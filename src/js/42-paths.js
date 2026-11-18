@@ -108,7 +108,7 @@ function worldOpen(p,wi){
 /* Some later stop of the same world is passed (it was added later, or an old save skipped it): it stays open. */
 function stopBehind(p,i){const b=WR[p][NODES[p][i].wi][1];for(let j=i+1;j<=b;j++)if(passed(p,j))return true;return false}
 function unlocked(p,i){
-  if(PLAY.lockedW(p,NODES[p][i].wi))return false; // PLAY-01: the Play app's free sample (the stars stay saved; 03-play.js)
+  if(PLAY.lockedS(p,i))return false; // PLAY-01: the Play app's free sample (the stars stay saved; 03-play.js)
   if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
   const wi=NODES[p][i].wi;
   if(!worldOpen(p,wi))return false;
@@ -146,7 +146,7 @@ function curNode(p){
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
   }
-  if(any<0&&PLAY.locked()){let w=startWorld(p);PATHS[p].worlds.forEach((x,j)=>{if(!PLAY.lockedW(p,j)&&worldHasProgress(p,j))w=j});return WR[p][w][1]} // PLAY-01: the free sample is all done here: open on the last free world played, never a locked one
+  if(any<0&&PLAY.locked()){const w=PLAY.freeW(p);return Math.min(WR[p][w][0]+PLAY.FREE_STOPS-1,WR[p][w][1])} // PLAY-01: the free sample is all done here: open on its last stop, never a locked world
   return any>=0?any:N.length-1;
 }
 const curWorld=p=>NODES[p][curNode(p)].wi;

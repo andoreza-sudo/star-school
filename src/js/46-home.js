@@ -394,10 +394,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedW(p,N[i].wi))return PLAY.kid('world',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
-  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedW(p,N[i].wi))return PLAY.kid('world',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)

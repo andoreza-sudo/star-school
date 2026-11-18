@@ -270,7 +270,7 @@ const SCREENS = {
   },
   'grown-play': {
     adult: true,
-    run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForFunction(() => !document.querySelector('#plbuy').disabled); await p.waitForTimeout(300); },
+    run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForTimeout(300); },
   },
   // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
   'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
@@ -476,7 +476,7 @@ function pageInit() {
   window.gtime = () => { S.pt = { bank: 1200, day: today(), used: 0 }; };
   // PLAY-01: the Play app's free sample with a mocked Google Play billing (the price comes from getDetails)
   window.playMock = () => {
-    const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [], acknowledge: async () => {} };
+    const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [] };
     window.getDigitalGoodsService = async () => svc;
     PLAY.st = { v: 1, on: 1, own: 0 }; PLAY.write(); PLAY.read(); PLAY.priceT = '';
   };

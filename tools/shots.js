@@ -1236,7 +1236,7 @@ Object.assign(SCREENS, {
 });
 // PLAY-01: the Play app's free sample in the page, with a mocked Google Play billing (the price comes from getDetails)
 function PLAY_MOCK() {
-  const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [], acknowledge: async () => {} };
+  const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [] };
   window.getDigitalGoodsService = async () => svc;
   PLAY.st = { v: 1, on: 1, own: 0 }; PLAY.write(); PLAY.read(); PLAY.priceT = '';
 }

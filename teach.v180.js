@@ -47,6 +47,17 @@ const LS = {
   // a new lesson. o: {seed, rem: [lesson ids due], day, S (the save; default S), at: beat to resume at, pre / post: results already
   // given, chkN: the extra Check me turns already given}
   make(id, o = {}) {
+    // PLAY-01 (fix179 follow-up): a resumed one-try beat never asks an item the child has already seen there (S.les.q, LS.keep): its
+    // fresh seed is drawn again (up to 12 times) while its first item is one of them
+    if (Array.isArray(o.avoid) && o.avoid.length && !(o.seed >>> 0)) {
+      let st = null;
+      for (let k = 0; k < 12; k++) {
+        st = LS.make(id, Object.assign({}, o, {avoid: null, seed: ((Math.random() * 4294967295) >>> 0) + 1}));
+        const it = LS.cur(st);
+        if (!it || !it.q || !o.avoid.includes(it.q.label)) break;
+      }
+      return st;
+    }
     const L = LESSONS[id], seed = (o.seed >>> 0) || ((Math.random() * 4294967296) >>> 0);
     const st = {id, L, seed, r: mulberry32(seed + (o.at | 0)), b: -1, items: [], i: 0, pre: (o.pre || []).slice(), post: (o.post || []).slice(0, 2), to: false, ctx: {}, chk: [],
       rem: (o.rem || []).filter(x => LESSONS[x] && x !== id), day: o.day || 0, S: o.S || S, last: -1, drop: false, done: false,
@@ -63,7 +74,8 @@ const LS = {
      remembering the questions. A Show or test-out item answered and then left during its line is never asked again. */
   resume(les, day) {
     const B = LSB[les.b | 0], fresh = ['pre', 'chk', 'show', 'win'].includes(B);
-    return {seed: fresh ? 0 : les.s, at: les.b | 0, pre: les.pre, post: les.post, chkN: les.m, day, rem: [], repair: les.r, proof: true, know: !!les.k, caught: !!les.c};
+    return {seed: fresh ? 0 : les.s, at: les.b | 0, pre: les.pre, post: les.post, chkN: les.m, day, rem: [], repair: les.r, proof: true, know: !!les.k, caught: !!les.c,
+      avoid: fresh && Array.isArray(les.q) ? les.q : null};
   },
   // fix179: the lesson's place in the save (S.les): the beat, its seed, the one-try answers given, how it started, the pet's mistake found
   keep(st) {
@@ -74,6 +86,8 @@ const LS = {
     if (st.repair) o.r = st.repair;
     if (st.slide) o.k = 1; // LS-STOP: how the lesson was started, and the pet's mistake found
     if (st.caught) o.c = 1;
+    const B = LSB[st.b]; // PLAY-01: the one-try items on show now, so a resumed beat never asks them again (LS.make avoid)
+    if (B == 'pre' || B == 'show') o.q = st.items.map(x => x.q && x.q.label).filter(Boolean).slice(0, 2);
     st.S.les = o;
   },
   cur: st => (st.done ? null : st.items[st.i] || null),

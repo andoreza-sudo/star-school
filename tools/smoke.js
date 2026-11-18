@@ -13237,26 +13237,30 @@ async function main() {
     }
     // end LS-STOP
 
-    // PLAY-01: the Google Play app (?src=play with a mocked Google Play billing): a child taps a locked world, the grown-ups' unlock
-    // behind the grown-up question with the price from Google Play, the purchase, Restore purchase in Grown-ups, the Game Room's
-    // locked games; and the same page without ?src=play (the web version) locks nothing
+    // PLAY-01: the Google Play app (?src=play with a mocked Google Play billing, Digital Goods v2): the free sample's 5 stops, a child's
+    // tap on a locked stop and world, the grown-ups' unlock behind the question, the purchase and its acknowledgement, Grown-ups by the
+    // hold and a reinstall restored, the free Game Room; normal Chrome and the web version lock nothing
     if (seg('PLAY-01')) {
       const bad = [], notes = [], path = require('path'), shots = process.env.PLAY_SHOTS || path.join(__dirname, 'out', 'play');
       require('fs').mkdirSync(shots, { recursive: true });
       const { INDEX_URL } = require('./lib/browser');
-      const mock = () => {
+      // Google Play as the TWA gives it with Digital Goods API v2: no acknowledge(), purchase details only {itemId, purchaseToken};
+      // the owner's acknowledgement endpoint (api/ack) answers through a mocked fetch. mode 'chrome': normal Chrome (the call rejects)
+      const mock = mode => {
         const L = window.__pl = { log: [], owned: [], pay: 'ok' };
         const svc = {
           getDetails: async ids => { L.log.push('details'); return ids.map(id => ({ itemId: id, title: 'Unlock', price: { currency: 'USD', value: '9.99' } })); },
-          listPurchases: async () => { L.log.push('list'); return L.owned.slice(); },
-          acknowledge: async (t, k) => { L.log.push('ack ' + t + ' ' + k); },
+          listPurchases: async () => { L.log.push('list'); return L.owned.map(x => ({ itemId: x.itemId, purchaseToken: x.purchaseToken })); },
         };
-        window.getDigitalGoodsService = async m => (m === 'https://play.google.com/billing' ? svc : null);
+        window.getDigitalGoodsService = async m => { if (mode == 'chrome') throw new Error('not a TWA'); return m === 'https://play.google.com/billing' ? svc : null; };
         window.PaymentRequest = class {
           constructor(m) { L.log.push('pr ' + m[0].data.sku); }
-          async show() { L.log.push('show'); if (L.pay == 'cancel') { const e = new Error('cancel'); e.name = 'AbortError'; throw e; }
-            return { details: { purchaseToken: 'tok1' }, complete: async r => { L.log.push('complete ' + r); } }; }
+          show() { L.log.push('show'); if (L.pay == 'cancel') { const e = new Error('cancel'); e.name = 'AbortError'; return Promise.reject(e); }
+            return Promise.resolve({ details: { purchaseToken: 'tok1' }, complete: async r => { L.log.push('complete ' + r); } }); }
         };
+        const f0 = window.fetch;
+        window.fetch = (u, o) => { if (u === 'api/ack') { const b = JSON.parse(o.body); L.log.push('post ' + b.token + ' ' + b.sku);
+          return Promise.resolve({ ok: true, json: async () => ({ state: 'purchased', acknowledged: true }) }); } return f0(u, o); };
       };
       const fit = (pg, at, sel) => pg.evaluate(sel => {
         const o = [], vw = document.documentElement.clientWidth;
@@ -13267,31 +13271,43 @@ async function main() {
         return o;
       }, sel).then(o => o.forEach(x => bad.push(at + x)));
       const PRICE = /[$€£]|\d[.,]\d\d/;
+      const kidSaw = async (pg, at, sel, re) => {
+        await pg.evaluate(sel => document.querySelector(sel).scrollIntoView({ block: 'center' }), sel);
+        await pg.click(sel);
+        await pg.waitForSelector('#plkid', { timeout: 5000 });
+        await vwait(pg, 500);
+        const k = await pg.evaluate(() => ({ t: document.querySelector('#plkid').textContent, log: window.__pl.log.filter(x => x != 'list'), play: !!document.querySelector('.play.qs') }));
+        if (!re.test(k.t) || PRICE.test(k.t) || /buy|pay|price/i.test(k.t) || k.log.length || k.play) bad.push(at + 'the child sees: ' + JSON.stringify(k));
+        return k;
+      };
       for (const [w, h] of [[380, 780], [600, 960]]) {
-        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h, url: INDEX_URL + '?src=play', init: [mock] });
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h, url: INDEX_URL + '?src=play', init: [mock, ''] });
         const pg = ta.page, at = 'PLAY-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h;
         try {
+          await pg.waitForFunction(() => PLAY.on, null, { timeout: 5000 }).catch(() => {});
           const m0 = await pg.evaluate(() => ({ on: PLAY.on, own: PLAY.own, key: localStorage.getItem(PLAY.KEY) }));
           if (!m0.on || m0.own) bad.push(at + 'Play mode at start: ' + JSON.stringify(m0));
-          // 1. a child taps a stop of a locked world (Number Meadow): one calm line, OK goes back to the child's own world
+          // 1. a child in Kindergarten: Shape Garden's first 5 stops are open, its 6th says "This stop opens ..."; Number Meadow is a
+          //    locked world ("This world opens ..."); OK goes back to the child's own world
+          await pg.evaluate(() => { S.grade = 0; save(); });
+          const sg = await pg.evaluate(() => { const wi = PATHS.math.worlds.findIndex(x => x.id == 'm_shape'), a = WR.math[wi][0]; for (let j = a; j < a + 5; j++) setSt('math', j, 2); save(); pathMap('math', wi);
+            return { a, open: [0, 1, 2, 3, 4].every(k => unlocked('math', a + k)), six: unlocked('math', a + 5) }; });
+          if (!sg.open || sg.six) bad.push(at + 'the free sample in Shape Garden: ' + JSON.stringify(sg));
+          await kidSaw(pg, at + 'a 6th stop: ', `.node[data-n="${sg.a + 5}"]`, /This stop opens when a grown-up unlocks Star School\./);
+          await pg.click('#plok');
+          await pg.waitForFunction(() => !document.querySelector('#plkid'), null, { timeout: 5000 });
           const wi = await pg.evaluate(() => PATHS.math.worlds.findIndex(x => x.id == 'm_meadow'));
-          await pg.evaluate(wi => { S.grade = 0; save(); pathMap('math', wi); }, wi);
+          await pg.evaluate(wi => mapGo('math', wi), wi);
           await pg.waitForSelector('.plgu', { timeout: 5000 });
           const a = await pg.evaluate(wi => WR.math[wi][0], wi);
-          await pg.evaluate(a => document.querySelector(`.node[data-n="${a}"]`).scrollIntoView({ block: 'center' }), a);
-          const n0 = await pg.evaluate(a => { const b = document.querySelector(`.node[data-n="${a}"]`); return { lock: b.classList.contains('lock'), label: b.getAttribute('aria-label'),
-            chip: document.querySelector(`.wchip[data-w="${PATHS.math.worlds.findIndex(x => x.id == 'm_meadow')}"]`).classList.contains('lock') }; }, a);
+          const n0 = await pg.evaluate(([a, wi]) => { const b = document.querySelector(`.node[data-n="${a}"]`); return { lock: b.classList.contains('lock'), label: b.getAttribute('aria-label'),
+            chip: document.querySelector(`.wchip[data-w="${wi}"]`).classList.contains('lock') }; }, [a, wi]);
           if (!n0.lock || !/locked/.test(n0.label) || !n0.chip) bad.push(at + 'the locked world on the map: ' + JSON.stringify(n0));
           await fit(pg, at + 'map: ', '.plgu');
+          await pg.evaluate(() => document.querySelector('.plgu').scrollIntoView({ block: 'center' }));
           await pg.screenshot({ path: path.join(shots, `play-map-${sz}.png`) });
-          await pg.click(`.node[data-n="${a}"]`);
-          await pg.waitForSelector('#plkid', { timeout: 5000 });
-          await vwait(pg, 400);
-          const k = await pg.evaluate(() => ({ t: document.querySelector('#plkid').textContent, log: window.__pl.log.filter(x => !/^list$/.test(x)), play: !!document.querySelector('.play.qs') }));
-          if (!/This world opens when a grown-up unlocks Star School\./.test(k.t) || PRICE.test(k.t) || /buy|pay|price/i.test(k.t) || k.log.length || k.play)
-            bad.push(at + 'the child sees: ' + JSON.stringify(k));
+          await kidSaw(pg, at + 'a locked world: ', `.node[data-n="${a}"]`, /This world opens when a grown-up unlocks Star School\./);
           await fit(pg, at + 'kid sheet: ', '#plkid .btn');
-          await vwait(pg, 500); // the sheet's slide-in
           await pg.screenshot({ path: path.join(shots, `play-kid-${sz}.png`) });
           await pg.click('#plok');
           await pg.waitForFunction(() => !document.querySelector('#plkid'), null, { timeout: 5000 });
@@ -13316,9 +13332,9 @@ async function main() {
           const sh = await pg.evaluate(() => ({ price: document.querySelector('#plprice').textContent, launch: (document.querySelector('#pllaunch') || {}).textContent }));
           if (!/^\$9\.99, paid once$/.test(sh.price) || !/^Launch price until/.test(sh.launch || '')) bad.push(at + 'the unlock sheet: ' + JSON.stringify(sh));
           await fit(pg, at + 'unlock sheet: ', '#plsheet .btn');
-          await vwait(pg, 500); // the sheet's slide-in
+          await vwait(pg, 500);
           await pg.screenshot({ path: path.join(shots, `play-unlock-${sz}.png`) });
-          // 3. a cancelled payment changes nothing; then the purchase
+          // 3. a cancelled payment changes nothing; then the purchase: show() inside the tap, acknowledged through the endpoint (v2)
           await pg.evaluate(() => { window.__pl.pay = 'cancel'; window.__pl.log = []; });
           await pg.click('#plbuy');
           await pg.waitForFunction(() => /No payment was made/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 }).catch(() => bad.push(at + 'cancel: no message'));
@@ -13327,51 +13343,62 @@ async function main() {
           await pg.click('#plbuy');
           await pg.waitForFunction(() => PLAY.own && /unlocked for every child/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
             .catch(() => bad.push(at + 'the purchase did not unlock'));
-          const by = await pg.evaluate(() => ({ log: window.__pl.log.join(), key: JSON.parse(localStorage.getItem(PLAY.KEY)).own, done: document.querySelector('#plno').textContent }));
-          if (by.log !== 'list,pr unlock_all,show,ack tok1 onetime,complete success' || by.key !== 1 || !/Done/.test(by.done)) bad.push(at + 'the purchase: ' + JSON.stringify(by));
-          await vwait(pg, 500); // the sheet's slide-in
+          const by = await pg.evaluate(() => ({ log: window.__pl.log.join(), st: JSON.parse(localStorage.getItem(PLAY.KEY)), done: document.querySelector('#plno').textContent }));
+          if (by.log !== 'pr unlock_all,show,complete success,post tok1 unlock_all' || by.st.own !== 1 || !(by.st.ackd || []).includes('tok1') || !/Done/.test(by.done))
+            bad.push(at + 'the purchase: ' + JSON.stringify(by));
+          await vwait(pg, 500);
           await pg.screenshot({ path: path.join(shots, `play-bought-${sz}.png`) });
           await pg.click('#plno');
           await pg.waitForFunction(() => !document.querySelector('#plsheet') && document.querySelector('#map'), null, { timeout: 5000 });
           await vwait(pg, 400);
           const op = await pg.evaluate(a => ({ lock: document.querySelector(`.node[data-n="${a}"]`).classList.contains('lock'), gu: !!document.querySelector('.plgu') }), a);
           if (op.lock || op.gu) bad.push(at + 'the map after the unlock: ' + JSON.stringify(op));
-          // 4. Restore purchase in Grown-ups (a reinstall: the tablet forgot, Google Play remembers)
-          await pg.evaluate(() => { PLAY.setOwn(false); window.__pl.owned = [{ itemId: 'unlock_all', purchaseToken: 'tok1' }]; window.__pl.log = []; grown(); document.querySelector('#gw-play').scrollIntoView(); });
-          await pg.waitForFunction(() => /9\.99/.test(document.querySelector('#plprice').textContent), null, { timeout: 5000 }).catch(() => bad.push(at + 'Grown-ups: no price'));
-          const ab = await pg.evaluate(() => document.querySelector('#ab-ed').textContent);
-          if (ab !== 'Free sample (Google Play)') bad.push(at + 'About: ' + ab);
+          // 4. Grown-ups by the 3-second hold (no question): the card has no price and no way to pay; "Unlock or restore" asks the
+          //    question; a reinstall (the tablet forgot, Google Play remembers) is restored as the sheet opens, no payment
+          await pg.evaluate(() => { PLAY.setOwn(false); delete PLAY.st.ackd; PLAY.write(); window.__pl.owned = [{ itemId: 'unlock_all', purchaseToken: 'tok1' }]; window.__pl.log = []; home(); });
+          const g = await pg.$('#gear'), gb = await g.boundingBox();
+          await pg.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+          await pg.mouse.down();
+          await pg.waitForSelector('#gw-play', { timeout: 10000 });
+          await pg.mouse.up();
+          await pg.evaluate(() => document.querySelector('#gw-play').scrollIntoView());
+          await vwait(pg, 400);
+          const cd = await pg.evaluate(() => ({ t: document.querySelector('#gw-play').textContent, buy: !!document.querySelector('#plbuy,#plrest'), go: !!document.querySelector('#plgo'),
+            ab: document.querySelector('#ab-ed').textContent, log: window.__pl.log.filter(x => x != 'list') }));
+          if (PRICE.test(cd.t) || cd.buy || !cd.go || cd.ab !== 'Free sample (Google Play)' || cd.log.length) bad.push(at + 'the Grown-ups card: ' + JSON.stringify(cd));
           await fit(pg, at + 'Grown-ups card: ', '#gw-play .btn');
-          await vwait(pg, 500); // the sheet's slide-in
           await pg.screenshot({ path: path.join(shots, `play-grown-${sz}.png`) });
-          await pg.click('#plrest');
-          await pg.waitForFunction(() => PLAY.own && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
-            .catch(() => bad.push(at + 'Restore purchase did not unlock'));
-          if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + 'Restore started a payment');
+          await pg.click('#plgo');
+          await pg.waitForSelector('#gwans', { timeout: 5000 });
+          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore opened the sheet without the question');
+          await pg.fill('#gwans', String(await pg.evaluate(() => NAV.gateSheet.ans)));
+          await pg.click('#gwok');
+          await pg.waitForFunction(() => PLAY.own && document.querySelector('#plmsg') && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
+            .catch(() => bad.push(at + 'the reinstall was not restored as the sheet opened'));
+          if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + 'restore started a payment');
+          await pg.click('#plno');
           await pg.waitForFunction(() => document.querySelector('#ab-ed') && document.querySelector('#ab-ed').textContent === 'Unlocked on Google Play', null, { timeout: 8000 })
             .catch(() => bad.push(at + 'Grown-ups did not redraw as unlocked'));
-          // 5. the Game Room in the free sample: two games open, a locked game says so calmly
+          // 5. the Game Room in the free sample: every game open (game time still comes from learning)
           await pg.evaluate(() => { PLAY.setOwn(false); S.pt = { bank: 600, day: today(), used: 0 }; save(); gameRoom(); });
           await pg.waitForSelector('.gh-card', { timeout: 20000 });
-          const gr = await pg.evaluate(() => GH.games.map(g => g.id + (document.querySelector('#' + g.btn).classList.contains('lock') ? ':lock' : '')).join());
-          if (gr !== 'hill:lock,art,blocks:lock,rally:lock,snack,hop:lock') bad.push(at + 'the Game Room: ' + gr);
-          await pg.click('#g4x4', { force: true }); // aria-disabled (a locked card), still tappable
-          await pg.waitForSelector('#plkid', { timeout: 5000 });
-          const gk = await pg.evaluate(() => document.querySelector('#plkid').textContent);
-          if (!/This game opens when a grown-up unlocks Star School\./.test(gk) || PRICE.test(gk)) bad.push(at + 'a locked game: ' + gk);
-          await pg.click('#plok');
-          if (w == 380) await pg.screenshot({ path: path.join(shots, `play-games-${sz}.png`) });
+          const gr = await pg.evaluate(() => ({ n: GH.games.length, grown: /grown-up/i.test(document.querySelector('.gh-grid').textContent), plgu: !!document.querySelector('.plgu') }));
+          if (gr.n < 6 || gr.grown || gr.plgu) bad.push(at + 'the Game Room: ' + JSON.stringify(gr));
+          await pg.click('#gcbn');
+          await pg.waitForFunction(() => !document.querySelector('.gh-grid'), null, { timeout: 10000 }).catch(() => bad.push(at + 'a game did not open in the free sample'));
+          if (await pg.$('#plkid')) bad.push(at + 'a game is locked');
           notes.push(sz);
         } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
         for (const e of ta.errors) bad.push(at + e);
         for (const u of ta.network) bad.push(at + 'network request: ' + u);
         await ta.ctx.close();
       }
-      // 6. the web version: the same tablet with Google Play billing but no ?src=play: nothing is locked, no unlock button anywhere
-      {
-        const ta = await openApp(browser, { fixture: 'midway', width: 380, height: 780, init: [mock] });
-        const pg = ta.page, at = 'PLAY-01 web ';
+      // 6. normal Chrome with ?src=play (the function exists, the call rejects), and the web version with billing present: nothing locked
+      for (const [url, m, what] of [[INDEX_URL + '?src=play', 'chrome', 'normal Chrome '], [INDEX_URL, '', 'web ']]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: 380, height: 780, url, init: [mock, m] });
+        const pg = ta.page, at = 'PLAY-01 ' + what;
         try {
+          await vwait(pg, 600);
           const wv = await pg.evaluate(() => { pathMap('math', 2); const g = document.querySelectorAll('.plgu').length; grown();
             return { on: PLAY.on, key: localStorage.getItem(PLAY.KEY), g, card: !!document.querySelector('#gw-play'), ed: document.querySelector('#ab-ed').textContent }; });
           if (wv.on || wv.key || wv.g || wv.card || wv.ed !== 'Everything is open (web version)') bad.push(at + JSON.stringify(wv));
@@ -13380,10 +13407,11 @@ async function main() {
         await ta.ctx.close();
       }
       if (bad.length) fail('PLAY-01 the Play app:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('PLAY-01: the Play app at ' + notes.join(' and ') + ': a locked world on the map, a child taps it and sees one calm line with no price, OK goes back to their world; ' +
-        'Unlock everything asks the grown-up question first (a wrong answer opens nothing, no price before it); the sheet shows the price from Google Play and the launch line; ' +
-        'cancel changes nothing; the purchase is acknowledged and unlocks the map; Restore purchase in Grown-ups unlocks again with no payment; the Game Room opens two games; ' +
-        'the web version locks nothing; no console errors, no network requests');
+      else step('PLAY-01: the Play app at ' + notes.join(' and ') + ': the first 5 stops of the grade\'s start world open, the 6th and a locked world each tell a ' +
+        'child one calm line with no price, OK goes back to their world; Unlock everything asks the grown-up question first (a wrong answer opens nothing, no price ' +
+        'or Google Play call before it); the sheet shows the price from Google Play and the launch line; cancel changes nothing; the purchase calls show() in the tap ' +
+        'and is acknowledged through the endpoint (Digital Goods v2); Grown-ups by the hold shows no price or way to pay, Unlock or restore asks the question and a ' +
+        'reinstall is restored as the sheet opens; every Game Room game opens; normal Chrome with ?src=play and the web version lock nothing; no console errors, no network requests');
     }
     // end PLAY-01
 

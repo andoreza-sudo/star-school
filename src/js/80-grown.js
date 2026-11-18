@@ -131,7 +131,7 @@ function grown(){let armed=false;
   reportGrownBind();
   BAK.bind();
   PRF.bind();
-  if(PLAY.on)PLAY.bind($('#gw-play'),()=>grown()); // PLAY-01: Unlock Star School (89-play.js)
+  if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Star School: Unlock or restore asks the grown-up question first (89-play.js)
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
