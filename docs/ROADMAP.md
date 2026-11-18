@@ -657,6 +657,26 @@ with a one-page design each; Andy picks or the merger picks if no answer.
 
 **G-04 · New games** · Opus: one chunk per game picked in G-03, same rules as G-02.
 
+## 10d. Queued after the paid lesson stops (added 2026-11-18 at Andy's request)
+
+Andy decided (2026-11-18): no AI model on the tablet. Words a child sees are written at authoring time and approved by the owner;
+the tablet only picks among approved sentences with simple rules. Size budget: the owner allows up to 20 MB for the whole offline
+app (code plus audio); the start-up limit stays 3 MB.
+
+**HINT-01 · A hint for each common mistake, in every practice question** · Opus: extend the lesson misconception codes
+(`BUGS`, `q.bug`, the TEACH-3 and TEACH-4 codes) to every Practice question kind. For each question the app computes what each
+known mistake would answer (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cap" for "cat", ...)
+and, when the child's wrong answer matches one, shows that mistake's approved hint with the real numbers filled in. Hints are
+drafted with tools/author.js and go live only after the owner's read-through. Accept: every Practice skill has its common
+mistakes coded; simulated children show the hint fires on the matching mistake and never on a right answer or a random guess.
+
+**PERS-01 · Problems about the child's interests** · Sonnet: a grown-up or child picks a few interests (soccer, dinosaurs,
+horses, space, cooking, ...); approved word lists per interest fill approved templates in word problems and stories. No sentence
+is invented on the tablet. Accept: every template and word list reviewed; kid-safe list and content rules checked by test.js.
+
+**ASK-01 · "Ask the pet"** · Sonnet: a short menu of questions per lesson or stop ("Why do we carry?", "What is a fraction?");
+each answer written ahead of time and approved; spoken by the pet in its age tone. Accept: no free text; every answer reviewed.
+
 ## 11. Later ideas (not planned)
 
 Nonogram puzzles, crosswords, world map graphics for geography, cursive tracing, a second language, teacher mode with several classes,

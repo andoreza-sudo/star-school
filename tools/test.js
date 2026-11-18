@@ -23,8 +23,9 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 // P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
 // and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache; ES-AUDIO 3.4 MB)
 // G-01b raised it to 3.6 MB for the Block Builder journey; ES-AUDIO had raised it from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=8000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
-// TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB ("we can do 8 mb and be fine") for the lesson parts; the start-up limit stays 3.0 MB.
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
+// TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
+// code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB.
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
