@@ -1,6 +1,6 @@
 # Draft: Place Value to 999,999 (pv4)
 
-status: unreviewed
+status: reviewed owner 2026-11-18
 made: 2026-11-18 by tools/author.js --draft (xAI API)
 
 <!-- For the owner: read the sheet below, change any wording in the JSON, then replace "unreviewed" above with
