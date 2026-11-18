@@ -9430,18 +9430,26 @@ async function main() {
           stage = 'turn with one finger';
           const cr = await pg.evaluate(() => { const r = $('#bbc').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
           const v0 = await pg.evaluate(() => ({ a: BB.ang, F: BB.F.join(), n: BB.w.filter(v => v).length }));
+          // CHK-FAST: a finger that rests before it moves is a hold (the magnifier), not a turn; at 8x a busy CPU's round trip for the first
+          // move outlasted the hold time, so the drag runs at the real clock (vspeed), as a finger's
+          await vspeed(pg, 1);
           await send('touchStart', [T(cr[0], cr[1])]);
           for (let s = 1; s <= 8; s++) { await send('touchMove', [T(cr[0] - s * 14, cr[1])]); await pg.waitForTimeout(30); }
           await send('touchEnd', []);
+          await vspeed(pg);
           await pg.waitForTimeout(250);
           const v1 = await pg.evaluate(() => ({ a: BB.ang, F: BB.F.join(), n: BB.w.filter(v => v).length }));
           if (!(Math.abs(v1.a - v0.a) > .2) || v1.F != v0.F || v1.n != v0.n) bad.push(at + 'one-finger drag: ' + JSON.stringify([v0, v1]));
-          // CHK-FAST: the flick at the real clock (vspeed): its speed is the moves' spacing on the page's clock, and at 8x a busy CPU
-          // stretched 16 ms between moves into a slow drag that does not spin; the angle at the moment the finger lifts, read then
+          // CHK-FAST: a flick spins only when the finger lifts within 90 ms (page clock) of the last move. At 8x the bot's 16 ms wait
+          // after the last move was 128 ms, and on a busy CPU the round trip of the last move alone (its event waits for a frame) was
+          // 130-300 ms; so the flick runs at the real clock (vspeed) and its last move and the lift go out together, queued in order
+          // like a real finger's; the angle at the moment the finger lifts is read then, in the page
           await vspeed(pg, 1);
           await send('touchStart', [T(cr[0] - 80, cr[1])]);
-          for (let s = 1; s <= 4; s++) { await send('touchMove', [T(cr[0] - 80 + s * 40, cr[1])]); await pg.waitForTimeout(16); }
-          const [fl] = await actRead(pg, () => send('touchEnd', []), [[0, () => BB.ang]], 'pointerup');
+          for (let s = 1; s <= 3; s++) { await send('touchMove', [T(cr[0] - 80 + s * 40, cr[1])]); await pg.waitForTimeout(16); }
+          await arm(pg, [[0, () => BB.ang]], 'pointerup');
+          await Promise.all([send('touchMove', [T(cr[0] + 80, cr[1])]), send('touchEnd', [])]);
+          const [fl] = await snaps(pg);
           await vspeed(pg);
           await pg.waitForFunction(() => !BB.gest.spin, null, { timeout: 6000 }).catch(() => {});
           const v2 = await pg.evaluate(() => ({ a: BB.ang, spin: BB.gest.spin, rot: BB.rot }));
@@ -9469,7 +9477,16 @@ async function main() {
           // hold, then slide: aims (magnifier) and lifting builds
           stage = 'hold and slide';
           await pg.waitForTimeout(300);
-          const sp2 = await pg.evaluate(new Function(toCss + 'for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) { const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k); if (k < 0 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue; const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]); if (h && h.i == i && h.j == j && h.f == "top" && p[0] > BB.W * .15 && p[0] < BB.W * .85 && p[1] > BB.H * .3 && p[1] < BB.H * .85) return [r.left + p[0] / d, r.top + p[1] / d]; } return null;'));
+          // CHK-FAST: the spot is a top face near the middle of the screen; how the flick above ends (a quarter turn more or less) decides
+          // the view, and from some quarters at 380x780 no top face is there: the bot then looks from the next quarter (Right), as a child would
+          let sp2 = await pg.evaluate(new Function(toCss + 'for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) { const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k); if (k < 0 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue; const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]); if (h && h.i == i && h.j == j && h.f == "top" && p[0] > BB.W * .15 && p[0] < BB.W * .85 && p[1] > BB.H * .3 && p[1] < BB.H * .85) return [r.left + p[0] / d, r.top + p[1] / d]; } return null;'));
+          for (let t = 0; t < 3 && !sp2; t++) {
+            const q0 = await pg.evaluate(() => Math.round(BB.ang / (Math.PI / 2)));
+            await tapSel('#bbrr');
+            await pg.waitForFunction(q => Math.abs(BB.ang - (q + 1) * Math.PI / 2) < 1e-9, q0, { timeout: 5000 }).catch(() => {});
+            await pg.waitForTimeout(300);
+            sp2 = await pg.evaluate(new Function(toCss + 'for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) { const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k); if (k < 0 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue; const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]); if (h && h.i == i && h.j == j && h.f == "top" && p[0] > BB.W * .15 && p[0] < BB.W * .85 && p[1] > BB.H * .3 && p[1] < BB.H * .85) return [r.left + p[0] / d, r.top + p[1] / d]; } return null;'));
+          }
           if (sp2) {
             const m0 = await count();
             await send('touchStart', [T(sp2[0], sp2[1] - 30)]);
@@ -11977,7 +11994,7 @@ async function main() {
           for (const e of document.querySelectorAll('.inp button, .lnw .lnp, .lnw .vband, .mmv [data-v], .mmv [data-c]')) {
             const r = e.getBoundingClientRect();
             if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small ' + (e.getAttribute('class') || e.tagName) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
-            if (r.left < -1 || r.right > vw + 1) o.push('outside ' + (e.getAttribute('class') || e.tagName));
+            if (r.left < -1 || r.right > vw + 1) o.push('outside ' + (e.getAttribute('class') || e.tagName) + ' (' + Math.round(r.left) + ' to ' + Math.round(r.right) + ' of ' + vw + ')');
           }
           const c = document.querySelector('#mcheck');
           if (c && document.scrollingElement.scrollTop === 0 && c.getBoundingClientRect().bottom > innerHeight + 1) o.push('Check below the screen');
