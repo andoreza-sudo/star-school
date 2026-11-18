@@ -1,0 +1,22 @@
+/* LS-STOP: the lesson stop on the map (42b-lstop.js), its ticket (what the next try pays) and label. In index.html: the map draws it
+   before the lesson part loads. Tokens only. */
+.btn.lsn,.btn.lsn.ls-go{position:absolute;width:60px;height:60px;min-height:60px;margin:-30px 0 0 -30px;padding:0;border-radius:var(--r-card);z-index:2;
+  display:grid;place-items:center;background:var(--surface);color:var(--c,var(--brand));
+  box-shadow:inset 0 0 0 4px var(--c,var(--brand)),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.lsn .ic{width:30px;height:30px}
+.btn.lsn.done{background:var(--c-tint,var(--brand-tint));color:var(--c-shade,var(--brand-shade))}
+.btn.lsn.cur{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--c,var(--brand));color:var(--surface);
+  box-shadow:inset 0 3px 0 var(--hi),inset 0 0 0 4px var(--surface),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.lsn.cur::after{content:'';position:absolute;inset:-9px;border:4px solid var(--c,var(--brand));border-radius:var(--r-card);opacity:0;
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
+.btn.lsn.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
+.btn.lsn:active{transform:translateY(3px)}
+.btn.lsn.lock:active{transform:none}
+.lsn-tk{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;display:inline-flex;align-items:center;gap:2px;
+  padding:2px var(--s-2) 2px var(--s-1);border-radius:var(--r-pill);background:var(--play-tint);color:var(--ink);font-family:var(--font-display);
+  font-size:var(--fs-2);font-weight:700;white-space:nowrap;box-shadow:inset 0 0 0 2px var(--play),0 2px 0 var(--drop)}
+.lsn-tk .ic{color:var(--play-shade);flex:none}
+.lsn-tk.dn{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 2px 0 var(--drop)}
+.lsn-tk.dn .ic{color:var(--good)}
+.nlab.lsn-lab{color:var(--ink-2)}
+html.calm .btn.lsn.cur::after{animation:none}

@@ -89,6 +89,8 @@ function grown(){let armed=false;
     <div class="gw-row"><span class="gw-rl">Learn first, minutes</span>${GW.seg('need',[0,5,10,15,20,30],pc.need,'Minutes of learning needed each day before the Game Room opens',v=>v||'None')}</div>
     ${pc.need?`<p class="gw-note" id="ptneed">${ico('clock',22)}<span>${!gt.more?`Learning today: ${pc.need} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room is open.`:`Learning today: ${Math.floor(gt.done/60)} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room opens at ${pc.need}.`}</span></p>
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
+    <p class="gw-sub" id="lspayh">Lessons with ${esc(petN())} pay game time when Show is passed with no help (guessing pays nothing). Minutes:</p>
+    ${[['ls1','First pass'],['ls2','Second pass'],['ls3','Later passes (once a day)'],['lsT','Good try, not passed (once a day)']].map(([k,l])=>`<div class="gw-row"><span class="gw-rl">${l}</span>${GW.seg(k,LS_PAY_OPT,lsPayCfg()[k],'Lesson game time, '+l+', minutes',v=>v||'None')}</div>`).join('')}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>
     <div class="gw-row" id="gw-hcas"><span class="gw-rl">4x4 Hill Climb driving help</span>${GW.seg('hcas',['auto',3,2,1,0],hcAsGrown(),'4x4 Hill Climb driving help',v=>HCAS_NAMES[v])}</div>
@@ -133,6 +135,7 @@ function grown(){let armed=false;
   $('#pt5').onclick=()=>{ptEarn(300);grown()};$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
   $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
+  for(const k in LS_PAY_D)$$(`[data-${k.toLowerCase()}]`).forEach(b=>b.onclick=()=>{ptCfg()[k]=+b.dataset[k.toLowerCase()];save();grown()}); // LS-STOP: what lessons pay
   $$('[data-hcas]').forEach(b=>b.onclick=()=>{const v=b.dataset.hcas;if(!S.garage||typeof S.garage!='object'||Array.isArray(S.garage))S.garage={};S.garage.as=v=='auto'?'auto':+v;save();grown()});
   $('#rlgates').onchange=e=>{if(!S.rally||typeof S.rally!='object'||Array.isArray(S.rally))S.rally={};S.rally.gates=e.target.checked?'on':'off';save()}; // G-FEEL2
   if($('#pto'))$('#pto').onchange=e=>{const p=pt();if(e.target.checked)p.open=today();else p.open='';save()};

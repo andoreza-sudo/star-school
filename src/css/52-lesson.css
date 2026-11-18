@@ -91,3 +91,26 @@ html.calm .btn.ls-go::after{animation:none}
 .ls-mh{width:30px;height:4px;background:var(--math)}
 .mm-hands .mms{column-gap:var(--s-2);row-gap:2px}
 .mm-hands .mml{min-width:0;flex-basis:100%;text-align:center}
+/* LS-STOP: the ticket meter in the lesson's top bar (what the lesson pays now, filled as the beats are done), the start card's price,
+   the end card's ticket that lands in the bank chip. Calm mode and reduced motion end the motion at once (20-base.css). */
+.ls-meter{flex:none;display:inline-flex;align-items:center;gap:var(--s-1);min-height:44px;padding:0 var(--s-3) 0 var(--s-2);border-radius:var(--r-pill);
+  font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;color:var(--ink);white-space:nowrap;
+  background:linear-gradient(90deg,var(--play-tint) calc(var(--f,0) * 100%),var(--surface) calc(var(--f,0) * 100%));box-shadow:inset 0 0 0 2px var(--play)}
+.ls-meter .ic{color:var(--play-shade);flex:none}
+.ls-meter.dn{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}
+.ls-meter.dn .ic{color:var(--good)}
+@media (max-width:640px){.ls-top.ls-m .ls-tag{display:none}}
+@media (max-width:420px){.ls-top.ls-m .ls-pips{gap:3px}.ls-top.ls-m .ls-pip{width:26px;height:26px}}
+.ls-price{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--play-tint);
+  border-radius:var(--r-card);padding:var(--s-2) var(--s-4);box-shadow:inset 0 0 0 2px var(--play)}
+.ls-price .ic{flex:none;color:var(--play-shade)}
+.ls-price.dn{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}
+.ls-price.dn .ic{color:var(--good)}
+.ls-tk{display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-4) var(--s-1) var(--s-2);border-radius:var(--r-pill);
+  font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;color:var(--ink);background:var(--play-tint);box-shadow:inset 0 0 0 3px var(--play),0 3px 0 var(--play-shade)}
+.ls-tk .ic{color:var(--play-shade)}
+.ls-tk.land{animation:ls-land var(--t-slow) var(--ease) forwards}
+@keyframes ls-land{to{transform:translateY(-40px) scale(.6);opacity:0}}
+.ls-earn .ls-gt b{color:var(--ink)}
+.ls-earn .ls-gt0 span{color:var(--ink-2)}
+.ls-acts{padding:var(--s-2)}

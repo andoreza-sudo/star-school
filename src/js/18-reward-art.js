@@ -296,7 +296,7 @@ const RW = {
     const L = [[/^Round done/, 'check'], [/^Keep trying|^Good try/, 'heart'], [/^New stop/, 'map'], [/^Beat your old/, 'trophy'],
       [/^Harder world/, 'bolt'], [/^Perfect/, 'star'], [/^Beat the boss/, 'crown'], [/^Fixed/, 'replay'], [/^Already mastered/, 'crown'],
       [/^Tested out/, 'bolt'], [/^Practice round/, 'target'], [/^Played/, 'replay'], [/^Daily review/, 'review'],
-      [/^Daily mission/, 'calendar'], [/^Puzzle/, 'puzzle']];
+      [/^Daily mission/, 'calendar'], [/^Puzzle/, 'puzzle'], [/^Lesson/, 'doc']];
     for (const [re, ic] of L) if (re.test(label)) return ic;
     return 'plus';
   },
