@@ -1,5 +1,5 @@
-/* Star School teach v176. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
-   index.html v176 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v176.js. */
+/* Star School teach v177. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
+   index.html v177 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v177.js. */
 (function(){var s=document.createElement('style');s.id='css-teach';s.textContent="/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of\n   the prompt card: the pet, its caption bubble and \"Hear it again\". Tokens only. */\n.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}\n.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}\n.ls-pip .ic{width:18px;height:18px}\n.ls-pip.on{background:var(--math);color:var(--surface)}\n.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}\n.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}\n.ls-top .ls-tag{flex:none}\n.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}\n.ls-art{flex:none;width:64px;height:64px}\n.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}\n.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);\n  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}\n.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}\n.ls-bub.on{opacity:1}\n.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}\n.btn.ls-hear{flex:none}\n.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}\n.ls-turn .ls-bub::before{border-right-color:var(--star)}\n.ls-pw{display:flex;justify-content:center;max-width:100%}\n.ls-pw .viz{max-width:100%}\n.slot.ls-pv{background:var(--star-tint);color:var(--ink)}\n.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}\n.ls-qm{color:var(--math-shade)}\n.ls-judge{display:flex;gap:var(--s-3);justify-content:center}\n.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}\n.ls-judge .btn .ic{width:36px;height:36px}\n.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}\n.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}\n.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}\n#lsinp>.btn.lg{margin:0 auto;display:flex}\n.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}\n.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}\n.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}\n/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */\n.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;\n  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.btn.ls-go .ic{width:30px;height:30px}\n.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}\n/* the end card */\n.ls-end{display:flex;justify-content:center;padding:var(--s-4)}\n.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}\n.ls-endc h1{margin:0}\n.ls-art.ls-big{width:150px;height:150px}\n.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}\n.ls-idea .ic{flex:none;color:var(--math-shade)}\n.ls-earn{align-self:stretch}\n.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}\n@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}\nhtml.calm .btn.ls-go::after{animation:none}\n/* TEACH-2: a repair's contrast (the right answer beside the held idea's, on one picture each) */\n.ls-con{display:flex;gap:var(--s-3);justify-content:center;flex-wrap:wrap;width:100%}\n.ls-cpane{flex:1 1 140px;max-width:300px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:var(--s-1);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface)}\n.ls-cpane.ok{box-shadow:inset 0 0 0 3px var(--good)}.ls-cpane.ok>.ic{color:var(--good-ink)}\n.ls-cpane.no{box-shadow:inset 0 0 0 3px var(--try)}.ls-cpane.no>.ic{color:var(--ink-2)}\n.ls-cpane .viz,.ls-cpane svg{max-width:100%;height:auto}\n/* TEACH-2: the notebook (52d-notebook.js) */\n.nbk{padding:var(--s-3) var(--s-4) var(--s-6)}\n.nbk-in{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-4);align-items:center}\n.nbk-top .chip{flex:none}\n.nbk-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--s-3);width:100%;align-items:start}\n.nbk-pg{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-3);background:var(--surface);border-radius:var(--r-card);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line);cursor:pointer;min-width:0}\n.nbk-pg.kept{box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.nbk-pic{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:120px;background:var(--math-tint);border-radius:var(--r-chip);padding:var(--s-2);overflow:hidden}\n.nbk-pic .pkq,.nbk-pic .viz,.nbk-pic svg{max-width:100%;height:auto}\n.nbk-pic .eq{font-size:var(--fs-4)}\n.nbk-idea{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);line-height:var(--lh-2)}\n.nbk-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2)}\n.nbk-t{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2);font-weight:700;min-width:0}\n.nbk-star{color:var(--star-ink);flex:none}\n.nbk-empty{display:grid;place-items:center;width:160px;height:160px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.nbk-next .btn{min-width:220px}\n/* TEACH-2: the report card's lessons by stage (82-report.js calls LSREP) */\n.rp-ls{display:grid;gap:2px;margin:var(--s-2) 0;font-size:var(--fs-1)}\n.rp-lsr{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr));gap:var(--s-1);align-items:center;padding:var(--s-1) 0;border-bottom:1px solid var(--line)}\n.rp-lsh{font-weight:700;color:var(--ink-2);align-items:end;overflow-wrap:anywhere}.rp-lsh>span+span{text-align:center}\n.rp-lsn{text-align:center;font-weight:700;color:var(--ink-2)}\n.rp-lsn.on{color:var(--ink);background:var(--good-tint);border-radius:var(--r-chip)}\n.rp-noticed .rp-pin{display:flex;margin-top:var(--s-2)}\n@media (max-width:560px){.rp-lsr{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:2px}.rp-lsr>[role=rowheader]{grid-column:1/-1;font-weight:700}\n  .rp-lsh>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.rp-lsh{text-align:center}}\n/* TEACH-2b: the workbench pieces of the grade 1 and 2 lessons (52f-bench.js): blocks in a second colour, the trade buttons, groups,\n   the named clock hands */\n.viz .ls-b2{fill:var(--play-shade)}\n.viz .ls-gd{fill:none;stroke:var(--math)}\n.ls-trs{gap:var(--s-2)}\n.mmb.ls-tr{font-size:var(--fs-2);font-weight:700;padding:0 var(--s-3);white-space:nowrap}\n.ls-hh,.ls-mh{display:inline-block;vertical-align:middle;width:22px;height:6px;border-radius:3px;margin-right:6px;background:var(--read)}\n.ls-mh{width:30px;height:4px;background:var(--math)}\n.mm-hands .mms{column-gap:var(--s-2);row-gap:2px}\n.mm-hands .mml{min-width:0;flex-basis:100%;text-align:center}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-1: "Sparky teaches", the lesson (part teach; docs/TEACH-PLAN-2.md, batch 1) ----------
    A lesson is a short class the child's pet runs, about 3 minutes (owner decision 2): it always opens with two "show me" items and
@@ -61,7 +61,7 @@ const LS = {
       const n = L.name(st.ctx, r);
       it = [{m: 'say', html: n.html, lines: n.lines}];
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
-    else if (B == 'chk') it = [LS.petItem(st)];
+    else if (B == 'chk') it = L.chk ? L.chk(st) : [LS.petItem(st)]; // TEACH-3: grades 3-5 have their own Check me (52i-bench35.js)
     else if (B == 'show') it = [0, 1].map(k => {
       // TEACH-2b: a drafted script frames Show as its job in the world (its Show lines), unless the child tested out
       const q = L.q(L.test, r), w = L.w && !st.to ? lsW(L.w.beats.show, k, q.sl) : [];
@@ -139,6 +139,7 @@ const LS = {
   answer(st, v) {
     const it = LS.cur(st), T = lsTone(), B = LSB[st.b];
     if (!it) return null;
+    if (it.on) return it.on(st, v); // TEACH-3: an item that answers for itself ("your problem", 52i-bench35.js)
     const yay = () => [T.yay[(st.r() * T.yay.length) | 0]];
     if (it.m == 'say') return {ok: true, act: 'next', lines: []};
     if (it.m == 'open') {
@@ -150,7 +151,7 @@ const LS = {
     if (it.m == 'judge') {
       const yes = String(v) === '1', ok = yes === it.petOk;
       st.chk.push(ok ? 1 : 0);
-      if (!it.petOk) st.items.splice(st.i + 1, 0, LS.fixItem(it));
+      if (!it.petOk) st.items.splice(st.i + 1, 0, ...(it.after ? it.after(st) : [LS.fixItem(it)])); // TEACH-3: the fix, then the reason from tiles
       // TEACH-2b: a drafted script's reason for the pet's mistake (its misconception code), after it is caught
       const why = !it.petOk && it.code && st.L.w ? lsW((st.L.w.reasons || {})[it.code], 0, it.q.sl) : [];
       return {ok, act: 'next', mood: it.petOk ? 'happy' : 'oops',
@@ -282,7 +283,7 @@ const LS = {
       prompt = it.html;
       input = UI.btn('Next', {kind: 'primary', size: 'lg', icon: 'go', id: 'lsnext'});
     } else if (it.m == 'judge') {
-      prompt = LS.petWork(q, it.pv);
+      prompt = it.pw || LS.petWork(q, it.pv); // TEACH-3: the pet's written steps
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
     } else {
       prompt = q.html;
@@ -318,8 +319,8 @@ const LS = {
       return q.html + `<div class="ls-pw">${K2MM[q.model].draw(q, s).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
     }
     if (q.kind == 'line') return q.html + `<div class="ls-pw">${VIZ.numLine(Object.assign({}, q.line, {pin: +v})).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
-    const c = q.kind == 'choice' ? q.choices.find(x => x.v === String(v)) : null;
-    return q.html.replace(SLOT, `<span class="slot ls-pv">${esc(c ? c.l : v)}</span>`);
+    const c = q.kind == 'choice' ? q.choices.find(x => x.v === String(v)) : null, sl = [SLOT_MIX, SLOT_FRAC, SLOT_R].find(x => q.html.includes(x)) || SLOT;
+    return q.html.replace(sl, `<span class="slot ls-pv">${esc(c ? c.l : v)}</span>`); // TEACH-3: a fraction or remainder answer fills its slots as one
   },
   judge(v) {
     const st = LS.st;
@@ -406,7 +407,7 @@ const LS = {
   // never a front door). Placed above the stop, or beside it, wherever it covers nothing; no button when nothing is free.
   mapAdd() {
     const m = $('#map');
-    if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2) return;
+    if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2 && !partReady('teach35')) return; // TEACH-3: grades 3 up once their lessons are in
     const old = m.querySelector('.ls-go');
     if (old) old.remove();
     NB.mapBtn();
@@ -439,7 +440,7 @@ function lsFill(t, sl) {
 const lsW = (a, k, sl) => { a = [].concat(a || []); const t = a.length ? lsFill(a[k % a.length], sl) : null; return t ? [t] : []; };
 // an answer as the pet says it: a time as words, cents with their unit
 const LS_SIGN = {'<': 'is less than', '>': 'is greater than', '=': 'is equal to'};
-const lsSayV = (q, v) => (q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
+const lsSayV = (q, v) => (q.vsay ? q.vsay(String(v)) : q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
   : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? v + ' cents' : String(v));
 /* ---------- TEACH-1: what the tutor knows, the plan, the before-and-after measure (part teach) ----------
    Saved data (all of it stays on the tablet; a backup file carries it like the rest of S):
@@ -642,7 +643,9 @@ function planToday(S0, day, p = 'math') {
   const K = S0.know || {}, ps = id => at(id) >= 0 && passed('math', at(id)), learned = id => (K[id] || {}).s >= 2;
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
-    const cand = LS_IDS.filter(x => at(x) >= 0).sort((a, b) => at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
+    // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's)
+    const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS.math.worlds[NODES.math[at(x)].wi].g, mine = x => (g0 >= 3 && wg(x) != Math.min(g0, 5) ? 1 : 0);
+    const cand = LS_IDS.filter(x => at(x) >= 0 && (g0 < 3 || wg(x) >= 3)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
     const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
     let nx = cand[0] || null;
     const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1];
@@ -1190,4 +1193,4 @@ const LSREP = {
   },
 };
 
-var TEACH_VER='v176'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH_VER='v177'; // last line: the whole file ran (checked by dataReady() before the app starts)

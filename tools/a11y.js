@@ -307,6 +307,16 @@ const SCREENS = {
   'teach12-blocks': { run: async p => teach12Tog(p, 'big3') },
   'teach12-clock': { run: async p => teach12Tog(p, 'time2') },
   'teach12-groups': { run: async p => teach12Tog(p, 'mult1') },
+  // TEACH-3: the grade 3-5 lessons (teach35): two fraction bars (Unlike Fractions), the place-value chart (Place Value to 999,999), the area model
+  // (2-Digit Times 2-Digit), each as a Together build or picture; the pet's written steps in Check me, the slip tapped, the reason from word
+  // tiles, and "your problem" (2-Digit Times 1-Digit, as a 4th grader; the pet made to slip)
+  'teach35-bars': { run: async p => teach35Beat(p, 'frac6', 'tog', 0) },
+  'teach35-chart': { run: async p => teach35Beat(p, 'pv4', 'tog', 0) },
+  'teach35-area': { run: async p => teach35Beat(p, 'mbig4', 'tog', 0) },
+  'teach35-steps': { run: async p => teach35Beat(p, 'mbig2', 'chk', 0, 'steps') },
+  'teach35-fix': { run: async p => teach35Beat(p, 'mbig2', 'chk', 1, 'steps') },
+  'teach35-tiles': { run: async p => teach35Beat(p, 'mbig2', 'chk', 2, 'steps') },
+  'teach35-mine': { run: async p => teach35Beat(p, 'mbig2', 'chk', 0, 'mine') },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
@@ -378,6 +388,18 @@ async function teach12Tog(p, id) {
   await p.waitForFunction(() => typeof LS_DRAFTED != 'undefined', null, { timeout: 30000 });
   await p.evaluate(([id, w]) => { window.say = window.__a11y.say; teachSave(); if (!LESSONS[id]) lsEnable(id, w); LS.WAKE = 400;
     const st = LS.make(id, { seed: 5, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show(); }, [id, W[id]]);
+  await p.waitForTimeout(1500);
+}
+// TEACH-3: a grade 3-5 lesson at a beat (k: the item; for Check me, 1 is the fix and 2 the reason from tiles after the pet's slip)
+async function teach35Beat(p, id, beat, k, form) {
+  await p.evaluate(() => partsLoad(['teach', 'teach12', 'teach35']));
+  await p.waitForFunction(() => typeof LS_B35 != 'undefined', null, { timeout: 30000 });
+  await p.evaluate(([id, beat, k, form]) => { window.say = window.__a11y.say; teachSave(); S.grade = 4; LS.WAKE = 400; LS.PET_OK = 0;
+    let st = null;
+    for (let s = 1; s < 60; s++) { st = LS.make(id, { seed: s, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat)); const it = LS.cur(st);
+      if (!form || (form == 'mine' ? it.mine : it.steps)) break; }
+    for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
+    LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, form]);
   await p.waitForTimeout(1500);
 }
 async function gamesReady(p) {
