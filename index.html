@@ -2991,7 +2991,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v177'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v177 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v178'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v178 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3151,7 +3151,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v177'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v178'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3648,13 +3648,14 @@ function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)retu
 function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
-  const M=it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  const M=it.tch?EN_TEACH:it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
   if(it.btn)it.btn.classList.add('talking');
   try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
   sfxDuck(speakBusy)}
 // a file that does not load or play: never tried again this session; the line goes to the tablet's voice
 function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
   if(it.en){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow,1)} // EN-PRAISE: the rest of the cheer, tablet voice
+  if(it.tch){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow)} // TEACH-4: the rest of the teacher line, tablet voice
   if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
 /* EN-PRAISE: recorded English encouragement. EN_AUDIO (src/data/d-en-audio.js, made by tools/en-audio.js) maps every fixed praise,
    try-again and well-done line say() speaks ("Great job!", "Almost!", "You got 7 stars!", "New record!") to six recordings, one per
@@ -3700,9 +3701,21 @@ function pickVoice(es){const k=es?'es':'en';if(VOICE[k]&&VOICE.n===speechSynthes
 let VOICE_WARM=0;
 function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
+/* TEACH-4: the pet's recorded teacher lines. EN_TEACH (src/data/d-teach-audio.js, made by tools/en-audio.js --teach) maps the fixed lines of the
+   Pre-K to 2nd grade lessons ("My turn. Check me!", "Read the word. Then tap its picture.") to one recording each, in one warm voice. A line
+   that is recorded whole plays its file; a line of several sentences plays its recorded sentences and says the others with the tablet's
+   voice, in order (tchRuns). Anything with a name, a number or a word of the question is the tablet's voice. Off with ENA.off, the Cheer
+   voices choice "Tablet voice", where Opus cannot play, or for a file that failed (the tablet's voice says it instead). */
+function tchRuns(t){if(ENA.off||typeof EN_TEACH=='undefined'||t==null||!esaOk()||cheerMode()=='tts')return null;const m=EN_TEACH.lines,k=esKey(t),ok=x=>!!m[x]&&!ESA.bad[m[x]];
+  if(ok(k)){const r=[k];r.r=true;return[r]}const ps=enSplit(k);if(!ps.some(ok))return null;const o=[];
+  for(const p of ps){const r=ok(p),l=o[o.length-1];if(l&&l.r===r)l.push(p);else{const n=[p];n.r=r;o.push(n)}}return o}
+function tchSay(t,btn,q,slow){const rs=tchRuns(t);if(!rs)return false;if(!q)hush();
+  rs.forEach((r,i)=>{if(!r.r)return say(r.join(' '),btn,null,1,slow);const it={a:r.map(x=>[EN_TEACH.lines[x],0]),i:0,t:r.join(' '),ts:r.slice(),btn,slow,tch:1};
+    if((q||i)&&speakBusy())ESA.q.push(it);else esaPlay(it)});return true}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
 function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
   if(!q&&cheerBusy()){q=1;ESA.q=[]} // EN-PRAISE: a cheer is not cut off: the new line waits for it (what was queued goes, as with hush)
+  if(!es&&tchSay(t,btn,q,slow))return; // TEACH-4: a recorded teacher line
   if(!es&&enSay(t,btn,q,slow))return; // EN-PRAISE: a recorded cheer (or the grown-up's clip)
   if(fs){if(!q)hush();const it={a:fs,i:0,t:String(t),btn,slow};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);return} // ES-AUDIO
   if(es&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
@@ -8036,7 +8049,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v177)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v178)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8069,7 +8082,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   view(`<div class="top tbar mp-top s-${p}">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl mp-ttl">${ico(UI.SUBJ_ICON[p]||'map',30)}<span>${esc(P.n)}</span></div>${UI.chip('star',S.stars,{aria:'Stars'})}</div>
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
-  NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm(); // NAV-01: Back goes one step back
+  NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read'); // NAV-01: Back goes one step back
   if(wi!=null)return mapTop(p);
   const c=$('.node.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 /* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */
@@ -8122,9 +8135,9 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2);
-  if(p=='math'&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
+  if((p=='math'||p=='read')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
 // TEACH-1: the lessons' part loads once the math map is drawn (Pre-K to 2nd), then adds its offer; a part that does not load just shows no offer
-function teachWarm(){const up=gradeOf()>2;if(TEACH.off||partReady(up?'teach35':'teach12'))return;(up?partsLoad(['teach','teach12','teach35']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP=='math'&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons (teach35) too
+function teachWarm(p='math'){const up=gradeOf()>2,rd=p=='read'||gradeOf()<0;if(TEACH.off||p=='read'&&up||partReady(up?'teach35':rd?'teachrd':'teach12'))return;(up?partsLoad(['teach','teach12','teach35']):rd?partsLoad(['teach','teach12','teachrd']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons too (teach35); TEACH-4: the reading map (Pre-K to 2nd), and the math map of a Pre-K child, load the reading and Pre-K lessons (teachrd)
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
@@ -11639,7 +11652,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v177'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v178'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12235,18 +12248,19 @@ function appFiles() {
     ['teach', typeof TEACH_VER === 'undefined' ? null : TEACH_VER],
     ['teach12', typeof TEACH12_VER === 'undefined' ? null : TEACH12_VER],
     ['teach35', typeof TEACH35_VER === 'undefined' ? null : TEACH35_VER],
+    ['teachrd', typeof TEACHRD_VER === 'undefined' ? null : TEACHRD_VER],
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v177');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v178');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v177')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v177)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v178')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v178)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12263,20 +12277,20 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'petage']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v177';
+  return !!f && f[1] === 'v178';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v177') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v178') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v177.js';
+    s.src = stem + '.v178.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12301,9 +12315,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v177.js"></script>
-<script src="gen2.v177.js"></script>
-<script src="data.v177.js"></script>
+<script src="gen.v178.js"></script>
+<script src="gen2.v178.js"></script>
+<script src="data.v178.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

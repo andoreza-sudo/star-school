@@ -317,6 +317,16 @@ const SCREENS = {
   'teach35-fix': { run: async p => teach35Beat(p, 'mbig2', 'chk', 1, 'steps') },
   'teach35-tiles': { run: async p => teach35Beat(p, 'mbig2', 'chk', 2, 'steps') },
   'teach35-mine': { run: async p => teach35Beat(p, 'mbig2', 'chk', 0, 'mine') },
+  // TEACH-4: the reading and Pre-K lessons (teachrd): the sound sort with pictures (First Sounds), the letter named (Name it), building a word
+  // from letter tiles (Build a Word), the pet's letters in Check me and its fix, the sentence matched to a picture (Picture Words), a Pre-K
+  // picture choice (Which Has More)
+  'teach4-sort': { run: async p => teach4Beat(p, 'sound1', 'exp', 0) },
+  'teach4-name': { run: async p => teach4Beat(p, 'sound1', 'name', 0) },
+  'teach4-build': { run: async p => teach4Beat(p, 'build1', 'tog', 0) },
+  'teach4-pet': { run: async p => teach4Beat(p, 'build1', 'chk', 0) },
+  'teach4-fix': { run: async p => teach4Beat(p, 'build1', 'chk', 1) },
+  'teach4-sent': { run: async p => teach4Beat(p, 'pic1', 'show', 0) },
+  'teach4-plates': { run: async p => teach4Beat(p, 'pk_more1', 'show', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
@@ -400,6 +410,16 @@ async function teach35Beat(p, id, beat, k, form) {
       if (!form || (form == 'mine' ? it.mine : it.steps)) break; }
     for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
     LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, form]);
+  await p.waitForTimeout(1500);
+}
+// TEACH-4: a reading or Pre-K lesson at a beat (k: the item; in Check me, 1 is the fix after the pet's mistake)
+async function teach4Beat(p, id, beat, k) {
+  await p.evaluate(() => partsLoad(['teach', 'teach12', 'teachrd']));
+  await p.waitForFunction(() => typeof LS_B4 != 'undefined', null, { timeout: 30000 });
+  await p.evaluate(([id, beat, k]) => { window.say = window.__a11y.say; teachSave(); S.grade = LESSONS[id].g; LS.WAKE = 400; LS.PET_OK = 0;
+    const st = LS.make(id, { seed: 3, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat));
+    for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
+    LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k]);
   await p.waitForTimeout(1500);
 }
 async function gamesReady(p) {
@@ -873,6 +893,10 @@ async function scanOne(browser, name, s, [w, h]) {
 }
 
 async function main() {
+  // SHARDS: --shard=i/N scans only every N-th job from the i-th (tools/check.sh runs the N shards side by side, each its own browser)
+  const shardArg = (process.argv.find(a => a.startsWith('--shard=')) || '').slice(8);
+  const shard = shardArg ? shardArg.split('/').map(Number) : null;
+  if (shard && !(shard[1] >= 1 && shard[0] >= 1 && shard[0] <= shard[1])) { console.error('--shard=i/N wants 1 <= i <= N'); process.exit(2); }
   const args = process.argv.slice(2).filter(a => !a.startsWith('-'));
   const sizeArg = process.argv.find(a => a.startsWith('--size='));
   const sizes = sizeArg ? [sizeArg.slice(7).split('x').map(Number)] : SIZES;
@@ -894,6 +918,9 @@ async function main() {
   try {
     const jobs = [];
     for (const size of sizes) for (const n of names) jobs.push([n, size]);
+    const total = jobs.length;
+    if (shard) jobs.splice(0, jobs.length, ...jobs.filter((j, k) => k % shard[1] === shard[0] - 1));
+    if (shard) console.log(`a11y shard ${shard[0]}/${shard[1]}: ${jobs.length} of ${total} jobs (screen x size)`);
     let next = 0;
     const PAR = +process.env.A11Y_PAR || 2;
     const worker = async () => {
@@ -912,7 +939,7 @@ async function main() {
   }
   const by = {};
   for (const f of all) by[f.rule] = (by[f.rule] || 0) + 1;
-  console.log(`a11y: ${names.length} screens x ${sizes.length} sizes in ${Math.round((Date.now() - t0) / 1000)} s; ` +
+  console.log(`a11y${shard ? ' shard ' + shard.join('/') : ''}: ${names.length} screens x ${sizes.length} sizes in ${Math.round((Date.now() - t0) / 1000)} s; ` +
     (all.length ? `${all.length} failure(s): ` + Object.entries(by).map(([k, v]) => k + ' ' + v).join(', ') : 'zero failures'));
   process.exit(all.length ? 1 : 0);
 }

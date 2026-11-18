@@ -142,6 +142,9 @@ games.<VER>.js    the Game Room: src/js/62-hill, 64-gtimer, 66-colornum, 68-lowp
 rally.<VER>.js    G-RALLY2: Star Rally on its own (src/js/63-game-race.js, src/css/49-game-race.css), then  var RALLY_VER='<VER>'; loads after games, before games2
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
+teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons of Tiny Town and ABC Beach, src/js/52k-words4, 52l-bench4,
+                  52m-lessons4 and src/css/52k-teach4.css; LAZY: the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too
+                  for a Pre-K child (teachWarm in 46-home.js)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
@@ -149,6 +152,8 @@ sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/b
                   ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
 audio/es/*.ogg    ES-AUDIO: the recorded Spanish (tools/es-audio.js); not loaded at start, fetched the first time a line is said
 audio/en/*.ogg    EN-PRAISE: the recorded English encouragement, six voices (tools/en-audio.js); the same way
+audio/teach/*.ogg TEACH-4: the pet's recorded teacher lines for the Pre-K to 2nd grade lessons, one voice (node tools/en-audio.js --teach;
+                  manifest src/data/d-teach-audio.js, EN_TEACH); the same way and cache, inside the same audio budget
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:
@@ -308,14 +313,41 @@ change the generator in `tools/puzzles/`, rerun `build-banks.js`, then `node too
 
 Inner loop while you work (seconds, not an hour): `python3 tools/build.py && node tools/contrast.js && node tools/test.js --only X`,
 where X is a word from the name of the check you are changing (the check names are the `run('...')` strings in `tools/test.js`).
-`--only` is not available for `smoke.js`: it is one long script on one shared page, so a block cannot be skipped without the later blocks losing their state.
+`--only` is not available for `smoke.js`, but `--seg` is (CHK-FAST): `node tools/smoke.js --seg TEACH-1,KINDS2-A` runs only those
+segments (the ids are the `if (seg('ID')) {` lines of `main()`; `node tools/smoke.js --plan` lists them by shard).
 
-The full check, before you hand work in: `bash tools/check.sh`. Build, contrast and the hex guard run first and stop the run if they fail.
-Then `test.js`, `smoke.js` and `a11y.js` run at the same time (all three with 8 or more CPUs; with 2 to 7, smoke runs beside test then a11y, because three at once crashed Chrome on 4 CPUs), then `perf.js` alone
-and last, because it measures timings. A failing step does not stop the others: each step writes its own log in a temp directory, and a
-table at the end gives step, pass or fail, minutes and the log path. The exit status is non-zero if any step failed.
-`KEEP_GOING=0 bash tools/check.sh` is the old behaviour: one step after another on the terminal, stop at the first failure.
-`A11Y_PAR=n` sets how many screens `a11y.js` scans at once.
+The full check, before you hand work in: `bash tools/check.sh` (CHK-FAST: about 35 minutes on 4 CPUs, half the old one-process run).
+Build, contrast, the hex guard and the smoke shard plan run first and stop the run if they fail. Then the **shards** run side by side,
+`JOBS` processes at once (5 with 4+ CPUs, fewer when free memory is short, about 1 GB each): `test.js --shard=i/N` (2), `a11y.js
+--shard=i/N` (2, at nice 10) and `smoke.js --shard i/N` (8), each its own node and its own Chrome. Then the **timed** shards
+(`smoke.js --shard tI/M`, 2, and `test.js --shard=t`) run with nothing else beside them, then `perf.js` alone and last. A failing
+step does not stop the others: every step and shard writes its own log in a temp directory, and a table at the end gives step, pass
+or fail, minutes and the log path; the `test`, `smoke` and `a11y` rows sum up their shards (test also checks that the shards' check
+counts add up). The exit status is non-zero if any step failed. `KEEP_GOING=0 bash tools/check.sh` is the old behaviour: one step
+after another on the terminal, no shards, stop at the first failure. `A11Y_PAR=n` sets how many screens each `a11y.js` shard scans
+at once; `SMOKE_SHARDS`, `TIMED_SHARDS`, `TEST_SHARDS`, `A11Y_SHARDS` and `JOBS` override the counts.
+
+How the smoke shards work (tools/lib/smoke-shards.js): `main()` of `tools/smoke.js` is a list of **segments**, each one top-level
+`if (seg('ID')) {` ... `}` block that opens its own page(s) (`core` is the first page's run through steps 1 to 11). Nothing else may
+stand between the segments but the shared lines listed in `ALLOWED`; the plan step and the test.js check "smoke shards" fail on a step
+block outside a segment, so a new step can neither be lost nor run twice. Every segment lands in exactly one shard (balanced by
+`WEIGHTS`, seconds measured with `SMOKE_SEG_TIMES=file node tools/smoke.js`; an unmeasured segment counts by its length). With no
+flag, `node tools/smoke.js` still runs every segment, in order, in one browser. A new step block: give it its own `if (seg('ID')) {`
+and its own pages, and add its weight once measured.
+
+**TIMED** segments (the `TIMED` list in tools/lib/smoke-shards.js) are the steps that **measure real time against a limit**: frame
+times and drawing at a CPU throttle, a tap answered within 100 ms, the gap between sounds, and the WebGL looks drawn on the CPU. On a
+busy CPU they fail because the machine is slow, not the app, so they run only in the timed shards, after the others, with nothing but
+the timed test.js shard beside them (and test.js keeps its checks with time limits in `TEST_TIMED`, run by `--shard=t`). A new step
+that measures time goes in TIMED.
+
+A step that only **reads** the screen inside one of the app's short windows (a right answer's tick shows 1.2 s, 150 ms of real time
+at the 8x clock, then the round moves on) is NOT timed: it must read at the right moment, in the page, so it holds on a busy CPU.
+Never "tap, wait, then read" from Node for such a state. Use the helpers at the top of tools/smoke.js: `actRead(pg, act, [[ms, read]],
+ev, sel)` (the trusted event of the act schedules `read` `ms` of virtual time later with the app's own `setTimeout`, so it runs in
+order with the app's timers), `armShow(pg, sel, read)` (reads in the microtask after `sel` first shows), a `waitForFunction` that
+returns the snapshot it saw, and, only for a bot act that must land inside an app window (a touch before a banner goes by itself),
+`vspeed(pg, 1)` ... `vspeed(pg)` around it (the page's clock at real speed for that act; never shortens what the app waits for).
 
 Smoke runs on a virtual clock (fixed day 2026-06-15 10:00, timers and `Date` run at `SMOKE_SPEED` times real time, default 8, see `tools/lib/browser.js`). Run `SMOKE_SPEED=1 node tools/smoke.js` for the real clock.
 

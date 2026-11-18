@@ -1,6 +1,6 @@
 # Draft: Divide Big Numbers (dbig3)
 
-status: unreviewed
+status: reviewed owner 2026-11-18
 made: 2026-11-18 by tools/author.js --draft (xAI API)
 
 <!-- For the owner: read the sheet below, change any wording in the JSON, then replace "unreviewed" above with

@@ -1,6 +1,6 @@
 # Draft: Round to 100 (round2)
 
-status: unreviewed
+status: reviewed owner 2026-11-18
 made: 2026-11-18 by tools/author.js --draft (xAI API)
 edited: 2026-11-18 by Claude after reading every line (words only; see "After reading")
 
@@ -12,7 +12,7 @@ edited: 2026-11-18 by Claude after reading every line (words only; see "After re
 
 ```text
 Round to 100 (round2), grade 3, the kid pet
-Idea: Find the hundreds a number sits between, then pick the nearer one.
+Idea: Find the hundreds a number sits between, then pick the nearer one. Halfway rounds up.
 
 Remember:
   - Do you remember this? What comes next counting by tens from {k}?
@@ -32,9 +32,9 @@ Check me:
 Show:
   - The path needs a sign at each hundred. Round {n} to the nearest hundred.
 Reasons the pet gives when it is caught:
-  trunc: It is past halfway. Round up to the next hundred.
+  trunc: It is halfway or past it. Round up to the next hundred.
   rup: It is not halfway yet. Round down to the lower hundred.
-Tonight's question: Ask {name}: "What would you round 73 to, the nearest ten?"
+Tonight's question: Ask {name}: "What would you round 730 to, the nearest hundred?"
 About 3.3 minutes.
 ```
 
@@ -55,7 +55,7 @@ About 3.3 minutes.
  "t": "Round to 100",
  "grade": 3,
  "age": "kid",
- "idea": "Find the hundreds a number sits between, then pick the nearer one.",
+ "idea": "Find the hundreds a number sits between, then pick the nearer one. Halfway rounds up.",
  "beats": {
   "remember": [
    "Do you remember this? What comes next counting by tens from {k}?"
@@ -83,13 +83,13 @@ About 3.3 minutes.
  },
  "reasons": {
   "trunc": [
-   "It is past halfway. Round up to the next hundred."
+   "It is halfway or past it. Round up to the next hundred."
   ],
   "rup": [
    "It is not halfway yet. Round down to the lower hundred."
   ]
  },
- "home": "Ask {name}: \"What would you round 73 to, the nearest ten?\""
+ "home": "Ask {name}: \"What would you round 730 to, the nearest hundred?\""
 }
 ```
 
@@ -123,3 +123,5 @@ Tonight's question: Ask {name}: "What would you round 73 to, the nearest ten?"
 About 3.3 minutes.
 ```
 </details>
+
+Fixed after review (2026-11-18): rounding lines now say halfway rounds up, and tonight's question is about hundreds; the owner had approved this lesson, these are factual corrections only.

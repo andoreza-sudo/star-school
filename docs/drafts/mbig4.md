@@ -1,6 +1,6 @@
 # Draft: 2-Digit Times 2-Digit (mbig4)
 
-status: unreviewed
+status: reviewed owner 2026-11-18
 made: 2026-11-18 by tools/author.js --draft (xAI API)
 edited: 2026-11-18 by Claude after reading every line (words only; see "After reading")
 

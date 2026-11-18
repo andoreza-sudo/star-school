@@ -39,7 +39,12 @@ function clockInit([speed, start]) {
   const realST = window.setTimeout.bind(window), realSI = window.setInterval.bind(window);
   const t0 = start ? new RealDate(...start).getTime() : RealDate.now();
   const p0 = realNow();
-  const vNow = () => t0 + (realNow() - p0) * speed;
+  // CHK-FAST: __vspeed(s) changes the speed from now on (the virtual clock goes on from where it is; timers set before keep their real
+  // delay). tools/smoke.js uses it (vspeed) only around a bot act that must land inside a short app window (a touch on a banner that
+  // goes by itself after 2 s), so a busy CPU cannot make the bot late; it never shortens anything the app waits for.
+  let vt = t0, vp = p0;
+  const vNow = () => vt + (realNow() - vp) * speed;
+  window.__vspeed = s => { vt = vNow(); vp = realNow(); speed = s; };
   function VDate(...a) {
     if (!new.target) return new RealDate(vNow()).toString();
     return a.length ? new RealDate(...a) : new RealDate(vNow());
@@ -50,7 +55,7 @@ function clockInit([speed, start]) {
   Object.defineProperty(VDate, 'name', { value: 'Date' });
   window.Date = VDate;
   window.__realNow = realNow; // for steps that measure real CPU time (the map-draw budget)
-  performance.now = () => (realNow() - p0) * speed;
+  performance.now = () => vNow() - t0;
   const dl = d => (Number(d) || 0) / speed;
   window.setTimeout = (f, d, ...a) => realST(f, dl(d), ...a);
   window.setInterval = (f, d, ...a) => realSI(f, dl(d), ...a);
