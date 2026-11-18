@@ -12526,7 +12526,8 @@ async function main() {
           const end = await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
             return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
               idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
-          if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 0 || end.lm[3] !== 1 || // LS-STOP: a missed show-me item after "I already know this!" ends the test-out at once (0 of 1, was 1 of 2)
+          // fix179 (owner, 2026-11-18: practice is still required): the passed lesson opens Make Ten but does not pass it (was 2 stars, the next stop open)
+          if (end.st !== 0 || end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 0 || end.lm[3] !== 1 || // LS-STOP: a missed show-me item after "I already know this!" ends the test-out at once (0 of 1, was 1 of 2)
              end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
             // TEACH-2: the end card also opens the notebook (lsnb), on purpose
             || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap,lsnb') bad.push(at + 'the end: ' + JSON.stringify(end));
@@ -13186,6 +13187,42 @@ async function main() {
           const off = await pg.evaluate(() => ({ lsn: document.querySelectorAll('.lsn').length, lock: document.querySelector(`.node[data-n="${NODES.math.findIndex(n => nid(n) === 'add1')}"]`).classList.contains('lock') }));
           await pg.evaluate(() => { TEACH.off = false; });
           if (off.lsn || off.lock) bad.push(at + 'lessons off: ' + JSON.stringify(off));
+          if (w == 380) {
+            // 10. fix179: a missed show-me item after "I already know this!" is in the save at once; leaving during the slide line and
+            //     coming back goes on into the lesson (never the same show-me item again)
+            await pg.evaluate(() => { delete S.les; LS.open('tenf3'); });
+            await pg.waitForSelector('#lsknow', { timeout: 5000 });
+            await pg.click('#lsknow');
+            await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
+            const l0 = await pg.evaluate(() => LS.cur(LS.st).q.label);
+            await actS(pg, true);
+            const kept = await pg.evaluate(() => { const l = JSON.parse(localStorage.getItem(SKEY)).les; LS.st = null; home(); return l; });
+            await pg.evaluate(() => { LS.open('tenf3'); });
+            await pg.waitForSelector('#lsplay', { timeout: 10000 });
+            const rs = await pg.evaluate(() => ({ b: document.querySelector('#lsplay').dataset.beat, l: LS.st && LS.cur(LS.st).q && LS.cur(LS.st).q.label, pre: LS.st && LS.st.pre }));
+            if (!kept || JSON.stringify(kept.pre) !== '[false]' || rs.b == 'pre' || rs.l === l0 || JSON.stringify(rs.pre) !== '[false]') bad.push(at + 'left during the slide line: ' + JSON.stringify([kept, rs]));
+            await pg.evaluate(() => { LS.st = null; delete S.les; home(); });
+            // 11. fix179: a lesson part that does not load opens the practice stop (never a dead end); a part that loads after the child
+            //     has gone on never replaces the screen
+            await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'add1'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); delete S.know.add1; delete LS_PASS.add1;
+              window.__pl = partsLoad; partsLoad = () => Promise.resolve('teach'); pathMap('math', NODES.math[i].wi); });
+            const ai = await pg.evaluate(() => NODES.math.findIndex(n => nid(n) === 'add1'));
+            await pg.waitForSelector(`.lsn[data-ls="${ai}"]`, { timeout: 5000 });
+            await pg.evaluate(i => document.querySelector(`.lsn[data-ls="${i}"]`).scrollIntoView({ block: 'center' }), ai);
+            await pg.click(`.lsn[data-ls="${ai}"]`);
+            await pg.waitForSelector('.play.qs', { timeout: 8000 }).catch(() => {});
+            const pf = await pg.evaluate(() => ({ play: !!document.querySelector('.play.qs'), node: typeof G != 'undefined' && G && G.node, path: G && G.path, gate: lsGate('math', G ? G.node : 0), card: !!document.querySelector('#lsopen') }));
+            if (!pf.play || pf.node !== ai || pf.path !== 'math' || pf.gate || pf.card) bad.push(at + 'a lesson part that does not load: ' + JSON.stringify(pf));
+            await pg.evaluate(() => { delete LS_PASS.add1; let go; partsLoad = () => new Promise(r => { go = r; }); window.__go = () => go(null); pathMap('math', NODES.math[NODES.math.findIndex(n => nid(n) === 'add1')].wi); });
+            await pg.waitForSelector(`.lsn[data-ls="${ai}"]`, { timeout: 5000 });
+            await pg.evaluate(i => document.querySelector(`.lsn[data-ls="${i}"]`).scrollIntoView({ block: 'center' }), ai);
+            await pg.click(`.lsn[data-ls="${ai}"]`);
+            await pg.evaluate(() => { home(); window.__go(); });
+            await vwait(pg, 500);
+            const lt = await pg.evaluate(() => ({ card: !!document.querySelector('#lsopen'), map: !!document.querySelector('#map') }));
+            await pg.evaluate(() => { partsLoad = window.__pl; });
+            if (lt.card || lt.map) bad.push(at + 'a part that loaded late replaced the screen: ' + JSON.stringify(lt));
+          }
           notes.push(sz);
         } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
         for (const e of ta.errors) bad.push(at + e);
@@ -13195,7 +13232,8 @@ async function main() {
       if (bad.length) fail('LS-STOP lesson stops:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card; ' +
         '"I already know this!" with a miss slides into the lesson with no wrong sound; the top bar meter fills; the end card lists +5:00 game time and the bank chip counts ' +
-        'up by 5:00; the stop opens and its lesson stop shows +2 min; a proven skip pays; lessons off has no lesson stops or locks; no console errors, no network requests');
+        'up by 5:00; the stop opens and its lesson stop shows +2 min; a proven skip pays; lessons off has no lesson stops or locks; (fix179) a show-me item missed and left ' +
+        'during the slide line resumes in the lesson; a lesson part that does not load opens the practice round, one that loads late changes no screen; no console errors, no network requests');
     }
     // end LS-STOP
 

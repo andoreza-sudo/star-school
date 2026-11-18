@@ -8,7 +8,8 @@
      S.lm = [[nid, day, preRight, preN, postRight, postN, testedOut], ...]   the measure: the two "show me" items before teaching
         (first try, no help) and the two Show items after it (one try, no help); newest last, at most LS_KEEP
      S.lr = [[nid, gapDays, right], ...]   Remember answers: right again after how many days (retention by day gap); at most LS_KEEP
-     S.les = {n: nid, b: beat, s: seed, pre: [..]}   a lesson left part way, resumed at that beat (deleted when it ends)
+     S.les = {n: nid, b: beat, s: seed, pre: [..], post?: [..], m?: extra Check me turns, r?, k?, c?}   a lesson left part way, resumed at
+        that beat (LS.keep, LS.resume in 52-lesson.js: the one-try items and Check me come back fresh; deleted when it ends)
    Day numbers are STRK.idx(today()) (55-streak.js). */
 const LS_GAP = [2, 5, 12, 30, 60], LS_KEEP = 100;
 const lsDay = () => (typeof STRK != 'undefined' ? STRK.idx(today()) : 0);

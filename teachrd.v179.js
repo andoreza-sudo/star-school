@@ -221,7 +221,7 @@ function lsPw4(q, v) {
 }
 function lsChk4(st) {
   const L = st.L, D = LS_DRAFTED[st.id], T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
-  const petOk = st.r() < LS.PET_OK;
+  const petOk = LS.petRight(st);
   let q, pv = null, code = null;
   for (let n = 0; n < 40 && pv == null; n++) {
     q = L.q(D.petSt | 0, st.r);
@@ -231,7 +231,7 @@ function lsChk4(st) {
       if (v != null) { pv = String(v); code = c; break; }
     }
   }
-  if (pv == null) pv = q.ans; // never reached with these lessons (tools/test.js checks every pet turn)
+  if (pv == null) pv = q.ans; // never reached with these lessons (tools/test.js "every pet turn" checks every lesson's forced-wrong turn)
   const ok = lsOk(q, pv), sl = Object.assign({}, q.sl, {ans: lsSayV(q, pv)});
   const claim = lsW(L.w.beats.check.filter(t => /\{ans\}/.test(t)), 0, sl)[0] || `I think it is ${lsSayV(q, pv)}.`;
   return [{m: 'judge', q, pv, petOk: ok, code, pw: lsPw4(q, pv), lines: [T.myTurn, claim],
@@ -515,7 +515,9 @@ function ls4Size(id, t, o) {
 }
 // patterns
 function ls4Pat(id, t, o) {
-  const D = ls4(id, t, 'math', -1, Object.assign({bugs: ['rep'], petSt: 2, claim: 'Next comes the {ans}!',
+  // fix179: the pet's turn is an A B A B A pattern (stage 1), where saying the last shape again (rep) is wrong; in stage 2's A B B A B
+  // the last shape IS what comes next, so the pet could never be wrong there
+  const D = ls4(id, t, 'math', -1, Object.assign({bugs: ['rep'], petSt: 1, claim: 'Next comes the {ans}!',
     fam: 'pat', slots: ls4Sl([], [], [], [], [])}, o));
   const mk = (r, k, abb) => {
     const sh = ls4Shuf(r, ['circle', 'square', 'triangle', 'star', 'diamond']), cs = PK.cols(), A = {s: sh[0], c: cs[0]}, B = {s: sh[1], c: cs[1]}, C = {s: sh[2], c: cs[2]}, E = {s: sh[3], c: cs[3]};

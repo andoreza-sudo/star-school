@@ -33,17 +33,45 @@ const LS = {
   PET_OK: .25,   // how often the pet is right in Check me
   WAKE: 6000,    // the answer controls wake at the latest this long after a spoken line starts
   RUSH: 800,     // LS-STOP: an answer this soon after the controls woke is a rushed one (two or more: not a good try)
+  /* fix179 (owner, 2026-11-18: practice is still required): the stars a passed lesson gives its practice stop (S.maps, LS.record). 0: a
+     passed lesson OPENS its practice stop (lsGate reads the lesson's own record, S.know[nid].s >= 2) but does not pass it; the child
+     plays the stop's practice round (paid as rounds are) to pass it and open the next stop. The end card leads to Practice and has no
+     "Next stop unlocked" (rec.next reads unlocked()). A lesson never lowers or removes stars a stop already has. (2 was v179 before
+     this decision: the lesson passed the stop, so a map could be crossed on test-outs alone.) */
+  STOP_STARS: 0,
   st: null, u: null, seq: 0,
   // ---- the state machine ----
-  // a new lesson. o: {seed, rem: [lesson ids due], day, S (the save; default S), at: beat to resume at, pre: results already given}
+  // a new lesson. o: {seed, rem: [lesson ids due], day, S (the save; default S), at: beat to resume at, pre / post: results already
+  // given, chkN: the extra Check me turns already given}
   make(id, o = {}) {
     const L = LESSONS[id], seed = (o.seed >>> 0) || ((Math.random() * 4294967296) >>> 0);
-    const st = {id, L, seed, r: mulberry32(seed + (o.at | 0)), b: -1, items: [], i: 0, pre: (o.pre || []).slice(), post: [], to: false, ctx: {}, chk: [],
+    const st = {id, L, seed, r: mulberry32(seed + (o.at | 0)), b: -1, items: [], i: 0, pre: (o.pre || []).slice(), post: (o.post || []).slice(0, 2), to: false, ctx: {}, chk: [],
       rem: (o.rem || []).filter(x => LESSONS[x] && x !== id), day: o.day || 0, S: o.S || S, last: -1, drop: false, done: false,
-      repair: BUGS[o.repair] ? o.repair : null, proof: !!o.proof, slide: !!o.know, caught: !!o.caught, chkN: 0, rush: 0};
+      repair: BUGS[o.repair] ? o.repair : null, proof: !!o.proof, slide: !!o.know, caught: !!o.caught, chkN: Math.min(2, o.chkN | 0), rush: 0};
     if (o.at && st.pre.length == 2 && st.pre.every(Boolean) && o.at <= LSB.indexOf('show')) st.to = true;
-    LS.beat(st, Math.max(0, Math.min(o.learn && !o.at ? 1 : o.at | 0, LSB.indexOf('show')))); // LS-STOP: "Let's learn" starts at Remember
+    // fix179: a test-out already missed after "I already know this!" (the child left during the slide line) goes on into the teaching beats
+    const at = !o.at && st.slide && st.pre.some(x => !x) ? 1 : o.at | 0;
+    LS.beat(st, Math.max(0, Math.min(o.learn && !o.at ? 1 : at, LSB.indexOf('show')))); // LS-STOP: "Let's learn" starts at Remember
     return st;
+  },
+  /* fix179: the options that resume a lesson left part way (S.les, written by LS.keep). The teaching beats come back as they were (the
+     same seed: the child loses nothing); the one-try items (the test-out, Show) and Check me get FRESH items (a new seed), with the
+     answers already given kept (pre, post, the pet's mistake found), so a lesson left and resumed can never be passed, or paid, by
+     remembering the questions. A Show or test-out item answered and then left during its line is never asked again. */
+  resume(les, day) {
+    const B = LSB[les.b | 0], fresh = ['pre', 'chk', 'show', 'win'].includes(B);
+    return {seed: fresh ? 0 : les.s, at: les.b | 0, pre: les.pre, post: les.post, chkN: les.m, day, rem: [], repair: les.r, proof: true, know: !!les.k, caught: !!les.c};
+  },
+  // fix179: the lesson's place in the save (S.les): the beat, its seed, the one-try answers given, how it started, the pet's mistake found
+  keep(st) {
+    if (!st || st.done) return;
+    const o = {n: st.id, b: st.b, s: st.seed, pre: st.pre.slice()};
+    if (st.post.length) o.post = st.post.slice();
+    if (st.chkN) o.m = st.chkN;
+    if (st.repair) o.r = st.repair;
+    if (st.slide) o.k = 1; // LS-STOP: how the lesson was started, and the pet's mistake found
+    if (st.caught) o.c = 1;
+    st.S.les = o;
   },
   cur: st => (st.done ? null : st.items[st.i] || null),
   beat(st, b) {
@@ -68,7 +96,7 @@ const LS = {
       it = [{m: 'say', html: n.html, lines: n.lines}];
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = L.chk ? L.chk(st) : [LS.petItem(st)]; // TEACH-3: grades 3-5 have their own Check me (52i-bench35.js)
-    else if (B == 'show') it = [0, 1].map(k => {
+    else if (B == 'show') it = [0, 1].slice(st.post.length).map(k => { // fix179: a resumed Show asks only the items not yet answered
       // TEACH-2b: a drafted script frames Show as its job in the world (its Show lines), unless the child tested out
       const q = L.q(L.test, r), w = L.w && !st.to ? lsW(L.w.beats.show, k, q.sl) : [];
       return {m: 'ask', one: 1, q, lines: k ? (L.w && L.w.beats.show.length > 1 ? w : []) : [st.to ? T.testOut : w[0] || T.showMe]};
@@ -103,7 +131,7 @@ const LS = {
   // child's own misconception when the record shows one, else the script's first; right about PET_OK of the time
   petItem(st) {
     const L = st.L, r = st.r, T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
-    const petOk = r() < LS.PET_OK;
+    const petOk = LS.petRight(st);
     let q, pv, code = null;
     // up to 30 questions for the preferred mistake, then any of the stop's
     for (let n = 0; n < 40 && pv == null; n++) {
@@ -115,10 +143,12 @@ const LS = {
         if (v != null) { pv = String(v); code = c; break; }
       }
     }
-    if (pv == null) pv = q.ans; // never reached with these scripts (tools/test.js checks every pet item)
+    if (pv == null) pv = q.ans; // never reached with these scripts (tools/test.js "every pet turn" checks every lesson's forced-wrong turn)
     const ok = lsOk(q, pv);
     return {m: 'judge', q, pv, petOk: ok, code, lines: [T.myTurn, (L.w && lsW(L.w.beats.check.filter(t => /\{ans\}/.test(t)), 0, Object.assign({}, q.sl, {ans: lsSayV(q, pv)}))[0]) || LS.petSays(q, pv)]};
   },
+  // fix179: is the pet right this turn? About PET_OK of the time; never in the extra turns of Check me (st.chkN), where it is always wrong
+  petRight: st => st.r() < (st.chkN ? -1 : LS.PET_OK),
   // can the pet's answer be shown on this question's model?
   fits(q, v) {
     const n = +v, M = q.kind == 'make' && K2MM[q.model];
@@ -198,13 +228,11 @@ const LS = {
       return LS.beat(st, LSB.indexOf('show'));
     }
     // LS-STOP: Check me goes on until the pet's mistake is found: up to two more turns, in which the pet is always wrong
+    // (fix179: st.chkN > 0 makes every Check me builder give a wrong pet, LS.petRight; a turn whose pet is somehow right is never offered)
     if (B == 'chk' && st.proof && !st.caught && st.chkN < 2) {
       st.chkN++;
-      const k = LS.PET_OK;
-      let it;
-      LS.PET_OK = -1;
-      try { it = st.L.chk ? st.L.chk(st) : [LS.petItem(st)]; } finally { LS.PET_OK = k; }
-      if (it.length) { it[0].lines = [lsTone2().findIt].concat(it[0].lines || []); st.items = it; st.i = 0; return st; }
+      const it = st.L.chk ? st.L.chk(st) : [LS.petItem(st)];
+      if (it.length && it[0].m == 'judge' && !it[0].petOk) { it[0].lines = [lsTone2().findIt].concat(it[0].lines || []); st.items = it; st.i = 0; return st; }
     }
     if (B == 'show' && st.post.length == 2 && st.post.every(Boolean) || B == 'win') {
       st.done = true;
@@ -229,7 +257,8 @@ const LS = {
     return {pass, sc: st.post.filter(Boolean).length};
   },
   /* the end of a lesson, written the way finish() (50-round.js) writes a round, so the map, unlocks, missions, the streak and game time
-     keep working: the stop's stars (S.maps, setSt: 2 for a passed lesson, never lower than before), a world finished (S.wdone, +20 coins),
+     keep working: the stop's stars (S.maps, setSt: LS.STOP_STARS for a passed lesson, 0 since fix179 so practice is still required;
+     never lower than before), a world finished (S.wdone, +20 coins),
      the skill's tries and right answers (P(sk).t, .c: the Show items), stars and coins (one each for a right Show item), a sticker,
      the day's rounds (day().r, for the "round" mission), the activity log (actRound), the streak (streakTick), missions (MIS.done)
      and game time. Not written: P(sk).r (rounds played), S.best (a streak in a row), mastery (S.mast).
@@ -238,8 +267,8 @@ const LS = {
   record(st) {
     S.tq = st.L.home.replace('{name}', S.name || 'your child'); // tonight's question for the grown-ups' report card (82-report.js)
     const f = LS.finish(st), p = st.L.p || 'math', ni = NODES[p].findIndex(n => nid(n) === st.id), nd = NODES[p][ni], d = day(), sc = f.sc, n = st.post.length;
-    const stars = f.pass ? 2 : 0, prev = getSt(p, ni), newPass = !prev && stars > 0;
-    setSt(p, ni, Math.max(prev, stars));
+    const stars = f.pass ? 2 : 0, prev = getSt(p, ni), give = f.pass ? LS.STOP_STARS : 0, newPass = !prev && give > 0;
+    if (give) setSt(p, ni, Math.max(prev, give));
     let wDone = false;
     if (newPass && !S.wdone[nd.wid] && worldDone(p, nd.wi)) { S.wdone[nd.wid] = 1; wDone = true; }
     const pr = P(nd.sk);
@@ -267,7 +296,7 @@ const LS = {
     if (!LESSONS[id]) return;
     const day0 = lsDay(), pl = planToday(S, day0, LESSONS[id].p || 'math') || {}, // TEACH-4: Remember from the lesson's own subject
       les = S.les && S.les.n === id ? S.les : null;
-    LS.st = LS.make(id, les ? {seed: les.s, at: les.b, pre: les.pre, day: day0, rem: [], repair: les.r, proof: true, know: !!les.k, caught: !!les.c}
+    LS.st = LS.make(id, les ? LS.resume(les, day0)
       : {rem: pl.remember || [], day: day0, repair: pl.id === id && pl.code, proof: true, know: !!o.know, learn: !!o.learn});
     LS.t0 = 0;
     warmVoices();
@@ -295,11 +324,20 @@ const LS = {
     UI.hear();
     if (LS.voice()) say(T2.open(lsName()));
   },
-  // LS-STOP: lesson time counts as learning (the activity log, so "learn first" sees it): the time on each screen, at most a minute
-  tick() {
-    const now = Date.now(), st = LS.st, sec = LS.t0 ? Math.min(60, Math.round((now - LS.t0) / 1000)) : 0;
+  /* LS-STOP: lesson time counts as learning (the activity log, so "learn first" sees it). fix179: only active time, as a round counts
+     it (ACT.qEnd): a screen's time counts when the child answers or goes on (tick, from submit, judge and Next), from when the screen
+     came (screen) or the last answer, at most ACT.CAP (60 s), never the time the app was hidden (vis); a screen left idle, quit or
+     closed counts nothing. LS.t0: when counting started (0: not counting); LS.hid: hidden ms since; LS.h0: hidden since (or null). */
+  screen(now = Date.now()) { LS.t0 = now; LS.hid = 0; LS.h0 = typeof document != 'undefined' && document.hidden ? now : null; },
+  vis(hidden, now = Date.now()) {
+    if (hidden && LS.h0 == null) LS.h0 = now;
+    else if (!hidden && LS.h0 != null) { LS.hid = (LS.hid | 0) + now - LS.h0; LS.h0 = null; }
+  },
+  tick(now = Date.now()) {
+    const st = LS.st, h = (LS.hid | 0) + (LS.h0 != null ? now - LS.h0 : 0), cap = typeof ACT != 'undefined' && ACT.CAP || 60;
+    const sec = LS.t0 ? Math.max(0, Math.min(cap, Math.round((now - LS.t0 - h) / 1000))) : 0;
     if (sec >= 1 && st) try { ACT.add(today(), {sec, area: st.L.p || 'math'}); } catch (e) {}
-    LS.t0 = now;
+    if (LS.t0) LS.screen(now);
   },
   // LS-STOP: the ticket meter in the top bar: what this lesson pays now, filled as the beats are done
   meter(st, B, at) {
@@ -333,11 +371,8 @@ const LS = {
     const st = LS.st, it = st && LS.cur(st);
     if (!st) return;
     if (!it) return LS.end();
-    S.les = {n: st.id, b: st.b, s: st.seed, pre: st.pre.slice()};
-    if (st.repair) S.les.r = st.repair;
-    if (st.slide) S.les.k = 1; // LS-STOP: how the lesson was started, and the pet's mistake found
-    if (st.caught) S.les.c = 1;
-    LS.tick();
+    LS.keep(st);
+    LS.screen();
     save();
     LS.seq++; // screens shown (tests wait for the next one)
     const q = it.q, B = LSB[st.b], T = lsTone(), sp = st.L.p || 'math';
@@ -369,7 +404,7 @@ const LS = {
     $('#lshear').onclick = () => LS.talk(it.m == 'say' ? it.lines : lines.length ? lines : [q.say]);
     UI.hear();
     const wake = () => { const w = $('#lsinp'); if (w) w.classList.remove('ls-wait'); if (LS.u) { LS.u.lock = false; LS.u.w = Date.now(); } };
-    if (it.m == 'say') $('#lsnext').onclick = () => { if (!LS.u.lock) LS.go(LS.answer(st, 'ok')); };
+    if (it.m == 'say') $('#lsnext').onclick = () => { if (!LS.u.lock) { LS.tick(); LS.go(LS.answer(st, 'ok')); } };
     else if (it.m == 'judge') { $('#lsyes').onclick = () => LS.judge('1'); $('#lsno').onclick = () => LS.judge('0'); }
     else {
       KIND[q.kind].bind(q, LS.u, LS.submit);
@@ -393,7 +428,10 @@ const LS = {
     if (!st || LS.u.lock) return;
     LS.u.lock = true;
     LS.rushed(st);
+    LS.tick();
     const it = LS.cur(st), res = LS.answer(st, v), b = $(v == '1' ? '#lsyes' : '#lsno');
+    LS.keep(st); // fix179: the answer is in the save at once (leaving during the line cannot undo it)
+    save();
     if (b) b.classList.add(res.ok ? 'right' : 'ls-pk');
     if (res.ok) SFX.right(1); else SFX.pop(2);
     if (!it.petOk) $('#prompt').classList.add('ls-oops');
@@ -407,8 +445,10 @@ const LS = {
     const q = it.q, K = KIND[q.kind];
     if (q.kind == 'make' && (q.model == 'frame2' || K2MM[q.model].raw || q.raw)) v = u.mm.slice();
     LS.rushed(st);
+    LS.tick();
     const res = LS.answer(st, v);
     u.lock = true;
+    if (it.one) { LS.keep(st); save(); } // fix179: a test-out or Show answer is in the save at once (leaving during its line, or the slide line, cannot undo it)
     if (res.slide) { LS.mood('happy'); return LS.go(res); } // LS-STOP: a missed show-me item after "I already know this!": no reveal, no wrong
     if (res.ok) {
       if (el) el.classList.add('right');
@@ -458,11 +498,10 @@ const LS = {
   end() {
     const st = LS.st, rec = LS.record(st), T = lsTone(), L = st.L, p = L.p || 'math'; // TEACH-4: a reading lesson goes back to the reading map
     LS.st = null;
-    const line = rec.pass ? (st.to ? 'You already knew it!' : 'You learned it!') : 'Great learning today!', T2 = lsTone2(), PT = rec.PT, kind = PT.pay.kind;
-    LS.tick();
+    LS.t0 = 0;
+    const line = rec.pass ? (st.to ? 'You already knew it!' : 'You learned it!') : 'Great learning today!', T2 = lsTone2(), PT = rec.PT;
     // LS-STOP: the game time: each paid line as "+5:00 game time", or why there is none; a ticket that lands in the bank chip
-    const why = PT.sec ? '' : kind == 'guess' ? T2.noProof : kind == 'pass' ? (lsPriceTag(st.id) == 'done today' ? 'Game time for this lesson: done today' : '')
-      : lsPriceTag(st.id) ? `Pass Show to earn ${lsPriceTag(st.id)} of game time` : '';
+    const why = LS.why(st.id, PT.pay);
     const gt = PT.lines.map(([v, l]) => `<li class="ls-gt">${ico('ticket', 18)}<span><b>+${fmtT(v)} game time</b> ${esc(l)}</span></li>`).join('')
       + (why ? `<li class="ls-gt0">${ico('ticket', 18)}<span>${esc(why)}</span></li>` : '');
     view(`<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div>${UI.chip('ticket', fmtT(rec.bank0), {aria: 'Game time in the bank', id: 'lsbank'})}</div>
@@ -473,7 +512,7 @@ const LS = {
      ${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       ${gt}${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES[p][rec.next].t)}!</span></li>` : ''}</ul>
-     <div class="ls-acts">${rec.pass ? UI.btn('Practice', {kind: 'soft', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
+     <div class="ls-acts">${rec.pass ? UI.btn('Practice', {kind: getSt(p, rec.ni) ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass && getSt(p, rec.ni) ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
     LS.mood('cheer');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
@@ -488,6 +527,13 @@ const LS = {
     UI.hear();
     if (LS.voice()) say(said);
     if (PT.sec) LS.land(rec);
+  },
+  /* LS-STOP: why the lesson itself paid nothing ('' when it paid). fix179: read from the lesson's own pay, not the end card's total, so a
+     lesson that paid nothing still says why when only the daily mission's minute was paid */
+  why(id, pay) {
+    if (pay.sec) return '';
+    const T2 = lsTone2(), tag = lsPriceTag(id);
+    return pay.kind == 'guess' ? T2.noProof : pay.kind == 'pass' ? (tag == 'done today' ? 'Game time for this lesson: done today' : '') : tag ? `Pass Show to earn ${tag} of game time` : '';
   },
   // LS-STOP: the moment the minutes are earned: the ticket lands in the bank chip, which counts up (at once in calm mode or with
   // reduced motion), with a sound
@@ -533,6 +579,8 @@ const LS = {
     m.querySelector('.ls-go').onclick = () => { SFX.whoosh(); LS.open(pl.id); };
   },
 };
+// fix179: lesson time stops counting while the app is hidden (LS.vis)
+if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
 const lsName = () => (S.name || 'friend');
 // the state that shows value v on a make question's model (the pet's build, the child's fix)
 const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v]);

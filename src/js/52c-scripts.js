@@ -319,9 +319,9 @@ const LS_TONE = {
 const LS_TONE2 = {
   little: {open: n => `Hi ${n}! Want to learn this with me?`, slide: "That's okay. Let's learn it together!", findIt: 'One more. Find my mistake!',
     paid: 'You earned game time!', noProof: 'Find my mistake next time to earn game time.'},
-  kid: {open: n => `Hey ${n}. Quick challenge. Give me a hard one?`, slide: 'No problem. We will work through it.', findIt: 'Another one. Find my slip.',
+  kid: {open: n => `Hey ${n}. Ready for a quick challenge?`, slide: 'No problem. We will work through it.', findIt: 'Another one. Find my slip.',
     paid: 'Game time earned.', noProof: 'Catch my slip next time to earn game time.'},
-  teen: {open: n => `Hey ${n}. Short challenge. Give me a hard one.`, slide: 'Fine. We will work through it.', findIt: 'Another one. Find the error.',
+  teen: {open: n => `Hey ${n}. Short challenge. Ready when you are.`, slide: 'Fine. We will work through it.', findIt: 'Another one. Find the error.',
     paid: 'Game time earned.', noProof: 'Find the error next time to earn game time.'},
 };
 const lsTone2 = () => LS_TONE2[lsAge(typeof gradeOf == 'function' ? gradeOf() : 0)];

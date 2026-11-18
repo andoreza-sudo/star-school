@@ -188,9 +188,12 @@ function lsEnable3(id, W) {
 }
 
 /* ---- Check me for grades 3 to 5 ---- */
+// fix179: in the extra turns of Check me (st.chkN, the pet always wrong) there is no "your problem" (the child's numbers may allow no
+// slip): the pet works numbers of its own that have a real slip (up to 20 draws), else a question with a wrong answer of its codes
 function lsChk35(st) {
   const D = LS_DRAFTED[st.id];
-  if (D.fix && D.mine && (lsAge(gradeOf()) == 'teen' || st.r() < .5)) return [lsMineItem(st, D)];
+  if (!st.chkN && D.fix && D.mine && (lsAge(gradeOf()) == 'teen' || st.r() < .5)) return [lsMineItem(st, D)];
+  if (st.chkN && D.fix) for (let n = 0; n < 20; n++) { const it = lsStepsItem(st, D, D.fix.nums(st.r)); if (it && !it.petOk) return [it]; }
   return [(D.fix && lsStepsItem(st, D, D.fix.nums(st.r))) || lsPetItem35(st)];
 }
 // the find-the-mistake question's parts (k2Fix* in 49b-kinds2.js) for a label: {prob, lab, build(mis), muts, hint}, or null. The k2Fix
@@ -217,7 +220,8 @@ function lsStepsItem(st, D, nums) {
   if (!ok || ok.length < 3 || ok.length > 5) return null;
   const held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
   const cands = f.muts.filter(([i, k]) => { const b = f.build({i, k}); return b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]); });
-  const petOk = st.r() < LS.PET_OK || !cands.length;
+  if (st.chkN && !cands.length) return null; // fix179: an extra Check me turn needs a slip these numbers allow
+  const petOk = LS.petRight(st) || !cands.length;
   let mis = null;
   if (!petOk) {
     const pref = codes.map(c => cands.filter(m => lsFixCode(D, m) == c)).find(a => a.length) || cands;
@@ -255,7 +259,7 @@ function lsFits35(q, v) {
 // Check me on the model or the question (no written steps): the pet's answer by the child's idea, else the lesson's codes in order
 function lsPetItem35(st) {
   const L = st.L, r = st.r, T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
-  const petOk = r() < LS.PET_OK;
+  const petOk = LS.petRight(st);
   let q, pv = null, code = null;
   for (let n = 0; n < 40 && pv == null; n++) {
     q = L.q(L.petSt != null ? L.petSt : 1, r);

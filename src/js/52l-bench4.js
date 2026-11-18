@@ -185,7 +185,7 @@ function lsPw4(q, v) {
 }
 function lsChk4(st) {
   const L = st.L, D = LS_DRAFTED[st.id], T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
-  const petOk = st.r() < LS.PET_OK;
+  const petOk = LS.petRight(st);
   let q, pv = null, code = null;
   for (let n = 0; n < 40 && pv == null; n++) {
     q = L.q(D.petSt | 0, st.r);
@@ -195,7 +195,7 @@ function lsChk4(st) {
       if (v != null) { pv = String(v); code = c; break; }
     }
   }
-  if (pv == null) pv = q.ans; // never reached with these lessons (tools/test.js checks every pet turn)
+  if (pv == null) pv = q.ans; // never reached with these lessons (tools/test.js "every pet turn" checks every lesson's forced-wrong turn)
   const ok = lsOk(q, pv), sl = Object.assign({}, q.sl, {ans: lsSayV(q, pv)});
   const claim = lsW(L.w.beats.check.filter(t => /\{ans\}/.test(t)), 0, sl)[0] || `I think it is ${lsSayV(q, pv)}.`;
   return [{m: 'judge', q, pv, petOk: ok, code, pw: lsPw4(q, pv), lines: [T.myTurn, claim],
