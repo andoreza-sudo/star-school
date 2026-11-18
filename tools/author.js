@@ -292,8 +292,11 @@ function approve(ids, o = {}) {
 // TEACH-3: o.batch 3 reads the grade 3-5 drafts (LS_B35) that are not reviewed, under the batch 3 heading
 function readThrough(ids, o = {}) {
   const R = app(), at = id => R(`NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)})`), b3 = o.batch == 3, B35 = R('LS_B35');
-  if (b3 && !ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && B35.includes(x.d.id)).map(x => x.d.id);
-  const xs = drafts().filter(x => x.d && (ids.length ? ids.includes(x.d.id) : x.d.status === 'unreviewed')).sort((a, b) => at(a.d.id) - at(b.d.id));
+  // no stops named: every unreviewed draft of this batch's band (batch 3 the grade 3-5 lessons, batch 2 the rest); none waiting reads as none,
+  // never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
+  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && B35.includes(x.d.id) === b3).map(x => x.d.id);
+  const xs = drafts().filter(x => x.d && ids.includes(x.d.id)).sort((a, b) => at(a.d.id) - at(b.d.id));
+  if (!xs.length) return [`# Batch ${b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
   const head = b3 ? ['# Batch 3 read-through: grade 3 to 5 math lessons', '',
     `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
     'Grades 3 and 4 hear the older kid pet; grade 5 hears the teen-like partner.', '',
