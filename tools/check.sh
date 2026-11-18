@@ -15,8 +15,9 @@
 #   With 4+ CPUs: TEST_SHARDS 2, A11Y_SHARDS 2, SMOKE_SHARDS 8, JOBS 5 (processes at once; fewer when free memory is short, about
 #   1 GB each). The queue is the test shards, the a11y shards, then the smoke shards. a11y.js runs at nice 10 (no time limits in it):
 #   the smoke bot's taps race the app's (8x sped-up) timers and test.js has time limits, so they get the CPU first.
-#   The smoke steps with time limits or that read the screen inside the app's short feedback windows (TIMED in
-#   tools/lib/smoke-shards.js) are not in those shards: TIMED_SHARDS (2) timed shards run after them, with nothing else
+#   The smoke steps that measure real time against a limit (TIMED in tools/lib/smoke-shards.js: frame times at a CPU
+#   throttle, tap latency, sound gaps, WebGL on the CPU) are not in those shards (steps that only read a short window of
+#   the app read it in the page at its moment, CHK-FAST): TIMED_SHARDS (2) timed shards run after them, with nothing else
 #   beside them but the timed test.js shard (its checks with time limits, TEST_TIMED in tools/test.js), then perf.js alone.
 #   With 2-3 CPUs: 1, 1, 3 shards, JOBS 3 and 1 timed shard; with 1 CPU everything one after another. A11Y_PAR: pages at once in each
 #   a11y shard (2: it waits on the real clock most of the time).
