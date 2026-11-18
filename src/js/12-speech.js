@@ -38,13 +38,14 @@ function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)retu
 function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
-  const M=it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  const M=it.tch?EN_TEACH:it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
   if(it.btn)it.btn.classList.add('talking');
   try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
   sfxDuck(speakBusy)}
 // a file that does not load or play: never tried again this session; the line goes to the tablet's voice
 function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
   if(it.en){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow,1)} // EN-PRAISE: the rest of the cheer, tablet voice
+  if(it.tch){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow)} // TEACH-4: the rest of the teacher line, tablet voice
   if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
 /* EN-PRAISE: recorded English encouragement. EN_AUDIO (src/data/d-en-audio.js, made by tools/en-audio.js) maps every fixed praise,
    try-again and well-done line say() speaks ("Great job!", "Almost!", "You got 7 stars!", "New record!") to six recordings, one per
@@ -90,9 +91,21 @@ function pickVoice(es){const k=es?'es':'en';if(VOICE[k]&&VOICE.n===speechSynthes
 let VOICE_WARM=0;
 function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
+/* TEACH-4: the pet's recorded teacher lines. EN_TEACH (src/data/d-teach-audio.js, made by tools/en-audio.js --teach) maps the fixed lines of the
+   Pre-K to 2nd grade lessons ("My turn. Check me!", "Read the word. Then tap its picture.") to one recording each, in one warm voice. A line
+   that is recorded whole plays its file; a line of several sentences plays its recorded sentences and says the others with the tablet's
+   voice, in order (tchRuns). Anything with a name, a number or a word of the question is the tablet's voice. Off with ENA.off, the Cheer
+   voices choice "Tablet voice", where Opus cannot play, or for a file that failed (the tablet's voice says it instead). */
+function tchRuns(t){if(ENA.off||typeof EN_TEACH=='undefined'||t==null||!esaOk()||cheerMode()=='tts')return null;const m=EN_TEACH.lines,k=esKey(t),ok=x=>!!m[x]&&!ESA.bad[m[x]];
+  if(ok(k)){const r=[k];r.r=true;return[r]}const ps=enSplit(k);if(!ps.some(ok))return null;const o=[];
+  for(const p of ps){const r=ok(p),l=o[o.length-1];if(l&&l.r===r)l.push(p);else{const n=[p];n.r=r;o.push(n)}}return o}
+function tchSay(t,btn,q,slow){const rs=tchRuns(t);if(!rs)return false;if(!q)hush();
+  rs.forEach((r,i)=>{if(!r.r)return say(r.join(' '),btn,null,1,slow);const it={a:r.map(x=>[EN_TEACH.lines[x],0]),i:0,t:r.join(' '),ts:r.slice(),btn,slow,tch:1};
+    if((q||i)&&speakBusy())ESA.q.push(it);else esaPlay(it)});return true}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
 function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
   if(!q&&cheerBusy()){q=1;ESA.q=[]} // EN-PRAISE: a cheer is not cut off: the new line waits for it (what was queued goes, as with hush)
+  if(!es&&tchSay(t,btn,q,slow))return; // TEACH-4: a recorded teacher line
   if(!es&&enSay(t,btn,q,slow))return; // EN-PRAISE: a recorded cheer (or the grown-up's clip)
   if(fs){if(!q)hush();const it={a:fs,i:0,t:String(t),btn,slow};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);return} // ES-AUDIO
   if(es&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}

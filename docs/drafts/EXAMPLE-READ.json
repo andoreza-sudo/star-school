@@ -1,0 +1,19 @@
+{
+ "id": "rhyme1",
+ "t": "Rhyme Time",
+ "grade": 0,
+ "age": "little",
+ "idea": "Words that rhyme sound the same at the end.",
+ "beats": {
+  "remember": ["Do you remember this? Find the letter {letter}."],
+  "explore": ["Let's sort the pictures. Listen to the end of each word."],
+  "name": ["{a} and {b} sound the same at the end.", "That is a rhyme!", "Words that rhyme sound the same at the end."],
+  "together": ["Listen to {word}. Build it with me.", "Say {word} slowly. Which word is it?", "Read the word. Then find its picture."],
+  "check": ["My turn. Check me!", "I built {ans}. Am I right?"],
+  "show": ["The beach shop needs labels. Read each one!"]
+ },
+ "reasons": {
+  "last": ["Oops. I missed the last sound. Say it slowly."]
+ },
+ "home": "Ask {name}: \"What rhymes with cat?\""
+}

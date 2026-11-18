@@ -279,7 +279,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","petage"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -10471,13 +10471,14 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'petage'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
-          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext))))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too
+          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext)),
+            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
           const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
           return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5) };
         });
@@ -10499,7 +10500,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false' || // nine lazy parts (TEACH-2b: teach12; TEACH-3: teach35; PET-AGE2: petage), less petage (Home's, filtered above): eight
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false' || // ten lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage), less petage (Home's, filtered above): nine
             s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
@@ -10517,7 +10518,7 @@ async function main() {
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
-        if (s3.parts !== 'false,true,true,true,true,false,false,false' || // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35)
+        if (s3.parts !== 'false,true,true,true,true,false,false,false,false' || // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's)
             s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
@@ -12736,6 +12737,115 @@ async function main() {
         'bars, typed fractions, the pet\'s written steps, the slip tapped, the reason from word tiles), every screen fitting with no hole in the words; no console errors, no network requests');
     }
     // end TEACH-3
+    // TEACH-4 reading for K to 2nd grade, and the Pre-K lessons of Tiny Town and ABC Beach (52l-bench4.js, 52m-lessons4.js, 52k-words4.js in the part
+    // teachrd; docs/drafts), at 380x780 and 600x960 on the midway save. teachrd is not loaded at start, nor by a Kindergartner's math map; the reading
+    // map loads it (with teach and teach12) and offers First Sounds to a Kindergartner; a Pre-K child's math map loads it and offers Count to 5. Four
+    // lessons through every beat by the real controls, the pet's mistake forced (LS.PET_OK 0) so its whole turn is seen: Which Has More (Tiny Town),
+    // Little Letters (ABC Beach), Picture Words (K: the sound sort, the word built from tiles, the pet reading a word wrong and the child building it
+    // right, a sentence matched to a picture) and Build Blends (1st grade). Every screen fits, no hole in the words, the pet's turn is announced and
+    // says its answer; screenshots of every beat (TEACH4_SHOTS, default tools/out/teach4).
+    {
+      const bad = [], notes = [], shots = process.env.TEACH4_SHOTS || require('path').join(__dirname, 'out', 'teach4');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const act4 = async (pg, wrong) => {
+        await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, goal: q.goal, tgt: q.target, total: q.m && q.m.total, word: q.word, tiles: q.tiles,
+            items: q.items && q.items.map(c => [c.v, c.b]), bins: q.bins && q.bins.map(b => b.v), order: q.kind == 'order' ? q.ans : null, choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'num') { for (const d of String(it.ans)) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); }
+        else if (it.kind == 'build') {
+          const used = [], want = wrong ? [...it.tiles].reverse().join('').slice(0, it.word.length) : it.word;
+          for (const ch of (wrong && want === it.word ? it.tiles.slice(1).concat(it.tiles[0]).join('').slice(0, it.word.length) : want)) {
+            const i = it.tiles.findIndex((t, j) => t == ch && !used.includes(j)); used.push(i); await pg.click(`.lt[data-i="${i}"]`); }
+        } else if (it.kind == 'sort') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.schip[data-i="${i}"]`); await pg.click(`.sbt[data-b="${it.bins.indexOf(it.items[i][1])}"]`, { position: { x: 16, y: 12 } }); }
+          await pg.click('#mcheck');
+        } else if (it.kind == 'order') {
+          const used = []; for (const v of it.order) { const i = it.items.findIndex((c, j) => c[0] == v && !used.includes(j)); used.push(i); await pg.click(`.ot[data-i="${i}"]`); }
+        } else if (it.kind == 'make') {
+          let want;
+          if (it.model == 'frame2') want = [3, 1];
+          else want = [it.goal == 'gt' ? it.tgt + 2 : it.goal == 'any' ? 3 : +it.ans + (wrong ? (+it.ans > 1 ? -1 : 1) : 0)];
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const step4 = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await act4(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fit4 = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear')) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small button ' + (b.id || b.className)); if (r.right > vw + 1 || r.left < -1) o.push('button off screen ' + (b.id || b.className + ' ' + b.textContent)); }
+        if (/undefined|NaN|\{[a-z]+\}/.test(document.querySelector('#lsplay').textContent)) o.push('a hole in the words: ' + document.querySelector('#lsbub').textContent);
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-4 ' + w + 'x' + h + ' ';
+        try {
+          // 1. teachrd is not in at start, nor after a Kindergartner's math map; the reading map loads it and offers First Sounds
+          const s0 = await pg.evaluate(() => ({ ready: partReady('teachrd'), tag: [...document.scripts].some(s => /teachrd\./.test(s.src)) }));
+          if (s0.ready || s0.tag) bad.push(at + 'teachrd is loaded at start: ' + JSON.stringify(s0));
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; for (const p of ['math', 'read']) for (let j = 0; j < NODES[p].length; j++) setSt(p, j, 0); save(); pathMap('math', 1); });
+          await pg.waitForFunction(() => partReady('teach12'), null, { timeout: 15000 });
+          await pg.waitForTimeout(500);
+          if (await pg.evaluate(() => partReady('teachrd'))) bad.push(at + 'a Kindergartner\'s math map loaded teachrd');
+          await pg.evaluate(() => pathMap('read', 1));
+          await pg.waitForFunction(() => partReady('teachrd') && typeof LS_B4 != 'undefined', null, { timeout: 15000 });
+          await pg.waitForSelector('.ls-go', { timeout: 10000 });
+          const off = await pg.evaluate(() => { const b = document.querySelector('.ls-go'), r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            return { id: planToday(S, lsDay(), 'read').id, label: b.getAttribute('aria-label'), w: r.width, in: r.left >= 0 && r.right <= vw, css: !!document.querySelector('#css-teachrd') }; });
+          if (off.id !== 'sound1' || !/^Learn First Sounds with /.test(off.label) || off.w < 48 || !off.in || !off.css) bad.push(at + 'the reading offer: ' + JSON.stringify(off));
+          await pg.screenshot({ path: require('path').join(shots, `teach4-offer-read-${w}x${h}.png`) });
+          // a Pre-K child: the math map offers Count to 5
+          await pg.evaluate(() => { S.grade = -1; save(); pathMap('math', 0); });
+          await pg.waitForFunction(() => document.querySelector('.ls-go') && /Count to 5/.test(document.querySelector('.ls-go').getAttribute('aria-label')), null, { timeout: 10000 }).catch(() => bad.push(at + 'no Count to 5 offer for a Pre-K child'));
+          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
+          // 2. four lessons through every beat
+          for (const [id, gr] of [['pk_more1', -1], ['abc2', -1], ['pic1', 0], ['build2', 1]]) {
+            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; const p = LESSONS[id].p, i = NODES[p].findIndex(n => nid(n) === id); for (let j = 0; j <= i; j++) setSt(p, j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
+            await pg.waitForSelector('#lsplay', { timeout: 5000 });
+            const path = [], seen = [];
+            let pet = null, fixed = false;
+            for (let n = 0; n < 50; n++) {
+              const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m + ':' + (LS.cur(LS.st).q && LS.cur(LS.st).q.kind) + (LS.cur(LS.st).fix ? ':fix' : '') : null);
+              if (!b) break;
+              await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+              if (!seen.includes(b)) { seen.push(b); await fit4(pg, at + id + ' ' + b + ': ');
+                await pg.screenshot({ path: require('path').join(shots, `teach4-${id}-${String(seen.length).padStart(2, '0')}-${b.replace(/:/g, '-')}-${w}x${h}.png`) }); }
+              if (b.startsWith('chk:judge') && !pet) pet = await pg.evaluate(() => { const it = LS.cur(LS.st); return { bub: document.querySelector('#lsbub').textContent, pv: it.pv, petOk: it.petOk, turn: !!document.querySelector('.ls-pet.ls-turn'), say: lsSayV(it.q, it.pv) }; });
+              if (/:fix$/.test(b)) fixed = true;
+              path.push(b.split(':').slice(0, 2).join(':'));
+              await step4(pg, b.startsWith('pre:ask') && path.length == 1);
+            }
+            const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+            if (order !== 'pre,rem,exp,name,tog,chk,show' && order !== 'pre,rem,exp,name,tog,chk,show,win') bad.push(at + id + ' beats ' + order);
+            if (!pet || pet.petOk || !/Check me/.test(pet.bub) || !pet.bub.includes(pet.say) || !pet.turn) bad.push(at + id + ' the pet\'s turn: ' + JSON.stringify(pet));
+            if (!fixed) bad.push(at + id + ': no fix after the pet\'s mistake');
+            await pg.waitForSelector('#lsend', { timeout: 10000 });
+            await pg.screenshot({ path: require('path').join(shots, `teach4-${id}-end-${w}x${h}.png`) });
+            const end = await pg.evaluate(id => ({ k: S.know[id] && S.know[id].s, lm: S.lm[S.lm.length - 1], idea: document.querySelector('.ls-idea').textContent, tq: S.tq, top: document.querySelector('.ls-top').className }), id);
+            if (!end.k || !end.lm || end.lm[0] !== id || !end.idea || /\{/.test(end.tq) || !/Ask /.test(end.tq) || !end.top.includes(id == 'pk_more1' ? 's-math' : 's-read')) bad.push(at + id + ' the end: ' + JSON.stringify(end));
+          }
+          await pg.evaluate(() => { LS.PET_OK = .25; home(); });
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-4 reading and Pre-K lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-4: reading and Pre-K lessons at ' + notes.join(' and ') + ': teachrd loads with the reading map (not with a Kindergartner\'s math map), which offers First Sounds; ' +
+        'a Pre-K child\'s math map offers Count to 5; Which Has More, Little Letters, Picture Words and Build Blends through every beat by the real controls (the sound sort, ' +
+        'letter tiles, the pet\'s word read wrong and built right, a sentence matched to a picture), every screen fitting with no hole in the words; no console errors, no network requests');
+    }
+    // end TEACH-4
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

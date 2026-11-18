@@ -214,7 +214,7 @@ const LS = {
      and game time (ptCalc, ptEarn). Not written: P(sk).r (rounds played), S.best (a streak in a row), mastery (S.mast). */
   record(st) {
     S.tq = st.L.home.replace('{name}', S.name || 'your child'); // tonight's question for the grown-ups' report card (82-report.js)
-    const f = LS.finish(st), p = 'math', ni = NODES[p].findIndex(n => nid(n) === st.id), nd = NODES[p][ni], d = day(), sc = f.sc, n = st.post.length;
+    const f = LS.finish(st), p = st.L.p || 'math', ni = NODES[p].findIndex(n => nid(n) === st.id), nd = NODES[p][ni], d = day(), sc = f.sc, n = st.post.length;
     const stars = f.pass ? 2 : 0, prev = getSt(p, ni), newPass = !prev && stars > 0;
     setSt(p, ni, Math.max(prev, stars));
     let wDone = false;
@@ -239,7 +239,8 @@ const LS = {
   // ---- the screen ----
   start(id) {
     if (!LESSONS[id]) return;
-    const day0 = lsDay(), pl = planToday(S, day0) || {}, les = S.les && S.les.n === id ? S.les : null;
+    const day0 = lsDay(), pl = planToday(S, day0, LESSONS[id].p || 'math') || {}, // TEACH-4: Remember from the lesson's own subject
+      les = S.les && S.les.n === id ? S.les : null;
     LS.st = LS.make(id, les ? {seed: les.s, at: les.b, pre: les.pre, day: day0, rem: [], repair: les.r} : {rem: pl.remember || [], day: day0, repair: pl.id === id && pl.code});
     warmVoices();
     LS.show();
@@ -247,9 +248,11 @@ const LS = {
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
   talk(lines, then, cap0) {
-    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = cap0 || t;
+    const ls = lines.filter(Boolean), t = ls.join(' '), b = $('#lsbub'), me = LS.st, c = cap0 || t;
     if (b) { b.firstChild.textContent = c; b.classList.toggle('on', !!c); }
-    if (t && LS.voice()) say(t);
+    // TEACH-4: one line at a time, each queued behind the one before, so a line the pet has recorded (EN_TEACH, 12-speech.js) is
+    // played wherever it falls, and the rest is the tablet's voice
+    if (t && LS.voice()) ls.forEach((x, i) => say(x, null, null, i > 0));
     if (!then) return;
     // the controls wake once the line has been said (TEACH-PLAN-2 system H): poll the speech, at most WAKE ms (no voice: a short pause)
     const t0 = Date.now(), cap = t && LS.voice() && canSpeak() ? LS.WAKE : 600;
@@ -272,7 +275,7 @@ const LS = {
     if (st.repair) S.les.r = st.repair;
     save();
     LS.seq++; // screens shown (tests wait for the next one)
-    const q = it.q, B = LSB[st.b], T = lsTone();
+    const q = it.q, B = LSB[st.b], T = lsTone(), sp = st.L.p || 'math';
     LS.u = {lock: true, typed: '', built: [], tries: 0};
     const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS_PIPS.map(([k, ic, l], j) => `<span class="ls-pip${j < at || B == 'win' ? ' on' : j == at ? ' now' : ''}" aria-hidden="true">${ico(ic, 18)}</span>`).join('');
     let prompt = '', input = '';
@@ -287,9 +290,9 @@ const LS = {
       input = KIND[q.kind].render(q);
     }
     const tag = B == 'pre' ? 'Show me' : B == 'win' ? 'One more' : (LS_PIPS[at] || [])[2] || '';
-    view(`<div class="top tbar round qtop ls-top s-math">${NAV.house('quit')}<div class="ls-pips" role="img" aria-label="${esc(tag)}">${pips}</div>
+    view(`<div class="top tbar round qtop ls-top s-${sp}">${NAV.house('quit')}<div class="ls-pips" role="img" aria-label="${esc(tag)}">${pips}</div>
      <div class="pl-tag ls-tag">${ico('doc', 24)}<span>${esc(st.L.t)}</span></div></div>
-    <div class="play qs s-math ls-play" id="lsplay" data-beat="${B}" data-mode="${it.m}"><div class="qarea">
+    <div class="play qs s-${sp} ls-play" id="lsplay" data-beat="${B}" data-mode="${it.m}"><div class="qarea">
      <div class="ls-pet${it.m == 'judge' ? ' ls-turn' : ''}"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub" id="lsbub" role="status"><span></span></div>
       ${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear', cls: 'ls-hear'})}</div>
      <div class="prompt" id="prompt">${prompt}</div><div class="qhint"><div id="hint" class="hint"></div></div></div>
@@ -350,13 +353,13 @@ const LS = {
     if (res.act == 'retry') {
       SFX.pop(1);
       if (el) { el.classList.add('wrong'); el.disabled = true; }
-      if (it.m == 'open') { u.mmMoved = false; if (q.kind == 'make') KIND.make.draw(q, u); }
+      if (it.m == 'open') { u.mmMoved = false; if (q.kind == 'make') KIND.make.draw(q, u); else K.retry(q, u, () => {}); } // TEACH-4: a sort shows which pictures are home
       else {
         if (h && q.hint) { h.innerHTML = LS.hint(q); h.scrollIntoView({block: 'nearest'}); }
         K.retry(q, u, () => {});
       }
       LS.talk(res.lines);
-      u.lock = false;
+      if (it.m != 'open' || q.kind == 'make') u.lock = false; // TEACH-4: an open sort unlocks itself once its pictures go back (KIND.sort.retry)
       fit();
       return;
     }
@@ -379,23 +382,23 @@ const LS = {
     LS.talk((res.lines || []).concat(extra ? [extra] : []), () => setTimeout(on, res.ok ? 500 : 1400));
   },
   end() {
-    const st = LS.st, rec = LS.record(st), T = lsTone(), L = st.L;
+    const st = LS.st, rec = LS.record(st), T = lsTone(), L = st.L, p = L.p || 'math'; // TEACH-4: a reading lesson goes back to the reading map
     LS.st = null;
     const line = rec.pass ? (st.to ? 'You already knew it!' : 'You learned it!') : 'Great learning today!';
-    view(`<div class="top tbar s-math ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div></div>
+    view(`<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div></div>
     <div class="scroll ls-end" id="lsend"><div class="ls-endc">
      <div class="ls-art ls-big" id="lsart" aria-hidden="true"></div>
      <h1>${esc(line)}</h1><p class="ls-idea">${ico('hint', 26)}<span>${esc(L.idea)}</span></p>
      ${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
-      <li>${ico('ticket', 18)}<span>+${fmtM(rec.PT.sec)} of game time</span></li>${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES.math[rec.next].t)}!</span></li>` : ''}</ul>
+      <li>${ico('ticket', 18)}<span>+${fmtM(rec.PT.sec)} of game time</span></li>${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES[p][rec.next].t)}!</span></li>` : ''}</ul>
      <div class="ls-acts">${UI.btn('Practice', {kind: rec.pass ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'})}${UI.btn('Map', {kind: rec.pass ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
     LS.mood('cheer');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
-    $('#lsprac').onclick = () => { SFX.whoosh(); start('math', rec.ni); };
-    $('#lsmap').onclick = () => { SFX.whoosh(); pathMap('math'); };
-    $('#lsnb').onclick = () => { SFX.whoosh(); NB.open(() => pathMap('math')); };
+    $('#lsprac').onclick = () => { SFX.whoosh(); start(p, rec.ni); };
+    $('#lsmap').onclick = () => { SFX.whoosh(); pathMap(p); };
+    $('#lsnb').onclick = () => { SFX.whoosh(); NB.open(() => pathMap(p)); };
     SFX.fanfare();
     if (rec.pass) confetti(24);
     if (LS.voice()) say(`${line} ${L.idea} ${T.bye(lsName())}`);
@@ -404,11 +407,11 @@ const LS = {
   // never a front door). Placed above the stop, or beside it, wherever it covers nothing; no button when nothing is free.
   mapAdd() {
     const m = $('#map');
-    if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2 && !partReady('teach35')) return; // TEACH-3: grades 3 up once their lessons are in
+    if (!m || MAPP != 'math' && MAPP != 'read' || TEACH.off || gradeOf() > 2 && !partReady('teach35')) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
     const old = m.querySelector('.ls-go');
     if (old) old.remove();
     NB.mapBtn();
-    const pl = planToday(S, lsDay()), b = pl && m.querySelector(`.node[data-n="${pl.i}"]`);
+    const pl = planToday(S, lsDay(), MAPP), b = pl && m.querySelector(`.node[data-n="${pl.i}"]`);
     if (!b) return;
     const x = parseFloat(b.style.left), y = parseFloat(b.style.top), W = m.clientWidth || 360, sd = x > W / 2 ? -1 : 1;
     const busy = [...m.querySelectorAll('.node,.nlab,.wtitle,.tobtn,.mappet,.ck-go,.ck-mapm,.nnew,.wmore,.mp-champ')].map(e => e.getBoundingClientRect());
@@ -419,7 +422,7 @@ const LS = {
     for (const d of [68, 82, 98, 116]) for (let k = 0; k < 16; k++) { const a = -Math.PI / 2 + sd * (k % 2 ? -1 : 1) * Math.ceil(k / 2) * Math.PI / 8; ring.push([Math.round(x + d * Math.cos(a)), Math.round(y + d * Math.sin(a))]); }
     const at = ring.find(free);
     if (!at) return;
-    m.insertAdjacentHTML('beforeend', `<button class="btn ls-go" style="left:${at[0]}px;top:${at[1]}px" aria-label="Learn ${esc(NODES.math[pl.i].t)} with ${esc(petN())}">${ico('doc', 30)}</button>`);
+    m.insertAdjacentHTML('beforeend', `<button class="btn ls-go" style="left:${at[0]}px;top:${at[1]}px" aria-label="Learn ${esc(NODES[MAPP][pl.i].t)} with ${esc(petN())}">${ico('doc', 30)}</button>`);
     m.querySelector('.ls-go').onclick = () => { SFX.whoosh(); LS.start(pl.id); };
   },
 };

@@ -7939,7 +7939,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,petage')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7949,7 +7949,7 @@ run('code split A11b (and data file split A11)',()=>{
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
   // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","petage"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -8120,7 +8120,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','petage','data']; // TEACH-2b: teach12; TEACH-3: teach35; PET-AGE2: petage
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','petage','data']; // TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8554,11 +8554,11 @@ run('performance P6-02',()=>{
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","petage"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3) and petage (PET-AGE2): '+JSON.stringify(LAZY));
-  const NOT_GAME=['bt','teach','teach12','teach35','petage']; // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teachrd (TEACH-4) and petage (PET-AGE2): '+JSON.stringify(LAZY));
+  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','petage']; // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
   const GAME_FILES=LAZY_FILES.filter((f,i)=>!NOT_GAME.includes(LAZY[i])),parts_=on=>LAZY.map(x=>String(!NOT_GAME.includes(x)&&on)).join(); // parts_(true): the games in, bt, teach and teach12 (TEACH-1/2b, the math map's) and petage not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
-  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35 and petage');
+  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd and petage');
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -18083,7 +18083,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,petage,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
@@ -19989,7 +19989,7 @@ run('teach: lessons, beats, test-out, Check me, measure TEACH-1',()=>{
       lsKnow('pk_count3').s=2;S.know.pk_count3.due=90;for(let j=0;j<at('tenf1');j++)setSt('math',j,2);
       pl=planToday(S,100);if(!pl||pl.id!=='tenf1'||pl.remember.join()!=='pk_count3')bad.push('plan, next: '+JSON.stringify(pl));
       S.les={n:'pk_count3',b:3,s:1};pl=planToday(S,100);if(!pl||pl.id!=='pk_count3'||pl.kind!=='again'||pl.remember.length)bad.push('plan, resume: '+JSON.stringify(pl));
-      if(planToday(S,100,'read')!==null)bad.push('plan: lessons outside math');
+      if(planToday(S,100,'es')!==null)bad.push('plan: lessons outside math and reading'); // TEACH-4: reading has lessons now (its own check, "teach: reading and Pre-K lessons ... TEACH-4")
       // a stop passed in Practice is not offered again as new; with nothing due it comes back in Remember
       delete S.les;S.know={};for(let j=0;j<at('tenf2');j++)setSt('math',j,2);pl=planToday(S,100);
       if(!pl||pl.id!=='tenf2'||pl.remember.join()!=='pk_more2')bad.push('plan, after Practice: '+JSON.stringify(pl));
@@ -20147,7 +20147,7 @@ run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
     lsKnow('add4').s=2;lsKnow('tenf2').s=2;pl=planToday(S,100);if(!pl||pl.id!=='add1')bad.push('alternation: '+JSON.stringify(pl)+' (want add1, another strand)');
     S.lm=[['pk_count3',100,1,2,2,2,0]];pl=planToday(S,100);if(!pl||pl.id!=='tenf1')bad.push('alternation on the same day: '+JSON.stringify(pl));
     const sg=planSuggest(S,100);if(!sg||sg.p!=='math'||!sg.plan)bad.push('suggest: '+JSON.stringify(sg));
-    if(planToday(S,100,'read')!==null||planToday(S,100,'es')!==null)bad.push('lessons outside math');
+    if(planToday(S,100,'es')!==null)bad.push('lessons outside math and reading'); // TEACH-4: reading has lessons (planned on the reading map: "teach: the reading and Pre-K planner ... TEACH-4")
     // 4. a year of daily lessons for a Kindergartner and a 1st grader who learn: never a learned stop as new, Remember one item at most,
     //    never today's, every due stop comes back within 30 days of its day, every lesson of the grade reached
     for(const gr of [0,1]){loadSave(null);S.grade=gr;S.name='Mia';let fail=0,maxLate=0;const did=new Set(),rem={};
@@ -20158,7 +20158,7 @@ run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
         const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
         if(f.pass)setSt('math',pl.i,2);if(fail>3)break}
       const due=LS_IDS.filter(x=>S.know[x]&&S.know[x].s>=2&&S.know[x].due<465-30);
-      const want=LS_IDS.filter(x=>g(x)<=gr);
+      const want=LS_IDS.filter(x=>at(x)>=0&&g(x)<=gr&&(g(x)>=0||gr<0)); // TEACH-4: the math map's lessons (reading has its own year); a Pre-K world's lessons are a Pre-K child's
       for(const x of want)if(!did.has(x))bad.push('grade '+gr+': never reached '+x);
       if(due.length)bad.push('grade '+gr+': due and never remembered: '+due.join());
       rows.push('grade '+gr+': '+did.size+' lessons reached, latest Remember '+maxLate+' days after due')}
@@ -20291,7 +20291,7 @@ run('teach: drafted lessons, their words, the review gate TEACH-2b',()=>{
     if(r2.done.join()!=='zz9'||!/^status: reviewed Test Owner 2026-11-18 \(in chat\)$/m.test(fs.readFileSync(f,'utf8')))p.push('--approve: '+JSON.stringify(r2)+' '+(/^status:.*$/m.exec(fs.readFileSync(f,'utf8'))||[])[0])}
   finally{if(fs.existsSync(f))fs.unlinkSync(f);cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-only'],{stdio:'pipe'})}}
   // 3. the read-through: every unreviewed draft, in map order, each lesson's sheet; short enough for a phone
-  const un=Object.keys(DW).filter(id=>DW[id].status==='unreviewed'&&!B35.includes(id)),rt=A.readThrough(un);
+  const B4=R('LS_B4'),un=Object.keys(DW).filter(id=>DW[id].status==='unreviewed'&&!B35.includes(id)&&!B4.includes(id)),rt=A.readThrough(un); // TEACH-4: batch 4 has its own read-through (BATCH4-READ.md)
   for(const id of un)if(!rt.includes('('+id+')'))p.push('the read-through has no '+id);
   if(/\(big3\)|\(frac4\)/.test(rt))p.push('the read-through repeats reviewed lessons');
   if(rt.split('\n').some(l=>l.length>140))p.push('the read-through has lines too long for a phone');
@@ -20553,7 +20553,7 @@ run('teach: grade 3-5 workbench, the pet\'s steps, the planner by grade TEACH-3'
     const gOf=id=>PATHS.math.worlds[NODES.math[NODES.math.findIndex(n=>nid(n)===id)].wi].g;
     for(const [gr,want] of [[3,3],[4,4],[5,5],[6,5]]){loadSave(null);S.grade=gr;S.unlockAll=true;const pl=planToday(S,100);
       if(!pl||gOf(pl.id)!==want)bad.push('grade '+gr+': offered '+(pl&&pl.id)+' (grade '+(pl&&gOf(pl.id))+')')}
-    loadSave(null);S.grade=4;S.unlockAll=true;for(const id of LS_IDS)if(gOf(id)==4)lsKnow(id).s=2;const pl4=planToday(S,100);if(!pl4||gOf(pl4.id)<3)bad.push('grade 4, its own lessons learned: '+(pl4&&pl4.id));
+    loadSave(null);S.grade=4;S.unlockAll=true;for(const id of LS_IDS.filter(x=>NODES.math.some(n=>nid(n)===x)))if(gOf(id)==4)lsKnow(id).s=2; // TEACH-4: the math map's lessons (reading lessons are not on it)const pl4=planToday(S,100);if(!pl4||gOf(pl4.id)<3)bad.push('grade 4, its own lessons learned: '+(pl4&&pl4.id));
     loadSave(null);S.grade=2;S.unlockAll=true;const p2=planToday(S,100);if(!p2||gOf(p2.id)>=3)bad.push('grade 2: '+(p2&&p2.id));
     // the map offer: 3rd grade up once teach35 is in
     if(!/gradeOf\\(\\) > 2 && !partReady\\('teach35'\\)/.test(String(LS.mapAdd)))bad.push('the map offer is not opened for 3rd grade up');
@@ -20567,6 +20567,220 @@ run('teach: simulated children on grade 3-5 lessons TEACH-3',()=>{
   const r=R(`(()=>{const K=${TEACH_KIDS},out={},N=60,KIDS=[['guesser',0,0],['partial',.5,0],['learner',.1,.25],['knower',.95,0]];S.grade=4;
     for(const [nm,p0,g] of KIDS){const t={pre:0,post:0,to:0,n:0,per:{}};
       for(const id of LS_B35){let a=0,b=0,to=0;for(let i=0;i<N;i++){S.know={};S.lm=[];const rr=mulberry32(3000+i*7+id.length),c=K.kid(p0,g,rr);
+        const {st}=K.run(id,c,i*31+5);a+=st.pre.filter(Boolean).length;b+=st.post.filter(Boolean).length;to+=st.to?1:0}
+        t.per[id]=[a/N/2,b/N/2,to/N];t.pre+=a/N/2;t.post+=b/N/2;t.to+=to/N;t.n++}
+      out[nm]={pre:t.pre/t.n,post:t.post/t.n,to:t.to/t.n,per:t.per}}
+    S.grade=0;return out})()`);
+  const p=[],f=x=>Math.round(x*100),gain=x=>x.post-x.pre,L=r.learner,G=r.guesser;
+  if(!(gain(L)>=.5))p.push('the learner gains '+f(gain(L))+' points (want 50 or more)');
+  for(const id in L.per)if(L.per[id][1]-L.per[id][0]<.3)p.push(id+': the learner gains only '+f(L.per[id][1]-L.per[id][0])+' points');
+  if(Math.abs(gain(G))>.05)p.push('the guesser "gains" '+f(gain(G))+' points');
+  if(Math.abs(gain(r.partial))>.08)p.push('the partial knower "gains" '+f(gain(r.partial))+' points');
+  if(!(r.knower.to>=.8))p.push('the knower tests out '+f(r.knower.to)+'%');
+  for(const id in G.per)if(G.per[id][2]>.15)p.push(id+': the guesser tests out '+f(G.per[id][2])+'%');
+  return{problems:p,note:Object.entries(r).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')};
+});
+
+// ---- TEACH-4: reading for K to 2nd grade, and the Pre-K lessons of Tiny Town and ABC Beach (docs/TEACH-PLAN-2.md batch 4; src/js/52k-words4.js,
+// 52l-bench4.js, 52m-lessons4.js, src/css/52k-teach4.css in the lazy part teachrd). The phonics lesson shape: a sound sort with pictures, the
+// letter named, words built from letter tiles, the pet reading "cat" as "cap" in its announced turn, a decodable sentence matched to a picture.
+// Each lesson runs on its reviewed draft's words (LSW4) or, until the owner reads it, on its hand-written fallback words. The pet's fixed
+// teacher lines are recorded in one voice (tools/en-audio.js --teach). ----
+run('teach: reading and Pre-K lessons, the part, their words, the review gate TEACH-4',()=>{
+  const p=[],A=require('./author.js'),cpx=require('child_process'),DW=draftWords(),R=teachApp(),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  // 0. the part: teachrd is lazy, after teach35; the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too for a Pre-K child
+  for(const f of ['52k-words4.js','52l-bench4.js','52m-lessons4.js','52k-teach4.css'])if(partOf(f)!=='teachrd')p.push(f+' is not in the teachrd part');
+  if(LAZY.indexOf('teachrd')!==LAZY.indexOf('teach35')+1)p.push('teachrd must be lazy, right after teach35: '+JSON.stringify(LAZY));
+  const frd='teachrd.'+BUILD_VER+'.js';
+  if(!fs.existsSync(path.join(ROOT,frd)))p.push(frd+' not built; run python3 tools/build.py first');
+  else{if([...rd('index.html').matchAll(/<script src="([^"]*)"/g)].some(m=>m[1]===frd))p.push('index.html loads '+frd+' at start');
+    if(!rd('sw.js').includes("'./"+frd+"'"))p.push('sw.js does not precache '+frd);
+    if(Buffer.byteLength(rd(frd))>PART_WARN)p.push(frd+' is over '+PART_WARN)}
+  const home=rd('src/js/46-home.js');
+  if(!/partsLoad\(\['teach','teach12','teachrd'\]\)/.test(home)||!/if\(p=='read'\)teachWarm\('read'\)/.test(home)||!/rd=p=='read'\|\|gradeOf\(\)<0/.test(home))p.push('the reading map (and a Pre-K child\'s math map) does not load teachrd (teachWarm)');
+  if(!/\(p=='math'\|\|p=='read'\)&&typeof LS!='undefined'\)setTimeout\(\(\)=>LS\.mapAdd\(\),0\)/.test(home))p.push('the reading map does not add the lesson offer');
+  if(/LS_B4|lsDraft4|const EN_TEACH=/.test(rd('index.html')))p.push('batch 4 lesson code or the teacher manifest is in index.html');
+  if(!/'teachrd', typeof TEACHRD_VER === 'undefined' \? null : TEACHRD_VER/.test(rd('src/js/90-app.js')))p.push('appFiles() does not list teachrd');
+  // 1. the lessons: real stops of Tiny Town, ABC Beach and the K-2 reading worlds, with the same names, each with a draft that passes every check
+  const ids=R('LS_B4'),g=R(`Object.fromEntries(LS_B4.map(id=>{const L=LESSONS[id],p=L.p,i=NODES[p].findIndex(n=>nid(n)===id);return[id,i<0?null:[PATHS[p].worlds[NODES[p][i].wi].g,NODES[p][i].t,L.t,!!L.fb,L.band,p,PATHS[p].worlds[NODES[p][i].wi].n]]}))`);
+  if(ids.length<25)p.push('only '+ids.length+' batch 4 lessons (want 25 or more)');
+  for(const id of ids){const x=g[id];if(!x){p.push(id+': no such stop on its map');continue}
+    if(x[0]>2)p.push(id+': grade '+x[0]);if(x[1]!==x[2])p.push(id+': not the stop '+x[1]);if(x[4]!=='4')p.push(id+': not marked band 4');
+    if(x[0]==-1&&!['Tiny Town','ABC Beach'].includes(x[6]))p.push(id+': a Pre-K lesson outside Tiny Town and ABC Beach');if(x[0]>=0&&x[5]!=='read')p.push(id+': a K-2 lesson of batch 4 that is not reading');
+    const d=DW[id];if(!d){p.push(id+': no draft in docs/drafts');continue}
+    if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,3).join('; '));
+    if(x[3]!==(d.status!=='reviewed'))p.push(id+': runs on '+(x[3]?'fallback':'drafted')+' words but its draft is '+d.status)}
+  for(const w of ['Tiny Town','ABC Beach'])if(!ids.some(id=>g[id]&&g[id][6]===w))p.push('no lesson in '+w);
+  for(const gr of [0,1,2])if(!ids.some(id=>g[id]&&g[id][0]===gr))p.push('no reading lesson for grade '+gr);
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('src/js/52k-words4.js is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
+  for(const id of R('Object.keys(LSW4)'))if(!DW[id]||DW[id].status!=='reviewed')p.push('LSW4 has words for '+id+', whose draft is not reviewed');
+  if(R('Object.keys(LSW).concat(Object.keys(LSW3)).some(id=>LS_B4.includes(id))'))p.push('a batch 4 lesson has words in another batch\'s file');
+  // 2. the fallback words: the idea, tonight's question, the Name it line, the pet's claim and each code's reason, for the little one
+  const fb=R(`LS_B4.map(id=>{const D=LS_DRAFTED[id],W=lsFallback4(D);return{id,lines:[W.idea,...W.beats.name,...W.beats.check,...Object.values(W.reasons).flat()],home:W.home,
+    bad:D.bugs.filter(c=>!BUGS[c]||!LSREP.NOTE[c]),claim:/\\{ans\\}/.test(D.claim||''),slots:[...new Set((W.beats.name.join(' ').match(/\\{\\w+\\}/g)||[]).map(x=>x.slice(1,-1)))].filter(s=>!D.slots.name.includes(s))}})`);
+  for(const x of fb){if(x.bad.length)p.push(x.id+': codes with no reason or no grown-ups line '+x.bad);if(x.slots.length)p.push(x.id+': fallback Name it uses '+x.slots);if(!x.claim)p.push(x.id+': the pet\'s claim does not say its answer');
+    for(const t of x.lines){const b=R('lsToneBad('+JSON.stringify(t)+',"little")');if(b.length)p.push(x.id+' fallback: '+b[0]+': '+t);if(A.BANNED.test(t))p.push(x.id+': a banned theme: '+t)}
+    if(!/\{name\}/.test(x.home)||x.home.length>90||A.BANNED.test(x.home))p.push(x.id+': tonight\'s question '+x.home)}
+  // 3. every word a lesson shows, builds or reads, and every reading the pet can make, is a kid-safe real word (CONTENT-01, the kid-safe list)
+  const ws=R(`(()=>{const o=new Set();for(const id of LS_B4){const L=LESSONS[id];for(let s=1;s<=40;s++){const r=mulberry32(s);for(const st of [0,1,2,3]){const q=L.q(st,r);
+    [q.word,q.ans,...(q.choices||[]).map(c=>c.v),...(q.items||[]).map(c=>c.v),...(q.tiles||[])].forEach(w=>w!=null&&o.add(String(w)));for(const c in q.bug)q.bug[c].forEach(v=>o.add(String(v)));
+    String(q.html).replace(/<[^>]*>/g,' ').split(/[^A-Za-z']+/).forEach(w=>w&&o.add(w))}}}
+    for(const w of Object.values(LS4W).flat())ls4Con(w).forEach(x=>o.add(x));return[...o].filter(w=>/^[a-z]+$/i.test(w))})()`);
+  for(const w of ws){if(R('BAD.test('+JSON.stringify(w.toLowerCase())+')||ksBad('+JSON.stringify(w)+',true)'))p.push('a word that is not kid-safe: '+w);if(A.BANNED.test(w))p.push('a banned theme: '+w)}
+  // 4. the read-through: every batch 4 draft not yet reviewed, in map order, equal to docs/drafts/BATCH4-READ.md
+  const rt=A.readThrough([],{batch:4}),un=ids.filter(id=>DW[id]&&DW[id].status==='unreviewed');
+  for(const id of un)if(!rt.includes('('+id+')'))p.push('the batch 4 read-through has no '+id);
+  if(rt.split('\n').some(l=>l.length>140))p.push('the batch 4 read-through has lines too long for a phone');
+  if(un.length&&rt.indexOf('(pk_count1)')>rt.indexOf('(abc1)'))p.push('the batch 4 read-through is not in map order (Tiny Town first)');
+  const bf=path.join(ROOT,'docs/drafts/BATCH4-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH4-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH4-READ.md is not what node tools/author.js --read <file> --batch 4 gives now');
+  if(A.readThrough([],{batch:2}).includes('(sound1)')||A.readThrough([],{batch:3}).includes('(sound1)'))p.push('a batch 4 lesson is in the batch 2 or 3 read-through');
+  return{problems:p,note:ids.length+' lessons ('+ids.filter(id=>g[id]&&g[id][6]=='Tiny Town').length+' Tiny Town, '+ids.filter(id=>g[id]&&g[id][6]=='ABC Beach').length+' ABC Beach, '
+    +[0,1,2].map(n=>ids.filter(id=>g[id]&&g[id][0]===n).length+' '+['K','1st','2nd'][n]).join(', ')+' reading); '+un.length+' drafts wait for the owner; '+ws.length+' words checked kid-safe'};
+});
+run('teach: reading and Pre-K lessons run, Check me, the pet reads cat as cap TEACH-4',()=>{
+  const R=teachApp(),DW=draftWords();
+  const r=R(`(()=>{const DW=${JSON.stringify(DW)},bad=[],rows=[],K=${TEACH_KIDS};let petN=0,petOk=0,real=0,wrong=0;
+    // what changed from a word to the pet's reading: the codes, by hand
+    for(const [w,x,c] of [['cat','cap','last'],['cat','cut','mid'],['sun','bun','first'],['frog','fog','blend'],['hand','had','blend'],['ship','sip','dig'],['kite','kit','silent'],
+      ['boat','bat','team'],['coat','cot','team'],['cat','dog',null],['bike','bake','mid'],['milk','mill','last']])if(ls4Code(w,x)!==c)bad.push('ls4Code '+w+' '+x+': '+ls4Code(w,x)+' (want '+c+')');
+    for(const id of LS_B4)for(const words of ['fallback','draft']){
+      const W=words=='draft'?DW[id]:null;if(words=='draft'&&!W){bad.push(id+': no draft');continue}
+      const L=lsEnable4(id,W),D=LS_DRAFTED[id];
+      const fill=(t,sl,b)=>{const x=lsFill(t,sl);if(x==null)bad.push(id+' '+words+' '+b+': a slot with no word or number: "'+t+'" '+JSON.stringify(sl));else if(/undefined|NaN|\\{/.test(x))bad.push(id+' '+b+': '+x);return x};
+      let num=0,n=0;
+      for(let s=0;s<40;s++){const rr=mulberry32(s+1);
+        for(const st of [0,1,2,3]){const q=L.q(st,rr);n++;
+          if(q.st!==Math.min(st,2))bad.push(id+' stage '+st+': q.st '+q.st);
+          for(const x of kindProblems(q))if(!(q.goal&&/start state is the answer|answer state does not give/.test(x)))bad.push(id+' stage '+st+': '+x);
+          if(!lsOk(q,lsRight(q)))bad.push(id+' stage '+st+': the right answer is not taken '+q.label);
+          if(!q.say||/undefined|NaN/.test(q.say+q.html))bad.push(id+' stage '+st+': '+q.say);
+          if(lsToneBad(q.say,'little').length)bad.push(id+' stage '+st+': a long line: '+q.say);
+          if(q.kind=='choice'&&q.choices.some(c=>c.h&&!/a11y-h|<svg[^>]*aria-label/.test(c.l)&&!/a11y-h/.test(c.l)&&!/^<b>/.test(c.l)))bad.push(id+' stage '+st+': a picture choice with no name');
+          const P=knowPredict(q);for(const c in P)for(const v of P[c])if(lsOk(q,v))bad.push(id+' '+c+' predicts a right answer '+v);
+          if(Object.keys(P).some(c=>L.bugs.includes(c)))num++;
+          if(st<3)fill(L.w.beats.together[st]||'x',q.sl,'together '+(st+1));if(st===3)L.w.beats.show.forEach(t=>fill(t,q.sl,'show'));
+          for(const c in L.w.reasons)L.w.reasons[c].forEach(t=>fill(t,q.sl,'reason'))}
+        if(L.warm){const w=L.warm(rr);(L.w.beats.remember||[]).forEach(t=>fill(t,w.sl,'remember'));for(const x of kindProblems(w))bad.push(id+' warm-up: '+x)}
+        const e=L.exp(rr);if(!lsOk(e.q,lsRight(e.q)))bad.push(id+': Explore does not take a right build or sort');for(const x of kindProblems(e.q))if(!/start state is the answer/.test(x))bad.push(id+' Explore: '+x);
+        (L.w.beats.explore||[]).forEach(t=>fill(t,e.q.sl,'explore'));if(e.q.kind=='sort'&&e.q.items.some(c=>c.h&&/class="art/.test(c.l))&&!(e.lines||[]).some(t=>e.q.items.every(c=>t.toLowerCase().includes(String(c.say||c.v).toLowerCase()))))bad.push(id+': the sort does not name its pictures');
+        const re=e.react(lsRight(e.q)),nm=L.name(Object.assign({},re.ctx),rr);
+        if(nm.lines.length!==L.w.beats.name.length)bad.push(id+' '+words+': Name it lost a line '+JSON.stringify(re.ctx));
+        if(/undefined|NaN/.test(nm.html+re.lines.join(' ')+nm.lines.join(' ')+e.q.say))bad.push(id+': Explore or Name it: '+re.lines+' '+nm.lines);
+        if(!/\\S/.test(NB.pic(id,re.ctx)))bad.push(id+': no notebook picture')}
+      if(num<n*.5)bad.push(id+': a code of the lesson predicts a wrong answer on only '+num+' of '+n+' questions');
+      // through all the beats as a child of the lesson's grade, missing the first show-me item; the first stop of a world has no Remember yet
+      S.grade=L.g;S.know={};const c=K.kid(1,0,mulberry32(7));c.answer0=c.answer;let first=true;c.answer=function(it){if(first&&it.m=='ask'){first=false;return'999'}return this.answer0(it)};
+      const {st,path,stuck}=K.run(id,c,11,{rem:[]});if(stuck||!st.done)bad.push(id+': the lesson did not end ('+path.slice(-3)+')');
+      const beats=[...new Set(path.map(x=>x.split(':')[0]))].join();if(beats!==(D.first?'pre,exp,name,tog,chk,show':'pre,rem,exp,name,tog,chk,show'))bad.push(id+': beats '+beats);
+      // Check me: announced, the pet says its answer and shows its work, right about a quarter of the time; caught: its reason, then the fix
+      for(let s=1;s<80;s++){S.know={};const x=LS.make(id,{seed:s,day:100});LS.beat(x,LSB.indexOf('chk'));const it=LS.cur(x);
+        if(!it||it.m!=='judge'){bad.push(id+': no judge item');continue}
+        if(!/Check me/.test(it.lines.join(' ')))bad.push(id+': the pet turn is not announced: '+it.lines);
+        petN++;if(it.petOk)petOk++;
+        if(!it.lines.join(' ').includes(lsSayV(it.q,it.pv)))bad.push(id+': the pet does not say its answer '+it.pv+' '+it.lines);
+        if(!it.pw||/id="ls\\d/.test(it.pw)||/undefined|NaN/.test(it.pw))bad.push(id+': the pet\\'s work on the card '+String(it.pw).slice(0,80));
+        if(!it.petOk){wrong++;if(lsOk(it.q,it.pv))bad.push(id+': the pet is called wrong but is right '+it.pv);if(!lsFits4(it.q,it.pv))bad.push(id+': the pet answer cannot be shown '+it.pv);
+          if(!L.bugs.includes(it.code)||!(knowPredict(it.q)[it.code]||[]).includes(String(it.pv)))bad.push(id+': the pet\\'s mistake is not its code '+it.code+' '+it.pv);
+          if(it.q.kind=='build'&&it.q.word.length>1){real++;if(ls4Code(it.q.word,it.pv)!==it.code)bad.push(id+': the pet read '+it.q.word+' as '+it.pv+', not by '+it.code)}
+          const res=LS.answer(x,'0');if(!res.ok)bad.push(id+': catching the pet is not right');
+          if(!(L.w.reasons[it.code]||[]).length||res.lines.length<2)bad.push(id+': a caught mistake without its reason ('+it.code+')');
+          LS.next(x);const fx=LS.cur(x);if(!fx||!fx.fix){bad.push(id+': no fix after the pet mistake');continue}
+          for(const y of kindProblems(fx.q))bad.push(id+' fix: '+y);
+          if(fx.q.kind=='build'&&[...it.pv].some(ch=>!fx.q.word.includes(ch))&&!fx.q.tiles.some(t=>it.pv.includes(t)&&!fx.q.word.includes(t)))bad.push(id+': the fix has none of the pet\\'s wrong letters');
+          LS.answer(x,lsRight(fx.q));LS.next(x);if(LSB[x.b]!=='show')bad.push(id+': Check me does not end after the fix ('+LSB[x.b]+')')}}
+      lsEnable4(id,null);rows.push(id)}
+    S.grade=0;const share=petOk/petN;if(share<.2||share>.35)bad.push('the pet is right '+Math.round(share*100)+'% of the time in Check me (want 20 to 35%)');
+    if(real<50)bad.push('the pet read a word wrong only '+real+' times');
+    return{bad,rows,share,real,wrong}})()`);
+  return{problems:[...new Set(r.bad)].slice(0,40),note:r.rows.length/2+' lessons run with fallback and drafted words; Check me: the pet right '+Math.round(r.share*100)+'%, a word read wrong by its code '+r.real+' times'};
+});
+run('teach: the reading and Pre-K planner, the stop record, the notebook TEACH-4',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],rows=[],K=${TEACH_KIDS},at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id),g=(p,id)=>PATHS[p].worlds[NODES[p][at(p,id)].wi].g;
+    if(!LS_SUBJ.includes('read'))bad.push('reading is not a subject with lessons');
+    // 1. the plan inside the subject the child chose: a Kindergartner on the reading map is offered First Sounds, a Pre-K child Big Letters on
+    //    the reading map and Count to 5 on the math map; a Kindergartner is never offered a Pre-K lesson, a 3rd grader no reading lesson
+    loadSave(null);S.grade=0;let pl=planToday(S,100,'read');if(!pl||pl.id!=='sound1'||pl.kind!=='new')bad.push('K, reading: '+JSON.stringify(pl));
+    S.grade=-1;pl=planToday(S,100,'read');if(!pl||pl.id!=='abc1')bad.push('Pre-K, reading: '+JSON.stringify(pl));
+    pl=planToday(S,100,'math');if(!pl||pl.id!=='pk_count1')bad.push('Pre-K, math: '+JSON.stringify(pl));
+    S.grade=0;S.unlockAll=true;pl=planToday(S,100,'math');if(!pl||g('math',pl.id)<0)bad.push('K, math: a Pre-K lesson '+JSON.stringify(pl));
+    pl=planToday(S,100,'read');if(!pl||g('read',pl.id)<0)bad.push('K, reading: a Pre-K lesson '+JSON.stringify(pl));
+    S.grade=3;if(planToday(S,100,'read'))bad.push('3rd grade: a reading lesson');delete S.unlockAll;
+    // the pet's suggestion alternates by day: math yesterday, reading today
+    loadSave(null);S.grade=0;S.lm=[['tenf2',99,1,2,2,2,0]];const sg=planSuggest(S,100);if(!sg||sg.p!=='read')bad.push('suggest after math yesterday: '+JSON.stringify(sg&&{p:sg.p,id:sg.plan.id}));
+    // 2. a year of daily lessons on each map for a Pre-K, a K, a 1st and a 2nd grader who learn: never a learned stop as new, Remember one item
+    //    at most and never today's, every lesson of the child's band reached
+    for(const [p,gr] of [['read',-1],['math',-1],['read',0],['read',1],['read',2]]){loadSave(null);S.grade=gr;S.name='Mia';const did=new Set();let fail=0;
+      for(let d=100;d<400;d++){NODES[p].forEach((n,i)=>{if(!LESSONS[nid(n)]&&!passed(p,i)&&unlocked(p,i))setSt(p,i,2)});
+        pl=planToday(S,d,p);if(!pl)continue;if(pl.kind==='new'&&((S.know||{})[pl.id]||{}).s>=2){fail++;bad.push(p+' '+gr+' day '+d+': learned '+pl.id+' as new')}
+        if(pl.remember.length>1||pl.remember.includes(pl.id))bad.push(p+' '+gr+' day '+d+': remember '+pl.remember);
+        if((LESSONS[pl.id].p||'math')!==p)bad.push(p+' '+gr+': a lesson of another subject '+pl.id);
+        const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
+        if(f.pass)setSt(p,pl.i,2);if(fail>3)break}
+      const want=LS_B4.filter(x=>LESSONS[x].p===p&&at(p,x)>=0&&g(p,x)<=Math.max(gr,0)&&(g(p,x)>=0||gr<0)&&(gr<0?g(p,x)<0:true));
+      for(const x of want)if(!did.has(x))bad.push(p+' grade '+gr+': never reached '+x);
+      rows.push(p+' '+gr+': '+did.size)}
+    // 3. the stop record of a reading lesson is the reading map's: its stars, the next stop, the end card's map
+    {loadSave(null);S.grade=0;const i=at('read','sound3');for(let j=0;j<i;j++)setSt('read',j,2);const st=LS.make('sound3',{seed:4,day:STRK.idx(today())});st.pre=[true,false];
+      LS.beat(st,LSB.indexOf('show'));for(let k=0;k<2;k++){LS.answer(st,lsRight(LS.cur(st).q));LS.next(st)}
+      const rec=LS.record(st);if(getSt('read',i)!==2||!rec.newPass||!unlocked('read',i+1)||S.maps.math.sound3)bad.push('record: a reading lesson '+JSON.stringify({st:getSt('read',i),rec:rec.newPass}))}
+    // 4. the notebook and the report card take reading pages and rows
+    {loadSave(null);S.name='Mia';S.know={};for(const id of ['tenf2','sound1','abc1'])Object.assign(lsKnow(id),{s:2,n:1});
+      const pg=NB.pages().map(x=>x.id).join();if(pg!=='tenf2,abc1,sound1')bad.push('notebook pages: '+pg);
+      const m=REP.data(),row=m.ls.rows.find(x=>x.name==='Letters and phonics');if(!row||row.c.join()!=='0,0,2,0')bad.push('report rows: '+JSON.stringify(m.ls.rows.map(x=>[x.name,x.c])));
+      if(!/MAPP != 'math' && MAPP != 'read'/.test(String(LS.mapAdd))||!/planToday\\(S, lsDay\\(\\), MAPP\\)/.test(String(LS.mapAdd)))bad.push('the map offer is not on the reading map')}
+    return{bad,rows}})()`);
+  return{problems:r.bad.slice(0,40),note:'a year of lessons: '+r.rows.join('; ')};
+});
+run('recorded teacher lines TEACH-4',()=>{
+  const p=[],EA=require('./en-audio.js'),E=require('./es-audio.js'),vm=require('vm'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),dir=path.join(ROOT,EA.TEACH_DIR);
+  // 1. every collected line has its file in the teacher voice (the hash of its text), mono Ogg Opus of a sensible size; nothing else
+  const ctx=E.loadApp(),lines=EA.collectTeach(ctx),M=vm.runInContext('typeof EN_TEACH=="undefined"?null:EN_TEACH',ctx),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  if(!M)return{problems:['no EN_TEACH: run node tools/en-audio.js --teach']};
+  if(M.dir!==EA.TEACH_DIR||M.voice!==EA.TEACH_VOICE||!EA.VOICES.some(v=>v[0]===M.voice))p.push('EN_TEACH: dir '+M.dir+', voice '+M.voice+' (one of the EN-PRAISE voices)');
+  if(lines.size<60||lines.size>110)p.push(lines.size+' teacher lines (want about 70)');
+  let total=0,big=0;const used=new Set();
+  for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
+    if(f!==EA.teachFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
+  for(const k in M.lines)if(!lines.has(k))p.push('the teacher manifest has a line the list does not: '+k);
+  for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);if(!used.has(f))p.push(EA.TEACH_DIR+f+' is not in the manifest');
+    const h=b.indexOf('OpusHead');if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.TEACH_DIR+f+' is not mono Ogg Opus');
+    if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.TEACH_DIR+f+' is '+b.length+' bytes')}
+  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total;
+  if(all>AUDIO_FAIL)p.push('the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
+  // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions; never a digit; no cheer twice
+  const src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n'),en=vm.runInContext('EN_AUDIO.lines',ctx);
+  for(const [k,o] of lines){if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');if(/\d/.test(k))p.push('a teacher line with a number: '+k);if(en[k])p.push('recorded twice: '+k)}
+  for(const k of ['My turn. Check me!','Can you fix it?','You learned it!','Read the word. Then tap its picture.','Which one is different?'])if(!M.lines[k])p.push('not recorded: '+k);
+  // 3. the build: the manifest is in the data file, not index.html; sw.js precaches every teacher file and answers a Range request from the cache
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
+  if(!data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in '+DATA_FILE+' and not in index.html');
+  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
+  if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
+  if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');
+  // 4. say() in a stand-in browser: a recorded line plays its file; a line with a sentence not recorded plays the recorded one and speaks the rest,
+  //    in order; the tablet's voice when recordings are off, for "Tablet voice", or when a file fails; the lesson says its lines one by one
+  const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
+  const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text);setTimeout(()=>u.onend&&u.onend(),0)},cancel(){},speaking:false,pending:false}});
+  const S2=t=>vm.runInContext(t,s),end=()=>{const a=S2('ESA.au');if(a&&a.onended)a.onended()};
+  try{S2("S.voice=true;CLIPS=[];ENA.t=0");
+    log.length=0;S2("say('Can you fix it?')");if(log.join('|')!=='play '+M.dir+M.lines['Can you fix it?']+M.ext)p.push('a recorded line: '+log.join(' | '));end();
+    log.length=0;S2("say('Can you fix it? Build sun.')");if(log[0]!=='play '+M.dir+M.lines['Can you fix it?']+M.ext||log.some(x=>/^speak/.test(x)))p.push('recorded first: '+log.join(' | '));end();if(log.pop()!=='speak Build sun.')p.push('the rest was not said after the recording: '+log.join(' | '));
+    S2('hush()');log.length=0;S2("say('Build sun. Can you fix it?')");if(log[0]!=='speak Build sun.')p.push('a sentence before the recording: '+log.join(' | '));
+    S2('ENA.off=true;hush()');log.length=0;S2("say('Can you fix it?')");if(log.join()!=='speak Can you fix it?')p.push('ENA.off: '+log.join(' | '));S2('ENA.off=false');
+    S2("S.cheerV='tts';hush()");log.length=0;S2("say('Can you fix it?')");if(log.join()!=='speak Can you fix it?')p.push('Tablet voice: '+log.join(' | '));S2("S.cheerV='mix'");
+    S2('hush()');log.length=0;S2("say('Can you fix it?')");const a=S2('ESA.au');a.onerror();if(log.pop()!=='speak Can you fix it?')p.push('a failed file did not fall back to the voice: '+log.join(' | '));
+  }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  if(!/ls\.forEach\(\(x, i\) => say\(x, null, null, i > 0\)\)/.test(rd('src/js/52-lesson.js')))p.push('the lesson does not say its lines one by one (LS.talk)');
+  return{problems:p,note:lines.size+' lines in the voice '+M.voice+', '+files.length+' files, '+Math.round(total/1000)+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round(all/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'};
+});
+run('teach: simulated children on reading and Pre-K lessons TEACH-4',()=>{
+  // the TEACH-1 children on every batch 4 lesson (fallback words; the measure does not read words), as a child of the lesson's grade: the learner
+  // gains, the guesser and the partial knower do not, the knower tests out and a guesser almost never does
+  const R=teachApp();
+  const r=R(`(()=>{const K=${TEACH_KIDS},out={},N=60,KIDS=[['guesser',0,0],['partial',.5,0],['learner',.1,.25],['knower',.95,0]];
+    for(const [nm,p0,g] of KIDS){const t={pre:0,post:0,to:0,n:0,per:{}};
+      for(const id of LS_B4){S.grade=LESSONS[id].g;let a=0,b=0,to=0;for(let i=0;i<N;i++){S.know={};S.lm=[];const rr=mulberry32(5000+i*7+id.length),c=K.kid(p0,g,rr);
         const {st}=K.run(id,c,i*31+5);a+=st.pre.filter(Boolean).length;b+=st.post.filter(Boolean).length;to+=st.to?1:0}
         t.per[id]=[a/N/2,b/N/2,to/N];t.pre+=a/N/2;t.post+=b/N/2;t.to+=to/N;t.n++}
       out[nm]={pre:t.pre/t.n,post:t.post/t.n,to:t.to/t.n,per:t.per}}

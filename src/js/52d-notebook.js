@@ -10,12 +10,16 @@
 // the right build or answer of an Explore task (any build is fine there; this is one the checker takes)
 const lsRight = q => (q.kind == 'make' && q.model == 'frame2' ? [(q.m.target || q.m.total) - 1, 1] : q.goal == 'less' ? String(q.s0[0] - 1)
   : q.kind == 'make' && (K2MM[q.model].raw || q.raw) ? K2MM[q.model].ans(q) : q.ans); // TEACH-2b: a raw model's right build is its state
-const lsAt = id => NODES.math.findIndex(n => nid(n) === id);
+// TEACH-4: a lesson's own map (math or reading); a stop of a lesson whose part is not in is looked for on both
+const lsPathOf = id => (LESSONS[id] && LESSONS[id].p) || (NODES.read && NODES.read.some(n => nid(n) === id) ? 'read' : 'math');
+const lsAt = id => NODES[lsPathOf(id)].findIndex(n => nid(n) === id);
+// the order of the notebook's pages and the report's rows: the math map, then the reading map
+const lsOrd = id => (lsPathOf(id) == 'math' ? 0 : 1e4) + lsAt(id);
 const NB = {
   // the pages, in map order: {id, t, idea, kept, html (the picture)}
   pages(S0 = S) {
     const K = S0.know || {};
-    return LS_IDS.filter(id => K[id] && K[id].s >= 2 && lsAt(id) >= 0).sort((a, b) => lsAt(a) - lsAt(b))
+    return LS_IDS.filter(id => K[id] && K[id].s >= 2 && lsAt(id) >= 0).sort((a, b) => lsOrd(a) - lsOrd(b))
       .map(id => ({id, t: LESSONS[id].t, idea: LESSONS[id].idea, kept: K[id].s >= 3, html: NB.pic(id, K[id].note)}));
   },
   // the page's picture: the Name it picture of the lesson, on what the child built (a test-out has no build: a build the lesson takes)
@@ -66,7 +70,8 @@ const NB = {
     if (!t || $('#nbopen') || !NB.pages().length) return;
     const b = UI.ibtn('doc', 'My notebook', {size: 'sm', id: 'nbopen', cls: 'nbk-open'}), c = t.querySelector('.chip');
     if (c) c.insertAdjacentHTML('beforebegin', b); else t.insertAdjacentHTML('beforeend', b);
-    $('#nbopen').onclick = () => { SFX.whoosh(); NB.open(() => pathMap('math')); };
+    const mp = MAPP == 'read' ? 'read' : 'math'; // TEACH-4: back to the map it was opened from
+    $('#nbopen').onclick = () => { SFX.whoosh(); NB.open(() => pathMap(mp)); };
   },
 };
 
@@ -95,18 +100,18 @@ const LSREP = {
     if (!k || !(k.s >= 1)) return -1;
     if (k.s >= 2) return k.s >= 3 ? 3 : 2;
     const i = lsAt(id);
-    return k.n >= 2 || i >= 0 && passed('math', i) ? 1 : 0;
+    return k.n >= 2 || i >= 0 && passed(lsPathOf(id), i) ? 1 : 0;
   },
   data(S0 = S) {
     const K = S0.know && typeof S0.know == 'object' ? S0.know : {}, day = lsDay(), rows = {}, noticed = [];
     for (const id in K) {
       const st = LSREP.stage(id, K[id]), i = lsAt(id);
       if (st < 0 || i < 0) continue;
-      const nd = NODES.math[i], nm = REP.strandOf(nd.sk), r = rows[nm] || (rows[nm] = {name: nm, c: [0, 0, 0, 0], t: [[], [], [], []]});
+      const lp = lsPathOf(id), nd = NODES[lp][i], nm = REP.strandOf(nd.sk), r = rows[nm] || (rows[nm] = {name: nm, c: [0, 0, 0, 0], t: [[], [], [], []]});
       r.c[st]++;
       r.t[st].push(nd.t);
       const h = knowHeld(id, S0, day);
-      if (h && LSREP.NOTE[h]) noticed.push({p: 'math', sk: nd.sk, lv: nd.lv, t: nd.t, code: h, i});
+      if (h && LSREP.NOTE[h]) noticed.push({p: lp, sk: nd.sk, lv: nd.lv, t: nd.t, code: h, i: lsOrd(id)});
     }
     const order = REP.STRANDS.map(x => x[0]);
     const lm = Array.isArray(S0.lm) ? S0.lm : [];

@@ -55,6 +55,65 @@ const GROUPS = [
 ];
 const enKey = E.esKey; // NFC, trimmed, spaces collapsed: the same key as say() uses
 
+/* TEACH-4: the pet's fixed teacher lines for the Pre-K to 2nd grade lessons (docs/TEACH-PLAN-2.md system H, owner addition 3: about 70 lines),
+   recorded in ONE warm voice (the pet is one speaker): audio/teach/<hash>.ogg, manifest src/data/d-teach-audio.js (EN_TEACH: key -> file).
+     node tools/en-audio.js --teach        record only these (new lines; checks each with speech to text; deletes unused files)
+   Plain node tools/en-audio.js records them after the encouragement. What is recorded: the little pet's own lines (LS_TONE.little), the lesson
+   end card, the pet's reasons and repair lines of the Pre-K to 2nd grade codes (BUGS), and the fixed instructions of the batch 4 lessons.
+   Never a line with a name, a number or a word of the question: those stay the tablet's voice (say() plays a recorded line whole, or its
+   recorded sentences in order with the tablet's voice for the rest; 12-speech.js tchSay). A line the encouragement already records (in six
+   voices, "Great job!") is left to it. tools/test.js "recorded teacher lines TEACH-4" checks the list against the manifest and the files. */
+const TEACH_DIR = 'audio/teach/', TEACH_VOICE = 'luna', TEACH_SPEED = 0.95; // Luna: "gentle, patient, and deeply nurturing (education)"; a little slower for small children
+const TEACH_FORMAT = 'xai-tts en wav24k speed0.95 trim opus16k-mono ogg teach v1';
+const TEACH_MANIFEST = path.join(SRC, 'data', 'd-teach-audio.js');
+// [where, lines (a list, or a function of the app), lit: every line is in src/js as written]
+const TEACH_GROUPS = [
+  ['the little pet\'s own lines (LS_TONE.little, 52c-scripts.js)', R => R("Object.values(LS_TONE.little).filter(v=>typeof v!='function').flat()")],
+  ['the little pet\'s hello (LS_TONE.little.hi, after the name)', ["Let's learn together."], 1],
+  ['the lesson end card (52-lesson.js)', ['You learned it!', 'You already knew it!', 'Great learning today!'], 1],
+  ['the pet\'s reasons and repairs, Pre-K to 2nd grade (BUGS)', R => R("[...new Set(LS_IDS.filter(id=>LESSONS[id].band!='35').flatMap(id=>LESSONS[id].bugs))].map(c=>BUGS[c].say)")],
+  ['the batch 4 lessons\' fixed instructions (52m-lessons4.js)', ['Which one is different?', 'Which one is a different colour?', 'Put the animals together and the food together.',
+    'Tap a picture, then tap its group.', 'Put in more counters than the dots.', 'Put the big ones together and the small ones together.', 'Tap a picture, then tap Big or Small.',
+    'Tap a picture to hear it. Then tap its letter.', 'Tap a picture to hear it. Then tap where it goes.', 'Put each little letter with its big partner.', 'Tap its little partner.', 'Tap its big partner.',
+    'Tap a little letter, then its big partner.', 'Clap each word. One clap or two?', 'Which letter is missing?', 'Put the letters in ABC order. Sing it with me!',
+    'Sing the ABC song. Which letter comes first?', 'Which letter goes in the box?', 'Read the word. Then tap its picture.', 'Read it. Then tap the picture that matches.',
+    'How many dots? Tap the number.', 'Put in as many counters as you like!', 'What comes next?', 'Put in some blue and some orange. Any way you like!', 'Tap a shape, then tap its group.',
+    'Use both colours.', 'Match them up.', 'Tap a picture to hear it. Clap it. Then tap its bin.'], 1],
+];
+// collectTeach(ctx?) -> Map key -> {text, from: [where], lit}; lines the encouragement records are left out
+function collectTeach(ctx) {
+  ctx = ctx || E.loadApp();
+  const R = s => vm.runInContext(s, ctx), en = R('typeof EN_AUDIO=="undefined"?{}:EN_AUDIO.lines'), lines = new Map();
+  for (const [from, ls, lit] of TEACH_GROUPS) for (const t of (typeof ls == 'function' ? ls(R) : ls)) {
+    const k = enKey(t);
+    if (!k || en[k] || /\d/.test(k)) continue;
+    if (!lines.has(k)) lines.set(k, { text: k, from: [], lit: !!lit });
+    lines.get(k).from.push(from);
+  }
+  return lines;
+}
+const teachFileOf = k => VA.fileOf(TEACH_FORMAT, TEACH_VOICE, k);
+function teachManifest(lines) {
+  const keys = [...lines.keys()].sort();
+  return '/* ---------- TEACH-4: the pet\'s recorded teacher lines (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach) ----------\n'
+    + '   The fixed lines of the Pre-K to 2nd grade lessons -> their file, ' + TEACH_DIR + '<file>.ogg (xAI text to speech, English, the voice ' + TEACH_VOICE + ',\n'
+    + '   speed ' + TEACH_SPEED + ', Opus 16 kbps mono). One voice: the pet is one speaker. Keys are esKey(text). ' + keys.length + ' lines. */\n'
+    + 'const EN_TEACH={dir:' + JSON.stringify(TEACH_DIR) + ',ext:' + JSON.stringify(EXT) + ',voice:' + JSON.stringify(TEACH_VOICE) + ',lines:{\n'
+    + keys.map(k => JSON.stringify(k) + ':' + JSON.stringify(teachFileOf(k))).join(',\n') + '}};\n';
+}
+async function teachMain(dry) {
+  const lines = collectTeach(), all = [...lines.values()];
+  console.log(`teacher lines: ${all.length} in the voice ${TEACH_VOICE}, ${all.reduce((s, o) => s + o.text.length, 0)} characters`);
+  const jobs = all.map(o => ({ text: o.text, voice: TEACH_VOICE, file: teachFileOf(o.text) }));
+  const { failed } = await VA.record(jobs, { dir: TEACH_DIR, ext: EXT, lang: LANG, speed: TEACH_SPEED, dry, check });
+  if (dry) return failed;
+  const dir = path.join(ROOT, TEACH_DIR), have = new Map([...lines].filter(([k]) => fs.existsSync(path.join(dir, teachFileOf(k) + EXT))));
+  fs.writeFileSync(TEACH_MANIFEST, teachManifest(have));
+  const keep = new Set([...have.keys()].map(k => teachFileOf(k) + EXT)), [gone, bytes] = VA.prune(TEACH_DIR, EXT, keep);
+  console.log(`teacher manifest: ${have.size} lines, ${fs.statSync(TEACH_MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
+  return failed;
+}
+
 // collect(ctx?) -> Map key -> {text, kind, from:[where], lit}
 function collect(ctx) {
   ctx = ctx || E.loadApp();
@@ -98,6 +157,7 @@ function check(j, file) {
 
 async function main() {
   const dry = process.argv.includes('--dry');
+  if (process.argv.includes('--teach')) { if ((await teachMain(dry)).length) process.exitCode = 1; return; } // TEACH-4: the teacher lines only
   const lines = collect(), all = [...lines.values()];
   console.log(`lines: ${all.length} x ${VOICES.length} voices = ${all.length * VOICES.length} files, ${all.reduce((s, o) => s + o.text.length, 0) * VOICES.length} characters`);
   const jobs = [];
@@ -110,7 +170,8 @@ async function main() {
   const keep = new Set([...have.keys()].flatMap(k => VOICES.map(([v]) => fileOf(k, v) + EXT))), [gone, bytes] = VA.prune(DIR, EXT, keep);
   console.log(`manifest: ${have.size} lines, ${fs.statSync(MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
   if (failed.length) process.exitCode = 1;
+  if ((await teachMain(false)).length) process.exitCode = 1; // TEACH-4: then the teacher lines
 }
 
-module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS };
+module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectTeach, teachFileOf, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_GROUPS };
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
