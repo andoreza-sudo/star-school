@@ -100,6 +100,7 @@ const worldSkipped=(p,wi)=>!!(S.skip&&S.skip[worldId(p,wi)]);
 function worldHasProgress(p,wi){const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(passed(p,i))return true;return false}
 const worldFinished=(p,wi)=>passed(p,WR[p][wi][1])||worldSkipped(p,wi)||worldDone(p,wi);
 function worldOpen(p,wi){
+  if(PLAY.lockedW(p,wi))return false; // PLAY-01: outside the free sample of the Play app, until a grown-up unlocks it (03-play.js)
   if(S.unlockAll||wi==0)return true;
   if(!PATHS[p].byLevel&&PATHS[p].worlds[wi].g<=gradeOf())return true; // nothing at or below the child's grade is locked
   return worldSkipped(p,wi)||worldFinished(p,wi-1)||worldHasProgress(p,wi); // skipped worlds stay playable
@@ -107,6 +108,7 @@ function worldOpen(p,wi){
 /* Some later stop of the same world is passed (it was added later, or an old save skipped it): it stays open. */
 function stopBehind(p,i){const b=WR[p][NODES[p][i].wi][1];for(let j=i+1;j<=b;j++)if(passed(p,j))return true;return false}
 function unlocked(p,i){
+  if(PLAY.lockedS(p,i))return false; // PLAY-01: the Play app's free sample (the stars stay saved; 03-play.js)
   if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
   const wi=NODES[p][i].wi;
   if(!worldOpen(p,wi))return false;
@@ -119,8 +121,14 @@ const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 /* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
 function startWorld(p){
   if(PATHS[p].byLevel)return 0;
-  const pw=placeWorld(p);if(pw>=0)return pw; // P1-07: a placement result taken at the current grade
-  const ws=PATHS[p].worlds,g0=gradeOf(),k=ws.findIndex(w=>w.g>=g0);
+  const pw=placeWorld(p);if(pw>=0&&!PLAY.lockedW(p,pw))return pw; // P1-07: a placement result taken at the current grade (PLAY-01: in the free sample)
+  return defStart(p,gradeOf());
+}
+/* PLAY-01: the world a child of grade g0 starts in on a fresh save (no placement). startWorld uses it; so does the Play app's free
+   sample (PLAY.free, 03-play.js: the start world of every grade), so the two can never disagree. */
+function defStart(p,g0){
+  if(PATHS[p].byLevel)return 0;
+  const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=g0);
   // P2-37: Discover has worlds only for K, 3 and 5, so the first world at or above a 1st, 2nd or 4th grader's grade is still locked.
   // startBelow paths start such a child at the last world at or below their grade (Nature Trail for K-2, Science Lab for 4th grade).
   if(PATHS[p].startBelow&&k>=0&&ws[k].g>g0){let j=-1;ws.forEach((w,i)=>{if(w.g<=g0)j=i});if(j>=0)return j}
@@ -138,6 +146,7 @@ function curNode(p){
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
   }
+  if(any<0&&PLAY.locked()){const w=PLAY.freeW(p);return Math.min(WR[p][w][0]+PLAY.FREE_STOPS-1,WR[p][w][1])} // PLAY-01: the free sample is all done here: open on its last stop, never a locked world
   return any>=0?any:N.length-1;
 }
 const curWorld=p=>NODES[p][curNode(p)].wi;

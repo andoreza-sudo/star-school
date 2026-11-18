@@ -70,7 +70,7 @@ async function launch() {
 }
 
 // Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height, url (default: the built index.html),
-//   scale (device pixels per css pixel, default 1), lazy (true: do not load the on-demand bt part, P6-03) }
+//   scale (device pixels per css pixel, default 1), lazy (true: do not load the on-demand bt part, P6-03), init ([fn, arg], PLAY-01) }
 // Returns { ctx, page, errors, network }. errors: console errors + uncaught exceptions.
 // network: any http(s) request the app tried to make (must stay empty, the app is offline).
 async function openApp(browser, opts = {}) {
@@ -99,6 +99,8 @@ async function openApp(browser, opts = {}) {
       } catch (e) {}
     }, [SAVE_KEY, seed]);
   }
+  // opts.init: [fn, arg] run in the page before the app's code (PLAY-01: a mocked Google Play billing)
+  if (opts.init) await ctx.addInitScript(opts.init[0], opts.init[1]);
   const page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   page.on('pageerror', e => errors.push('exception: ' + e.message));

@@ -48,7 +48,7 @@ const WEIGHTS = {
   'R-01m': 5, 'R-01r': 2, 'R-01s': 5, 'R-01b': 16, 'G-01': 69, 'G-BB2': 52, 'G-BB3': 27, 'G-ART2': 30, 'G-04a': 51, 'R-01d': 7,
   'P5-10': 64, 'P6-05': 15, 'ES-AUDIO': 3, 'EN-PRAISE': 5, 'P6-02': 6, 'G-04b': 106, 'S-SPK': 59, 'S-SPK2': 47, 'G-FEEL2': 7,
   'P6-01': 2, 'GL-01': 32, 'GL-02': 54, 'CHECK-IN': 27, 'KINDS2-A': 26, 'KINDS2-B': 21, 'KINDS2-C': 46, 'KINDS2-D': 29,
-  'TEACH-1': 37, 'TEACH-2': 6, 'STK-2': 6, 'TEACH-2b': 57, 'TEACH-3': 54,
+  'TEACH-1': 37, 'TEACH-2': 6, 'STK-2': 6, 'TEACH-2b': 57, 'TEACH-3': 54, 'PLAY-01': 12,
 };
 
 // Reads smoke.js: { ids (segments in source order), lines (id -> source lines), problems }
