@@ -873,6 +873,10 @@ async function scanOne(browser, name, s, [w, h]) {
 }
 
 async function main() {
+  // SHARDS: --shard=i/N scans only every N-th job from the i-th (tools/check.sh runs the N shards side by side, each its own browser)
+  const shardArg = (process.argv.find(a => a.startsWith('--shard=')) || '').slice(8);
+  const shard = shardArg ? shardArg.split('/').map(Number) : null;
+  if (shard && !(shard[1] >= 1 && shard[0] >= 1 && shard[0] <= shard[1])) { console.error('--shard=i/N wants 1 <= i <= N'); process.exit(2); }
   const args = process.argv.slice(2).filter(a => !a.startsWith('-'));
   const sizeArg = process.argv.find(a => a.startsWith('--size='));
   const sizes = sizeArg ? [sizeArg.slice(7).split('x').map(Number)] : SIZES;
@@ -894,6 +898,9 @@ async function main() {
   try {
     const jobs = [];
     for (const size of sizes) for (const n of names) jobs.push([n, size]);
+    const total = jobs.length;
+    if (shard) jobs.splice(0, jobs.length, ...jobs.filter((j, k) => k % shard[1] === shard[0] - 1));
+    if (shard) console.log(`a11y shard ${shard[0]}/${shard[1]}: ${jobs.length} of ${total} jobs (screen x size)`);
     let next = 0;
     const PAR = +process.env.A11Y_PAR || 2;
     const worker = async () => {
@@ -912,7 +919,7 @@ async function main() {
   }
   const by = {};
   for (const f of all) by[f.rule] = (by[f.rule] || 0) + 1;
-  console.log(`a11y: ${names.length} screens x ${sizes.length} sizes in ${Math.round((Date.now() - t0) / 1000)} s; ` +
+  console.log(`a11y${shard ? ' shard ' + shard.join('/') : ''}: ${names.length} screens x ${sizes.length} sizes in ${Math.round((Date.now() - t0) / 1000)} s; ` +
     (all.length ? `${all.length} failure(s): ` + Object.entries(by).map(([k, v]) => k + ' ' + v).join(', ') : 'zero failures'));
   process.exit(all.length ? 1 : 0);
 }

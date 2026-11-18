@@ -88,8 +88,28 @@ const ONLY=(()=>{const a=process.argv.slice(2),i=a.findIndex(x=>x=='--only'||x.s
   const l=String(v||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
   if(!l.length){console.error('usage: node tools/test.js --only <substring>[,<substring>...]');process.exit(2)}return l})();
 let SKIPPED=0;
+// SHARDS: --shard=i/N runs only the checks of shard i (tools/check.sh runs the N shards side by side). The long checks (TEST_S,
+// measured seconds) are placed first, longest first onto the least loaded shard; every other check (2 s) goes, in the order the checks
+// run, to the shard with the least seconds so far. The same in every shard, so every check runs in exactly one; each shard prints its
+// count and the count in the other shards (check.sh adds them up). TEST_TIMED: the checks with a time limit (make() in N ms on average,
+// the goals check in 20 ms) are in no numbered shard but in the timed shard, --shard=t, which check.sh runs after the side-by-side
+// shards, beside the timed smoke shards only (a busy CPU made "number puzzles P3-10" miss its 8 ms)
+const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku UI P3-03','mathdoku UI P3-05','logic UI P3-07',
+  'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
+  'word search and unscramble P3-15','Block Builder goals G-BB3'];
+const TEST_S={'sky hop G-04b':451,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
+  'math review fixes R-01m':18,'robot path P3-13':12,'block builder G-01':8};
+const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
+  if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
+  const m=a.slice(8).match(/^(\d+)\/(\d+)$/);
+  if(!m||+m[1]<1||+m[1]>+m[2]){console.error('usage: node tools/test.js --shard=i/N or --shard=t');process.exit(2)}
+  const load=Array(+m[2]).fill(0),pre={};
+  for(const [k,v] of Object.entries(TEST_S).filter(e=>!TEST_TIMED.includes(e[0])).sort((a,b)=>b[1]-a[1])){const j=load.indexOf(Math.min(...load));pre[k]=j;load[j]+=v}
+  return{i:+m[1],n:+m[2],load,pre,other:0}})();
 const run=(name,fn)=>{
   if(ONLY&&!ONLY.some(o=>name.toLowerCase().includes(o))){SKIPPED++;return}
+  if(SHARD&&(SHARD.timed||TEST_TIMED.includes(name))){if(SHARD.timed!==TEST_TIMED.includes(name)){SHARD.other++;return}}
+  else if(SHARD){const L=SHARD.load,k=name in SHARD.pre?SHARD.pre[name]:L.indexOf(Math.min(...L));if(!(name in SHARD.pre))L[k]+=2;if(k!==SHARD.i-1){SHARD.other++;return}}
   const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
     return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
@@ -20581,6 +20601,14 @@ run('teach: simulated children on grade 3-5 lessons TEACH-3',()=>{
   return{problems:p,note:Object.entries(r).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')};
 });
 
+// SHARDS: tools/check.sh runs tools/smoke.js as shards (`--shard i/N`, tools/lib/smoke-shards.js). Every step block of smoke.js's main()
+// is a segment (`if (seg('ID')) {`), nothing else stands between them but the shared lines, and for 1 to 8 shards every segment
+// lands in exactly one shard, so a new step can neither be lost nor run twice
+run('smoke shards: every smoke step in exactly one shard',()=>{
+  const SH=require('./lib/smoke-shards'),c=SH.check(8);
+  return{problems:c.problems,note:c.ids.length+' segments'+(c.unmeasured.length?', '+c.unmeasured.length+' not measured yet (counted by length)':'')};
+});
+
 // ---- report ----
 Promise.all(PENDING).then(()=>{
 let failed=0;
@@ -20591,7 +20619,7 @@ for(const r of results){
   if(r.problems.length>10)console.log('        ... and '+(r.problems.length-10)+' more');
   for(const k of r.unusedKnown)console.log('        note: KNOWN exception no longer needed: '+k);
 }
-const skipNote=ONLY?' ('+SKIPPED+' skipped by --only '+ONLY.join(',')+')':'';
+const skipNote=(ONLY?' ('+SKIPPED+' skipped by --only '+ONLY.join(',')+')':'')+(SHARD?' (shard '+SHARD.i+'/'+SHARD.n+'; '+SHARD.other+' checks in the other shards)':'');
 if(ONLY&&!results.length){console.log('no check name contains '+ONLY.join(' or ')+'; '+SKIPPED+' skipped');process.exitCode=1;return}
 console.log((failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed')+skipNote);
 process.exitCode=failed?1:0;

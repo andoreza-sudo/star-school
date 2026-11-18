@@ -36,6 +36,48 @@ let failed = 0;
 const step = msg => console.log('- ' + msg);
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
 
+// SHARDS: main() is a list of segments, each a top-level `if (seg('ID')) {` block that sets up its own pages. `--shard i/N` runs only
+// the segments tools/lib/smoke-shards.js gives shard i of N, `--shard tI/M` timed shard I of M (the steps with time limits; tools/check.sh
+// runs the N shards side by side, each its own browser, and the M timed shards later with nothing else beside them);
+// with no --shard every segment runs, in order, as before; `--seg ID,ID` runs only those. `--plan N M` prints the shards and checks
+// the segments, without a browser.
+// SMOKE_SEG_TIMES=file writes the seconds each segment took (for WEIGHTS in tools/lib/smoke-shards.js).
+const SHARDS = require('./lib/smoke-shards');
+const SHARD = SHARDS.parseArg(process.argv);
+const segSeen = [], segTimes = {};
+let segOpen = null;
+function segClose() {
+  if (segOpen) segTimes[segOpen[0]] = Math.round((Date.now() - segOpen[1]) / 100) / 10;
+  segOpen = null;
+}
+function seg(id) {
+  if (segSeen.includes(id)) throw new Error('smoke segment ' + id + ' runs twice');
+  segSeen.push(id);
+  segClose();
+  const on = !SHARD || SHARD.ids.has(id);
+  if (on) segOpen = [id, Date.now()];
+  return on;
+}
+// after main's steps: the times, and in a shard that every segment of the source was reached and exactly this shard's ran
+function segEnd() {
+  segClose();
+  if (process.env.SMOKE_SEG_TIMES) require('fs').writeFileSync(process.env.SMOKE_SEG_TIMES, JSON.stringify(segTimes, null, 1) + '\n');
+  if (!SHARD) return;
+  const all = SHARDS.parse().ids, ran = Object.keys(segTimes), mine = all.filter(id => SHARD.ids.has(id));
+  if (segSeen.join() !== all.join()) fail(`shard ${SHARD.i}/${SHARD.n}: reached ${segSeen.length} of ${all.length} segments`);
+  else if (!SHARD.only && ran.join() !== mine.join()) fail(`shard ${SHARD.i}/${SHARD.n}: ran ${ran.join(' ')}, not ${mine.join(' ')}`);
+  console.log(`smoke shard ${SHARD.i}/${SHARD.n}: ${ran.length} segments (${ran.join(' ')}), ${Math.round(ran.reduce((t, id) => t + segTimes[id], 0))} s`);
+}
+if (process.argv.includes('--plan')) {
+  const k = process.argv.indexOf('--plan'), n = +process.argv[k + 1] || 4, m = +process.argv[k + 2] || 1;
+  const c = SHARDS.check(Math.max(8, n), Math.max(3, m));
+  if (c.problems.length) { console.error('FAIL: smoke shards:\n  ' + c.problems.join('\n  ')); process.exit(1); }
+  SHARDS.assign(c.ids, c.lines, n).forEach((s, k) => console.log(`shard ${k + 1}/${n}: ${s.ids.size} segments, ~${Math.round(s.s)} s: ${[...s.ids].join(' ')}`));
+  SHARDS.assign(c.ids, c.lines, m, true).forEach((s, k) => console.log(`timed shard t${k + 1}/${m}: ${s.ids.size} segments, ~${Math.round(s.s)} s: ${[...s.ids].join(' ')}`));
+  console.log(`${c.ids.length} segments, each in exactly one of ${n} shards and ${m} timed shards` + (c.unmeasured.length ? `; not measured yet (counted by length): ${c.unmeasured.length}` : ''));
+  process.exit(0);
+}
+
 // Answer the current question by tapping the on-screen controls.
 async function answer(page) {
   const q = await page.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), word: G.q.word, alt: G.q.alt, one: !!G.q.one,
@@ -183,75 +225,297 @@ async function main() {
     const app = await openApp(browser, { fixture: 'fresh' });
     ctxAll = app;
     const { page, errors, network } = app;
-    if (!(await page.$('#nm'))) fail('fresh save should show the setup screen');
-    await page.fill('#nm', 'Smoke');
-    await page.click('#go');
-    await page.waitForSelector('.game[data-p]');
-    step('setup done, home shown');
-    const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Star School (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
-    if (!ver) fail('version label missing at the bottom of home'); else step('version label ' + ver);
+    // SHARDS: the steps from here to the end of 11 use this first page one after another, so they are one segment (core); every
+    // other step block is a segment of its own that sets up its own pages (tools/lib/smoke-shards.js, `--shard i/N`)
+    if (seg('core')) {
+      if (!(await page.$('#nm'))) fail('fresh save should show the setup screen');
+      await page.fill('#nm', 'Smoke');
+      await page.click('#go');
+      await page.waitForSelector('.game[data-p]');
+      step('setup done, home shown');
+      const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Star School (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
+      if (!ver) fail('version label missing at the bottom of home'); else step('version label ' + ver);
 
-    // 2. one full round on each path
-    for (const p of ['math', 'read', 'es']) {
+      // 2. one full round on each path
+      for (const p of ['math', 'read', 'es']) {
+        await page.evaluate(() => home());
+        await page.click(`.game[data-p="${p}"]`);
+        await page.waitForSelector('.node[data-n="0"]');
+        await page.click('.node[data-n="0"]');
+        if (p === 'es') { await page.waitForSelector('#go'); await page.click('#go'); }
+        await page.waitForSelector('#prompt');
+        await playRound(page, p);
+        await page.click('#ehome'); // NAV-01: the end card's Home
+        await page.waitForSelector('#navbar .nb-home[aria-current="page"]');
+        await page.evaluate(() => pathMap(MAPP));
+        await page.waitForSelector('#map');
+      }
+
+      // 2b. Fact Sprint: play a 20-facts sprint (first answer wrong on purpose), then check the end screen and the saved record
+      //     (R-01b: Fact Sprint is shown from grade 1 once Adding to 10 is passed; the fresh child is in Kindergarten, so move them up)
+      await page.evaluate(() => { S.grade = 1; S.maps.math.add1 = Math.max(1, S.maps.math.add1 || 0); save(); home(); });
+      await page.click('#flu');
+      await page.waitForSelector('.game[data-s="add10"]');
+      await page.click('.game[data-s="add10"]');
+      await page.click('.game[data-m="n20"]');
+      for (let i = 0; i < 40; i++) {
+        await page.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+        if (await page.$('#frepeat')) break;
+        let c = await page.evaluate(() => String(FL.f.c));
+        // one wrong answer with the same digit count (so it auto-submits): shown for 1 s, comes back later
+        if (i === 0) c = String(+c + 1).length === c.length ? String(+c + 1) : String(+c - 1);
+        for (const d of c) await page.click(`.k[data-k="${d}"]`);
+      }
+      await page.waitForSelector('#frepeat', { timeout: 8000 });
+      const flu = await page.evaluate(() => ({ best: S.flu['add10-20'].best, n: S.flu['add10-20'].hist.length, paid: !!S.flu.add10.paid }));
+      if (!(flu.best > 0) || flu.n !== 1 || !flu.paid) fail('fact sprint not saved: ' + JSON.stringify(flu));
+      else step('Fact Sprint 20 facts played, saved ' + JSON.stringify(flu));
+      await page.click('#fhome');
+      await page.waitForSelector('#gear');
+
+      // 3. Game Room and Grown-ups (long press on the gear, like a grown-up would)
       await page.evaluate(() => home());
-      await page.click(`.game[data-p="${p}"]`);
+      await page.click('#groom');
+      await page.waitForSelector('#g4x4');
+      step('Game Room opened');
+      await page.click('#back');
+      await page.waitForSelector('#gear');
+      const box = await (await page.$('#gear')).boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await vwait(page, 3400);
+      await page.mouse.up();
+      await page.waitForSelector('#ula', { timeout: 3000 });
+      step('Grown-ups opened');
+
+      // 4. old save loads (midway fixture) with its progress intact
+      const old = await openApp(browser, { fixture: 'midway' });
+      const snap = await old.page.evaluate(() => ({ stars: S.stars, coins: S.coins, name: S.name, hat: S.wear.hat,
+        math: Object.keys(S.maps.math).length, read: Object.keys(S.maps.read).length, es: Object.keys(S.maps.es).length }));
+      if (snap.stars !== 85 || snap.coins !== 64 || snap.name !== 'Ava' || snap.hat !== '🎩' || !snap.math || !snap.read || !snap.es) fail('midway fixture not loaded as saved: ' + JSON.stringify(snap));
+      else step('midway fixture loads intact: ' + JSON.stringify(snap));
+      errors.push(...old.errors);
+      network.push(...old.network);
+      await old.ctx.close();
+
+      // 5. P0-05 error guard: throw inside a round -> friendly "go home" button, error logged, shown in the App log.
+      //    The injected error is the only one allowed; it is removed from the list below, everything else still fails the run.
+      const MARK = 'P0-05 injected test error';
+      await page.evaluate(() => home());
+      await page.click('.game[data-p="math"]');
       await page.waitForSelector('.node[data-n="0"]');
       await page.click('.node[data-n="0"]');
-      if (p === 'es') { await page.waitForSelector('#go'); await page.click('#go'); }
       await page.waitForSelector('#prompt');
-      await playRound(page, p);
-      await page.click('#ehome'); // NAV-01: the end card's Home
-      await page.waitForSelector('#navbar .nb-home[aria-current="page"]');
-      await page.evaluate(() => pathMap(MAPP));
-      await page.waitForSelector('#map');
+      await page.evaluate(m => setTimeout(() => { throw new Error(m); }, 0), MARK);
+      await page.waitForSelector('#oops', { timeout: 3000 });
+      step('injected error mid-round: friendly button shown');
+      await page.click('#oops');
+      await page.waitForSelector('.game[data-p]');
+      const logged = await page.evaluate(() => (S.err || []).map(e => e.msg));
+      if (!logged.some(m => m.includes(MARK))) fail('injected error not in S.err: ' + JSON.stringify(logged)); else step('recovered to home, error in S.err');
+      await page.evaluate(() => grown());
+      await page.waitForSelector('#applog');
+      const logTxt = await page.evaluate(() => document.querySelector('#applog').textContent);
+      if (!logTxt.includes(MARK)) fail('App log does not show the injected error'); else step('App log shows the injected error');
+      const injected = errors.filter(e => e.includes(MARK));
+      if (injected.length !== 1) fail('expected exactly 1 injected page error, saw ' + injected.length);
+      for (let i = errors.length - 1; i >= 0; i--) if (errors[i].includes(MARK)) errors.splice(i, 1);
+
+      // 6. P5-04 streak: the rounds played above counted today; the flame on Home opens the month grid
+      const stk = await page.evaluate(() => ({ n: (S.streak.days[today()] || 0), best: S.streak.best }));
+      if (stk.n < 1 || stk.best < 1) fail('finished rounds did not count for the streak: ' + JSON.stringify(stk)); else step('streak counted ' + stk.n + ' rounds today');
+      await page.evaluate(() => home());
+      await page.click('#stkb');
+      await page.waitForSelector('.stc-grid');
+      const cal = await page.evaluate(() => ({ on: document.querySelectorAll('.stc-d.on').length, now: document.querySelectorAll('.stc-d.now').length }));
+      if (cal.on < 1 || cal.now !== 1) fail('streak calendar grid wrong: ' + JSON.stringify(cal)); else step('streak calendar opens with today marked and a star on active days');
+      await page.click('#back');
+      await page.waitForSelector('#stkb');
+
+      // 7. number pad: after the second wrong try the slot must show the right answer, not the child's wrong number
+      await page.evaluate(() => home());
+      await page.click('.game[data-p="math"]');
+      // P2-01: node 0 is Tiny Town now; P2-02: a K child's map opens on Shape Garden. Number Meadow's first stop is a number-pad question: open its chip first
+      const meadowW = await page.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_meadow'));
+      const meadow0 = await page.evaluate(() => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_meadow')][0]);
+      await page.waitForSelector('.wchip.on');
+      await page.click(`.wchip[data-w="${meadowW}"]`);
+      await page.waitForSelector(`.node[data-n="${meadow0}"]`);
+      await page.click(`.node[data-n="${meadow0}"]`);
+      let numSeen = false;
+      for (let i = 0; i < 10 && !numSeen; i++) {
+        await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
+        if (await page.evaluate(() => G.q.kind !== 'num')) {
+          await page.evaluate(() => { window.__q = G.q; });
+          await answer(page);
+          await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+          if (await page.$('#fin')) break;
+          continue;
+        }
+        numSeen = true;
+        const ans = await page.evaluate(() => G.q.ans);
+        const wrong = ans === '9' ? '8' : '9';
+        for (let t = 0; t < 2; t++) {
+          await page.waitForFunction(() => G && !G.lock, null, { timeout: 8000 });
+          await page.click(`.k[data-k="${wrong}"]`);
+          await page.click('.k[data-k="go"]');
+        }
+        await page.waitForTimeout(200);
+        const slot = await page.evaluate(() => document.querySelector('#slot').textContent);
+        if (slot !== ans) fail(`number pad reveal shows "${slot}", expected the answer "${ans}"`);
+        else step('number pad: second wrong try reveals the right answer in the slot');
+      }
+      if (!numSeen) fail('number pad step: no number question in the first math round');
+
+      // 8. content bank: the round hook plays one passage with 5 questions, the passage panel opens, closes and scrolls
+      //    (demo skills are not on a map, so the step adds a node to the read path by hand)
+      await vwait(page, 2800); // TOOL-01: the number-pad reveal above leaves a pending next() (2.6 s); let it fire before leaving the round
+      await page.evaluate(() => home());
+      await page.evaluate(() => {
+        SK.passdemo = { t: 'Passage demo', e: '📗', area: 'read', max: 1, bank: 'demo', gen: lv => genPassage('demo', lv), round: lv => passageRound('passdemo', 'demo', lv) };
+        NODES.read.push({ ...NODES.read[0], sk: 'passdemo', lv: 1 });
+        start('read', NODES.read.length - 1);
+      });
+      await page.waitForSelector('.bctx');
+      const bk = await page.evaluate(() => ({ n: G.n, pool: G.pool.length + 1, open: document.querySelector('.bctx').open, words: document.querySelectorAll('.bctx-p .w').length }));
+      if (bk.n !== 5 || bk.pool !== 5) fail('passage round should have 5 questions: ' + JSON.stringify(bk));
+      if (!bk.open || bk.words < 20) fail('passage panel not open with its words: ' + JSON.stringify(bk));
+      await page.click('.bctx-p .w');
+      await page.click('.bctx-h');
+      const closed = await page.evaluate(() => !document.querySelector('.bctx').open && document.querySelector('.bctx').offsetHeight < 80);
+      if (!closed) fail('passage panel did not close');
+      await page.click('.bctx-h');
+      const text0 = await page.evaluate(() => document.querySelector('.bctx-p').textContent);
+      let asked = 0;
+      for (let guard = 0; guard < 30; guard++) {
+        const state = await page.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
+        if (state === 'fin') break;
+        if (state === 'none') { await page.waitForTimeout(150); continue; }
+        const same = await page.evaluate(t => document.querySelector('.bctx-p').textContent === t, text0);
+        if (!same) fail('passage text changed between questions');
+        await page.evaluate(() => { window.__q = G.q; });
+        await answer(page);
+        asked++;
+        await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+      }
+      const sc = await page.evaluate(() => G.score);
+      if (asked !== 5 || sc !== 5) fail(`passage round: asked ${asked}, score ${sc}, expected 5 and 5`);
+      else step('passage round: one passage, 5 questions, panel opens and closes, score 5/5');
+      await page.click('#chest', { timeout: 5000 }).catch(() => {});
+      const stars = await page.evaluate(() => getSt('read', NODES.read.length - 1));
+      if (stars !== 3) fail('passage round with 5 of 5 should earn 3 stars, got ' + stars); else step('5 of 5 on a 5-question round earns 3 stars');
+
+      // 9. new kinds B (P1-04): the bot plays a sample of each through the real round engine
+      const KB = require('./lib/kb-samples.js');
+      const kbShow = async name => {
+        await vwait(page, 2800); // the engine's own pending next() from the last sample must fire before a new round starts
+        await page.evaluate(() => home());
+        await page.evaluate(q => { start('math', 0); G.q = q; renderQ(); }, KB[name]);
+      };
+      const kbState = () => page.evaluate(() => ({ lock: G.lock, tries: G.tries, ok: !!document.querySelector('.mt.ok, .tp.right, .ls.ok'), done: G.done }));
+      // match: one wrong pair is a miss and keeps the round going; then every pair right passes
+      await kbShow('match');
+      await page.click('.mb[data-s="L"][data-i="0"]');
+      await page.click('.mb[data-s="R"][data-i="0"]'); // cat with puppy: wrong
+      let st = await kbState();
+      if (st.tries !== 1 || st.lock) fail('match: a wrong pair should count one miss and stay open ' + JSON.stringify(st));
+      for (const [l, r] of [[0, 2], [1, 0], [2, 3], [3, 1]]) {
+        await page.click(`.mb[data-s="L"][data-i="${l}"]`);
+        await page.click(`.mb[data-s="R"][data-i="${r}"]`);
+      }
+      st = await kbState();
+      if (!st.lock || !st.ok || st.done !== 1) fail('match: all pairs right did not pass ' + JSON.stringify(st)); else step('match: wrong pair = miss, then all pairs right passes');
+      // match: two wrong pairs reveal every pair
+      await kbShow('match');
+      for (let t = 0; t < 2; t++) {
+        await page.waitForFunction(() => G && !G.lock, null, { timeout: 4000 });
+        await page.click('.mb[data-s="L"][data-i="0"]');
+        await page.click('.mb[data-s="R"][data-i="0"]');
+      }
+      const shown = await page.evaluate(() => document.querySelectorAll('.mb.done').length);
+      if (shown !== 8) fail('match: second miss should reveal all 8 buttons as paired, got ' + shown); else step('match: second miss reveals the pairs');
+      // tap: wrong tap marks it, right tap passes. TEACH-1 ("old checks check old", as K2OLD): this sample has two words to tap, which now
+      // get one try in Practice; TEACH.off gives the kind's second try this step checks (the one-try rule has its own TEACH-1 step)
+      await page.evaluate(() => { TEACH.off = true; });
+      await kbShow('tapWord');
+      await page.click('.tp[data-v="mat"]');
+      st = await kbState();
+      if (st.tries !== 1 || st.lock) fail('tap: wrong tap should count one miss ' + JSON.stringify(st));
+      await page.click('.tp[data-v="cat"]');
+      st = await kbState();
+      if (!st.lock || !st.ok) fail('tap: right tap did not pass ' + JSON.stringify(st)); else step('tap: wrong tap = miss, right tap passes');
+      await page.evaluate(() => { TEACH.off = false; });
+      // spell: in-app keyboard only; wrong word keeps the right start; es keyboard has the accent row
+      await kbShow('spell');
+      for (const c of 'cut') await page.click(`.sk[data-ch="${c}"]`);
+      await page.waitForFunction(() => G && !G.lock && G.typed === 'c', null, { timeout: 4000 });
+      for (const c of 'at') await page.click(`.sk[data-ch="${c}"]`);
+      st = await kbState();
+      if (!st.lock || !st.ok) fail('spell: cat did not pass ' + JSON.stringify(st));
+      await kbShow('spellEs');
+      for (const c of 'niño') await page.click(`.sk[data-ch="${c}"]`);
+      st = await kbState();
+      if (!st.lock || !st.ok) fail('spell es: niño did not pass ' + JSON.stringify(st)); else step('spell: wrong word keeps its right start; cat and niño (accent key) pass');
+      const kbBox = await page.evaluate(() => { const b = document.querySelector('.sk').getBoundingClientRect(); return b.height; });
+      if (kbBox < 48) fail('spell key shorter than 48 px: ' + kbBox);
+      await page.evaluate(() => home());
+
+      // 11. new kinds A (P1-03): the bot plays every sample question of tools/kinds-samples.js through the real engine at 380x780
+      //    (right answers, 48 px targets, no sideways scroll), then gets three of them wrong twice and checks the reveal
+      // the number-pad step above leaves the old round's 2.6 s next-question timer running; let it fire before the new round starts
+      await page.evaluate(() => home());
+      await vwait(page, 3000);
+      await page.setViewportSize({ width: 380, height: 780 });
+      await page.evaluate(src => { window.__S2 = eval(src)(); }, '(' + require('./kinds-samples').make.toString() + ')');
+      const names = await page.evaluate(() => Object.keys(window.__S2));
+      await page.evaluate(() => { G = newG({ sk: 'zz_demo', mix: true, n: Object.keys(window.__S2).length, pool: Object.values(window.__S2) }); next(); });
+      for (const nm of names) {
+        await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
+        await page.waitForTimeout(500); // let the screen's entrance animation finish before measuring
+        const m = await page.evaluate(() => {
+          const small = [...document.querySelectorAll('.k, .mc, .ot, .os, #mcheck, .ch')].filter(e => e.getBoundingClientRect().height < 47.5 || e.getBoundingClientRect().width < 47.5)
+            .map(e => e.className + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height));
+          return { small, wide: document.documentElement.scrollWidth > window.innerWidth + 1, label: G.q.label };
+        });
+        if (m.small.length) fail(`${m.label}: targets under 48 px: ${m.small.join(', ')}`);
+        if (m.wide) fail(`${m.label}: page scrolls sideways at 380 wide`);
+        await page.evaluate(() => { window.__q = G.q; });
+        await answer(page).catch(async e => { throw new Error(`new kinds: playing "${nm}" failed: ` + String(e.message).split('\n')[0]); });
+        await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+      }
+      await page.waitForSelector('#chest', { timeout: 5000 });
+      const sc2 = await page.evaluate(() => G.score);
+      if (sc2 !== names.length) fail(`new kinds: bot scored ${sc2}/${names.length}`); else step(`new kinds: ${names.length} sample questions answered right (${names.join(', ')}), targets 48 px, no sideways scroll`);
+
+      // wrong twice: the reveal shows the right answer (num: slot, multi: right boxes, order: slots)
+      const wrongOf = ['dec', 'multi', 'order'];
+      await page.evaluate(w => { G = newG({ sk: 'zz_demo', mix: true, n: w.length, pool: w.map(k => window.__S2[k]) }); next(); }, wrongOf);
+      for (const nm of wrongOf) {
+        await page.evaluate(() => { window.__q = G.q; });
+        for (let t = 0; t < 2; t++) {
+          await page.waitForFunction(() => G && !G.lock, null, { timeout: 8000 });
+          if (nm === 'dec') { await page.click('.k[data-k="9"]'); await page.click('.k[data-k="go"]'); }
+          else if (nm === 'multi') {
+            const i = await page.evaluate(() => G.q.choices.findIndex(c => !G.q.ans.includes(c.v)));
+            await page.click(`.mc[data-i="${i}"]`); await page.click('#mcheck');
+          } else {
+            const order = await page.evaluate(() => G.q.ans.slice().reverse().map(v => G.q.items.findIndex(t => t.v === v)));
+            for (const i of order) await page.click(`.ot[data-i="${i}"]`);
+          }
+        }
+        await page.waitForTimeout(150);
+        const rev = await page.evaluate(() => {
+          const q = G.q;
+          if (q.kind === 'num') return document.querySelector('#slot').textContent === q.ans && document.querySelector('#slot').classList.contains('rev');
+          if (q.kind === 'multi') return [...document.querySelectorAll('.mc.right')].map(b => q.choices[b.dataset.i].v).join() === q.ans.join();
+          return [...document.querySelectorAll('.os')].map(b => b.textContent).join() === q.ans.join();
+        });
+        if (!rev) fail(`new kinds: ${nm} reveal after two wrong tries does not show the right answer`);
+        else step(`new kinds: ${nm} second wrong try reveals the right answer`);
+        await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+      }
+      await page.evaluate(() => home());
     }
-
-    // 2b. Fact Sprint: play a 20-facts sprint (first answer wrong on purpose), then check the end screen and the saved record
-    //     (R-01b: Fact Sprint is shown from grade 1 once Adding to 10 is passed; the fresh child is in Kindergarten, so move them up)
-    await page.evaluate(() => { S.grade = 1; S.maps.math.add1 = Math.max(1, S.maps.math.add1 || 0); save(); home(); });
-    await page.click('#flu');
-    await page.waitForSelector('.game[data-s="add10"]');
-    await page.click('.game[data-s="add10"]');
-    await page.click('.game[data-m="n20"]');
-    for (let i = 0; i < 40; i++) {
-      await page.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
-      if (await page.$('#frepeat')) break;
-      let c = await page.evaluate(() => String(FL.f.c));
-      // one wrong answer with the same digit count (so it auto-submits): shown for 1 s, comes back later
-      if (i === 0) c = String(+c + 1).length === c.length ? String(+c + 1) : String(+c - 1);
-      for (const d of c) await page.click(`.k[data-k="${d}"]`);
-    }
-    await page.waitForSelector('#frepeat', { timeout: 8000 });
-    const flu = await page.evaluate(() => ({ best: S.flu['add10-20'].best, n: S.flu['add10-20'].hist.length, paid: !!S.flu.add10.paid }));
-    if (!(flu.best > 0) || flu.n !== 1 || !flu.paid) fail('fact sprint not saved: ' + JSON.stringify(flu));
-    else step('Fact Sprint 20 facts played, saved ' + JSON.stringify(flu));
-    await page.click('#fhome');
-    await page.waitForSelector('#gear');
-
-    // 3. Game Room and Grown-ups (long press on the gear, like a grown-up would)
-    await page.evaluate(() => home());
-    await page.click('#groom');
-    await page.waitForSelector('#g4x4');
-    step('Game Room opened');
-    await page.click('#back');
-    await page.waitForSelector('#gear');
-    const box = await (await page.$('#gear')).boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await vwait(page, 3400);
-    await page.mouse.up();
-    await page.waitForSelector('#ula', { timeout: 3000 });
-    step('Grown-ups opened');
-
-    // 4. old save loads (midway fixture) with its progress intact
-    const old = await openApp(browser, { fixture: 'midway' });
-    const snap = await old.page.evaluate(() => ({ stars: S.stars, coins: S.coins, name: S.name, hat: S.wear.hat,
-      math: Object.keys(S.maps.math).length, read: Object.keys(S.maps.read).length, es: Object.keys(S.maps.es).length }));
-    if (snap.stars !== 85 || snap.coins !== 64 || snap.name !== 'Ava' || snap.hat !== '🎩' || !snap.math || !snap.read || !snap.es) fail('midway fixture not loaded as saved: ' + JSON.stringify(snap));
-    else step('midway fixture loads intact: ' + JSON.stringify(snap));
-    errors.push(...old.errors);
-    network.push(...old.network);
-    await old.ctx.close();
 
     // A11, A11b: the Brain Teaser puzzle types (bt.<VER>.js), the Game Room (games.<VER>.js) and the data banks (data.<VER>.js) are
     // files of their own, each loaded by a plain <script> over file://, in that order. Check the data globals, open a reading
@@ -264,7 +528,7 @@ async function main() {
     // the Game Room shows Try again instead (with the App log line); with the file back, Try again opens the Game Room.
     // P6-03: bt (the puzzle code) is LAZY too: not loaded at start (lazy: true keeps openApp from loading it), the types are listed
     // from BT.CAT, and the puzzles below load it from the hub. A missing bt file lets the app start; a puzzle shows Try again.
-    {
+    if (seg('A11')) {
       const d = await openApp(browser, { fixture: 'midway', lazy: true });
       const g = await d.page.evaluate(() => {
         const src = [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src'));
@@ -458,171 +722,9 @@ async function main() {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
 
-    // 5. P0-05 error guard: throw inside a round -> friendly "go home" button, error logged, shown in the App log.
-    //    The injected error is the only one allowed; it is removed from the list below, everything else still fails the run.
-    const MARK = 'P0-05 injected test error';
-    await page.evaluate(() => home());
-    await page.click('.game[data-p="math"]');
-    await page.waitForSelector('.node[data-n="0"]');
-    await page.click('.node[data-n="0"]');
-    await page.waitForSelector('#prompt');
-    await page.evaluate(m => setTimeout(() => { throw new Error(m); }, 0), MARK);
-    await page.waitForSelector('#oops', { timeout: 3000 });
-    step('injected error mid-round: friendly button shown');
-    await page.click('#oops');
-    await page.waitForSelector('.game[data-p]');
-    const logged = await page.evaluate(() => (S.err || []).map(e => e.msg));
-    if (!logged.some(m => m.includes(MARK))) fail('injected error not in S.err: ' + JSON.stringify(logged)); else step('recovered to home, error in S.err');
-    await page.evaluate(() => grown());
-    await page.waitForSelector('#applog');
-    const logTxt = await page.evaluate(() => document.querySelector('#applog').textContent);
-    if (!logTxt.includes(MARK)) fail('App log does not show the injected error'); else step('App log shows the injected error');
-    const injected = errors.filter(e => e.includes(MARK));
-    if (injected.length !== 1) fail('expected exactly 1 injected page error, saw ' + injected.length);
-    for (let i = errors.length - 1; i >= 0; i--) if (errors[i].includes(MARK)) errors.splice(i, 1);
-
-    // 6. P5-04 streak: the rounds played above counted today; the flame on Home opens the month grid
-    const stk = await page.evaluate(() => ({ n: (S.streak.days[today()] || 0), best: S.streak.best }));
-    if (stk.n < 1 || stk.best < 1) fail('finished rounds did not count for the streak: ' + JSON.stringify(stk)); else step('streak counted ' + stk.n + ' rounds today');
-    await page.evaluate(() => home());
-    await page.click('#stkb');
-    await page.waitForSelector('.stc-grid');
-    const cal = await page.evaluate(() => ({ on: document.querySelectorAll('.stc-d.on').length, now: document.querySelectorAll('.stc-d.now').length }));
-    if (cal.on < 1 || cal.now !== 1) fail('streak calendar grid wrong: ' + JSON.stringify(cal)); else step('streak calendar opens with today marked and a star on active days');
-    await page.click('#back');
-    await page.waitForSelector('#stkb');
-
-    // 7. number pad: after the second wrong try the slot must show the right answer, not the child's wrong number
-    await page.evaluate(() => home());
-    await page.click('.game[data-p="math"]');
-    // P2-01: node 0 is Tiny Town now; P2-02: a K child's map opens on Shape Garden. Number Meadow's first stop is a number-pad question: open its chip first
-    const meadowW = await page.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_meadow'));
-    const meadow0 = await page.evaluate(() => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_meadow')][0]);
-    await page.waitForSelector('.wchip.on');
-    await page.click(`.wchip[data-w="${meadowW}"]`);
-    await page.waitForSelector(`.node[data-n="${meadow0}"]`);
-    await page.click(`.node[data-n="${meadow0}"]`);
-    let numSeen = false;
-    for (let i = 0; i < 10 && !numSeen; i++) {
-      await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
-      if (await page.evaluate(() => G.q.kind !== 'num')) {
-        await page.evaluate(() => { window.__q = G.q; });
-        await answer(page);
-        await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
-        if (await page.$('#fin')) break;
-        continue;
-      }
-      numSeen = true;
-      const ans = await page.evaluate(() => G.q.ans);
-      const wrong = ans === '9' ? '8' : '9';
-      for (let t = 0; t < 2; t++) {
-        await page.waitForFunction(() => G && !G.lock, null, { timeout: 8000 });
-        await page.click(`.k[data-k="${wrong}"]`);
-        await page.click('.k[data-k="go"]');
-      }
-      await page.waitForTimeout(200);
-      const slot = await page.evaluate(() => document.querySelector('#slot').textContent);
-      if (slot !== ans) fail(`number pad reveal shows "${slot}", expected the answer "${ans}"`);
-      else step('number pad: second wrong try reveals the right answer in the slot');
-    }
-    if (!numSeen) fail('number pad step: no number question in the first math round');
-
-    // 8. content bank: the round hook plays one passage with 5 questions, the passage panel opens, closes and scrolls
-    //    (demo skills are not on a map, so the step adds a node to the read path by hand)
-    await vwait(page, 2800); // TOOL-01: the number-pad reveal above leaves a pending next() (2.6 s); let it fire before leaving the round
-    await page.evaluate(() => home());
-    await page.evaluate(() => {
-      SK.passdemo = { t: 'Passage demo', e: '📗', area: 'read', max: 1, bank: 'demo', gen: lv => genPassage('demo', lv), round: lv => passageRound('passdemo', 'demo', lv) };
-      NODES.read.push({ ...NODES.read[0], sk: 'passdemo', lv: 1 });
-      start('read', NODES.read.length - 1);
-    });
-    await page.waitForSelector('.bctx');
-    const bk = await page.evaluate(() => ({ n: G.n, pool: G.pool.length + 1, open: document.querySelector('.bctx').open, words: document.querySelectorAll('.bctx-p .w').length }));
-    if (bk.n !== 5 || bk.pool !== 5) fail('passage round should have 5 questions: ' + JSON.stringify(bk));
-    if (!bk.open || bk.words < 20) fail('passage panel not open with its words: ' + JSON.stringify(bk));
-    await page.click('.bctx-p .w');
-    await page.click('.bctx-h');
-    const closed = await page.evaluate(() => !document.querySelector('.bctx').open && document.querySelector('.bctx').offsetHeight < 80);
-    if (!closed) fail('passage panel did not close');
-    await page.click('.bctx-h');
-    const text0 = await page.evaluate(() => document.querySelector('.bctx-p').textContent);
-    let asked = 0;
-    for (let guard = 0; guard < 30; guard++) {
-      const state = await page.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
-      if (state === 'fin') break;
-      if (state === 'none') { await page.waitForTimeout(150); continue; }
-      const same = await page.evaluate(t => document.querySelector('.bctx-p').textContent === t, text0);
-      if (!same) fail('passage text changed between questions');
-      await page.evaluate(() => { window.__q = G.q; });
-      await answer(page);
-      asked++;
-      await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
-    }
-    const sc = await page.evaluate(() => G.score);
-    if (asked !== 5 || sc !== 5) fail(`passage round: asked ${asked}, score ${sc}, expected 5 and 5`);
-    else step('passage round: one passage, 5 questions, panel opens and closes, score 5/5');
-    await page.click('#chest', { timeout: 5000 }).catch(() => {});
-    const stars = await page.evaluate(() => getSt('read', NODES.read.length - 1));
-    if (stars !== 3) fail('passage round with 5 of 5 should earn 3 stars, got ' + stars); else step('5 of 5 on a 5-question round earns 3 stars');
-
-    // 9. new kinds B (P1-04): the bot plays a sample of each through the real round engine
-    const KB = require('./lib/kb-samples.js');
-    const kbShow = async name => {
-      await vwait(page, 2800); // the engine's own pending next() from the last sample must fire before a new round starts
-      await page.evaluate(() => home());
-      await page.evaluate(q => { start('math', 0); G.q = q; renderQ(); }, KB[name]);
-    };
-    const kbState = () => page.evaluate(() => ({ lock: G.lock, tries: G.tries, ok: !!document.querySelector('.mt.ok, .tp.right, .ls.ok'), done: G.done }));
-    // match: one wrong pair is a miss and keeps the round going; then every pair right passes
-    await kbShow('match');
-    await page.click('.mb[data-s="L"][data-i="0"]');
-    await page.click('.mb[data-s="R"][data-i="0"]'); // cat with puppy: wrong
-    let st = await kbState();
-    if (st.tries !== 1 || st.lock) fail('match: a wrong pair should count one miss and stay open ' + JSON.stringify(st));
-    for (const [l, r] of [[0, 2], [1, 0], [2, 3], [3, 1]]) {
-      await page.click(`.mb[data-s="L"][data-i="${l}"]`);
-      await page.click(`.mb[data-s="R"][data-i="${r}"]`);
-    }
-    st = await kbState();
-    if (!st.lock || !st.ok || st.done !== 1) fail('match: all pairs right did not pass ' + JSON.stringify(st)); else step('match: wrong pair = miss, then all pairs right passes');
-    // match: two wrong pairs reveal every pair
-    await kbShow('match');
-    for (let t = 0; t < 2; t++) {
-      await page.waitForFunction(() => G && !G.lock, null, { timeout: 4000 });
-      await page.click('.mb[data-s="L"][data-i="0"]');
-      await page.click('.mb[data-s="R"][data-i="0"]');
-    }
-    const shown = await page.evaluate(() => document.querySelectorAll('.mb.done').length);
-    if (shown !== 8) fail('match: second miss should reveal all 8 buttons as paired, got ' + shown); else step('match: second miss reveals the pairs');
-    // tap: wrong tap marks it, right tap passes. TEACH-1 ("old checks check old", as K2OLD): this sample has two words to tap, which now
-    // get one try in Practice; TEACH.off gives the kind's second try this step checks (the one-try rule has its own TEACH-1 step)
-    await page.evaluate(() => { TEACH.off = true; });
-    await kbShow('tapWord');
-    await page.click('.tp[data-v="mat"]');
-    st = await kbState();
-    if (st.tries !== 1 || st.lock) fail('tap: wrong tap should count one miss ' + JSON.stringify(st));
-    await page.click('.tp[data-v="cat"]');
-    st = await kbState();
-    if (!st.lock || !st.ok) fail('tap: right tap did not pass ' + JSON.stringify(st)); else step('tap: wrong tap = miss, right tap passes');
-    await page.evaluate(() => { TEACH.off = false; });
-    // spell: in-app keyboard only; wrong word keeps the right start; es keyboard has the accent row
-    await kbShow('spell');
-    for (const c of 'cut') await page.click(`.sk[data-ch="${c}"]`);
-    await page.waitForFunction(() => G && !G.lock && G.typed === 'c', null, { timeout: 4000 });
-    for (const c of 'at') await page.click(`.sk[data-ch="${c}"]`);
-    st = await kbState();
-    if (!st.lock || !st.ok) fail('spell: cat did not pass ' + JSON.stringify(st));
-    await kbShow('spellEs');
-    for (const c of 'niño') await page.click(`.sk[data-ch="${c}"]`);
-    st = await kbState();
-    if (!st.lock || !st.ok) fail('spell es: niño did not pass ' + JSON.stringify(st)); else step('spell: wrong word keeps its right start; cat and niño (accent key) pass');
-    const kbBox = await page.evaluate(() => { const b = document.querySelector('.sk').getBoundingClientRect(); return b.height; });
-    if (kbBox < 48) fail('spell key shorter than 48 px: ' + kbBox);
-    await page.evaluate(() => home());
-
     // 10. P1-05 long maps: world strip on an old save (opens on the current world, real taps switch worlds), then
     //    map draw time with 16 fake worlds (~150 stops) at 6x CPU throttle must stay under 50 ms
-    {
+    if (seg('P1-05')) {
       const wm = await openApp(browser, { fixture: 'midway' });
       const wp = wm.page;
       await wp.evaluate(() => home());
@@ -688,65 +790,9 @@ async function main() {
       await wm.ctx.close();
     }
 
-    // 11. new kinds A (P1-03): the bot plays every sample question of tools/kinds-samples.js through the real engine at 380x780
-    //    (right answers, 48 px targets, no sideways scroll), then gets three of them wrong twice and checks the reveal
-    // the number-pad step above leaves the old round's 2.6 s next-question timer running; let it fire before the new round starts
-    await page.evaluate(() => home());
-    await vwait(page, 3000);
-    await page.setViewportSize({ width: 380, height: 780 });
-    await page.evaluate(src => { window.__S2 = eval(src)(); }, '(' + require('./kinds-samples').make.toString() + ')');
-    const names = await page.evaluate(() => Object.keys(window.__S2));
-    await page.evaluate(() => { G = newG({ sk: 'zz_demo', mix: true, n: Object.keys(window.__S2).length, pool: Object.values(window.__S2) }); next(); });
-    for (const nm of names) {
-      await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
-      await page.waitForTimeout(500); // let the screen's entrance animation finish before measuring
-      const m = await page.evaluate(() => {
-        const small = [...document.querySelectorAll('.k, .mc, .ot, .os, #mcheck, .ch')].filter(e => e.getBoundingClientRect().height < 47.5 || e.getBoundingClientRect().width < 47.5)
-          .map(e => e.className + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height));
-        return { small, wide: document.documentElement.scrollWidth > window.innerWidth + 1, label: G.q.label };
-      });
-      if (m.small.length) fail(`${m.label}: targets under 48 px: ${m.small.join(', ')}`);
-      if (m.wide) fail(`${m.label}: page scrolls sideways at 380 wide`);
-      await page.evaluate(() => { window.__q = G.q; });
-      await answer(page).catch(async e => { throw new Error(`new kinds: playing "${nm}" failed: ` + String(e.message).split('\n')[0]); });
-      await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
-    }
-    await page.waitForSelector('#chest', { timeout: 5000 });
-    const sc2 = await page.evaluate(() => G.score);
-    if (sc2 !== names.length) fail(`new kinds: bot scored ${sc2}/${names.length}`); else step(`new kinds: ${names.length} sample questions answered right (${names.join(', ')}), targets 48 px, no sideways scroll`);
-
-    // wrong twice: the reveal shows the right answer (num: slot, multi: right boxes, order: slots)
-    const wrongOf = ['dec', 'multi', 'order'];
-    await page.evaluate(w => { G = newG({ sk: 'zz_demo', mix: true, n: w.length, pool: w.map(k => window.__S2[k]) }); next(); }, wrongOf);
-    for (const nm of wrongOf) {
-      await page.evaluate(() => { window.__q = G.q; });
-      for (let t = 0; t < 2; t++) {
-        await page.waitForFunction(() => G && !G.lock, null, { timeout: 8000 });
-        if (nm === 'dec') { await page.click('.k[data-k="9"]'); await page.click('.k[data-k="go"]'); }
-        else if (nm === 'multi') {
-          const i = await page.evaluate(() => G.q.choices.findIndex(c => !G.q.ans.includes(c.v)));
-          await page.click(`.mc[data-i="${i}"]`); await page.click('#mcheck');
-        } else {
-          const order = await page.evaluate(() => G.q.ans.slice().reverse().map(v => G.q.items.findIndex(t => t.v === v)));
-          for (const i of order) await page.click(`.ot[data-i="${i}"]`);
-        }
-      }
-      await page.waitForTimeout(150);
-      const rev = await page.evaluate(() => {
-        const q = G.q;
-        if (q.kind === 'num') return document.querySelector('#slot').textContent === q.ans && document.querySelector('#slot').classList.contains('rev');
-        if (q.kind === 'multi') return [...document.querySelectorAll('.mc.right')].map(b => q.choices[b.dataset.i].v).join() === q.ans.join();
-        return [...document.querySelectorAll('.os')].map(b => b.textContent).join() === q.ans.join();
-      });
-      if (!rev) fail(`new kinds: ${nm} reveal after two wrong tries does not show the right answer`);
-      else step(`new kinds: ${nm} second wrong try reveals the right answer`);
-      await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
-    }
-    await page.evaluate(() => home());
-
     // 12. P1-06 grade pick: setup offers 8 grade buttons (K preselected); Pre-K is picked by a real tap and its round has 6 questions;
     //     Grown-ups changes the grade to 3rd, the last world opens (the Pre-K progress stays) and a round has 10 questions
-    {
+    if (seg('P1-06')) {
       const ga = await openApp(browser, { fixture: 'fresh' });
       const gp = ga.page;
       const gr = await gp.evaluate(() => ({ n: document.querySelectorAll('.gr').length, sel: document.querySelector('.gr.sel').dataset.g,
@@ -791,7 +837,7 @@ async function main() {
 
     // P5-05 activity log: a real round through the UI writes today's entry (rounds, questions, first-try right, seconds per subject)
     // and it is saved to localStorage; a hidden-tab period inside a question adds no seconds
-    {
+    if (seg('P5-05')) {
       const aa = await openApp(browser, { fixture: 'midway' });
       const ap = aa.page;
       await ap.waitForSelector('.game[data-p="math"]');
@@ -816,7 +862,7 @@ async function main() {
     // P1-07 placement quiz at 380x780: a new K child sees the "Find my level" card on Home; quitting after 2 answers changes
     //    nothing; a full run with every answer right (real taps) passes every math world below the last in 20 questions (5 sets; P2-01 Tiny Town, P2-05 Multiply Mountain), shows the result,
     //    saves S.place and the skips, keeps stars and coins, and the map opens on the last world. Grown-ups shows the result.
-    {
+    if (seg('P1-07')) {
       const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const pp = pa.page;
       await pp.fill('#nm', 'Placer');
@@ -891,7 +937,7 @@ async function main() {
     // P1-08 mastery: a fast, all-right first five turns the rest of a round into Challenge questions from the next harder stop
     //     (tag shown); the bot misses every other one once and still gets 3 stars; the stop's mastery record is saved;
     //     a weak first five turns on support: the hint is on screen before the first try
-    {
+    if (seg('P1-08')) {
       const ma = await openApp(browser, { fixture: 'midway' });
       const mp = ma.page;
       const mi = await mp.evaluate(() => {
@@ -959,7 +1005,7 @@ async function main() {
 
     // P5-06 report card at 380x780: Grown-ups has a Report card button (48 px or more); it opens a read-only screen with seven sections,
     // nothing wider than the screen, S unchanged; a brand-new child gets kind empty states; Back returns to Grown-ups
-    {
+    if (seg('P5-06')) {
       const ra = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const rp = ra.page;
       await rp.waitForSelector('.game[data-p="math"]');
@@ -1008,7 +1054,7 @@ async function main() {
     //     (no question html left, stars and coins kept); home still offers Mixed Practice; a stop round asks due items at
     //     questions 2 and 4 with the "Remember this one?" tag and a right answer moves them to box 1, due tomorrow; Tricky Mix
     //     plays 7 rebuilt items and books every one as fixed
-    {
+    if (seg('P5-02')) {
       const ra = await openApp(browser, { fixture: 'tricky' });
       const rp = ra.page;
       const r0 = await rp.evaluate(() => {
@@ -1060,7 +1106,7 @@ async function main() {
     // P5-03 Daily Review at 380x780: the tricky fixture (21 due) shows "Today's review: 21 due" with a Start button of 48 px or more and
     //     nothing wider than the screen; Start plays a 10-question round of due items only (all rebuilt, all booked as fixed); home then says
     //     11 due; with nothing due the card is a kind "All caught up" with no button, and startReview() still plays a normal round
-    {
+    if (seg('P5-03')) {
       const ra = await openApp(browser, { fixture: 'tricky', width: 380, height: 780 });
       const rp = ra.page;
       await rp.waitForSelector('#rev');
@@ -1097,7 +1143,7 @@ async function main() {
 
     // P2-19 spelling: every level has a map stop; a round at 380x780 taps the in-app keyboard (keys 48 px or more); the clue shows a blank,
     //       never the word; the hint gives the letter count; the stop earns stars; stars of old stops do not move
-    {
+    if (seg('P2-19')) {
       const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const sp = sa.page;
       await sp.waitForSelector('.game[data-p="read"]');
@@ -1139,7 +1185,7 @@ async function main() {
     // P2-15 ABC Beach at 380x780: a Pre-K child's reading map opens on abc1 (ABC Beach is the first reading world) and the bot wins the
     //     6-question round by tapping; every new stop (abc 1-4, syl 1-2, sound 3-4) shows a question whose buttons are 48 px or more and
     //     nothing is wider than the screen; a default (K) child is not put in ABC Beach: the reading map opens on Letter Meadow (sound1)
-    {
+    if (seg('P2-15')) {
       const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const pp = pa.page;
       await pp.fill('#nm', 'Beach');
@@ -1196,7 +1242,7 @@ async function main() {
     //    6-question round is finished by tapping pictures only, every prompt is spoken on its own (say() is stubbed and recorded), the
     //    replay button is big, no letters are on screen outside the picture choices; then every Tiny Town stop is opened and answered
     //    once through the real taps (numerals, picture choices, plates) with sizes checked (48 px or more, no sideways scroll)
-    {
+    if (seg('P2-01')) {
       const ta = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const tp = ta.page;
       await tp.fill('#nm', 'Tiny');
@@ -1268,7 +1314,7 @@ async function main() {
     // P2-05 Multiply Mountain at 380x780: a 3rd grader opens the last math world from the strip, plays Arrays and the first
     //    times-facts stop with real taps (every answer right), nothing is wider than the screen; the Fact Sprint then lists
     //    the Times facts set and a 20-facts sprint of it is played to the end.
-    {
+    if (seg('P2-05')) {
       const ma5 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const mp = ma5.page;
       await mp.evaluate(() => { S.grade = 3; save(); });
@@ -1328,7 +1374,7 @@ async function main() {
     // P2-06 Fraction Forest at 380x780: a 3rd grader opens the world from the strip (found by id, 4 stops + boss), plays all four
     //    stops with real taps and the number pad (frac 2 to 5, every answer right); nothing is wider than the screen, the number pad
     //    and every choice or tap target is at least 48 px, and a fraction question shows a stacked fraction.
-    {
+    if (seg('P2-06')) {
       const fr6 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fp = fr6.page;
       await fp.evaluate(() => { S.grade = 3; S.unlockAll = true; save(); }); // P2-07 put twelve stops between these four
@@ -1372,7 +1418,7 @@ async function main() {
     // P2-18 Phonics 1st-2nd at 380x780: a 2nd grader who finished Ocean Reef opens Space Station and plays sight 4 and the two
     //    r-controlled stops, then (with Space Station done) Word Workshop and its sight 5 and two vowel-team stops, with real taps.
     //    Every answer is right, nothing is wider than the screen, and each stop saves its stars.
-    {
+    if (seg('P2-18')) {
       const ph = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pp = ph.page;
       await pp.evaluate(() => {
@@ -1415,7 +1461,7 @@ async function main() {
     //    8-question round of the first stop is played by taps with every prompt spoken on its own, then each of the 14 stops is opened and
     //    answered once through the real taps with all text hidden (html.notext): nothing to read in the prompt, every touch target 48 px
     //    or more, nothing wider than the screen, a Help picture on each; the boss and the three new skills are on the map.
-    {
+    if (seg('P2-02')) {
       const sg = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const sp = sg.page;
       await sp.fill('#nm', 'Garden');
@@ -1492,7 +1538,7 @@ async function main() {
     // P2-03 Clock Tower at 380x780: a 1st grader who has finished Candy Canyon opens on Clock Tower (between Candy Canyon and Ocean Reef),
     //    plays the first round with real taps, then every stop is opened and three questions of it answered by taps (numerals, picture
     //    choices, picture graphs, shapes, cut circles); sizes checked (48 px or more, no sideways scroll). Time stops draw the VIZ clock.
-    {
+    if (seg('P2-03')) {
       const ca = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const cp = ca.page;
       await cp.fill('#nm', 'Tower');
@@ -1559,7 +1605,7 @@ async function main() {
     //    and toy, tapping it shows the cheer face; Pet Care shows the hungry mood and the bath the oops face; the map pet and
     //    the round runner are drawn, a right answer shows the cheer face; the growth overlay; super stage; reduced motion
     //    and calm stop the loops; a dino child still sees exactly today's emoji pet; setup offers the drawn dragon.
-    {
+    if (seg('P4-05')) {
       const pr = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pp = pr.page;
       const opa = sel => pp.evaluate(s => { const e = document.querySelector(s); return e ? +getComputedStyle(e).opacity : -1; }, sel);
@@ -1673,7 +1719,7 @@ async function main() {
     // P2-04 Treasure Bay at 380x780: a 2nd grader who has finished Space Station opens on Treasure Bay (between Space Station and
     //    Multiply Mountain) at pv2, plays the first round with real taps, then all 13 stops are opened and three questions of each
     //    answered by taps (base-ten pictures, clocks, money, rulers, bar graphs, arrays); sizes checked (48 px or more, no sideways scroll).
-    {
+    if (seg('P2-04')) {
       const ba = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const bp = ba.page;
       await bp.fill('#nm', 'Bay');
@@ -1740,7 +1786,7 @@ async function main() {
     //    over two lines and every button 48 px or more. A low score gets the pet, "Try again" and the "Get N right" tip.
     //    The boss intro, top bar (hit face on a zap) and win card are drawn; the prize is saved and worn. Growth overlay,
     //    test out card, and calm mode hiding the confetti.
-    {
+    if (seg('P4-11')) {
       const ra = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const rp = ra.page;
       const layout = () => rp.evaluate(() => {
@@ -1852,7 +1898,7 @@ async function main() {
 
     // P4-03 icons at 380x780 (midway): Grown-ups, Pet Shop, Stickers and the Game Room menu show ico() icons instead of emoji;
     //    every icon points at a sprite symbol and is drawn (not 0 x 0); the shop tabs and the back buttons still work.
-    {
+    if (seg('P4-03')) {
       const ia = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const ip = ia.page;
       // P6-02: the games parts load on demand; look() calls gameRoom() and reads the screen at once, so load them first, as the app does
@@ -1894,7 +1940,7 @@ async function main() {
     //    with a streak, review items due and a hungry pet (tricky save): no sideways scroll, nothing overflows its box, no word
     //    broken over two lines, every target at least 48 px, no emoji in the chrome, scene and pictures drawn. Then (380x780)
     //    every Home button still opens its screen, the thought bubble and the Pet Care badge show, and calm stops the bubble.
-    {
+    if (seg('P4-08')) {
       const hmSet = ([kind]) => {
         if (kind == 'fresh') { S.name = 'Ava'; setGrade(1); }
         if (kind == 'tricky') {
@@ -2008,7 +2054,7 @@ async function main() {
     //    spell, build) and a Pre-K question; every target at least 48 px (pad keys at least 56, spell keys 48 tall), nothing
     //    sticks out sideways, no word broken over two lines, the track has one dot per question; then right and wrong
     //    feedback: a green tick badge and a toast, an amber cross badge and a "try again" toast; calm mode stops the motion.
-    {
+    if (seg('P4-10')) {
       const KB10 = require('./lib/kb-samples.js'), KS10 = '(' + require('./kinds-samples').make.toString() + ')';
       // lay out one question and measure it (runs in the page)
       const measure = () => {
@@ -2112,7 +2158,7 @@ async function main() {
     //    than the screen, number pad keys and choices are 48 px or more, the picture stops show a picture, and every stop saves
     //    its stars. Then a forest that was finished before (four fraction stops + boss) shows NEW on all twelve, and the map
     //    does not open on one of them (this child still has an older stop open).
-    {
+    if (seg('P2-07')) {
       const ff7 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fq = ff7.page;
       await fq.evaluate(() => { S.grade = 3; for (const id of ['frac2', 'frac3', 'frac4', 'frac5']) S.maps.math[id] = 3; save(); });
@@ -2160,7 +2206,7 @@ async function main() {
     // P2-20 grammar 1-5: every level has a map stop in its world (by id); at 380x780 each level's question fits (no sideways scroll, answer
     //       buttons at least 48 px, tap-a-word buttons too); the hint teaches without the answer; one full round earns stars and
     //       no other stop's stars move
-    {
+    if (seg('P2-20')) {
       const ga = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const gp = ga.page;
       await gp.waitForSelector('.game[data-p="read"]');
@@ -2207,7 +2253,7 @@ async function main() {
 
     // P2-22 vocabulary A: five stops on the reading map; a round of the opposites level and a look at the compound-word and prefix layouts
     //       at 380x780 (choice buttons 48 px or more, no sideways scroll); the stop earns stars; stars of other stops do not move
-    {
+    if (seg('P2-22')) {
       const va = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const vp = va.page;
       await vp.waitForSelector('.game[data-p="read"]');
@@ -2253,7 +2299,7 @@ async function main() {
     //    question and result; Pet Care; Game Room; setup; the balloon bonus; the Spanish learn cards; the report card) have every
     //    button at least 48 px, nothing outside the screen, no sideways scroll, no word broken over two lines and no emoji in
     //    their chrome (pets, balloons, snack and word pictures are content and not counted).
-    {
+    if (seg('P4-18')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         const SKIP = '.petbig, .pet-svg, .gx-pp, .bal, .gx-sp, .stage, .lp, .mappet, .sdeco, .rw-burst, .burst';
@@ -2336,7 +2382,7 @@ async function main() {
     // P2-25 Comprehension at 380x780: a 2nd grader who has done every Word Workshop stop before the new two opens the map on Read a Story
     //    (comp 3), plays a round of two stories (10 questions, passage panel above each, hint quotes the story), then Learn About It
     //    (info 1), with real taps. Stars are saved under comp3 and info1 and the old stops keep theirs.
-    {
+    if (seg('P2-25')) {
       const cp25 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = cp25.page;
       await pg.evaluate(() => {
@@ -2391,7 +2437,7 @@ async function main() {
 
     // P2-24 Sentences (sent 3-5) at 380x780: the three new stops sit where CURRICULUM puts them, a 2nd grader plays each round with real
     //    taps (word tiles into slots, the gap word, a picture sentence, story sentences), sizes checked (48 px or more, no sideways scroll).
-    {
+    if (seg('P2-24')) {
       const sa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const sp = sa.page;
       await sp.fill('#nm', 'Sent');
@@ -2470,7 +2516,7 @@ async function main() {
     // P2-21 grammar 6-9: stops by world id (gram 6-7 Dragon Library, 8 Author Island, 9 Legend Lab); at 380x780 each level's question fits (no
     //       sideways scroll, answer buttons at least 48 px, tap-a-word buttons too, quoted sentences not cut); hints teach without the answer;
     //       one full round of level 7 earns stars and no other stop's stars move
-    {
+    if (seg('P2-21')) {
       const gb = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const gq = gb.page;
       await gq.waitForSelector('.game[data-p="read"]');
@@ -2526,7 +2572,7 @@ async function main() {
 
     // P2-23 vocabulary B: five more stops (Dragon Library, Author Island, Legend Lab); each level's longest prompt and longest choices fit at
     //       380x780 (choices 48 px or more, no sideways scroll, nothing cut off); a 10/10 round of context clues saves stars
-    {
+    if (seg('P2-23')) {
       const vb = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const bp = vb.page;
       await bp.waitForSelector('.game[data-p="read"]');
@@ -2582,7 +2628,7 @@ async function main() {
     //    1- and 2-digit divisors, equivalent fractions, a common bottom, text steps). Each tap on Help shows the next step (the
     //    pips move, the button reads "Next step" until the last step, then "Help"), the last step asks with a "?", the card never
     //    overflows, nothing scrolls sideways, the buttons stay 48 px; a wrong answer keeps the step on show.
-    {
+    if (seg('P2-08')) {
       const CASES8 = [
         ['big5', null],
         ['add6', "stepQ(ST.vert(['487265','358947'],'+'),'846212',stepsAdd(487265,358947),{max:7})"],
@@ -2665,7 +2711,7 @@ async function main() {
 
     // P2-27 4th grade passages at 380x780: a 4th grader who has done everything before Longer Stories plays comp 5 and info 3 with real taps.
     //    The longer passages (130-180 words) must leave the question line and the choices visible beside the open panel; 10/10 saves stars.
-    {
+    if (seg('P2-27')) {
       const cp27 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = cp27.page;
       await pg.evaluate(() => {
@@ -2709,7 +2755,7 @@ async function main() {
     // P2-29 6th grade passages at 380x780: a 6th grader who has done every other stop opens Legend Lab on its two new stops (comp 7, info 5),
     //    230-300 word passages in the panel: on every one of the 10 questions the question line is visible with the panel open, the four
     //    choices are at least 48 px, nothing scrolls sideways; a 10/10 round saves stars. Shots story6-comp and story6-info are the ones to look at.
-    {
+    if (seg('P2-29')) {
       const cp29 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = cp29.page;
       await pg.evaluate(() => {
@@ -2756,7 +2802,7 @@ async function main() {
     // P2-09 Factor Factory at 380x780: a 4th grader finds the world, every stop's first question fits (no sideways scroll,
     //    number keys, choices and tick boxes at least 48 px), eight stops are played with real taps (stars saved), and the
     //    step hints of the multiplication and long division stops are tapped through (one step per tap, the last step asks).
-    {
+    if (seg('P2-09')) {
       const fa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fp = fa.page;
       await k2Old(fp); // KINDS2-D: mbig, dbig, sub and big mix in find the mistake; this checks each stop's pad layout and step hints
@@ -2829,7 +2875,7 @@ async function main() {
     // P2-26 Story Summit comprehension at 380x780: a 3rd grader who has done every Story Summit stop but the new two opens Read a Story 3
     //    (comp 4), then Learn About It 2 (info 2). The longer passages (up to ~120 words) must leave the question line and the four
     //    choices on screen with the passage panel open; targets 48 px; no sideways scroll; a 10/10 round saves stars under comp4 and info2.
-    {
+    if (seg('P2-26')) {
       const cp26 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = cp26.page;
       await pg.evaluate(() => {
@@ -2891,7 +2937,7 @@ async function main() {
 
     // P2-28 5th grade passages at 380x780: comp 6 and info 4 at the end of Author Island. For each stop the question line is on screen
     //    together with the open passage panel, the four choices are at least 48 px, nothing scrolls sideways, and a 10/10 round saves stars.
-    {
+    if (seg('P2-28')) {
       const cp28 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = cp28.page;
       await pg.evaluate(() => {
@@ -2948,7 +2994,7 @@ async function main() {
     // P2-10 Decimal Desert at 380x780: a 4th grader opens the math map on the desert (no unlock switch), plays Unlike Fractions with
     //    real taps (a step hint inside), then jumps through the other stops: an angle, a decimal, a fraction pad and the rest each show
     //    their picture, keys and choices are 48 px or more, nothing is wider than the screen, and the stars are saved.
-    {
+    if (seg('P2-10')) {
       const dd = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const dp = dd.page;
       await k2Old(dp); // KINDS2: dec 2 and ang 1 mix in sort questions; this checks each stop's pad, choices, picture and step hint
@@ -3051,7 +3097,7 @@ async function main() {
     //    hub (Puzzle of the Day, type card) -> level strip (locked levels, band chips) -> play (hint tiers with a cooldown, saved
     //    state, restart sheet) -> back and Keep going resumes exactly -> win card pays stars and game time -> Next level -> Home.
     //    Every button 48 px, no sideways scroll, no emoji in the chrome, nothing outside the screen.
-    {
+    if (seg('P3-01')) {
       const fake = require('./lib/bt-fake');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -3180,7 +3226,7 @@ async function main() {
     // P2-11 Volcano Lab at 380x780: a 5th grader finds the world (9 stops), every stop's first question fits (no sideways scroll, number keys
     //    including the decimal point and choices at least 48 px), seven stops are played with real taps (decimal answers typed on the pad, stars
     //    saved), and the step hints of the decimal multiply, decimal divide and 3 x 2 digit stops are tapped through.
-    {
+    if (seg('P2-11')) {
       const vo = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const vp = vo.page;
       await k2Old(vp); // KINDS2-D: dec 3-4, mbig 5, ooo 1 mix in find the mistake; this checks the pads (decimals typed) and step hints
@@ -3267,7 +3313,7 @@ async function main() {
     //    Patterns -> level 1 -> a wrong tap (amber, stays out, a mistake saved) -> hint tiers 1, 2 (words) and 3 (two choices go)
     //    with the cooldown -> every item answered by tapping -> win card (1 star after 3 hints) -> stars saved, level 2 open.
     //    Every button 48 px (choices 64), no sideways scroll, nothing outside the screen, no emoji in the chrome.
-    {
+    if (seg('P3-09')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('button, [role="button"]')) {
@@ -3365,7 +3411,7 @@ async function main() {
     //    and shows the guess), hint tiers 1 and 2 (they point and explain but fill nothing), back and Keep going resumes exactly,
     //    the rest of solve() tapped in -> win card -> stars saved. At 380x780 also band A (grade 0): a balance with one picture.
     //    Every button 48 px, no sideways scroll, no emoji in the chrome, nothing outside the screen.
-    {
+    if (seg('P3-10')) {
       const taps = require('./lib/bt-num');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -3489,7 +3535,7 @@ async function main() {
     //    trail and the arrow pad, then the rest of the route -> win card, stars saved. At 1024x600 also band D level 12 (18x18):
     //    a door stops the bear without its key, the full route wins with 3 stars, and the drawing of the board is timed at 6x throttle.
     //    Every button 48 px, no sideways scroll, no emoji in the chrome.
-    {
+    if (seg('P3-08')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('button, [role="button"]')) {
@@ -3696,7 +3742,7 @@ async function main() {
     //    step hint and Coordinate Grid and Volume of a Box as full rounds of real taps (a point tapped on the grid, an (x, y) typed into
     //    two boxes), then jumps through the other stops. Every question measured: 48 px keys and choices, nothing wider than the screen,
     //    no word cut off by the card or a button, the picture where there should be one; and the stars are saved.
-    {
+    if (seg('P2-12')) {
       const cc = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const cp = cc.page;
       await cp.fill('#nm', 'Caves');
@@ -3832,7 +3878,7 @@ async function main() {
     //    the yellow ball and a dotted guide); a palm resting on the board while a stroke is traced is ignored (touch); every glyph is
     //    traced through its three passes, the round of 5 completes with 5/5 and the stop gets its stars. Targets 48 px or more, the
     //    board at least 240 px, no sideways scroll.
-    {
+    if (seg('P2-16')) {
       for (const [w, h, grade, touch] of [[380, 780, -1, true], [1024, 600, 0, false]]) {
         const tag = 'P2-16 ' + w + 'x' + h;
         const tr = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -3952,7 +3998,7 @@ async function main() {
     // P4-06 dino, bird and sea pal on the rig, at 380x780 from a fresh save: for each pet, pick it at setup -> Home shows the drawn
     //    egg; then at a later stage Home, Pet Care, the map pet and a round's runner (cheer face after a right answer) all show the
     //    drawn pet (pet-k-<kind>), never the emoji; nothing sticks out sideways; no console errors.
-    {
+    if (seg('P4-06')) {
       const pz = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const pg = pz.page, bad = [], seen = [];
       const PICT = '\\p{Extended_Pictographic}';
@@ -4007,7 +4053,7 @@ async function main() {
     //    The 9x9 also: Undo takes the clash away, Notes put a pencil mark in. Then a 9x9 at 380x780 (the zoom box: board squares 36 px
     //    or more, zoom squares 48 px, a zoom tap picks the square) and band A (animals on the pad, a wrong animal bounces, win).
     //    48 px targets (board squares of a zoomed 9x9: 36 px on a phone, 44 on a tablet, BRAIN_TEASERS 8), no sideways scroll, no emoji chrome.
-    {
+    if (seg('P3-03')) {
       const taps = require('./lib/bt-sud');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -4163,7 +4209,7 @@ async function main() {
     //    a tapped number on the line, three numbers put in order, numbers typed with the +/- key), and jumps through the other stops (a match
     //    of fractions and percents, divided fractions). Every question measured: 48 px keys, choices, tiles and tap targets, nothing wider than the
     //    screen, no word cut off, and with a step hint open the question stays in view; and the stars are saved.
-    {
+    if (seg('P2-13')) {
       const sc = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const sp = sc.page;
       await sp.fill('#nm', 'Sky');
@@ -4339,7 +4385,7 @@ async function main() {
     //    nothing is filled), a right move, back and Keep going resumes exactly, the rest tapped in, win card, 1 star (two hints) saved.
     //    The same 6x6 again at 380x780: the phone keeps 48 px squares with no zoom box.
     //    48 px targets everywhere (board squares too), cage labels at least 14 px, no sideways scroll, the puzzle fits, no emoji chrome.
-    {
+    if (seg('P3-05')) {
       const taps = require('./lib/bt-md');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -4486,7 +4532,7 @@ async function main() {
     //    data at 380x780 by a Pre-K child: the round is fixed to a, i (a dot to tap), g (a tail below the base), k, y (a tail).
     //    Both tracing stops show the reading colour on the map, the round's chrome is the reading colour, every glyph is traced
     //    through its three passes, the round completes 5/5 and the stop is saved with 3 stars.
-    {
+    if (seg('P2-17')) {
       const tag = 'P2-17 380x780';
       const tl = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const pg = tl.page, bad = [];
@@ -4556,7 +4602,7 @@ async function main() {
     // P2-36 Discover: Home -> the Discover card -> the map (Nature Trail) -> a round of Living Things played with real taps, at 380x780 and
     //       1024x600. The stop earns stars under its own id, nothing on the other paths moves, the next stop opens; every question seen has
     //       buttons of 48 px or more, no sideways scroll and no cut-off words.
-    {
+    if (seg('P2-36')) {
       for (const [dw, dh] of [[380, 780], [1024, 600]]) {
         const da = await openApp(browser, { fixture: 'midway', width: dw, height: dh });
         const dp = da.page, tag = `Discover ${dw}x${dh}`;
@@ -4614,7 +4660,7 @@ async function main() {
     //    in --try-ink, never red) and is not counted; Check counts it; Undo takes it away. Hint tiers 1 and 2 point and explain and
     //    change nothing; back and Keep going resumes exactly; the rest tapped in; the win card shows the answer in words; stars saved.
     //    48 px targets (grid squares 44 px, BRAIN_TEASERS 8), no sideways scroll, the page does not scroll, no emoji outside pictures.
-    {
+    if (seg('P3-07')) {
       const taps = require('./lib/bt-lg');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -4749,7 +4795,7 @@ async function main() {
     //    (expressions with two letters, area of a triangle, a parallelogram and a trapezoid, GCF and LCM stories, mean, median, a line plot, percent
     //    and ratio stories). Every question measured: 48 px keys, choices, tiles and tap targets, nothing wider than the screen, no word cut off,
     //    and with a step hint open the question stays in view; and the stars are saved.
-    {
+    if (seg('P2-14')) {
       const gc = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const gp = gc.page;
       await gp.fill('#nm', 'Gala');
@@ -4908,7 +4954,7 @@ async function main() {
     //       then (the stops before it counted as done) the geography stop States & Capitals and, in Nature Trail, the civics stop Our Community, all with
     //       real taps. Stars save under each stop's own id, nothing on the other paths moves, every question has 48 px choices, no sideways scroll,
     //       no cut-off words.
-    {
+    if (seg('P2-37')) {
       const da = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const dp = da.page, tag = 'Discover 4th grade';
       await k2Old(dp); // KINDS2: every Discover stop mixes in sort, match and order; this checks the choice layout of every question
@@ -4986,7 +5032,7 @@ async function main() {
     //    replayed, hint 1 (slower replay) and hint 2 (the next pad ringed), every round copied, win card.
     //    1024x600: Memory band D (a 5th grader), 20 cards, a mismatch, every pair tapped, 3 stars. Every screen: 48 px targets (pads
     //    64), nothing outside, no sideways scroll, no emoji outside the content pictures.
-    {
+    if (seg('P3-14')) {
       const P = require('./lib/bt-p314');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -5187,7 +5233,7 @@ async function main() {
     for (const e of errors) fail(e);
     // P2-30 Spanish framework at 380x780: level 3 (hear it, spell it) typed with the accent key, and the no-Spanish-voice path (the word shown big,
     //    a one-time grown-up note, no speaker buttons): 48 px keys and choices, nothing wider than the screen. Uses the fake unit es_tst (tools/lib/es-fx.js).
-    {
+    if (seg('P2-30')) {
       const ES_FX = require('./lib/es-fx.js');
       const ex = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const ep = ex.page;
@@ -5245,7 +5291,7 @@ async function main() {
     // P2-31 La Casa at 380x780: a child who finished Gran Repaso opens the Spanish map on La Casa, plays a level 1 (listen) round of House with real taps, a level 3
     //    (spell, accent key forced: lápiz, baño) round, and a level 1 round again with no Spanish voice (the word shown big, no speaker). Stars saved, every key and choice
     //    at least 48 px, nothing wider than the screen. Shots: es-casa-* (tools/shots.js).
-    {
+    if (seg('P2-31')) {
       const cx = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const cp = cx.page;
       await k2Old(cp); // KINDS2: a review question in these rounds can come from a stop that mixes in sort (Gran Repaso es_mix 2); every question is checked as a choice
@@ -5319,7 +5365,7 @@ async function main() {
 
     // P2-32 El Tiempo at 380x780: the world is on the Spanish map; a round of days (listen) and a round of big numbers (read the numeral) are
     //    played with real taps; stars are saved under the stop id; choices are 48 px; nothing wider than the screen.
-    {
+    if (seg('P2-32')) {
       const ES_FX2 = require('./lib/es-fx.js');
       const et = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const tp = et.page;
@@ -5348,7 +5394,7 @@ async function main() {
 
     // P2-33 La Ciudad at 380x780: open the world from the Spanish map by id, play a verbs round (es_verb 1) and an adjectives round (es_adj 2)
     //    with real taps; stars saved, choices and the speaker 48 px or more, nothing wider than the screen.
-    {
+    if (seg('P2-33')) {
       const cx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const cp = cx.page;
       await cp.evaluate(() => { S.unlockAll = true; save(); });
@@ -5387,7 +5433,7 @@ async function main() {
     //    slot. Also: a drag back to the tray, a piece dropped turned wrong gets the amber ring and Undo takes it back (mouse), hint tiers
     //    1-3 (1 and 2 move nothing, 3 places one), back and Keep going resume the same state, the win card, 1 star (3 hints) saved.
     //    Every screen: buttons and tray cells 48 px, the smallest piece on the board catchable at 48 px, no sideways scroll, no emoji.
-    {
+    if (seg('P3-11')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('button, [role="button"]')) {
@@ -5569,7 +5615,7 @@ async function main() {
     //    right block faintly (the program does not change), tier 3 puts one right block in; back to the levels and the hub, Keep going
     //    resumes exactly; the rest of solve() tapped in, Go, the robot reaches the flag, win card, 1 star (three hints) saved.
     //    Every screen: 48 px targets, nothing outside the screen, no sideways scroll, the puzzle fits without scrolling, no emoji chrome.
-    {
+    if (seg('P3-13')) {
       const taps = require('./lib/bt-rb');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -5713,7 +5759,7 @@ async function main() {
     //    1024x600 (a 5th grader, band D): Turn It: the mirror image tapped ("flipped"), hints 1-2 (the four turns), every shape, 1 star;
     //    Cubes and Mirror played straight through, 3 stars each. Every screen: 48 px targets (grid squares 44, BRAIN_TEASERS 8),
     //    nothing outside the screen, no sideways scroll, the puzzle does not scroll, no emoji chrome.
-    {
+    if (seg('P3-16')) {
       const P = require('./lib/bt-p316');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -5888,7 +5934,7 @@ async function main() {
     //    opens from the hub, the same level left three times offers the band below. Then the badges view and Home at 1024x600, and
     //    every registered type's play top bar at 380x780 in bands C and D with the timer at 59:59: the whole name shows, beside the
     //    timer, in at most two lines. 48 px targets, no sideways scroll, no emoji chrome.
-    {
+    if (seg('P3-17')) {
       const fake = require('./lib/bt-fake');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -6051,7 +6097,7 @@ async function main() {
     //    every piece picked, turned (taps on touch, the Turn button on the mouse) and flipped (Flip, band D), dragged onto its slot with
     //    a miss the snap corrects, one by tap-then-tap (touch), a drag back to the tray, hint tiers 1-3, the win card, 1 star saved.
     //    Every screen: buttons and tray cells 48 px, no sideways scroll, nothing outside the screen, no emoji chrome.
-    {
+    if (seg('P3-12')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('button, [role="button"]')) {
@@ -6250,7 +6296,7 @@ async function main() {
     //    box), every word tapped in, win, 1 star. 1024x600 by mouse: Word Search band D (9 x 9, backwards words) dragged through, and
     //    Unscramble band B (pictures) tapped through, 3 stars each. Every screen: 48 px targets (grid squares 44), found words struck
     //    through (not colour alone), nothing outside the screen, no sideways scroll, the puzzle does not scroll, no emoji chrome.
-    {
+    if (seg('P3-15')) {
       const P = require('./lib/bt-p315');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -6424,7 +6470,7 @@ async function main() {
 
     // P2-34 Las Frases at 380x780: open the world from the Spanish map by id, play an articles round (es_art 1, choices) and a sentence round
     //    (es_sent 1, word tiles) with real taps; stars saved under the stop id, choices and tiles 48 px or more, nothing wider than the screen.
-    {
+    if (seg('P2-34')) {
       const fx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fp = fx.page;
       await fp.evaluate(() => { S.unlockAll = true; save(); });
@@ -6465,7 +6511,7 @@ async function main() {
     //    coins go down by the price, the item is owned and on, and Home and Pet Care show the drawn item on the pet; then the same with
     //    a toy for a second pet. Not enough coins says so and opens no sheet. Then the sticker book (pages, die-cut stickers, Puzzle
     //    badges kept). Every screen: 48 px targets, no sideways scroll, no emoji chrome (sticker pictures are content).
-    {
+    if (seg('P4-07')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('button, [role="button"]')) {
@@ -6569,7 +6615,7 @@ async function main() {
     // STK-2: the sticker book and the doubles swap at 380x780 and 600x960, with real taps. A save with doubles: the book shows "Page 1 of 4",
     //    a count that fits, and Swap doubles; Swap opens the missing stickers, a tap picks one, Swap gives it and takes two doubles
     //    (no sticker lost); 48 px targets, no sideways scroll, no emoji chrome. Screenshots: tools/out/stickers/.
-    {
+    if (seg('STK-2')) {
       const bad = [];
       const dir = require('path').join(__dirname, 'out', 'stickers');
       require('fs').mkdirSync(dir, { recursive: true });
@@ -6639,7 +6685,7 @@ async function main() {
     // scene (one SVG the size of the band, aria-hidden, no taps), drawn behind the map: with the scenes made hit-testable for the
     // check, the point at every stop's centre is the stop, at its label the label, at the title the title and at the Test out
     // banner the banner; the trail has its stones, nothing scrolls sideways. (The draw time check is step 10.)
-    {
+    if (seg('P4-09')) {
       const bad = [];
       let worlds = 0, stops = 0;
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -6707,7 +6753,7 @@ async function main() {
     //    by holding the gear, every section looked at (App log opened, a segmented row, a switch, a field, Erase armed only, report card
     //    with its online note), Pet Care feed, bath and play with drawn sparkles (none with reduced motion or calm mode). Every screen:
     //    targets at least 48 px, nothing wider than the screen, no emoji in the chrome (pets and snack pictures are content).
-    {
+    if (seg('P4-12')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('#app button, #app summary, #app label.switch, #app .fld')) {
@@ -6850,7 +6896,7 @@ async function main() {
     //    is shut and how much is saved; once the minute is done the time shows, a game runs the time out ("Game time's up!"), and the Game
     //    Room says there is none left and why. Then the Grown-ups Game time card: learn-first row, today's learning, the open-today switch,
     //    every control a real tap with 48 px targets and no sideways scroll.
-    {
+    if (seg('P5-09')) {
       const bad = [];
       const look = (root) => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -6969,7 +7015,7 @@ async function main() {
     //    round engine (start, a seeded question in G.q, renderQ): counting balloons, a picture word, Spanish animals and food (drawings as the
     //    picture and as the answer choices). Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no
     //    sideways scroll.
-    {
+    if (seg('P4-14')) {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = app.page, bad = [], notes = [];
       await k2Old(pg); // KINDS2: pic 4 mixes in sort questions; the picture word is checked as its choice question
@@ -7019,7 +7065,7 @@ async function main() {
     // P2-35 Los Cuentos at 380x780: open the world from the Spanish map by id, play a level 1 round (English questions) with real taps: the dialogue panel
     //    sits above every question with a speak button per line (48 px), the question and its choices stay on screen; stars saved under the stop id.
     //    Then a level 2 question (picture answers) and a level 3 question with no Spanish voice: the buttons go, the lines stay, a tap still answers.
-    {
+    if (seg('P2-35')) {
       const ES_FX = require('./lib/es-fx.js');
       const cx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const cp = cx.page;
@@ -7098,7 +7144,7 @@ async function main() {
     //    the clock runs again -> Pause -> Quit goes back to the game's first screen -> Back goes back to the hub. Then each game's
     //    time-up card and a real Hill Climb end card (the shared .gh-end) with Garage tapped. Every screen, the sheet and the cards:
     //    the shared chrome's buttons at least 48 px, no sideways scroll, no emoji in the shared chrome.
-    {
+    if (seg('P4-16')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('.gh-room button, .gh-top button, .sheet button, .gh-end button')) {
@@ -7226,7 +7272,7 @@ async function main() {
     //    (a round, a Fact Race, a puzzle, Hill Climb, game time up) has Play again / Next / Home in that order (Next only where something
     //    comes next). Grown-ups: a tap asks a times-table question (a wrong answer keeps it shut, the right one opens it); holding 1 s does
     //    not open it, holding 3 s does, with the ring filling.
-    {
+    if (seg('NAV-01')) {
       const bad = [];
       let checks = 0, nAsk = 0;
       for (const [w, h] of [[360, 740], [800, 1280]]) {
@@ -7476,7 +7522,7 @@ async function main() {
     //    clock stopped after each race. Buttons 48 px or more, no sideways scroll. At 1024x600 also the frame time while racing (Windmill
     //    Hill, with its tunnel) under 6x CPU throttle: the median frame at most 34 ms; a busy machine is measured again, up to 3 more
     //    times, and the best pass counts, like the map-draw budget.
-    {
+    if (seg('G-02')) {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -7663,7 +7709,7 @@ async function main() {
     //    faster: the bonus line, sparkles + 25, the date saved, a buzz at the finish (navigator.vibrate seen) -> the menu says "Done
     //    today" -> the garage: level 2 locked (a touch on a kit buys nothing) -> after a mirror cup is raced (save), a kit bought by touch
     //    and on the car. Buttons 48 px or more, no sideways scroll.
-    {
+    if (seg('G-RALLY2')) {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -7811,7 +7857,7 @@ async function main() {
     //    first checkpoint (the car set on its roof by a test hook) starts again at that checkpoint with "Flipped" -> at 1024x600 the
     //    frame time while driving Log Bridges in the rain under 6x CPU throttle, after 2 s to settle its pixel scale (median at most 34 ms; a busy machine measures again,
     //    up to 3 more times). Every screen: 48 px buttons, 64 px pedals, no sideways scroll, the distance and fuel readable.
-    {
+    if (seg('G-HC2')) {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -7976,7 +8022,7 @@ async function main() {
     //    first time today) -> the tank runs dry (test hook) -> the end card says today's drive is done -> Menu: the card shows done -> with 30 stars
     //    (test hook) the garage's level 2 is open: touch Gold rims to buy and use them -> at 6x CPU throttle the drive keeps game speed
     //    (simulated seconds per real second at least 0.85: a slow frame runs more fixed steps, no slow motion).
-    {
+    if (seg('G-HC3')) {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -8087,7 +8133,7 @@ async function main() {
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
     //    round engine (start, a seeded question in G.q, renderQ): a picture word (vowel teams), Spanish house (drawings as the answer
     //    choices), weather and places. Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no sideways scroll.
-    {
+    if (seg('P4-15')) {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = app.page, bad = [], notes = [];
       await k2Old(pg); // KINDS2: pic 4 mixes in sort questions; the picture word is checked as its choice question
@@ -8140,7 +8186,7 @@ async function main() {
     //    tools/lib/bt-fake.js) and each is finished with real taps from its Home row: its sticker is paid once ("Mission done" shows once), the
     //    row turns into a tick, and after the third the bonus (5 stars, 5 coins, a sticker) is paid once. At 1024x600 the natural draw is
     //    used and every row opens the thing it names (round, sprint, puzzle, review or mix).
-    {
+    if (seg('P5-08')) {
       const fake = require('./lib/bt-fake');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -8313,7 +8359,7 @@ async function main() {
     //    Grown-ups. Every tap is answered within 100 ms (its handlers run and the next frame is drawn); nothing shifts the layout while
     //    the effects play (right answer, boss hit, reward reveal, pet tap, snack, buy); no sideways scroll at any moment; with reduced
     //    motion and in calm mode no particle shows; no console errors.
-    {
+    if (seg('P4-17')) {
       const watch = () => {
         const rn = window.__realNow || performance.now.bind(performance);
         const m = window.__mo = { taps: [], ls: [], side: [] };
@@ -8505,7 +8551,7 @@ async function main() {
     //    the browser has one, and offline), Start over (two taps, after Save a backup first), load the file back with the file picker
     //    (a summary sheet: Not now changes nothing, Yes brings the progress back), Undo last load; bad files give a message and change
     //    nothing. Targets at least 48 px, nothing wider than the screen, the online note beside every Save button.
-    {
+    if (seg('P5-07')) {
       const fs = require('fs'), os = require('os'), path = require('path');
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
@@ -8636,7 +8682,7 @@ async function main() {
     //    (add 2 seed 8: 6 + 9, the "+9 is +10 then take 1 away" ten frames) through the real round engine. A wrong answer on the pad opens
     //    the hint, and the Help button on a fresh question opens it too: either way the whole hint is on screen inside the prompt card,
     //    above the number pad (R-01 Should 13), with the strategy picture drawn. Also a Kindergarten story with its picture (story 1).
-    {
+    if (seg('R-01m')) {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = app.page, bad = [], notes = [];
       await pg.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
@@ -8693,7 +8739,7 @@ async function main() {
     //    with impossible spellings) and a Letter Teams question (sound 4), drawn by the real round engine (start, a seeded question in G.q,
     //    renderQ). Every word choice on screen is the answer or a real word from its checked set (PWC); the Letter Teams word is spoken
     //    (Hear it replays it), but is printed nowhere on the screen. No sideways scroll. With R01R_SHOTS=<dir> it saves both screens.
-    {
+    if (seg('R-01r')) {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
       const pg = app.page, bad = [], notes = [];
       await k2Old(pg); // KINDS2: pic 3 and sound 4's seeds are checked as the choice questions the review saw (those stops mix in sort now)
@@ -8748,7 +8794,7 @@ async function main() {
     //    seed 41): no two choices mean the same thing, the cool / hot / cold pictures carry their English, a feeling shows both forms
     //    (cards and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
     //    Screenshots: tools/out/es-r01s-* (or the folder in R01S_SHOTS).
-    {
+    if (seg('R-01s')) {
       const rx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
       const rp = rx.page;
       const dir = process.env.R01S_SHOTS || require('path').join(__dirname, 'out');
@@ -8815,7 +8861,7 @@ async function main() {
     //    pictures in the row (within 1 px), and every row shows two whole copies of its unit. (3) Every type that has band B, opened at
     //    level 1 with `say` stubbed: it speaks its first instruction by itself. (4) A grades 5-6 maze at level 12 has squares of 28 px or
     //    more. Screenshots: tools/out/r01b-* (or the folder in R01B_SHOTS).
-    {
+    if (seg('R-01b')) {
       const rx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
       const rp = rx.page;
       const dir = process.env.R01B_SHOTS || require('path').join(__dirname, 'out');
@@ -8908,7 +8954,7 @@ async function main() {
     //    saved by id; a tap far away is a tip, never a mistake. G-01b: the Stairs end card names the next build; Next build -> the Brick
     //    Wall count build by taps (a 5th block in the row refused, one mistake, 3 stars); the menu's next goal and the locked Sunny Beach;
     //    a world -> More -> Save a picture to my gallery -> Pause -> Quit: the picture is on the menu.
-    {
+    if (seg('G-01')) {
       const bad = [];
       const notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -9219,7 +9265,7 @@ async function main() {
     //    flick keeps turning and stops by itself on whole quarters for stamps; a pinch zooms; Right turns a quarter (in-between angles
     //    seen); hold then slide aims and builds; More -> Add animal: a drawn animal (no emoji) hops; More -> 3D look off: the 2D look
     //    (saved as S.bb.gl = 0), on again: 3D; Pause -> Quit -> the first blueprint built by tapping its see-through blocks: 3 stars.
-    {
+    if (seg('G-BB2')) {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const at = w + 'x' + h + ' ';
@@ -9413,7 +9459,7 @@ async function main() {
     //    harbour's first step (a dock of 4 over the water) is done, and the project in the scene shows 1/3 with its next step; More
     //    lists the goals and the two big projects with a dot a step; Pause -> Quit -> the world again: the goals, the step and the
     //    built blocks (the saved mask) are still there; 48 px buttons, no sideways scroll, the project and the messages clear of Pause.
-    {
+    if (seg('G-BB3')) {
       const bad = [], notes = [];
       for (const [w, h, look3] of [[380, 780, false], [1024, 600, true]]) {
         const at = w + 'x' + h + (look3 ? ' 3D ' : ' 2D ');
@@ -9564,7 +9610,7 @@ async function main() {
     //    taps, Done -> the end card with the framed picture -> My gallery shows it first -> its big view opens and closes; a Neon drawing
     //    drawn with one finger -> Done -> kept as strokes. Every button 48 px or more (Done 64), no emoji in the menus and tools, no
     //    sideways scroll.
-    {
+    if (seg('G-ART2')) {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const at = w + 'x' + h + ' ';
@@ -9712,7 +9758,7 @@ async function main() {
     //    plate stays empty), then the steps in order, through to the end card; the shop: the Food cart and String lights bought by touch,
     //    saved, shown on the stand; the next goal moved on. Main controls (food, tabs, Undo, Serve, Buy) at least 64 px, every other
     //    button at least 48 px, no sideways scroll; the first message of a day never covers a customer.
-    {
+    if (seg('G-04a')) {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -9961,7 +10007,7 @@ async function main() {
     //    seed 66) draws the grid with its 0 corner on screen; after a wrong tap the hint and the whole grid are on screen and the question
     //    stays at 18 px or more. Then the review's phone item (sci_life 3 seed 201, the frogs) with its hint open: question 18 px or more.
     //    48 px buttons, no sideways scroll. Screenshots: tools/out/disc-r01d-* (or the folder in R01D_SHOTS).
-    {
+    if (seg('R-01d')) {
       const dx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
       const dp = dx.page, bad = [], notes = [];
       await k2Old(dp); // KINDS2: the reviewed Discover items are checked as the choice questions their seeds gave (Discover stops mix in sort, match and order)
@@ -10058,7 +10104,7 @@ async function main() {
     //    picker, Ava plays a round; each child's stars, coins and pet stay their own (Ben's stored save does not move while Ava plays);
     //    a new visit opens on the picker; Ben deletes Ava with the double confirm (Keep first changes nothing). Targets at least 48 px,
     //    nothing wider than the screen, no emoji chrome, on every screen.
-    {
+    if (seg('P5-10')) {
       const look = () => {
         const vw = document.documentElement.clientWidth, out = [];
         for (const e of document.querySelectorAll('#app button, #app summary, #app label.switch')) {
@@ -10214,7 +10260,7 @@ async function main() {
     //    (legacy-single-map), the other legacy one and the midway save open Home with the same stars and name they were saved with, the
     //    saved stars still in storage after the first save, and Grown-ups > About Star School shows 1.0.0, the build, the privacy lines and
     //    the Andika licence (its full text opens). Real taps: the gear is held to open Grown-ups. 380x780 and 1024x600; no network.
-    {
+    if (seg('P6-05')) {
       const fs = require('fs'), path = require('path'), { ROOT, loadFixture } = require('./lib/browser');
       const build = (fs.readFileSync(path.join(ROOT, 'tools', 'build.py'), 'utf8').match(/^VER = '(v\d+)'/m) || [])[1];
       const bad = [], notes = [];
@@ -10285,7 +10331,7 @@ async function main() {
     //    (es_animal 1): read out on show from its file; the speaker keeps its place (no word shown big); "Hear it" plays the file with the
     //    button talking. (3) A file that does not load: the line falls back to the tablet's voice. (4) English, Spanish, English queued with
     //    say(..., q): each starts on the end event of the one before. Times are on the smoke clock (8x: 400 ms there is 50 ms real).
-    {
+    if (seg('ES-AUDIO')) {
       const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = sa.page, bad = [];
       try {
@@ -10362,7 +10408,7 @@ async function main() {
     //    the toast shows. (2) The next right answer is said in a different voice. (3) Grown-ups -> Cheer voices -> Tablet voice (saved for
     //    the child): the sample and a right answer are spoken by the tablet's voice, no file. (4) A grown-up's own cheer clip wins over
     //    the recordings (the clip's 30% chance forced).
-    {
+    if (seg('EN-PRAISE')) {
       const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = sa.page, bad = [];
       try {
@@ -10439,7 +10485,7 @@ async function main() {
     //    server is stopped and the context goes offline; a new page cold-starts from the cache with only the start-up files (no games
     //    code, no games <style>); Home -> Game Room shows "Getting the games ready..." and then the hub (games and games2 come from
     //    the cache), and Snack Stand (games2) starts with real taps. No request reaches the server once it is offline.
-    {
+    if (seg('P6-02')) {
       const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
       const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
       const served = [], socks = new Set();
@@ -10584,7 +10630,7 @@ async function main() {
     //    least 48 px, no sideways scroll. At 1024x600 also the frame time while hopping (with the ghost of the first run on screen)
     //    under 6x CPU throttle: the median interval between frames at most 34 ms (measured again on a busy machine, up to 3 more
     //    times, like G-02).
-    {
+    if (seg('G-04b')) {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -10803,7 +10849,7 @@ async function main() {
     // model, then the recording), the "That sounded like" hint, Try again, I said it! (the round goes on, nothing scored); a skip;
     // a story round (the child plays a character); a blocked microphone (the grown-up note, then it goes on by itself); no microphone
     // (no step, the round goes on); the Grown-ups switch. SSPK_SHOTS=<dir> saves screenshots at 2x.
-    {
+    if (seg('S-SPK')) {
       const bad = [], notes = [], SH = process.env.SSPK_SHOTS || '';
       const fakeMedia = mode => {
         window.__spk = { said: [], played: [] };
@@ -10971,7 +11017,7 @@ async function main() {
     //    that can download Spanish: the button, the online note, the download), the Listening corner (the three recordings, Listen
     //    plays the model then the child, a star, Keep 1 week, Delete all), Home shows the star message once with a sticker.
     //    48 px buttons, mic 64+, no sideways scroll. SSPK2_SHOTS=<dir> saves screenshots at 2x.
-    {
+    if (seg('S-SPK2')) {
       const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
       const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
       const socks = new Set(), bad = [], notes = [], SH = process.env.SSPK2_SHOTS || '';
@@ -11159,7 +11205,7 @@ async function main() {
     //    "hungry"), no meter under 30%, the saved meter unchanged. The report card: one sentence per subject ("is solid on ... and
     //    still working on ..."), "Practise this next" pins a stop (aria-pressed, S.pin), and on the next day it is the first
     //    mission on Home, which opens that stop. No sideways scroll. FEEL2_SHOTS=<dir> saves screenshots (else tools/out).
-    {
+    if (seg('G-FEEL2')) {
       const bad = [], notes = [];
       const dir = process.env.FEEL2_SHOTS || require('path').join(__dirname, 'out');
       try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
@@ -11251,7 +11297,7 @@ async function main() {
     // its points as <g role="button" tabindex="0">; an SVG element has no click(), so UI.modal.key threw on Enter. Now UI.press sends it a
     // click event. One-question rounds of the real round engine: Enter on the right point, then Space on it; each is scored once and
     // the round finishes. No console errors, no requests.
-    {
+    if (seg('P6-01')) {
       const ka = await openApp(browser, { fixture: 'midway', width: 1024, height: 600 });
       const pg = ka.page, bad = [], tags = [];
       try {
@@ -11293,7 +11339,7 @@ async function main() {
     // reading fps and "3D"; leaving gives the context back. With the 2D look chosen in Grown-ups, and with WebGL forced off in the
     // browser, the drive is the 2D look (no WebGL canvas) and still drives.
     // No console errors, no requests, nothing in the app log. GL_SHOTS=<dir> saves screenshots (else tools/out).
-    {
+    if (seg('GL-01')) {
       const bad = [], notes = [];
       const dir = process.env.GL_SHOTS || require('path').join(__dirname, 'out');
       try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
@@ -11386,7 +11432,7 @@ async function main() {
     // a tunnel's mouth and on a bridge between its rails, every sampled pixel well inside the car's drawing is the car's own colour in
     // the WebGL picture (nothing of the world drawn over it). The Star Rally menu's 3D switch (saved) gives the 2D look; WebGL forced off
     // gives the 2D look; leaving gives the context back. No console errors, no requests, nothing in the app log. GL_SHOTS=<dir> as GL-01.
-    {
+    if (seg('GL-02')) {
       const bad = [], notes = [];
       const dir = process.env.GL_SHOTS || require('path').join(__dirname, 'out');
       try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
@@ -11503,7 +11549,7 @@ async function main() {
     // shows it; the map shows the small medal by the stop. At 360x740 a check-in with every answer wrong ends on the gentle card (Good try,
     // Play again, no badge). At 800x1280 a normal round of a ready stop ends with the Check-in card, which opens the sheet. The Grown-ups
     // report card lists the stop with its badge. Controls 48 px or more, no sideways scroll, no console errors, no requests.
-    {
+    if (seg('CHECK-IN')) {
       const bad = [], notes = [], shots = [];
       const shot = async (pg, n) => { const f = require('path').join(__dirname, 'out', n + '.png'); await pg.screenshot({ path: f }).catch(() => {}); shots.push('tools/out/' + n + '.png'); };
       for (const [w, h] of [[360, 740], [800, 1280]]) {
@@ -11657,7 +11703,7 @@ async function main() {
     // by a mouse drag; a whole sort by Tab and Enter / Space only. mark: one word right, two words wrong then right (the found word stays),
     // wrong twice (reveal). Fit: .qarea and .inp do not overflow sideways, every control in .inp is 48 x 48 or more, Check is on screen
     // without scrolling the page. Then a real stop of each kind (eo 2, gram 2) answered by answer(). No console errors, no requests.
-    {
+    if (seg('KINDS2-A')) {
       const bad = [], notes = [];
       for (const [w, h] of [[360, 740], [800, 1280]]) {
         const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -11870,7 +11916,7 @@ async function main() {
     // waits for a move) then right; wrong twice (the pin slides to the answer with a tick, the answer spoken, asked again at the end);
     // the pin dragged by the mouse; the pin's slider by the keyboard (Tab, arrows, Home, End; Tab to Check, Enter); real round, frac,
     // int, dec, pv and cnt questions answered by answer()
-    {
+    if (seg('KINDS2-B')) {
       const bad = [], notes = [];
       for (const [w, h] of [[360, 740], [800, 1280]]) {
         const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -11975,7 +12021,7 @@ async function main() {
     // frame cells); the ten frame by its cells; too many then right ("Too many", the state kept, a cross); b10 digits swapped ("Check your
     // tens and ones."); wrong twice (the answer drawn, dashed, a tick, the answer spoken, asked again at the end); the steppers and the
     // parts' "shade one more" by the keyboard (Tab, Enter); real tenf, pk_count, pv, coins, time, mfact, frac, geo and dec questions by answer()
-    {
+    if (seg('KINDS2-C')) {
       const bad = [], notes = [];
       for (const [w, h] of [[360, 740], [800, 1280]]) {
         const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -12097,7 +12143,7 @@ async function main() {
     // last step on screen without scrolling, nothing sideways); real big, sub, mbig, dbig, dec, fop, ooo and alg questions by answer().
     // Why: the misconception value shows the sentence (bulb) above the hint and says it; another wrong value shows none; a right answer
     // none; on a rounding line too; a why from a real sub 4 question.
-    {
+    if (seg('KINDS2-D')) {
       const bad = [], notes = [];
       for (const [w, h] of [[360, 740], [800, 1280]]) {
         const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
@@ -12229,7 +12275,7 @@ async function main() {
     // Then a lesson left at Together resumes there; Ten and More tested out (both show-me items right: straight to Show); and in Practice
     // a two-choice question gets one try (the answer shown with its picture), three choices keep their second try, TEACH.off keeps the
     // old second try. No console errors, no network requests.
-    {
+    if (seg('TEACH-1')) {
       const bad = [], notes = [];
       const lsAct = async (pg, wrong) => {
         await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
@@ -12378,7 +12424,7 @@ async function main() {
     // sideways scroll; Back goes to the map. A repair lesson opens with the contrast (the right answer and the held idea's, side by side).
     // The report card's lessons card: the four stages, "What we noticed" with its pin (S.pin set, pressed); the part loaded by the report
     // itself. The Grown-ups switch turns lessons off (no offer, no notebook button on the map) and on. No console errors, no network.
-    {
+    if (seg('TEACH-2')) {
       const bad = [], notes = [], shots = process.env.TEACH2_SHOTS || require('path').join(__dirname, 'out');
       const fits = (pg, at, sel) => pg.evaluate(sel => {
         const o = [], vw = document.documentElement.clientWidth;
@@ -12487,7 +12533,7 @@ async function main() {
     // Half Past (the clock with named hands), Dimes Too (the coin purse); each screen fits. The workbench pieces by their buttons. A Practice
     // round on Carry the 1 scores the same with and without the record's check() wrap, and only the wrap writes the misconception page.
     // Screenshots (TEACH2B_SHOTS, default tools/out): each beat of the three lessons. No console errors, no network requests.
-    {
+    if (seg('TEACH-2b')) {
       const bad = [], notes = [], shots = process.env.TEACH2B_SHOTS || require('path').join(__dirname, 'out'), A = require('./author.js');
       const W = Object.fromEntries(A.drafts().filter(x => x.d).map(x => [x.d.id, { idea: x.d.idea, beats: x.d.beats, reasons: x.d.reasons, home: x.d.home }]));
       require('fs').mkdirSync(shots, { recursive: true });
@@ -12633,7 +12679,7 @@ async function main() {
     // a 4th grader on 2-Digit Times 1-Digit (blocks with trades; Check me: the pet's written steps or "your problem", the slip tapped, the reason
     // from word tiles) and Unlike Fractions (two fraction bars, a typed fraction), a 6th grader on Unlike Denominators (the teen-like pet, a
     // locked bar to match, the pet's steps). Every screen fits, no hole in the words; screenshots (TEACH3_SHOTS, default tools/out/teach3).
-    {
+    if (seg('TEACH-3')) {
       const bad = [], notes = [], shots = process.env.TEACH3_SHOTS || require('path').join(__dirname, 'out', 'teach3');
       require('fs').mkdirSync(shots, { recursive: true });
       const act3 = async (pg, wrong) => {
@@ -12745,6 +12791,7 @@ async function main() {
   } finally {
     await browser.close();
   }
+  segEnd();
   console.log(failed ? `smoke FAILED (${failed})` : 'smoke OK');
   process.exit(failed ? 1 : 0);
 }
