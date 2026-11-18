@@ -32,6 +32,17 @@ async function btLeave(pg) {
 // sort and mark questions turns the new kinds off in its page (K2.off: every generator and bank as before KINDS2) and back on after
 const k2Old = (pg, on = true) => pg.evaluate(v => { K2.off = v; }, on);
 
+// LS-STOP: a stop with a lesson waits until its lesson is done (lsGate, 42b-lstop.js). The steps written before it test PRACTICE rounds (a
+// stop's questions, sizes, sounds), so where the stop they tap is locked behind its lesson they mark that lesson learned first (as
+// passing its Show does) and tap the stop as before; a stop that is not locked is left alone. The LS-STOP step tests the lock itself.
+async function lsLearnAt(pg, i) {
+  await pg.waitForSelector('#map .node', { timeout: 15000 });
+  await pg.evaluate(i => { const p = MAPP; if (i === 'cur') i = curNode(p); if (typeof lsGate != 'function' || !lsGate(p, i)) return;
+    (S.know = S.know || {})[nid(NODES[p][i])] = { s: 2, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {}, box: 0, due: 0 }; save(); drawMap(p); }, i);
+}
+const lsLearnCur = pg => lsLearnAt(pg, 'cur');
+const lsLearnSel = async (pg, sel) => { await pg.waitForSelector(sel, { timeout: 15000 }).catch(() => {}); const i = await pg.evaluate(sel => { const b = document.querySelector(sel); return b ? +b.dataset.n : null; }, sel); if (i != null) await lsLearnAt(pg, i); };
+
 let failed = 0;
 const step = msg => console.log('- ' + msg);
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
@@ -196,6 +207,7 @@ async function main() {
       await page.evaluate(() => home());
       await page.click(`.game[data-p="${p}"]`);
       await page.waitForSelector('.node[data-n="0"]');
+      await lsLearnSel(page, '.node[data-n="0"]'); // LS-STOP: as above
       await page.click('.node[data-n="0"]');
       if (p === 'es') { await page.waitForSelector('#go'); await page.click('#go'); }
       await page.waitForSelector('#prompt');
@@ -464,6 +476,7 @@ async function main() {
     await page.evaluate(() => home());
     await page.click('.game[data-p="math"]');
     await page.waitForSelector('.node[data-n="0"]');
+    await lsLearnSel(page, '.node[data-n="0"]'); // LS-STOP: as above
     await page.click('.node[data-n="0"]');
     await page.waitForSelector('#prompt');
     await page.evaluate(m => setTimeout(() => { throw new Error(m); }, 0), MARK);
@@ -501,6 +514,7 @@ async function main() {
     await page.waitForSelector('.wchip.on');
     await page.click(`.wchip[data-w="${meadowW}"]`);
     await page.waitForSelector(`.node[data-n="${meadow0}"]`);
+    await lsLearnSel(page, `.node[data-n="${meadow0}"]`); // LS-STOP: as above
     await page.click(`.node[data-n="${meadow0}"]`);
     let numSeen = false;
     for (let i = 0; i < 10 && !numSeen; i++) {
@@ -758,6 +772,7 @@ async function main() {
       await gp.waitForSelector('.game[data-p]');
       if ((await gp.evaluate(() => S.grade)) !== -1) fail('Pre-K tap on setup not saved');
       await gp.click('.game[data-p="math"]');
+      await lsLearnCur(gp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await gp.waitForSelector('.node.cur');
       await gp.click('.node.cur');
       await gp.waitForSelector('#prompt');
@@ -777,6 +792,7 @@ async function main() {
       const sel = await gp.evaluate(() => document.querySelector('.gr.sel').dataset.g);
       await gp.click('#back');
       await gp.click('.game[data-p="math"]');
+      await lsLearnCur(gp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await gp.waitForSelector('.node.cur');
       const cw = await gp.evaluate(() => worldOpen('math', PATHS.math.worlds.findIndex(w => w.id === 'm_frac'))); // the last grade-3 world (P2-09: Factor Factory, grade 4, is now last)
       await gp.click('.node.cur');
@@ -797,6 +813,7 @@ async function main() {
       await ap.waitForSelector('.game[data-p="math"]');
       await ap.evaluate(() => { S.log = []; });
       await ap.click('.game[data-p="math"]');
+      await lsLearnCur(ap); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await ap.waitForSelector('.node.cur');
       await ap.click('.node.cur');
       await ap.waitForSelector('#prompt');
@@ -1016,7 +1033,8 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 6 || r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
+      if (r0.v !== 7 || // LS-STOP: migration 6 raised the save version from 6 to 7
+         r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
       // a math stop round: log every question as it is drawn (G.q.rvk = the review item it came from)
@@ -1147,6 +1165,7 @@ async function main() {
       await pp.click('#go');
       await pp.waitForSelector('.game[data-p]');
       await pp.click('.game[data-p="read"]');
+      await lsLearnCur(pp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await pp.waitForSelector('.node.cur');
       const cur0 = await pp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: NODES.read[curNode('read')].wid, n: +document.querySelector('.node.cur').dataset.n }));
       if (cur0.id !== 'abc1' || cur0.w !== 'r_abc' || cur0.n !== 0) fail('Pre-K reading map should open on abc1: ' + JSON.stringify(cur0));
@@ -1183,6 +1202,7 @@ async function main() {
       await kp.click('#go');
       await kp.waitForSelector('.game[data-p]');
       await kp.click('.game[data-p="read"]');
+      await lsLearnCur(kp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await kp.waitForSelector('.node.cur');
       const cur1 = await kp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: curWorld('read'), g: S.grade }));
       if (cur1.id !== 'sound1' || cur1.w !== 1) fail('K reading map should open on Letter Meadow sound1: ' + JSON.stringify(cur1));
@@ -1204,6 +1224,7 @@ async function main() {
       await tp.click('#go');
       await tp.waitForSelector('.game[data-p="math"]');
       await tp.click('.game[data-p="math"]');
+      await lsLearnCur(tp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await tp.waitForSelector('.node.cur');
       const mp0 = await tp.evaluate(() => ({ on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
         sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: PATHS.math.worlds.length }));
@@ -1228,6 +1249,7 @@ async function main() {
           }, 700);
         };
       });
+      await lsLearnCur(tp); // LS-STOP: as above
       await tp.click('.node.cur');
       await tp.waitForSelector('#prompt', { state: 'attached' }); // text hidden: a listening prompt can be empty
       await playRound(tp, 'P2-01 Tiny Town round, text hidden', 6);
@@ -1280,6 +1302,7 @@ async function main() {
         await mp.click(`.wchip[data-w="${lastW}"]`);
         await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
         const n = await mp.evaluate(k => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][0] + k, k);
+        await lsLearnSel(mp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await mp.click(`.node[data-n="${n}"]`);
         await mp.waitForSelector('#prompt');
       };
@@ -1340,6 +1363,7 @@ async function main() {
         await fp.click(`.wchip[data-w="${forest}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${forest}"]`);
         const n = await fp.evaluate(k => NODES.math.findIndex(x => nid(x) === 'frac' + (k + 2)), k);
+        await lsLearnSel(fp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await fp.click(`.node[data-n="${n}"]`);
         await fp.waitForSelector('#prompt');
       };
@@ -1387,6 +1411,7 @@ async function main() {
         await pp.waitForSelector('.wchip.on');
         await pp.click(`.wchip[data-w="${at.w}"]`);
         await pp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pp.click(`.node[data-n="${at.i}"]`);
         await pp.waitForSelector('#prompt');
       };
@@ -1423,6 +1448,7 @@ async function main() {
       await sp.click('#go');
       await sp.waitForSelector('.game[data-p="math"]');
       await sp.click('.game[data-p="math"]');
+      await lsLearnCur(sp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await sp.waitForSelector('.node.cur');
       const g0 = await sp.evaluate(() => ({ wid: NODES.math[curNode('math')].wid, sk: nid(NODES.math[curNode('math')]),
         on: PATHS.math.worlds[+document.querySelector('.wchip.on').dataset.w].id, chips: document.querySelectorAll('.wchip').length, n: PATHS.math.worlds.length }));
@@ -1439,6 +1465,7 @@ async function main() {
           setTimeout(() => { window.__rec.push({ sk: q.sk + q.lv, said: window.__said.includes(q.say), pk: !!document.querySelector('#spk.pkspk') }); }, 700);
         };
       });
+      await lsLearnCur(sp); // LS-STOP: as above
       await sp.click('.node.cur');
       await sp.waitForSelector('#prompt');
       await playRound(sp, 'P2-02 Count to 20', 8);
@@ -1475,6 +1502,7 @@ async function main() {
       else step('Shape Garden: all 14 stops open and are answered by taps with the text hidden; touch targets 48 px or more, no sideways scroll, a hint on each');
       await sp.evaluate(() => { G.dead = true; home(); });
       await sp.click('.game[data-p="math"]');
+      await lsLearnCur(sp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await sp.waitForSelector('.node.cur');
       const mp = await sp.evaluate(() => {
         const [a, b] = WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_shape')];
@@ -1501,12 +1529,14 @@ async function main() {
       await cp.waitForSelector('.game[data-p="math"]');
       await cp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_candy').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Candy Canyon finished
       await cp.click('.game[data-p="math"]');
+      await lsLearnCur(cp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await cp.waitForSelector('.node.cur');
       const cm = await cp.evaluate(() => { const ids = PATHS.math.worlds.map(w => w.id), c = ids.indexOf('m_clock');
         return { c, near: ids[c - 1] + ' ' + ids[c + 1], on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
           sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: ids.length }; });
       if (cm.c < 0 || cm.near !== 'm_candy m_reef' || cm.on !== cm.c || cm.wid !== 'm_clock' || cm.sk !== 'pv1' || cm.chips !== cm.n) fail('Clock Tower map: ' + JSON.stringify(cm));
       else step('Clock Tower: sits between Candy Canyon and Ocean Reef, the map opens on it at stop pv1 after Candy Canyon');
+      await lsLearnCur(cp); // LS-STOP: as above
       await cp.click('.node.cur');
       await cp.waitForSelector('#prompt');
       await playRound(cp, 'P2-03 Tens & Ones');
@@ -1682,12 +1712,14 @@ async function main() {
       await bp.waitForSelector('.game[data-p="math"]');
       await bp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_space').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Space Station finished
       await bp.click('.game[data-p="math"]');
+      await lsLearnCur(bp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await bp.waitForSelector('.node.cur');
       const bm = await bp.evaluate(() => { const ids = PATHS.math.worlds.map(w => w.id), c = ids.indexOf('m_bay');
         return { c, near: ids[c - 1] + ' ' + ids[c + 1], on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
           sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: ids.length }; });
       if (bm.c < 0 || bm.near !== 'm_space m_mult' || bm.on !== bm.c || bm.wid !== 'm_bay' || bm.sk !== 'pv2' || bm.chips !== bm.n) fail('Treasure Bay map: ' + JSON.stringify(bm));
       else step('Treasure Bay: sits between Space Station and Multiply Mountain, the map opens on it at stop pv2 after Space Station');
+      await lsLearnCur(bp); // LS-STOP: as above
       await bp.click('.node.cur');
       await bp.waitForSelector('#prompt');
       await playRound(bp, 'P2-04 Place Value to 999');
@@ -2129,6 +2161,7 @@ async function main() {
         await fq.click(`.wchip[data-w="${forest}"]`);
         await fq.waitForSelector(`.wchip.on[data-w="${forest}"]`);
         const n = await fq.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(fq, `.node[data-n="${n}"]`); // LS-STOP: as above
         await fq.click(`.node[data-n="${n}"]`);
         await fq.waitForSelector('#prompt');
         await fq.waitForTimeout(900); // the prompt pops in with a scale animation; sizes are measured once it has settled
@@ -2353,6 +2386,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
       };
@@ -2681,6 +2715,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
         // every question of the round: question line and the four buttons inside the screen, panel open, no sideways scroll
@@ -2726,6 +2761,7 @@ async function main() {
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
         if (at.w !== lw) fail('P2-29 ' + id + ' is not in Legend Lab');
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
         const bad = [];
@@ -2775,6 +2811,7 @@ async function main() {
         await fp.click(`.wchip[data-w="${info.wi}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${info.wi}"]`);
         const n = await fp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(fp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await fp.click(`.node[data-n="${n}"]`);
         await fp.waitForSelector('#prompt');
         await fp.waitForTimeout(900);
@@ -2845,6 +2882,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
       };
@@ -2907,6 +2945,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
       };
@@ -2972,6 +3011,7 @@ async function main() {
       await dp.click('.game[data-p="math"]');
       await dp.waitForSelector(`.wchip.on[data-w="${w10.wi}"]`);
       const first = await dp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'frac6'));
+      await lsLearnSel(dp, `.node[data-n="${first}"]`); // LS-STOP: as above
       const nodeOn = await dp.evaluate(n => !!document.querySelector(`.node[data-n="${n}"]`) && !document.querySelector(`.node[data-n="${n}"]`).classList.contains('lock'), first);
       await dp.click(`.node[data-n="${first}"]`);
       await dp.waitForSelector('#prompt');
@@ -3006,6 +3046,7 @@ async function main() {
         await dp.click(`.wchip[data-w="${w10.wi}"]`);
         await dp.waitForSelector(`.wchip.on[data-w="${w10.wi}"]`);
         const n = await dp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(dp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await dp.click(`.node[data-n="${n}"]`);
         await dp.waitForSelector('#prompt');
         const most = full.has(id) ? 1 : 3;
@@ -3204,6 +3245,7 @@ async function main() {
         await vp.click(`.wchip[data-w="${info.wi}"]`);
         await vp.waitForSelector(`.wchip.on[data-w="${info.wi}"]`);
         const n = await vp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(vp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await vp.click(`.node[data-n="${n}"]`);
         await vp.waitForSelector('#prompt');
         await vp.waitForTimeout(900);
@@ -3748,6 +3790,7 @@ async function main() {
       // first stop by taps: Unlike Denominators, a step hint, then the full round
       const first = await cp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'fop3'));
       await k2Old(cp); // FIX3: fop3 mixes in find the mistake (KINDS2-D, about 1 in 5), which has no step hint; this checks the step hint
+      await lsLearnSel(cp, `.node[data-n="${first}"]`); // LS-STOP: as above
       await cp.click(`.node[data-n="${first}"]`);
       await cp.waitForSelector('#prompt');
       await cp.waitForTimeout(900);
@@ -3776,6 +3819,7 @@ async function main() {
         await cp.click(`.wchip[data-w="${w12.wi}"]`);
         await cp.waitForSelector(`.wchip.on[data-w="${w12.wi}"]`);
         const n = await cp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(cp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await cp.click(`.node[data-n="${n}"]`);
         await cp.waitForSelector('#prompt');
         if (full.has(id)) {
@@ -3804,6 +3848,7 @@ async function main() {
         await cp.waitForSelector('.wchip.on');
         await cp.click(`.wchip[data-w="${w12.wi}"]`);
         const n = await cp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await lsLearnSel(cp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await cp.click(`.node[data-n="${n}"]`);
         await cp.waitForSelector('#prompt');
         await cp.evaluate(([sk, lv, re]) => { for (let i = 1; i < 900; i++) { const q = genQ(sk, lv, i); if (new RegExp(re).test(q.label)) { G.q = q; renderQ(); break; } } }, [sk, lv, re]);
@@ -3861,6 +3906,7 @@ async function main() {
         await pg.waitForSelector('#map');
         await pg.evaluate(() => { const c = document.querySelector('.wchip[data-w="0"]'); if (c) c.click(); });
         await pg.waitForSelector(`.node[data-n="${ti}"]`);
+        await lsLearnSel(pg, `.node[data-n="${ti}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${ti}"]`);
         await pg.waitForSelector('#trb');
         const look = () => {
@@ -4241,6 +4287,7 @@ async function main() {
       const answer13 = async () => (await sp.evaluate(() => G.q.kind)) === 'match' ? answerMatch() : answer(sp);
       // first stop by taps: Ratios and Tables, a step hint, then the full round
       const first = await sp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'ratio1'));
+      await lsLearnSel(sp, `.node[data-n="${first}"]`); // LS-STOP: as above
       await sp.click(`.node[data-n="${first}"]`);
       await sp.waitForSelector('#prompt');
       await sp.waitForTimeout(900);
@@ -4268,6 +4315,7 @@ async function main() {
         await sp.click(`.wchip[data-w="${w13.wi}"]`);
         await sp.waitForSelector(`.wchip.on[data-w="${w13.wi}"]`);
         const n = await sp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(sp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await sp.click(`.node[data-n="${n}"]`);
         await sp.waitForSelector('#prompt');
         if (full.has(id)) {
@@ -4296,6 +4344,7 @@ async function main() {
         await sp.waitForSelector('.wchip.on');
         await sp.click(`.wchip[data-w="${w13.wi}"]`);
         const n = await sp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await lsLearnSel(sp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await sp.click(`.node[data-n="${n}"]`);
         await sp.waitForSelector('#prompt');
         const found = await sp.evaluate(([sk, lv, re, flag]) => {
@@ -4513,6 +4562,7 @@ async function main() {
       await pg.waitForSelector(`.node[data-n="${ti}"]`);
       const map = await pg.evaluate(ti => [ti - 3, ti].map(i => document.querySelector(`.node[data-n="${i}"]`).className), ti);
       if (!map.every(c => / read\b/.test(c) && !/\bmath\b/.test(c))) bad.push('tracing stops on the map are not in the reading colour: ' + map.join(' | '));
+      await lsLearnSel(pg, `.node[data-n="${ti}"]`); // LS-STOP: as above
       await pg.click(`.node[data-n="${ti}"]`);
       await pg.waitForSelector('#trb');
       const chrome = await pg.evaluate(() => {
@@ -4577,6 +4627,7 @@ async function main() {
         if (map.n !== 12 || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
         else step(`${tag}: Home card, then the map (Nature Trail and the world after it, 12 stops; the first is open), 48 px stops, no sideways scroll`);
         const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
+        await lsLearnSel(dp, '.node[data-n="0"]'); // LS-STOP: as above
         await dp.click('.node[data-n="0"]');
         await dp.waitForSelector('#prompt');
         const bad = [];
@@ -4824,6 +4875,7 @@ async function main() {
       };
       // first stop by taps: Exponents, a step hint, then the full round
       const first = await gp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'ooo2'));
+      await lsLearnSel(gp, `.node[data-n="${first}"]`); // LS-STOP: as above
       await gp.click(`.node[data-n="${first}"]`);
       await gp.waitForSelector('#prompt');
       await gp.waitForTimeout(900);
@@ -4851,6 +4903,7 @@ async function main() {
         await gp.click(`.wchip[data-w="${w14.wi}"]`);
         await gp.waitForSelector(`.wchip.on[data-w="${w14.wi}"]`);
         const n = await gp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(gp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await gp.click(`.node[data-n="${n}"]`);
         await gp.waitForSelector('#prompt');
         if (full.has(id)) {
@@ -4880,6 +4933,7 @@ async function main() {
         await gp.waitForSelector('.wchip.on');
         await gp.click(`.wchip[data-w="${w14.wi}"]`);
         const n = await gp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await lsLearnSel(gp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await gp.click(`.node[data-n="${n}"]`);
         await gp.waitForSelector('#prompt');
         const found = await gp.evaluate(([sk, lv, re]) => {
@@ -4927,6 +4981,7 @@ async function main() {
       // one real round on a stop: opens it by its map button, plays, checks every question, and returns to the map
       const playStop = async (n, what) => {
         await dp.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), n);
+        await lsLearnSel(dp, `.node[data-n="${n}"]`); // LS-STOP: as above
         const nb = await dp.evaluate(i => { const b = document.querySelector(`.node[data-n="${i}"]`).getBoundingClientRect(); return { w: b.width, h: b.height, lock: document.querySelector(`.node[data-n="${i}"]`).classList.contains('lock') }; }, n);
         if (nb.w < 48 || nb.h < 48 || nb.lock) fail(`${tag}: ${what} stop button ${JSON.stringify(nb)}`);
         await dp.click(`.node[data-n="${n}"]`);
@@ -5276,6 +5331,7 @@ async function main() {
       };
       // level 1 (listen): a real tap on the first stop, the learn screen, then the round
       const n0 = await cp.evaluate(() => WR.es[3][0]);
+      await lsLearnSel(cp, '.node[data-n="' + n0 + '"]'); // LS-STOP: as above
       await cp.click('.node[data-n="' + n0 + '"]');
       await cp.waitForSelector('#go');
       await cp.click('#go');
@@ -5289,6 +5345,7 @@ async function main() {
       await cp.evaluate(() => { for (let i = WR.es[3][0]; i < WR.es[3][0] + 8; i++) setSt('es', i, 2); save(); pathMap('es', 3); });
       await cp.waitForSelector('.wchip.on[data-w="3"]');
       const n3 = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_house' && x.lv === 3));
+      await lsLearnSel(cp, '.node[data-n="' + n3 + '"]'); // LS-STOP: as above
       await cp.click('.node[data-n="' + n3 + '"]'); // levels 2 and 3 start the round at once (only level 1 has the learn screen)
       await cp.waitForSelector('.lslots .ls');
       await cp.evaluate(() => { for (let s = 1; s < 400; s++) { const q = genQ('es_house', 3, s); if (q.word === 'baño') { G.q = q; renderQ(); return; } } });
@@ -5302,6 +5359,7 @@ async function main() {
       await cp.evaluate(() => { speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }]; ESNOTE = 0; ESA.off = true; S.maps.es.es_clothes1 = 0; save(); pathMap('es', 3); }); // ES-AUDIO: lines without a recording
       await cp.waitForSelector('.wchip.on[data-w="3"]');
       const nc = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_clothes' && x.lv === 1));
+      await lsLearnSel(cp, '.node[data-n="' + nc + '"]'); // LS-STOP: as above
       await cp.click('.node[data-n="' + nc + '"]');
       await cp.waitForSelector('#go');
       await cp.click('#go');
@@ -5362,6 +5420,7 @@ async function main() {
         if (at.wid !== 'e_ciudad') fail('P2-33 ' + id + ' is not in La Ciudad: ' + JSON.stringify(at));
         await cp.click(`.wchip[data-w="${at.w}"]`);
         await cp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(cp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await cp.click(`.node[data-n="${at.i}"]`);
         await cp.waitForSelector('#go, .ch'); // the learn screen comes first on a level 1 stop
         if (await cp.$('#go')) await cp.click('#go');
@@ -6439,6 +6498,7 @@ async function main() {
         if (at.wid !== 'e_frases') fail('P2-34 ' + id + ' is not in Las Frases: ' + JSON.stringify(at));
         await fp.click(`.wchip[data-w="${at.w}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(fp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await fp.click(`.node[data-n="${at.i}"]`);
         await fp.waitForSelector('.ch, .ot'); // a grammar stop opens straight on the question (no word-card learn screen)
         const l = await fp.evaluate(lay, sel);
@@ -6890,6 +6950,7 @@ async function main() {
         await gp.waitForSelector('.wchip.on');
         await gp.click(`.wchip[data-w="${mw}"]`);
         await gp.waitForSelector(`.node[data-n="${m0}"]`);
+        await lsLearnSel(gp, `.node[data-n="${m0}"]`); // LS-STOP: as above
         await gp.click(`.node[data-n="${m0}"]`);
         await gp.waitForSelector('#prompt');
         const bank0 = await gp.evaluate(() => pt().bank);
@@ -7042,6 +7103,7 @@ async function main() {
       if (at.wid !== 'e_cuentos' || at.last !== 'e_cuentos') fail('P2-35 es_story1 is not in Los Cuentos: ' + JSON.stringify(at));
       await cp.click(`.wchip[data-w="${at.w}"]`);
       await cp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+      await lsLearnSel(cp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
       await cp.click(`.node[data-n="${at.i}"]`);
       await cp.waitForSelector('.bctx.dlg .dl-b'); // a story stop opens straight on the question (no word-card learn screen)
       await vwait(cp, 800);
@@ -8385,6 +8447,7 @@ async function main() {
           at = 'round';
           // a round: first stop of math, one wrong answer, then right answers; the chest; the reward cards
           await pg.click('.game[data-p="math"]');
+          await lsLearnCur(pg); // LS-STOP: a practice round's stop, its lesson done first if it is locked
           await pg.waitForSelector('.node.cur');
           await pg.click('.node.cur'); // the child's current stop
           await pg.waitForSelector('#prompt');
@@ -8556,7 +8619,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 6 || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 7 /* LS-STOP: save version 7 (migration 6) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -8765,6 +8828,7 @@ async function main() {
         if (at.wid !== wid) bad.push(id + ' is not in ' + wid + ': ' + JSON.stringify(at));
         await rp.click(`.wchip[data-w="${at.w}"]`);
         await rp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(rp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await rp.click(`.node[data-n="${at.i}"]`);
         await rp.waitForSelector('#go'); // level 1 opens on the learn cards
         const cards = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => b.textContent));
@@ -10098,6 +10162,7 @@ async function main() {
           await pg.waitForSelector('.node');
           // the first open stop on the world the map shows (not a boss)
           const n = await pg.evaluate(() => [...document.querySelectorAll('.node:not(.lock)')].map(e => +e.dataset.n).find(i => NODES.math[i].sk != 'boss'));
+          await lsLearnSel(pg, `.node[data-n="${n}"]`); // LS-STOP: as above
           await pg.click(`.node[data-n="${n}"]`);
           await pg.waitForSelector('#prompt');
           await playRound(pg, tag + ' ' + label);
@@ -11232,6 +11297,8 @@ async function main() {
             await pg.waitForSelector('#hmmis [data-mi="0"]');
             const hm = await pg.evaluate(() => ({ t: document.querySelector('#hmmis .hm-mi b').textContent, pin: S.pin, m0: S.day.m[0] }));
             if (hm.t !== 'Play ' + st.work || hm.pin !== null || !hm.m0.pin || hm.m0.i !== st.i) bad.push(at + 'tomorrow\'s first mission: ' + JSON.stringify(hm));
+            // LS-STOP: a pinned stop locked behind its lesson opens the lesson; this step is about the pin opening the stop's round
+            await pg.evaluate(i => { if (lsGate('math', i)) { (S.know = S.know || {})[nid(NODES.math[i])] = { s: 2, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {}, box: 0, due: 0 }; save(); } }, st.i);
             await pg.click('#hmmis [data-mi="0"]');
             await pg.waitForFunction(() => typeof G != 'undefined' && G && G.path == 'math', null, { timeout: 8000 }).catch(() => {});
             const g = await pg.evaluate(() => ({ p: G && G.path, node: G && G.node }));
