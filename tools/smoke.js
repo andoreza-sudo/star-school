@@ -57,6 +57,11 @@ async function armShow(pg, sel, read) {
 // be made safe by reading at the right moment: vspeed(pg, 1) runs the page's clock at real speed for that act (tools/lib/browser.js
 // __vspeed), vspeed(pg) puts the run's speed back. It never shortens what the app waits for, and the checks stay as they are.
 const vspeed = (pg, s = envSpeed()) => pg.evaluate(s => window.__vspeed && window.__vspeed(s), s);
+// a layout check (fit, 48 px, nothing outside the screen) measures the screen at rest: the question pops in with an overshooting scale
+// and a miss shakes it sideways (CSS, on the real clock), and on a busy CPU the bot measured mid-animation. Waits (up to 5 s) until no
+// finite CSS animation runs
+const animsDone = pg => pg.waitForFunction(() => document.getAnimations().every(a => a.playState !== 'running' || !isFinite(a.effect.getComputedTiming().endTime)),
+  null, { timeout: 5000 }).catch(() => {});
 // act (the bot's real tap or key), then the reads at their moments
 async function actRead(pg, act, reads, ev = 'click', sel = null) {
   await arm(pg, reads, ev, sel);
@@ -11803,6 +11808,7 @@ async function main() {
           const binAt = b => pg.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } });
           const plan = () => pg.evaluate(() => G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]));
           const fitOk = async (tag) => {
+            await animsDone(pg);
             const r = await pg.evaluate(() => {
               const o = [], vw = document.documentElement.clientWidth;
               for (const s of ['.qarea', '.inp']) { const e = document.querySelector(s); if (e && e.scrollWidth > e.clientWidth + 1) o.push(s + ' overflows sideways'); }
@@ -11978,7 +11984,7 @@ async function main() {
           if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
           return o;
       };
-      kit.fitOk = async (tag, r) => (r || await pg.evaluate(kit.FIT)).forEach(x => bad.push(at + tag + ': ' + x)); // r: the fit read by K.at
+      kit.fitOk = async tag => { await animsDone(pg); (await pg.evaluate(kit.FIT)).forEach(x => bad.push(at + tag + ': ' + x)); };
       kit.tabTo = async (sel, back) => {
         for (let k = 0; k < 60; k++) {
           if (await pg.evaluate(s => document.activeElement && document.activeElement.matches(s), sel)) return true;
@@ -12220,6 +12226,7 @@ async function main() {
         try {
           await pg.evaluate(() => { S.voice = true; window.__said = []; const s0 = window.say; window.say = (t, ...a) => { window.__said.push(String(t)); return s0(t, ...a); }; });
           const fixFit = async tag => {
+            await animsDone(pg);
             const r = await pg.evaluate(() => {
               const o = [], vw = document.documentElement.clientWidth, ls = [...document.querySelectorAll('#prompt .fxs .tp')];
               for (const e of ls) { const b = e.getBoundingClientRect(); if (b.height < 47.5 || b.width < 47.5) o.push('small step ' + Math.round(b.width) + 'x' + Math.round(b.height)); if (b.left < -1 || b.right > vw + 1) o.push('step outside'); }
@@ -12293,9 +12300,9 @@ async function main() {
           await lineSteady(pg);
           const p40 = await pg.evaluate(`(${KSM.linePt.toString()})(0)`);
           await pg.mouse.click(p40.x, p40.y); await vwait(pg, 120);
-          const [wl] = await actRead(pg, () => pg.click('#mcheck'), [[300, `() => ({ why: (${WHY})(), fit: (${K.FIT})() })`]]);
-          if (!/5 or more rounds up/.test(wl.why)) bad.push(at + 'why on the line: ' + wl.why);
-          await K.fitOk('why on the line', wl.fit);
+          const [wl] = await actRead(pg, () => pg.click('#mcheck'), [[300, WHY]]);
+          if (!/5 or more rounds up/.test(wl)) bad.push(at + 'why on the line: ' + wl);
+          await K.fitOk('why on the line');
           await vwait(pg, 900);
           await answer(pg);
           await K.settle('why line');
