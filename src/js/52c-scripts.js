@@ -313,8 +313,9 @@ const LS_TONE = {
    words in a line, and the words that age does not use. The little one may say anything kind; the older kid drops baby praise;
    the teen-like partner also drops the little one's exclamations and never says "we did it" for the child's own work. */
 /* LS-STOP: the lines of a lesson stop at each age (the start card, a test-out that slides into the lesson, Check me once more, the pay).
-   Kept apart from LS_TONE so the recorded teacher lines (tools/en-audio.js reads LS_TONE.little) stay as recorded: these are the tablet's
-   voice until a rerun of en-audio --teach records them. Checked against LS_RULES like LS_TONE (tools/test.js LS-STOP). */
+   Kept apart from LS_TONE so the recorded teacher lines (tools/en-audio.js reads LS_TONE.little) stay as recorded. The little one's fixed
+   lines, and "Want to learn this with me?" after the name, are recorded too (en-audio --teach, v179); the older ages' are the tablet's
+   voice. Checked against LS_RULES like LS_TONE (tools/test.js LS-STOP). */
 const LS_TONE2 = {
   little: {open: n => `Hi ${n}! Want to learn this with me?`, slide: "That's okay. Let's learn it together!", findIt: 'One more. Find my mistake!',
     paid: 'You earned game time!', noProof: 'Find my mistake next time to earn game time.'},

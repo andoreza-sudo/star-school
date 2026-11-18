@@ -3067,7 +3067,8 @@ const GW = {
 };
 /* P6-05: About Star School (Grown-ups): what the app is, privacy, the release and build, and the licences of what it bundles.
    Only Andika is third-party (embedded by tools/build.py; the text is OFL_TEXT in src/data/d-licences.js = LICENSES/OFL-Andika.txt).
-   The art, icons, sounds and games are made for Star School; speech comes from the tablet's own voices; no libraries are bundled. */
+   The art, icons, sounds and games are made for Star School; speech is the tablet's own voice and recordings made with xAI
+   text-to-speech (audio/, ES-AUDIO, EN-PRAISE, TEACH-4; the About card says so); no libraries are bundled. */
 function aboutCard(){
   return GW.card('gw-about','info','About Star School',
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
@@ -3077,6 +3078,7 @@ function aboutCard(){
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
+    <p class="gw-sub ab-lic-line" id="ab-tts">The recorded voices were made with AI text-to-speech (xAI).</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
 }
 // G-FEEL1: 4x4 Hill Climb driving help (S.garage.as: 'auto' or 0-3; src/js/62-hill.js, which loads with the Game Room). Read here
@@ -3117,7 +3119,7 @@ function grown(){let armed=false;
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
-  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (Pre-K to 2nd; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
+  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (lesson stops on the math and reading maps; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
     {sub:'Picks where the maps start. Nothing is ever locked or removed when you change it.'})}
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
     <div class="gw-row"><span class="gw-rl">Minutes per round</span>${GW.seg('per',[2,3,5],pc.per,'Minutes per round',v=>v)}</div>

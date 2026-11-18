@@ -8213,7 +8213,7 @@ function genSpell(lv){
 }
 /* ---------- TEACH-4: the pet's recorded teacher lines (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach) ----------
    The fixed lines of the Pre-K to 2nd grade lessons -> their file, audio/teach/<file>.ogg (xAI text to speech, English, the voice luna,
-   speed 0.95, Opus 16 kbps mono). One voice: the pet is one speaker. Keys are esKey(text). 86 lines. */
+   speed 0.95, Opus 16 kbps mono). One voice: the pet is one speaker. Keys are esKey(text). 91 lines. */
 const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "A full frame is ten. Count the ten first.":"4942db0f4b89",
 "And you still know it!":"8f971cdef1d9",
@@ -8224,6 +8224,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Count each one once. Touch it as you count.":"d0ed5405ab0f",
 "Do you remember this?":"196eb8f68e13",
 "Each coin has a value. Add the values.":"9f7613da260c",
+"Find my mistake next time to earn game time.":"83454918974c",
 "Find the one that does not match the rest.":"b9a27d555453",
 "First, show me what you know.":"8df3f569f1ce",
 "Give me a problem!":"18a995fe5f80",
@@ -8250,6 +8251,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Now let's do some together.":"1013b9679933",
 "Now tell me why.":"ba7b4e1ec1a1",
 "One more, together!":"8487acd6f039",
+"One more. Find my mistake!":"ba4ccd1d6981",
 "Only one digit fits in each place.":"d0043afd78fd",
 "Put each little letter with its big partner.":"9d452d2903ca",
 "Put in as many counters as you like!":"5ba64b76e358",
@@ -8276,6 +8278,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Tap its big partner.":"2c9882ed55a8",
 "Tap its little partner.":"a506b9adc606",
 "Ten ones make a ten. Carry it over.":"24df29582747",
+"That's okay. Let's learn it together!":"10386f14d0fb",
 "The e at the end changes the vowel sound.":"53ac8ca2e645",
 "The number we see is not the answer.":"38b721d4df54",
 "The open side faces the bigger number.":"0970d970a58b",
@@ -8286,6 +8289,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Top take away bottom. Not the small from the big.":"20fec2316531",
 "Two vowels side by side make one sound.":"41c17a1be3d3",
 "Use both colours.":"ac1cbcdca013",
+"Want to learn this with me?":"86fca3a3050f",
 "We did it!":"4c4279f72ce9",
 "We took a ten. Now the tens have one less.":"163a4e09cb2f",
 "What comes next?":"0d4762c6ae7b",
@@ -8297,6 +8301,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Yes, I got it right!":"f6a760a8fb1e",
 "You already knew it!":"da4b1d09e9b2",
 "You caught my mistake!":"1a91631c50d5",
+"You earned game time!":"71561c2eceac",
 "You fixed it!":"40de3ffed792",
 "You know this! Show me!":"3a72d16721c7",
 "You learned it!":"3ceb38958101",
