@@ -20780,7 +20780,7 @@ run('teach: batch 5r reading shapes, their models, the story told, their read-th
         if(q.kind=='choice'&&q.choices.length<3)bad.push(id+': a choice of two');if(q.kind=='make'&&!['flash','clap','sfix'].includes(q.model))bad.push(id+': model '+q.model)}
       const e=L.exp(r);(nudge[LS_DRAFTED[id].fam]=nudge[LS_DRAFTED[id].fam]||new Set()).add(e.nudge.replace(/with \\w+\\./,'with X.'))}
     const own=Object.values(nudge).map(x=>[...x].join('|'));if(new Set(own).size!==own.length||own.length!==10)bad.push('the shapes do not each have their own "not yet" line: '+JSON.stringify(own));
-    if(!/\\(q\\.tell \\|\\| \\[\\]\\)\\.concat\\(\\[q\\.say\\]\\)/.test(String(LS.show)))bad.push('the lesson does not tell a story before its question (q.tell, LS.show)');
+    if(!/\\(q\\.tell \\|\\| \\[\\]\\)\\.concat\\(\\[q\\.say\\]\\)/.test(String(LS.told))||!/LS\\.told\\(it\\)/.test(String(LS.show)))bad.push('the lesson does not tell a story before its question (q.tell, LS.told in LS.show)');
     return bad})()`);
   p.push(...m);
   // 3. the read-through: batch 5r only, in map order, equal to docs/drafts/BATCH5R-READ.md; every other batch leaves these lessons out
@@ -21326,7 +21326,7 @@ run('teach: the model up front, the beat label, the Remember line TEACH-UX',()=>
       for(let s=1;s<=25;s++){for(const [what,o] of [['remember',remOf(host,x,s)],['warm-up',LESSONS[x].warm?remOf(x,null,s):null]]){
         if(!o)continue;const it=o.it,at=x+' '+what+' seed '+s+': ';
         if(!it){bad.push(at+'no item at Remember');continue}
-        const q=it.q,h=q.hint&&q.hint.k=='html'?q.hint.html:'',want=q.kind=='num'&&svgs(h).length>0&&!/<svg/.test(q.html||'');
+        const q=it.q,h=q.hint&&q.hint.k=='html'?q.hint.html:'',want=q.kind=='num'&&svgs(h).length>0&&!/<svg/.test(q.html||'')&&q.hint.mdl!==false; // fixRev: add5 opts out
         if(!!it.mdl!==want)bad.push(at+'model '+!!it.mdl+', want '+want+' ('+q.kind+')');
         const pr=LS.prompt(it);
         if(want){seen.model.add(x+' '+what);
@@ -21347,7 +21347,7 @@ run('teach: the model up front, the beat label, the Remember line TEACH-UX',()=>
         const [a,b]=[q.sl.a,q.sl.b];
         if(id=='add2'||id=='add3'){if(dots(h,'v1')!==a||dots(h,'v2')!==b)bad.push(at+'the hint frame is not '+a+' then '+b+' in two colours: '+dots(h,'v1')+'/'+dots(h,'v2'))}
         else if(/<g class="v2/.test(h))bad.push(at+'the hint frame has a second colour')}}
-    if(seen.model.size<23)bad.push('only '+seen.model.size+' lessons carry a model at Remember: '+[...seen.model].join());
+    if(seen.model.size<22)bad.push('only '+seen.model.size+' lessons carry a model at Remember: '+[...seen.model].join());
     // 2. grades 3 to 6 are as before: no model up front; their pet's own "then we build" line
     for(const g of [3,4,5,6]){S.grade=g;const T=lsTone();
       for(const x of ['add2','pv1','add3']){const {it}=remOf('tenf1',x,3);if(!it||it.mdl||LS.prompt(it)!==it.q.html)bad.push('grade '+g+' '+x+': a model up front');
@@ -21377,11 +21377,106 @@ run('teach: the model up front, the beat label, the Remember line TEACH-UX',()=>
     return {bad,model:[...seen.model].length,none:[...seen.none]}})()`);
   const p=r.bad.slice(),src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
   // the screen: the label under the dots is text a screen reader reads (the dots are hidden), from LS.step; tokens only
-  if(!/<div class="ls-pips" aria-hidden="true">\$\{pips\}<\/div><span class="ls-step" id="lsstep">\$\{esc\(LS\.step\(B\)\)\}<\/span>/.test(src))p.push('the top bar has no beat label under the dots');
+  if(!/<div class="ls-pips" aria-hidden="true">\$\{pips\}<\/div><span class="ls-step" id="lsstep">\$\{esc\(LS\.step\(B\)\)(\.replace\(\/\( of \\d\+\)\/, '<span class="ls-of">\$1<\/span>'\))?\}<\/span>/.test(src))p.push('the top bar has no beat label under the dots');
   if(!/const prompt = LS\.prompt\(it\)/.test(src))p.push('the screen does not draw the prompt with LS.prompt');
   const rule=(css.match(/\.ls-step\{[^}]*\}/)||[''])[0]+(css.match(/\.ls-beats\{[^}]*\}/)||[''])[0];
   if(!rule||/#[0-9a-f]{3,8}\b|\d+px/i.test(rule))p.push('the label CSS is not tokens only: '+rule);
   return{problems:p,note:r.model+' lesson items carry a model at Remember; no picture at all: '+(r.none.join(', ')||'none')};
+});
+
+// ---- Review fixes (v184, a Fable review of TEACH-UX and READ-SHAPES): the Remember model drew the answer (13 minus 9 as 4 counters), a
+//      heard-only "road" had the tiles for "rode", the pet's turn on a story never told the story, the flash card faded before the child
+//      could answer, the step label was cut on small phones, Parts of Speech sorted "duck", Plurals offered "stares" and "treees" ----
+run('teach: review fixes, the model never shows the answer, no homophone tiles, the story at the pet\'s turn, flash, step label, words fixRev',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],notes={model:new Set(),kinds:{}};
+    const NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,twenty:20};
+    // the numbers the question says (the operands; "Ten and 3 more" says ten)
+    const ops=q=>{const s=String(q.say||'');return new Set((s.match(/\\d+/g)||[]).map(Number).concat((s.toLowerCase().match(/[a-z]+/g)||[]).filter(w=>w in NW).map(w=>NW[w])))};
+    const svgs=h=>h.match(/<svg[\\s\\S]*?<\\/svg>/g)||[],circ=g=>(g.match(/<circle/g)||[]).length;
+    // base-ten blocks from their path: each block is "M x y h W v H": a flat is wide and tall, a rod tall, a cube small
+    const blocks=d=>{const o=[0,0,0];for(const m of d.matchAll(/h(\\d+(?:\\.\\d+)?)v(\\d+(?:\\.\\d+)?)/g)){const w=+m[1],h=+m[2];o[w>40&&h>40?0:h>40?1:2]++}return o};
+    // every group of one model picture, each read the way a child reads it: [what, value, parts]
+    const groups=m=>{const out=[];
+      for(const v of svgs(m)){
+        if(/aria-label="ten frame"/.test(v)){const g={};for(const x of v.matchAll(/<g class="([^"]+)">([\\s\\S]*?)<\\/g>/g))g[x[1]]=(g[x[1]]||0)+circ(x[2]);
+          const fade=Object.keys(g).filter(k=>/vx/.test(k)).reduce((a,k)=>a+g[k],0),all=Object.values(g).reduce((a,b)=>a+b,0);
+          if(fade)out.push(['frame: all',all],['frame: taken away',fade]);else for(const k in g)out.push(['frame '+k,g[k]]);}
+        else if(/aria-label="base ten blocks"/.test(v)){for(const x of v.matchAll(/<path class="(vb|ls-b2)" d="([^"]*)"/g)){const b=blocks(x[2]);
+          out.push(['blocks '+x[1],b[0]*100+b[1]*10+b[2],b.filter(Boolean).length?[b[0]*100,b[1]*10,b[2]].filter(Boolean):[],b.filter(Boolean)])}}
+        else if(/viz-nl/.test(v))out.push(['line',null,(v.replace(/<text class="vqt"[^>]*>\\?<\\/text>/g,'').match(/<text[^>]*>[^<]*<\\/text>/g)||[]).map(t=>+t.replace(/<[^>]+>/g,'')).filter(x=>!isNaN(x))]);
+        else out.push(['unknown '+(v.match(/aria-label="([^"]*)"/)||[])[1],null])}
+      return out};
+    const remOf=(host,x,seed)=>{const st=LS.make(host,{seed,day:100,learn:1,rem:x?[x]:[]});return LSB[st.b]=='rem'?LS.cur(st):null};
+    // 1. every lesson, as a Remember item and as its own warm-up, for a 1st grader (the little pet), 60 seeds: a model only for the
+    //    Pre-K to 2nd grade lessons, and every group in it is a number the question says (a frame's colour, the counters before some are
+    //    taken away and those taken away, a colour's blocks or their places as the question names them, the line's labels), so no
+    //    picture is the answer unless the answer is a number the question says itself (a count-the-objects item)
+    S.grade=1;
+    for(const x of LS_IDS){for(let s=1;s<=60;s++)for(const it of [remOf(x=='tenf1'?'add3':'tenf1',x,s),LESSONS[x].warm?remOf(x,null,s):null]){
+      if(!it||!it.mdl)continue;const q=it.q,at=x+' seed '+s+' ('+q.say+' = '+q.ans+'): ',m=LS.model(q),O=ops(q),ans=+q.ans;
+      if(LESSONS[x].band=='35'){bad.push(at+'a grade 3-5 lesson carries a model');continue}
+      notes.model.add(x);
+      for(const [what,val,parts,cnt] of groups(m)){notes.kinds[what.split(' ')[0]]=1;
+        if(/^unknown/.test(what)){bad.push(at+'a model picture this check cannot read: '+what);continue}
+        if(what=='line'){if(parts.includes(ans)&&!O.has(ans))bad.push(at+'the number line shows the answer '+ans);continue}
+        const ok=O.has(val)||(parts&&parts.length&&(parts.every(p=>O.has(p))||cnt.every(p=>O.has(p))));
+        if(!ok)bad.push(at+what+' is '+val+(parts?' ('+parts.join('+')+')':'')+', not a number the question says ['+[...O].join(',')+']');
+        if(val===ans&&!O.has(ans)&&!(parts&&parts.length))bad.push(at+what+' is the answer')}}}
+    for(const x of ['sub2','big2','big3','big4','big5','cnt4','miss1','miss2'])if(!notes.model.has(x))bad.push(x+': no model at all (it had one)');
+    if(notes.model.has('add5'))bad.push('add5 carries a model: its hint draws only the sum');
+    // the owner's cases: 13 minus 9 is 13 counters with 9 faded; 32 plus 61 is 32 in blue and 61 in orange
+    {const dots=(h,c)=>[...h.matchAll(new RegExp('<g class="'+c+'">([\\\\s\\\\S]*?)<\\\\/g>','g'))].reduce((a,x)=>a+circ(x[1]),0);
+      for(let s=1;s<=30;s++){const q=LS_DRAFTED.sub2.q(2,mulberry32(s)),m=LS.model(q);
+        if(dots(m,'v1')+dots(m,'v1 vx')!==q.sl.a||dots(m,'v1 vx')!==q.sl.b)bad.push('sub2 '+q.say+': not '+q.sl.a+' counters with '+q.sl.b+' faded');
+        const b=LS_DRAFTED.big2.q(2,mulberry32(s)),g=groups(LS.model(b));
+        if(g.length!==2||g[0][1]!==b.sl.a||g[1][1]!==b.sl.b)bad.push('big2 '+b.say+': the blocks are '+JSON.stringify(g))}}
+    // 2. a heard-only spelling never offers the tiles for a real word that sounds the same (this check's own list, beyond sameSound),
+    //    at any stage, in Explore and in the fix after the pet's turn, over the whole pool and 1500 seeds
+    const HOM={road:['rode'],rose:['rows'],plane:['plain'],sun:['son'],coat:['cote'],nose:['knows'],bee:['be'],tail:['tale'],pear:['pair'],sail:['sale'],
+      meat:['meet'],hare:['hair'],knot:['not'],mail:['male'],deer:['dear'],flower:['flour'],night:['knight'],cent:['sent'],tide:['tied'],pail:['pale']};
+    const can=(t,w)=>{t=t.slice();for(const c of w){const i=t.indexOf(c);if(i<0)return false;t.splice(i,1)}return true};
+    const spell=LS_IDS.filter(id=>LS_DRAFTED[id]&&LS_DRAFTED[id].fam=='spell'),words=new Set();let builds=0;
+    for(const id of spell){const D=LS_DRAFTED[id];
+      for(let s=1;s<=1500;s++){const r=mulberry32(s*31+id.length);
+        for(const q of [0,1,2,3].map(st=>D.q(st,r)).concat([D.exp(r).q])){if(q.kind!='build')continue;builds++;words.add(q.word);
+          const qs=[q].concat(Object.values(knowPredict(q)).flat().filter(v=>!lsOk(q,String(v))).slice(0,2).map(v=>D.fix(q,String(v),r)));
+          for(const t of qs)for(const h of new Set(sameSound(q.word).concat(HOM[q.word]||[])))if(h.length==q.word.length&&can(t.tiles,h))
+            bad.push(id+' '+q.word+' ('+(t===q?'item':'fix')+', '+(/ls4-pic|class="emo"/.test(q.html)?'picture':'heard')+'): the tiles '+t.tiles.join('')+' build '+h)}}}
+    for(const w of ['road','rose','plane','sun','coat'])if(!words.has(w)&&spell.length)notes.kinds['pool without '+w]=1;
+    // 3. the pet's turn on a story question says the story, then the question, then the pet's claim (a child who cannot read judges by ear)
+    let judged=0;
+    for(const id of LS_IDS.filter(id=>LS_DRAFTED[id]&&LS_DRAFTED[id].fam=='story'))for(let s=1;s<=20;s++){
+      const st=LS.make(id,{seed:s,day:100,learn:1});st.S=st.S||S;LS.beat(st,LSB.indexOf('chk'));const it=LS.cur(st);if(!it||it.m!='judge')continue;judged++;
+      const L=LS.told(it),q=it.q,i0=L.indexOf(q.tell[0]),iq=L.indexOf(q.say),ic=L.indexOf(it.lines[it.lines.length-1]);
+      if(!q.tell||!q.tell.every((t,k)=>L[i0+k]===t)||i0<0||iq!==i0+q.tell.length||ic<=iq||!L.includes(it.lines[0]))bad.push(id+' seed '+s+': the pet\\'s turn says '+JSON.stringify(L))}
+    if(judged<20)bad.push('only '+judged+' story pet turns');
+    // and other items are as before: an ask item says its lines, its story and its question; a judge item with no story only its lines
+    {const it={m:'judge',q:{say:'Q'},lines:['a','b']},a={m:'ask',q:{say:'Q',tell:['t1','t2']},lines:['a']};
+      if(JSON.stringify(LS.told(it))!=='["a","b"]'||JSON.stringify(LS.told(a))!=='["a","t1","t2","Q"]')bad.push('LS.told changed other items: '+JSON.stringify([LS.told(it),LS.told(a)]))}
+    // 4. the flash card fades only once the controls wake (data-wake, added by the screen's wake), never from the start
+    {const q=LS_DRAFTED.sight1.q(2,mulberry32(3)),h=q.html+(q.choices||[]).map(c=>c.l).join('');
+      if(/ls5-flash[^"]*\\bgo\\b/.test(h)||!/class="ls5-flash" data-wake="go"/.test(h))bad.push('the flash card: '+(h.match(/<span class="ls5-flash[^>]*>/)||[''])[0]);
+      if(!/\\[data-wake\\]/.test(String(LS.show)))bad.push('the screen\\'s wake does not start what waits for it (data-wake)')}
+    // 5. Parts of Speech: no word that is both a naming and a doing word to a child; Plurals: the wrong ending is a plausible non-word
+    const BOTH=['duck','ducks','fish','fishes','flies','fly','watch','watches','rock','rocks','park','parks','play','plays','kick','kicks','sink','sinks','fall','falls','dress','dresses'];
+    const REAL=['stares','hates','belles','doges','capes','tubes','cubes','cares','pines','bites','mates','notes','hopes','canes','cones','robes','tapes','dates','gates','kites',
+      'bikes','cakes','trees','stars','hats','bells','dogs','foxes','boxes','dishes','buses','tens','hens','pens','beds','cups','bugs','bats','ants','nuts','pots','pins','cans'];
+    {const sorted=new Set(),said=new Set();
+      for(let s=1;s<=400;s++){const r=mulberry32(s*13);for(const st of [0,1,2,3]){const q=LS_DRAFTED.gram2.q(st,r);
+        for(const x of (q.items||[]).map(c=>c.v).concat((q.choices||[]).map(c=>c.v)))sorted.add(x)}}
+      for(const w of sorted)if(BOTH.includes(w))bad.push('Parts of Speech offers "'+w+'", a naming word and a doing word');
+      for(let s=1;s<=600;s++){const r=mulberry32(s*17);for(const st of [0,1,2,3]){const q=LS_DRAFTED.gram3.q(st,r),w=q.sl.word,p=ls5Pl(w);
+        const wrong=(q.choices||[]).map(c=>c.v).filter(v=>v!==q.ans).concat(Object.values(knowPredict(q)).flat().map(String)).filter(v=>v!==w&&!(v.endsWith('s')&&LS5_PLS.concat(LS5_PLES).some(x=>x!==w&&ls5Pl(x)===v)));
+        for(const v of wrong){said.add(v);if(REAL.includes(v)||/(.)\\1\\1/.test(v)||/ees$/.test(v))bad.push('Plurals: one '+w+', two '+p+': the wrong "'+v+'" is a real word or not plausible')}}}
+      notes.kinds['plural wrongs '+said.size]=1}
+    return {bad,model:[...notes.model].length,kinds:Object.keys(notes.kinds),builds}})()`);
+  const p=r.bad.slice();
+  // 5. the step label under 400 px: " of 6" in its own span, which the narrow layout leaves out (smoke TEACH-UX measures 320 and 360 px)
+  const src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
+  if(!/<span class="ls-of">\$1<\/span>/.test(src))p.push('the step label has no " of 6" span');
+  if(!/@media \(max-width:400px\)\{[^\n]*\.ls-step \.ls-of\{display:none\}/.test(css))p.push('the step label keeps " of 6" under 400 px');
+  return{problems:p.slice(0,40),note:r.model+' lessons carry a model, each group a number the question says ('+r.kinds.join(', ')+'); '+r.builds+' spelling builds'};
 });
 
 // ---- PLAY-01: the Google Play app: the free sample, Play mode, the grown-up gate, the purchase (mocked Google Play), saves ----

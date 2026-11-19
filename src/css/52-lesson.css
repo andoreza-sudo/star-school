@@ -11,7 +11,7 @@
 .ls-beats .ls-pips{flex:none;max-width:100%}
 .ls-step{max-width:100%;font-size:var(--fs-2);font-weight:700;line-height:1.1;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:480px){.ls-top .ls-tag{display:none}}
-@media (max-width:400px){.top.tbar.ls-top{gap:var(--s-1)}.ls-top .ls-meter{padding:0 var(--s-2) 0 var(--s-1)}}
+@media (max-width:400px){.top.tbar.ls-top{gap:var(--s-1)}.ls-top .ls-meter{padding:0 var(--s-2) 0 var(--s-1)}.ls-step .ls-of{display:none}}
 .ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}
 .ls-top .ls-tag{flex:none}
 .ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}

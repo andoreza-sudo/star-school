@@ -906,7 +906,7 @@ function ls5Sight(id, t, g, lv, o) {
   };
   const okW = () => pool.filter(w => all.some(x => x !== w && x[0] === w[0] && !sameSound(w).includes(x)));
   const cards = (w, r) => { const A = alts(w, r), ws = ls4Shuf(r, [w, A.same[0], A.other[0], A.other[1]]); return {ws, t: ws.indexOf(w), s: ws.indexOf(A.same[0])}; };
-  const flash = w => `<div class="ls5-fl"><span class="ls5-card up ls5-big"><span class="ls5-flash go">${esc(w)}</span></span>`
+  const flash = w => `<div class="ls5-fl"><span class="ls5-card up ls5-big"><span class="ls5-flash" data-wake="go">${esc(w)}</span></span>`
     + `<button class="mmb ls5-again" aria-label="Show the word again">${ico('replay', 26)}</button></div>`;
   D.q = (st, r) => {
     const w = ls4Pick(r, okW()), A = alts(w, r), sl = {word: w}, hint = {k: 'html', html: `<div class="pkhint">${ls4Big(w)}</div>`, w: `Look at every letter of ${w}.`};
@@ -1029,6 +1029,20 @@ function ls5Claps(id, t, g, o) {
 /* ---- Spell (dictation): the child hears the word and builds it from letter tiles. Stage 0 with its picture, 1 the written word among
    three that differ by the lesson's sound, 2 and 3 heard only (no picture). The pet writes a real word that differs by one of the
    lesson's codes (kite as kit), as the phonics lessons read them (ls4Code). ---- */
+// fixRev (v184): real words that sound like a spelling word (beyond sameSound's list, 20-words.js): a heard-only dictation never offers
+// the tiles to build one, since the child cannot tell them apart by ear and "rode" for road is not wrong to the ear
+const LS5_HOM = {road: ['rode'], rose: ['rows'], plane: ['plain'], sun: ['son'], coat: ['cote'], nose: ['knows'], bee: ['be'], tail: ['tale'], pear: ['pair'],
+  hare: ['hair'], sail: ['sale'], meat: ['meet'], night: ['knight'], deer: ['dear'], flower: ['flour'], knot: ['not'], mail: ['male']};
+// the letters a homophone of w (of w's length: a build is checked only when every slot is full) needs beyond w's own letters
+const ls5HomNeed = w => {
+  const need = new Set();
+  for (const h of new Set(sameSound(w).concat(LS5_HOM[w] || []))) {
+    if (h.length != w.length) continue;
+    const t = [...w];
+    for (const c of h) { const i = t.indexOf(c); if (i < 0) need.add(c); else t.splice(i, 1); }
+  }
+  return need;
+};
 function ls5Spell(id, t, g, pool, key, bugs, o) {
   const D = ls5D(id, t, g, 'spell', Object.assign({bugs, petSt: 2, key, slots: LS5_SL.spell, claim: 'I wrote {ans}. Am I right?'}, o));
   const coded = w => ls4Con(w).filter(x => bugs.includes(ls4Code(w, x)));
@@ -1038,8 +1052,9 @@ function ls5Spell(id, t, g, pool, key, bugs, o) {
   const bugOf = (w, xs) => { const b = {}; for (const x of xs) { const c = ls4Code(w, x); if (c) (b[c] = b[c] || []).push(x); } return b; };
   const ear = w => ls5Say(w, 'Hear the word again', true);
   const build = (st, w, r, pic, o2) => {
-    const cs = ls4Shuf(r, coded(w)), n = st == 0 ? 1 : 2, extra = [...new Set([...cs.join('')].filter(c => !w.includes(c)))].slice(0, 1);
-    const more = ls4Shuf(r, [...'bdfgmnprst'].filter(c => !w.includes(c) && !extra.includes(c))).slice(0, n + 1 - extra.length);
+    // fixRev (v184): never the letter a homophone needs (road's "e" from read would let rode be built), with or without the picture
+    const no = ls5HomNeed(w), cs = ls4Shuf(r, coded(w)), n = st == 0 ? 1 : 2, extra = [...new Set([...cs.join('')].filter(c => !w.includes(c) && !no.has(c)))].slice(0, 1);
+    const more = ls4Shuf(r, [...'bdfgmnprst'].filter(c => !w.includes(c) && !extra.includes(c) && !no.has(c))).slice(0, n + 1 - extra.length);
     return ls4Q(D, Math.min(st, 2), Object.assign({kind: 'build', word: w, tiles: ls4Shuf(r, [...w].concat(extra, more)), ans: w, sl: {word: w}, bug: bugOf(w, cs),
       hint: {k: 'text', s: `Say it slowly: ${w}. One sound at a time.`}, html: (pic ? `<div class="emo">${ls4Pic(w)}</div>` : '') + `<div class="ls5-dict">${ear(w)}</div>` + ls4Slots(w.length),
       say: pic ? `${w}. Build ${w} with the tiles.` : `Listen: ${w}. Build the word.`, label: `${id} build ${w}${pic ? '' : ' heard'}${st == 3 ? ' show' : ''}`}, o2));
@@ -1064,7 +1079,11 @@ function ls5Spell(id, t, g, pool, key, bugs, o) {
     const w = c.word || good()[0], k = c.letter || keyOf(w);
     return {html: `<div class="ls4-nw">${ls4Pic(w, 'ls4-m')}<span class="ls4-wd">${mark(w, k)}</span></div>${ls4Slots(w.length, w, 'ls5-nb')}`, sl: {word: w, letter: ls4Spk(k)}};
   };
-  D.fix = (q, pv, r) => ls4FixBuild(q, pv, r);
+  // fixRev (v184): the fix offers the pet's wrong letters, but never one a homophone needs (the pet's "read" for road brings an e: rode)
+  D.fix = (q, pv, r) => {
+    const f = ls4FixBuild(q, pv, r), no = ls5HomNeed(q.word), n = c => [...q.word].filter(x => x == c).length;
+    return no.size ? Object.assign(f, {tiles: f.tiles.filter((c, i) => !no.has(c) || f.tiles.slice(0, i + 1).filter(x => x == c).length <= n(c))}) : f;
+  };
   D.warm = ls5WarmFirst(D);
   return D;
 }
@@ -1236,8 +1255,9 @@ function ls5Order(id, t, g, o) {
 
 /* ---- Parts of Speech: naming words and doing words. Stage 0 a sorter of four words, 1 a picture and its sentence (tap the doing or the
    naming word), 2 the sentence alone, 3 a longer sentence with four words to pick from. Wrong: the other kind of word (posSwap). ---- */
-const LS5_VERB = {dog: ['runs', 'digs', 'jumps', 'barks'], cat: ['naps', 'jumps', 'runs'], bird: ['sings', 'flies'], fish: ['swims'], frog: ['hops', 'jumps', 'swims'],
-  duck: ['swims', 'quacks'], bee: ['flies', 'buzzes'], horse: ['runs', 'trots'], pig: ['eats', 'digs'], hen: ['pecks', 'eats'], owl: ['flies', 'hoots'], rabbit: ['hops', 'eats'],
+// fixRev (v184): no word that is both a naming and a doing word to a child (a duck, to duck; a fish, to fish; flies, the insects)
+const LS5_VERB = {dog: ['runs', 'digs', 'jumps', 'barks'], cat: ['naps', 'jumps', 'runs'], bird: ['sings', 'chirps'], frog: ['hops', 'jumps', 'swims'],
+  bee: ['buzzes'], horse: ['runs', 'trots'], pig: ['eats', 'digs'], hen: ['pecks', 'eats'], owl: ['hoots'], rabbit: ['hops', 'eats'],
   turtle: ['swims', 'crawls'], lion: ['roars', 'runs'], cow: ['eats', 'moos'], bear: ['sleeps', 'eats'], mouse: ['runs', 'hides']};
 const LS5_ADV = ['fast', 'now', 'today', 'here'];
 function ls5Pos(id, t, g, o) {
@@ -1279,11 +1299,17 @@ const LS5_PLS = ['cat', 'dog', 'pig', 'hat', 'bed', 'cup', 'duck', 'frog', 'kite
 const LS5_PLES = ['box', 'fox', 'dish', 'dress', 'beach', 'church'];
 const ls5Es = w => /(x|s|sh|ch)$/.test(w);
 const ls5Pl = w => w + (ls5Es(w) ? 'es' : 's');
+// fixRev (v184): the wrong ending (es for s, s for es) must make a plausible non-word: never a real word (star + es is "stares"), never
+// three letters in a row (dress + s), never e + es (kite + es); a word whose wrong ending fails is not asked (it still sorts in Explore)
+const LS5_PLREAL = ['stares', 'hates', 'belles', 'doges', 'capes', 'tubes', 'cubes', 'cares', 'pines', 'bites', 'mates', 'notes', 'hopes', 'canes', 'cones',
+  'robes', 'tapes', 'dates', 'gates', 'rates', 'fates', 'pales', 'tales', 'bares'];
+const ls5PlWrong = w => (ls5Es(w) ? w + 's' : w + 'es');
+const ls5PlOk = w => { const x = ls5PlWrong(w); return !LS5_PLREAL.includes(x) && !/(.)\1\1/.test(x) && !/ees$/.test(x); };
 function ls5Plural(id, t, g, o) {
   const D = ls5D(id, t, g, 'plural', Object.assign({bugs: ['plEs', 'plE', 'plNo'], slots: LS5_SL.plural, claim: 'Two of them: {ans}. Am I right?'}, o));
   const S = () => LS5_PLS.filter(w => ART[w]), E = () => LS5_PLES.filter(w => ART[w]);
-  const word = r => ls4Pick(r, r() < .5 ? E() : S());
-  const bugOf = w => (ls5Es(w) ? {plEs: [w + 's'], plNo: [w]} : {plE: [w + 'es'], plNo: [w]});
+  const word = r => ls4Pick(r, (r() < .5 ? E() : S()).filter(ls5PlOk));
+  const bugOf = w => (ls5Es(w) ? {plEs: [ls5PlWrong(w)], plNo: [w]} : {plE: [ls5PlWrong(w)], plNo: [w]});
   const two = w => `<div class="emo ls5-two">${ls4Pic(w)}${ls4Pic(w)}</div>`;
   D.q = (st, r) => {
     const w = word(r), p = ls5Pl(w), sl = {word: w};
@@ -1292,7 +1318,7 @@ function ls5Plural(id, t, g, o) {
       return ls4Q(D, 0, {kind: 'build', word: p, tiles, ans: p, sl, bug: bugOf(w), hint: {k: 'text', s: ls5Es(w) ? `${w} ends with ${w.slice(-2) == 'sh' || w.slice(-2) == 'ch' ? w.slice(-2) : w.slice(-1)}: add e and s.` : 'Just add s.'},
         html: two(w) + lsAsk(`One ${esc(w)}, two …`) + ls4Slots(p.length), say: `One ${w}, two ${p}. Build ${p}.`, label: `${id} build ${p}`});
     }
-    const wr = ls5Es(w) ? [w + 's', w] : [w + 'es', w], oth = ls5Pl(ls4Pick(r, (ls5Es(w) ? E() : S()).filter(x => x !== w))), all = ls5Ch(r, [p].concat(wr, st == 3 ? [oth] : []));
+    const wr = [ls5PlWrong(w), w], oth = ls5Pl(ls4Pick(r, (ls5Es(w) ? E() : S()).filter(x => x !== w))), all = ls5Ch(r, [p].concat(wr, st == 3 ? [oth] : []));
     return ls4Q(D, Math.min(st, 2), {kind: 'choice', cls: 'ls4-words', ans: p, choices: all, sl, bug: bugOf(w),
       hint: {k: 'text', s: 'Say the word for two. Do you hear an extra part at the end?'}, html: (st == 1 ? two(w) : '') + `<div class="ls4-sent">One ${esc(w)}, two ___.</div>`,
       say: `One ${w}, two what?`, label: `${id} pick ${w}${st == 3 ? ' 4' : ''}`});

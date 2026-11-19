@@ -172,7 +172,7 @@ const LESSONS = {
 
   miss1: {sk: 'miss', lv: 1, t: 'Missing Number', test: 2, idea: 'Count on from the part you have to the whole.', bugs: ['op', 'given'],
     q(st, r) {
-      const a = lsRi(r, 1, 6), t = lsRi(r, a + 1, 10), k = t - a, hint = lsFrameHint(t, 10, {b: k}, `Count on from ${a} to ${t}.`), bug = {op: a + t <= 20 ? [a + t] : [], given: [a, t]};
+      const a = lsRi(r, 1, 6), t = lsRi(r, a + 1, 10), k = t - a, hint = lsFrameHint(a, 10, {}, `Count on from ${a} to ${t}.`), bug = {op: a + t <= 20 ? [a + t] : [], given: [a, t]};
       if (st == 0) return lsFrame('miss', 1, 0, k, 10, {fixed: a, html: lsEq(`${a} + ${lsQm} = ${t}`) + lsAsk(`Put in more to make ${t}.`), say: `${a} and how many make ${t}? Put in more to make ${t}.`, hint, bug});
       if (st == 1) return lsNum('miss', 1, 1, k, `<div class="pkq">${VIZ.tenFrame(a, 10)}</div>` + lsEq(`${a} + ${SLOT} = ${t}`), `${a} plus what equals ${t}?`, {hint, bug});
       return lsNum('miss', 1, 2, k, lsEq(`${a} + ${SLOT} = ${t}`), `${a} plus what equals ${t}?`, {hint, bug});
@@ -190,7 +190,7 @@ const LESSONS = {
   cnt4: {sk: 'cnt', lv: 4, t: 'Count On & Back', test: 2, idea: 'Count on: one more each time. Count back: one less.', bugs: ['back', 'off1'],
     q(st, r) {
       const on = r() < .5, n = lsRi(r, 2, 17), ans = on ? n + 1 : n - 1, m = n > 10 || ans > 10 ? 10 : 0, line = {min: m, max: m + 10, step: 1, labels: 'all', marks: [n]};
-      const hint = {k: 'html', html: `<div class="pkhint">${VIZ.numLine({min: m, max: m + 10, labels: 'all', hops: [[n, ans, on ? '+1' : '−1']]})}<div>${on ? 'One more: a hop forward.' : 'One less: a hop back.'}</div></div>`, w: on ? 'One more is one hop forward.' : 'One less is one hop back.'};
+      const hint = {k: 'html', html: `<div class="pkhint">${VIZ.numLine({min: m, max: m + 10, labels: 'all', marks: [n], hide: [ans], hops: [[n, ans, on ? '+1' : '−1']]})}<div>${on ? 'One more: a hop forward.' : 'One less: a hop back.'}</div></div>`, w: on ? 'One more is one hop forward.' : 'One less is one hop back.'};
       const bug = {back: [on ? n - 1 : n + 1], given: [n]};
       if (st == 0) return lsLine('cnt', 4, 0, ans, line, lsEq(n) + lsAsk(on ? `One more than ${n}?` : `One less than ${n}?`),
         `Put the pin on one ${on ? 'more' : 'less'} than ${n}.`, {hint, bug, start: ans == m ? m + 10 : m});

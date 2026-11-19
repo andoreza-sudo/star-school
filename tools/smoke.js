@@ -13242,7 +13242,7 @@ async function main() {
           const st0 = await pg.evaluate(() => { const i = NODES.read.findIndex(n => nid(n) === 'sight1'); return { stop: lsStopAt('read', i), gate: lsGate('read', i), node: !!document.querySelector(`.lsn[data-ls="${i}"]`), css: !!document.querySelector('#css-teachrd') }; });
           if (!st0.stop || !st0.gate || !st0.node || !st0.css) bad.push(at + 'Sight Words has no lesson stop on the reading map: ' + JSON.stringify(st0));
           await shot(pg, `read5-map-${w}x${h}`);
-          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
+          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; window.__said5 = []; const s0 = window.say; window.say = (t, ...a) => { window.__said5.push(String(t)); return s0(t, ...a); }; });
           // 2. four lessons through every beat
           for (const [id, gr] of [['sight1', 0], ['comp1', 1], ['gram1', 1], ['syl2', 1]]) {
             await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; const i = NODES.read.findIndex(n => nid(n) === id); for (let j = 0; j <= i; j++) setSt('read', j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
@@ -13255,6 +13255,13 @@ async function main() {
               await wake5(pg);
               if (!seen.includes(b)) { seen.push(b); await fit5(pg, at + id + ' ' + b + ': '); await shot(pg, `read5-${id}-${String(seen.length).padStart(2, '0')}-${b.replace(/:/g, '-')}-${w}x${h}`); }
               if (b.startsWith('chk:judge') && !pet) pet = await pg.evaluate(() => { const it = LS.cur(LS.st); return { bub: document.querySelector('#lsbub').textContent, pv: it.pv, petOk: it.petOk, say: lsSayV(it.q, it.pv) }; });
+              // fixRev (v184): the pet's turn on a story says the story, then the question, then the pet's claim; the Hear button the same
+              if (id == 'comp1' && b.startsWith('chk:judge')) {
+                const told = await pg.evaluate(() => { const it = LS.cur(LS.st), want = it.q.tell.concat([it.q.say, it.lines[it.lines.length - 1]]).join(' '), n0 = window.__said5.length;
+                  const shown = window.__said5.some(t => t.includes(want)); document.querySelector('#lshear').click();
+                  return { want, shown, again: window.__said5.slice(n0).some(t => t.includes(want)), said: window.__said5.slice(-2) }; });
+                if (!told.shown || !told.again) bad.push(at + 'the pet\'s turn on a story does not tell it: ' + JSON.stringify(told));
+              }
               if (/:fix$/.test(b)) fixed = true;
               // the story card: a 48 px speaker for every sentence, and the story told before the question
               if (id == 'comp1' && /^tog:ask/.test(b) && !notes.includes('story' + w)) {
@@ -13266,6 +13273,9 @@ async function main() {
               }
               // the flash card hides its word, and shows it again
               if (id == 'sight1' && /^tog:ask:choice/.test(b) && await pg.evaluate(() => !!document.querySelector('.ls5-flash'))) {
+                // fixRev (v184): the fade starts when the controls wake (data-wake), not when the card is drawn
+                const fw = await pg.evaluate(() => { const c = document.querySelector('.ls5-flash'); return { go: c.classList.contains('go'), wake: c.dataset.wake, waiting: !!document.querySelector('#lsinp.ls-wait') }; });
+                if (!fw.go || fw.wake !== 'go' || fw.waiting) bad.push(at + 'the flash card after the controls woke: ' + JSON.stringify(fw));
                 const gone = await pg.waitForFunction(() => +getComputedStyle(document.querySelector('.ls5-flash')).opacity < .05, null, { timeout: 15000 }).then(() => true).catch(() => false);
                 await shot(pg, `read5-sight1-flash-hidden-${w}x${h}`);
                 await pg.click('.ls5-again');
@@ -13568,10 +13578,38 @@ async function main() {
         for (const u of ta.network) bad.push(at + 'network request: ' + u);
         await ta.ctx.close();
       }
+      // fixRev (v184): on 320 and 360 px phones, with the ticket meter, the label leaves out " of 6" and every step's name shows whole
+      for (const [w, h] of [[320, 640], [360, 740]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, sz = w + 'x' + h, at = 'TEACH-UX ' + sz + ' ';
+        try {
+          await pg.evaluate(() => { S.grade = 1; S.name = 'Mia'; S.lm = []; delete S.les; const i = NODES.math.findIndex(n => nid(n) === 'add3');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); lsOpen('math', i); });
+          await pg.waitForSelector('#lslearn', { timeout: 15000 });
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('#lslearn');
+          await pg.waitForSelector('#lsplay', { timeout: 15000 });
+          const s3 = await pg.evaluate(() => {
+            const o = [], vw = document.documentElement.clientWidth; let met = 0;
+            for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
+              const e = document.querySelector('#lsstep'), name = LS.step(B).split(' · ').pop(), vis = e.innerText.trim(), r = e.getBoundingClientRect();
+              if (document.querySelector('.ls-top #lsmeter')) met++;
+              if (e.scrollWidth > e.clientWidth + 1 || !vis.endsWith(name) || / of /.test(vis) || r.right > vw || r.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
+            const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show();
+            return { o, met, tog: document.querySelector('#lsstep').innerText.trim() }; });
+          if (s3.o.length || !s3.met || s3.tog !== 'Step 4 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
+          await pg.screenshot({ path: path.join(shots, `teachux-step-${sz}.png`) });
+          notes.push(sz + ' "' + s3.tog + '"');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
       if (bad.length) fail('TEACH-UX the model up front:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('TEACH-UX: add3 as a 1st grader at ' + notes.join(', ') + ': Remember (add2) shows its ten frame above the sum before any answer; the top bar reads ' +
         '"Step 1 of 6 · Remember" in words and is no taller for it; the pet says "Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads ' +
-        '"Step 2 of 6 · Explore"; every beat\'s label fits whole, with and without the ticket meter; screenshots in tools/out/teachux; no console errors, no network requests');
+        '"Step 2 of 6 · Explore"; every beat\'s label fits whole, with and without the ticket meter; at 320 and 360 px with the meter every step\'s name shows whole ' +
+        '(no "of 6"); screenshots in tools/out/teachux; no console errors, no network requests');
     }
     // end TEACH-UX
 
