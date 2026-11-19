@@ -458,14 +458,9 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .nv-extra .btn{width:100%;min-height:var(--tap);font-size:var(--fs-3)}
 .nv-extra .art-ex{display:flex;gap:var(--s-3);width:100%}.nv-extra .art-ex .btn{flex:1 1 0}
 
-/* ---- Grown-ups on Home: a labelled button with the hold ring ---- */
+/* ---- Grown-ups on Home: a labelled button (a tap asks for the PIN, RC-1) ---- */
+.btn.soft.nv-gw>.ic{width:22px;height:22px;color:var(--ink-2)}
 .btn.soft.nv-gw{padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);gap:var(--s-2);font-size:var(--fs-2);white-space:nowrap}
-.nv-ring{position:relative;display:grid;place-items:center;width:36px;height:36px;flex:none}
-.nv-ring .nv-rs{position:absolute;inset:0;width:36px;height:36px;transform:rotate(-90deg)}
-.nv-rt{fill:none;stroke:var(--line);stroke-width:3.5}
-.nv-rf{fill:none;stroke:var(--brand);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100}
-.btn.soft.nv-gw .nv-ring>.ic{width:22px;height:22px;color:var(--ink-2)}
-.nv-gw.hold{background:var(--brand-tint)}
 @media (max-width:480px){.hm-logo>span:last-child{display:none}}
 .nv-gate{text-align:center}
 .nv-q{display:flex;align-items:center;justify-content:center;gap:var(--s-3);margin:0 0 var(--s-2);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700}
@@ -2438,6 +2433,15 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .btn.icon.ak-btn{width:var(--tap);height:var(--tap);min-height:var(--tap);background:var(--surface);color:var(--brand);box-shadow:var(--shadow),0 3px 0 var(--line)}
 .hm-stage .btn.ak-hm{position:absolute;top:var(--s-2);left:var(--s-2);z-index:2}
 .map .btn.ak-mp{position:absolute;margin:calc(var(--tap) / -2) 0 0 calc(var(--tap) / -2);z-index:4}
+/* RC-1: the tablet cannot save (46-home.js hmSaveWarn) */
+.hm .hm-svw{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
+  background:var(--try-tint);color:var(--try-ink);font-weight:700}
+.hm .hm-svw>.ic{flex:none}
+.hm .hm-svw>span{flex:1}
+.hm .hm-svw .btn{flex:none}
+.hm .hm-gift{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
+  background:var(--play-tint);color:var(--ink);font-weight:700}
+.hm .hm-gift>.ic{flex:none;color:var(--play-shade)}
 /* LS-STOP: the lesson stop on the map (42b-lstop.js), its ticket (what the next try pays) and label. In index.html: the map draws it
    before the lesson part loads. Tokens only. */
 .btn.lsn,.btn.lsn.ls-go{position:absolute;width:60px;height:60px;min-height:60px;margin:-30px 0 0 -30px;padding:0;border-radius:var(--r-card);z-index:2;
@@ -2460,6 +2464,8 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .lsn-tk.dn .ic{color:var(--good)}
 .nlab.lsn-lab{color:var(--ink-2)}
 html.calm .btn.lsn.cur::after{animation:none}
+/* RC-1: the planner's pick (LS.mapAdd, .ls-go) pulses only when it is the child's own stop (.cur): one ring on the map */
+.btn.lsn.ls-go:not(.cur)::after{content:none;animation:none}
 /* P4-18 graphics quality pass: drawn chrome for the screens that still had emoji or flat looks (map stops and world badges,
    Fact Sprint, Speed Race, streak calendar, placement, Pet Care, setup, Game Room). Tokens only; motion is transform/opacity
    (calm mode and reduced motion stop it in 20-base.css). Markup ids and classes are the ones the screens always had. */
@@ -3038,7 +3044,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v187'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v187 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v188'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v188 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3266,7 +3272,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v187'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v188'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3335,7 +3341,14 @@ const PRF = {
     const ids = [...new Set(o.ids.filter(id => PRF.SLOTS.includes(id)))];
     return { ids, cur: PRF.SLOTS.includes(o.cur) ? o.cur : ids[0] };
   },
-  writeIdx(ids, cur) { return PRF.put(PRF.IDX, JSON.stringify({ v: 1, ids, cur })); },
+  // RC-1: the index also keeps each child's picture password (pw: {slot: {s, h, n, t}}, 41c-kidpw.js, part gate); a rewrite keeps
+  // the passwords of the children it lists and drops the rest
+  writeIdx(ids, cur) {
+    const o = PRF.obj(PRF.get(PRF.IDX)), pw = {};
+    if (o && o.pw && typeof o.pw == 'object') for (const id of ids) if (o.pw[id]) pw[id] = o.pw[id];
+    return PRF.put(PRF.IDX, JSON.stringify(Object.keys(pw).length ? { v: 1, ids, cur, pw } : { v: 1, ids, cur }));
+  },
+  pwOn(id) { const o = PRF.obj(PRF.get(PRF.IDX)), x = o && o.pw && o.pw[id]; return !!(x && typeof x.h == 'string'); },
   // At load, before 42-paths.js migrates S: the children that exist (the index order, then any slot it does not list) and the
   // one who played last, whose save is loaded. 00-core.js already loaded child 1, so that is read again only for another child.
   boot() {
@@ -3346,6 +3359,8 @@ const PRF = {
     const listed = (idx ? idx.ids : []).filter(PRF.has);
     const ids = listed.concat(PRF.SLOTS.filter(id => !listed.includes(id) && PRF.has(id)));
     const cur = idx && ids.includes(idx.cur) ? idx.cur : ids[0] || 'p1';
+    const er = /^(.+)\|seen$/.exec(PRF.get(KEY + '-erased') || ''); // RC-1: an "Undo erase" copy Grown-ups has offered goes now (BAK.keepErased)
+    if (er) { PRF.drop(er[1] + '-undo'); PRF.drop(KEY + '-erased'); }
     if (!ids.length) ids.push(cur);
     PRF.ids = ids;
     PRF.cur = cur;
@@ -3479,11 +3494,13 @@ const PRF = {
     return PRF.put(PRF.key(id), JSON.stringify(d)) ? '' : PRF.FULL;
   },
   // Delete a child and everything kept for them (never the last one: that is Start over). Resolves to '' or a message.
-  async remove(id) {
+  // RC-1: keep (default): the deleted save is kept for "Undo erase" (BAK.keepErased, 81-backup.js)
+  async remove(id, keep = true) {
     if (!PRF.ids.includes(id) || PRF.ids.length < 2) return 'That child cannot be deleted.';
-    const k = PRF.key(id), ids = PRF.ids.filter(x => x !== id);
+    const k = PRF.key(id), ids = PRF.ids.filter(x => x !== id), raw = id === PRF.cur ? JSON.stringify(S) : PRF.get(k);
     if (id === PRF.cur) SAVE_OFF = true; // nothing may write the deleted save back before the app starts again
     for (const x of ['', '-bak', '-corrupt', '-undo']) PRF.drop(k + x);
+    if (keep && typeof BAK != 'undefined') BAK.keepErased(k, raw); // RC-1: kept for "Undo erase" (a restored save is a child again at the next start)
     PRF.drop(PRF.k('starschool-neon', id));
     PRF.writeIdx(ids, id === PRF.cur ? ids[0] : PRF.cur); // if this fails, the next start drops the missing child by itself
     PRF.ids = ids;
@@ -3492,15 +3509,19 @@ const PRF = {
   },
   // Start over with more than one child: this child's save becomes a fresh one in the same place (setup runs again).
   async wipe() {
-    if (!PRF.put(SKEY, JSON.stringify(PRF.fresh()))) return PRF.FULL;
+    const kept = typeof BAK != 'undefined' && BAK.keepErased(SKEY, JSON.stringify(S)); // RC-1: for "Undo erase"
+    if (!PRF.put(SKEY, JSON.stringify(PRF.fresh()))) {
+      if (kept) { PRF.drop(SKEY + '-undo'); PRF.drop(BAK.ERASED); }
+      return PRF.FULL;
+    }
     SAVE_OFF = true;
-    PRF.drop(SKEY + '-undo');
+    if (!kept) PRF.drop(SKEY + '-undo');
     await PRF.dropClips(PRF.cur);
     return '';
   },
   // Back from setup when another child exists: a new child who never finished setup is removed again (nothing is lost).
   async cancelNew() {
-    if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur);
+    if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur, false); // RC-1: nothing to undo
     PRF.setWho('');
     reloadSaved();
   },
@@ -3524,7 +3545,7 @@ const PRF = {
     if (el) el.innerHTML = t ? `<p class="gw-warn">${ico('warning', 22)}<span>${esc(t)}</span></p>` : '';
   },
   // "Who is playing?": one big card per child (their pet on their place, the name, their stars). Tapping it plays as them.
-  pick() {
+  pick(grownUp) { // RC-1: grownUp (Grown-ups' "Who is playing?", behind the PIN): no picture passwords
     const cards = PRF.ids.map(id => {
       const i = PRF.info(id), nm = PRF.label(i);
       return `<button class="pf-kid" data-kid="${id}" aria-label="${esc(nm)}"><span class="pf-stage sc-${esc(i.scene)}">` +
@@ -3538,8 +3559,9 @@ const PRF = {
     $$('.pf-kid').forEach(b => b.onclick = () => {
       SFX.giggle();
       anim(b.querySelector('.pf-pet'), 'jump');
-      const bad = PRF.go(b.dataset.kid);
-      if (bad) PRF.msg(bad);
+      const id = b.dataset.kid, go = () => { const bad = PRF.go(id); if (bad) PRF.msg(bad); };
+      if (grownUp !== true && PRF.pwOn(id)) return partLoad('gate').then(ok => ok && typeof KPW != 'undefined' ? KPW.ask(id, go) : go()); // RC-1: their picture password
+      go();
     });
   },
   // Home's top bar: hold to change who is playing (a tap only says so), shown only with more than one child
@@ -3567,7 +3589,8 @@ const PRF = {
       `<div class="pf-list">${rows}</div><div class="gw-bkrow">` +
       UI.btn('Add a child', { kind: 'primary', size: 'sm', icon: 'plus', id: 'pf-add', off: full }) +
       (PRF.many() ? UI.btn('Who is playing?', { size: 'sm', icon: 'users', id: 'pf-who' }) : '') + '</div>' +
-      (full ? `<p class="gw-note">${ico('info', 22)}<span>Up to 4 children can share this tablet.</span></p>` : '') + '<div id="pf-msg" role="status"></div>',
+      (full ? `<p class="gw-note">${ico('info', 22)}<span>Up to 4 children can share this tablet.</span></p>` : '') + '<div id="pf-msg" role="status"></div>' +
+      (PRF.many() ? '<div id="gw-kpw"></div>' : ''),
       { sub: 'Up to 4 children can share this tablet, each with their own progress, pet, stars, coins, stickers and game time. ' +
         'Sound settings are shared by the tablet; game-time rules, grade and calm mode are set for each child.' });
   },
@@ -3578,7 +3601,8 @@ const PRF = {
       PRF.setWho(r.id);
       reloadSaved(); // starts with the first-run setup for the new child
     };
-    if ($('#pf-who')) $('#pf-who').onclick = PRF.pick;
+    if ($('#pf-who')) $('#pf-who').onclick = () => PRF.pick(true);
+    partLoad('gate').then(ok => { if (ok && typeof KPW != 'undefined' && $('#gw-kpw')) KPW.grownFill(); }); // RC-1: picture passwords
     $$('[data-pren]').forEach(b => b.onclick = () => PRF.renameSheet(b.dataset.pren));
     $$('[data-pdel]').forEach(b => b.onclick = () => PRF.deleteSheet(b.dataset.pdel));
   },
@@ -3611,13 +3635,12 @@ const PRF = {
     sh.el.querySelector('#pf-del1').onclick = () => {
       const acts = sh.el.querySelector('.acts'), wasMe = id === PRF.cur;
       sh.el.querySelector('h2').textContent = 'Really delete ' + PRF.label(PRF.info(id)) + '?';
-      sh.el.querySelector('p').textContent = 'This cannot be undone.';
+      sh.el.querySelector('p').textContent = 'You can undo it in Grown-ups until Star School is opened again.';
       acts.innerHTML = UI.btn('Yes, delete ' + PRF.label(PRF.info(id)), { kind: 'risk', wide: true, icon: 'trash', id: 'pf-del2' }) +
         UI.btn('Keep ' + PRF.label(PRF.info(id)), { kind: 'ghost', wide: true, id: 'pf-keep' });
       sh.el.querySelector('#pf-keep').onclick = sh.close;
-      sh.el.querySelector('#pf-del2').onclick = async () => {
+      sh.el.querySelector('#pf-del2').onclick = () => { sh.close(); NAV.quiz(async () => { // RC-1: the Grown-ups PIN again, right before deleting
         const name = PRF.label(PRF.info(id)), bad = await PRF.remove(id);
-        sh.close();
         if (bad) return PRF.msg(bad);
         if (wasMe) {
           PRF.setWho('');
@@ -3626,7 +3649,7 @@ const PRF = {
         }
         grown();
         fb(name + ' was deleted', 'info');
-      };
+      }); };
     };
   },
   // App log: one line with each child's save size
@@ -3682,7 +3705,14 @@ const PLAY = {
     PLAY.own = PLAY.on && PLAY.st.own === 1;
   },
   write() {
-    try { localStorage.setItem(PLAY.KEY, JSON.stringify(PLAY.st)); } catch (e) {}
+    try { localStorage.setItem(PLAY.KEY, JSON.stringify(PLAY.st)); return true; } catch (e) { return false; }
+  },
+  // RC-1: after a change to PLAY.st: read it back from storage, or, when it could not be written (storage full), keep what is in memory
+  // for this session (a family that just paid is never locked again by a failed write)
+  keep() {
+    if (PLAY.write()) return PLAY.read();
+    PLAY.on = PLAY.st.on === 1;
+    PLAY.own = PLAY.on && PLAY.st.own === 1;
   },
   // At load: keep Play mode once it was set; set it when the Play app opened this page and Google Play billing answers (see the header).
   // Returns a promise of PLAY.on (tests await it).
@@ -3700,8 +3730,7 @@ const PLAY = {
         PLAY.read();
         PLAY.st.on = 1;
         PLAY.st.own = PLAY.st.own === 1 ? 1 : 0;
-        PLAY.write();
-        PLAY.read();
+        PLAY.keep();
         if (typeof PLAY.redraw == 'function') PLAY.redraw();
         if (typeof PLAY.verify == 'function') PLAY.verify().catch(() => {});
         return true;
@@ -3713,8 +3742,7 @@ const PLAY = {
     PLAY.st.own = v ? 1 : 0;
     PLAY.st.at = Date.now();
     delete PLAY.st.miss;
-    PLAY.write();
-    PLAY.read();
+    PLAY.keep();
   },
   locked() { return PLAY.on && !PLAY.own && !PLAY.mig; },
   // the free world of path p: the start world of the child's grade
@@ -4172,6 +4200,7 @@ const UI = {
       bg.classList.remove('on');
       setTimeout(() => bg.remove(), 340);
       if (o.onClose) o.onClose();
+      if (typeof SWU != 'undefined' && SWU.due === 1) setTimeout(SWU.try, 400); // RC-1: an update waiting for a hub screen (90-app.js)
     };
     if (!o.stay) {
       bg.onclick = e => { if (e.target === bg) close(); };
@@ -7003,7 +7032,7 @@ let ASK_ON = 8;
 // Every screen adds it when S.calm is on; the switch (80-grown.js) turns it off again with calmApply(true).
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
 const view=h=>{music(false);calmApply();if(typeof NAV!='undefined'&&NAV.held){NAV.held=false;if(typeof GH!='undefined')GH.held=false} // NAV-01: a Go Home? sheet the new screen removed
-  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
+  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -7018,9 +7047,8 @@ const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'
    - Back is an arrow (ico 'back', aria-label "Back") and goes one step back; Home is the house (aria-label "Home") and goes all
      the way Home. Nothing else uses the house.
    - Every end card ends with the same three choices, NAV.end3(): Play again, Next (hidden when there is no next), Home.
-   - Grown-ups on Home is a labelled button held for 3 seconds (a ring fills), or a times-table question for a tap (NAV.gate). */
+   - Grown-ups on Home is a labelled button; a tap asks for the Grown-ups PIN (NAV.quiz, 41b-pin.js; RC-1). */
 const NAV = {
-  HOLD_MS: 3000,
   mapFrom: 'home', // where a map's Back arrow goes: 'home' or 'learn' (the screen the child came from)
   held: false, // the Go Home? sheet is open
   // the bar's buttons: [id, icon, label, open]
@@ -7135,39 +7163,33 @@ const NAV = {
     return el;
   },
 
-  // ---- Grown-ups gate (Home): hold the button 3 seconds (the ring fills), or a tap opens a times-table question ----
+  // ---- Grown-ups gate (Home): a tap asks for the Grown-ups PIN (41b-pin.js; RC-1, owner decision 2026-11-19: the 3-second hold is gone) ----
   gateHTML() {
-    return `<button class="btn soft sm nv-gw" id="gear" aria-label="Grown-ups: hold for 3 seconds"><span class="nv-ring" aria-hidden="true">` +
-      `<svg class="nv-rs" viewBox="0 0 36 36" aria-hidden="true" focusable="false"><circle class="nv-rt" cx="18" cy="18" r="15.5"/><circle class="nv-rf" id="gwring" cx="18" cy="18" r="15.5" pathLength="100"/></svg>` +
-      `${ico('gear', 22)}</span><span>${UI.t('Grown-ups')}</span></button>`;
+    return `<button class="btn soft sm nv-gw" id="gear" aria-label="Grown-ups">${ico('gear', 22)}<span>${UI.t('Grown-ups')}</span></button>`;
   },
   gateBind() {
     const g = $('#gear');
     if (!g) return;
-    let t = 0, iv = 0, n = 0, done = false;
-    const ring = v => { const r = $('#gwring'); if (r) r.style.strokeDashoffset = String(Math.round(100 - 100 * v)); };
-    const stop = () => { clearTimeout(t); clearInterval(iv); t = iv = 0; g.classList.remove('hold'); if (!done) ring(0); };
     g.oncontextmenu = e => e.preventDefault();
-    g.onpointerdown = e => {
-      if (e.button > 0) return;
-      stop();
-      done = false;
-      n = 0;
-      g.classList.add('hold');
-      iv = setInterval(() => ring(Math.min(1, ++n * 100 / NAV.HOLD_MS)), 100);
-      t = setTimeout(() => { done = true; stop(); ring(1); SFX.chime(); grown(); }, NAV.HOLD_MS);
-    };
-    g.onpointerup = g.onpointerleave = g.onpointercancel = () => { if (t) stop(); };
-    g.onclick = () => {
-      if (done) return;
-      NAV.quiz();
-    };
+    g.onclick = () => NAV.quiz();
   },
-  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in. then: what a right answer opens
-  // (default Grown-ups; PLAY-01: the Unlock Star School sheet, which is only ever reached through this question)
+  // the way into Grown-ups and everything it guards: then (default Grown-ups; PLAY-01: the Unlock Star School sheet; Erase; Delete)
+  // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
+  // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
-    const a = R(6, 9), b = R(6, 9), go2 = typeof then == 'function' ? then : grown;
-    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>${then ? 'This part is for grown-ups. Answer to go on:' : 'Hold the Grown-ups button for 3 seconds, or answer:'}</p>` +
+    const go = typeof then == 'function' ? then : grown;
+    if (typeof PIN != 'undefined') return PIN.gate(go);
+    return partLoad('gate').then(ok => {
+      if (ok && typeof PIN != 'undefined') return PIN.gate(go);
+      logErr('the gate part did not load: the old question was asked');
+      return NAV.askQ(go);
+    });
+  },
+  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in; then: what a right answer opens.
+  // RC-1: only the first way in on a tablet with no Grown-ups PIN yet (PIN.gate), which then asks the grown-up to choose one
+  askQ(then) {
+    const a = R(6, 9), b = R(6, 9), go2 = then;
+    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>This part is for grown-ups. Answer to go on:</p>` +
       `<label class="nv-q"><span>${a} × ${b} =</span><input id="gwans" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="${a} times ${b}"></label>` +
       `<p class="nv-msg" id="gwmsg" role="status"></p><div class="acts">${UI.btn('Open', { kind: 'primary', size: 'lg', wide: true, icon: 'check', id: 'gwok' })}` +
       `${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'gwno' })}</div></div>`);
@@ -7349,12 +7371,15 @@ function defStart(p,g0){
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
    Falls back to any open unpassed stop (not in an untouched world below the start world), then to the very last stop (everything done). */
+// RC-1: the worlds curNode passes over (below), as a test the lesson planner shares (planToday, 52b-know.js), so the map's ring, the
+// planner's offer, Ask the pet and the missions all name the same stop. sw: startWorld(p); lp: lastWorld(p)
+function lastWorld(p){const N=NODES[p];let lp=-1;for(let i=0;i<N.length;i++)if(passed(p,i))lp=Math.max(lp,N[i].wi);return lp} // the furthest world with a passed stop
+const worldBelow=(p,wi,sw,lp)=>(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)))||(wi<lp&&!worldHasProgress(p,wi));
 function curNode(p){
-  const N=NODES[p],sw=startWorld(p);let any=-1,lp=-1;
-  for(let i=0;i<N.length;i++)if(passed(p,i))lp=Math.max(lp,N[i].wi); // the furthest world with a passed stop
+  const N=NODES[p],sw=startWorld(p),lp=lastWorld(p);let any=-1;
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    const wi=N[i].wi,below=(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)))||(wi<lp&&!worldHasProgress(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child), or behind the child's furthest progress (a K world added in front of Number Meadow)
+    const wi=N[i].wi,below=worldBelow(p,wi,sw,lp); // an untouched world below the start world (Pre-K Tiny Town for a K child), or behind the child's furthest progress (a K world added in front of Number Meadow)
     if(any<0&&!below&&!stopNew(p,i))any=i; // (P2-24: a NEW stop never becomes the fallback) a finished child is not sent back down to a world they never needed
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
@@ -7439,8 +7464,10 @@ function lsOpen(p, i) {
   });
 }
 // the lesson stop on the map: its button, its ticket (what the next try pays) and its label. x, y: map px; W: map width
-function lsNodeHTML(p, i, x, y, W) {
-  const n = NODES[p][i], id = nid(n), lk = !unlocked(p, i), dn = lsLearned(id), up = gradeOf() > 2, tag = lk ? '' : lsPriceTag(id), cur = !lk && lsGate(p, i);
+// RC-1: cur (the ring and the pulse) only for the lesson stop of the child's own stop, curNode(p) (drawMap passes it as cn): an open
+// lesson of a lower world the map shows beside it is not where the child is (a fresh 1st grader opened on Number Meadow)
+function lsNodeHTML(p, i, x, y, W, cn) {
+  const n = NODES[p][i], id = nid(n), lk = !unlocked(p, i), dn = lsLearned(id), up = gradeOf() > 2, tag = lk ? '' : lsPriceTag(id), cur = !lk && i === cn && lsGate(p, i);
   const said = tag == 'done today' ? ', game time done today' : tag ? `, earns ${tag.slice(1).replace('min', 'minutes')} of game time` : '';
   return `<button class="btn lsn s-${p}${lk ? ' lock' : ''}${dn ? ' done' : ''}${cur ? ' cur' : ''}" data-ls="${i}" style="left:${x}px;top:${y}px"`
     + ` aria-label="${esc(`Learn ${n.t} with ${petN()}`)}${lk ? ', locked' : dn ? ', learned' : ''}${said}">${ico(lk ? 'lock' : dn ? 'check' : up ? 'bolt' : 'doc', 30)}</button>`
@@ -8140,20 +8167,31 @@ function hmActs() {
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
 }
 
+// RC-1: a save failed (SAVE_FAILED, 00-core.js: the tablet's storage is full). One banner on Home, once a visit, said aloud for
+// children who cannot read yet, so a grown-up hears of it before progress is lost
+const SAVE_LINE="Star School can't save right now: ask a grown-up to free some space.";let SAVE_WARNED=false;
+function hmSaveWarn(){if(!SAVE_FAILED||SAVE_WARNED)return'';SAVE_WARNED=true;
+  return`<div class="hm-svw" id="svw" role="alert">${ico('warning',26)}<span>${SAVE_LINE}</span>${UI.ibtn('speak','Hear it',{id:'svwspk',size:'sm'})}</div>`}
+// RC-1 (owner): game time a grown-up gave (ptGift, 58-playtime.js), said once on the next Home
+const hmGiftLine=s=>{const m=Math.round(s/60);return`A grown-up gave you ${m} minute${m==1?'':'s'}!`};
+function hmGift(){const p=S.pt;if(!p||!(p.gift>=30))return'';const t=hmGiftLine(p.gift);p.gift=0;save();
+  return`<div class="hm-gift" id="hmgift" role="status">${ico('ticket',26)}<span>${t}</span></div>`}
 function home(first){
   if(!S.name)return setup();
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
   view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Star School</span></div><div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${PRF.homeBtn()}${NAV.gateHTML()}</div>
-  <div class="scroll hm" id="hs"><div class="hm-cols">
+  <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v187)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v188)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
+  if($('#hmgift')&&S.voice)setTimeout(()=>{const g=$('#hmgift');if(g)say(g.textContent.trim())},$('#svw')?4000:700);
+  if($('#svw')){$('#svwspk').onclick=e=>say(SAVE_LINE,e.currentTarget);if(S.voice)setTimeout(()=>{if($('#svw'))say(SAVE_LINE)},600)}
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
@@ -8220,7 +8258,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
-  const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
+  const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W,allDone?-1:cur);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
     return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur&&!q[3]),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
@@ -10152,6 +10190,7 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
      q       questions answered that day (a question counts once, when it is finally answered right; re-asked misses do not count again)
      ok      of those, answered right on the first try
      by      {area: seconds}; area is the skill's area: math, read, es (later bt, disc)
+     gt      RC-1: game time from a grown-up that day, seconds (+ given, - taken away; ACT.gift); only on a day that has some
    Time rule: a question's time runs from the moment it is on screen to the moment it is answered right. Time while the tab is
    hidden is left out, and one question counts at most 60 s, so a tablet left on a question does not pile up minutes.
    A question that is never answered (child quits) adds no time. Fact Sprint adds its own active seconds to math.
@@ -10177,7 +10216,9 @@ const ACT={
     const n=v=>(v>0&&isFinite(v))?Math.round(v):0,by={};
     if(e.by&&typeof e.by=='object'&&!Array.isArray(e.by))for(const a in e.by)if(/^[a-z]{1,8}$/.test(a)&&n(e.by[a]))by[a]=n(e.by[a]);
     let sec=0;for(const a in by)sec+=by[a];
-    return{d:String(e.d),sec,rounds:n(e.rounds),q:n(e.q),ok:Math.min(n(e.ok),n(e.q)),by};
+    const c={d:String(e.d),sec,rounds:n(e.rounds),q:n(e.q),ok:Math.min(n(e.ok),n(e.q)),by},g=Math.round(+e.gt);
+    if(g&&isFinite(g))c.gt=g; // RC-1: game time from a grown-up that day (seconds, + given, - taken away); only when there is some
+    return c;
   },
   get(){
     const out=[];
@@ -10185,7 +10226,7 @@ const ACT={
       const c=ACT.clean(e);
       if(!c)continue;
       const o=out.find(x=>x.d===c.d);
-      if(o){o.sec+=c.sec;o.rounds+=c.rounds;o.q+=c.q;o.ok+=c.ok;for(const a in c.by)o.by[a]=(o.by[a]||0)+c.by[a]}else out.push(c);
+      if(o){o.sec+=c.sec;o.rounds+=c.rounds;o.q+=c.q;o.ok+=c.ok;for(const a in c.by)o.by[a]=(o.by[a]||0)+c.by[a];if(c.gt)o.gt=(o.gt||0)+c.gt}else out.push(c);
     }
     out.sort((a,b)=>STRK.idx(a.d)-STRK.idx(b.d));
     return S.log=out;
@@ -10203,13 +10244,15 @@ const ACT={
     S.log=log.filter(x=>STRK.idx(x.d)>t-ACT.KEEP&&STRK.idx(x.d)<=t+1); // old days go; so do days far in the future (clock set back)
     return e;
   },
+  // RC-1: game time a grown-up gave (+) or took away (-) today, kept apart from learning (gt: never in sec, rounds or by)
+  gift(sec){const e=ACT.add(today(),{});e.gt=(e.gt||0)+Math.round(sec);if(!e.gt)e.gt=undefined;return e},
   sum(endKey,days){
-    const end=STRK.idx(endKey||today()),n=days||7,r={sec:0,rounds:0,q:0,ok:0,by:{},active:0};
+    const end=STRK.idx(endKey||today()),n=days||7,r={sec:0,rounds:0,q:0,ok:0,by:{},active:0,gt:0};
     if(!(end>=0))return r;
     for(const e of ACT.get()){
       const i=STRK.idx(e.d);
       if(i>end-n&&i<=end){
-        r.sec+=e.sec;r.rounds+=e.rounds;r.q+=e.q;r.ok+=e.ok;if(e.sec)r.active++;
+        r.sec+=e.sec;r.rounds+=e.rounds;r.q+=e.q;r.ok+=e.ok;r.gt+=e.gt||0;if(e.sec)r.active++;
         for(const a in e.by)r.by[a]=(r.by[a]||0)+e.by[a];
       }
     }
@@ -10715,6 +10758,12 @@ function ptGate(){const c=ptCfg(),p=pt(),need=c.need*60,open=p.open===today();
   return{need,done:Math.min(done,need),more:Math.max(0,need-done),open,locked:done<need&&!open}}
 function ptLeft(){const p=pt(),c=ptCfg();if(c.pause||ptGate().locked)return 0;const cap=c.max?c.max*60-p.used:1e9;return Math.max(0,Math.min(p.bank,cap))}
 function ptEarn(sec){pt().bank+=sec;save()}
+/* RC-1 (owner): a grown-up gives (+) or takes away (-) game time in Grown-ups. It goes straight into the bank, never below 0. It is not
+   learning: the activity log keeps it apart (ACT.gift, the report card's "from a grown-up" line), so "learn first" does not count it;
+   the daily max still caps how much is played. S.pt.gift holds what was given since Home last said so ("A grown-up gave you ...").
+   Returns the seconds the bank changed by. */
+function ptGift(sec){const p=pt(),b0=p.bank;p.bank=Math.max(0,b0+Math.round(sec));const d=p.bank-b0;
+  if(d){ACT.gift(d);p.gift=Math.max(0,(p.gift|0)+d)}save();return d}
 // everything the screens and tests need to know about game time right now; why: ok, paused, learn, max or empty
 function ptState(){const p=pt(),c=ptCfg(),g=ptGate(),left=ptLeft(),capSec=c.max?c.max*60:0;
   const why=c.pause?'paused':g.locked?'learn':c.max&&p.used>=capSec?'max':p.bank<=0?'empty':'ok';
@@ -11128,7 +11177,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v187'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v188'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11704,7 +11753,16 @@ document.addEventListener('pointerup',()=>{const d=document.documentElement;
   if(!document.fullscreenElement&&d.requestFullscreen&&!matchMedia('(display-mode: fullscreen)').matches)d.requestFullscreen({navigationUI:'hide'}).catch(()=>{})},true);
 document.addEventListener('contextmenu',e=>e.preventDefault());
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
-if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=1;if(!document.querySelector('#hcv,#bbc,#stsvg,#ncv'))location.reload()})}
+/* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
+   Grown-ups, Learn, the Brain Teasers hub, the Game Room; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
+   is set, and view() (40-view.js) tries again after every new screen, UI.sheet (14-ui.js) when a sheet closes. */
+const SWU={due:0,
+  hub:()=>![...document.querySelectorAll('.sheet-bg,.ovl')].some(b=>!b._closing)&&!!document.querySelector('#hs,#map,.gw,.lh,.bt-hub,.gh-room'),
+  go(){if(!SWU.due)SWU.due=1;SWU.try()},
+  try(){if(SWU.due!==1||!SWU.hub())return;SWU.due=2;save();location.reload()}};
+if('serviceWorker' in navigator&&navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',SWU.go);
+// RC-1: ask the browser to keep this site's storage (the saves) when the tablet runs low on space; a refusal changes nothing
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
 /* ---------- A11, A11b, A11c: data banks and on-demand code live in more files ----------
    tools/build.py writes the question generators (gen, gen2; gen also carries the Grown-ups screens, ROOM), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
@@ -11732,17 +11790,18 @@ function appFiles() {
     ['teach6', typeof TEACH6_VER === 'undefined' ? null : TEACH6_VER],
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
     ['hints', typeof HINTS_VER === 'undefined' ? null : HINTS_VER],
+    ['gate', typeof GATE_VER === 'undefined' ? null : GATE_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v187');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v188');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v187')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v187)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v188')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v188)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11759,20 +11818,20 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints']; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate']; // RC-1: gate, the Grown-ups PIN and the picture passwords; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v187';
+  return !!f && f[1] === 'v188';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v187') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v188') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v187.js';
+    s.src = stem + '.v188.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11797,9 +11856,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v187.js"></script>
-<script src="gen2.v187.js"></script>
-<script src="data.v187.js"></script>
+<script src="gen.v188.js"></script>
+<script src="gen2.v188.js"></script>
+<script src="data.v188.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

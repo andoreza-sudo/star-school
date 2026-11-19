@@ -1,5 +1,5 @@
-/* Star School data banks v187. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v187 loads this file with <script src="data.v187.js"> between the code and the start-up script. */
+/* Star School data banks v188. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v188 loads this file with <script src="data.v188.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -8320,14 +8320,14 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "This one is right.":"fd3b177afcd8",
 "Top take away bottom. Not the small from the big.":"20fec2316531",
 "Two vowels side by side make one sound.":"41c17a1be3d3",
-"Use both colours.":"ac1cbcdca013",
+"Use both colors.":"2fd4a1d72d9c",
 "Want to learn this with me?":"86fca3a3050f",
 "We did it!":"4c4279f72ce9",
 "We took a ten. Now the tens have one less.":"163a4e09cb2f",
 "What comes next?":"0d4762c6ae7b",
 "Which letter goes in the box?":"4a636da00ad7",
 "Which letter is missing?":"a852bc6c1a29",
-"Which one is a different colour?":"102c96275f9c",
+"Which one is a different color?":"e05275ff0236",
 "Which one is different?":"8402f44bf63c",
 "Which step is wrong? Tap it.":"183ccd346c79",
 "Yes, I got it right!":"f6a760a8fb1e",
@@ -9700,4 +9700,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v187'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v188'; // last line: the whole file ran (checked by dataReady() before the app starts)

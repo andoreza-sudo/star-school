@@ -193,7 +193,7 @@ function ls4More(id, t, o) {
       html: lsAsk(k == 2 ? 'Which has more?' : 'Which has the most?'), say: `Which plate has ${k == 2 ? 'more' : 'the most'} ${ob[1]}?`, vsay: () => 'this plate',
       hint: {k: 'text', s: 'Match them up. Which one has some left over?'}, label: `${id} more ${ns.join('/')} ${ob[1]}`});
   };
-  D.exp = () => ({q: lsFrame2(D.sk, D.lv, 10, 'both', {html: lsAsk('Put in blue and orange!'), say: 'Put in some blue and some orange. Any way you like!', sl: {}}), nudge: 'Use both colours.',
+  D.exp = () => ({q: lsFrame2(D.sk, D.lv, 10, 'both', {html: lsAsk('Put in blue and orange!'), say: 'Put in some blue and some orange. Any way you like!', sl: {}}), nudge: 'Use both colors.',
     react: ([a, b]) => ({ctx: {a, b}, lines: [a > b ? 'Blue has more!' : a < b ? 'Orange has more!' : 'They are the same!']})});
   D.name = c => { const a = c.a != c.b ? c.a : 5, b = c.a != c.b ? c.b : 3; return {html: `<div class="pkq">${VIZ.dots(a, 'row')}</div><div class="pkq">${VIZ.dots(b, 'row', {b})}</div>`, sl: {a, b}}; };
   D.warm = ls4WarmFrame(D, 4);
@@ -233,7 +233,7 @@ function ls4Odd(id, t, o) {
     if (st == 2) { const pr = ls4Pick(r, PK.SAFE), s = ls4Pick(r, ['circle', 'square', 'triangle', 'star']), odd = Math.floor(r() * 4);
       const ch = Array.from({length: 4}, (_, i) => ({v: String(i), l: PK.shp(s, i == odd ? pr[1] : pr[0]) + `<span class="a11y-h">${PK.COL[i == odd ? pr[1] : pr[0]][0]} ${s}</span>`, h: true}));
       return ls4Q(D, 2, {kind: 'choice', cls: 'pics pk4', ans: String(odd), choices: ch, sl: {}, bug: {alike: ch.map(c => c.v).filter(v => v !== String(odd))}, vsay: () => 'this one',
-        html: lsAsk('Which one is different?'), say: 'Which one is a different colour?', hint: {k: 'text', s: 'Look at the colours. Three are the same.'}, label: `${id} colour ${s} ${pr}`}); }
+        html: lsAsk('Which one is different?'), say: 'Which one is a different color?', hint: {k: 'text', s: 'Look at the colors. Three are the same.'}, label: `${id} colour ${s} ${pr}`}); }
     const [A, B] = r() < .5 ? [ANI, FOOD] : [FOOD, ANI], same = ls4Pick(r, A.filter(x => ART[x])), diff = ls4Pick(r, B.filter(x => ART[x])), odd = Math.floor(r() * k);
     const ch = Array.from({length: k}, (_, i) => ({v: String(i), l: ls4Pic(i == odd ? diff : same), h: true}));
     return ls4Q(D, Math.min(st, 2), {kind: 'choice', cls: `pics pk${k}`, ans: String(odd), choices: ch, sl: {}, bug: {alike: ch.map(c => c.v).filter(v => v !== String(odd))}, vsay: () => 'this one',

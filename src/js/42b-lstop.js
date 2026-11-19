@@ -54,8 +54,10 @@ function lsOpen(p, i) {
   });
 }
 // the lesson stop on the map: its button, its ticket (what the next try pays) and its label. x, y: map px; W: map width
-function lsNodeHTML(p, i, x, y, W) {
-  const n = NODES[p][i], id = nid(n), lk = !unlocked(p, i), dn = lsLearned(id), up = gradeOf() > 2, tag = lk ? '' : lsPriceTag(id), cur = !lk && lsGate(p, i);
+// RC-1: cur (the ring and the pulse) only for the lesson stop of the child's own stop, curNode(p) (drawMap passes it as cn): an open
+// lesson of a lower world the map shows beside it is not where the child is (a fresh 1st grader opened on Number Meadow)
+function lsNodeHTML(p, i, x, y, W, cn) {
+  const n = NODES[p][i], id = nid(n), lk = !unlocked(p, i), dn = lsLearned(id), up = gradeOf() > 2, tag = lk ? '' : lsPriceTag(id), cur = !lk && i === cn && lsGate(p, i);
   const said = tag == 'done today' ? ', game time done today' : tag ? `, earns ${tag.slice(1).replace('min', 'minutes')} of game time` : '';
   return `<button class="btn lsn s-${p}${lk ? ' lock' : ''}${dn ? ' done' : ''}${cur ? ' cur' : ''}" data-ls="${i}" style="left:${x}px;top:${y}px"`
     + ` aria-label="${esc(`Learn ${n.t} with ${petN()}`)}${lk ? ', locked' : dn ? ', learned' : ''}${said}">${ico(lk ? 'lock' : dn ? 'check' : up ? 'bolt' : 'doc', 30)}</button>`

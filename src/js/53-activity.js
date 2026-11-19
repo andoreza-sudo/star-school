@@ -6,6 +6,7 @@
      q       questions answered that day (a question counts once, when it is finally answered right; re-asked misses do not count again)
      ok      of those, answered right on the first try
      by      {area: seconds}; area is the skill's area: math, read, es (later bt, disc)
+     gt      RC-1: game time from a grown-up that day, seconds (+ given, - taken away; ACT.gift); only on a day that has some
    Time rule: a question's time runs from the moment it is on screen to the moment it is answered right. Time while the tab is
    hidden is left out, and one question counts at most 60 s, so a tablet left on a question does not pile up minutes.
    A question that is never answered (child quits) adds no time. Fact Sprint adds its own active seconds to math.
@@ -31,7 +32,9 @@ const ACT={
     const n=v=>(v>0&&isFinite(v))?Math.round(v):0,by={};
     if(e.by&&typeof e.by=='object'&&!Array.isArray(e.by))for(const a in e.by)if(/^[a-z]{1,8}$/.test(a)&&n(e.by[a]))by[a]=n(e.by[a]);
     let sec=0;for(const a in by)sec+=by[a];
-    return{d:String(e.d),sec,rounds:n(e.rounds),q:n(e.q),ok:Math.min(n(e.ok),n(e.q)),by};
+    const c={d:String(e.d),sec,rounds:n(e.rounds),q:n(e.q),ok:Math.min(n(e.ok),n(e.q)),by},g=Math.round(+e.gt);
+    if(g&&isFinite(g))c.gt=g; // RC-1: game time from a grown-up that day (seconds, + given, - taken away); only when there is some
+    return c;
   },
   get(){
     const out=[];
@@ -39,7 +42,7 @@ const ACT={
       const c=ACT.clean(e);
       if(!c)continue;
       const o=out.find(x=>x.d===c.d);
-      if(o){o.sec+=c.sec;o.rounds+=c.rounds;o.q+=c.q;o.ok+=c.ok;for(const a in c.by)o.by[a]=(o.by[a]||0)+c.by[a]}else out.push(c);
+      if(o){o.sec+=c.sec;o.rounds+=c.rounds;o.q+=c.q;o.ok+=c.ok;for(const a in c.by)o.by[a]=(o.by[a]||0)+c.by[a];if(c.gt)o.gt=(o.gt||0)+c.gt}else out.push(c);
     }
     out.sort((a,b)=>STRK.idx(a.d)-STRK.idx(b.d));
     return S.log=out;
@@ -57,13 +60,15 @@ const ACT={
     S.log=log.filter(x=>STRK.idx(x.d)>t-ACT.KEEP&&STRK.idx(x.d)<=t+1); // old days go; so do days far in the future (clock set back)
     return e;
   },
+  // RC-1: game time a grown-up gave (+) or took away (-) today, kept apart from learning (gt: never in sec, rounds or by)
+  gift(sec){const e=ACT.add(today(),{});e.gt=(e.gt||0)+Math.round(sec);if(!e.gt)e.gt=undefined;return e},
   sum(endKey,days){
-    const end=STRK.idx(endKey||today()),n=days||7,r={sec:0,rounds:0,q:0,ok:0,by:{},active:0};
+    const end=STRK.idx(endKey||today()),n=days||7,r={sec:0,rounds:0,q:0,ok:0,by:{},active:0,gt:0};
     if(!(end>=0))return r;
     for(const e of ACT.get()){
       const i=STRK.idx(e.d);
       if(i>end-n&&i<=end){
-        r.sec+=e.sec;r.rounds+=e.rounds;r.q+=e.q;r.ok+=e.ok;if(e.sec)r.active++;
+        r.sec+=e.sec;r.rounds+=e.rounds;r.q+=e.q;r.ok+=e.ok;r.gt+=e.gt||0;if(e.sec)r.active++;
         for(const a in e.by)r.by[a]=(r.by[a]||0)+e.by[a];
       }
     }

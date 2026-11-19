@@ -17,7 +17,7 @@ Idea: Make a ten to add bigger facts.
 Remember:
   - Do you remember this? Let's make ten.
 Explore:
-  - Fill this double frame. Use both colours. Any way you like!
+  - Fill this double frame. Use both colors. Any way you like!
 Name it:
   - You made {a} and {b}.
   - {a} and {b} make {sum}.
@@ -46,6 +46,7 @@ About 3.3 minutes.
 
 - The Show line no longer tells a different story from the problem; Together lines teach making a ten.
 - The first draft from the API is kept below as it came, for comparison.
+- RC-1 (v188, 2026-11-19): spelling only, after the owner's review: "colours" -> "colors" (US spelling). Status kept.
 
 ## Words (the draft itself)
 
@@ -61,7 +62,7 @@ About 3.3 minutes.
    "Do you remember this? Let's make ten."
   ],
   "explore": [
-   "Fill this double frame. Use both colours. Any way you like!"
+   "Fill this double frame. Use both colors. Any way you like!"
   ],
   "name": [
    "You made {a} and {b}.",
