@@ -1,6 +1,6 @@
-/* Star School teach35 v181. BUILT by tools/build.py from 52h-teach35.css, 52h-words.js, 52i-bench35.js, 52j-lessons35.js: never edit by hand.
-   index.html v181 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v181.js. */
-(function(){var s=document.createElement('style');s.id='css-teach35';s.textContent="/* TEACH-3: the grade 3-5 lessons' workbench (52i-bench35.js): two fraction bars, the place-value chart, the area model, \"your problem\",\n   the pet's written steps in Check me and the reason built from tiles */\n.ls-bars{display:flex;flex-direction:column;gap:var(--s-2);align-items:center;max-width:100%}\n.ls-bar{display:flex;align-items:center;gap:var(--s-2);max-width:100%}\n.ls-bar .viz{max-width:min(240px,62vw);height:auto}\n.ls-barl{font-size:var(--fs-3);font-weight:700;color:var(--ink);min-width:2.2em;text-align:center}\n.ls-copies{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;max-width:100%}\n.ls-copies .viz{max-width:min(150px,40vw);height:auto}\n.ls-pvc{border-collapse:separate;border-spacing:2px;margin:0 auto;font-weight:700;max-width:100%}\n.ls-pvc th{font-size:var(--fs-2);min-width:1.6em;color:var(--ink-2);padding:2px 4px;background:var(--surface-2);border-radius:var(--r-chip);white-space:nowrap}\n.ls-pvc td{font-size:var(--fs-4);color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);border-radius:var(--r-chip);text-align:center;min-width:1.6em;padding:2px 6px}\n.ls-pvc td.ls-pvm{background:var(--math-tint);box-shadow:inset 0 0 0 3px var(--math-shade)}\n.ls-pvc td.ls-pvo{box-shadow:inset -6px 0 0 -3px var(--ink),inset 0 0 0 2px var(--line)}\n.ls-area{border-collapse:separate;border-spacing:3px;margin:0 auto;font-weight:700}\n.ls-area th{font-size:var(--fs-2);color:var(--ink-2);padding:2px 6px}\n.ls-area td{font-size:var(--fs-3);color:var(--ink);background:var(--math-tint);border-radius:var(--r-chip);text-align:center;min-width:3.2em;padding:var(--s-2) var(--s-1)}\n.ls-mine{font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--surface);border-radius:var(--r-card);padding:var(--s-2) var(--s-3);box-shadow:inset 0 0 0 2px var(--line)}\n.fxs.ls-fx .fxl{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) var(--s-3);background:var(--surface);border-radius:var(--r-chip);box-shadow:inset 0 0 0 2px var(--line);color:var(--ink);text-align:left}\n.fxs.ls-fx .fxl.ls-fixd{box-shadow:inset 0 0 0 3px var(--good);background:var(--good-tint)}\n.ls-fixtop{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);width:100%}\n.ls-fixtop .eq{font-size:var(--fs-4)}\n.ls-why{font-weight:700;color:var(--ink)}\n@media (max-width:420px){.ls-pvc th{padding:2px}.ls-pvc td{font-size:var(--fs-3);padding:2px 3px;min-width:1.2em}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School teach35 v182. BUILT by tools/build.py from 52h-teach35.css, 52n-teach3b.css, 52h-words.js, 52i-bench35.js, 52j-lessons35.js, 52n-bench3b.js, 52o-lessons3b.js: never edit by hand.
+   index.html v182 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v182.js. */
+(function(){var s=document.createElement('style');s.id='css-teach35';s.textContent="/* TEACH-3: the grade 3-5 lessons' workbench (52i-bench35.js): two fraction bars, the place-value chart, the area model, \"your problem\",\n   the pet's written steps in Check me and the reason built from tiles */\n.ls-bars{display:flex;flex-direction:column;gap:var(--s-2);align-items:center;max-width:100%}\n.ls-bar{display:flex;align-items:center;gap:var(--s-2);max-width:100%}\n.ls-bar .viz{max-width:min(240px,62vw);height:auto}\n.ls-barl{font-size:var(--fs-3);font-weight:700;color:var(--ink);min-width:2.2em;text-align:center}\n.ls-copies{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;max-width:100%}\n.ls-copies .viz{max-width:min(150px,40vw);height:auto}\n.ls-pvc{border-collapse:separate;border-spacing:2px;margin:0 auto;font-weight:700;max-width:100%}\n.ls-pvc th{font-size:var(--fs-2);min-width:1.6em;color:var(--ink-2);padding:2px 4px;background:var(--surface-2);border-radius:var(--r-chip);white-space:nowrap}\n.ls-pvc td{font-size:var(--fs-4);color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);border-radius:var(--r-chip);text-align:center;min-width:1.6em;padding:2px 6px}\n.ls-pvc td.ls-pvm{background:var(--math-tint);box-shadow:inset 0 0 0 3px var(--math-shade)}\n.ls-pvc td.ls-pvo{box-shadow:inset -6px 0 0 -3px var(--ink),inset 0 0 0 2px var(--line)}\n.ls-area{border-collapse:separate;border-spacing:3px;margin:0 auto;font-weight:700}\n.ls-area th{font-size:var(--fs-2);color:var(--ink-2);padding:2px 6px}\n.ls-area td{font-size:var(--fs-3);color:var(--ink);background:var(--math-tint);border-radius:var(--r-chip);text-align:center;min-width:3.2em;padding:var(--s-2) var(--s-1)}\n.ls-mine{font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--surface);border-radius:var(--r-card);padding:var(--s-2) var(--s-3);box-shadow:inset 0 0 0 2px var(--line)}\n.fxs.ls-fx .fxl{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) var(--s-3);background:var(--surface);border-radius:var(--r-chip);box-shadow:inset 0 0 0 2px var(--line);color:var(--ink);text-align:left}\n.fxs.ls-fx .fxl.ls-fixd{box-shadow:inset 0 0 0 3px var(--good);background:var(--good-tint)}\n.ls-fixtop{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);width:100%}\n.ls-fixtop .eq{font-size:var(--fs-4)}\n.ls-why{font-weight:700;color:var(--ink)}\n@media (max-width:420px){.ls-pvc th{padding:2px}.ls-pvc td{font-size:var(--fs-3);padding:2px 3px;min-width:1.2em}}\n/* TEACH-3b: the models of the grade 3-5 lessons TEACH-3 left out (52n-bench3b.js): graphs, the protractor, bar models, the in and out\n   rule, shape facts and fold lines, the try-how-many-fit work, mixed-number bars. Tokens only; every button is at least var(--tap). */\n.viz text.ls3b-lab{paint-order:stroke;stroke:var(--star-tint);stroke-width:5px;stroke-linejoin:round}\n.viz text.ls3b-in{font-size:16px;fill:var(--ink-2)}\n.mm-plot .viz text.vfr,.mm-plot .viz text{font-size:18px}\n.mm-dial .viz text.vcn{font-size:15px}\n.viz .ls3b-ray{stroke-width:4}\n.viz .ls3b-take{stroke-dasharray:6 4;fill:var(--surface-2)}\n.viz .ls3b-rest{stroke-dasharray:6 4}\n.viz .ls3b-fold{fill:none;stroke:var(--brand-shade);stroke-width:3;stroke-dasharray:7 5}\n.ls3b-tab{border-collapse:separate;border-spacing:2px;margin:0 auto;font-weight:700}\n.ls3b-tab th{font-size:var(--fs-2);color:var(--ink-2);background:var(--surface-2);border-radius:var(--r-chip);padding:2px var(--s-2);min-width:3.2em}\n.ls3b-tab td{font-size:var(--fs-3);color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);border-radius:var(--r-chip);text-align:center;padding:2px var(--s-2)}\n.ls3b-tab td.ok{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good)}\n.ls3b-tab td.no{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try-ink)}\n.ls3b-rule{font-size:var(--fs-5)}\n.mmb.ls3b-op{font-size:var(--fs-4);min-width:var(--tap)}\n.ls3b-prop{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-2);max-width:100%}\n.ls3b-prop .viz{max-width:min(160px,40vw);height:auto}\n.ls3b-facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.ls3b-facts li{display:flex;align-items:center;gap:var(--s-1)}\n.ls3b-facts li.on{color:var(--ink);font-weight:700}\n.ls3b-facts li.on svg{color:var(--good-ink)}\n.ls3b-tgs{gap:var(--s-1)}\n.mmb.ls3b-tg{font-size:var(--fs-2);max-width:min(46%,220px);white-space:normal;line-height:1.15;padding:var(--s-1) var(--s-2)}\n.ls3b-fic{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:3;stroke-dasharray:5 3}\n.ls3b-try{display:flex;flex-direction:column;align-items:center;gap:var(--s-1)}\n.ls3b-st{display:inline-flex;align-items:center;gap:var(--s-1);font-weight:700;font-size:var(--fs-3);padding:2px var(--s-3);border-radius:var(--r-pill)}\n.ls3b-st.ok{background:var(--good-tint);color:var(--good-ink)}\n.ls3b-st.no{background:var(--try-tint);color:var(--try-ink)}\n.ls3b-bars{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;max-width:100%}\n.ls3b-bars .viz{max-width:min(120px,20vw);height:auto}\n.mm-mixb .ls-trs .mmb{font-size:var(--fs-2);padding:0 var(--s-2)}\n.mm-mixb .mmv .eq{font-size:var(--fs-3)}\n.ls3b-row{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;font-weight:700;color:var(--ink);text-align:center}\n.ls3b-row .viz{max-width:min(110px,27vw);height:auto}\n.ls3b-list{font-size:var(--fs-3);flex-wrap:wrap}\n.mm-graph .mmv .viz,.mm-plot .mmv .viz,.mm-tape .mmv .viz,.mm-left .mmv .viz{max-height:180px;max-width:100%;height:auto}\n.mm-ang .mmv .viz,.mm-dial .mmv .viz{max-height:200px;max-width:100%;height:auto}\n.mm-xy .mmv .viz{max-height:250px;max-width:100%;height:auto}\n.viz.ls3b-xy text{font-size:22px}\n.viz-bar3b text{font-size:20px}\n.mm-sym .mmv .viz{max-height:190px}\n@media (max-width:420px){.mm-xy .mmv .viz{max-height:236px}.mm-ang .mmv .viz{max-height:170px}.mm-graph .mmv .viz{max-height:182px}.mm-plot .mmv .viz{max-height:150px}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-3: the words of the drafted lessons the owner has reviewed (part teach35) ----------
    BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft3, 52j-lessons35.js):
    never edit by hand. A draft that is not reviewed is never here, so its lesson is not live with its words (it runs on its hand-written fallback words). */
@@ -1325,5 +1325,998 @@ lsDraft3('dec5', ls3DOp('dec5', 'Divide Decimals', 5, 'div', 'Divide as if there
 lsDraft3('fop3', ls3Fop('fop3', 'Unlike Denominators', 5, 'unlike', ['addBot', 'renameTop', 'slip'], 'Make the bottoms the same, then add the tops.', 'Ask {name}: "What is 1 half plus 1 fourth?"'));
 lsDraft3('geo4', ls3Geo('geo4', 'Volume of a Box', 5, 'vol', ['layer', 'mulAdd'], 'Volume is one layer of cubes times the layers.', 'Ask {name} how many cubes fill a box 3 by 2 by 2.'));
 lsDraft3('fop5', ls3Fop('fop5', 'Multiply Fractions', 5, 'mul', ['mixAdd', 'topOnly'], 'Part of a part: multiply the tops and the bottoms.', 'Ask {name}: "What is half of a half?"'));
+/* ---------- TEACH-3b: the workbench of the grade 3-5 lessons that had no fitting model (part teach35, after 52j; TEACH-PLAN-2 batch 3) ----------
+   The stops TEACH-3 left out (story problems, graphs, shapes, angles, the coordinate grid, scales, elapsed time, in and out tables, dividing
+   by a 2-digit number, mixed numbers, unit fraction division, converting both ways) get their lessons in 52o-lessons3b.js. Their models
+   are keys of K2MM (49b-kinds2.js), added from here like bars2 and pvc (52i-bench35.js); Practice never uses them. Every model is drawn
+   from the shared tokens (src/css/52n-teach3b.css), every control is a 48 px button with its own spoken name, and each is a "raw" model:
+   the lesson submits its state, the goal (LSGOAL) checks it, and a value a misconception predicts is turned back into a state (of) to
+   draw the pet's build in Check me.
+     graph   a bar graph with a fixed scale; one bar (or every bar, in Explore) has a stepper (a line of the scale a step)
+     plot    a line plot of lengths (fourths, halves or eighths): a stepper a mark puts its dots on
+     ang     an angle the child opens with steppers (5 and 15 degrees), plain or on a protractor with its two scales
+     xy      a point on a coordinate grid: steppers across and up
+     dial    a kitchen scale or a measuring jug: a stepper moves the needle (or the water) one mark
+     tape    a bar model: equal boxes of a story, a stepper for the boxes and one for what is in each (an extra box for a second step)
+     left    a bar model of a division story: the full groups the child counts, and what is left over
+     rule    an in and out rule: a sign (+ − × ÷) and a number; the table works the child's rule out beside the real outs
+     props   a quadrilateral and four facts to tap (four sides, all sides equal, four right angles, both pairs of sides parallel)
+     sym     a shape and four fold lines to tap (up and down, across, the two slants)
+     qtry    dividing by a 2-digit number: try how many fit (a stepper of ones and tens); the work below says too much, more fits, or right
+     mixb    mixed numbers as whole bars and parts, with a trade (parts into a whole) and a break (a whole into parts)
+     cut     whole bars cut into equal parts: a stepper sets how many parts each bar is cut into */
+// the misconception codes of these lessons (TEACH-PLAN-2 system C): what the pet says when it repairs the idea, the reason the child builds
+// from tiles (LS_WHY: its last three words are the tiles) and the line a grown-up reads (LSREP.NOTE)
+Object.assign(BUGS, {
+  scale: {d: 'counts the squares or pictures of a graph, not what each one stands for', say: 'Each line stands for more than one. Count by the scale.'},
+  dotsVal: {d: 'counts the dots of a line plot instead of adding their lengths', say: 'Each dot has a length. Add the lengths.'},
+  angSw: {d: 'mixes up acute and obtuse angles', say: 'Acute is less than a square corner. Obtuse is more.'},
+  rtAng: {d: 'calls an angle close to a square corner a right angle', say: 'A right angle is exactly a square corner.'},
+  proto: {d: 'reads the other scale of the protractor', say: 'Start from the zero on the side the angle starts.'},
+  sup: {d: 'takes a part from the wrong whole (a straight angle for a right angle)', say: 'Check the whole first: a square corner or a straight line.'},
+  swapXY: {d: 'swaps across and up on the coordinate grid', say: 'Go across first, then up.'},
+  gridOff: {d: 'counts the grid lines from one instead of from zero', say: 'The corner is zero. Count the jumps from there.'},
+  mark1: {d: 'counts each small mark of a scale as one', say: 'Each mark is a step of the scale. Count by the step.'},
+  rEnd: {d: 'reads the end of the ruler mark when the object does not start at zero', say: 'Start where the object starts, not at the end.'},
+  hr100: {d: 'counts an hour as a hundred minutes', say: 'Count up to the next hour first. An hour has sixty minutes.'},
+  minOnly: {d: 'takes away only the minutes and forgets the hour', say: 'Count the minutes to the hour, then past it.'},
+  wrongOp: {d: 'uses the wrong operation for the story', say: 'Picture the story first. Then choose what to do.'},
+  oneStep: {d: 'stops after the first step of a two-step story', say: 'This story has two steps. Finish both.'},
+  remDrop: {d: 'leaves out the leftovers: gives the full groups whatever the story asks', say: 'Read the question again. What happens to the leftovers?'},
+  remUp: {d: 'counts a group for leftovers that cannot fill one', say: 'Only full groups count here. The leftovers are not enough.'},
+  unitOnly: {d: 'finds one part of the amount but not all the parts asked for', say: 'Find one part, then take as many parts as the top says.'},
+  fracTop: {d: 'multiplies by the top number only', say: 'Divide by the bottom number too.'},
+  rowJump: {d: 'follows the jump down the out column instead of the rule from in to out', say: 'The rule goes across, from in to out.'},
+  propMix: {d: 'mixes up which shapes have equal sides and which have right angles', say: 'Check the sides and the corners one at a time.'},
+  diag: {d: 'thinks every slanted line through a shape folds it in half', say: 'Fold it in your mind. Both halves must match.'},
+  axis: {d: 'counts only the up and down and the across fold lines', say: 'Slanted lines can fold a shape too.'},
+  flipDiv: {d: 'divides the wrong way round with a unit fraction', say: 'How many small pieces fit? Count them.'},
+  mulFrac: {d: 'multiplies when the problem divides by a fraction', say: 'Dividing cuts into pieces. Count the pieces.'},
+  mixSub: {d: 'takes the smaller part from the bigger one instead of breaking a whole', say: 'Not enough parts? Break one whole into parts.'},
+  convDir: {d: 'multiplies when changing to a bigger unit', say: 'A bigger unit needs fewer of it. Divide.'},
+});
+Object.assign(LS_WHY, {
+  scale: 'Count by the scale', dotsVal: 'Add the lengths of the dots', angSw: 'Acute is less than a right angle', rtAng: 'A right angle is exactly square',
+  proto: 'Count up from the zero', sup: 'Check which whole it is', swapXY: 'Go across before up', gridOff: 'Start counting at zero',
+  mark1: 'Count by the step size', rEnd: 'Start where it starts', hr100: 'Count to the hour first', minOnly: 'Count the hour too',
+  wrongOp: 'Picture the story first', oneStep: 'Finish the second step', remDrop: 'Think about the leftovers', remUp: 'Only full groups count',
+  unitOnly: 'Take as many parts', fracTop: 'Divide by the bottom', rowJump: 'The rule goes across', propMix: 'Check sides and corners',
+  diag: 'Both halves must match', axis: 'Slanted lines can fold', flipDiv: 'Count the pieces that fit', mulFrac: 'Cut it into pieces',
+  mixSub: 'Break a whole into parts', convDir: 'Bigger units need fewer',
+});
+if (typeof LSREP != 'undefined') Object.assign(LSREP.NOTE, {
+  scale: 'sometimes counts the squares of a graph instead of reading its scale', dotsVal: 'sometimes counts the dots of a line plot instead of adding the lengths',
+  angSw: 'sometimes mixes up acute and obtuse angles', rtAng: 'sometimes calls an angle close to a square corner a right angle',
+  proto: 'sometimes reads the other scale of a protractor', sup: 'sometimes takes an angle from the wrong whole (180 for 90)',
+  swapXY: 'sometimes swaps across and up on a grid', gridOff: 'sometimes counts grid lines from 1 instead of 0', mark1: 'sometimes counts each mark of a scale as one',
+  rEnd: 'sometimes reads a ruler at the end without checking where the object starts', hr100: 'sometimes counts an hour as 100 minutes',
+  minOnly: 'sometimes takes away only the minutes of two times', wrongOp: 'sometimes uses the wrong operation in a story problem',
+  oneStep: 'sometimes stops after the first step of a two-step story', remDrop: 'sometimes forgets the leftovers in a division story',
+  remUp: 'sometimes counts an extra group for leftovers', unitOnly: 'sometimes finds one part of an amount but not the fraction asked for',
+  fracTop: 'sometimes multiplies by the top of a fraction and forgets the bottom', rowJump: 'sometimes follows the out column instead of the rule',
+  propMix: 'sometimes mixes up the sides and the angles of shapes', diag: 'sometimes thinks every slanted line is a line of symmetry',
+  axis: 'sometimes misses slanted lines of symmetry', flipDiv: 'sometimes divides by a unit fraction the wrong way round',
+  mulFrac: 'sometimes multiplies when dividing by a fraction', mixSub: 'sometimes takes the smaller part from the bigger in mixed numbers',
+  convDir: 'sometimes multiplies when changing to a bigger unit',
+});
 
-var TEACH35_VER='v181'; // last line: the whole file ran (checked by dataReady() before the app starts)
+/* ---- drawings (the shared viz classes of src/css/32-viz.css; numbers are drawn at the viz text size) ---- */
+const ls3bF = v => Math.round(v * 10) / 10;
+const ls3bSvg = (k, w, h, body, label) => `<svg class="viz viz-${k}" viewBox="0 0 ${ls3bF(w)} ${ls3bF(h)}" style="--vw:${ls3bF(w)}" role="img" aria-label="${label}">${body}</svg>`;
+// a bar graph with a fixed number of lines (top), so the axis does not change while a bar is built; ed: the bars being built (second colour)
+function ls3bGraph(names, vals, sc, top, ed = []) {
+  const n = names.length, rh = Math.max(16, Math.min(26, Math.floor(170 / top))), pitch = Math.min(70, Math.floor(268 / n)), L = 40, T = 12, base = T + top * rh;
+  const w = L + n * pitch + 8, bw = Math.round(pitch * .58);
+  let g = '', y = '', b = '';
+  for (let k = 0; k <= top; k++) {
+    g += `M${L} ${base - k * rh}h${n * pitch + 4}`;
+    if (top <= 6 || k % 2 == 0) y += `<text class="vta" x="${L - 6}" y="${base - k * rh + 5}">${k * sc}</text>`;
+  }
+  names.forEach((nm, i) => {
+    const x = L + i * pitch + (pitch - bw) / 2, h = vals[i] / sc * rh;
+    if (h > 0) b += `<rect class="${ed.includes(i) ? 'v2' : 'v1'} vbar" x="${ls3bF(x)}" y="${ls3bF(base - h)}" width="${bw}" height="${ls3bF(h)}" rx="3"/>`;
+    b += `<text x="${ls3bF(x + bw / 2)}" y="${base + 21}">${esc(nm)}</text>`;
+  });
+  return ls3bSvg('bar3b', w, base + 30, `<path class="vgl" d="${g}"/><path class="va" d="M${L} ${T - 4}V${base}H${w - 2}"/>${y}${b}`, 'bar graph');
+}
+// a protractor with its two scales (outer: 0 on the right; inner: 0 on the left), an angle of deg whose first side is on the right
+// (left false) or the left; o.ray: draw the angle (false: only the protractor)
+function ls3bProto(deg, left) {
+  const cx = 150, cy = 146, R = 124, at = (a, r) => [ls3bF(cx + r * Math.cos(a * Math.PI / 180)), ls3bF(cy - r * Math.sin(a * Math.PI / 180))];
+  let t = '', tx = '';
+  for (let a = 0; a <= 180; a += 10) {
+    const m = a % 30 == 0, [x1, y1] = at(a, R - (m ? 16 : 9)), [x2, y2] = at(a, R);
+    t += `M${x1} ${y1}L${x2} ${y2}`;
+    if (m) { const b = Math.min(172, Math.max(8, a)), [ox, oy] = at(b, R - 30), [ix, iy] = at(b, R - 56);
+      tx += `<text class="ls3b-lab" x="${ox}" y="${ls3bF(oy + 6)}">${a}</text><text class="ls3b-lab ls3b-in" x="${ix}" y="${ls3bF(iy + 6)}">${180 - a}</text>`; }
+  }
+  const a0 = left ? 180 : 0, a1 = left ? 180 - deg : deg, [p0x, p0y] = at(a0, R + 14), [p1x, p1y] = at(a1, R + 14), [w0x, w0y] = at(a0, 34), [w1x, w1y] = at(a1, 34);
+  const wedge = `<path class="vwg" d="M${cx} ${cy}L${w0x} ${w0y}A34 34 0 0 ${left ? 1 : 0} ${w1x} ${w1y}z"/>`;
+  return ls3bSvg('ang', 300, 160, `<path class="vru" d="M${cx - R - 8} ${cy}A${R + 8} ${R + 8} 0 0 1 ${cx + R + 8} ${cy}z"/><path class="vk" d="${t}"/>${wedge}`
+    + `<path class="va ls3b-ray" d="M${p0x} ${p0y}L${cx} ${cy}L${p1x} ${p1y}"/>${tx}<circle class="vpin" cx="${cx}" cy="${cy}" r="5"/>`, 'protractor');
+}
+// a bar model (tape): g equal boxes each holding n (n shown, or '?'), o.ex: one more box of another colour (a second step: [value, '+' | '−']),
+// o.tot: the whole above the tape (a number or '?'), o.q: the boxes' numbers hidden ('?')
+function ls3bTape(g, n, o = {}) {
+  const ex = o.ex, W = 290, X = 6, Y = o.tot != null ? 34 : 8, H = 46, k = o.rest ? 4 : g + (ex ? 1.4 : 0), bw = (W - 2 * X) / Math.max(k, 1);
+  let body = '';
+  for (let i = 0; i < g; i++) body += `<rect class="v1" x="${ls3bF(X + i * bw)}" y="${Y}" width="${ls3bF(bw)}" height="${H}" rx="4"/>`
+    + (bw >= 26 ? `<text class="vw" x="${ls3bF(X + i * bw + bw / 2)}" y="${Y + 30}">${o.q ? '?' : n}</text>` : '');
+  if (o.rest) body += `<rect class="vo ls3b-rest" x="${ls3bF(X + bw)}" y="${Y}" width="${ls3bF(W - 2 * X - bw)}" height="${H}" rx="4"/><text x="${ls3bF((W + bw) / 2)}" y="${Y + 30}">?</text>`;
+  if (ex) body += `<rect class="${ex[1] == '−' ? 'vo ls3b-take' : 'v2'}" x="${ls3bF(X + g * bw)}" y="${Y}" width="${ls3bF(1.4 * bw)}" height="${H}" rx="4"/>`
+    + `<text x="${ls3bF(X + g * bw + .7 * bw)}" y="${Y + 30}">${ex[1]}${ex[0]}</text>`;
+  const tw = o.rest ? W - 2 * X : g * bw;
+  if (o.tot != null) body += `<path class="vk" d="M${X} ${Y - 6}v-10H${ls3bF(X + tw)}v10"/><text x="${ls3bF(X + tw / 2)}" y="${Y - 20}">${o.tot}</text>`;
+  return ls3bSvg('tape', W, Y + H + 6, body, 'bar model');
+}
+// a division story's bar model: g full groups of s, and the leftover of T (or the groups that do not fit, marked)
+function ls3bLeft(T, s, g) {
+  const W = 290, X = 4, Y = 8, H = 44, n = Math.max(g, Math.ceil(T / s)), bw = Math.min(56, (W - 2 * X) / Math.max(n, 1));
+  let body = '', left = T;
+  for (let i = 0; i < n; i++) {
+    const full = left >= s, have = Math.max(0, Math.min(s, left)), inG = i < g;
+    left -= s;
+    const cls = !inG ? 'vo ls3b-take' : full ? 'v1' : have ? 'v2' : 'vo';
+    body += `<rect class="${cls}" x="${ls3bF(X + i * bw)}" y="${Y}" width="${ls3bF(bw - 4)}" height="${H}" rx="4"/>`
+      + `<text class="${cls == 'v1' ? 'vw' : ''}" x="${ls3bF(X + i * bw + bw / 2 - 2)}" y="${Y + 29}">${inG ? have : have || ''}</text>`;
+  }
+  return ls3bSvg('tape', W, Y + H + 6, body, 'groups and leftovers');
+}
+// a bar cut into d boxes, each holding T / d, the first n shaded (fraction of an amount)
+function ls3bFracTape(T, d, n) {
+  const W = 290, X = 6, Y = 34, H = 46, bw = (W - 2 * X) / d;
+  let body = `<path class="vk" d="M${X} ${Y - 6}v-10H${W - X}v10"/><text x="${W / 2}" y="${Y - 20}">${T}</text>`;
+  for (let i = 0; i < d; i++) body += `<rect class="${i < n ? 'v1' : 'vo'}" x="${ls3bF(X + i * bw)}" y="${Y}" width="${ls3bF(bw)}" height="${H}" rx="4"/>`
+    + `<text class="${i < n ? 'vw' : ''}" x="${ls3bF(X + i * bw + bw / 2)}" y="${Y + 30}">?</text>`;
+  return ls3bSvg('tape', W, Y + H + 6, body, 'bar model');
+}
+// a quadrilateral (or a triangle) for the shape lessons, in a 120 by 100 box; right angles get their square marks; lines: fold lines
+// to draw through the middle [up and down, across, slant up, slant down]
+const LS3B_SH = {
+  square: [[20, 10], [100, 10], [100, 90], [20, 90]], rectangle: [[6, 24], [114, 24], [114, 76], [6, 76]], rhombus: [[60, 4], [98, 50], [60, 96], [22, 50]],
+  parallelogram: [[32, 22], [114, 22], [88, 78], [6, 78]], trapezoid: [[36, 22], [84, 22], [112, 78], [8, 78]], kite: [[60, 4], [92, 34], [60, 96], [28, 34]],
+};
+const LS3B_RT = {square: [0, 1, 2, 3], rectangle: [0, 1, 2, 3]};
+const LS3B_SHN = {square: 'square', rectangle: 'rectangle', rhombus: 'rhombus', parallelogram: 'parallelogram', trapezoid: 'trapezoid', kite: 'kite'};
+function ls3bShape(name, lines = [0, 0, 0, 0], o = {}) {
+  const P = LS3B_SH[name], c = [60, 50];
+  let body = `<path class="vpo" d="M${P.map(p => p.join(' ')).join('L')}z"/>`;
+  for (const i of LS3B_RT[name] || []) {
+    const p = P[i], a = P[(i + 1) % 4], b = P[(i + 3) % 4], u = [(a[0] - p[0]) / Math.hypot(a[0] - p[0], a[1] - p[1]) * 9, (a[1] - p[1]) / Math.hypot(a[0] - p[0], a[1] - p[1]) * 9],
+      v = [(b[0] - p[0]) / Math.hypot(b[0] - p[0], b[1] - p[1]) * 9, (b[1] - p[1]) / Math.hypot(b[0] - p[0], b[1] - p[1]) * 9];
+    body += `<path class="vk" d="M${ls3bF(p[0] + u[0])} ${ls3bF(p[1] + u[1])}l${ls3bF(v[0])} ${ls3bF(v[1])}l${ls3bF(-u[0])} ${ls3bF(-u[1])}"/>`;
+  }
+  const L = [[[60, -4], [60, 104]], [[-6, 50], [126, 50]], [[8, 102], [112, -2]], [[8, -2], [112, 102]]];
+  lines.forEach((on, i) => { if (+on) body += `<path class="ls3b-fold" d="M${L[i][0].join(' ')}L${L[i][1].join(' ')}"/>`; });
+  const said = ['up and down', 'across', 'slanted up', 'slanted down'].filter((x, i) => +lines[i]);
+  return ls3bSvg('shp', 120, 100, body, LS3B_SHN[name] + (said.length ? ', fold lines: ' + said.join(', ') : '')).replace('viewBox="0 0 120 100"', 'viewBox="-8 -8 136 116"').replace('--vw:120', '--vw:' + (o.w || 170));
+}
+// an in and out table as HTML (head, rows [in, out]); o.mine: the outs the child's rule gives, beside them, a tick or a cross a row
+function ls3bTable(head, rows, o = {}) {
+  const th = `<tr><th scope="col">${esc(head[0])}</th><th scope="col">${esc(head[1])}</th>${o.mine ? `<th scope="col">${esc(o.mineHead || 'Your rule')}</th>` : ''}</tr>`;
+  return `<table class="ls3b-tab">${th}${rows.map((r, i) => `<tr><td>${r[0]}</td><td>${r[1]}</td>${o.mine ? `<td class="${o.mine[i] === r[1] ? 'ok' : 'no'}">${o.mine[i] == null ? '–' : o.mine[i]}`
+    + `<span class="a11y-h">${o.mine[i] === r[1] ? ' matches' : ' does not match'}</span></td>` : ''}</tr>`).join('')}</table>`;
+}
+const LS3B_OPS = ['+', '−', '×', '÷'];
+const ls3bApply = (o, k, x) => (o == 0 ? x + k : o == 1 ? x - k : o == 2 ? x * k : x % k ? null : x / k);
+const LS3B_OPSAY = ['plus', 'minus', 'times', 'divided by'];
+// a mixed number of bars: w whole bars and p parts of d (p may be d or more before a trade: the parts spill onto more bars)
+function ls3bMixBars(w, p, d) {
+  const bars = [];
+  for (let i = 0; i < w; i++) bars.push(VIZ.fracBar(d, d, {w: 120}));
+  let left = p;
+  while (left > 0) { bars.push(VIZ.fracBar(Math.min(d, left), d, {w: 120}).replace('class="viz', 'class="viz ls3b-parts')); left -= d; }
+  return `<div class="ls3b-bars">${bars.join('') || VIZ.fracBar(0, d, {w: 120})}</div>`;
+}
+
+/* ---- the models (keys of K2MM) ---- */
+if (typeof K2MM != 'undefined') {
+  const bit = (i, l, ic) => `<button class="mmb ls3b-tg" data-i="${i}" data-d="1" aria-label="${esc(l)}">${ic || esc(l)}</button>`;
+  const flip = (s, i) => s.map((x, j) => (j == i ? 1 - x : x));
+  // a bar graph: m {names, vals (every bar's value), sc (the scale), top (lines), ed (the bars with a stepper)}; state: the lines of each ed bar
+  K2MM.graph = {
+    raw: true,
+    s0: q => q.m.ed.map(() => 0),
+    val: (q, s) => (q.m.ed.length == 1 ? s[0] * q.m.sc : s.map(x => x * q.m.sc).join(',')),
+    ans: q => q.m.ed.map(i => q.m.vals[i] / q.m.sc),
+    step: (q, s, i, d) => { const o = s.slice(); o[i] += d; return o[i] < 0 || o[i] > q.m.top ? null : o; },
+    draw: (q, s) => ls3bGraph(q.m.names, q.m.vals.map((v, i) => (q.m.ed.includes(i) ? s[q.m.ed.indexOf(i)] * q.m.sc : v)), q.m.sc, q.m.top, q.m.ed),
+    ctl: q => `<div class="mmc mmcol">${q.m.ed.map((b, i) => mmRow(q.m.names[b], i, false)).join('')}</div>`,
+    of: (q, v) => String(v).split(',').map(x => Math.round(+x / q.m.sc)),
+    fits: (q, v) => String(v).split(',').length == q.m.ed.length && String(v).split(',').every(x => +x >= 0 && +x % q.m.sc == 0 && +x / q.m.sc <= q.m.top),
+    miss: (q, s) => (s[0] * q.m.sc > q.m.target ? 'Too tall. Each line counts ' + q.m.sc + '.' : 'Not tall enough. Each line counts ' + q.m.sc + '.'),
+  };
+  // a line plot: m {den, ks (the marks' numerators, four of them), target (the counts)}; state: the dots on each mark
+  K2MM.plot = {
+    raw: true,
+    s0: q => q.m.ks.map(() => 0),
+    val: (q, s) => s.join(','),
+    ans: q => q.m.target.slice(),
+    step: (q, s, i, d) => { const o = s.slice(); o[i] += d; return o[i] < 0 || o[i] > 6 ? null : o; },
+    draw: (q, s) => VIZ.linePlot(q.m.ks.flatMap((k, i) => Array(s[i]).fill(k / q.m.den)), {min: 0, max: q.m.ks[q.m.ks.length - 1] / q.m.den, step: 1 / q.m.den, den: q.m.den, w: 250}),
+    ctl: q => `<div class="mmc mmcol">${q.m.ks.map((k, i) => mmRow(ls3bFrTxt(k, q.m.den), i, true)).join('')}</div>`,
+    of: (q, v) => String(v).split(',').map(Number),
+    fits: (q, v) => String(v).split(',').length == q.m.ks.length && String(v).split(',').every(x => +x >= 0 && +x <= 6),
+    miss: () => 'Count the lengths for each mark again.',
+  };
+  // an angle: m {proto, left, show (write the degrees), kind | target}; state: [degrees], 5 to 180
+  K2MM.ang = {
+    raw: true,
+    s0: q => [q.m.s0 || 30],
+    val: (q, s) => s[0],
+    ans: q => [q.m.target || {acute: 45, right: 90, obtuse: 135, straight: 180}[q.m.kind]],
+    step: (q, s, i, d) => (s[0] + d < 5 || s[0] + d > 180 ? null : [s[0] + d]),
+    draw: (q, s) => (q.m.proto ? ls3bProto(s[0], q.m.left) : VIZ.angle(s[0], {rot: q.m.rot || 0, label: q.m.show ? s[0] + '°' : ''})),
+    ctl: q => `<div class="mmc mmcol">${mmRow(q.m.show ? 'Open' : 'Turn', 0, false, [5, 15])}</div>`,
+    of: (q, v) => [+v],
+    fits: (q, v) => Number.isInteger(+v) && +v >= 5 && +v <= 180 && +v % 5 == 0,
+    miss: (q, s) => (q.m.kind ? `That is ${ls3bKind(s[0])}. Open or close it.` : s[0] > q.m.target ? 'Too wide. Close it a little.' : 'Not wide enough. Open it a little.'),
+  };
+  // a point on a coordinate grid: m {max, target 'x,y'}; state: [across, up]
+  K2MM.xy = {
+    raw: true,
+    s0: () => [0, 0],
+    val: (q, s) => s.join(','),
+    ans: q => q.m.target.split(',').map(Number),
+    step: (q, s, i, d) => { const o = s.slice(); o[i] += d; return o[i] < 0 || o[i] > q.m.max ? null : o; },
+    draw: (q, s) => VIZ.coordGrid({max: q.m.max, points: [[s[0], s[1], 'A']]}).replace('viz viz-grid', 'viz viz-grid ls3b-xy'),
+    ctl: () => `<div class="mmc mmcol">${mmRow('Across', 0, true)}${mmRow('Up', 1, true)}</div>`,
+    of: (q, v) => String(v).split(',').map(Number),
+    fits: (q, v) => /^\d+,\d+$/.test(String(v)) && String(v).split(',').every(x => +x <= q.m.max),
+    miss: (q, s) => { const [x, y] = K2MM.xy.ans(q); return s[0] == y && s[1] == x ? 'Across first, then up.' : s[0] != x ? 'Check how far across.' : 'Check how far up.'; },
+  };
+  // a scale or a jug: m {jug, max, step, unit, target}; state: [marks]
+  K2MM.dial = {
+    raw: true,
+    s0: () => [0],
+    val: (q, s) => s[0] * q.m.step,
+    ans: q => [q.m.target / q.m.step],
+    step: (q, s, i, d) => (s[0] + d < 0 || (s[0] + d) * q.m.step > q.m.max ? null : [s[0] + d]),
+    draw: (q, s) => (q.m.jug ? ffJug : ffDial)(s[0] * q.m.step, q.m.max, q.m.step, q.m.unit),
+    ctl: q => `<div class="mmc mmcol">${mmRow(q.m.jug ? 'Water' : 'Needle', 0, false)}</div>`,
+    of: (q, v) => [+v / q.m.step],
+    fits: (q, v) => Number.isInteger(+v / q.m.step) && +v >= 0 && +v <= q.m.max,
+    miss: (q, s) => (s[0] * q.m.step > q.m.target ? `Too much. Each mark is ${q.m.step}.` : `Not enough yet. Each mark is ${q.m.step}.`),
+  };
+  // a bar model: m {g, n, ex, hiN}; state: [boxes, in each box]
+  K2MM.tape = {
+    raw: true,
+    s0: () => [1, 1],
+    val: (q, s) => s[0] * s[1],
+    ans: q => [q.m.g, q.m.n],
+    step: (q, s, i, d) => { const o = s.slice(); o[i] += d; return o[i] < 1 || o[i] > (i ? q.m.hiN || 12 : 10) ? null : o; },
+    draw: (q, s) => ls3bTape(s[0], s[1], {ex: q.m.ex, tot: '?'}),
+    ctl: () => `<div class="mmc mmcol">${mmRow('Boxes', 0, true)}${mmRow('In each box', 1, true)}</div>`,
+    of: (q, v) => [q.m.g, Math.round(+v / q.m.g)],
+    fits: (q, v) => Number.isInteger(+v / q.m.g) && +v / q.m.g >= 1 && +v / q.m.g <= (q.m.hiN || 12),
+    miss: (q, s) => (s[0] != q.m.g ? 'Check how many boxes the story has.' : 'Check how many go in each box.'),
+  };
+  // a division story's groups: m {T, s, target}; state: [groups]
+  K2MM.left = {
+    raw: true,
+    s0: () => [1],
+    val: (q, s) => s[0],
+    ans: q => [q.m.target],
+    step: (q, s, i, d) => (s[0] + d < 1 || s[0] + d > 12 ? null : [s[0] + d]),
+    draw: (q, s) => ls3bLeft(q.m.T, q.m.s, s[0]),
+    ctl: () => `<div class="mmc mmcol">${mmRow('Groups', 0, true)}</div>`,
+    of: (q, v) => [+v],
+    fits: (q, v) => Number.isInteger(+v) && +v >= 1 && +v <= 12,
+    miss: (q, s) => (s[0] > q.m.target ? 'One group too many. Read the question again.' : 'Not enough yet. Read the question again.'),
+  };
+  // an in and out rule: m {head, rows [[in, out]], target 'op k'}; state: [sign 0-3, number 1-12]
+  K2MM.rule = {
+    raw: true,
+    s0: () => [0, 1],
+    val: (q, s) => LS3B_OPS[s[0]] + s[1],
+    ans: q => [LS3B_OPS.indexOf(q.m.target[0]), +q.m.target.slice(1)],
+    step: (q, s, i, d) => { if (i == 0) return [(s[0] + d + 4) % 4, s[1]]; const k = s[1] + d; return k < 1 || k > 12 ? null : [s[0], k]; },
+    draw: (q, s) => `<div class="eq ls3b-rule">${LS3B_OPS[s[0]]} ${s[1]}</div>` + ls3bTable(q.m.head, q.m.rows, {mine: q.m.rows.map(r => ls3bApply(s[0], s[1], r[0])), mineHead: LS3B_OPS[s[0]] + ' ' + s[1]}),
+    ctl: () => `<div class="mmc mmcol"><div class="mms"><span class="mml">Sign</span>${LS3B_OPS.map((o, i) => `<button class="mmb ls3b-op" data-i="0" data-d="${i}" aria-label="${LS3B_OPSAY[i]}">${o}</button>`).join('')}</div>${mmRow('Number', 1, true)}</div>`,
+    of: (q, v) => [LS3B_OPS.indexOf(String(v)[0]), +String(v).slice(1)],
+    fits: (q, v) => /^[+−×÷]([1-9]|1[0-2])$/.test(String(v)),
+    miss: () => 'Try your rule on every row.',
+  };
+  // the sign buttons set the sign (data-op) rather than step it
+  const step0 = K2MM.rule.step;
+  K2MM.rule.step = (q, s, i, d) => (i == 0 && d >= 0 && d <= 3 ? (s[0] == d ? null : [d, s[1]]) : step0(q, s, i, d));
+  // the facts of a quadrilateral: m {shape}; state: four bits (four sides, all sides equal, four right angles, both pairs parallel)
+  K2MM.props = {
+    raw: true,
+    s0: () => [0, 0, 0, 0],
+    val: (q, s) => s.join(''),
+    ans: q => LS3B_PROPS[q.m.shape].slice(),
+    step: (q, s, i) => flip(s, i),
+    draw: (q, s) => `<div class="ls3b-prop">${ls3bShape(q.m.shape)}<ul class="ls3b-facts">${LS3B_FACT.map((f, i) => `<li class="${s[i] ? 'on' : ''}">${ico(s[i] ? 'check-circle' : 'close', 20)}<span>${f}</span>`
+      + `<span class="a11y-h">${s[i] ? ' tapped' : ' not tapped'}</span></li>`).join('')}</ul></div>`,
+    ctl: () => `<div class="mmc ls3b-tgs">${LS3B_FACT.map((f, i) => bit(i, f)).join('')}</div>`,
+    of: (q, v) => String(v).split('').map(Number),
+    fits: (q, v) => /^[01]{4}$/.test(String(v)),
+    miss: () => 'Check the sides, then the corners.',
+  };
+  // fold lines: m {shape}; state: four bits (up and down, across, slant up, slant down)
+  const foldIc = i => `<svg class="ls3b-fic" viewBox="0 0 24 24" aria-hidden="true"><path d="${['M12 2V22', 'M2 12H22', 'M3 21L21 3', 'M3 3L21 21'][i]}"/></svg>`;
+  K2MM.sym = {
+    raw: true,
+    s0: () => [0, 0, 0, 0],
+    val: (q, s) => s.join(''),
+    ans: q => LS3B_SYM[q.m.shape].slice(),
+    step: (q, s, i) => flip(s, i),
+    draw: (q, s) => ls3bShape(q.m.shape, s, {w: 200}),
+    ctl: () => `<div class="mmc ls3b-tgs">${['Fold line up and down', 'Fold line across', 'Fold line slanted up', 'Fold line slanted down'].map((l, i) => bit(i, l, foldIc(i))).join('')}</div>`,
+    of: (q, v) => String(v).split('').map(Number),
+    fits: (q, v) => /^[01]{4}$/.test(String(v)),
+    miss: () => 'Fold it in your mind: both halves must match.',
+  };
+  // dividing by a 2-digit number: m {n, d, target}; state: [how many fit]
+  K2MM.qtry = {
+    raw: true,
+    s0: () => [1],
+    val: (q, s) => s[0],
+    ans: q => [q.m.target],
+    step: (q, s, i, d) => (s[0] + d < 1 || s[0] + d > 99 ? null : [s[0] + d]),
+    draw: (q, s) => { const p = q.m.d * s[0], l = q.m.n - p, st = l < 0 ? 'Too much' : l >= q.m.d ? 'More fit' : 'Fits';
+      return `<div class="ls3b-try"><div class="eq">${q.m.d} × ${s[0]} = ${p}</div><div class="eq">${q.m.n} − ${p} = ${l < 0 ? '−' + -l : l}</div>`
+        + `<div class="ls3b-st ${l < 0 || l >= q.m.d ? 'no' : 'ok'}">${ico(l < 0 || l >= q.m.d ? 'close' : 'check-circle', 22)}<span>${st}</span></div></div>`; },
+    ctl: () => `<div class="mmc mmcol">${mmRow('How many fit', 0, true, [1, 10])}</div>`,
+    of: (q, v) => [+v],
+    fits: (q, v) => Number.isInteger(+v) && +v >= 1 && +v <= 99,
+    miss: (q, s) => (q.m.d * s[0] > q.m.n ? 'Too much. Try fewer.' : 'More fit. Try more.'),
+  };
+  // mixed numbers: m {d, target (a value as text)}; state: [wholes, parts]; trade d parts for a whole (i 2, d 1) or break one (d -1)
+  const trade = (d, l) => `<button class="mmb ls-tr" data-i="2" data-d="${d}" aria-label="${l}">${esc(l)}</button>`;
+  K2MM.mixb = {
+    raw: true,
+    s0: q => (q.m.s0 || [0, 0]).slice(),
+    val: (q, s) => ls3bMixTxt(s[0], s[1], q.m.d),
+    ans: q => { const v = ls3bMixOf(q.m.target, q.m.d); return [v[0], v[1]]; },
+    step: (q, s, i, d) => {
+      const D = q.m.d, o = s.slice();
+      if (i == 2) { if (d > 0) { if (o[1] < D) return null; o[1] -= D; o[0]++; } else { if (o[0] < 1) return null; o[0]--; o[1] += D; } return o; }
+      o[i] += d;
+      return o[i] < 0 || o[0] > 9 || o[1] > 2 * D ? null : o;
+    },
+    draw: (q, s) => ls3bMixBars(s[0], s[1], q.m.d) + `<div class="eq">${s[0]} ${fcFr(s[1], q.m.d)}</div>`,
+    ctl: q => `<div class="mmc mmcol">${mmRow('Wholes', 0, true)}${mmRow(FC_NAMES[q.m.d][0].toUpperCase() + FC_NAMES[q.m.d].slice(1) + 's', 1, true)}<div class="mms ls-trs">`
+      + trade(1, `${q.m.d} parts → 1 whole`) + trade(-1, `1 whole → ${q.m.d} parts`) + '</div></div>',
+    of: (q, v) => ls3bMixOf(v, q.m.d),
+    fits: (q, v) => { const o = ls3bMixOf(v, q.m.d); return !!o && o[0] <= 9 && o[1] < q.m.d; },
+    miss: (q, s) => (s[1] >= q.m.d ? 'Trade parts for a whole.' : 'Check the wholes and the parts.'),
+  };
+  // whole bars cut into parts: m {w, target (pieces)}; state: [parts in each bar]
+  K2MM.cut = {
+    raw: true,
+    s0: () => [1],
+    val: (q, s) => q.m.w * s[0],
+    ans: q => [q.m.target / q.m.w],
+    step: (q, s, i, d) => (s[0] + d < 1 || s[0] + d > 8 ? null : [s[0] + d]),
+    draw: (q, s) => ccBars(q.m.w, s[0]),
+    ctl: () => `<div class="mmc mmcol">${mmRow('Parts in each bar', 0, true)}</div>`,
+    of: (q, v) => [+v / q.m.w],
+    fits: (q, v) => Number.isInteger(+v / q.m.w) && +v / q.m.w >= 1 && +v / q.m.w <= 8,
+    miss: (q, s) => (s[0] * q.m.w > q.m.target ? 'Pieces too small. Cut fewer.' : 'Cut more pieces.'),
+  };
+  // the make kind's first-miss words for these models (their own line), the rest as before
+  const MK = KIND.make, r1 = MK.retry;
+  MK.retry = (q, st) => {
+    const M = K2MM[q.model];
+    if (!M || !M.miss) return r1(q, st);
+    fb(M.miss(q, st.mm), 'again');
+    st.mmMoved = false;
+    MK.draw(q, st);
+    const w = $('.mmw');
+    if (!w) return;
+    w.classList.add('wrong');
+    k2Shake(w);
+    setTimeout(() => w.classList.remove('wrong'), 900);
+  };
+}
+// the facts of each shape (four sides, all sides equal, four right angles, both pairs of sides parallel) and its fold lines
+const LS3B_FACT = ['Four sides', 'All sides equal', 'Four right angles', 'Both pairs of sides parallel'];
+const LS3B_PROPS = {square: [1, 1, 1, 1], rectangle: [1, 0, 1, 1], rhombus: [1, 1, 0, 1], parallelogram: [1, 0, 0, 1], trapezoid: [1, 0, 0, 0], kite: [1, 0, 0, 0]};
+const LS3B_SYM = {square: [1, 1, 1, 1], rectangle: [1, 1, 0, 0], rhombus: [1, 1, 0, 0], kite: [1, 0, 0, 0], trapezoid: [1, 0, 0, 0], parallelogram: [0, 0, 0, 0]};
+const ls3bKind = d => (d < 90 ? 'acute' : d == 90 ? 'right' : d < 180 ? 'obtuse' : 'straight');
+const ls3bFrTxt = (k, d) => (k % d ? `${k}/${d}` : String(k / d));
+const ls3bMixTxt = (w, p, d) => (p ? `${w} ${p}/${d}` : String(w));
+// "2 3/4", "3/4" or "5" as [wholes, parts] of d (null when it is not a number of d parts)
+function ls3bMixOf(v, d) {
+  const t = String(v).trim();
+  let m = /^(\d+)$/.exec(t);
+  if (m) return [+m[1], 0];
+  if (!(m = /^(?:(\d+) )?(\d+)\/(\d+)$/.exec(t)) || !+m[3] || d % +m[3]) return null;
+  return [+(m[1] || 0), +m[2] * d / +m[3]];
+}
+// the checkers (LSGOAL, 52b-know.js): a raw state, or a value as text (a misconception's prediction, a simulated child)
+Object.assign(LSGOAL, {
+  akind: (q, v) => ls3bKind(+(Array.isArray(v) ? v[0] : v)) == q.m.kind,
+  xy: (q, v) => (Array.isArray(v) ? v.join(',') : String(v)) === q.m.target,
+  plot: (q, v) => (Array.isArray(v) ? v.join(',') : String(v)) === q.m.target.join(','),
+  rule: (q, v) => { const s = Array.isArray(v) ? v : K2MM.rule.of(q, v); return s[0] >= 0 && q.m.rows.every(r => ls3bApply(s[0], s[1], r[0]) === r[1]); },
+  props: (q, v) => (Array.isArray(v) ? v.join('') : String(v)) === LS3B_PROPS[q.m.shape].join(''),
+  sym: (q, v) => (Array.isArray(v) ? v.join('') : String(v)) === LS3B_SYM[q.m.shape].join(''),
+  mixv: (q, v) => { const s = Array.isArray(v) ? v : ls3bMixOf(v, q.m.d); const t = ls3bMixOf(q.m.target, q.m.d); return !!s && s[1] < q.m.d && s[0] * q.m.d + s[1] == t[0] * q.m.d + t[1]; },
+  some2: (q, v) => (Array.isArray(v) ? v : String(v).split(',').map(Number)).some(x => x > 0),
+});
+/* ---------- TEACH-3b: the grade 3-5 math lessons TEACH-3 left out (part teach35, after 52n-bench3b.js; TEACH-PLAN-2 batch 3) ----------
+   Each is a drafted lesson like the TEACH-3 ones (lsDraft3, 52i-bench35.js): its code here chooses every number, question, model and
+   misconception code; its words are a draft in docs/drafts/<stop>.md that the owner reads (docs/drafts/BATCH3B-READ.md, the read-through
+   of batch '3b'); until the owner approves a draft the lesson runs on its hand-written fallback words (the idea, tonight's question, a
+   Name it line with the child's own numbers, each code's reason). D.b3b marks the lessons of this batch (tools/author.js --read --batch 3b).
+   The stages, as in TEACH-3: 0 build on the model, 1 a picture and a typed answer (or a choice of four), 2 the symbols or the story
+   alone; test (the show-me items and Show) is typed or built, never a choice of two. Check me is the pet's own answer on a stage 1
+   question (petSt), wrong by the child's held idea or the lesson's codes, as in TEACH-3 (lsPetItem35). */
+const ls3B = (id, t, g, o) => Object.assign(ls3(id, t, g, o), {b3b: 1});
+const lsPk = (r, a) => a[Math.floor(r() * a.length)];
+const ls3bStory = t => `<p class="story">${esc(t)}</p>`;
+const LS3B_WHO = ['Ava', 'Leo', 'Mia', 'Sam', 'Zoe', 'Ben'];
+const LS3B_THING = [['shells', 'shell'], ['stickers', 'sticker'], ['beads', 'bead'], ['apples', 'apple'], ['crayons', 'crayon'], ['cards', 'card']];
+const LS3B_BOX = [['bag', 'bags'], ['box', 'boxes'], ['jar', 'jars'], ['tray', 'trays']];
+const ls3bTS = (h, m) => `${h}:${String(m).padStart(2, '0')}`;
+const ls3bFrWarm = D => r => { const d = lsRi(r, 3, 6), n = lsRi(r, 1, d - 1); return ls3FQ(D, 0, `${n}/${d}`, `<div class="pkq">${VIZ.fracBar(n, d)}</div>` + lsCap('What fraction is shaded?') + lsEq(SLOT_FRAC),
+  'What fraction of the bar is shaded?', {sl: {}, hint: {k: 'text', s: 'All the parts on the bottom, the shaded parts on top.'}}); };
+const LS3B_REM = {remember: ['a', 'b']}; // the times-fact warm-up's slots
+
+/* ---- story problems: Story Problems 5 (times and dividing), Story Problems 6 (two steps), Remainder Stories, Fraction Stories ---- */
+const LS3B_BRIEF_ST = `Explore: EXP (no slots in the task).
+Name it: what they built; lines on it (NAME) and the idea: IDEA.
+Together (no slots: each story has its own numbers and the app reads it out): line 1 before building the story's bar model, line 2 before a story with its bar model drawn (they type the answer), line 3 before a story alone.
+Remember: a warm-up: WARM.
+Show: two stories to solve, no help, inside a small job in the world (no slots).`;
+const ls3bBrief = (o) => LS3B_BRIEF_ST.replace('EXP', o.exp).replace('NAME', o.name).replace('IDEA', o.idea).replace('WARM', o.warm || 'a times fact (slots {a} {b})');
+function ls3bSt5(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['wrongOp', 'skip'], idea, home, fb: '{a} boxes of {b} make {sum}.',
+    brief: ls3bBrief({exp: 'the child builds any bar model: how many boxes, and how many in each box, with steppers; the app says how many in all',
+      name: 'slots {a}: the boxes, {b}: how many in each, {sum}: how many in all', idea: 'equal boxes make a times story; sharing a whole into equal boxes is a dividing story'}),
+    slots: {remember: ['a', 'b'], explore: [], name: ['a', 'b', 'sum'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const who = lsPk(r, LS3B_WHO), [th] = lsPk(r, LS3B_THING), [box, boxes] = lsPk(r, LS3B_BOX), a = lsRi(r, 2, 9), b = lsRi(r, 2, 9), f = lsRi(r, 0, 2);
+    const T = [`${who} has ${a} ${boxes} of ${b} ${th}. How many ${th} in all?`, `${who} puts ${a * b} ${th} in ${boxes} of ${b}. How many ${boxes}?`,
+      `${who} shares ${a * b} ${th} into ${a} ${boxes}. How many in each ${box}?`][f];
+    const ans = [a * b, a, b][f], bug = f == 0 ? {wrongOp: [a + b], skip: [a * b - b, a * b + b]} : {wrongOp: [a * b - (f == 1 ? b : a), a * b + (f == 1 ? b : a)], skip: [ans - 1, ans + 1].filter(x => x > 0)};
+    const hint = {k: 'text', s: f == 0 ? `${a} boxes with ${b} in each: ${a} × ${b}.` : f == 1 ? `How many boxes of ${b} make ${a * b}? ${a * b} ÷ ${b}.` : `Share ${a * b} into ${a} equal boxes: ${a * b} ÷ ${a}.`};
+    const pic = f == 0 ? ls3bTape(a, b, {tot: '?'}) : f == 1 ? ls3bTape(1, b, {tot: a * b, rest: 1}) : ls3bTape(a, b, {tot: a * b, q: 1});
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'tape', m: {g: a, n: b}, goal: 'groups', eq: 'value', ans: a * b, ansSay: `${a} boxes of ${b}`, sl: {}, bug: {}, hint,
+      html: ls3bStory(T) + lsCap('Build the bar model: the boxes, and how many in each.'), say: T});
+    return lsDq(D, Math.min(st, 2), {kind: 'num', ans, sl: {}, bug, hint, html: ls3bStory(T) + (st == 1 ? `<div class="pkq">${pic}</div>` : '') + SLOT, say: T});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'tape', m: {g: 3, n: 4}, goal: 'moved', eq: 'value', ans: 12, raw: 1, sl: {}, demo: [3, 5],
+    html: lsCap('Build any bar model you like.'), say: 'Build any bar model. Pick the boxes, and how many go in each.'}), nudge: 'Change the boxes or how many in each, then check.',
+  react: v => { const [a, b] = Array.isArray(v) ? v : [3, 5]; return {ctx: {a, b, sum: a * b}, lines: [`${a} boxes of ${b} make ${a * b}.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bTape(c.a, c.b, {tot: c.sum})}</div>` + lsEq(`${c.a} × ${c.b} = ${c.sum}`), sl: c});
+  return D;
+}
+function ls3bSt6(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['oneStep', 'wrongOp'], idea, home, fb: '{a} boxes of {b} and {k} more make {sum}.',
+    brief: ls3bBrief({exp: 'a bar model of equal boxes and one more box of {k}; the child picks the boxes and how many in each with steppers; the app says how many in all',
+      name: 'slots {a}: the boxes, {b}: how many in each, {k}: the extra box, {sum}: how many in all', idea: 'a two-step story: first the equal boxes, then add or take away'}),
+    slots: {remember: ['a', 'b'], explore: ['k'], name: ['a', 'b', 'k', 'sum'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const who = lsPk(r, LS3B_WHO), [th] = lsPk(r, LS3B_THING), [box, boxes] = lsPk(r, LS3B_BOX), a = lsRi(r, 2, 9), b = lsRi(r, 2, 9), add = r() < .5, c = lsRi(r, 2, Math.min(19, a * b - 1));
+    const T = add ? `${who} has ${a} ${boxes} of ${b} ${th}, then finds ${c} more. How many now?`
+      : `A shop has ${a} ${boxes} of ${b} ${th}. It sells ${c}. How many are left?`;
+    const ans = add ? a * b + c : a * b - c, bug = {oneStep: [a * b], wrongOp: [add ? a * b - c : a * b + c, a + b + c]};
+    const hint = {k: 'text', s: `Step 1: ${a} × ${b}. Step 2: ${add ? 'add' : 'take away'} ${c}.`}, ex = [c, add ? '+' : '−'];
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'tape', m: {g: a, n: b, ex}, goal: 'groups', eq: 'value', ans: a * b, ansSay: `${a} boxes of ${b}`, sl: {}, bug: {}, hint,
+      html: ls3bStory(T) + lsCap('Step 1: build the equal boxes.'), say: T});
+    return lsDq(D, Math.min(st, 2), {kind: 'num', ans, sl: {}, bug, hint, html: ls3bStory(T) + (st == 1 ? `<div class="pkq">${ls3bTape(a, b, {ex, tot: '?'})}</div>` : '') + SLOT, say: T});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'tape', m: {g: 3, n: 4, ex: [5, '+']}, goal: 'moved', eq: 'value', ans: 12, raw: 1, sl: {k: 5}, demo: [3, 4],
+    html: lsCap('Build any bar model. One more box of 5 is there.'), say: 'Build any equal boxes. One more box of 5 is there too.'}), nudge: 'Change the boxes or how many in each, then check.',
+  react: v => { const [a, b] = Array.isArray(v) ? v : [3, 4]; return {ctx: {a, b, k: 5, sum: a * b + 5}, lines: [`${a} boxes of ${b} is ${a * b}, and 5 more make ${a * b + 5}.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bTape(c.a, c.b, {ex: [c.k, '+'], tot: c.sum})}</div>` + lsEq(`${c.a} × ${c.b} + ${c.k} = ${c.sum}`), sl: c});
+  return D;
+}
+function ls3bSt7(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['remDrop', 'remUp'], idea, home, fb: '{n} in groups of {b} is {a} groups, {k} left over.',
+    brief: ls3bBrief({exp: 'the child picks a number and a group size with steppers; the app says how many full groups and how many are left over',
+      name: 'slots {n}: the number, {b}: the group size, {a}: the full groups, {k}: left over', idea: 'divide, then ask what the leftovers mean: one more group, drop them, or the answer itself'}),
+    slots: {remember: ['a', 'b'], explore: [], name: ['n', 'b', 'a', 'k'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const who = lsPk(r, LS3B_WHO), [th] = lsPk(r, LS3B_THING), [box, boxes] = lsPk(r, LS3B_BOX), s = lsRi(r, 3, 9), q = lsRi(r, 2, 9), m = lsRi(r, 1, s - 1), T = s * q + m, f = lsRi(r, 0, 2);
+    const S = [`${T} kids, ${s} in each car. How many cars do they need?`, `${who} has ${T} ${th}. A full ${box} holds ${s}. How many full ${boxes}?`,
+      `${who} puts ${T} ${th} in ${boxes} of ${s}. How many are left over?`][f];
+    const ans = [q + 1, q, m][f], tgt = f == 0 ? q + 1 : q, bug = f == 1 ? {remUp: [q + 1]} : {remDrop: [q]};
+    const hint = {k: 'text', s: `${T} ÷ ${s} = ${q} R ${m}. ${['Everyone needs a seat: the leftovers need one more.', 'Only full ones count.', 'The leftover is the answer.'][f]}`};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'left', m: {T, s, target: tgt}, goal: 'value', eq: 'value', ans: tgt, sl: {}, bug: f == 1 ? {remUp: [q + 1]} : f == 0 ? {remDrop: [q]} : {remUp: [q + 1]}, hint,
+      html: ls3bStory(S) + lsCap(['Make enough cars for everyone.', `Make only the full ${boxes}.`, `Make the full ${boxes} of ${s}.`][f]), say: S});
+    return lsDq(D, Math.min(st, 2), {kind: 'num', ans, sl: {}, bug, hint, html: ls3bStory(S) + (st == 1 ? `<div class="pkq">${ls3bLeft(T, s, q)}</div>` + lsEq(`${T} ÷ ${s} = ${q} R ${m}`) : '') + SLOT, say: S});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'pickn', m: {v: [26, 4], lo: [10, 2], hi: [60, 9], ds: [[1, 10], [1]], lab: ['Number', 'Group size'], fmt: s => `${s[0]} in groups of ${s[1]}`},
+    raw: 1, goal: 'mine', eq: 'value', ans: 1, sl: {}, html: lsCap('Pick a number and a group size.'), say: 'Pick a number to put into groups, and the size of each group.'}), nudge: 'Change a number, then check.',
+  react: v => { const [n, b] = Array.isArray(v) ? v : [26, 4], a = Math.floor(n / b), k = n % b; return {ctx: {n, b, a, k}, lines: [`${n} in groups of ${b} is ${a} groups, and ${k} left over.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bLeft(c.n, c.b, c.a)}</div>` + lsEq(`${c.n} ÷ ${c.b} = ${c.a} R ${c.k}`), sl: c});
+  return D;
+}
+function ls3bSt8(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['unitOnly', 'fracTop'], idea, home, fb: '{a} parts of {n} cut in fourths make {sum}.',
+    brief: ls3bBrief({exp: 'a bar of {n} cut into fourths; the child shades any parts', name: 'slots {n}: the whole amount, {a}: the parts shaded, {sum}: what they are worth',
+      idea: 'a fraction of an amount: divide by the bottom number to find one part, then take as many parts as the top number', warm: 'name a shaded fraction (no slots)'}),
+    slots: {remember: [], explore: ['n'], name: ['n', 'a', 'sum'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const who = lsPk(r, LS3B_WHO), d = lsRi(r, 3, 6), n = lsRi(r, 2, d - 1), u = lsRi(r, 2, 9), T = d * u, f = lsRi(r, 0, 2), F = `${n}/${d}`, Fs = ls3Frs(n, d);
+    const S = [`A class has ${T} kids. ${F} of them walk to school. How many walk?`, `A book has ${T} pages. ${who} reads ${F} of it. How many pages?`,
+      `A rope is ${T} meters long. ${who} uses ${F} of it. How many meters?`][f];
+    const ans = n * u, bug = {unitOnly: [u], fracTop: [T * n]}, hint = {k: 'text', s: `One ${FC_NAMES[d]} of ${T} is ${T} ÷ ${d} = ${u}. Then ${n} of them.`};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d, whole: 1}, eq: 'value', ans: F, sl: {}, bug: {}, hint,
+      html: ls3bStory(S) + lsCap(`Shade ${F} of the bar.`), say: S.replace(F, Fs), ansSay: Fs});
+    return lsDq(D, Math.min(st, 2), {kind: 'num', ans, sl: {}, bug, hint, html: ls3bStory(S) + (st == 1 ? `<div class="pkq">${ls3bFracTape(T, d, n)}</div>` : '') + SLOT, say: S.replace(F, Fs)});
+  };
+  D.warm = ls3bFrWarm(D);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d: 4, whole: 1}, eq: 'value', goal: 'some', ans: '1/4', sl: {n: 20}, demo: '3/4',
+    html: lsEq(20) + lsCap('This bar is 20, cut into fourths. Shade any parts.'), say: 'This bar is 20, cut into fourths. Shade any parts you like.'}), nudge: 'Shade a part or more, then check.',
+  react: v => { const a = Math.round(k2Val(v) * 4); return {ctx: {n: 20, a, sum: 5 * a}, lines: [`${a} fourths of 20 is ${5 * a}.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${VIZ.fracBar(c.a, 4, {w: 240})}</div>` + lsEq(`${ls3Fr(c.a, 4)} of ${c.n} = ${c.sum}`), sl: c});
+  return D;
+}
+
+/* ---- graphs: Scaled Graphs (a bar or picture graph whose lines count more than one), Line Plots (lengths in fourths, halves, eighths) ---- */
+const LS3B_DATA = [['Pets', ['Cats', 'Dogs', 'Fish', 'Birds']], ['Fruit', ['Apples', 'Pears', 'Plums', 'Figs']], ['Sports', ['Soccer', 'Tennis', 'Swim', 'Bike']], ['Colors', ['Red', 'Blue', 'Green', 'Pink']]];
+const LS3B_BRIEF_DATA3 = `Explore: a bar graph whose lines count {k}; the child builds any three bars with steppers.
+Name it: the graph they built; lines on it (slots {k}: what each line counts, {a}: the tallest bar) and the idea: each line or picture stands for more than one, so count by the scale.
+Together (line 1 slots {k} {a}; lines 2 and 3 have none, the value is the answer): line 1 before building one bar to show {a} on a graph whose lines count {k}, line 2 before reading a bar or picture graph (they type the number), line 3 before a key and a count in words only.
+Remember: a warm-up: skip counting (slot {k}: the step).
+Show: two graph questions to type, no help, inside a small job in the world (no slots).`;
+function ls3bData3(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['scale', 'skip'], brief: LS3B_BRIEF_DATA3, idea, home, fb: 'Each line counts {k}. The tallest bar shows {a}.', test: 1,
+    slots: {remember: ['k'], explore: ['k'], name: ['k', 'a'], together: [['k', 'a'], [], []], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const [title, names] = lsPk(r, LS3B_DATA), sc = lsPk(r, [2, 5, 10]), ks = [1, 2, 3, 4, 5, 6].map(x => [r(), x]).sort((a, b) => a[0] - b[0]).slice(0, 4).map(x => x[1]), vals = ks.map(k => k * sc);
+    const i = lsRi(r, 0, 3), j = (i + lsRi(r, 1, 3)) % 4, lc = k => names[k].toLowerCase(), head = `<div class="sub"><b>${title}</b></div>`;
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'graph', m: {names, vals, sc, top: 7, ed: [i], target: vals[i]}, goal: 'value', eq: 'value', ans: vals[i], sl: {k: sc, a: vals[i]}, bug: {},
+      hint: {k: 'text', s: `Count by ${sc}s up the side to ${vals[i]}.`}, html: head + lsCap(`Each line counts ${sc}. Make the ${names[i]} bar show ${vals[i]}.`),
+      say: `Each line on this graph counts ${sc}. Make the ${names[i]} bar show ${vals[i]}.`});
+    if (st == 1) {
+      const pic = r() < .5, g0 = pic ? VIZ.pictograph(names.map((x, k) => [x, vals[k]]), {per: sc, key: String(sc)}) : ls3bGraph(names, vals, sc, 7);
+      const more = r() < .5, hi = vals[i] >= vals[j] ? i : j, lo = hi == i ? j : i;
+      const ask = more ? `How many more chose ${lc(hi)} than ${lc(lo)}?` : `How many chose ${lc(i)}?`, ans = more ? vals[hi] - vals[lo] : vals[i];
+      const bug = more ? {scale: [ks[hi] - ks[lo]], skip: [ans + sc, ans - sc].filter(x => x > 0)} : {scale: [ks[i]], skip: [ans + sc, ans - sc].filter(x => x > 0)};
+      return lsDq(D, 1, {kind: 'num', ans, sl: {}, bug, hint: {k: 'text', s: pic ? `Each picture stands for ${sc}. Count by ${sc}s.` : `Each line counts ${sc}. Count by ${sc}s up the side.`},
+        html: head + `<div class="pkq">${g0}</div>` + lsCap(ask) + SLOT, say: `${pic ? `Each picture stands for ${sc}.` : `Each line counts ${sc}.`} ${ask}`});
+    }
+    return lsDq(D, 2, {kind: 'num', ans: vals[i], sl: {}, bug: {scale: [ks[i]], skip: [vals[i] + sc, vals[i] - sc].filter(x => x > 0), mulAdd: [ks[i] + sc]}, hint: {k: 'text', s: `${ks[i]} pictures, each ${sc}: count by ${sc}s.`},
+      html: lsCap(`In a picture graph, each picture stands for ${sc}. ${names[i]} has ${ks[i]} picture${ks[i] > 1 ? 's' : ''}. How many is that?`) + SLOT,
+      say: `Each picture stands for ${sc}. ${names[i]} has ${ks[i]} picture${ks[i] > 1 ? 's' : ''}. How many?`});
+  };
+  D.warm = r => { const k = lsPk(r, [2, 5, 10]); return lsSeqQ(D, 0, k * lsRi(r, 1, 5), k); };
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'graph', m: {names: ['Cats', 'Dogs', 'Fish'], vals: [15, 25, 10], sc: 5, top: 6, ed: [0, 1, 2]}, goal: 'some2', eq: 'value', ans: '15', raw: 1, sl: {k: 5}, demo: [3, 5, 2],
+    html: lsCap('Each line counts 5. Make any bar graph.'), say: 'Each line on this graph counts 5. Make any bar graph you like.'}), nudge: 'Make a bar taller, then check.',
+  react: v => { const s = Array.isArray(v) ? v : [3, 5, 2], a = 5 * Math.max(...s); return {ctx: {k: 5, a, s: s.slice()}, lines: [`Each line counts 5. Your tallest bar shows ${a}.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bGraph(['Cats', 'Dogs', 'Fish'], (c.s || [c.a / 5, 0, 0]).map(x => 5 * x), 5, 6)}</div>` + lsEq(`1 line = ${c.k}`), sl: c});
+  return D;
+}
+const LS3B_PL = {inch: 'inches', foot: 'feet'};
+const LS3B_LP = [[4, 'ribbons', 'inch'], [2, 'ropes', 'foot'], [8, 'worms', 'inch'], [4, 'leaves', 'inch']];
+const LS3B_BRIEF_DATA4 = `Explore: a line plot with four marks (fourths of an inch); the child puts any dots on it with a stepper a mark.
+Name it: the line plot they made; lines on it (slot {n}: how many dots) and the idea: each dot is one length; to find a total, add the lengths of the dots, not the dots.
+Together (no slots: the lengths are fractions on the screen, and the app says them): line 1 before putting a dot on the line plot for each length of a list, line 2 before reading a line plot (they type a total as a fraction), line 3 before the same in words only.
+Remember: a warm-up: name a shaded fraction (no slots).
+Show: two totals to type as fractions, no help, inside a small job in the world (no slots).`;
+function ls3bData4(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['dotsVal', 'addBot'], brief: LS3B_BRIEF_DATA4, idea, home, fb: 'Each dot is one length. You put {n} dots on the plot.', test: 1,
+    slots: {remember: [], explore: [], name: ['n'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const [den, things, unit] = lsPk(r, LS3B_LP), ks = [1, 2, 3, 4], cnt = ks.map(() => lsRi(r, 0, 3)), v = lsPk(r, [0, 1, 2, 3].filter(i => ks[i] % den));
+    if (cnt[v] < 2) cnt[v] = lsRi(r, 2, 4);
+    while (cnt[v] * ks[v] % den == 0) cnt[v]++;
+    const fr = k => ls3bFrTxt(k, den), frS = k => (k % den ? fcSay(k, den) : String(k / den)), list = ks.flatMap((k, i) => Array(cnt[i]).fill(k)).map(k => [r(), k]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    const tot = cnt[v] * ks[v], gc = k2Gcd(tot, den), ans = tot % den ? `${tot / gc}/${den / gc}` : `${tot / den}`, un = x => (x > den ? LS3B_PL[unit] : unit);
+    const bug = {dotsVal: [cnt[v]], addBot: [`${tot}/${cnt[v] * den}`]}, hint = {k: 'text', s: `${cnt[v]} dots of ${fr(ks[v])}: add ${fr(ks[v])} ${cnt[v]} times.`};
+    const plot = VIZ.linePlot(list.map(k => k / den), {min: 0, max: ks[3] / den, step: 1 / den, den, w: 250});
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'plot', m: {den, ks, target: cnt}, goal: 'plot', eq: 'value', ans: cnt.join(','), sl: {}, bug: {}, hint: {k: 'text', s: 'Count how many of each length, then put that many dots on its mark.'},
+      html: lsCap(`The ${things}, in ${LS3B_PL[unit]}:`) + `<div class="eq ls3b-list">${list.map(k => (k % den ? fcFr(k, den) : k / den)).join(', ')}</div>` + lsCap('Put a dot on the line plot for each one.'),
+      say: `Put a dot on the line plot for each length of the ${things}.`, ansSay: 'one dot for each length'});
+    const ask = `What is the total length of the ${things} at ${frS(ks[v])} ${un(ks[v])}?`;
+    if (st == 1) return ls3FQ(D, 1, ans, `<div class="pkq">${plot}</div>` + lsCap(ask) + lsEq(SLOT_FRAC), `Each dot is one ${things.slice(0, -1)}. ${ask}`, {sl: {}, bug, hint, eq: 'value'});
+    return ls3FQ(D, 2, ans, lsCap(`${cnt[v]} ${things} are each ${fr(ks[v])} ${un(ks[v])} long. Total length?`) + lsEq(SLOT_FRAC), `${cnt[v]} ${things} are each ${frS(ks[v])} ${un(ks[v])} long. What is their total length?`, {sl: {}, bug, hint, eq: 'value'});
+  };
+  D.warm = ls3bFrWarm(D);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'plot', m: {den: 4, ks: [1, 2, 3, 4], target: [1, 2, 1, 0]}, goal: 'some2', eq: 'value', ans: '1,2,1,0', raw: 1, sl: {}, demo: [1, 2, 1, 0],
+    html: lsCap('Put any dots on the line plot.'), say: 'Put dots on any marks of the line plot. Each dot is one length.'}), nudge: 'Put a dot on a mark, then check.',
+  react: v => { const s = Array.isArray(v) ? v : [1, 2, 1, 0], n = s.reduce((a, b) => a + b, 0); return {ctx: {n, s: s.slice()}, lines: [`You put ${n} dots on the line plot.`]}; }});
+  D.name = c => { const s = c.s || [c.n, 0, 0, 0]; return {html: `<div class="pkq">${VIZ.linePlot([1, 2, 3, 4].flatMap((k, i) => Array(s[i]).fill(k / 4)), {min: 0, max: 1, step: .25, den: 4, w: 250})}</div>` + lsEq(`${c.n} dots`), sl: c}; };
+  return D;
+}
+
+/* ---- angles: Kinds of Angles (open an angle of a kind), Measure Angles (a protractor with two scales; a missing angle) ---- */
+const LS3B_KINDS = [['acute', 'Acute'], ['right', 'Right'], ['obtuse', 'Obtuse'], ['straight', 'Straight']];
+const LS3B_BRIEF_ANG1 = `Explore: the child opens an angle any amount with steppers; the app says how many degrees and what kind it is.
+Name it: the angle they made; lines on it (slot {a}: its degrees) and the idea: a right angle is a square corner; acute is less, obtuse is more, straight is a flat line.
+Together (no slots: the kind is the answer): line 1 before opening an angle of a kind the app names, line 2 before a picture of an angle (they choose its kind), line 3 before an angle given in degrees only (they choose its kind).
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two angles to open, no help, inside a small job in the world (no slots).`;
+function ls3bAng1(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['angSw', 'rtAng'], brief: LS3B_BRIEF_ANG1, idea, home, fb: 'Your angle is {a} degrees.', test: 0,
+    slots: {remember: ['a', 'b'], explore: [], name: ['a'], together: [], check: ['ans'], show: []}});
+  const ch = () => LS3B_KINDS.map(x => [x[0], x[1]]), sw = {acute: 'obtuse', obtuse: 'acute', right: 'acute', straight: 'obtuse'};
+  D.q = (st, r) => {
+    if (st == 0) {
+      const kind = lsPk(r, ['acute', 'obtuse', 'right', 'acute', 'obtuse']), s0 = kind == 'acute' ? 120 : kind == 'obtuse' ? 40 : 60;
+      return lsDq(D, 0, {kind: 'make', model: 'ang', m: {kind, s0, show: 1, rot: 0}, goal: 'akind', eq: 'value', ans: {acute: 45, right: 90, obtuse: 135}[kind], s0: [s0], sl: {},
+        bug: {angSw: [kind == 'right' ? 120 : 180 - {acute: 45, obtuse: 135}[kind]], rtAng: kind == 'right' ? [80, 100] : [90]}, ansSay: `an ${kind} angle`.replace('an right', 'a right'),
+        hint: {k: 'text', s: kind == 'right' ? 'A right angle is a square corner: 90 degrees.' : kind == 'acute' ? 'Acute is less than a square corner, less than 90.' : 'Obtuse is more than a square corner, more than 90.'},
+        html: lsCap(`Make ${kind == 'right' ? 'a right' : kind == 'acute' ? 'an acute' : 'an obtuse'} angle.`), say: `Make ${kind == 'right' ? 'a right' : kind == 'acute' ? 'an acute' : 'an obtuse'} angle.`});
+    }
+    const deg = st == 1 ? lsPk(r, [20, 30, 45, 60, 80, 90, 100, 120, 135, 150, 180, 85, 95]) : lsPk(r, [25, 40, 55, 70, 90, 110, 125, 140, 165, 180, 88, 92]), ans = ls3bKind(deg);
+    const bug = {angSw: [sw[ans]], rtAng: Math.abs(deg - 90) <= 20 && deg != 90 ? ['right'] : []};
+    const hint = {k: 'html', html: `<div class="pkhint">${VIZ.angle(90, {rot: 10})}<div>A right angle is a square corner, 90°. Acute is less, obtuse is more, straight is a flat line.</div></div>`, w: 'A right angle is a square corner. Acute is less, obtuse is more.'};
+    if (st == 1) return lsPick(D.sk, D.lv, 1, ans, `<div class="pkq">${VIZ.angle(deg, {rot: lsPk(r, [0, 15, 30, 200])})}</div>` + lsCap('What kind of angle is it?') + SLOT, 'What kind of angle is this?', ch(),
+      {pk: false, sl: {}, bug, hint, after: `It is ${ans == 'acute' || ans == 'obtuse' ? 'an' : 'a'} ${ans} angle.`});
+    return lsPick(D.sk, D.lv, 2, ans, lsEq(`${deg}°`) + lsCap('What kind of angle is it?') + SLOT, `An angle of ${deg} degrees. What kind of angle is it?`, ch(),
+      {pk: false, sl: {}, bug, hint, after: `It is ${ans == 'acute' || ans == 'obtuse' ? 'an' : 'a'} ${ans} angle.`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'ang', m: {show: 1, s0: 30, target: 110}, goal: 'moved', eq: 'value', ans: 30, raw: 1, sl: {}, demo: [110],
+    html: lsCap('Open the angle any amount.'), say: 'Open or close the angle any amount you like.'}), nudge: 'Open or close it, then check.',
+  react: v => { const a = Array.isArray(v) ? v[0] : +v; return {ctx: {a}, lines: [`${a} degrees. That is ${ls3bKind(a) == 'acute' || ls3bKind(a) == 'obtuse' ? 'an' : 'a'} ${ls3bKind(a)} angle.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${VIZ.angle(c.a, {label: c.a + '°'})}${VIZ.angle(90, {label: '90°'})}</div>` + lsEq(`${c.a}° ${c.a < 90 ? '<' : c.a > 90 ? '>' : '='} 90°`), sl: c});
+  return D;
+}
+const LS3B_BRIEF_ANG2 = `Explore: an angle on a protractor; the child opens it any amount with steppers; the app says how many degrees.
+Name it: the angle they made on the protractor; lines on it (slot {a}: its degrees) and the idea: put the zero on the side the angle starts, then count up that scale.
+Together (no slots: the degrees are the answer): line 1 before opening an angle on the protractor to a number of degrees the app says, line 2 before reading an angle on a protractor (they type the degrees), line 3 before a missing angle given in words only (they type it).
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two angles to read and type, no help, inside a small job in the world (no slots).`;
+function ls3bAng2(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['proto', 'sup', 'slip'], brief: LS3B_BRIEF_ANG2, idea, home, fb: 'Your angle is {a} degrees.', test: 1,
+    slots: {remember: ['a', 'b'], explore: [], name: ['a'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const hint = {k: 'text', s: 'Find the zero on the side where the angle starts. Count up that scale to the other side.'};
+    if (st < 2) {
+      let deg; do deg = 5 * lsRi(r, 3, 33); while (deg == 90);
+      const left = r() < .5;
+      if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'ang', m: {proto: 1, left, target: deg, s0: deg > 90 ? 30 : 150}, goal: 'value', eq: 'value', ans: deg, s0: [deg > 90 ? 30 : 150], sl: {}, ansSay: `${deg} degrees`,
+        bug: {proto: [180 - deg]}, hint, html: lsCap(`Open the angle to ${deg}°. It starts on the ${left ? 'left' : 'right'}.`), say: `Open the angle to ${deg} degrees on the protractor. It starts on the ${left ? 'left' : 'right'}.`});
+      return lsDq(D, 1, {kind: 'num', ans: deg, sl: {}, bug: {proto: [180 - deg], slip: [deg + 10, deg - 10]}, hint, max: 3,
+        html: `<div class="pkq">${ls3bProto(deg, left)}</div>` + lsCap(`The angle starts on the ${left ? 'left' : 'right'}. How many degrees?`) + `<div class="eq">${SLOT}°</div>`, say: `The angle starts on the ${left ? 'left' : 'right'} side. How many degrees is it?`});
+    }
+    const right = r() < .5, W = right ? 90 : 180, a = right ? 5 * lsRi(r, 2, 16) : 5 * lsRi(r, 4, 32), b = W - a;
+    const S = right ? `A right angle is cut in two. One part is ${a}°. The other?` : `A straight line makes two angles. One is ${a}°. The other?`;
+    return lsDq(D, 2, {kind: 'num', ans: b, sl: {}, bug: {sup: [right ? 180 - a : 90 - a].filter(x => x > 0), slip: [b + 10, b - 10].filter(x => x > 0)}, max: 3,
+      hint: {k: 'text', s: `${right ? 'A right angle is 90°' : 'A straight line is 180°'}. Take away ${a}.`}, html: lsCap(S) + `<div class="eq">${SLOT}°</div>`, say: S.replace(/°/g, ' degrees')});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'ang', m: {proto: 1, left: false, s0: 30, target: 70}, goal: 'moved', eq: 'value', ans: 30, raw: 1, sl: {}, demo: [70],
+    html: lsCap('Open the angle any amount.'), say: 'Open the angle on the protractor any amount you like.'}), nudge: 'Open or close it, then check.',
+  react: v => { const a = Array.isArray(v) ? v[0] : +v; return {ctx: {a}, lines: [`It starts at zero on the right. It measures ${a} degrees.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bProto(c.a, false)}</div>` + lsEq(`${c.a}°`), sl: c});
+  return D;
+}
+
+/* ---- Coordinate Grid: a point is across, then up ---- */
+const LS3B_BRIEF_XY = `Explore: a point on a coordinate grid; the child moves it anywhere with an across stepper and an up stepper.
+Name it: the point they placed; lines on it (slots {x}: how far across, {y}: how far up) and the idea: an ordered pair says across first, then up, both counted from zero.
+Together (line 1 slots {x} {y}; lines 2 and 3 have none, the point is the answer): line 1 before placing a point at ({x}, {y}), line 2 before reading a point on the grid (they type both numbers), line 3 before a move told in words only (they type where it ends).
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two points to read and type, no help, inside a small job in the world (no slots).`;
+function ls3bXY(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 0, bugs: ['swapXY', 'gridOff'], brief: LS3B_BRIEF_XY, idea, home, fb: 'Your point is {x} across and {y} up.', test: 1,
+    slots: {remember: ['a', 'b'], explore: [], name: ['x', 'y'], together: [['x', 'y'], [], []], check: ['ans'], show: []}});
+  const vs = v => { const [x, y] = String(v).split(',').map(Number); return `${x} across and ${y} up`; };
+  const hint = {k: 'text', s: 'Start at zero, in the corner. Go across first, then up.'};
+  D.q = (st, r) => {
+    let x, y; do { x = lsRi(r, 0, 5); y = lsRi(r, 0, 5); } while (x == y || x + y < 2 || (!x || !y) && r() < .7);
+    const ans = `${x},${y}`, bug = {swapXY: [`${y},${x}`], gridOff: [`${x + 1},${y + 1}`]};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'xy', m: {max: 6, target: ans}, goal: 'xy', eq: 'value', ans, sl: {x, y}, bug, hint, vsay: vs, ansSay: vs(ans),
+      html: lsEq(`(${x}, ${y})`) + lsCap('Put point A there.'), say: `Put point A at ${x}, ${y}. Go ${x} across, then ${y} up.`});
+    if (st == 1) return lsDq(D, 1, {kind: 'num', sep: 'xy', ans, sl: {}, bug, hint, vsay: vs, html: `<div class="pkq">${VIZ.coordGrid({max: 6, points: [[x, y, 'A']]})}</div>` + lsCap('Where is point A?') + `<div class="eq">${ccXY}</div>`,
+      say: 'Where is point A? Type how far across, then how far up.'});
+    const a = lsRi(r, 1, 3), b = lsRi(r, 1, 3), x0 = Math.max(0, x - a), y0 = Math.max(0, y - b), A = `${x0 + a},${y0 + b}`;
+    return lsDq(D, 2, {kind: 'num', sep: 'xy', ans: A, sl: {}, bug: {swapXY: [`${y0 + b},${x0 + a}`], gridOff: [`${x0 + a + 1},${y0 + b + 1}`]}, hint, vsay: vs,
+      html: lsCap(`Start at (${x0}, ${y0}). Go ${a} across and ${b} up. Where are you?`) + `<div class="eq">${ccXY}</div>`, say: `Start at ${x0}, ${y0}. Go ${a} across and ${b} up. Where are you now?`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'xy', m: {max: 6, target: '3,5'}, goal: 'moved', eq: 'value', ans: '3,5', raw: 1, sl: {}, demo: [4, 2], vsay: vs,
+    html: lsCap('Put point A anywhere on the grid.'), say: 'Move point A anywhere you like on the grid.'}), nudge: 'Move the point, then check.',
+  react: v => { const [x, y] = Array.isArray(v) ? v : String(v).split(',').map(Number); return {ctx: {x, y}, lines: [`Your point is ${x} across and ${y} up.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${VIZ.coordGrid({max: 6, points: [[c.x, c.y, 'A']]})}</div>` + lsEq(`(${c.x}, ${c.y})`), sl: c});
+  return D;
+}
+
+/* ---- Rulers & Scales: a kitchen scale and a measuring jug (count by the marks' step), and a ruler that does not start at zero ---- */
+const LS3B_DIAL = [[0, 'g', 500, 50, 'grams'], [0, 'g', 1000, 100, 'grams'], [0, 'kg', 20, 2, 'kilograms'], [1, 'mL', 500, 50, 'milliliters'], [1, 'mL', 1000, 100, 'milliliters'], [1, 'L', 10, 2, 'liters']];
+const LS3B_BRIEF_MEAS4 = `Explore: a kitchen scale whose marks are {k} grams; the child moves the needle to any mark with a stepper.
+Name it: the scale they set; lines on it (slots {k}: each mark, {n}: what the needle shows) and the idea: find what one mark is worth, then count by it; on a ruler, start where the object starts.
+Together (no slots: the reading is the answer, and the app says the units): line 1 before moving a scale's needle or a jug's water to an amount, line 2 before reading a scale, a jug or a ruler (they type it), line 3 before a reading told in words only.
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two readings to type, no help, inside a small job in the world (no slots).`;
+function ls3bMeas4(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['mark1', 'rEnd', 'skip'], brief: LS3B_BRIEF_MEAS4, idea, home, fb: 'Each mark is {k} grams. Yours shows {n}.', test: 1,
+    slots: {remember: ['a', 'b'], explore: ['k'], name: ['k', 'n'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const [jug, unit, max, step, uname] = lsPk(r, LS3B_DIAL), n = max / step, k = lsRi(r, 2, n - 1), val = k * step, lab = n <= 6 ? 1 : 2, last = Math.floor(k / lab) * lab;
+    const hint = {k: 'text', s: `Each mark is ${step} ${unit}. Count by ${step}s.`}, bug = {mark1: [last * step + (k - last), k].filter(x => x != val), skip: [val + step, val - step].filter(x => x > 0)};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'dial', m: {jug, max, step, unit, target: val}, goal: 'value', eq: 'value', ans: val, sl: {}, bug: {}, hint, ansSay: `${val} ${uname}`,
+      html: lsCap(`Each mark is ${step} ${unit}. Make it show ${val} ${unit}.`), say: `Each mark is ${step} ${uname}. Make the ${jug ? 'water' : 'scale'} show ${val} ${uname}.`});
+    if (st == 1 && r() < .35) {
+      const from = lsRi(r, 1, 4), len = lsRi(r, 3, 8);
+      return lsDq(D, 1, {kind: 'num', ans: len, sl: {}, bug: {rEnd: [from + len], skip: [len + 1, len - 1]}, hint: {k: 'text', s: `It starts at ${from}. Count the centimeters from ${from} to the end.`},
+        html: `<div class="pkq">${VIZ.ruler(len, 'cm', 'pencil', {from})}</div>` + lsCap('How long is the pencil?') + `<div class="eq">${SLOT} cm</div>`, say: 'How long is the pencil? The ruler is in centimeters.'});
+    }
+    if (st == 1) return lsDq(D, 1, {kind: 'num', ans: val, sl: {}, bug, hint, max: 4, html: `<div class="pkq">${(jug ? ffJug : ffDial)(val, max, step, unit)}</div>` + lsCap(jug ? 'How much water is in the jug?' : 'How heavy is the bag?') + `<div class="eq">${SLOT} ${unit}</div>`,
+      say: `${jug ? 'How much water is in the jug?' : 'How heavy is the bag on the scale?'} Each mark is ${step} ${uname}.`});
+    const at = last * step, more = k - last || 1, V = at + more * step;
+    return lsDq(D, 2, {kind: 'num', ans: V, sl: {}, bug: {mark1: [at + more], skip: [V + step, V - step]}, hint, max: 4,
+      html: lsCap(`Each mark is ${step} ${unit}. The ${jug ? 'water' : 'needle'} is ${more} mark${more > 1 ? 's' : ''} past ${at} ${unit}. How much?`) + `<div class="eq">${SLOT} ${unit}</div>`,
+      say: `Each mark is ${step} ${uname}. The ${jug ? 'water' : 'needle'} is ${more} mark${more > 1 ? 's' : ''} past ${at}. How much is it?`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'dial', m: {jug: 0, max: 500, step: 50, unit: 'g', target: 250}, goal: 'moved', eq: 'value', ans: 50, raw: 1, sl: {k: 50}, demo: [5],
+    html: lsCap('Each mark is 50 g. Move the needle anywhere.'), say: 'Each mark is 50 grams. Move the needle to any mark you like.'}), nudge: 'Move the needle, then check.',
+  react: v => { const n = (Array.isArray(v) ? v[0] : +v / 50) * 50; return {ctx: {k: 50, n}, lines: [`Each mark is 50 grams. The needle shows ${n} grams.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ffDial(c.n, 500, c.k, 'g')}</div>` + lsEq(`${c.n} g`), sl: c});
+  return D;
+}
+
+/* ---- How Much Time Passed: count up to the next hour, then on ---- */
+const LS3B_BRIEF_TIME6 = `Explore: a clock that starts at 3 o'clock; the child moves the hands to any later time.
+Name it: lines on what they set (slots {time}: the time they set, {n}: the minutes from 3 o'clock) and the idea: count the minutes up to the next hour, then on from it.
+Together (no slots: the times are on the screen and the app says them): line 1 before moving a clock's hands a number of minutes later, line 2 before two clocks (they type the minutes that passed), line 3 before two times written only.
+Remember: a warm-up: set an o'clock time (slot {time}).
+Show: two times that passed to type, no help, inside a small job in the world (no slots).`;
+function ls3bTime6(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['hr100', 'minOnly'], brief: LS3B_BRIEF_TIME6, idea, home, fb: 'From the start to {time} is {n} minutes.', test: 1,
+    slots: {remember: ['time'], explore: [], name: ['time', 'n'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    let h, m, d; do { h = lsRi(r, 1, 10); m = 5 * lsRi(r, 1, 11); d = 5 * lsRi(r, 3, 15); } while (m + d < 60 && r() < .85 || m + d == 60 || m + d >= 120);
+    const eh = h + Math.floor((m + d) / 60), em = (m + d) % 60, s = ls3bTS(h, m), e = ls3bTS(eh, em), ss = mmTimeSay(h, m), es = mmTimeSay(eh, em);
+    const bug = {hr100: [eh * 100 + em - h * 100 - m], minOnly: [Math.abs(em - m)].filter(x => x)}, hint = {k: 'text', s: em >= m && eh == h ? `Same hour: ${em} − ${m}.` : `From ${s} to ${ls3bTS(h + 1, 0)} is ${60 - m} minutes. Then ${em} more.`};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'hands', m: {one: false}, eq: 'exact', ans: e, ansSay: es, hm: [eh, em], s0: [h, m], sl: {}, bug: {}, hint,
+      html: lsEq(s) + lsCap(`Move the clock ${d} minutes later.`), say: `It is ${ss}. Move the clock ${d} minutes later.`});
+    if (st == 1) return lsDq(D, 1, {kind: 'num', ans: d, sl: {}, bug, hint, max: 3, html: `<div class="ffrow"><div>${VIZ.clock(h, m)}<div>Start</div></div><div>${VIZ.clock(eh, em)}<div>End</div></div></div>`
+      + lsCap('How many minutes passed?') + `<div class="eq">${SLOT} minutes</div>`, say: `It starts at ${ss} and ends at ${es}. How many minutes passed?`});
+    return lsDq(D, 2, {kind: 'num', ans: d, sl: {}, bug, hint, max: 3, html: `<div class="eq"><div>Start <b>${s}</b></div><div>End <b>${e}</b></div></div>` + lsCap('How many minutes passed?') + `<div class="eq">${SLOT} minutes</div>`,
+      say: `Start at ${ss}. End at ${es}. How many minutes passed?`});
+  };
+  D.warm = lsWarmHour(D);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'hands', m: {one: false}, eq: 'exact', ans: '3:00', goal: 'moved', s0: [3, 0], sl: {}, demo: '3:40',
+    html: lsEq('3:00') + lsCap('Move the hands to any later time.'), say: "It is 3 o'clock. Move the hands to any later time."}), nudge: 'Move a hand, then check.',
+  react: v => { const [h, m] = String(Array.isArray(v) ? K2MM.hands.val({}, v) : v).split(':').map(Number), n = ((h % 12) * 60 + m - 180 + 720) % 720;
+    return {ctx: {time: mmTimeSay(h, m), n, h, m}, lines: [`From 3 o'clock to ${mmTimeSay(h, m)} is ${n} minutes.`]}; }});
+  D.name = c => ({html: `<div class="ffrow"><div>${VIZ.clock(3, 0)}</div><div>${VIZ.clock(c.h || 3, c.m || 0)}</div></div>` + lsEq(`${c.n} minutes`), sl: c});
+  return D;
+}
+
+/* ---- In and Out Tables, Two Rules: the rule goes across, from in to out ---- */
+const LS3B_BRIEF_RULE = `Explore: an in and out table; the child sets any rule (a sign and a number) and sees what it does to each in number.
+Name it: the rule they set; lines on it (slots {a}: an in number, {sum}: what their rule makes of it) and the idea: IDEA.
+Together (no slots: the numbers are in the table, and the app reads them): line 1 before setting the rule that makes a table true, line 2 before a table with one out missing (they type it), line 3 before a rule and an in number in words only.
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two missing numbers to type, no help, inside a small job in the world (no slots).`;
+function ls3bRule(id, t, g, two, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: two ? ['rowJump', 'skip'] : ['rowJump', 'mulAdd'], idea, home, fb: 'Your rule turns {a} into {sum}.', test: 1,
+    brief: LS3B_BRIEF_RULE.replace('IDEA', two ? 'two patterns from zero: find how each number of one is made from the number beside it' : 'the rule goes across, from each in number to its out number; test it on every row'),
+    slots: {remember: ['a', 'b'], explore: [], name: ['a', 'sum'], together: [], check: ['ans'], show: []}});
+  const head = two ? ['A', 'B'] : ['In', 'Out'];
+  D.q = (st, r) => {
+    let rows, o, k, x4, ans, bug;
+    if (two) {
+      const a = lsRi(r, 2, 6), m = lsRi(r, 2, 5), b = a * m, i = lsRi(r, 5, 9);
+      rows = [1, 2, 3].map(j => [a * j, b * j]); o = 2; k = m; x4 = a * i; ans = b * i; bug = {rowJump: [x4 + b - a], skip: [ans + b, ans - b]};
+      if (st == 2) { const S = `From 0, A adds ${a} and B adds ${b}. When A is ${x4}, what is B?`;
+        return lsDq(D, 2, {kind: 'num', ans, sl: {}, bug, max: 3, hint: {k: 'text', s: `B is ${m} times A.`}, html: lsCap(S) + SLOT, say: S}); }
+    } else {
+      o = lsPk(r, [0, 1, 2, 2]); k = o == 2 ? lsRi(r, 2, 9) : lsRi(r, 2, 12);
+      const s = o == 1 ? lsRi(r, k + 1, k + 6) : lsRi(r, 1, 6);
+      rows = [s, s + 1, s + 2].map(x => [x, ls3bApply(o, k, x)]); x4 = s + lsRi(r, 4, 7); ans = ls3bApply(o, k, x4);
+      const j = rows[1][1] - rows[0][1]; bug = {rowJump: [rows[2][1] + j], mulAdd: o == 2 ? [x4 + k] : []};
+      if (st == 2) { const X = o == 1 ? lsRi(r, k + 1, k + 12) : lsRi(r, 3, 12), Y = ls3bApply(o, k, X), S = `The rule is ${LS3B_OPSAY[o]} ${k}. The in number is ${X}. What is the out number?`;
+        return lsDq(D, 2, {kind: 'num', ans: Y, sl: {}, bug: {mulAdd: o == 2 ? [X + k] : [], rowJump: [Y + 1]}, max: 3, hint: {k: 'text', s: `Do the rule to ${X}: ${X} ${LS3B_OPS[o]} ${k}.`},
+          html: lsEq(`${LS3B_OPS[o]} ${k}`) + lsCap(`In ${X}. Out?`) + SLOT, say: S}); }
+    }
+    const tgt = LS3B_OPS[o] + k, hint = {k: 'text', s: `Look across row 1: what turns ${rows[0][0]} into ${rows[0][1]}? Test it on every row.`};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'rule', m: {head, rows, target: tgt}, goal: 'rule', eq: 'value', ans: k, sl: {}, hint, vsay: v => `${LS3B_OPSAY[LS3B_OPS.indexOf(String(v)[0])]} ${String(v).slice(1)}`,
+      bug: {rowJump: [`+${rows[1][1] - rows[0][1]}`].filter(x => x != tgt)}, ansSay: `${LS3B_OPSAY[o]} ${k}`, html: lsCap(two ? 'What turns each A number into its B number?' : 'Find the rule.'),
+      say: two ? 'Set the rule that turns each A number into the B number beside it.' : 'Set the rule that turns each in number into its out number.'});
+    return lsDq(D, 1, {kind: 'num', ans, sl: {}, bug, hint, max: 3, html: `<div class="pkq">${ls3bTable(head, rows.concat([[x4, '?']]))}</div>` + lsCap(two ? `When ${head[0]} is ${x4}, what is ${head[1]}?` : 'What number goes in the box?') + SLOT,
+      say: two ? `Look at the table. When A is ${x4}, what is B?` : `Find the rule in the table. What is the out number for ${x4}?`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'rule', m: {head: [head[0], head[1]], rows: [[1, 3], [2, 6], [3, 9]], target: '×3'}, goal: 'moved', eq: 'value', ans: 3, raw: 1, sl: {}, demo: [0, 4],
+    vsay: v => String(v), html: lsCap('Set any rule. See what it does to each number.'), say: 'Set any rule you like, and see what it does to each number.'}), nudge: 'Change the sign or the number, then check.',
+  react: v => { const [o, k] = Array.isArray(v) ? v : [0, 4], x = ls3bApply(o, k, 2); return {ctx: {a: 2, sum: x == null ? 0 : x, o, k}, lines: [x == null ? `${LS3B_OPSAY[o]} ${k} does not work on 2.` : `${LS3B_OPSAY[o]} ${k} turns 2 into ${x}.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bTable(head, [1, 2, 3].map(x => [x, ls3bApply(c.o || 0, c.k || 4, x)]).map(([x, y]) => [x, y == null ? '–' : y]))}</div>` + lsEq(`${LS3B_OPS[c.o || 0]} ${c.k || 4}`), sl: c});
+  return D;
+}
+
+/* ---- Shape Families (the facts of quadrilaterals), Symmetry & Lines (fold lines) ---- */
+const LS3B_PMIX = {square: '1110', rectangle: '1111', rhombus: '1111', parallelogram: '1011', trapezoid: '1001', kite: '1100'};
+const LS3B_NMIX = {square: 'rhombus', rectangle: 'square', rhombus: 'square', parallelogram: 'rectangle', trapezoid: 'parallelogram', kite: 'rhombus'};
+const LS3B_DESC = {square: 'All sides equal and four right angles.', rectangle: 'Four right angles, but not all sides equal.', rhombus: 'All sides equal, but no right angles.',
+  parallelogram: 'Both pairs of sides parallel, no right angles, not all sides equal.', trapezoid: 'Only one pair of sides parallel.', kite: 'Two pairs of equal sides next to each other, and no parallel sides.'};
+const ls3bCap = s => s[0].toUpperCase() + s.slice(1);
+const LS3B_BRIEF_SH5 = `Explore: a rectangle and four facts (four sides, all sides equal, four right angles, both pairs of sides parallel); the child taps the facts they think are true.
+Name it: a square, a rectangle and a rhombus side by side (no slots) and the idea: shapes are sorted by their sides and their corners; a square is a rectangle and a rhombus too.
+Together (no slots: the shape is on the screen and the app names it): line 1 before tapping every fact that is true for a shape, line 2 before a picture of a shape (they choose its best name), line 3 before a shape described in words only (they choose its name).
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two shapes to tap the true facts of, no help, inside a small job in the world (no slots).`;
+function ls3bShape5(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['propMix'], brief: LS3B_BRIEF_SH5, idea, home, fb: 'Check the sides first, then the corners.', test: 0,
+    slots: {remember: ['a', 'b'], explore: [], name: [], together: [], check: ['ans'], show: []}});
+  const NM = Object.keys(LS3B_PROPS), hint = {k: 'text', s: 'Check the sides first: are they all equal? Then the corners: are they square? Then the parallel sides.'};
+  const chs = (r, ans) => { const o = [ans, LS3B_NMIX[ans]]; while (o.length < 4) { const x = lsPk(r, NM); if (!o.includes(x)) o.push(x); } return o.map(x => [x, ls3bCap(x)]).sort((a, b) => (a[0] < b[0] ? -1 : 1)); };
+  D.q = (st, r) => {
+    const sh = lsPk(r, NM), name = sh;
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'props', m: {shape: sh}, goal: 'props', eq: 'value', ans: LS3B_PROPS[sh].join(''), sl: {}, bug: {propMix: [LS3B_PMIX[sh]]}, hint,
+      ansSay: `A ${name}: ` + LS3B_FACT.filter((f, i) => LS3B_PROPS[sh][i]).join(', ').toLowerCase(), html: lsCap(`This is a ${name}. Tap every fact that is true.`), say: `This is a ${name}. Tap every fact that is true for it.`});
+    if (st == 1) return lsPick(D.sk, D.lv, 1, sh, `<div class="pkq">${ls3bShape(sh)}</div>` + lsCap('What is its best name?') + SLOT, 'What is the best name for this shape?', chs(r, sh),
+      {pk: false, sl: {}, bug: {propMix: [LS3B_NMIX[sh]]}, hint, after: `It is a ${sh}.`});
+    return lsPick(D.sk, D.lv, 2, sh, lsCap(`A shape with four sides. ${LS3B_DESC[sh]} What is it?`) + SLOT, `${LS3B_DESC[sh]} What is it?`, chs(r, sh),
+      {pk: false, sl: {}, bug: {propMix: [LS3B_NMIX[sh]]}, hint, after: `It is a ${sh}.`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'props', m: {shape: 'rectangle'}, goal: 'moved', eq: 'value', ans: '1011', raw: 1, sl: {}, demo: [1, 0, 1, 1],
+    html: lsCap('Tap the facts you think are true.'), say: 'Here is a rectangle. Tap the facts you think are true. Any way is fine.'}), nudge: 'Tap a fact, then check.',
+  react: () => ({ctx: {}, lines: ['A rectangle has four sides, four right angles, and both pairs of sides parallel.']})});
+  D.name = c => ({html: `<div class="ls3b-row">${['square', 'rectangle', 'rhombus'].map(s => `<div>${ls3bShape(s)}<div>${ls3bCap(s)}</div></div>`).join('')}</div>`, sl: c});
+  return D;
+}
+const LS3B_SMIX = {diag: {square: null, rectangle: '1111', rhombus: '1111', kite: '1100', trapezoid: '1011', parallelogram: '0011'}, axis: {square: '1100'}};
+const LS3B_SDESC = {square: 'a square', rectangle: 'a rectangle that is not a square', rhombus: 'a rhombus that is not a square', kite: 'a kite', trapezoid: 'a trapezoid with two equal slanted sides', parallelogram: 'a parallelogram that is not a rectangle'};
+const ls3bSymN = s => LS3B_SYM[s].reduce((a, b) => a + b, 0);
+const LS3B_BRIEF_SH6 = `Explore: a square and four fold lines (up and down, across, two slants); the child taps the lines they think fold it in half.
+Name it: the square with its fold lines (slot {n}: how many) and the idea: a line of symmetry folds a shape into two halves that match exactly.
+Together (no slots: the shape is on the screen and the app names it): line 1 before tapping every fold line of a shape, line 2 before a picture of a shape (they type how many lines of symmetry), line 3 before a shape named in words only.
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two shapes to count the lines of symmetry of, no help, inside a small job in the world (no slots).`;
+function ls3bShape6(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['diag', 'axis'], brief: LS3B_BRIEF_SH6, idea, home, fb: 'A square has {n} lines of symmetry.', test: 1,
+    slots: {remember: ['a', 'b'], explore: [], name: ['n'], together: [], check: ['ans'], show: []}});
+  const hint = {k: 'text', s: 'Fold it in your mind along the line. Do both halves match exactly?'};
+  const nOf = b => (b ? b.split('').reduce((a, x) => a + +x, 0) : null);
+  D.q = (st, r) => {
+    const sh = lsPk(r, st == 0 ? ['square', 'rectangle', 'rhombus', 'kite', 'trapezoid'] : ['square', 'rectangle', 'rhombus', 'kite', 'trapezoid', 'parallelogram']), n = ls3bSymN(sh);
+    const pb = {diag: [LS3B_SMIX.diag[sh]].filter(Boolean), axis: [LS3B_SMIX.axis[sh]].filter(Boolean)};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'sym', m: {shape: sh}, goal: 'sym', eq: 'value', ans: LS3B_SYM[sh].join(''), sl: {}, bug: pb, hint, ansSay: `${n} fold line${n == 1 ? '' : 's'}`,
+      html: lsCap(`A ${sh}. Tap every line that folds it into matching halves.`), say: `Here is a ${sh}. Tap every line that folds it into two matching halves.`});
+    const bug = {diag: pb.diag.map(nOf), axis: pb.axis.map(nOf)};
+    if (st == 1) return lsDq(D, 1, {kind: 'num', ans: n, sl: {}, bug, hint, max: 1, html: `<div class="pkq">${ls3bShape(sh)}</div>` + lsCap('How many lines of symmetry?') + SLOT, say: `How many lines of symmetry does this ${sh} have?`});
+    return lsDq(D, 2, {kind: 'num', ans: n, sl: {}, bug, hint, max: 1, html: lsCap(`How many lines of symmetry does ${LS3B_SDESC[sh]} have?`) + SLOT, say: `How many lines of symmetry does ${LS3B_SDESC[sh]} have?`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'sym', m: {shape: 'square'}, goal: 'moved', eq: 'value', ans: '1111', raw: 1, sl: {}, demo: [1, 1, 0, 0],
+    html: lsCap('Tap the lines you think fold it in half.'), say: 'Here is a square. Tap the lines you think fold it into matching halves.'}), nudge: 'Tap a line, then check.',
+  react: v => { const s = Array.isArray(v) ? v : String(v).split('').map(Number), c = s.filter(Boolean).length; return {ctx: {n: 4}, lines: [`You tapped ${c}. A square folds in half along all four lines.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bShape('square', [1, 1, 1, 1])}</div>` + lsEq(`${c.n} lines`), sl: c});
+  return D;
+}
+
+/* ---- Divide by 2-Digit: try how many fit, multiply back, check what is left ---- */
+const LS3B_BRIEF_DB4 = `Explore: the child picks a number and a 2-digit divisor with steppers; the app says how many times it fits and what is left.
+Name it: lines on their pick (slots {n}: the number, {b}: the divisor, {a}: how many times it fits, {k}: what is left) and the idea: guess how many fit, multiply back, then check what is left is less than the divisor.
+Together (slots {n}: the number, {b}: the divisor; never the answer): line 1 before trying how many fit with a stepper (the work shows too much, more fit, or right), line 2 before a table of tens times the divisor (they type the answer and what is left), line 3 before the division in symbols only.
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two divisions to type, no help, inside a small job in the world (slots {n} {b}).`;
+function ls3bDb4(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['remBig', 'slip'], brief: LS3B_BRIEF_DB4, idea, home, fb: '{n} divided by {b} is {a}, with {k} left over.', test: 2,
+    slots: {remember: ['a', 'b'], explore: [], name: ['n', 'b', 'a', 'k'], together: ['n', 'b'], check: ['ans'], show: ['n', 'b']}});
+  const vs = v => String(v).replace(/ ?R ?/, ' remainder ');
+  D.q = (st, r) => {
+    const d = lsRi(r, 12, 29), q = lsRi(r, 11, 39), m = lsRi(r, 1, d - 1), n = d * q + m, sl = {n, b: d}, ans = `${q}R${m}`, hint = {k: 'text', s: `Try ${d} × ${Math.floor(q / 10) * 10} first. Multiply back, then check what is left.`};
+    const bug = {remBig: [`${q - 1}R${m + d}`], slip: [`${q + 1}R${m}`, `${q}R${m + 1}`]};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'qtry', m: {n, d, target: q}, goal: 'value', eq: 'value', ans: q, sl, bug: {remBig: [q - 1], slip: [q + 1]}, hint, ansSay: `${q}, with ${m} left over`,
+      html: lsEq(`${n} ÷ ${d}`) + lsCap(`How many ${d}s fit in ${n}? Try a number.`), say: `${n} divided by ${d}. How many ${d}s fit? Try a number, then check.`});
+    if (st == 1) return lsDq(D, 1, {kind: 'num', sep: 'R', ans, sl, bug, hint, vsay: vs, html: `<div class="pkq">${ls3bTable(['×', String(d)], [10, 20, 30, 40].map(x => [x, x * d]))}</div>` + lsEq(`${n} ÷ ${d} = ${SLOT_R}`),
+      say: `${n} divided by ${d}. How many times does it fit, and what is left?`});
+    return lsDq(D, 2, {kind: 'num', sep: 'R', ans, sl, bug, hint, vsay: vs, html: ST.ldiv(n, d, SLOT_R), say: `${n} divided by ${d} equals what?`});
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'pickn', m: {v: [250, 12], lo: [100, 11], hi: [999, 30], ds: [[1, 10, 100], [1, 10]], lab: ['Number', 'Divide by'], fmt: s => `${s[0]} ÷ ${s[1]}`},
+    raw: 1, goal: 'mine', eq: 'value', ans: 1, sl: {}, html: lsCap('Pick a number and a divisor.'), say: 'Pick a number, and a number from 11 to 30 to divide it by.'}), nudge: 'Change a number, then check.',
+  react: v => { const [n, b] = Array.isArray(v) ? v : [250, 12], a = Math.floor(n / b), k = n % b; return {ctx: {n, b, a, k}, lines: [`${n} divided by ${b} is ${a}, with ${k} left over.`]}; }});
+  D.name = c => ({html: lsEq(`${c.b} × ${c.a} = ${c.b * c.a}`) + lsEq(`${c.n} − ${c.b * c.a} = ${c.k}`), sl: c});
+  return D;
+}
+
+/* ---- Mixed Numbers (5th grade: add and take away, trading parts and wholes), Unit Fraction Division ---- */
+const LS3B_BRIEF_FOP4 = `Explore: whole bars and fourths; the child makes any mixed number with steppers, and can trade four fourths for a whole or break a whole.
+Name it: what they made (slots {a}: the wholes, {b}: the fourths) and the idea: add or take away the parts, then the wholes; trade parts for a whole, or break a whole when the parts run out.
+Together (no slots: the mixed numbers are on the screen and the app says them): line 1 before building the answer with bars (trading or breaking a whole), line 2 before a picture of bars (they type the mixed number), line 3 before the problem in symbols only.
+Remember: a warm-up: name a shaded fraction (no slots).
+Show: two problems to type as mixed numbers, no help, inside a small job in the world (no slots).`;
+function ls3bFop4(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['mixSub', 'addBot'], brief: LS3B_BRIEF_FOP4, idea, home, fb: 'Wholes: {a}. Fourths: {b}.', test: 2,
+    slots: {remember: [], explore: [], name: ['a', 'b'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    let d, w1, a, w2, c, add;
+    do { d = lsRi(r, 3, 8); add = r() < .5; w1 = lsRi(r, add ? 1 : 3, add ? 5 : 6); w2 = lsRi(r, 1, add ? 3 : w1 - 2); a = lsRi(r, 1, d - 1); c = lsRi(r, 1, d - 1); }
+    while (add ? a + c <= d : a >= c);
+    const W = add ? w1 + w2 + 1 : w1 - w2 - 1, P = add ? a + c - d : a + d - c, ans = `${W} ${P}/${d}`, F = (w, n) => `${w} ${fcFr(n, d)}`, Fs = (w, n) => `${w} and ${ls3Frs(n, d)}`;
+    const e = `${F(w1, a)} ${add ? '+' : '−'} ${F(w2, c)}`, se = `${Fs(w1, a)} ${add ? 'plus' : 'minus'} ${Fs(w2, c)}`;
+    const bug = add ? {addBot: [`${w1 + w2} ${a + c}/${2 * d}`]} : {mixSub: [`${w1 - w2} ${c - a}/${d}`]}, hint = {k: 'text', s: add ? `The parts make ${a + c} ${FC_NAMES[d]}s: trade ${d} of them for a whole.` : `${a} ${FC_NAMES[d]}s is not enough to take ${c}: break a whole into ${d} parts.`};
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'mixb', m: {d, target: ans, s0: add ? [w1 + w2, a + c] : [w1, a]}, s0: add ? [w1 + w2, a + c] : [w1, a], goal: 'mixv', eq: 'value', ans, sl: {}, bug, hint, vsay: ls3Say, ansSay: ls3Say(ans),
+      html: lsEq(e) + lsCap(add ? 'All the bars are in. Trade parts for a whole.' : `Take away ${w2} wholes and ${c} parts.`), say: `${se}. ${add ? 'Trade parts for a whole.' : 'Break a whole if you need to.'}`});
+    const o = {kind: 'num', sep: 'mix', eq: 'value', ans, sl: {}, bug, hint, vsay: ls3Say};
+    if (st == 1) return lsDq(D, 1, Object.assign(o, {html: `<div class="pkq">${ls3bMixBars(w1, a, d)}${add ? ls3bMixBars(w2, c, d) : ''}</div>` + lsEq(`${e} = ${SLOT_MIX}`), say: `${se} equals what?`}));
+    return lsDq(D, 2, Object.assign(o, {html: lsEq(`${e} = ${SLOT_MIX}`), say: `${se} equals what?`}));
+  };
+  D.warm = ls3bFrWarm(D);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'mixb', m: {d: 4, target: '1 1/4'}, goal: 'moved', eq: 'value', ans: '1 1/4', raw: 1, sl: {}, demo: [2, 3],
+    html: lsCap('Make any mixed number with bars.'), say: 'Make any mixed number with whole bars and fourths.'}), nudge: 'Change the bars, then check.',
+  react: v => { const [a, b] = Array.isArray(v) ? v : [2, 3]; return {ctx: {a, b}, lines: [b >= 4 ? `${a} wholes and ${b} fourths. Four fourths could make one more whole.` : `You made ${a} and ${ls3Frs(b, 4)}.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ls3bMixBars(c.a, c.b, 4)}</div>` + lsEq(`${c.a} ${fcFr(c.b, 4)}`), sl: c});
+  return D;
+}
+const LS3B_BRIEF_FOP6 = `Explore: three whole bars; the child cuts each into any number of equal parts with a stepper; the app counts the pieces.
+Name it: the cut bars (slots {n}: the bars, {b}: the parts in each, {sum}: all the pieces) and the idea: a whole number divided by a unit fraction is how many of those pieces fit; a unit fraction divided by a whole number cuts one piece smaller.
+Together (no slots: the problem is on the screen and the app says it): line 1 before cutting whole bars into the parts a problem names, line 2 before a picture of cut bars (they type the answer), line 3 before the problem in symbols only.
+Remember: a warm-up: name a shaded fraction (no slots).
+Show: two divisions to type, no help, inside a small job in the world (no slots).`;
+function ls3bFop6(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['flipDiv', 'mulFrac', 'slip'], brief: LS3B_BRIEF_FOP6, idea, home, fb: '{n} bars cut into {b} parts each make {sum} pieces.', test: 2,
+    slots: {remember: [], explore: [], name: ['n', 'b', 'sum'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const big = st == 0 || r() < .55;
+    if (big) {
+      const w = lsRi(r, 2, 6), d = lsRi(r, 2, 8), ans = w * d, e = `${w} ÷ ${ls3Fr(1, d)}`, se = `${w} divided by ${ls3Frs(1, d)}`, bug = {flipDiv: [`1/${w * d}`], mulFrac: [`${w}/${d}`], slip: [ans + 1, ans - 1]};
+      const hint = {k: 'text', s: `Each whole has ${d} ${ccPl(d)}. ${w} wholes: ${w} × ${d}.`};
+      if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'cut', m: {w, target: ans}, goal: 'value', eq: 'value', ans, sl: {}, bug: {slip: [ans + w]}, hint, ansSay: `${ans} ${ccPl(d)}`,
+        html: lsEq(e) + lsCap(`How many ${ccPl(d)} fit in ${w}? Cut each bar into ${ccPl(d)}.`), say: `${se}. How many ${ccPl(d)} fit in ${w} wholes? Cut each bar into ${ccPl(d)}.`});
+      return lsDq(D, Math.min(st, 2), {kind: 'num', ans, sl: {}, bug, hint, max: 2, html: (st == 1 ? `<div class="pkq">${ccBars(w, d)}</div>` : '') + lsEq(`${e} = ${SLOT}`), say: `${se} equals what?`});
+    }
+    const d = lsRi(r, 2, 6), n = lsRi(r, 2, 4), e = `${ls3Fr(1, d)} ÷ ${n}`, se = `${ls3Frs(1, d)} divided by ${n}`, ans = `1/${d * n}`;
+    return ls3FQ(D, Math.min(st, 2), ans, (st == 1 ? `<div class="pkq">${ccSplit(d, n)}</div>` : '') + lsEq(`${e} = ${SLOT_FRAC}`), `${se} equals what?`,
+      {sl: {}, eq: 'value', bug: {flipDiv: [d * n], mulFrac: [`${n}/${d}`], slip: [`1/${d + n}`]}, hint: {k: 'text', s: `Cut one ${FC_NAMES[d]} into ${n} pieces. The whole has ${d} × ${n} of them.`}});
+  };
+  D.warm = ls3bFrWarm(D);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'cut', m: {w: 3, target: 6}, goal: 'moved', eq: 'value', ans: 6, raw: 1, sl: {}, demo: [4],
+    html: lsCap('Cut the bars into any number of equal parts.'), say: 'Cut each bar into any number of equal parts you like.'}), nudge: 'Cut the bars, then check.',
+  react: v => { const b = Array.isArray(v) ? v[0] : +v / 3; return {ctx: {n: 3, b, sum: 3 * b}, lines: [`3 bars cut into ${b} parts each make ${3 * b} pieces.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${ccBars(c.n, c.b)}</div>` + lsEq(`${c.n} ÷ ${ls3Fr(1, c.b)} = ${c.sum}`), sl: c});
+  return D;
+}
+
+/* ---- Convert Both Ways: to a smaller unit multiply, to a bigger unit divide ---- */
+const LS3B_UNITS = [['feet', 'inches', 12, 'foot'], ['yards', 'feet', 3, 'yard'], ['meters', 'centimeters', 100, 'meter'], ['kilograms', 'grams', 1000, 'kilogram'],
+  ['hours', 'minutes', 60, 'hour'], ['minutes', 'seconds', 60, 'minute'], ['gallons', 'quarts', 4, 'gallon'], ['pounds', 'ounces', 16, 'pound']];
+const LS3B_BRIEF_MEAS6 = `Explore: the child picks how many feet with a stepper (no slots in the task); the app says how many inches that is, and back.
+Name it: lines on their pick (slots {n}: the feet, {sum}: the inches) and the idea: to a smaller unit you need more of them, so multiply; to a bigger unit you need fewer, so divide.
+Together (no slots: the units change from item to item and the app says them): line 1 before a table that counts up by one unit, line 2 before one unit's size and a problem, line 3 before the problem only.
+Remember: a warm-up: a times fact (slots {a} {b}).
+Show: two to type, no help, inside a small job in the world (no slots).`;
+function ls3bMeas6(id, t, g, idea, home) {
+  const D = ls3B(id, t, g, {petSt: 1, bugs: ['convDir', 'conv'], brief: LS3B_BRIEF_MEAS6, idea, home, fb: '{n} feet is {sum} inches.', test: 2,
+    slots: {remember: ['a', 'b'], explore: [], name: ['n', 'sum'], together: [], check: ['ans'], show: []}});
+  D.q = (st, r) => {
+    const [B, S, k, one] = lsPk(r, LS3B_UNITS), n = lsRi(r, 2, 9), up = r() < .55, big = n * k, ans = up ? n : big;
+    const from = up ? `${big} ${S}` : `${n} ${B}`, to = up ? B : S, bug = up ? {convDir: [big * k], conv: [big - k].filter(x => x > 0)} : {conv: [n + k], convDir: [n * k * k]};
+    const hint = {k: 'text', s: up ? `${k} ${S} make one ${one}. How many groups of ${k} in ${big}?` : `One ${one} is ${k} ${S}. ${n} of them: ${n} × ${k}.`};
+    const o = {kind: 'num', ans, sl: {}, bug, hint, max: 5};
+    if (st == 0) return lsDq(D, 0, Object.assign(o, {html: `<div class="pkq">${VIZ.tableInOut([[1, k], [2, 2 * k], [3, 3 * k], up ? ['?', big] : [n, '?']], {head: [B, S]})}</div>` + lsEq(`${from} = ${SLOT} ${to}`),
+      say: `The table counts ${B} and ${S}. How many ${to} is ${from}?`}));
+    if (st == 1) return lsDq(D, 1, Object.assign(o, {html: lsCap(`1 ${one} = ${k} ${S}`) + lsEq(`${from} = ${SLOT} ${to}`), say: `One ${one} is ${k} ${S}. How many ${to} is ${from}?`}));
+    return lsDq(D, 2, Object.assign(o, {html: lsEq(`${from} = ${SLOT} ${to}`), say: `How many ${to} is ${from}?`}));
+  };
+  D.warm = ls3WarmFact(D, 2, 9);
+  D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'pickn', m: {v: [3], lo: [1], hi: [9], ds: [[1]], lab: ['Feet'], fmt: s => `${s[0]} feet`}, raw: 1, goal: 'mine', eq: 'value', ans: 1, sl: {},
+    html: lsCap('Pick how many feet.'), say: 'Pick how many feet. I will tell you the inches, and back again.'}), nudge: 'Change the number, then check.',
+  react: v => { const n = Array.isArray(v) ? v[0] : 3; return {ctx: {n, sum: 12 * n}, lines: [`${n} feet is ${12 * n} inches. And ${12 * n} inches is ${n} feet.`]}; }});
+  D.name = c => ({html: `<div class="pkq">${VIZ.tableInOut([[1, 12], [c.n, c.sum]], {head: ['feet', 'inches']})}</div>` + lsEq(`${c.n} × 12 = ${c.sum}`) + lsEq(`${c.sum} ÷ 12 = ${c.n}`), sl: c});
+  return D;
+}
+
+// ---- the lessons, in map order (Multiply Mountain and Fraction Forest: 3rd grade; Decimal Desert: 4th grade; Volcano Lab and Crystal
+// Caves: 5th grade). The idea and tonight's question here are the hand-written fallback. ----
+lsDraft3('story5', ls3bSt5('story5', 'Story Problems 5', 3, 'Draw the story as equal boxes, then multiply or divide.', 'Ask {name}: "4 bags with 6 apples in each. How many apples?"'));
+lsDraft3('data3', ls3bData3('data3', 'Scaled Graphs', 3, 'Each line or picture can stand for more than one: count by the scale.', 'Ask {name}: "Each picture means 5. How many is 4 pictures?"'));
+lsDraft3('shape5', ls3bShape5('shape5', 'Shape Families', 3, 'Sort shapes by their sides and corners: a square is a rectangle too.', 'Ask {name}: "Is a square a rectangle? Why?"'));
+lsDraft3('time6', ls3bTime6('time6', 'How Much Time Passed', 3, 'Count the minutes up to the next hour, then on from it.', 'Ask {name}: "How long from 2:40 to 3:15?"'));
+lsDraft3('meas4', ls3bMeas4('meas4', 'Rulers & Scales', 3, 'Find what one mark is worth, then count by it.', 'Ask {name} to read the marks on a measuring cup.'));
+lsDraft3('story6', ls3bSt6('story6', 'Story Problems 6', 3, 'A two-step story: do the first step, then use its answer.', 'Ask {name}: "3 boxes of 8 crayons, and 5 more. How many?"'));
+lsDraft3('ang1', ls3bAng1('ang1', 'Kinds of Angles', 4, 'Compare an angle with a square corner: less is acute, more is obtuse.', 'Ask {name} to find a right angle, an acute angle and an obtuse angle at home.'));
+lsDraft3('ang2', ls3bAng2('ang2', 'Measure Angles', 4, 'Start at zero on the side the angle starts, then count up that scale.', 'Ask {name}: "A straight line is split into two angles. One is 50°. The other?"'));
+lsDraft3('shape6', ls3bShape6('shape6', 'Symmetry & Lines', 4, 'A line of symmetry folds a shape into two matching halves.', 'Ask {name} to fold a paper square every way that makes matching halves.'));
+lsDraft3('pat4', ls3bRule('pat4', 'In and Out Tables', 4, false, 'The rule goes across, from in to out: test it on every row.', 'Ask {name}: "In 2, out 8. In 3, out 12. What is the rule?"'));
+lsDraft3('story7', ls3bSt7('story7', 'Remainder Stories', 4, 'After dividing, ask what the leftovers mean in the story.', 'Ask {name}: "26 kids, 4 in each car. How many cars?"'));
+lsDraft3('dbig4', ls3bDb4('dbig4', 'Divide by 2-Digit', 5, 'Guess how many fit, multiply back, then check what is left.', 'Ask {name}: "How many 24s fit in 500?"'));
+lsDraft3('fop4', ls3bFop4('fop4', 'Mixed Numbers', 5, 'Work the parts, then the wholes; trade or break a whole when you need to.', 'Ask {name}: "What is 3 1/4 take away 1 3/4?"'));
+lsDraft3('coord1', ls3bXY('coord1', 'Coordinate Grid', 5, 'An ordered pair is across first, then up, both from zero.', 'Ask {name} to mark (3, 5) on squared paper.'));
+lsDraft3('fop6', ls3bFop6('fop6', 'Unit Fraction Division', 5, 'Dividing by a unit fraction counts how many pieces fit.', 'Ask {name}: "How many quarter pizzas are in 3 pizzas?"'));
+lsDraft3('meas6', ls3bMeas6('meas6', 'Convert Both Ways', 5, 'To a smaller unit multiply; to a bigger unit divide.', 'Ask {name}: "How many feet is 36 inches?"'));
+lsDraft3('data4', ls3bData4('data4', 'Line Plots', 5, 'Each dot is a length: to find a total, add the lengths, not the dots.', 'Ask {name} to measure 5 pencils to the nearest half inch and make a line plot.'));
+lsDraft3('pat5', ls3bRule('pat5', 'Two Rules', 5, true, 'Two patterns from zero: find how each B number is made from its A number.', 'Ask {name}: "Count by 3s and by 6s. How do the two lists match up?"'));
+lsDraft3('story8', ls3bSt8('story8', 'Fraction Stories', 5, 'To find a fraction of an amount, divide by the bottom, then times the top.', 'Ask {name}: "What is 3/4 of 24?"'));
+
+var TEACH35_VER='v182'; // last line: the whole file ran (checked by dataReady() before the app starts)
