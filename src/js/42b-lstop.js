@@ -6,7 +6,7 @@
    shows what the next try pays.
      LS_STOPS            the stops with a lesson, per map (the live lessons of the teach parts; tools/test.js checks it equals LESSONS)
      lsStopAt(p, i)      stop i of map p has a lesson stop for this child: lessons on (TEACH.off off), a lesson, the child's band
-                         (as planToday, 52b-know.js: Pre-K to 2nd below 3rd grade, 3rd to 5th from 3rd grade; a Pre-K world's
+                         (as planToday, 52b-know.js: Pre-K to 2nd below 3rd grade, 3rd to 6th from 3rd grade; a Pre-K world's
                          lessons for a Pre-K child only)
      lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a stop open before lessons were stops
                          (S.lsOpen, migration 6 in 00-core.js), a skipped world (placement or Test out proved it), a stop with a later
@@ -22,7 +22,8 @@ const LS_STOPS = {
     + 'sub5 time4 coins4 arr1 coins5 arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 '
     + 'frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 '
     + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5 '
-    + 'story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8').split(' ')), // TEACH-3b (v182)
+    + 'story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8 ' // TEACH-3b (v182)
+    + 'ratio1 ratio2 int1 ratio3 int2 ratio4 fop7 int3 ooo2 alg1 ooo3 alg2 geo5 coord2 fact3 data5 alg3 story9').split(' ')), // TEACH-6M (v188): grade 6
   read: new Set(('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4 pic6 build6 ' // TEACH-3b: pic6 build6 (v182)
     + 'sight1 rhyme1 sight2 rhyme2 comp1 syl2 spell1 sight3 comp2 spell2 vocab1 gram1 sight4 spell3 sent3 sight5 gram2 vocab2 gram3').split(' ')), // READ-SHAPES (v184)
   es: new Set('es_animal1 es_food1 es_body1 es_family1 es_house1 es_clothes1 es_school1 es_trans1 es_art1'.split(' ')), // TEACH-5S (v187): every grade
@@ -38,8 +39,8 @@ function lsGate(p, i) {
   const id = nid(NODES[p][i]);
   return !lsLearned(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
 }
-// the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35, Spanish and Discover in teaches
-const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'es' || p == 'disc' ? ['teachrd', 'teaches'] : p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'] : []);
+// the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35 (grade 6: and teach6), Spanish and Discover in teaches
+const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'es' || p == 'disc' ? ['teachrd', 'teaches'] : p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'].concat(lsWorldG(p, i) > 5 ? ['teach6'] : []) : []);
 function lsOpen(p, i) {
   const id = nid(NODES[p][i]), a = typeof $ == 'function' && $('#app'), scr = a && a.firstElementChild, here = () => !scr || scr.isConnected;
   SFX.whoosh();

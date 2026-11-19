@@ -153,6 +153,9 @@ teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons 
 teaches.<VER>.js  TEACH-5S: the Spanish and Discover lessons, src/js/52s-bench5s (their shapes), 52s-words5 (reviewed words, LSW5) and
                   52t-lessons5s, and src/css/52s-teach5s.css; LAZY: the Spanish and Discover maps load it with teach, teach12 and teachrd
                   (teachWarm in 46-home.js)
+teach6.<VER>.js   TEACH-6M: the grade 6 math lessons, src/js/52u-bench6 (their models) and 52v-lessons6 (the lessons, lsDraft3: grade 3-6
+                  lessons in LS_B35, so their reviewed words go into teach35's 52h-words.js), and src/css/52u-teach6.css; LAZY: after teach35
+                  (whose helpers it uses), loaded by the math map for a 5th grader up (teachWarm) and by a grade 6 lesson stop (lsParts)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js and the generated 39n-hintw.js, then  var HINTS_VER='<VER>';
@@ -192,7 +195,7 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
 - `games3` (G-BB2, v164): Block Builder (`60-blocks.js`, `60-game-blocks.css`) and its WebGL renderer `61-bb-gl.js`, moved out of `games` when that
   file passed its 400 KB warning (games 419 -> 263 KB). LAZY like the other two, loaded after games2; the games2 rule skips `60-game-blocks.css` by name.
 
-Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints')`) names the parts that index.html does not load at start, and
+Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints')`) names the parts that index.html does not load at start, and
 `LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
 the others. `partsThen(stems, go)` (90-app.js) is the one way in: when those parts are in it runs `go()` at once; otherwise it draws
 "Getting the games ready..." (a Back button and a drawn disc; `#partwait`), adds one plain `<script src="<stem>.<VER>.js">` per part, one

@@ -203,7 +203,7 @@ const LS = {
     if (q.kind == 'make' && q.model == 'b10') return Number.isInteger(n) && n > 0 && n < 100;
     if (q.kind == 'line') return Number.isInteger(n) && n >= q.line.min && n <= q.line.max && String(n) !== String(q.start);
     if (q.kind == 'choice') return q.choices.some(c => c.v === String(v));
-    return Number.isInteger(n) && n >= 0;
+    return Number.isInteger(n) && (n >= 0 || q.pad == 'neg'); // TEACH-6M: the plus-or-minus pad takes a negative number
   },
   petSays(q, v) {
     if (q.kind == 'choice') return `${q.say.replace(/^Is /, '').replace(/\?$/, '')}? I pick ${{'<': 'less than', '>': 'greater than', '=': 'equal to'}[v] || v}!`;
@@ -602,7 +602,7 @@ const LS = {
   mapAdd() {
     const m = $('#map');
     const sm = MAPP == 'es' || MAPP == 'disc'; // TEACH-5S: and the Spanish and Discover maps, once their part is in
-    if (!m || MAPP != 'math' && MAPP != 'read' && !sm || TEACH.off || (sm ? !partReady('teaches') : gradeOf() > 2 && !partReady('teach35'))) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
+    if (!m || MAPP != 'math' && MAPP != 'read' && !sm || TEACH.off || (sm ? !partReady('teaches') : gradeOf() > 2 && !partReady('teach35') || gradeOf() > 4 && !partReady('teach6'))) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
     const old = m.querySelector('.ls-go:not(.lsn)');
     if (old) old.remove();
     NB.mapBtn();

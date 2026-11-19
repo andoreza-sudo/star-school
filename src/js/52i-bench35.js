@@ -190,7 +190,7 @@ function lsMineItem(st, D) {
 }
 // can the pet's answer v be shown on question q? (num: in the pad's shape; the rest as batches 1 and 2)
 function lsFits35(q, v) {
-  if (q.kind == 'num') return (q.sep == 'R' ? /^\d+R\d+$/ : q.sep == 'mix' ? /^\d+ \d+\/[1-9]\d*$/ : q.pad == 'frac' ? /^\d+\/[1-9]\d*$/ : q.pad == 'dec' ? /^\d+(\.\d+)?$/ : /^\d+$/).test(String(v));
+  if (q.kind == 'num') return (q.sep == 'R' ? /^\d+R\d+$/ : q.sep == 'mix' ? /^\d+ \d+\/[1-9]\d*$/ : q.pad == 'frac' ? /^\d+\/[1-9]\d*$/ : q.pad == 'dec' ? /^\d+(\.\d+)?$/ : q.pad == 'neg' ? /^-?\d+$/ : /^\d+$/).test(String(v)); // TEACH-6M: a negative number on the plus-or-minus pad
   return LS.fits(q, v);
 }
 // Check me on the model or the question (no written steps): the pet's answer by the child's idea, else the lesson's codes in order
