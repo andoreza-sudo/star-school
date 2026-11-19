@@ -13844,6 +13844,91 @@ async function main() {
         'a right answer shows none; on screen, no sideways scroll; no console errors, no network requests; the hints part loads with a round, not at start');
     }
     // end HINT-01
+    if (seg('PERS-01')) {
+      // PERS-01: Grown-ups' Story themes card opens the picker; the grown-up picks Dinosaurs (the drafts' words, as if approved: nothing is
+      // reviewed yet); a story round then asks a themed problem with the same math as the default one, said as shown
+      const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'pers'), A = require('./author.js');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const W = Object.fromEntries(A.persDrafts().filter(x => x.d).map(x => [x.d.id, { name: x.d.name, pic: x.d.pic, things: x.d.things, st: x.d.st }]));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = pa.page, at = 'PERS-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h;
+        const FIT = () => {
+          const o = [], vw = document.documentElement.clientWidth;
+          if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+          for (const e of document.querySelectorAll('.pp-c, #pers-done, #pers-open, #back')) {
+            const r = e.getBoundingClientRect();
+            if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.width && (r.left < -1 || r.right > vw + 1)) o.push('outside ' + (e.id || e.dataset.int));
+          }
+          return o;
+        };
+        try {
+          // nothing reviewed: Grown-ups has no card, a story is the default one even with an interest picked
+          await pg.evaluate(() => { S.grade = 1; S.voice = false; S.buddy = 'Ben'; S.ints = ['dinosaurs']; for (const k in PERSW) delete PERSW[k]; grown(); });
+          await vwait(pg, 400);
+          const none = await pg.evaluate(() => ({ card: !!document.querySelector('#pers-open'), held: !!document.querySelector('#gw-pers[hidden]'), q: genQ('story', 1, 7).say, on: persOn().length }));
+          if (none.card || !none.held || none.on || /dinosaur/.test(none.q)) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
+          // the words as if approved: the card shows, its button opens the picker
+          await pg.evaluate(W => { Object.assign(PERSW, W); S.ints = []; grown(); }, W);
+          await pg.waitForSelector('#pers-open', { timeout: 10000 });
+          const c0 = await pg.evaluate(() => document.querySelector('#pers-now').textContent);
+          if (!/Nothing picked/.test(c0)) bad.push(at + 'card: ' + c0);
+          await pg.evaluate(() => document.querySelector('#gw-pers').scrollIntoView());
+          await pg.click('#pers-open');
+          await pg.waitForSelector('.pp-c[data-int="dinosaurs"]', { timeout: 5000 });
+          await animsDone(pg);
+          const chips = await pg.evaluate(() => [...document.querySelectorAll('.pp-c')].map(b => b.dataset.int));
+          if (chips.length !== 8) bad.push(at + 'the picker shows ' + chips.join(', '));
+          (await pg.evaluate(FIT)).forEach(x => bad.push(at + 'picker: ' + x));
+          // pick Dinosaurs by touch: it turns on, is saved, and the sample sentence is about it
+          await pg.click('.pp-c[data-int="dinosaurs"]');
+          const p1 = await pg.evaluate(() => ({ ints: S.ints, pressed: document.querySelector('.pp-c[data-int="dinosaurs"]').getAttribute('aria-pressed'),
+            ex: document.querySelector('#pers-ex').textContent, saved: JSON.parse(localStorage.getItem(SKEY)).ints }));
+          if (JSON.stringify(p1.ints) !== '["dinosaurs"]' || p1.pressed !== 'true' || !/dinosaur/i.test(p1.ex) || JSON.stringify(p1.saved) !== '["dinosaurs"]') bad.push(at + 'pick: ' + JSON.stringify(p1));
+          await pg.screenshot({ path: P_.join(shots, 'pers-pick-' + sz + '.png') }).catch(() => {});
+          // up to 3: a fourth is refused; taking one off works
+          for (const id of ['space', 'music', 'ocean']) await pg.click(`.pp-c[data-int="${id}"]`);
+          const p2 = await pg.evaluate(() => S.ints.slice());
+          if (JSON.stringify(p2) !== '["dinosaurs","space","music"]') bad.push(at + 'up to 3: ' + JSON.stringify(p2));
+          for (const id of ['space', 'music']) await pg.click(`.pp-c[data-int="${id}"]`);
+          await pg.click('#pers-done');
+          await pg.waitForSelector('#pers-now', { timeout: 10000 });
+          const c1 = await pg.evaluate(() => ({ t: document.querySelector('#pers-now').textContent, ints: S.ints }));
+          if (c1.t !== 'Story problems are about Dinosaurs.' || JSON.stringify(c1.ints) !== '["dinosaurs"]') bad.push(at + 'back in Grown-ups: ' + JSON.stringify(c1));
+          await pg.evaluate(() => document.querySelector('#gw-pers').scrollIntoView());
+          await pg.screenshot({ path: P_.join(shots, 'pers-grown-' + sz + '.png') }).catch(() => {});
+          // a story round: the first question is themed, the same math as without the theme, said as shown, its picture drawn
+          await pg.evaluate(() => { const i = NODES.math.findIndex(n => n.sk === 'story' && n.lv === 1); start('math', i); });
+          await pg.waitForSelector('.story', { timeout: 10000 });
+          await animsDone(pg);
+          const q = await pg.evaluate(() => {
+            const q = G.q, ints = S.ints; S.ints = []; const q0 = genQ('story', q.lv, q.seed); S.ints = ints;
+            return { say: q.say, shown: document.querySelector('.story').textContent, ans: q.ans, ans0: q0.ans, label: q.label, label0: q0.label, say0: q0.say,
+              pics: document.querySelectorAll('.st-pic .st-o').length, fit: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+          });
+          if (!/toy dinosaur|dinosaur (sticker|egg|bone|book)/.test(q.say) || q.say === q.say0) bad.push(at + 'not themed: ' + q.say);
+          if (q.ans !== q.ans0 || q.label !== q.label0) bad.push(at + 'the math changed: ' + JSON.stringify(q));
+          if (q.shown.replace(/\s+/g, ' ').trim() !== q.say) bad.push(at + 'said is not shown: ' + JSON.stringify([q.shown, q.say]));
+          if (!q.pics || !q.fit) bad.push(at + 'the story picture or the width: ' + JSON.stringify(q));
+          await pg.screenshot({ path: P_.join(shots, 'pers-story-' + sz + '.png') }).catch(() => {});
+          for (const d of q.ans) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await vwait(pg, 300);
+          const sc = await pg.evaluate(() => G.score);
+          if (sc !== 1) bad.push(at + 'the right answer did not score: ' + sc);
+          notes.push(sz + ' "' + q.say + '"');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of pa.errors) bad.push(at + e);
+        for (const u of pa.network) bad.push(at + 'network request: ' + u);
+        await pa.ctx.close();
+      }
+      if (bad.length) fail('PERS-01 story themes:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('PERS-01: story themes at ' + notes.join(' and ') + ': with nothing reviewed no card and the default story; approved (simulated), the Grown-ups card ' +
+        'opens the picker, Dinosaurs picked by touch is saved and shown in a sample, a fourth pick is refused, the card names the pick; a story round asks a themed ' +
+        'problem with the default answer and label, said as shown, with its picture; the right answer scores; no sideways scroll, no console errors, no network requests');
+    }
+    // end PERS-01
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

@@ -56,6 +56,10 @@ function hcAsGrown(){const g=S.garage&&typeof S.garage=='object'&&!Array.isArray
 function rlGatesOn(){const r=S.rally&&typeof S.rally=='object'&&!Array.isArray(S.rally)?S.rally:{};
   return r.gates==='on'?true:r.gates==='off'?false:r.quiz===true||+S.grade>=1}
 const CHEER_NAMES={mix:'Mixed',f:'Female',m:'Male',tts:'Tablet voice'}; // EN-PRAISE: the Cheer voices choice (S.cheerV, cheerMode() in 12-speech.js)
+// PERS-01: the Story themes card (persCard, 39p-pers.js in the lazy part hints) replaces the hidden #gw-pers placeholder once that part is
+// in (loading it if a round has not); it stays hidden when no interest is reviewed (PERSW empty).
+function persGrown(){const go=()=>{if(typeof persCard=='function')persCard($('#gw-pers'))};
+  if(typeof persCard=='function')go();else if(typeof partLoad=='function')partLoad('hints').then(go,()=>{})}
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
@@ -84,6 +88,7 @@ function grown(){let armed=false;
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
+  <div id="gw-pers" hidden></div>
   ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (lesson stops on the math and reading maps; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
     {sub:'Picks where the maps start. Progress is never removed when you change it, but a new grade can put stops behind a lesson.'})}
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
@@ -128,6 +133,7 @@ function grown(){let armed=false;
   $('#bd').oninput=e=>{S.buddy=e.target.value.trim();save()};
   gradePickBind(g=>{setGrade(g)});
   placeGrownBind();
+  persGrown(); // PERS-01: the Story themes card, once the hints part is in
   reportGrownBind();
   BAK.bind();
   PRF.bind();

@@ -1,5 +1,6 @@
-/* Star School hints v184. BUILT by tools/build.py from 39m-mist.js, 39n-hintw.js: never edit by hand.
-   index.html v184 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v184.js. */
+/* Star School hints v185. BUILT by tools/build.py from 39p-pers.css, 39m-mist.js, 39n-hintw.js, 39p-pers.js, 39q-persw.js: never edit by hand.
+   index.html v185 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v185.js. */
+(function(){var s=document.createElement('style');s.id='css-hints';s.textContent="/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */\n.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}\n.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}\n.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}\n.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;\n  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}\n.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}\n.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}\n.pp-emo{line-height:1}\n.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}\n.btn.pp-c.on .pp-ok{opacity:1}\n.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}\n.pp-exl{font-weight:700;color:var(--ink-2)}\n.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}\n@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- HINT-01: a hint for each common mistake, in every Practice question (part hints since v182: loaded when a Practice round starts) ----------
    docs/ROADMAP.md 10d (owner decisions 2026-11-18). For a Practice question the app works out what each known mistake would answer
    (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cat" as "cap", la for el ...). When the child's
@@ -836,5 +837,80 @@ function hmHint(q, v) {
    not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */
 const HINTW = {
 };
+/* ---------- PERS-01: the Story themes picker (part hints; the words are PERSW, 39q-persw.js; the engine is 30p-pers.js) ----------
+   Grown-ups shows a "Story themes" card (persCard) once the part is in, and only when the owner has reviewed at least one interest.
+   Its button opens the picker (persPick): big picture buttons, written so a grown-up can hand the tablet to the child; a tap says
+   the name and turns it on or off (up to PERS_MAX; saved at once in S.ints, per child); a sample sentence shows what a story
+   problem will sound like. CSS in src/css/39p-pers.css (part hints). */
+const PERS_MAX = 3;
+// the reviewed interests, in the order of the read-through (sorted ids)
+const persList = () => Object.keys(PERSW).sort();
+const persPic = (id, size) => {
+  const p = PERSW[id].pic || [];
+  return p[0] && ART[p[0]] ? picArt(p[0], size) : `<span class="pp-emo" style="font-size:${size}">${esc(p[1] || '')}</span>`;
+};
+// the names of the child's picks ("Animals and Space"), or ''
+function persNames() {
+  const n = persOn().map(id => PERSW[id].name);
+  return n.length < 2 ? n.join('') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1];
+}
+// a sample: the first pick's first joining sentence, with the child's name, a friend and small numbers (what a story will sound like)
+function persSample() {
+  const id = persOn()[0];
+  if (!id) return '';
+  const P = PERSW[id], t = P.things[0], line = [].concat((P.st || {}).join || [])[0];
+  if (!line) return '';
+  return persFill(line, [t[0], t[3] || '', t[1], t[2] || t[1]], {who: S.name || 'Sam', other: S.buddy || petN(), a: 4, b: 3});
+}
+// Grown-ups: fill the placeholder #gw-pers with the card (nothing when no interest is reviewed)
+function persCard(el) {
+  if (!el || !persList().length) return;
+  const names = persNames();
+  el.outerHTML = GW.card('gw-pers', 'skill-story', 'Story themes',
+    `<p class="gw-p" id="pers-now">${names ? 'Story problems are about ' + esc(names) + '.' : 'Nothing picked: the usual story problems.'}</p>` +
+    UI.btn(names ? 'Change themes' : 'Choose themes', {size: 'sm', icon: 'heart', id: 'pers-open'}),
+    {sub: `Pick up to ${PERS_MAX} things ${esc(S.name || 'your child')} likes. Story problems use them. The math stays the same.`});
+  $('#pers-open').onclick = () => persPick(() => grown());
+}
+// the picker screen; back: where Back and Done go
+function persPick(back) {
+  if (!Array.isArray(S.ints)) S.ints = [];
+  const ids = persList(), on = id => S.ints.includes(id);
+  const chips = ids.map(id => `<button class="btn pp-c${on(id) ? ' on' : ''}" data-int="${id}" aria-pressed="${on(id)}">` +
+    `<span class="pp-pic">${persPic(id, '48px')}</span><b>${esc(PERSW[id].name)}</b>${ico('check-circle', 22, 'pp-ok')}</button>`).join('');
+  view(`<div class="top tbar gx-mtop s-math">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('skill-story', 24)}</span><span>Story themes</span></div></div>
+   <div class="scroll"><div class="pp-card">
+    <h1 class="pp-h">What does ${esc(S.name || 'your child')} like?</h1>
+    <p class="pp-sub">Pick up to ${PERS_MAX}. Story problems will be about them.</p>
+    <div class="pp-grid" role="group" aria-label="Story themes">${chips}</div>
+    <div class="pp-ex" id="pers-ex" aria-live="polite"></div>
+    <div class="pp-btns">${UI.btn('Done', {kind: 'primary', icon: 'check', id: 'pers-done'})}</div>
+   </div></div>`);
+  NAV.bar('');
+  const ex = () => {
+    const s = persSample();
+    $('#pers-ex').innerHTML = s ? `<span class="pp-exl">Like this:</span> <span class="pp-ext">${esc(s)}</span>` : `<span class="pp-ext">Nothing picked: the usual story problems.</span>`;
+  };
+  ex();
+  $$('.pp-c').forEach(b => b.onclick = () => {
+    const id = b.dataset.int;
+    if (on(id)) S.ints = S.ints.filter(x => x !== id);
+    else if (persOn().length >= PERS_MAX) { fb(`Up to ${PERS_MAX}. Tap one to take it off.`, 'warn'); SFX.wrong(); return; }
+    else S.ints = S.ints.filter(x => PERSW[x]).concat(id); // an interest no longer offered is dropped when the list changes
+    save();
+    b.classList.toggle('on', on(id));
+    b.setAttribute('aria-pressed', on(id));
+    SFX.pop(on(id) ? 2 : 1);
+    if (S.voice) say(PERSW[id].name, b);
+    ex();
+  });
+  $('#back').onclick = back;
+  $('#pers-done').onclick = back;
+}
+/* ---------- PERS-01: the interest themes the owner has reviewed (part hints) ----------
+   BUILT by tools/build.py from docs/drafts/pers/<id>.md ("status: reviewed ..."): never edit by hand. An interest that
+   is not reviewed is never here, so it is never offered and its story problems stay the default ones (30p-pers.js). */
+const PERSW = {
+};
 
-var HINTS_VER='v184'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var HINTS_VER='v185'; // last line: the whole file ran (checked by dataReady() before the app starts)

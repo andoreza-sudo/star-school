@@ -274,6 +274,10 @@ const SCREENS = {
   },
   // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
   'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
+  // PERS-01: the Story themes picker (every interest draft's words as if the owner had approved them, one picked) and its card in Grown-ups
+  'pers-pick': { run: async p => { await persReady(p); await p.evaluate(() => { window.say = window.__a11y.say; S.ints = ['dinosaurs']; persPick(() => grown()); }); await p.waitForTimeout(400); } },
+  'grown-pers': { adult: true, run: async p => { await persReady(p); await p.evaluate(() => { S.ints = ['space', 'music']; grown(); });
+    await p.waitForSelector('#pers-open', { timeout: 10000 }); await p.evaluate(() => document.querySelector('#gw-pers').scrollIntoView()); await p.waitForTimeout(300); } },
   'grown-children': {
     adult: true,
     run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),
@@ -446,6 +450,13 @@ const SCREENS = {
 // Game screens: the games' part files may load only when the Game Room opens (P6-02's lazy parts). Open the Game Room first when
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 // P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
+// PERS-01: the hints part (the picker and PERSW) loaded, with the interest drafts' words in PERSW (nothing is reviewed yet)
+async function persReady(p) {
+  await p.evaluate(() => partLoad('hints'));
+  await p.waitForFunction(() => typeof persPick == 'function', null, { timeout: 30000 });
+  const W = Object.fromEntries(require('./author.js').persDrafts().filter(x => x.d).map(x => [x.d.id, { name: x.d.name, pic: x.d.pic, things: x.d.things, st: x.d.st }]));
+  await p.evaluate(W => Object.assign(PERSW, W), W);
+}
 async function teachReady(p) {
   await p.evaluate(() => partLoad('teach'));
   await p.waitForFunction(() => typeof NB != 'undefined', null, { timeout: 30000 });

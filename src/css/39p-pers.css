@@ -1,0 +1,16 @@
+/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */
+.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}
+.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}
+.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}
+.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}
+.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;
+  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}
+.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}
+.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}
+.pp-emo{line-height:1}
+.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}
+.btn.pp-c.on .pp-ok{opacity:1}
+.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}
+.pp-exl{font-weight:700;color:var(--ink-2)}
+.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}
+@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}

@@ -99,7 +99,7 @@ let SKIPPED=0;
 const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku UI P3-03','mathdoku UI P3-05','logic UI P3-07',
   'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
   'word search and unscramble P3-15','Block Builder goals G-BB3'];
-const TEST_S={'sky hop G-04b':451,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
+const TEST_S={'sky hop G-04b':451,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
   'math review fixes R-01m':18,'robot path P3-13':12,'block builder G-01':8};
 const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
   if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
@@ -21684,6 +21684,121 @@ run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
     for(const c of codes)if(!t.includes('**'+c+'**'))p.push('the read-through has no '+c);
     if(t.split('\n').some(l=>l.length>200))p.push('the read-through has a line over 200 characters')}
   return{problems:p,note:codes.length+' codes, '+have.length+' drafts, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
+});
+
+// ---- PERS-01: story problems about the child's interests ----
+// a fresh app (every part, as the page runs it) with every interest draft's words as if the owner had approved them (PERSW)
+const persApp=()=>{const R=hintApp(),A=require('./author.js'),ds=A.persDrafts().filter(x=>x.d);
+  R('Object.assign(PERSW,'+JSON.stringify(Object.fromEntries(ds.map(x=>[x.d.id,{name:x.d.name,pic:x.d.pic,things:x.d.things,st:x.d.st}])))+');S.buddy="Ben";S.voice=false;');
+  return {R,A,ids:ds.map(x=>x.d.id)}};
+run('story themes: the same math with and without interests, every story level, many seeds PERS-01',()=>{
+  const {R,ids}=persApp(),p=[];
+  // the interest sets: none, each one alone, and three together (the picker's most)
+  const sets=[...ids.map(i=>[i]),ids.slice(0,3),ids.slice(3,6),ids.slice(5,8)];
+  const r=R(`(()=>{const bad=[],sets=${JSON.stringify(sets)},nums=s=>(String(s).match(/\\d+(?:[.,]\\d+)*/g)||[]).sort().join(' ');
+    // everything a question carries except its words: the answer, the kind, the choices, the label (the hint engine and the lessons' records
+    // read it), the pad, the hint's kind and steps (their numbers), and how many rnd() calls it made (the next number drawn)
+    const math=(q,next)=>JSON.stringify({ans:q.ans,kind:q.kind,label:q.label,pad:q.pad,eq:q.eq,max:q.max,auto:q.auto,choices:q.choices,
+      hk:q.hint&&q.hint.k,hst:q.hint&&q.hint.st,hn:nums(q.hint&&(q.hint.w||q.hint.s||JSON.stringify(q.hint.steps||q.hint.lines||''))),
+      prob:typeof hmProb=='function'?hmProb(q):null,pred:typeof hmPredict=='function'?hmPredict(q):null,ls:typeof lsNums=='function'?Object.assign({},lsNums(q),{html:0,say:0,hint:0}):null,next}); // lsNums: the lessons' record reads the numbers onto a copy of q
+    const gen=(lv,seed,ints)=>{S.ints=ints;RNG=mulberry32(seed);try{const q=SK.story.gen(lv);q.sk='story';q.lv=lv;q.seed=seed;return [q,rnd()]}finally{RNG=Math.random}};
+    let n=0,themed=0,lines=new Set();
+    for(let lv=1;lv<=SK.story.max;lv++)for(let seed=1;seed<=(lv<=6?400:60);seed++){
+      const [q0,n0]=gen(lv,seed,[]),m0=math(q0,n0);
+      for(const set of sets){
+        const [q,n1]=gen(lv,seed,set);n++;
+        if(math(q,n1)!==m0){bad.push('story'+lv+' seed '+seed+' '+set.join('+')+': the math changed ('+q0.label+' / '+q.label+')');continue}
+        if(nums(q.say)!==nums(q0.say))bad.push('story'+lv+' seed '+seed+' '+set.join('+')+': other numbers in the words: "'+q.say+'"');
+        if(lv>6){if(q.say!==q0.say||q.html!==q0.html)bad.push('story'+lv+' is themed (only levels 1 to 6 are)');continue} // 7-9 say decimals their own way
+        const shown=(q.html.match(/<p class="story">([\\s\\S]*?)<\\/p>/)||[])[1];
+        if(shown==null||shown.replace(/<[^>]+>/g,'').replace(/&#39;/g,"'").replace(/&amp;/g,'&')!==q.say)bad.push('story'+lv+' seed '+seed+': what is said is not what is shown: "'+q.say+'"');
+        const things=set.flatMap(i=>PERSW[i].things);
+        if(!things.some(t=>q.say.includes(t[0])||q.say.includes(t[1])))bad.push('story'+lv+' seed '+seed+' '+set.join('+')+': none of the interest\\'s things: "'+q.say+'"');
+        else themed++;
+        for(const t of things)if(t[0]!==t[1]&&new RegExp('(^|[^\\\\d])1 '+t[0]+'\\\\b').test(q.say))bad.push('a plural after 1: "'+q.say+'"');
+        if(/\\{|\\}|undefined|NaN/.test(q.say+q.html))bad.push('a slot left: "'+q.say+'"');
+        if(ksBad(q.say,true))bad.push('not kid-safe: "'+q.say+'"');
+        if(lv<=3&&/^story (\\w+)/.test(q.label))lines.add(q.label.split(' ')[1]);
+      }
+    }
+    return {bad,n,themed,kinds:[...lines].sort()}})()`);
+  p.push(...r.bad.slice(0,20));
+  const want=['chg','chgS','cmpB','cmpD','cmpS','join','part','sep','start','startS'];
+  if(JSON.stringify(r.kinds)!==JSON.stringify(want))p.push('story kinds seen themed: '+r.kinds.join(', '));
+  return{problems:p,note:r.n+' questions (story levels 1-9 x '+sets.length+' interest sets), '+r.themed+' themed (levels 1-6), math identical'};
+});
+run('story themes: the gate, the words, slots and plurals, the save, the parts PERS-01',()=>{
+  const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  // 1. the parts: the engine at start (gen, with the generators), the words and the picker in the lazy part hints; index.html under 1,000,000
+  if(partOf('30p-pers.js')!=='gen')p.push('30p-pers.js is not in the gen part');
+  for(const f of ['39p-pers.js','39q-persw.js','39p-pers.css'])if(partOf(f)!=='hints')p.push(f+' is not in the hints part');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size;if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  // 2. the drafts: the eight starting interests, each passes every check (kid-safe, banned themes, slots, plurals, pictures, the hint agrees)
+  const ds=A.persDrafts(),ids=ds.filter(x=>x.d).map(x=>x.d.id);
+  for(const id of Object.keys(A.PERS_IDS))if(!ids.includes(id))p.push(id+': no draft in docs/drafts/pers');
+  for(const x of ds){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.id+': '+x.problems.slice(0,3).join('; '))}
+  // the checks catch what they are for
+  const d0=JSON.parse(JSON.stringify(ds[0].d)),bad=(f,re,w)=>{const d=JSON.parse(JSON.stringify(d0));f(d);if(!A.checkPers(d).some(x=>re.test(x)))p.push('checkPers misses '+w)};
+  bad(d=>d.st.chg=['{who} has {a things}. {other} gives {who} {b} more. Now {who} has {c things}. How many {pl}?'],/is not a slot of chg/,'the answer as a slot');
+  bad(d=>d.st.join=['{who} has {a} {pl}. {other} gives {b} more. How many {pl}?'],/reads "1 balls"/,'a plural after a number that can be 1');
+  bad(d=>d.st.sep=['{who} had {a things}. {b} roll away. How many {pl} are left?'],/can be 1/,'a present-tense verb after a number that can be 1');
+  bad(d=>d.st.part=['{who} has {c things}. {a} are new. How many old {pl} are there?'],/so the hint stays true/,'a sentence the hint contradicts');
+  bad(d=>d.st.join=['{who} has {a things} and a magic wand. {other} gives {b} more. How many {pl}?'],/ruled out/,'a banned theme');
+  bad(d=>d.st.join=['{who} has five {pl}. {other} gives {b} more. How many {pl}?'],/number word/,'a number word');
+  bad(d=>d.things[0]=['toy foxs','toy fox','',''],/not the plural/,'a wrong plural');
+  bad(d=>d.things[0]=['toy unicorns','toy unicorn','','🦄'],/not allowed|emoji-allow/,'a banned thing');
+  // 3. the gate: 39q-persw.js has the reviewed interests only (none yet); the words check holds; the gate on a copy
+  const rev=ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.id).sort();
+  const live=Object.keys(Function(rd('src/js/39q-persw.js')+';return PERSW')()).sort();
+  if(JSON.stringify(rev)!==JSON.stringify(live))p.push('39q-persw.js has '+JSON.stringify(live)+' but the reviewed interests are '+JSON.stringify(rev));
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pers-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/pers'),{recursive:true});
+  const lw="/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n";
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),lw);
+  const one={id:'zz',name:'Zz',pic:['ball',''],things:[['balls','ball','ball','']],st:{}};
+  const pw=b=>"/* ---------- PERS-01: the interest themes the owner has reviewed (part hints) ----------\n   BUILT by tools/build.py from docs/drafts/pers/<id>.md (\"status: reviewed ...\"): never edit by hand. An interest that\n   is not reviewed is never here, so it is never offered and its story problems stay the default ones (30p-pers.js). */\nconst PERSW = {\n"+b+"};\n";
+  const line='  "zz": '+JSON.stringify({name:'Zz',pic:['ball',''],things:[['balls','ball','ball','']],st:{}})+',\n';
+  const dj='\n```json\n'+JSON.stringify(one)+'\n```\n',chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  fs.writeFileSync(path.join(tmp,'docs/drafts/pers/zz.md'),'# Interest: Zz\n\nstatus: unreviewed\n'+dj);
+  fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(line));if(chk()!==1)p.push('the words check passes an unreviewed interest');
+  fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(''));if(chk()!==0)p.push('the words check refuses an empty file for an unreviewed interest');
+  fs.writeFileSync(path.join(tmp,'docs/drafts/pers/zz.md'),'# Interest: Zz\n\nstatus: reviewed Test Owner 2026-11-19\n'+dj);if(chk()!==1)p.push('the words check passes a reviewed interest left out');
+  fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(line));if(chk()!==0)p.push('the words check refuses a reviewed interest');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // 4. in the app: nothing reviewed = the default question word for word, even with interests picked; every sentence's slots fill
+  // (with the numbers 1 too: "1 toy horse"); "a" and "an"; the save: a new and an old save get S.ints = [], no migration added
+  const R=hintApp();
+  p.push(...R(`(()=>{const bad=[];for(const k in PERSW)delete PERSW[k];S.buddy='Ben';
+    for(let lv=1;lv<=6;lv++)for(let s=1;s<=60;s++){S.ints=[];const a=genQ('story',lv,s);S.ints=['sports','ocean'];const b=genQ('story',lv,s);
+      if(a.html!==b.html||a.say!==b.say)bad.push('with nothing reviewed, interests changed story'+lv+' seed '+s)}
+    if(persOn().length)bad.push('persOn() is not empty with nothing reviewed');
+    if(persFill('{an} and {an}',['eggs','','egg','egg'],{})!=='An egg and an egg'||persFill('{an}.',['balls','','ball','ball'],{})!=='A ball.')bad.push('a/an: '+persFill('{an} and {an}',['eggs','','egg','egg'],{}));
+    if(persFill('{who} has {a things}.',['toy sheep','','toy sheep',''],{who:'Mia',a:1})!=='Mia has 1 toy sheep.'||persFill('{a things} and {b things}.',['drums','','drum',''],{a:1,b:2})!=='1 drum and 2 drums.')bad.push('a number with its thing');
+    loadSave(null);migrate();if(JSON.stringify(S.ints)!=='[]')bad.push('a new save has no S.ints []');
+    loadSave(JSON.stringify({name:'Old',v:9,maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='[]')bad.push('an old save gets no S.ints []');
+    loadSave(JSON.stringify({name:'Old',v:9,ints:['space'],maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='["space"]')bad.push('a save loses its interests');
+    if(LATEST!==9)bad.push('LATEST is '+LATEST+' (PERS-01 adds no migration)');
+    return bad})()`));
+  const {R:R2}=persApp();
+  for(const x of ds.filter(y=>y.d))for(const k in A.PERS_KINDS)[].concat(x.d.st[k]||[]).forEach((t,i)=>{
+    const K=A.PERS_KINDS[k];
+    for(const one of [false,true])for(let j=0;j<x.d.things.length;j++){
+      const v=Object.assign({who:'Mia',other:'Ben'},K.ex);if(one)for(const s of K.one)v[s]=1;
+      const th=x.d.things[j],s=R2(`persFill(${JSON.stringify(t)},${JSON.stringify([th[0],th[3],th[1],th[2]])},${JSON.stringify(v)})`);
+      if(/[{}]/.test(s))p.push(x.d.id+' '+k+': a slot left: '+s);
+      if(th[0]!==th[1]&&new RegExp('\\b1 '+th[0]+'\\b').test(s))p.push(x.d.id+' '+k+': '+s);
+      for(const n of K.need)if(!new RegExp('\\b'+v[n]+'\\b').test(s))p.push(x.d.id+' '+k+': no '+n+' in '+s);
+    }});
+  // 5. the read-through: every interest, every sentence; the same as the tool writes now
+  const rf=path.join(ROOT,'docs/drafts/PERS-READ.md');
+  if(!fs.existsSync(rf))p.push('no docs/drafts/PERS-READ.md');else{const t=fs.readFileSync(rf,'utf8');
+    if(t!==A.persRead())p.push('docs/drafts/PERS-READ.md is not what node tools/author.js --pers-read gives now');
+    for(const x of ds.filter(y=>y.d))for(const k in A.PERS_KINDS)for(const s of [].concat(x.d.st[k]||[]))if(!t.includes(s))p.push('the read-through misses '+x.d.id+' '+k)}
+  // 6. the picker: Grown-ups has the placeholder and draws the card through the part; the picker saves S.ints and keeps to 3
+  const g=rd('src/js/80-grown.js'),pk=rd('src/js/39p-pers.js');
+  if(!/<div id="gw-pers" hidden><\/div>/.test(g)||!/persGrown\(\);/.test(g))p.push('Grown-ups has no Story themes placeholder or does not fill it');
+  if(!/PERS_MAX = 3/.test(pk)||!/S\.ints = S\.ints\.filter/.test(pk)||!/save\(\);/.test(pk))p.push('the picker does not keep to 3 or does not save S.ints');
+  return{problems:p,note:ids.length+' interests drafted, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
 });
 
 // ---- report ----
