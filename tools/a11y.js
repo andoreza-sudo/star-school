@@ -367,6 +367,10 @@ const SCREENS = {
   'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();
     const st = LS.make('tenf2', { seed: 4, day: lsDay(), proof: true }); st.caught = true; LS.beat(st, LSB.indexOf('show'));
     for (let k = 0; k < 2; k++) { LS.answer(st, LS.cur(st).q.ans); LS.next(st); } LS.st = st; LS.end(); }); await p.waitForTimeout(2500); } },
+  // TEACH-UX: a 1st grader's Remember in add3 with its model up front (the ten frame above the sum) and the beat label in the top bar
+  'teachux-rem': { run: async p => { await p.evaluate(() => partsLoad(['teach', 'teach12'])); await p.waitForFunction(() => typeof LS_DRAFTED != 'undefined', null, { timeout: 30000 });
+    await p.evaluate(() => { window.say = window.__a11y.say; teachSave(); S.grade = 1; LS.WAKE = 400;
+      LS.st = LS.make('add3', { seed: 3, day: lsDay(), learn: 1, rem: ['add2'] }); LS.show(); }); await p.waitForTimeout(1500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {

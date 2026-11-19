@@ -21211,6 +21211,73 @@ run('lesson stops: every pet turn, the extra turns, resume, a part that does not
     return{problems:p,note:'every lesson\'s pet can be wrong, the extra turns are; resume fresh; the part that does not load; '+note}});
 });
 
+// ---- TEACH-UX (v183): a 1st grader's Remember was a bare "9 + 7 = [ ]" (owner, from a real tablet). Pre-K to 2nd grade Remember and
+//      warm-up items show their model from the start, the top bar says the step in words, and the pet says that building comes next ----
+run('teach: the model up front, the beat label, the Remember line TEACH-UX',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const K=${TEACH_KIDS},bad=[],seen={model:new Set(),none:new Set()};
+    const little=LS_IDS.filter(id=>LESSONS[id].band!='35'),gr=id=>Math.max(0,LESSONS[id].g!=null?LESSONS[id].g:1);
+    const svgs=h=>(h.match(/<svg[\\s\\S]*?<\\/svg>/g)||[]),words=h=>h.replace(/<svg[\\s\\S]*?<\\/svg>/g,'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim();
+    // the Remember item of a lesson x (in a host lesson), or the host's own warm-up: {it, st}
+    const remOf=(host,x,seed,o)=>{const st=LS.make(host,Object.assign({seed,day:100,learn:1,rem:x?[x]:[]},o||{}));return{st,it:LSB[st.b]=='rem'?LS.cur(st):null}};
+    // 1. every Pre-K to 2nd grade lesson, as a Remember item (and its warm-up when it has one), 25 seeds each: the item carries its
+    //    model exactly when its hint draws one for a typed answer; the prompt shows the hint's picture (all of it, well formed), never
+    //    its words; and the line opens with the little pet's "then we build"
+    for(const x of little){const host=x=='tenf1'?'add3':'tenf1';S.grade=gr(x);
+      for(let s=1;s<=25;s++){for(const [what,o] of [['remember',remOf(host,x,s)],['warm-up',LESSONS[x].warm?remOf(x,null,s):null]]){
+        if(!o)continue;const it=o.it,at=x+' '+what+' seed '+s+': ';
+        if(!it){bad.push(at+'no item at Remember');continue}
+        const q=it.q,h=q.hint&&q.hint.k=='html'?q.hint.html:'',want=q.kind=='num'&&svgs(h).length>0&&!/<svg/.test(q.html||'');
+        if(!!it.mdl!==want)bad.push(at+'model '+!!it.mdl+', want '+want+' ('+q.kind+')');
+        const pr=LS.prompt(it);
+        if(want){seen.model.add(x+' '+what);
+          if(!pr.startsWith('<div class="pkq ls-model">')||!pr.endsWith(q.html))bad.push(at+'the model is not above the question');
+          if((h.match(/<svg/g)||[]).length!==svgs(h).length||!svgs(h).every(v=>pr.includes(v)))bad.push(at+'the hint picture is not all shown');
+          const w=words(h);if(w&&words(pr).includes(w))bad.push(at+'the hint words are shown before a miss: '+w);
+          if(!LS.hint(q,it).includes(w.split(' ')[0])||/<svg/.test(LS.hint(q,it)))bad.push(at+'after a miss the hint does not add its words only')}
+        else{if(pr!==q.html)bad.push(at+'the prompt changed without a model');
+          if(!/<svg/.test(pr)&&!['make','build','line','sort','order'].includes(q.kind)&&!(q.choices||[]).some(c=>/<svg/.test(c.l||'')))seen.none.add(x+' '+what+' '+q.kind)}
+        if(it.lines[0]!==LS_TONE.little.remGo)bad.push(at+'the line does not open with remGo: '+it.lines[0])}}}
+    // the owner's case: add3 as a 1st grader, with the doubles and +9 lesson (add2) to remember: a ten frame over the sum
+    {S.grade=1;let n=0;for(let s=1;s<=20;s++){const {it}=remOf('add3','add2',s);if(it&&it.mdl&&/ten frame/.test(LS.model(it.q)))n++}
+      if(n!==20)bad.push('add3 with add2 to remember: the ten frame shows in '+n+' of 20')}
+    if(seen.model.size<23)bad.push('only '+seen.model.size+' lessons carry a model at Remember: '+[...seen.model].join());
+    // 2. grades 3 to 6 are as before: no model up front; their pet's own "then we build" line
+    for(const g of [3,4,5,6]){S.grade=g;const T=lsTone();
+      for(const x of ['add2','pv1','add3']){const {it}=remOf('tenf1',x,3);if(!it||it.mdl||LS.prompt(it)!==it.q.html)bad.push('grade '+g+' '+x+': a model up front');
+        if(!it||it.lines[0]!==T.remGo||it.lines[1]!==T.rem)bad.push('grade '+g+': the Remember lines '+(it&&it.lines))}}
+    // 3. scoring, the knowledge record and retry/reveal do not change: the same lessons played by the same children, with the model
+    //    and with LS.model switched off, give the same path, the same answers' results, the same record and the same finish
+    {const m0=LS.model;
+      for(const x of little.filter((x,i)=>i%3==0))for(let s=1;s<=6;s++){const host=x=='tenf1'?'add3':'tenf1',out=[];S.grade=1;
+        for(const off of [false,true]){if(off)LS.model=()=>'';S.know={};S.lm=[];S.lr=[];
+          const c=K.kid(.5,.05,mulberry32(s*7)),st=LS.make(host,{seed:s,day:100,learn:1,rem:[x]}),res=[];let n=0;
+          while(!st.done&&n++<80){const it=LS.cur(st),v=c.answer(it),a=LS.answer(st,v);res.push(LSB[st.b]+':'+a.ok+':'+a.act);c.learn(it,a);if(a.act!='retry')LS.next(st)}
+          const f=LS.finish(st);out.push(JSON.stringify([res,st.pre,st.post,S.know,f.pass,f.sc]));LS.model=m0}
+        if(out[0]!==out[1]){bad.push(x+' seed '+s+': the model changes the score or the record');break}}
+      LS.model=m0}
+    // a first try at Remember still feeds the record exactly once (knowRemember), the warm-up never (knowAdd): with the model
+    {S.grade=1;S.know={add2:{s:2,n:1,lv:[[1,1],[1,1],[1,1]],b:{},box:0,due:99,d:97,last:97}};const k0=JSON.stringify(S.know.add2);
+      const st=LS.make('add3',{seed:4,day:100,learn:1,rem:['add2']}),it=LS.cur(st);if(!it.mdl)bad.push('add2 as Remember: no model');
+      const a1=LS.answer(st,String(+it.q.ans+1)),k1=JSON.stringify(S.know.add2),a2=LS.answer(st,it.q.ans),k2=JSON.stringify(S.know.add2);
+      if(a1.act!=='retry'||a2.act!=='next'||!a2.ok||k1===k0||k2!==k1||S.know.add3)bad.push('Remember with the model: retry, record '+JSON.stringify([a1.act,a2.act,k0==k1,k1==k2,!!S.know.add3]));
+      const sw=LS.make('add3',{seed:4,day:100,learn:1}),wt=LS.cur(sw);LS.answer(sw,lsRight(wt.q));if(S.know.add3)bad.push('a warm-up feeds the record')}
+    // 4. the beat label: every beat has one; the six are "Step n of 6 · <the dot's name>"
+    for(const B of LSB){const t=LS.step(B),j=LS_PIPS.findIndex(x=>x[0]==B);if(!t)bad.push('no label for '+B);
+      if(j>=0&&t!=='Step '+(j+1)+' of 6 · '+LS_PIPS[j][2])bad.push('the label of '+B+': '+t)}
+    if(LS.step('rem')!=='Step 1 of 6 · Remember'||LS.step('pre')!=='Show me'||LS.step('win')!=='One more')bad.push('labels: '+LSB.map(LS.step).join(' | '));
+    // 5. the line: one per age, within the age's rules and themes
+    for(const a in LS_TONE){const t=LS_TONE[a].remGo;if(!t||lsToneBad(t,a).length||!/build/i.test(t)||/magic|spell|evol/i.test(t))bad.push(a+'.remGo: '+t+' '+lsToneBad(t,a))}
+    return {bad,model:[...seen.model].length,none:[...seen.none]}})()`);
+  const p=r.bad.slice(),src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
+  // the screen: the label under the dots is text a screen reader reads (the dots are hidden), from LS.step; tokens only
+  if(!/<div class="ls-pips" aria-hidden="true">\$\{pips\}<\/div><span class="ls-step" id="lsstep">\$\{esc\(LS\.step\(B\)\)\}<\/span>/.test(src))p.push('the top bar has no beat label under the dots');
+  if(!/const prompt = LS\.prompt\(it\)/.test(src))p.push('the screen does not draw the prompt with LS.prompt');
+  const rule=(css.match(/\.ls-step\{[^}]*\}/)||[''])[0]+(css.match(/\.ls-beats\{[^}]*\}/)||[''])[0];
+  if(!rule||/#[0-9a-f]{3,8}\b|\d+px/i.test(rule))p.push('the label CSS is not tokens only: '+rule);
+  return{problems:p,note:r.model+' lesson items carry a model at Remember; no picture at all: '+(r.none.join(', ')||'none')};
+});
+
 // ---- PLAY-01: the Google Play app: the free sample, Play mode, the grown-up gate, the purchase (mocked Google Play), saves ----
 // ---- PLAY-01c: api/ack.js answers (Fable re-review): a 400/404 or an unknown purchaseState must never read as "cancelled" ----
 run('play PLAY-01c: the acknowledgement endpoint never reads an error as cancelled, acknowledges only a paid purchase once, caches the OAuth token',()=>{

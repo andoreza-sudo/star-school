@@ -1,5 +1,5 @@
-/* Star School hints v182. BUILT by tools/build.py from 39m-mist.js, 39n-hintw.js: never edit by hand.
-   index.html v182 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v182.js. */
+/* Star School hints v183. BUILT by tools/build.py from 39m-mist.js, 39n-hintw.js: never edit by hand.
+   index.html v183 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v183.js. */
 /* ---------- HINT-01: a hint for each common mistake, in every Practice question (part hints since v182: loaded when a Practice round starts) ----------
    docs/ROADMAP.md 10d (owner decisions 2026-11-18). For a Practice question the app works out what each known mistake would answer
    (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cat" as "cap", la for el ...). When the child's
@@ -837,4 +837,4 @@ function hmHint(q, v) {
 const HINTW = {
 };
 
-var HINTS_VER='v182'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var HINTS_VER='v183'; // last line: the whole file ran (checked by dataReady() before the app starts)

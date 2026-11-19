@@ -285,12 +285,17 @@ const LS_IDS = Object.keys(LESSONS);
      kid      3rd and 4th. An older kid: friendly, a little jokey, praise names what was done ("You lined up the tens"), not just
               "Super!". Lines up to 16 words. More "you try", fewer hints.
      teen     5th and 6th. A teen-like partner: calm, dry, no baby praise ("Nice." "That holds up."). Asks the child to check
-              its work and to "give me a hard one". Lines up to 20 words; never talks down. */
+              its work and to "give me a hard one". Lines up to 20 words; never talks down.
+   TEACH-UX (v183): remGo opens Remember, before rem or the script's Remember line, so the child hears that the lesson goes on after
+   this one item (a 1st grader saw only "Do you remember this?" and a sum, and thought that was the whole lesson). An engine line like
+   the others here: live at once, in the tablet's voice until the owner approves it (.claude/TEACHUX-READ.md) and en-audio --teach
+   records it. */
 const LS_TONE = {
   little: {hi: n => `Hi ${n}! Let's learn together.`, yay: ['Yes!', 'You got it!', 'Super!', 'Hooray!', 'Great job!'], help: 'Look! Let me help.',
     tryMore: "Let's look at it together.", testOut: 'You know this! Show me!', showMe: 'Your turn to show me!', myTurn: 'My turn. Check me!',
     caught: 'You caught my mistake!', fooled: 'Look again. I made a mistake!', rightMe: 'Yes, I got it right!', wrongMe: 'I was right this time!',
     fixIt: 'Can you fix it?', win: 'We did it!', bye: n => `Great learning, ${n}!`, rem: 'Do you remember this?',
+    remGo: 'Quick one first, then we build!',
     nb: n => `Look! We learned ${n} big idea${n > 1 ? 's' : ''}!`, nb0: "Let's learn together and fill our notebook!", kept: 'And you still know it!',
     first: 'First, show me what you know.', play: "Let's play first.", tog: "Now let's do some together.", more: 'One more, together!', fixed: 'You fixed it!',
     look: 'Look at these two.', isRight: 'This one is right.'},
@@ -298,6 +303,7 @@ const LS_TONE = {
     tryMore: 'Try it with the picture.', testOut: 'Looks like you know this. Prove it!', showMe: 'Show me what you know.',
     myTurn: 'My turn. Check my work.', caught: 'Good catch. I slipped there.', fooled: 'Look closer. I slipped.', rightMe: 'Yep, that one was right.',
     wrongMe: 'Actually, I had it right.', fixIt: 'Fix it for me?', win: 'Nailed it.', bye: n => `Good work today, ${n}.`, rem: 'Remember this one?',
+    remGo: 'Quick warm-up first. Then we build the new idea.',
     nb: n => `Your notebook has ${n} idea${n > 1 ? 's' : ''} in it.`, nb0: 'Your notebook fills up as we learn.', kept: 'You still know this one.',
     first: 'First, show me what you already know.', play: 'Try this first. Any way works.', tog: 'Now a few with me.', more: 'One more, with the picture.',
     fixed: 'You fixed it.', look: 'Compare these two.', isRight: 'This one is right.'},
@@ -305,6 +311,7 @@ const LS_TONE = {
     tryMore: 'Use the model.', testOut: 'You might know this already. Show me.', showMe: 'Your call.', myTurn: 'My turn. Check my work.',
     caught: 'Fair. I got that wrong.', fooled: 'Look again. That one was wrong.', rightMe: 'That one was fine.', wrongMe: 'That one was actually right.',
     fixIt: 'Fix it.', win: 'Done.', bye: n => `Good session, ${n}.`, rem: 'Quick one from before.',
+    remGo: 'Warm-up first, then we build the new idea.',
     nb: n => `Your notes: ${n} idea${n > 1 ? 's' : ''} so far.`, nb0: 'Your notes go here as we work.', kept: 'Still solid.',
     first: 'Show me what you already know.', play: 'Try this first. There is no wrong way.', tog: 'A few to work through.', more: 'One more with the model.',
     fixed: 'Fixed.', look: 'Compare these two.', isRight: 'This one holds up.'},

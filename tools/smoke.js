@@ -13358,6 +13358,81 @@ async function main() {
     }
     // end LS-STOP
 
+    // TEACH-UX: the owner's report from a tablet: a 1st grader's Remember in add3 (Make a ten to add bigger facts) was a bare "9 + 7"
+    // and a pad. Now its ten frame shows before any answer, the top bar says "Step 1 of 6 · Remember" in words without growing, and the
+    // pet says building comes next; a miss adds the hint's words only; Explore is "Step 2 of 6"
+    if (seg('TEACH-UX')) {
+      const bad = [], notes = [], path = require('path'), shots = process.env.TEACHUX_SHOTS || path.join(__dirname, 'out', 'teachux');
+      require('fs').mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, sz = w + 'x' + h, at = 'TEACH-UX ' + sz + ' ';
+        try {
+          await pg.evaluate(() => { window.__said = []; const s0 = window.say; window.say = (t, ...a) => { window.__said.push(String(t)); return s0(t, ...a); };
+            S.grade = 1; S.name = 'Mia'; S.lm = []; delete S.les; const d = STRK.idx(today()), i = NODES.math.findIndex(n => nid(n) === 'add3');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0);
+            S.know = { add2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: d - 1, d: d - 3, last: d - 3 } };
+            save(); lsOpen('math', i); });
+          await pg.waitForSelector('#lslearn', { timeout: 15000 });
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('#lslearn');
+          // 1. before any answer (read in the page the moment the screen shows): the ten frame above the sum, the label, the line
+          const r0 = await pg.waitForFunction(() => {
+            const pl = document.querySelector('#lsplay[data-beat="rem"]');
+            if (!pl) return null;
+            const box = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, l: b.left, r: b.right, w: b.width, h: b.height }; };
+            const st = document.querySelector('#lsstep'), top = document.querySelector('.ls-top'), h0 = top.getBoundingClientRect().height;
+            st.style.display = 'none'; const h1 = top.getBoundingClientRect().height; st.style.display = '';
+            const it = LS.cur(LS.st);
+            return { q: it.q.label, kind: it.q.kind, mdl: !!it.mdl, tf: box('#prompt .ls-model svg[aria-label="ten frame"]'), eq: box('#prompt .eq'), inp: box('#lsinp'),
+              step: st.textContent, clip: st.scrollWidth > st.clientWidth + 1, sb: box('#lsstep'), top: box('.ls-top'), withLabel: h0, without: h1, typed: LS.u.typed, know: JSON.stringify(S.know.add2),
+              hint: document.querySelector('#hint').innerHTML, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
+              sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]') };
+          }, null, { timeout: 15000 }).then(x => x.jsonValue());
+          if (!/^add2 /.test(r0.q) || r0.kind !== 'num' || !r0.mdl || !r0.tf || r0.tf.h < 60 || r0.tf.t < r0.top.b || r0.tf.b > r0.eq.t + 1 || r0.typed || r0.hint)
+            bad.push(at + 'the ten frame before any answer: ' + JSON.stringify(r0));
+          if (!/^Step 1 of 6 · Remember$/.test(r0.step) || r0.clip || !r0.read || r0.sb.r > r0.vw || r0.sb.l < 0 || r0.sb.b > r0.top.b) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.top]));
+          if (Math.abs(r0.withLabel - r0.without) > .5) bad.push(at + 'the label makes the top bar taller: ' + r0.without + ' -> ' + r0.withLabel);
+          if (r0.sw > r0.vw || r0.tf.r > r0.vw || (w < 1000 && r0.eq.b > r0.inp.t + 1)) bad.push(at + 'does not fit: ' + JSON.stringify(r0));
+          await pg.waitForFunction(() => !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+          const said = await pg.evaluate(() => window.__said.join(' | '));
+          if (!/Quick one first, then we build! Do you remember this\?/.test(said)) bad.push(at + 'the pet does not say building comes next: ' + said);
+          await pg.screenshot({ path: path.join(shots, `teachux-rem-${sz}.png`) });
+          // 2. a miss: the same retry as before, the hint adds its words (the picture is already up); the record is as before
+          const ans = await pg.evaluate(() => LS.cur(LS.st).q.ans);
+          for (const d of String(+ans + 1)) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await pg.waitForFunction(() => document.querySelector('#hint').textContent.trim(), null, { timeout: 8000 });
+          const m1 = await pg.evaluate(() => ({ svg: document.querySelectorAll('#hint svg').length, tf: document.querySelectorAll('#prompt .ls-model svg').length, b: LSB[LS.st.b],
+            tries: LS.cur(LS.st).tries, rec: S.know.add2 && S.know.add2.last }));
+          if (m1.svg || m1.tf !== 1 || m1.b !== 'rem' || m1.tries !== 1) bad.push(at + 'after a miss: ' + JSON.stringify(m1));
+          // 3. right: on to Explore, "Step 2 of 6 · Explore"
+          await pg.waitForFunction(() => !LS.u.lock, null, { timeout: 15000 });
+          for (const d of String(ans)) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await pg.waitForSelector('#lsplay[data-beat="exp"]', { timeout: 15000 });
+          // every beat's label fits whole, with the ticket meter and without it (a lesson that pays nothing shows its name on wide screens)
+          const s2 = await pg.evaluate(() => {
+            const o = [document.querySelector('#lsstep').textContent], p0 = lsPriceTag, st0 = LS.st;
+            for (const pay of [true, false]) { if (!pay) lsPriceTag = () => '';
+              for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
+                const e = document.querySelector('#lsstep'); if (!e.textContent || e.scrollWidth > e.clientWidth + 1) o.push('clipped ' + B + (pay ? '' : ' (no meter)') + ': ' + e.textContent); }
+              lsPriceTag = p0; }
+            LS.st = null; return o; });
+          if (s2[0] !== 'Step 2 of 6 · Explore' || s2.length > 1) bad.push(at + 'the labels: ' + s2.join(' | '));
+          notes.push(sz);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-UX the model up front:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-UX: add3 as a 1st grader at ' + notes.join(', ') + ': Remember (add2) shows its ten frame above the sum before any answer; the top bar reads ' +
+        '"Step 1 of 6 · Remember" in words and is no taller for it; the pet says "Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads ' +
+        '"Step 2 of 6 · Explore"; every beat\'s label fits whole, with and without the ticket meter; screenshots in tools/out/teachux; no console errors, no network requests');
+    }
+    // end TEACH-UX
+
     // PLAY-01: the Google Play app (?src=play with a mocked Google Play billing, Digital Goods v2): the free sample's 5 stops, a child's
     // tap on a locked stop and world, the grown-ups' unlock behind the question, the purchase and its acknowledgement, Grown-ups by the
     // hold and a reinstall restored, the free Game Room; normal Chrome and the web version lock nothing
