@@ -1,6 +1,6 @@
 # Interest: Vehicles (vehicles)
 
-status: unreviewed
+status: reviewed owner 2026-11-19
 made: 2026-11-19 by tools/author.js --pers-draft (xAI API, grok-4.20-0309-non-reasoning); read and rewritten by hand
 
 <!-- For the owner: read the sentences below as the child sees them, change any wording in the JSON ("st" and "things"),
