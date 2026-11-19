@@ -357,6 +357,21 @@ const SCREENS = {
   'teach4-fix': { run: async p => teach4Beat(p, 'build1', 'chk', 1) },
   'teach4-sent': { run: async p => teach4Beat(p, 'pic1', 'show', 0) },
   'teach4-plates': { run: async p => teach4Beat(p, 'pk_more1', 'show', 0) },
+  // READ-SHAPES: the K-2 reading lesson shapes (teachrd): word cards to turn over, the word that flashes, the rhyme sorter, clap-to-count,
+  // dictation tiles, the story card with a speaker per sentence and the pet's pick on it, the pairs match, the sentence fixer, word tiles in
+  // order, the naming and doing sorter, plurals built from tiles
+  'read5-cards': { run: async p => teach4Beat(p, 'sight1', 'exp', 0) },
+  'read5-flash': { run: async p => teach4Beat(p, 'sight2', 'tog', 2) },
+  'read5-rhyme': { run: async p => teach4Beat(p, 'rhyme1', 'exp', 0) },
+  'read5-claps': { run: async p => teach4Beat(p, 'syl2', 'tog', 0) },
+  'read5-dict': { run: async p => teach4Beat(p, 'spell1', 'tog', 0) },
+  'read5-story': { run: async p => teach4Beat(p, 'comp1', 'tog', 0) },
+  'read5-story-pet': { run: async p => teach4Beat(p, 'comp2', 'chk', 0) },
+  'read5-pairs': { run: async p => teach4Beat(p, 'vocab1', 'tog', 0) },
+  'read5-fix': { run: async p => teach4Beat(p, 'gram1', 'tog', 0) },
+  'read5-order': { run: async p => teach4Beat(p, 'sent3', 'tog', 0) },
+  'read5-pos': { run: async p => teach4Beat(p, 'gram2', 'exp', 0) },
+  'read5-plural': { run: async p => teach4Beat(p, 'gram3', 'tog', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   // LS-STOP: the lesson stop on the map (its ticket, Make Ten's practice locked behind it), the start card, the top bar's ticket meter, the
   // end card with its game time

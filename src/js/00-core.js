@@ -10,7 +10,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 const BUILD='__VER__'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over __VER__ in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
-const LATEST=8; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=9; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
    key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
@@ -163,6 +163,18 @@ const MIGRATIONS=[null,
      idempotent; never throws; removes nothing. */
   ()=>{
     const ids=new Set('story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8 pic6 build6'.split(' '));
+    const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
+    for(const p of['math','read'])if(NODES[p]&&S.maps&&S.maps[p])NODES[p].forEach((n,i)=>{try{const a=NODES[p][i-1];
+      if(ids.has(nid(n))&&!passed(p,i)&&unlocked(p,i)&&(a&&(passed(p,i-1)||a.wi!==n.wi&&worldSkipped(p,a.wi))||stopBehind(p,i)))o[nid(n)]=1}catch(e){}});
+    if(Object.keys(o).length)S.lsOpen=o;
+  },
+  /* 8: READ-SHAPES (v184). Nineteen K-2 reading stops got lessons (sight words, rhymes, claps, spelling, stories, opposites and synonyms,
+     capitals and end marks, word order, naming and doing words, plurals), so they now wait behind a lesson stop. The same rule as
+     migrations 6 and 7: every one of THESE stops this save could already play because of its own progress (the stop before it passed,
+     the first stop after a skipped world, or a later stop of its world passed) and has not passed is kept open in S.lsOpen. Frozen list
+     of the v184 additions (never LESSONS); idempotent; never throws; removes nothing. */
+  ()=>{
+    const ids=new Set('sight1 rhyme1 sight2 rhyme2 comp1 syl2 spell1 sight3 comp2 spell2 vocab1 gram1 sight4 spell3 sent3 sight5 gram2 vocab2 gram3'.split(' '));
     const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
     for(const p of['math','read'])if(NODES[p]&&S.maps&&S.maps[p])NODES[p].forEach((n,i)=>{try{const a=NODES[p][i-1];
       if(ids.has(nid(n))&&!passed(p,i)&&unlocked(p,i)&&(a&&(passed(p,i-1)||a.wi!==n.wi&&worldSkipped(p,a.wi))||stopBehind(p,i)))o[nid(n)]=1}catch(e){}});

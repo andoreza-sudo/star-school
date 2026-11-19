@@ -1143,7 +1143,7 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 8 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8
+      if (r0.v !== 9 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9
          r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
@@ -8747,7 +8747,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 8 /* LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 9 /* LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -13175,6 +13175,145 @@ async function main() {
         'letter tiles, the pet\'s word read wrong and built right, a sentence matched to a picture), every screen fitting with no hole in the words; no console errors, no network requests');
     }
     // end TEACH-4
+    // READ-SHAPES the K-2 reading stops in their new lesson shapes (52q-bench5r.js, 52r-lessons5r.js, 52q-teach5r.css in the part teachrd; drafts of
+    // batch 5r), at 380x780 and 600x960 on the midway save. The reading map of a Kindergartner who passed First Sounds has a lesson stop in front of
+    // Sight Words. Four lessons through every beat by the real controls, the pet's mistake forced (LS.PET_OK 0): Sight Words (the word cards turned over,
+    // the word that flashes and hides, then shows again), Story Time (the story card with a speaker per sentence, told before the question), Capitals &
+    // End Marks (the sentence fixer) and Count the Claps (the Clap button). Then the first Together item of every other shape, done by its own
+    // controls and taken: the rhyme sorter's lesson, dictation tiles, the pairs match (opposites, synonyms), word tiles in order, the naming and doing
+    // sorter, the add s or es word. Every screen fits, 48 px buttons, no hole in the words; screenshots (READ5_SHOTS, default tools/out/read5).
+    if (seg('READ-SHAPES')) {
+      const bad = [], notes = [], shots = process.env.READ5_SHOTS || require('path').join(__dirname, 'out', 'read5');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const shot = (pg, n) => pg.screenshot({ path: require('path').join(shots, n + '.png') });
+      const wake5 = pg => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+      const act5 = async (pg, wrong) => {
+        await wake5(pg);
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, word: q.word, tiles: q.tiles, m5: q.m || null,
+            items: q.items && q.items.map(c => [c.v, c.b]), opts: q.opts && q.opts.map(c => c.v), bins: q.bins && q.bins.map(b => b.v), order: q.kind == 'order' ? q.ans : null,
+            choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'build') {
+          const used = [], want = wrong ? it.tiles.slice(1).concat(it.tiles[0]).join('').slice(0, it.word.length) : it.word;
+          for (const ch of want) { const i = it.tiles.findIndex((t, j) => t == ch && !used.includes(j)); used.push(i); await pg.click(`.lt[data-i="${i}"]`); }
+        } else if (it.kind == 'sort') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.schip[data-i="${i}"]`); await pg.click(`.sbt[data-b="${it.bins.indexOf(it.items[i][1])}"]`, { position: { x: 16, y: 12 } }); }
+          await pg.click('#mcheck');
+        } else if (it.kind == 'order') {
+          const used = []; for (const v of it.order) { const i = it.items.findIndex((c, j) => c[0] == v && !used.includes(j)); used.push(i); await pg.click(`.ot[data-i="${i}"]`); }
+        } else if (it.kind == 'match') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.mb[data-s="L"][data-i="${i}"]`); await pg.click(`.mb[data-s="R"][data-i="${it.opts.indexOf(it.items[i][0])}"]`); }
+        } else if (it.kind == 'make' && it.model == 'flash') {
+          await pg.click(`.ls5-card[data-d="${wrong ? (it.m5.t + 1) % 4 : it.m5.t}"]`); await pg.click('#mcheck');
+        } else if (it.kind == 'make' && it.model == 'clap') {
+          for (let j = 0; j < it.m5.n + (wrong ? 1 : 0); j++) await pg.click('.ls5-clapb'); await pg.click('#mcheck');
+        } else if (it.kind == 'make' && it.model == 'sfix') {
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          if (!cur[0]) await pg.click('.ls5-fb[data-i="0"]');
+          await pg.click(`.ls5-fb[data-i="1"][data-d="${wrong ? 3 - (it.m5.ask ? 2 : 1) : it.m5.ask ? 2 : 1}"]`); await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const step5 = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await act5(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fit5 = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        // the size by layout (offsetWidth): the prompt card grows in with a short scale animation
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear, #prompt button')) { const r = b.getBoundingClientRect(); if (r.width && (b.offsetWidth < 47.5 || b.offsetHeight < 47.5)) o.push('small button ' + (b.getAttribute('aria-label') || b.id || b.className));
+          if (r.width && (r.right > vw + 1 || r.left < -1)) o.push('button off screen ' + (b.getAttribute('aria-label') || b.className)); }
+        for (const b of document.querySelectorAll('#lsplay button')) if (!(b.getAttribute('aria-label') || b.textContent.trim())) o.push('a button with no name ' + b.className);
+        if (/undefined|NaN|\{[a-z]+\}/.test(document.querySelector('#lsplay').textContent)) o.push('a hole in the words: ' + document.querySelector('#lsbub').textContent);
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'READ-SHAPES ' + w + 'x' + h + ' ';
+        try {
+          // 1. the reading map of a Kindergartner who passed First Sounds: a lesson stop in front of Sight Words, which waits for it
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES.read.findIndex(n => nid(n) === 'sight1');
+            for (let j = 0; j < NODES.read.length; j++) setSt('read', j, j < i ? 2 : 0); save(); pathMap('read', NODES.read[i].wi); });
+          await pg.waitForFunction(() => partReady('teachrd') && typeof ls5Sight == 'function', null, { timeout: 15000 });
+          await pg.waitForTimeout(300);
+          const st0 = await pg.evaluate(() => { const i = NODES.read.findIndex(n => nid(n) === 'sight1'); return { stop: lsStopAt('read', i), gate: lsGate('read', i), node: !!document.querySelector(`.lsn[data-ls="${i}"]`), css: !!document.querySelector('#css-teachrd') }; });
+          if (!st0.stop || !st0.gate || !st0.node || !st0.css) bad.push(at + 'Sight Words has no lesson stop on the reading map: ' + JSON.stringify(st0));
+          await shot(pg, `read5-map-${w}x${h}`);
+          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
+          // 2. four lessons through every beat
+          for (const [id, gr] of [['sight1', 0], ['comp1', 1], ['gram1', 1], ['syl2', 1]]) {
+            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; const i = NODES.read.findIndex(n => nid(n) === id); for (let j = 0; j <= i; j++) setSt('read', j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
+            await pg.waitForSelector('#lsplay', { timeout: 5000 });
+            const path = [], seen = [];
+            let pet = null, fixed = false;
+            for (let n = 0; n < 50; n++) {
+              const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m + ':' + (LS.cur(LS.st).q && (LS.cur(LS.st).q.model || LS.cur(LS.st).q.kind)) + (LS.cur(LS.st).fix ? ':fix' : '') : null);
+              if (!b) break;
+              await wake5(pg);
+              if (!seen.includes(b)) { seen.push(b); await fit5(pg, at + id + ' ' + b + ': '); await shot(pg, `read5-${id}-${String(seen.length).padStart(2, '0')}-${b.replace(/:/g, '-')}-${w}x${h}`); }
+              if (b.startsWith('chk:judge') && !pet) pet = await pg.evaluate(() => { const it = LS.cur(LS.st); return { bub: document.querySelector('#lsbub').textContent, pv: it.pv, petOk: it.petOk, say: lsSayV(it.q, it.pv) }; });
+              if (/:fix$/.test(b)) fixed = true;
+              // the story card: a 48 px speaker for every sentence, and the story told before the question
+              if (id == 'comp1' && /^tog:ask/.test(b) && !notes.includes('story' + w)) {
+                const sc = await pg.evaluate(() => { const q = LS.cur(LS.st).q, bs = [...document.querySelectorAll('#prompt .ls5-say')];
+                  return { n: bs.length, tell: (q.tell || []).length, names: bs.map(x => x.getAttribute('aria-label')), big: bs.every(x => x.offsetHeight >= 47.5) }; });
+                if (sc.n !== 3 || sc.tell !== 3 || !sc.big || sc.names.some(x => !/^Hear: The /.test(x))) bad.push(at + 'the story card: ' + JSON.stringify(sc));
+                await pg.click('#prompt .ls5-say');
+                notes.push('story' + w);
+              }
+              // the flash card hides its word, and shows it again
+              if (id == 'sight1' && /^tog:ask:choice/.test(b) && await pg.evaluate(() => !!document.querySelector('.ls5-flash'))) {
+                const gone = await pg.waitForFunction(() => +getComputedStyle(document.querySelector('.ls5-flash')).opacity < .05, null, { timeout: 15000 }).then(() => true).catch(() => false);
+                await shot(pg, `read5-sight1-flash-hidden-${w}x${h}`);
+                await pg.click('.ls5-again');
+                const back = await pg.evaluate(() => +getComputedStyle(document.querySelector('.ls5-flash')).opacity > .5);
+                if (!gone || !back) bad.push(at + 'the flash card: hidden ' + gone + ', shown again ' + back);
+              }
+              path.push(b.split(':').slice(0, 2).join(':'));
+              await step5(pg, b.startsWith('pre:ask') && path.length == 1);
+            }
+            const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+            if (order !== 'pre,rem,exp,name,tog,chk,show' && order !== 'pre,rem,exp,name,tog,chk,show,win') bad.push(at + id + ' beats ' + order);
+            if (!pet || pet.petOk || !/Check me/.test(pet.bub) || !pet.bub.includes(pet.say)) bad.push(at + id + ' the pet\'s turn: ' + JSON.stringify(pet));
+            if (!fixed) bad.push(at + id + ': no fix after the pet\'s mistake');
+            await pg.waitForSelector('#lsend', { timeout: 10000 });
+            await shot(pg, `read5-${id}-end-${w}x${h}`);
+            const end = await pg.evaluate(id => ({ k: S.know[id] && S.know[id].s, idea: document.querySelector('.ls-idea').textContent, tq: S.tq, top: document.querySelector('.ls-top').className }), id);
+            if (!end.k || !end.idea || /\{/.test(end.tq) || !/Ask |Say /.test(end.tq) || !end.top.includes('s-read')) bad.push(at + id + ' the end: ' + JSON.stringify(end));
+          }
+          // 3. every other shape: its Explore model and its first Together item, done by its own controls and taken
+          for (const id of ['rhyme2', 'spell2', 'vocab1', 'sent3', 'gram2', 'gram3', 'vocab2', 'sight4', 'comp2', 'spell3']) {
+            for (const B of ['exp', 'tog']) {
+              await pg.evaluate(([id, B]) => { S.grade = LESSONS[id].g; delete S.les; const st = LS.make(id, { seed: 5, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(B)); LS.st = st; LS.show(); }, [id, B]);
+              await pg.waitForSelector('#lsplay', { timeout: 5000 });
+              await wake5(pg);
+              const k = await pg.evaluate(() => { const q = LS.cur(LS.st).q; return q.model || q.kind; });
+              await fit5(pg, at + id + ' ' + B + ' ' + k + ': ');
+              await shot(pg, `read5-${B}-${id}-${k}-${w}x${h}`);
+              const s0 = await pg.evaluate(() => LS.seq);
+              await act5(pg, false);
+              await pg.waitForFunction(x => LS.seq > x, s0, { timeout: 15000 }).catch(() => bad.push(at + id + ' ' + B + ': the right answer was not taken'));
+              if (B == 'tog' && await pg.evaluate(() => !LS.st.L || LS.st.b !== LSB.indexOf('tog') || !(LS.st.i >= 1))) bad.push(at + id + ': Together did not go on after a right answer');
+            }
+          }
+          await pg.evaluate(() => { LS.PET_OK = .25; LS.st = null; home(); });
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('READ-SHAPES the batch 5r reading lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('READ-SHAPES: the batch 5r reading lessons at ' + notes.filter(x => !/^story/.test(x)).join(' and ') + ': Sight Words has its lesson stop on the reading map; ' +
+        'Sight Words, Story Time, Capitals & End Marks and Count the Claps through every beat by the real controls (word cards, the flash card hidden and shown again, ' +
+        'the story card told aloud with a speaker per sentence, the sentence fixer, the Clap button, the pet\'s forced mistake and its fix); the Explore and first ' +
+        'Together item of ten more lessons (rhyme sorter, dictation tiles, pairs match, word order, naming and doing sorter, plurals) done by their own controls; ' +
+        'every screen fits with 48 px named buttons and no hole in the words; no console errors, no network requests');
+    }
+    // end READ-SHAPES
 
     // LS-STOP lessons are required, paid stops on the map (42b-lstop.js, 46-home.js drawMap, 58-playtime.js lsPay, 52-lesson.js LS.open,
     // the meter and the end card), at 380x780 and 600x960 on the midway save as a Kindergartner with every stop before Make Ten passed.

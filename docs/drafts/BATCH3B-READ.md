@@ -23,7 +23,7 @@ When you are happy, say so, or run:
 `node tools/author.js --approve all --batch 3b --by <your name>`
 
 (or name the lessons instead of all). Approved lessons use their words at the next build.
-No lesson of another batch is waiting.
+Note: --approve all WITHOUT --batch 3b also approves 19 lessons of other batches still waiting.
 
 ## 1. Story Problems 5 (story5)
 

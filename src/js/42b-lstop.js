@@ -23,7 +23,8 @@ const LS_STOPS = {
     + 'frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 '
     + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5 '
     + 'story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8').split(' ')), // TEACH-3b (v182)
-  read: new Set('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4 pic6 build6'.split(' ')), // TEACH-3b: pic6 build6 (v182)
+  read: new Set(('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4 pic6 build6 ' // TEACH-3b: pic6 build6 (v182)
+    + 'sight1 rhyme1 sight2 rhyme2 comp1 syl2 spell1 sight3 comp2 spell2 vocab1 gram1 sight4 spell3 sent3 sight5 gram2 vocab2 gram3').split(' ')), // READ-SHAPES (v184)
 };
 const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
 function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
