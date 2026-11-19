@@ -29,7 +29,7 @@ When you are happy, say so, or run:
 `node tools/author.js --approve all --batch 5s --by <your name>`
 
 (or name the lessons instead of all). Approved lessons use their words at the next build.
-Note: --approve all WITHOUT --batch 5s also approves 40 lessons of other batches still waiting.
+No lesson of another batch is waiting.
 
 ## 1. Animals (es_animal1)
 
