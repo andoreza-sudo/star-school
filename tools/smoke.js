@@ -13792,17 +13792,23 @@ async function main() {
     // end PLAY-01
     // HINT-01 (docs/ROADMAP.md 10d): a hint for each common mistake in Practice. In a real round at 380x780 and 600x960: a math question
     // (5747 + 9829 style, answered as if the child forgot to carry; 2-digit sums have their own why sentences, KINDS2-D) and a reading question (a picture word, the wrong first sound) show the
-    // mistake's line above the generic hint, with the question's numbers filled in, once its line is approved (HINTW, simulated here
-    // with the draft's own line); with no approved line the generic hint alone shows, as before. The second try, the score and the
+    // mistake's line above the generic hint, with the question's numbers filled in, once its line is approved (HINTW: the owner approved
+    // all 117 on 2026-11-19, so the page's HINTW must be the reviewed drafts' lines; the gate is then tested by emptying HINTW and
+    // putting one line back); with no approved line the generic hint alone shows, as before. The second try, the score and the
     // round go on as they always did. Screenshots in tools/out/hints/.
     if (seg('HINT-01')) {
       const bad = [], notes = [], shots = require('path').join(__dirname, 'out', 'hints'), A = require('./author.js');
       require('fs').mkdirSync(shots, { recursive: true });
       const LN = Object.fromEntries(A.hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d.line]));
+      const LNR = Object.fromEntries(A.hintDrafts().filter(x => x.d && x.d.status === 'reviewed').map(x => [x.d.code, x.d.line])); // owner approved 2026-11-19
       for (const [w, h] of [[380, 780], [600, 960]]) {
         const ha = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const pg = ha.page, at = 'HINT-01 ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), sz = w + 'x' + h;
         try {
+          // the page as built: HINTW is exactly the reviewed drafts' lines (owner approved 2026-11-19)
+          const hw = await pg.evaluate(() => JSON.stringify(HINTW));
+          if (hw !== JSON.stringify(Object.fromEntries(Object.keys(JSON.parse(hw)).map(k => [k, LNR[k]]))) || Object.keys(JSON.parse(hw)).sort().join() !== Object.keys(LNR).sort().join())
+            bad.push(at + 'HINTW on the page is not the reviewed drafts\' lines');
           await pg.evaluate(() => { S.grade = 2; S.voice = false; for (const k in HINTW) delete HINTW[k]; });
           const HM_ = () => { const e = document.querySelector('#hint .why.hm'); return e ? { code: e.dataset.hm, text: e.textContent.trim() } : null; };
           const fitHint = async tag => {
@@ -13886,11 +13892,13 @@ async function main() {
     }
     // end HINT-01
     if (seg('PERS-01')) {
-      // PERS-01: Grown-ups' Story themes card opens the picker; the grown-up picks Dinosaurs (the drafts' words, as if approved: nothing is
-      // reviewed yet); a story round then asks a themed problem with the same math as the default one, said as shown
+      // PERS-01: Grown-ups' Story themes card opens the picker; the grown-up picks Dinosaurs (the drafts' words: the owner approved all 8 on
+      // 2026-11-19, so the page's PERSW must be the reviewed drafts' words; the gate is tested by emptying PERSW, as for an unreviewed
+      // interest, then putting the words back); a story round then asks a themed problem with the same math as the default one, said as shown
       const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'pers'), A = require('./author.js');
       require('fs').mkdirSync(shots, { recursive: true });
       const W = Object.fromEntries(A.persDrafts().filter(x => x.d).map(x => [x.d.id, { name: x.d.name, pic: x.d.pic, things: x.d.things, st: x.d.st }]));
+      const WR = Object.fromEntries(A.persDrafts().filter(x => x.d && x.d.status === 'reviewed').map(x => [x.d.id, W[x.d.id]])); // owner approved 2026-11-19
       for (const [w, h] of [[380, 780], [600, 960]]) {
         const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const pg = pa.page, at = 'PERS-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h;
@@ -13905,12 +13913,19 @@ async function main() {
           return o;
         };
         try {
-          // nothing reviewed: Grown-ups has no card, a story is the default one even with an interest picked
+          // the page as built: PERSW is exactly the reviewed drafts' words, and with no interest picked a story is the default one byte for byte
+          const live = await pg.evaluate(() => { const ints = S.ints, W = JSON.stringify(PERSW); S.buddy = 'Ben'; S.ints = []; const a = [1, 2, 3, 4, 5, 6].map(lv => genQ('story', lv, 7));
+            for (const k in PERSW) delete PERSW[k]; const b = [1, 2, 3, 4, 5, 6].map(lv => genQ('story', lv, 7)); Object.assign(PERSW, JSON.parse(W)); S.ints = ints;
+            return { W, same: a.every((q, i) => q.html === b[i].html && q.say === b[i].say) }; });
+          if (Object.keys(JSON.parse(live.W)).sort().join() !== Object.keys(WR).sort().join() || Object.entries(JSON.parse(live.W)).some(([k, v]) => JSON.stringify(v) !== JSON.stringify(WR[k])))
+            bad.push(at + 'PERSW on the page is not the reviewed drafts\' words');
+          if (!live.same) bad.push(at + 'with no interest picked, a story is not the default one byte for byte');
+          // nothing reviewed (PERSW emptied, as for an unreviewed interest): Grown-ups has no card, a story is the default one even with an interest picked
           await pg.evaluate(() => { S.grade = 1; S.voice = false; S.buddy = 'Ben'; S.ints = ['dinosaurs']; for (const k in PERSW) delete PERSW[k]; grown(); });
           await vwait(pg, 400);
           const none = await pg.evaluate(() => ({ card: !!document.querySelector('#pers-open'), held: !!document.querySelector('#gw-pers[hidden]'), q: genQ('story', 1, 7).say, on: persOn().length }));
           if (none.card || !none.held || none.on || /dinosaur/.test(none.q)) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
-          // the words as if approved: the card shows, its button opens the picker
+          // the words approved (put back): the card shows, its button opens the picker
           await pg.evaluate(W => { Object.assign(PERSW, W); S.ints = []; grown(); }, W);
           await pg.waitForSelector('#pers-open', { timeout: 10000 });
           const c0 = await pg.evaluate(() => document.querySelector('#pers-now').textContent);
@@ -13965,7 +13980,7 @@ async function main() {
         await pa.ctx.close();
       }
       if (bad.length) fail('PERS-01 story themes:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('PERS-01: story themes at ' + notes.join(' and ') + ': with nothing reviewed no card and the default story; approved (simulated), the Grown-ups card ' +
+      else step('PERS-01: story themes at ' + notes.join(' and ') + ': the page\'s words are the reviewed drafts\', no interest picked is the default story byte for byte; with nothing reviewed no card and the default story; approved, the Grown-ups card ' +
         'opens the picker, Dinosaurs picked by touch is saved and shown in a sample, a fourth pick is refused, the card names the pick; a story round asks a themed ' +
         'problem with the default answer and label, said as shown, with its picture; the right answer scores; no sideways scroll, no console errors, no network requests');
     }

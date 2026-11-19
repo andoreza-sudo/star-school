@@ -1,6 +1,6 @@
 # Interest themes read-through: story problems about what the child likes (PERS-01)
 
-8 interests (8 unreviewed). In Grown-ups, "Story themes" lets you
+8 interests (8 reviewed). In Grown-ups, "Story themes" lets you
 (or your child) pick up to 3. Story problems then use that interest's things and sentences.
 The math is the same: the same numbers, the same answer, the same hint and scoring.
 
@@ -17,7 +17,7 @@ To change a word: edit the JSON in docs/drafts/pers/<id>.md. When you are happy,
 Not themed (yet): story problems from grade 3 up (levels 7 to 9: remainders, money, ratios),
 reading stories, and the questions of lessons.
 
-## Animals (animals)
+## Animals (animals) (reviewed)
 
 ```text
 Things: toy horses, toy cows, toy pigs, toy sheep, toy ducks, toy rabbits
@@ -59,7 +59,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 toy pigs. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many toy pigs does each friend get? (answer 7)
 ```
 
-## Cooking (cooking)
+## Cooking (cooking) (reviewed)
 
 ```text
 Things: cookies, cupcakes, bread rolls, mini pizzas, pies
@@ -101,7 +101,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 bread rolls. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many bread rolls does each friend get? (answer 7)
 ```
 
-## Dinosaurs (dinosaurs)
+## Dinosaurs (dinosaurs) (reviewed)
 
 ```text
 Things: toy dinosaurs, dinosaur stickers, dinosaur eggs, dinosaur bones, dinosaur books
@@ -141,7 +141,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 dinosaur eggs. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many dinosaur eggs does each friend get? (answer 7)
 ```
 
-## Music (music)
+## Music (music) (reviewed)
 
 ```text
 Things: toy drums, bells, toy guitars, toy trumpets, toy microphones
@@ -183,7 +183,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 toy guitars. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many toy guitars does each friend get? (answer 7)
 ```
 
-## Ocean (ocean)
+## Ocean (ocean) (reviewed)
 
 ```text
 Things: seashells, toy crabs, toy fish, toy turtles, toy whales, toy octopuses
@@ -225,7 +225,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 toy fish. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many toy fish does each friend get? (answer 7)
 ```
 
-## Space (space)
+## Space (space) (reviewed)
 
 ```text
 Things: toy rockets, star stickers, moon stickers, toy robots, toy spaceships
@@ -267,7 +267,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 moon stickers. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many moon stickers does each friend get? (answer 7)
 ```
 
-## Sports (sports)
+## Sports (sports) (reviewed)
 
 ```text
 Things: soccer balls, basketballs, tennis balls, trophies, team flags, team caps
@@ -309,7 +309,7 @@ Bigger story problems, grades 2 and 3 (the usual sentences, with these things):
 - level 6: Mia has 31 tennis balls. Ava gives Mia 32 more. Then Mia shares them equally among 9 friends. How many tennis balls does each friend get? (answer 7)
 ```
 
-## Vehicles (vehicles)
+## Vehicles (vehicles) (reviewed)
 
 ```text
 Things: toy cars, toy trucks, toy buses, toy trains, toy boats, toy planes

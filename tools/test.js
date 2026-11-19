@@ -20267,6 +20267,9 @@ run('author: checks, drafts, the review gate TEACH-2',()=>{
 // tools/author.js, tools/build.py). The code of each lesson is written; its words are a draft the owner reads. These checks never rely on
 // an unreviewed draft being live: they turn drafts on in their own Node context only (lsEnable), with the words from docs/drafts. ----
 const draftWords=()=>{const A=require('./author.js'),o={};for(const x of A.drafts())if(x.d)o[x.d.id]={idea:x.d.idea,beats:x.d.beats,reasons:x.d.reasons,home:x.d.home,status:x.d.status,file:path.relative(ROOT,x.file),problems:x.problems};return o};
+// owner approved 2026-11-19 (HINT-01, batch 3b, batch 5r, PERS-01): a reviewed draft's status line names who reviewed it and the date
+// ("status: reviewed owner 2026-11-19"); tools/build.py reads only its first word, so this is checked here
+const REV_LINE=/^status: reviewed (?!\d{4}-\d\d-\d\d\b)\S+.*? \d{4}-\d\d-\d\d\b/m,revNamed=f=>REV_LINE.test(fs.readFileSync(path.resolve(ROOT,f),'utf8'));
 run('teach: drafted lessons, their words, the review gate TEACH-2b',()=>{
   const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process'),DW=draftWords(),R=teachApp(),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   // 0. the part: teach12 (the grade 1-2 lessons) is lazy, after teach, loaded with it by the math map; teach stays under 150 KB
@@ -20618,13 +20621,25 @@ run('teach: batch 3b lessons, their models, their read-through, migration 7 TEAC
   if(Buffer.byteLength(rd('index.html'))>=1000000)p.push('index.html is 1,000,000 bytes or more');
   // 1. the lessons: these 19 stops, live, in LS_B35 and LS_STOPS, map order, real stops of grades 3-5; drafts that pass every check
   const g=R(`(()=>{const o={};for(const id of ${JSON.stringify(B3B_IDS)}){const i=NODES.math.findIndex(n=>nid(n)===id),D=LS_DRAFTED[id];
-    o[id]={i,g:i<0?null:PATHS.math.worlds[NODES.math[i].wi].g,live:!!LESSONS[id],b35:LS_B35.includes(id),stop:LS_STOPS.math.has(id),b3b:!!(D&&D.b3b),test:D&&D.test,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.math[i].t}}return o})()`);
+    o[id]={i,g:i<0?null:PATHS.math.worlds[NODES.math[i].wi].g,live:!!LESSONS[id],b35:LS_B35.includes(id),stop:LS_STOPS.math.has(id),b3b:!!(D&&D.b3b),test:D&&D.test,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.math[i].t,
+      words:!!(LESSONS[id]&&!LESSONS[id].fb),lsw:!!LSW3[id]}}return o})()`);
   for(const id of B3B_IDS){const x=g[id];if(x.i<0){p.push(id+': no such stop');continue}
     if(!x.live||!x.b35||!x.stop||!x.b3b)p.push(id+': not a live batch 3b lesson with a lesson stop '+JSON.stringify(x));if(x.g<3||x.g>5)p.push(id+': grade '+x.g);if(x.t!==x.nt)p.push(id+': not named as its stop');
-    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));if(d.status!=='unreviewed')p.push(id+': draft '+d.status+' (only the owner approves)')}}
+    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      // owner approved 2026-11-19: a draft is unreviewed or reviewed (by a named reviewer, with the date); its words are live exactly when reviewed
+      if(d.status!=='unreviewed'&&d.status!=='reviewed')p.push(id+': draft '+d.status);
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date');
+      if(x.words!==(d.status==='reviewed')||x.lsw!==(d.status==='reviewed'))p.push(id+': its words live '+x.words+' (LSW3 '+x.lsw+') but its draft is '+d.status)}}
   if(R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b).sort().join()')!==B3B_IDS.concat(B3B_RD).sort().join())p.push('the batch 3b lessons are not these 21');
+  // the gate in the app (owner approved 2026-11-19, so the live drafts are reviewed): on a fresh app, the same lesson made again with its
+  // words taken out of LSW3, as an unreviewed draft is, runs on the hand-written fallback words; with them back, on its reviewed words
+  {const R2=teachApp(),gt=R2(`(()=>{const o={};for(const id of ['story5','ang1','story8']){const D=LS_DRAFTED[id],w=LSW3[id];if(!w){o[id]='no reviewed words';continue}
+    delete LSW3[id];lsDraft3(id,D);const off=!!(LESSONS[id]&&LESSONS[id].fb);LSW3[id]=w;lsDraft3(id,D);const on=!!(LESSONS[id]&&!LESSONS[id].fb&&LESSONS[id].w===w);o[id]=off&&on?'':'unreviewed fallback '+off+', reviewed words '+on}return o})()`);
+    for(const id in gt)if(gt[id]&&DW[id]&&DW[id].status==='reviewed')p.push(id+' (batch 3b gate): '+gt[id])}
   {const rd3=R(`${JSON.stringify(B3B_RD)}.map(id=>[!!LESSONS[id],LS_B4.includes(id),LS_STOPS.read.has(id),LESSONS[id]&&LESSONS[id].p])`);if(rd3.some(x=>!x[0]||!x[1]||!x[2]||x[3]!=='read'))p.push('the batch 3b reading lessons: '+JSON.stringify(rd3));
-    for(const id of B3B_RD){const d=DW[id];if(!d)p.push(id+': no draft');else if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '))}}
+    for(const id of B3B_RD){const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date'); // owner approved 2026-11-19
+      const on=R(`(id=>!!(LESSONS[id]&&!LESSONS[id].fb&&LSW4[id]))(${JSON.stringify(id)})`);if(on!==(d.status==='reviewed'))p.push(id+': its words live '+on+' but its draft is '+d.status)}}}
   // 2. the models: steps in range, the value, the right state, the pet's build (of / fits), the goals, drawings with no hole
   const m=R(`(()=>{const bad=[],eq=(a,b,w)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(w+': '+JSON.stringify(a)+' (want '+JSON.stringify(b)+')')};
     const G={model:'graph',m:{names:['A','B','C','D'],vals:[10,20,30,40],sc:10,top:7,ed:[1],target:20}};eq(K2MM.graph.step(G,[7],0,1),null,'graph: above the top');eq(K2MM.graph.val(G,[2]),20,'graph value');
@@ -20655,9 +20670,11 @@ run('teach: batch 3b lessons, their models, their read-through, migration 7 TEAC
   if(rt.split('\n').some(l=>l.length>140))p.push('the batch 3b read-through has lines too long for a phone');
   const at=rt.indexOf('(story5)'),at2=rt.indexOf('(story8)');if(un.includes('story5')&&un.includes('story8')&&!(at>=0&&at<at2))p.push('the batch 3b read-through is not in map order');
   const bf=path.join(ROOT,'docs/drafts/BATCH3B-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH3B-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH3B-READ.md is not what node tools/author.js --read <file> --batch 3b gives now');
+  // owner approved 2026-11-19: with nothing waiting the tool says so (BATCH3B-READ.md stays as the record of what was approved, as batches 2, 3 and 4)
+  if(!un.length&&!/Nothing is waiting/.test(rt))p.push('nothing in batch 3b waits, but the read-through does not say so');
   for(const b of [2,3,4]){const t=A.readThrough([],{batch:b});for(const id of B3B_IDS)if(t.includes('('+id+')'))p.push('the batch '+b+' read-through has the batch 3b lesson '+id)}
   for(const id of ['story5','coord1'])if(A.batchOf(id)!=='3b')p.push(id+' is not in batch 3b (author --approve --batch)');if(A.batchOf('mbig2')!=='3'||A.batchOf('sound1')!=='4')p.push('batchOf of batch 3 and 4');
-  if(!/approve all --batch 3b/.test(rt))p.push('the read-through does not say how to approve this batch only');
+  if(!/approve all --batch 3b/.test(un.length||!fs.existsSync(bf)?rt:fs.readFileSync(bf,'utf8')))p.push('the read-through does not say how to approve this batch only');
   // 4. migration 7 (save v7 -> v8): a save that reached batch 3b stops keeps them open; idempotent; a new save keeps none
   const mg=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id);
     loadSave(null);S.grade=3;const i=at('story5'),j=at('data3'),k=at('ang1');for(let n=0;n<i;n++)setSt('math',n,2);for(let n=at('frac2');n<j;n++)setSt('math',n,2);setSt('math',k+1,2); // story5 and data3: the stop before passed; ang1: a later stop of its world passed
@@ -20749,14 +20766,25 @@ run('teach: batch 5r reading shapes, their models, the story told, their read-th
   for(const f of ['52q-bench5r.js','52r-lessons5r.js','52q-teach5r.css'])if(partOf(f)!=='teachrd')p.push(f+' is not in the teachrd part');
   if(/ls5Sight|K2MM\.sfix|LS5_RHY/.test(rd('index.html')))p.push('batch 5r lesson code is in index.html');
   if(Buffer.byteLength(rd('index.html'))>=1000000)p.push('index.html is 1,000,000 bytes or more');
-  // 1. the lessons: these 19 stops, live, in LS_B4 and LS_STOPS, real K-2 reading stops with their names, their shape; drafts that pass, unreviewed
+  // 1. the lessons: these 19 stops, live, in LS_B4 and LS_STOPS, real K-2 reading stops with their names, their shape; drafts that pass,
+  //    unreviewed or reviewed (the owner approved batch 5r on 2026-11-19), their words live exactly when reviewed
   const g=R(`(()=>{const o={};for(const id of ${JSON.stringify(B5R_IDS)}){const i=NODES.read.findIndex(n=>nid(n)===id),D=LS_DRAFTED[id];
-    o[id]={i,g:i<0?null:PATHS.read.worlds[NODES.read[i].wi].g,live:!!LESSONS[id],b4:LS_B4.includes(id),stop:LS_STOPS.read.has(id),b5r:!!(D&&D.b5r),fam:D&&D.fam,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.read[i].t,p:LESSONS[id]&&LESSONS[id].p}}return o})()`);
+    o[id]={i,g:i<0?null:PATHS.read.worlds[NODES.read[i].wi].g,live:!!LESSONS[id],b4:LS_B4.includes(id),stop:LS_STOPS.read.has(id),b5r:!!(D&&D.b5r),fam:D&&D.fam,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.read[i].t,p:LESSONS[id]&&LESSONS[id].p,
+      words:!!(LESSONS[id]&&!LESSONS[id].fb),lsw:!!LSW4[id]}}return o})()`);
   for(const id of B5R_IDS){const x=g[id];if(x.i<0){p.push(id+': no such stop');continue}
     if(!x.live||!x.b4||!x.stop||!x.b5r||x.p!=='read')p.push(id+': not a live batch 5r reading lesson with a lesson stop '+JSON.stringify(x));if(x.g<0||x.g>2)p.push(id+': grade '+x.g);
     if(x.t!==x.nt)p.push(id+': not named as its stop');if(x.fam!==B5R_FAM[id])p.push(id+': shape '+x.fam+' (want '+B5R_FAM[id]+')');
-    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));if(d.status!=='unreviewed')p.push(id+': draft '+d.status+' (only the owner approves)')}}
+    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      // owner approved 2026-11-19: a draft is unreviewed or reviewed (by a named reviewer, with the date); its words are live exactly when reviewed
+      if(d.status!=='unreviewed'&&d.status!=='reviewed')p.push(id+': draft '+d.status);
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date');
+      if(x.words!==(d.status==='reviewed')||x.lsw!==(d.status==='reviewed'))p.push(id+': its words live '+x.words+' (LSW4 '+x.lsw+') but its draft is '+d.status)}}
   if(R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b5r).sort().join()')!==B5R_IDS.slice().sort().join())p.push('the batch 5r lessons are not these 19');
+  // the gate in the app (owner approved 2026-11-19, so the live drafts are reviewed): on a fresh app, the same lesson made again with its
+  // words taken out of LSW4, as an unreviewed draft is, runs on the hand-written fallback words; with them back, on its reviewed words
+  {const R2=teachApp(),gt=R2(`(()=>{const o={};for(const id of ['sight1','comp1','gram3']){const D=LS_DRAFTED[id],w=LSW4[id];if(!w){o[id]='no reviewed words';continue}
+    delete LSW4[id];lsDraft4(id,D);const off=!!(LESSONS[id]&&LESSONS[id].fb);LSW4[id]=w;lsDraft4(id,D);const on=!!(LESSONS[id]&&!LESSONS[id].fb&&LESSONS[id].w===w);o[id]=off&&on?'':'unreviewed fallback '+off+', reviewed words '+on}return o})()`);
+    for(const id in gt)if(gt[id]&&DW[id]&&DW[id].status==='reviewed')p.push(id+' (batch 5r gate): '+gt[id])}
   // not built: Bossy R (no drawn r-vowel partner pictures) and the tracing stops (their own screen)
   if(R(`['pic5','build5','trace1','trace2','trace3'].filter(id=>LESSONS[id]||LS_STOPS.read.has(id)).join()`))p.push('Bossy R or a tracing stop has a lesson');
   // 2. the models: steps, values, the right state, the pet's build as a picture, their own first-miss line; every control a named button
@@ -20789,9 +20817,11 @@ run('teach: batch 5r reading shapes, their models, the story told, their read-th
   if(rt.split('\n').some(l=>l.length>140))p.push('the batch 5r read-through has lines too long for a phone');
   const at=rt.indexOf('(sight1)'),at2=rt.indexOf('(gram3)');if(un.includes('sight1')&&un.includes('gram3')&&!(at>=0&&at<at2))p.push('the batch 5r read-through is not in map order');
   const bf=path.join(ROOT,'docs/drafts/BATCH5R-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH5R-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH5R-READ.md is not what node tools/author.js --read <file> --batch 5r gives now');
+  // owner approved 2026-11-19: with nothing waiting the tool says so (BATCH5R-READ.md stays as the record of what was approved, as batches 2, 3 and 4)
+  if(!un.length&&!/Nothing is waiting/.test(rt))p.push('nothing in batch 5r waits, but the read-through does not say so');
   for(const b of [2,3,4,'3b']){const t=A.readThrough([],{batch:b});for(const id of B5R_IDS)if(t.includes('('+id+')'))p.push('the batch '+b+' read-through has the batch 5r lesson '+id)}
   if(A.batchOf('sight1')!=='5r'||A.batchOf('gram3')!=='5r'||A.batchOf('sound1')!=='4'||A.batchOf('pic6')!=='3b')p.push('batchOf: batch 5r, 4 and 3b');
-  if(!/approve all --batch 5r/.test(rt))p.push('the read-through does not say how to approve this batch only');
+  if(!/approve all --batch 5r/.test(un.length||!fs.existsSync(bf)?rt:fs.readFileSync(bf,'utf8')))p.push('the read-through does not say how to approve this batch only');
   // 4. migration 8 (save v8 -> v9): a save that reached batch 5r stops keeps them open; idempotent; a new save keeps none
   const mg=R(`(()=>{const bad=[],at=id=>NODES.read.findIndex(n=>nid(n)===id);
     loadSave(null);S.grade=1;const i=at('sight2'),j=at('vocab1'),k=at('spell3');for(let n=0;n<i;n++)setSt('read',n,2);for(let n=at('sight3');n<j;n++)setSt('read',n,2);setSt('read',k+1,2); // sight2, vocab1: the stop before passed; spell3: a later stop of its world passed
@@ -21765,8 +21795,12 @@ run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
   const codes=R('Object.keys(HM)'),hd=A.checkHints(),have=hd.filter(x=>x.d).map(x=>x.d.code);
   for(const c of codes)if(!have.includes(c))p.push(c+': no draft in docs/drafts/hints');
   for(const x of hd){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.code+': '+x.problems.slice(0,3).join('; '))}
-  const rev=hd.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.code).sort(),live=R('Object.keys(HINTW).sort()');
+  // owner approved 2026-11-19: HINTW is read from a fresh app (part 3 above empties HINTW in its own app to test the gate); a draft is
+  // unreviewed or reviewed, and a reviewed one names its reviewer and the date; the live lines are exactly the reviewed drafts' lines
+  const rev=hd.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.code).sort(),HW=hintApp()('JSON.stringify(HINTW)'),hwo=JSON.parse(HW),live=Object.keys(hwo).sort();
   if(JSON.stringify(rev)!==JSON.stringify(live))p.push('HINTW has '+JSON.stringify(live)+' but the reviewed drafts are '+JSON.stringify(rev));
+  for(const x of hd)if(x.d){if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(x.d.code+': status '+x.d.status);
+    if(x.d.status==='reviewed'){if(!revNamed(x.file))p.push(x.d.code+': reviewed, but its status line names no reviewer and date');if(hwo[x.d.code]!==x.d.line)p.push(x.d.code+': HINTW has '+JSON.stringify(hwo[x.d.code])+', the reviewed draft '+JSON.stringify(x.d.line))}}
   try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('src/js/39n-hintw.js (or a lesson words file) is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hints-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/hints'),{recursive:true});
   const lw="/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n";
@@ -21849,8 +21883,10 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
   bad(d=>d.st.join=['{who} has five {pl}. {other} gives {b} more. How many {pl}?'],/number word/,'a number word');
   bad(d=>d.things[0]=['toy foxs','toy fox','',''],/not the plural/,'a wrong plural');
   bad(d=>d.things[0]=['toy unicorns','toy unicorn','','🦄'],/not allowed|emoji-allow/,'a banned thing');
-  // 3. the gate: 39q-persw.js has the reviewed interests only (none yet); the words check holds; the gate on a copy
+  // 3. the gate: 39q-persw.js has the reviewed interests only (all 8 since the owner approved them on 2026-11-19); a reviewed draft names its
+  //    reviewer and the date; the words check holds; the gate on a copy
   const rev=ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.id).sort();
+  for(const x of ds)if(x.d){if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(x.d.id+': status '+x.d.status);if(x.d.status==='reviewed'&&!revNamed(x.file))p.push(x.d.id+': reviewed, but its status line names no reviewer and date')}
   const live=Object.keys(Function(rd('src/js/39q-persw.js')+';return PERSW')()).sort();
   if(JSON.stringify(rev)!==JSON.stringify(live))p.push('39q-persw.js has '+JSON.stringify(live)+' but the reviewed interests are '+JSON.stringify(rev));
   try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
@@ -21867,7 +21903,7 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
   fs.writeFileSync(path.join(tmp,'docs/drafts/pers/zz.md'),'# Interest: Zz\n\nstatus: reviewed Test Owner 2026-11-19\n'+dj);if(chk()!==1)p.push('the words check passes a reviewed interest left out');
   fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(line));if(chk()!==0)p.push('the words check refuses a reviewed interest');
   fs.rmSync(tmp,{recursive:true,force:true});
-  // 4. in the app: nothing reviewed = the default question word for word, even with interests picked; every sentence's slots fill
+  // 4. in the app: nothing reviewed (PERSW emptied, as for an unreviewed interest) = the default question word for word, even with interests picked; every sentence's slots fill
   // (with the numbers 1 too: "1 toy horse"); "a" and "an"; the save: a new and an old save get S.ints = [], no migration added
   const R=hintApp();
   p.push(...R(`(()=>{const bad=[];for(const k in PERSW)delete PERSW[k];S.buddy='Ben';
@@ -21881,6 +21917,21 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
     loadSave(JSON.stringify({name:'Old',v:9,ints:['space'],maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='["space"]')bad.push('a save loses its interests');
     if(LATEST!==9)bad.push('LATEST is '+LATEST+' (PERS-01 adds no migration)');
     return bad})()`));
+  // the app as built (owner approved 2026-11-19): PERSW holds the reviewed interests' words exactly; with no interest picked a story is the
+  // default question byte for byte (the same as with nothing reviewed); with a reviewed interest picked, levels 1-6 tell its things
+  const R3=hintApp(),RW=JSON.parse(R3('JSON.stringify(PERSW)'));
+  for(const x of ds.filter(y=>y.d&&y.d.status==='reviewed'))if(JSON.stringify(RW[x.d.id])!==JSON.stringify({name:x.d.name,pic:x.d.pic,things:x.d.things,st:x.d.st}))p.push(x.d.id+': PERSW is not its reviewed draft\'s words');
+  p.push(...R3(`(()=>{const bad=[],rev=${JSON.stringify(rev)},W=JSON.stringify(PERSW);S.buddy='Ben';S.ints=[];const a={};
+    for(let lv=1;lv<=SK.story.max;lv++)for(let s=1;s<=40;s++){const q=genQ('story',lv,s);a[lv+' '+s]=[q.html,q.say]}
+    for(const k in PERSW)delete PERSW[k];
+    for(let lv=1;lv<=SK.story.max;lv++)for(let s=1;s<=40;s++){const q=genQ('story',lv,s),b=a[lv+' '+s];if(b[0]!==q.html||b[1]!==q.say)bad.push('with no interests picked, story'+lv+' seed '+s+' is not the default question byte for byte')}
+    Object.assign(PERSW,JSON.parse(W));
+    if(persOn().length)bad.push('persOn() is not empty with no interests picked');
+    for(const id of rev){S.ints=[id];if(persOn().join()!==id)bad.push(id+': reviewed and picked, but not on');let n=0,th=0;
+      for(let lv=1;lv<=6;lv++)for(let s=1;s<=20;s++){const q=genQ('story',lv,s);n++;if(PERSW[id].things.some(t=>q.say.includes(t[0])||q.say.includes(t[1])))th++}
+      if(th!==n)bad.push(id+': picked, '+(n-th)+' of '+n+' story questions do not tell its things')}
+    S.ints=['not-an-interest'];if(persOn().length)bad.push('an interest with no reviewed words is on');S.ints=[];
+    return bad.slice(0,20)})()`));
   const {R:R2}=persApp();
   for(const x of ds.filter(y=>y.d))for(const k in A.PERS_KINDS)[].concat(x.d.st[k]||[]).forEach((t,i)=>{
     const K=A.PERS_KINDS[k];

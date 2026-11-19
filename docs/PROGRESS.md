@@ -521,6 +521,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 ## Log
 
 ### OWNER-APPROVALS (2026-11-19): the owner approved HINT-01 (117 hints), batch 3b (21 lessons), batch 5r (19 reading lessons) and PERS-01 (8 story themes); TEACH-UX's three remGo lines and two-colour ten frames; 13 teacher lines recorded with the owner's go-ahead.
+- Tests after the approvals (2026-11-19, Claude): the four test.js checks that asserted "unreviewed" (TEACH-3B, READ-SHAPES, PERS-01 gate, HINT-01 gate) now check as batches 2-4 do: unreviewed or reviewed, a reviewed status line names reviewer and date, live words = exactly the reviewed drafts, the gate tested on an emptied copy in the app (and the temp tree, as before); HINTS-READ.md and PERS-READ.md rewritten by the tool (now "(reviewed)"); smoke HINT-01/PERS-01 also check the page's words are the reviewed drafts'. No hash, threshold, KNOWN list or fixture changed.
 
 ### PERS-01 Story problems about the child's interests (v185, 2026-11-19, Claude)
 - **What** (ROADMAP 10d; owner rules: no AI on the tablet, every sentence written at authoring time and approved): a grown-up picks up to 3 interests per child in Grown-ups > Story themes (the picker screen is written for the child too: big pictures, each name said on tap, a sample sentence). Story problems then use that interest's things and, for the K-2 kinds, its own sentences. Same generator, same rnd() calls, numbers, answer, label, hint and scoring: only nouns and wording change.
