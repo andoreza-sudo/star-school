@@ -257,6 +257,21 @@ const SCREENS = {
     },
   },
   grown: { adult: true, run: ev(() => grown()) },
+  // PLAY-01: the Play app's free sample: a locked world on the map with the grown-ups' button, and the child's line when a locked stop
+  // is tapped (sheet); the Unlock Star School sheet (behind the grown-up question) and its card in Grown-ups, with the price from Google Play
+  'play-map': {
+    run: ev(() => { playMock(); S.grade = 0; pathMap('math', PATHS.math.worlds.findIndex(w => w.id == 'm_meadow')); document.querySelector('.plgu').scrollIntoView({ block: 'center' }); }),
+    sheet: async p => { await p.evaluate(() => PLAY.kid('world', 'math')); await p.waitForTimeout(500); return { close: 'escape' }; },
+  },
+  'play-unlock': {
+    adult: true,
+    run: async p => { await p.evaluate(() => { playMock(); grown(); }); await p.waitForTimeout(400); },
+    sheet: async p => { await p.evaluate(() => PLAY.sheet()); await p.waitForFunction(() => !document.querySelector('#plbuy').disabled); await p.waitForTimeout(400); return { close: 'escape' }; },
+  },
+  'grown-play': {
+    adult: true,
+    run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForTimeout(300); },
+  },
   // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
   'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
   'grown-children': {
@@ -459,6 +474,12 @@ function pageInit() {
   A.now = () => performance.now();
   // helpers the screens' run functions call in the page
   window.gtime = () => { S.pt = { bank: 1200, day: today(), used: 0 }; };
+  // PLAY-01: the Play app's free sample with a mocked Google Play billing (the price comes from getDetails)
+  window.playMock = () => {
+    const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [] };
+    window.getDigitalGoodsService = async () => svc;
+    PLAY.st = { v: 1, on: 1, own: 0 }; PLAY.write(); PLAY.read(); PLAY.priceT = '';
+  };
   window.rlSave = () => { gtime(); const r = rlS(); r.spk = 130; r.stars = { 'meadow-0': 3 }; save(); };
   window.snSave = () => { gtime(); S.grade = 3; const r = snS(); r.coins = 80; r.days = 2; save(); };
   A.mark = k => { A.marks[k] = A.now(); };
@@ -806,6 +827,9 @@ async function sheetCheck(p, how) {
     window.__sheet = s;
     const sel = 'button:not([disabled]),a[href],input:not([type=hidden]):not([disabled]),select,textarea,summary,[tabindex]:not([tabindex="-1"])';
     const ctl = [...s.querySelectorAll(sel)].filter(e => e.getClientRects().length);
+    // each control gets its own number, so two different controls that read the same (the Blocks Builder's next goals can list
+    // a big project that is also in "Big projects") are not counted as one
+    ctl.forEach((e, i) => { e.dataset.a11yN = i; });
     return { n: ctl.length, inside: s.contains(document.activeElement) };
   });
   if (!info) { f('no sheet opened'); return fails; }
@@ -815,7 +839,7 @@ async function sheetCheck(p, how) {
     await p.keyboard.press('Tab');
     const r = await p.evaluate(() => {
       const a = document.activeElement;
-      return { inside: window.__sheet.contains(a), d: a === document.body ? 'body' : a.tagName + (a.id ? '#' + a.id : '') + '|' + (a.textContent || '').trim().slice(0, 20) + '|' + [...a.parentNode.children].indexOf(a) };
+      return { inside: window.__sheet.contains(a), d: a === document.body ? 'body' : (a.dataset && a.dataset.a11yN != null ? '#' + a.dataset.a11yN + ' ' : '') + a.tagName + (a.id ? '#' + a.id : '') + '|' + (a.textContent || '').trim().slice(0, 20) + '|' + [...a.parentNode.children].indexOf(a) };
     });
     if (!r.inside) { f('Tab left the open sheet (to ' + r.d + ')'); break; }
     visited.add(r.d);

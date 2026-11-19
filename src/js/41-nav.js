@@ -154,16 +154,17 @@ const NAV = {
       NAV.quiz();
     };
   },
-  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in
-  quiz() {
-    const a = R(6, 9), b = R(6, 9);
-    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>Hold the Grown-ups button for 3 seconds, or answer:</p>` +
+  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in. then: what a right answer opens
+  // (default Grown-ups; PLAY-01: the Unlock Star School sheet, which is only ever reached through this question)
+  quiz(then) {
+    const a = R(6, 9), b = R(6, 9), go2 = typeof then == 'function' ? then : grown;
+    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>${then ? 'This part is for grown-ups. Answer to go on:' : 'Hold the Grown-ups button for 3 seconds, or answer:'}</p>` +
       `<label class="nv-q"><span>${a} × ${b} =</span><input id="gwans" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="${a} times ${b}"></label>` +
       `<p class="nv-msg" id="gwmsg" role="status"></p><div class="acts">${UI.btn('Open', { kind: 'primary', size: 'lg', wide: true, icon: 'check', id: 'gwok' })}` +
       `${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'gwno' })}</div></div>`);
     const inp = s.el.querySelector('#gwans');
     const go = () => {
-      if (inp.value.trim() === String(a * b)) { s.close(); grown(); return; }
+      if (inp.value.trim() === String(a * b)) { s.close(); go2(); return; }
       SFX.wrong();
       s.el.querySelector('#gwmsg').textContent = 'Not quite. Ask a grown-up!';
       inp.value = '';

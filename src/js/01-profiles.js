@@ -142,6 +142,7 @@ const PRF = {
   // Play as child id. Returns '' (the app starts again for them, or Home for the same child) or a message; then nothing changed.
   go(id) {
     if (!PRF.ids.includes(id)) return 'That child is not on this tablet.';
+    if (PLAY.kidLocked(id)) return PLAY.LINE.kid; // PLAY-01: one child in the free sample (89-play.js)
     if (id === PRF.cur) {
       PRF.setWho(id);
       home(true);
@@ -160,6 +161,7 @@ const PRF = {
   // Returns {id} or {msg}; with a message nothing was changed.
   add(data, playNow) {
     if (PRF.ids.length >= PRF.MAX) return { msg: 'There are already 4 children on this tablet. Delete one to make room.' };
+    if (PLAY.locked()) return { msg: PLAY.LINE.add }; // PLAY-01: more children come with the unlock (Grown-ups, Unlock Star School)
     save();
     if (SAVE_FAILED || !PRF.has(PRF.cur)) return { msg: PRF.FULL };
     const id = PRF.SLOTS.find(s => !PRF.ids.includes(s)), k = PRF.key(id);

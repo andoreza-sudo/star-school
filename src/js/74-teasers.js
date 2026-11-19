@@ -417,7 +417,7 @@ const BT = {
     else {
       const cards = L.map(t => {
         const b = BT.band(), n = BT.starsOf(t.id), lv = BT.nowLevel(t, b);
-        return GFX.card({ cls: 'bt-type', attrs: `data-t="${t.id}"`, p: 'bt', icon: BT.icon(t), title: t.name,
+        return GFX.card({ cls: 'bt-type', attrs: `data-t="${t.id}"`, p: 'bt', icon: BT.icon(t), title: t.name, go: PLAY.locked() ? 'lock' : undefined, // PLAY-01: only the Puzzle of the Day in the free sample
           sub: `<span class="gx-ln">${ico('star', 18)}<b>${n}</b><span>${n == 1 ? 'star' : 'stars'}</span>${UI.tag('Level ' + lv, '', '')}</span>` });
       }).join('');
       const keep = ct ? GFX.card({ id: 'btkeep', cls: 'bt-keep', p: 'bt', icon: BT.icon(ct), title: 'Keep going!',
@@ -430,13 +430,14 @@ const BT = {
       const bdg = GFX.card({ id: 'btbdg', cls: 'bt-bdgc', p: 'bt', icon: 'medal', title: 'My badges', go: 'go',
         sub: `<span class="gx-ln">${got.length ? `<span class="bt-mini">${last.map(x => BT.medal(x, 30)).join('')}</span><span>${got.length} ${got.length == 1 ? 'badge' : 'badges'}</span>`
           : '<span>Solve puzzles to win badges!</span>'}</span>` });
-      body = `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>`;
+      body = `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>${PLAY.locked() ? PLAY.rowHTML() : ''}`;
     }
     view(`<div class="top tbar gx-mtop s-bt">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('puzzle', 24)}</span>` +
       `<span>Brain Teasers</span></div>${UI.chip('star', BT.totalStars(), { aria: 'Puzzle stars' })}</div><div class="scroll gx-list bt-hub">${body}</div>`);
     NAV.bar('puzzles');
     $('#back').onclick = () => home();
-    $$('[data-t]').forEach(b => b.onclick = () => { SFX.whoosh(); BT.levels(b.dataset.t); });
+    $$('[data-t]').forEach(b => b.onclick = () => { if (PLAY.locked()) return PLAY.kid('puzzle'); SFX.whoosh(); BT.levels(b.dataset.t); });
+    if ($('.plgu')) $('.plgu').onclick = () => PLAY.grown(() => BT.hub()); // PLAY-01
     if ($('#btkeep')) $('#btkeep').onclick = () => { SFX.whoosh(); BT.start(cur.id, cur.band, cur.level); };
     if ($('#btday')) $('#btday').onclick = () => { SFX.whoosh(); BT.start(dl.id, dl.band, dl.level); };
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
@@ -505,6 +506,7 @@ const BT = {
 
   // Level strip of a type in a band: 12 levels (one unlocks after the other), then Endless
   levels(id, band) {
+    if (PLAY.locked()) return PLAY.kid('puzzle'); // PLAY-01
     const d = BT.types[id];
     if (!d) return BT.hub();
     BT.stop();
@@ -540,6 +542,7 @@ const BT = {
   start(id, band, level) {
     const d = BT.types[id];
     if (!d) return BT.hub();
+    if (PLAY.btLocked(id, band, level)) return PLAY.kid('puzzle'); // PLAY-01: the free sample has the Puzzle of the Day only
     // P6-03: the puzzle code loads on demand. Not in yet: "Getting the puzzles ready..." (with Back), then this start again, only if
     // that screen still shows; a bt file that cannot be read or is of another release shows Try again (partsThen, 90-app.js).
     if (!BT.loaded(d)) {
