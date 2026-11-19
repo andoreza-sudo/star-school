@@ -688,7 +688,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","petage","hints"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -1211,7 +1211,7 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 9 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9
+      if (r0.v !== 10 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; TEACH-5S: migration 9 to 10
          r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
@@ -4801,6 +4801,7 @@ async function main() {
         if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/18/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
         await dp.click('.game[data-p="disc"]');
         await dp.waitForSelector('.node[data-n="0"]');
+        await lsLearnSel(dp, '.node[data-n="0"]'); // TEACH-5S: Living Things has a lesson now (LS-STOP's rule: a practice step marks a locked stop's lesson learned first)
         const map = await dp.evaluate(() => {
           const ns = [...document.querySelectorAll('.node')];
           return { n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
@@ -4832,6 +4833,7 @@ async function main() {
         await dp.waitForSelector('#navbar .nb-home[aria-current="page"]');
         await dp.evaluate(() => pathMap(MAPP));
         await dp.waitForSelector('#map');
+        await lsLearnSel(dp, '.node[data-n="1"]'); // TEACH-5S: Sky & Earth, the stop after it, has a lesson now (as above)
         const open2 = await dp.evaluate(() => [...document.querySelectorAll('.node')].map(n => n.classList.contains('lock')).join());
         if (open2.split(',').slice(0, 6).join() !== 'false,false,true,true,true,true') fail(`${tag}: map after the round: locks ${open2}`);
         await k2Old(dp, false);
@@ -8815,7 +8817,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 9 /* LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 10 /* TEACH-5S: 10 (migration 9); LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -10752,7 +10754,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'petage', 'hints'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too; TEACH-5S: teaches
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
@@ -10781,7 +10783,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false' || // ten lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage), less petage (Home's, filtered above): nine
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false,false' || // twelve lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; TEACH-5S: teaches; PET-AGE2: petage; hints), less petage and hints (filtered above): ten
             s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
@@ -10799,7 +10801,7 @@ async function main() {
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
-        if (s3.parts !== 'false,true,true,true,true,false,false,false,false' || // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's)
+        if (s3.parts !== 'false,true,true,true,true,false,false,false,false,false' || // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's; TEACH-5S: teaches, the Spanish and Discover maps')
             s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
@@ -13941,6 +13943,122 @@ async function main() {
         'every screen fits with 48 px named buttons and no hole in the words; no console errors, no network requests');
     }
     // end READ-SHAPES
+
+    // TEACH-5S lessons for Spanish (listen, sort, say with me, fix the pet's el or la) and Discover (predict, look, explain): 52s-bench5s.js,
+    // 52t-lessons5s.js, 52s-teach5s.css in the part teaches. At 380x780 and 600x960 on the midway save: the Spanish map of a Kindergartner has a
+    // lesson stop in front of Animals (Spanish lessons are for every grade), the Discover map one in front of Living Things; Animals (a Kindergartner),
+    // El or La? (a 5th grader: the teen-like pet's lines), Push, Pull & Stuff and Sky & Earth run through every beat by the real controls, the pet's
+    // mistake forced (LS.PET_OK 0). Spanish pieces are said in the Spanish voice (say(..., 'es')); "say it with me" ends Name it with "I said it!",
+    // and nothing asks for the microphone; a Discover answer is followed by what happens ("Look! ..."). Home's review tile is gone while every due item
+    // is at a learned lesson's stop, and back with lessons off. Every screen fits, 48 px named buttons, no hole; screenshots (TEACH5S_SHOTS).
+    if (seg('TEACH-5S')) {
+      const bad = [], notes = [], shots = process.env.TEACH5S_SHOTS || require('path').join(__dirname, 'out', 'teach5s');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const shot = (pg, n) => pg.screenshot({ path: require('path').join(shots, n + '.png') });
+      const wake6 = pg => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+      const act6 = async (pg, wrong) => {
+        await wake6(pg);
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, ans: q.ans, items: q.items && q.items.map(c => [c.v, c.b]), bins: q.bins && q.bins.map(b => b.v), choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'sort') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.schip[data-i="${i}"]`); await pg.click(`.sbt[data-b="${it.bins.indexOf(it.items[i][1])}"]`, { position: { x: 16, y: 12 } }); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const step6 = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await act6(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fit6 = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear, #prompt button')) { const r = b.getBoundingClientRect(); if (r.width && (b.offsetWidth < 47.5 || b.offsetHeight < 47.5)) o.push('small button ' + (b.getAttribute('aria-label') || b.id || b.className));
+          if (r.width && (r.right > vw + 1 || r.left < -1)) o.push('button off screen ' + (b.getAttribute('aria-label') || b.className)); }
+        for (const b of document.querySelectorAll('#lsplay button')) if (!(b.getAttribute('aria-label') || b.textContent.trim())) o.push('a button with no name ' + b.className);
+        if (/undefined|NaN|\{[a-z]+\}|«|»/.test(document.querySelector('#lsplay').textContent)) o.push('a hole or a mark in the words: ' + document.querySelector('#lsbub').textContent);
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-5S ' + w + 'x' + h + ' ';
+        try {
+          // nothing may ask for the microphone or listen; every say() is logged with its language
+          await pg.evaluate(() => { window.__mic = 0; window.__said = []; const o = say;
+            try { if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => { window.__mic++; return Promise.reject(new Error('no')); }; } catch (e) {}
+            window.SpeechRecognition = window.webkitSpeechRecognition = function () { window.__mic++; };
+            window.say = function (t, b, lang, q, slow) { window.__said.push([String(t), lang || '']); return o.apply(this, arguments); }; });
+          // 1. the maps: a lesson stop in front of Animals (Spanish, a Kindergartner) and of Living Things (Discover)
+          for (const [p, id] of [['es', 'es_animal1'], ['disc', 'sci_life1']]) {
+            await pg.evaluate(([p, id]) => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES[p].findIndex(n => nid(n) === id);
+              for (let j = 0; j < NODES[p].length; j++) setSt(p, j, j < i ? 2 : 0); save(); pathMap(p, NODES[p][i].wi); }, [p, id]);
+            await pg.waitForFunction(() => partReady('teaches') && typeof ls6Spanish == 'function', null, { timeout: 15000 });
+            await pg.waitForTimeout(300);
+            const st0 = await pg.evaluate(([p, id]) => { const i = NODES[p].findIndex(n => nid(n) === id), b = document.querySelector(`.lsn[data-ls="${i}"]`);
+              return { stop: lsStopAt(p, i), gate: lsGate(p, i), node: !!b, w: b && b.offsetWidth, css: !!document.querySelector('#css-teaches') }; }, [p, id]);
+            if (!st0.stop || !st0.gate || !st0.node || !(st0.w >= 47.5) || !st0.css) bad.push(at + id + ' has no lesson stop on its map: ' + JSON.stringify(st0));
+            await pg.evaluate(([p, id]) => { const b = document.querySelector(`.lsn[data-ls="${NODES[p].findIndex(n => nid(n) === id)}"]`); if (b) b.scrollIntoView({ block: 'center' }); }, [p, id]);
+            await shot(pg, `teach5s-map-${p}-${w}x${h}`);
+          }
+          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
+          // 2. four lessons through every beat
+          for (const [id, gr] of [['es_animal1', 0], ['es_art1', 5], ['sci_phys1', 0], ['sci_earth1', 1]]) {
+            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; window.__said = []; const p = id.startsWith('es_') ? 'es' : 'disc', i = NODES[p].findIndex(n => nid(n) === id);
+              for (let j = 0; j <= i; j++) setSt(p, j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
+            await pg.waitForSelector('#lsplay', { timeout: 5000 });
+            const path = [], seen = [];
+            let pet = null, fixed = false, sayW = null, look = 0;
+            for (let n = 0; n < 50; n++) {
+              const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m + ':' + (LS.cur(LS.st).q && LS.cur(LS.st).q.kind) + (LS.cur(LS.st).fix ? ':fix' : LS.cur(LS.st).with ? ':with' : '') : null);
+              if (!b) break;
+              await wake6(pg);
+              if (!seen.includes(b)) { seen.push(b); await fit6(pg, at + id + ' ' + b + ': '); await shot(pg, `teach5s-${id}-${String(seen.length).padStart(2, '0')}-${b.replace(/:/g, '-')}-${w}x${h}`); }
+              if (b.startsWith('chk:judge') && !pet) pet = await pg.evaluate(() => { const it = LS.cur(LS.st); return { bub: document.querySelector('#lsbub').textContent, pv: it.pv, petOk: it.petOk, code: it.code, say: lsSayV(it.q, it.pv).replace(/[«»]/g, ''),
+                es: !LS.voice() || window.__said.some(([t, l]) => l == 'es' && t == String(it.pv)), voice: LS.voice() }; }); // an older child with the voice off hears nothing
+              if (/:with$/.test(b)) sayW = await pg.evaluate(() => { const e = document.querySelector('#prompt .ls6-es'); return { btn: document.querySelector('#lsnext').textContent.trim(), ear: !!e && e.offsetWidth >= 47.5, es: !LS.voice() || window.__said.some(([t, l]) => l == 'es' && /^(el|la) /.test(t)) }; });
+              if (/:fix$/.test(b)) fixed = true;
+              path.push(b.split(':').slice(0, 2).join(':'));
+              const isTog = /^tog:ask/.test(b);
+              await step6(pg, b.startsWith('pre:ask') && path.length == 1);
+              if (isTog && id.startsWith('sci_')) look += await pg.evaluate(() => window.__said.some(([t]) => /Look!/.test(t)) ? 1 : 0);
+            }
+            const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+            if (order !== 'pre,rem,exp,name,tog,chk,show' && order !== 'pre,rem,exp,name,tog,chk,show,win' && order !== 'pre,exp,name,tog,chk,show' && order !== 'pre,exp,name,tog,chk,show,win') bad.push(at + id + ' beats ' + order);
+            if (!pet || pet.petOk || !/Check/.test(pet.bub) || !pet.bub.includes(pet.say)) bad.push(at + id + ' the pet\'s turn: ' + JSON.stringify(pet));
+            if (id.startsWith('es_') && (!pet || !pet.es || !['esArt', 'esEnd'].includes(pet.code))) bad.push(at + id + ' the pet\'s el or la slip is not said in Spanish: ' + JSON.stringify(pet));
+            if (id == 'es_art1' && pet && !/Check my work/.test(pet.bub)) bad.push(at + 'a 5th grader does not hear the teen-like pet: ' + pet.bub);
+            if (id.startsWith('es_') && (!sayW || sayW.btn !== 'I said it!' || !sayW.ear || !sayW.es)) bad.push(at + id + ' say it with me: ' + JSON.stringify(sayW));
+            if (id.startsWith('sci_') && !look) bad.push(at + id + ': no "Look!" after a Together answer');
+            if (!fixed) bad.push(at + id + ': no fix after the pet\'s mistake');
+            await pg.waitForSelector('#lsend', { timeout: 10000 });
+            await shot(pg, `teach5s-${id}-end-${w}x${h}`);
+            const end = await pg.evaluate(id => ({ k: S.know[id] && S.know[id].s, idea: document.querySelector('.ls-idea').textContent, tq: S.tq, top: document.querySelector('.ls-top').className }), id);
+            if (!end.k || !end.idea || /\{/.test(end.tq) || !/Ask /.test(end.tq) || !end.top.includes(id.startsWith('es_') ? 's-es' : 's-disc')) bad.push(at + id + ' the end: ' + JSON.stringify(end));
+          }
+          if (await pg.evaluate(() => window.__mic)) bad.push(at + 'a lesson asked for the microphone or speech recognition');
+          // 3. Home's review tile: gone while every due item is at a learned lesson's stop, back with lessons off
+          const rv = await pg.evaluate(() => { LS.PET_OK = .25; LS.st = null; S.grade = 1; S.rev = [{ sk: 'add', lv: 1, seed: 5, label: '3 + 4', box: 0, due: 0, n: 1 }];
+            S.know = { add1: { s: 2, box: 0, due: 999, d: 1, last: 1, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {} } }; save(); home();
+            const a = !!document.querySelector('#revcard'), row = document.querySelector('.hm-today').className; TEACH.off = true; home(); const b = !!document.querySelector('#revcard'); TEACH.off = false; home(); return { a, b, row }; });
+          if (rv.a || !rv.b) bad.push(at + 'the review tile: ' + JSON.stringify(rv));
+          await pg.evaluate(() => document.querySelector('.hm-today').scrollIntoView({ block: 'center' }));
+          await shot(pg, `teach5s-home-covered-${w}x${h}`);
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-5S the Spanish and Discover lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-5S: the Spanish and Discover lessons at ' + notes.join(' and ') + ': lesson stops in front of Animals and Living Things; Animals, El or La? (the teen-like pet), ' +
+        'Push, Pull & Stuff and Sky & Earth through every beat by the real controls (the el / la sort heard in Spanish, say it with me and "I said it!" with no microphone, ' +
+        'the pet\'s forced el or la slip said in Spanish and fixed, predictions followed by "Look!"); the review tile gone while Remember covers it; every screen fits ' +
+        'with 48 px named buttons and no hole; no console errors, no network requests');
+    }
+    // end TEACH-5S
+
 
     // LS-STOP lessons are required, paid stops on the map (42b-lstop.js, 46-home.js drawMap, 58-playtime.js lsPay, 52-lesson.js LS.open,
     // the meter and the end card), at 380x780 and 600x960 on the midway save as a Kindergartner with every stop before Make Ten passed.

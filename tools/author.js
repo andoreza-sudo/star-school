@@ -38,15 +38,17 @@
                                            ASK-01: the owner's step: mark questions reviewed (only those that pass every check), then
                                            write src/js/39s-askw.js and 39t-askon.js, so they are on the Ask menu at the next build
    node tools/author.js --ask-read <file>  ASK-01: one read-through of every question and answer (docs/drafts/ASK-READ.md)
-   node tools/author.js --read <file> [--batch 3|4|3b|5r] [stop ...]
+   node tools/author.js --read <file> [--batch 3|4|3b|5r|5s] [stop ...]
                                            TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
                                            TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md);
                                            TEACH-4: --batch 4, the reading and Pre-K drafts not yet reviewed (docs/drafts/BATCH4-READ.md);
                                            TEACH-3b: --batch 3b, the lessons of the stops TEACH-3 and TEACH-4 left out (LS_DRAFTED[id].b3b;
                                            docs/drafts/BATCH3B-READ.md); batches 3 and 4 leave them out;
                                            READ-SHAPES: --batch 5r, the K-2 reading lessons in the new lesson shapes (LS_DRAFTED[id].b5r;
-                                           docs/drafts/BATCH5R-READ.md); batches 3, 3b and 4 leave them out
-   node tools/author.js --approve all --batch 3b   TEACH-3b: approve every waiting draft of one batch only (2, 3, 4, 3b or 5r); "all" with no
+                                           docs/drafts/BATCH5R-READ.md); batches 3, 3b and 4 leave them out;
+                                           TEACH-5S: --batch 5s, the Spanish and Discover lessons (LS_DRAFTED[id].b5s;
+                                           docs/drafts/BATCH5S-READ.md); every other batch leaves them out
+   node tools/author.js --approve all --batch 3b   TEACH-3b: approve every waiting draft of one batch only (2, 3, 4, 3b, 5r or 5s); "all" with no
                                            --batch approves every batch and lists each lesson it approved under its batch
 
    What a draft is. Only words: the lines each of the six beats says (Remember, Explore, Name it, Together, Check me, Show), the
@@ -165,6 +167,15 @@ function checkDraft(d) {
     if ([].concat((d.beats || {}).together || []).length != 3) p.push('together: one line for each of the three items (3 lines)');
     if (![1, 2].includes([].concat((d.beats || {}).show || []).length)) p.push('show: one or two lines');
     if (d.home && (d.home.length > 90 || d.home.split(/\s+/).length > 14)) p.push('home: longer than 90 characters or 14 words (as the hand-written lessons)');
+    // TEACH-5S: the Spanish map is the same for every grade, so a Spanish lesson's lines suit every age of the pet; no Spanish word but
+    // el and la is written (the code fills the words), and el and la are never "boy" or "girl" words
+    if (C.p == 'es') {
+      const all = [d.idea].concat(...BEATS.map(b => [].concat((d.beats || {})[b] || [])), ...Object.values(d.reasons || {}).map(x => [].concat(x)));
+      for (const t of all) for (const a of ['kid', 'teen']) for (const x of R.ctx.lsToneBad(String(t).replace(/\{[^}]*\}/g, 'X'), a)) p.push(`${a} pet: ${x} — "${t}"`);
+      for (const t of all.concat([d.home || ''])) if (/\b(boy|girl)\s+words?\b/i.test(t)) p.push(`"boy words" or "girl words": say el words and la words — "${t}"`);
+      const EU = R('ES_UNITS.flatMap(u=>u.items.map(it=>it[0]))').filter(x => !['no', 'once', 'pie'].includes(x));
+      for (const t of all) { const w = (String(t).replace(/\{[^}]*\}/g, ' ').match(/[a-záéíóúñü]+/gi) || []).filter(x => /[áéíóúñü]/i.test(x) || EU.includes(x.toLowerCase())); if (w.length) p.push(`a Spanish word written into the words (the code fills {a} {b}): ${w.join(', ')} — "${t}"`); }
+    }
   }
   return p;
 }
@@ -175,7 +186,7 @@ function contract(id) {
   if (!id) return null;
   // TEACH-4: a batch 4 lesson's brief is kept out of the app (tools/briefs4.js), made from its family and fields
   const C = app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];return D?{t:D.t,slots:D.slots,bugs:D.bugs,brief:D.brief,band:D.band||'',p:D.p||'math',claim:D.claim||'',
-    fam:D.fam,key:D.key,show:D.show,what:D.what,top:D.top,up:D.up,read:D.read,syn:D.syn,two:D.two}:null})()`);
+    fam:D.fam,key:D.key,show:D.show,what:D.what,top:D.top,up:D.up,read:D.read,syn:D.syn,two:D.two,units:D.units,t2:D.t}:null})()`);
   if (C && !C.brief && C.fam) C.brief = require('./briefs4.js').brief(C);
   return C;
 }
@@ -259,23 +270,23 @@ function model() {
 // what the model is asked: the stop, the age's tone, the rules, and one hand-written lesson as the example
 function draftPrompt(id, grade) {
   // TEACH-4: a stop of the math map or the reading map
-  const R = app(), stop = R(`(()=>{for(const p of ['math','read']){const n=NODES[p].find(x=>nid(x)===${JSON.stringify(id)});if(!n)continue;const w=PATHS[p].worlds[n.wi];
+  const R = app(), stop = R(`(()=>{for(const p of ['math','read','es','disc']){const n=NODES[p].find(x=>nid(x)===${JSON.stringify(id)});if(!n)continue;const w=PATHS[p].worlds[n.wi];
     return{t:n.t,sk:n.sk,lv:n.lv,world:w.n,g:w.g,p,skill:(SK[n.sk]||{}).n||''}}return null})()`);
-  if (!stop) throw new Error('no math or reading stop ' + id);
+  if (!stop) throw new Error('no math, reading, Spanish or Discover stop ' + id);
   const g = grade != null ? +grade : stop.g, age = ageOf(g), rules = R(`(()=>{const r=LS_RULES[${JSON.stringify(age)}];return{words:r.words,chars:r.chars,no:r.no?String(r.no):''}})()`);
   const tone = R(`JSON.stringify(LS_TONE[${JSON.stringify(age)}],(k,v)=>typeof v=='function'?v(k=='nb'?'{n}':'{name}'):v)`), codes = R('Object.keys(BUGS).map(c=>c+": "+BUGS[c].d).join("\\n")');
-  const C = contract(id), b4 = C && C.band == '4', example = fs.readFileSync(path.join(DRAFTS, b4 && C.p == 'read' ? 'EXAMPLE-READ.json' : 'EXAMPLE.json'), 'utf8');
+  const C = contract(id), b4 = C && (C.band == '4' || C.band == '5'), es = stop.p == 'es', example = fs.readFileSync(path.join(DRAFTS, b4 && C.p != 'math' ? 'EXAMPLE-READ.json' : 'EXAMPLE.json'), 'utf8');
   const code = C ? `\nThis lesson's code is written already. What each beat's words are for, and which numbers it has:\n${C.brief}
 Slots each beat may use (no others; a slot is never the answer the child has to find): ${BEATS.map(b => b + ': ' + (Array.isArray((C.slots[b] || [])[0]) ? C.slots[b].map((x, i) => 'line ' + (i + 1) + ' ' + (x.map(y => '{' + y + '}').join(' ') || 'none')).join(', ') : (C.slots[b] || []).map(x => '{' + x + '}').join(' ') || 'none')).join('; ')}. {name} (the child) may be used anywhere.
 Explore lines are only the task, said before the child starts (no lines about what they made: the app reacts itself).
 After each Together and Show line the app says the problem itself, with its numbers, so a line coaches or sets the scene and never repeats the problem.
-check: exactly two lines: "My turn. Check me!" and the pet's claim, which must use {ans}: the pet's whole answer as the app says it (${b4 ? 'here: ' + (C.p == 'read' ? 'a letter or a word, ' : '') + 'as in "' + C.claim + '"' : 'a number, a time such as "half past 4" or "4 15", or "35 cents"'}), e.g. "${b4 ? C.claim : 'I think it is {ans}. Am I right?'}".${b4 ? '\nThe child does not read yet (or is just starting): every line is heard. Never spell a sound with slashes; name a letter by its slot, and a sound by a word that has it ("the first sound of {word}").' : ''}
+check: exactly two lines: "My turn. Check me!" and the pet's claim, which must use {ans}: the pet's whole answer as the app says it (${b4 ? 'here: ' + (C.p == 'read' ? 'a letter or a word, ' : C.p == 'es' ? 'the Spanish words it picked, such as "el vaca", ' : C.p == 'disc' ? 'the thing or the reason it picked, ' : '') + 'as in "' + C.claim + '"' : 'a number, a time such as "half past 4" or "4 15", or "35 cents"'}), e.g. "${b4 ? C.claim : 'I think it is {ans}. Am I right?'}".${b4 && C.p != 'es' ? '\nThe child does not read yet (or is just starting): every line is heard. Never spell a sound with slashes; name a letter by its slot, and a sound by a word that has it ("the first sound of {word}").' : ''}${es ? '\nThe Spanish map is the same for every grade, Pre-K to 6th: every line must suit a 4-year-old AND an 11-year-old (12 words at most, no baby talk, none of: yay, hooray, super, great job, awesome, let\'s play, we did it). The child hears every line; many do not read yet.\nNEVER write a Spanish noun, or any Spanish word but el and la: the code chooses the words and fills {a} and {b} (an el word and a la word, said in Spanish). Write el and la as plain words; the app says them in Spanish. Call them "el words" and "la words" (never boy words or girl words). The last letter is a clue, not a rule (la mano, el papá).' : ''}${C && C.p == 'disc' ? '\nThis is Kindergarten to 2nd grade science: predict, look, explain. NEVER name the lesson\'s things (a rock, a leaf, an ice cube): the code chooses them and fills {a} and {b}. No magic, nothing about evolution; growing up (a chick grows into a hen) is fine. Every fact must be true as a K-2 science book says it.' : ''}
 together: exactly three lines: line 1 is said before a build item, line 2 before a picture item, line 3 before a symbols-only item (the app says "Now let's do some together." itself, and a miss can bring a build back, so each line fits its kind of item on its own). The idea has no slots and no numbers. Never a number word: "eighteen", "nine", "hundreds of" are all written as slots or left out.
 reasons: only for these codes (the mistakes this lesson's pet makes): ${C.bugs.join(', ')}.\n` : '';
   const sys = 'You write the spoken words of short lessons in a children\'s learning app for Pre-K to 6th grade. The child\'s pet runs each lesson. '
     + 'You write only words; the app\'s code fills every number. Reply with one JSON object and nothing else.';
   const user = `Write the words of one lesson.
-Stop: "${stop.t}" (id ${id}) in the world "${stop.world}" (${stop.p == 'read' ? 'reading' : 'math'}), grade ${g === -1 ? 'Pre-K' : g === 0 ? 'Kindergarten' : g}.
+Stop: "${stop.t}" (id ${id}) in the world "${stop.world}" (${({read: 'reading', es: 'Spanish as a new language', disc: 'Discover: science'})[stop.p] || 'math'}), grade ${es ? 'every grade, Pre-K to 6th' : g === -1 ? 'Pre-K' : g === 0 ? 'Kindergarten' : g}.
 The pet's age for this grade: ${age}. How that pet talks (its fixed lines): ${tone}
 Rules for every line:
 - At most ${rules.words} words and ${rules.chars} characters.${rules.no ? ' Never use: ' + rules.no : ''}
@@ -332,26 +343,42 @@ function approve(ids, o = {}) {
   for (const id of done) (byBatch[batchOf(id)] = byBatch[batchOf(id)] || []).push(id);
   return {done, bad, byBatch};
 }
-// TEACH-3b: the read-through batch of a lesson: '3b' (D.b3b), '5r' (D.b5r, READ-SHAPES), 4 (LS_B4), 3 (LS_B35) or 2 (the rest)
+// TEACH-3b: the read-through batch of a lesson: '3b' (D.b3b), '5r' (D.b5r, READ-SHAPES), '5s' (D.b5s, TEACH-5S), 4 (LS_B4), 3 (LS_B35) or 2 (the rest)
 function batchOf(id) {
-  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];if(D&&D.b3b)return'3b';if(D&&D.b5r)return'5r';if(typeof LS_B4!='undefined'&&LS_B4.includes(${JSON.stringify(String(id))}))return'4';return D&&D.band=='35'?'3':'2'})()`);
+  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];if(D&&D.b3b)return'3b';if(D&&D.b5r)return'5r';if(D&&D.b5s)return'5s';if(typeof LS_B4!='undefined'&&LS_B4.includes(${JSON.stringify(String(id))}))return'4';return D&&D.band=='35'?'3':'2'})()`);
 }
 // the read-through: every lesson's sheet in map order, short enough to read on a phone
 // TEACH-3: o.batch 3 reads the grade 3-5 drafts (LS_B35) that are not reviewed, under the batch 3 heading
 function readThrough(ids, o = {}) {
   // TEACH-4: the reading map's stops come after the math map's (Tiny Town, then ABC Beach and the reading worlds)
-  const R = app(), at = id => R(`(()=>{const i=NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)});return i>=0?i:1e4+NODES.read.findIndex(n=>nid(n)===${JSON.stringify(id)})})()`);
-  const b5r = String(o.batch) == '5r', b3b = String(o.batch) == '3b', b3 = !b3b && !b5r && o.batch == 3, b4 = !b3b && !b5r && o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
+  // TEACH-5S: then the Spanish map's, then Discover's
+  const R = app(), at = id => R(`(()=>{const ps=['math','read','es','disc'];for(let k=0;k<ps.length;k++){const i=NODES[ps[k]].findIndex(n=>nid(n)===${JSON.stringify(id)});if(i>=0)return k*1e4+i}return 9e4})()`);
+  const b5s = String(o.batch) == '5s', b5r = String(o.batch) == '5r', b3b = String(o.batch) == '3b', b3 = !b3b && !b5r && !b5s && o.batch == 3, b4 = !b3b && !b5r && !b5s && o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
   const B3B = R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b)'); // TEACH-3b: its own batch; batches 2, 3 and 4 leave it out
   const B5R = R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b5r)'); // READ-SHAPES: its own batch too; every other batch leaves it out
+  const B5S = R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b5s)'); // TEACH-5S: its own batch too; every other batch leaves it out
   // no stops named: every unreviewed draft of this batch's band (batch 4 the reading and Pre-K lessons, batch 3 the grade 3-5 lessons,
   // batch 2 the rest); none waiting reads as none, never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
-  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b5r ? B5R.includes(x.d.id) : b3b ? B3B.includes(x.d.id) : !B3B.includes(x.d.id) && !B5R.includes(x.d.id) && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3))).map(x => x.d.id);
+  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b5s ? B5S.includes(x.d.id) : B5S.includes(x.d.id) ? false : b5r ? B5R.includes(x.d.id) : b3b ? B3B.includes(x.d.id) : !B3B.includes(x.d.id) && !B5R.includes(x.d.id) && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3))).map(x => x.d.id);
   const xs = drafts().filter(x => x.d && ids.includes(x.d.id)).sort((a, b) => at(a.d.id) - at(b.d.id));
-  if (!xs.length) return [`# Batch ${b5r ? '5r' : b3b ? '3b' : b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
+  if (!xs.length) return [`# Batch ${b5s ? '5s' : b5r ? '5r' : b3b ? '3b' : b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
   // TEACH-3b: what "all" would approve besides this batch, named, so it is never a surprise
-  const others = b3b || b5r ? drafts().filter(x => x.d && x.d.status === 'unreviewed' && !(b5r ? B5R : B3B).includes(x.d.id)).map(x => x.d.id) : [];
-  const head = b5r ? ['# Batch 5r read-through: the K-2 reading stops in new lesson shapes', '',
+  const others = b3b || b5r || b5s ? drafts().filter(x => x.d && x.d.status === 'unreviewed' && !(b5s ? B5S : b5r ? B5R : B3B).includes(x.d.id)).map(x => x.d.id) : [];
+  const head = b5s ? ['# Batch 5s read-through: lessons for Spanish and Discover', '',
+    `${xs.length} lessons, in map order: the Spanish map (Hola Plaza to Las Frases), then Discover`, '(Nature Trail). Each is what the child hears: the six beats, the pet\'s reasons',
+    'when it is caught, and tonight\'s question for you.', '',
+    'Spanish is the same map for every grade, so its lines are written to suit every age', '(the little one, the older kid and the teen-like pet all say them). Discover\'s Nature',
+    'Trail is Kindergarten to 2nd grade: the little one.', '',
+    'Spanish words in a line are written «la vaca»: the app says them in the Spanish voice.', 'The app fills in each {slot}: in Spanish {a} is an el word and {b} a la word the child',
+    'sorted; in Discover {a} and {b} are two things of the child\'s guess; {ans} is the', 'pet\'s answer. The app also says each question and its choices itself.', '',
+    'Until you approve a lesson, it runs on short hand-written lines', '(its idea, a Name it line, the pet\'s reasons), so it works now.', '',
+    'The lesson shapes. Spanish: listen to four pictures and sort them into el and la, say', 'a word with the pet (out loud: nothing is recorded), hear a word and tap its picture,',
+    'pick the right words for a picture, and catch the pet saying "el vaca" or "el mano".', 'Discover: predict (sort four pictures, any guess is fine), look (what really happens),',
+    'explain (pick the reason), and catch the pet thinking small things float, a car is', 'alive, or the shade melts ice as fast as the sun.', '',
+    'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
+    '`node tools/author.js --approve all --batch 5s --by <your name>`', '', '(or name the lessons instead of all). Approved lessons use their words at the next build.',
+    others.length ? `Note: --approve all WITHOUT --batch 5s also approves ${others.length} lessons of other batches still waiting.` : 'No lesson of another batch is waiting.', '']
+    : b5r ? ['# Batch 5r read-through: the K-2 reading stops in new lesson shapes', '',
     `${xs.length} lessons, in map order (Letter Meadow, Candy Canyon, Ocean Reef, Space Station,`, 'Word Workshop). Each is what the child hears: the six beats, the pet\'s',
     'reasons when it is caught, and tonight\'s question for you. All of them hear the little one pet.', '',
     'The app fills in each {slot} from the question on screen: {word} is the word of the question,', '{other} a second word, {a} and {b} the two words or pictures of Name it, {letter}',
@@ -1056,7 +1083,7 @@ if (require.main === module) {
     process.exitCode = r.bad.length ? 1 : 0;
   } else if (has('--read')) {
     const f = val('--read'), ids = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--read' && a[i - 1] !== '--batch');
-    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: ['3b', '5r'].includes(val('--batch')) ? val('--batch') : +val('--batch') || 2}));
+    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: ['3b', '5r', '5s'].includes(val('--batch')) ? val('--batch') : +val('--batch') || 2}));
     console.log('wrote ' + f);
   } else if (has('--draft')) {
     const r = draft(val('--draft'), {grade: val('--grade'), dry: has('--dry')});

@@ -111,7 +111,7 @@ const LS = {
       if (c) it.unshift(c);
     } else if (B == 'name') {
       const n = L.name(st.ctx, r);
-      it = [{m: 'say', html: n.html, lines: n.lines}];
+      it = [{m: 'say', html: n.html, lines: n.lines}].concat(n.also || []); // TEACH-5S: Spanish "say it with me" after the naming
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = L.chk ? L.chk(st) : [LS.petItem(st)]; // TEACH-3: grades 3-5 have their own Check me (52i-bench35.js)
     else if (B == 'show') it = [0, 1].slice(st.post.length).map(k => { // fix179: a resumed Show asks only the items not yet answered
@@ -243,18 +243,20 @@ const LS = {
     const ok = lsOk(it.q, v), first = !it.tries, M = it.q.kind == 'make' && K2MM[it.q.model];
     if (first && it.rem) knowRemember(it.rem, ok, st.day, st.S);
     else if (first && !it.fix && !it.win && !it.warm) knowAdd(st.id, it.q, M && M.raw && Array.isArray(v) ? String(M.val(it.q, v)) : v, ok, st.S, st.day);
+    // TEACH-5S: "look", what really happens (a Discover prediction), said once the answer is in or shown; never before a retry
+    const lk = it.q.look ? [it.q.look] : [];
     if (it.one) {
       it.tries = 1;
       (B == 'pre' ? st.pre : st.post).push(ok);
       // LS-STOP: "I already know this!" and a miss: no more show-me items, straight into the lesson (no reveal, no penalty)
       if (B == 'pre' && !ok && st.slide) { st.items.length = st.i + 1; return {ok, act: 'next', slide: true, lines: [lsTone2().slide]}; }
-      return {ok, act: ok ? 'next' : 'reveal', lines: ok ? yay() : [T.tryMore]};
+      return {ok, act: ok ? 'next' : 'reveal', lines: (ok ? yay() : [T.tryMore]).concat(lk)};
     }
-    if (ok) return {ok, act: 'next', lines: it.tries ? [T.fixed] : yay(), mood: 'happy'};
+    if (ok) return {ok, act: 'next', lines: (it.tries ? [T.fixed] : yay()).concat(lk), mood: 'happy'};
     it.tries = (it.tries || 0) + 1;
     if (it.tog) st.drop = true;
     if (it.tries <= it.help) return {ok, act: 'retry', lines: [T.help]};
-    return {ok, act: 'reveal', lines: it.win ? [T.win] : [T.tryMore]};
+    return {ok, act: 'reveal', lines: (it.win ? [T.win] : [T.tryMore]).concat(lk)};
   },
   // on to the next item (Together grows one item at a time), the next beat, or the end
   next(st) {
@@ -395,10 +397,12 @@ const LS = {
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
   talk(lines, then, cap0) {
-    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = cap0 || t;
+    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = lsPlain(cap0 || t);
     if (b) { b.firstChild.textContent = c; b.classList.toggle('on', !!c); }
     // TEACH-4: a recorded line (EN_TEACH, 12-speech.js) plays wherever its sentence falls in the lines; the rest is the tablet's voice
-    if (t && LS.voice()) say(t);
+    // TEACH-5S: a line with «Spanish» in it, or any line of a Spanish lesson, is said piece by piece in its own voice (lsSay)
+    if (t && LS.voice() && (/«/.test(t) || me && me.L.p == 'es')) lsSay(t, me && me.L.p);
+    else if (t && LS.voice()) say(t);
     if (!then) return;
     // the controls wake once the line has been said (TEACH-PLAN-2 system H): poll the speech, at most WAKE ms (no voice: a short pause)
     const t0 = Date.now(), cap = t && LS.voice() && canSpeak() ? LS.WAKE : 600;
@@ -426,7 +430,7 @@ const LS = {
     const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS_PIPS.map(([k, ic, l], j) => `<span class="ls-pip${j < at || B == 'win' ? ' on' : j == at ? ' now' : ''}" aria-hidden="true">${ico(ic, 18)}</span>`).join('');
     const prompt = LS.prompt(it);
     let input = '';
-    if (it.m == 'say') input = UI.btn('Next', {kind: 'primary', size: 'lg', icon: 'go', id: 'lsnext'});
+    if (it.m == 'say') input = UI.btn(it.nx || 'Next', {kind: 'primary', size: 'lg', icon: it.nx ? 'check' : 'go', id: 'lsnext'}); // TEACH-5S: "I said it!" after say it with me
     else if (it.m == 'judge') {
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
     } else input = KIND[q.kind].render(q);
@@ -568,9 +572,9 @@ const LS = {
     SFX.fanfare();
     if (rec.pass) confetti(24);
     const said = `${line} ${L.idea} ${PT.sec ? T2.paid + ' ' : ''}${T.bye(lsName())}`;
-    $('#lshear2').onclick = () => say(said);
+    $('#lshear2').onclick = () => lsSay(said, p);
     UI.hear();
-    if (LS.voice()) say(said);
+    if (LS.voice()) lsSay(said, p);
     if (PT.sec) LS.land(rec);
   },
   /* LS-STOP: why the lesson itself paid nothing ('' when it paid). fix179: read from the lesson's own pay, not the end card's total, so a
@@ -597,7 +601,8 @@ const LS = {
   // never a front door). Placed above the stop, or beside it, wherever it covers nothing; no button when nothing is free.
   mapAdd() {
     const m = $('#map');
-    if (!m || MAPP != 'math' && MAPP != 'read' || TEACH.off || gradeOf() > 2 && !partReady('teach35')) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
+    const sm = MAPP == 'es' || MAPP == 'disc'; // TEACH-5S: and the Spanish and Discover maps, once their part is in
+    if (!m || MAPP != 'math' && MAPP != 'read' && !sm || TEACH.off || (sm ? !partReady('teaches') : gradeOf() > 2 && !partReady('teach35'))) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
     const old = m.querySelector('.ls-go:not(.lsn)');
     if (old) old.remove();
     NB.mapBtn();
@@ -627,6 +632,24 @@ const LS = {
 // fix179: lesson time stops counting while the app is hidden (LS.vis)
 if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
 const lsName = () => (S.name || 'friend');
+/* TEACH-5S: Spanish in a spoken line is written «la vaca». lsRuns(t, es) cuts a line into [text, 1 when Spanish] pieces, in order; in a
+   Spanish lesson (es) "el" and "la" said alone are Spanish too. lsSay says each piece in its own voice, one after the other (say()
+   queues them; a Spanish piece is its ES-AUDIO recording when there is one); a line with no Spanish is said as before. lsPlain: the
+   caption, without the marks. */
+function lsRuns(t, es) {
+  const o = [];
+  String(t).split(/«([^»]*)»/).forEach((x, i) => {
+    if (i % 2) return o.push([x.trim(), 1]);
+    (es ? x.split(/\b(el|la|El|La)\b/) : [x]).forEach((y, j) => o.push([y.trim(), j % 2]));
+  });
+  return o.filter(x => /[a-z0-9áéíóúñü]/i.test(x[0]));
+}
+const lsPlain = t => String(t).replace(/[«»]/g, '');
+function lsSay(t, p) {
+  const rs = lsRuns(t, p == 'es');
+  if (!rs.some(x => x[1])) return say(lsPlain(t));
+  rs.forEach(([x, es], k) => say(x, null, es ? 'es' : null, k > 0));
+}
 // the state that shows value v on a make question's model (the pet's build, the child's fix)
 const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v]);
 /* TEACH-2b: the words of a drafted script (docs/drafts, reviewed; 52e-words.js) are lines with {slots}: lsFill fills them from a

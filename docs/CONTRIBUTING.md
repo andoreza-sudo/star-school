@@ -146,6 +146,9 @@ teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons 
                   52m-lessons4, 52p-lessons4b (TEACH-3b), 52q-bench5r and 52r-lessons5r (READ-SHAPES: the reading lesson shapes) and
                   src/css/52k-teach4.css, 52q-teach5r.css; LAZY: the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too
                   for a Pre-K child (teachWarm in 46-home.js)
+teaches.<VER>.js  TEACH-5S: the Spanish and Discover lessons, src/js/52s-bench5s (their shapes), 52s-words5 (reviewed words, LSW5) and
+                  52t-lessons5s, and src/css/52s-teach5s.css; LAZY: the Spanish and Discover maps load it with teach, teach12 and teachrd
+                  (teachWarm in 46-home.js)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js and the generated 39n-hintw.js, then  var HINTS_VER='<VER>';
