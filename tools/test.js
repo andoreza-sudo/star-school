@@ -21552,7 +21552,7 @@ run('recorded teacher lines TEACH-4',()=>{
   const ctx=E.loadApp(),lines=EA.collectTeach(ctx),M=vm.runInContext('typeof EN_TEACH=="undefined"?null:EN_TEACH',ctx),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
   if(!M)return{problems:['no EN_TEACH: run node tools/en-audio.js --teach']};
   if(M.dir!==EA.TEACH_DIR||M.voice!==EA.TEACH_VOICE||!EA.VOICES.some(v=>v[0]===M.voice))p.push('EN_TEACH: dir '+M.dir+', voice '+M.voice+' (one of the EN-PRAISE voices)');
-  if(lines.size<60||lines.size>110)p.push(lines.size+' teacher lines (want about 70)');
+  if(lines.size<60||lines.size>200)p.push(lines.size+' teacher lines (want at most 200: the owner raised the cap from 110 on 2026-11-19)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
     if(f!==EA.teachFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}

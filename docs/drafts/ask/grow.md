@@ -1,6 +1,6 @@
 # Ask the pet: When will you grow? (grow)
 
-status: unreviewed
+status: reviewed owner 2026-11-19
 made: 2026-11-19 by tools/author.js --ask-draft (xAI API, grok-4.20-0309-non-reasoning)
 
 <!-- For the owner: read the question and its answers below as the child sees and hears them, change any wording in the JSON
