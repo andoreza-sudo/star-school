@@ -24,7 +24,7 @@ When you are happy, say so, or run:
 `node tools/author.js --approve all --batch 5r --by <your name>`
 
 (or name the lessons instead of all). Approved lessons use their words at the next build.
-Note: --approve all WITHOUT --batch 5r also approves 21 lessons of other batches still waiting.
+Note: --approve all WITHOUT --batch 5r also approves 33 lessons of other batches still waiting.
 
 ## 1. Sight Words (sight1)
 

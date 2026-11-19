@@ -1,5 +1,5 @@
-/* Star School teach v186. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
-   index.html v186 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v186.js. */
+/* Star School teach v187. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
+   index.html v187 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v187.js. */
 (function(){var s=document.createElement('style');s.id='css-teach';s.textContent="/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of\n   the prompt card: the pet, its caption bubble and \"Hear it again\". Tokens only. */\n.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}\n.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}\n.ls-pip .ic{width:18px;height:18px}\n.ls-pip.on{background:var(--math);color:var(--surface)}\n.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}\n/* TEACH-UX: the beat label under the dots (\"Step 1 of 6 · Remember\"); the pair is no taller than the house button, so the bar keeps its\n   height. On a phone the lesson's name gives the label its room (the start card has the name), and the bar's gaps are smaller under 400 px */\n.ls-beats{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0}\n.ls-beats .ls-pips{flex:none;max-width:100%}\n.ls-step{max-width:100%;font-size:var(--fs-2);font-weight:700;line-height:1.1;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n@media (max-width:480px){.ls-top .ls-tag{display:none}}\n@media (max-width:400px){.top.tbar.ls-top{gap:var(--s-1)}.ls-top .ls-meter{padding:0 var(--s-2) 0 var(--s-1)}}\n.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}\n.ls-top .ls-tag{flex:none}\n.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}\n.ls-art{flex:none;width:64px;height:64px}\n.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}\n.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);\n  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}\n.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}\n.ls-bub.on{opacity:1}\n.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}\n.btn.ls-hear{flex:none}\n.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}\n.ls-turn .ls-bub::before{border-right-color:var(--star)}\n.ls-pw{display:flex;justify-content:center;max-width:100%}\n.ls-pw .viz{max-width:100%}\n.slot.ls-pv{background:var(--star-tint);color:var(--ink)}\n.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}\n.ls-qm{color:var(--math-shade)}\n.ls-judge{display:flex;gap:var(--s-3);justify-content:center}\n.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}\n.ls-judge .btn .ic{width:36px;height:36px}\n.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}\n.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}\n.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}\n#lsinp>.btn.lg{margin:0 auto;display:flex}\n.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}\n.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}\n.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}\n/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */\n.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;\n  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.btn.ls-go .ic{width:30px;height:30px}\n.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}\n/* the end card */\n.ls-end{display:flex;justify-content:center;padding:var(--s-4)}\n.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}\n.ls-endc h1{margin:0}\n.ls-art.ls-big{width:150px;height:150px}\n.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}\n.ls-idea .ic{flex:none;color:var(--math-shade)}\n.ls-earn{align-self:stretch}\n.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}\n@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}\nhtml.calm .btn.ls-go::after{animation:none}\n/* TEACH-2: a repair's contrast (the right answer beside the held idea's, on one picture each) */\n.ls-con{display:flex;gap:var(--s-3);justify-content:center;flex-wrap:wrap;width:100%}\n.ls-cpane{flex:1 1 140px;max-width:300px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:var(--s-1);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface)}\n.ls-cpane.ok{box-shadow:inset 0 0 0 3px var(--good)}.ls-cpane.ok>.ic{color:var(--good-ink)}\n.ls-cpane.no{box-shadow:inset 0 0 0 3px var(--try)}.ls-cpane.no>.ic{color:var(--ink-2)}\n.ls-cpane .viz,.ls-cpane svg{max-width:100%;height:auto}\n/* TEACH-2: the notebook (52d-notebook.js) */\n.nbk{padding:var(--s-3) var(--s-4) var(--s-6)}\n.nbk-in{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-4);align-items:center}\n.nbk-top .chip{flex:none}\n.nbk-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--s-3);width:100%;align-items:start}\n.nbk-pg{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-3);background:var(--surface);border-radius:var(--r-card);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line);cursor:pointer;min-width:0}\n.nbk-pg.kept{box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.nbk-pic{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:120px;background:var(--math-tint);border-radius:var(--r-chip);padding:var(--s-2);overflow:hidden}\n.nbk-pic .pkq,.nbk-pic .viz,.nbk-pic svg{max-width:100%;height:auto}\n.nbk-pic .eq{font-size:var(--fs-4)}\n.nbk-idea{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);line-height:var(--lh-2)}\n.nbk-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2)}\n.nbk-t{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2);font-weight:700;min-width:0}\n.nbk-star{color:var(--star-ink);flex:none}\n.nbk-empty{display:grid;place-items:center;width:160px;height:160px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.nbk-next .btn{min-width:220px}\n/* TEACH-2: the report card's lessons by stage (82-report.js calls LSREP) */\n.rp-ls{display:grid;gap:2px;margin:var(--s-2) 0;font-size:var(--fs-1)}\n.rp-lsr{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr));gap:var(--s-1);align-items:center;padding:var(--s-1) 0;border-bottom:1px solid var(--line)}\n.rp-lsh{font-weight:700;color:var(--ink-2);align-items:end;overflow-wrap:anywhere}.rp-lsh>span+span{text-align:center}\n.rp-lsn{text-align:center;font-weight:700;color:var(--ink-2)}\n.rp-lsn.on{color:var(--ink);background:var(--good-tint);border-radius:var(--r-chip)}\n.rp-noticed .rp-pin{display:flex;margin-top:var(--s-2)}\n@media (max-width:560px){.rp-lsr{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:2px}.rp-lsr>[role=rowheader]{grid-column:1/-1;font-weight:700}\n  .rp-lsh>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.rp-lsh{text-align:center}}\n/* TEACH-2b: the workbench pieces of the grade 1 and 2 lessons (52f-bench.js): blocks in a second colour, the trade buttons, groups,\n   the named clock hands */\n.viz .ls-b2{fill:var(--play-shade)}\n.viz .ls-gd{fill:none;stroke:var(--math)}\n.ls-trs{gap:var(--s-2)}\n.mmb.ls-tr{font-size:var(--fs-2);font-weight:700;padding:0 var(--s-3);white-space:nowrap}\n.ls-hh,.ls-mh{display:inline-block;vertical-align:middle;width:22px;height:6px;border-radius:3px;margin-right:6px;background:var(--read)}\n.ls-mh{width:30px;height:4px;background:var(--math)}\n.mm-hands .mms{column-gap:var(--s-2);row-gap:2px}\n.mm-hands .mml{min-width:0;flex-basis:100%;text-align:center}\n/* LS-STOP: the ticket meter in the lesson's top bar (what the lesson pays now, filled as the beats are done), the start card's price,\n   the end card's ticket that lands in the bank chip. Calm mode and reduced motion end the motion at once (20-base.css). */\n.ls-meter{flex:none;display:inline-flex;align-items:center;gap:var(--s-1);min-height:44px;padding:0 var(--s-3) 0 var(--s-2);border-radius:var(--r-pill);\n  font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;color:var(--ink);white-space:nowrap;\n  background:linear-gradient(90deg,var(--play-tint) calc(var(--f,0) * 100%),var(--surface) calc(var(--f,0) * 100%));box-shadow:inset 0 0 0 2px var(--play)}\n.ls-meter .ic{color:var(--play-shade);flex:none}\n.ls-meter.dn{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.ls-meter.dn .ic{color:var(--good)}\n@media (max-width:640px){.ls-top.ls-m .ls-tag{display:none}}\n@media (max-width:420px){.ls-top.ls-m .ls-pips{gap:3px}.ls-top.ls-m .ls-pip{width:26px;height:26px}}\n.ls-price{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--play-tint);\n  border-radius:var(--r-card);padding:var(--s-2) var(--s-4);box-shadow:inset 0 0 0 2px var(--play)}\n.ls-price .ic{flex:none;color:var(--play-shade)}\n.ls-price.dn{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.ls-price.dn .ic{color:var(--good)}\n.ls-tk{display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-4) var(--s-1) var(--s-2);border-radius:var(--r-pill);\n  font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;color:var(--ink);background:var(--play-tint);box-shadow:inset 0 0 0 3px var(--play),0 3px 0 var(--play-shade)}\n.ls-tk .ic{color:var(--play-shade)}\n.ls-tk.land{animation:ls-land var(--t-slow) var(--ease) forwards}\n@keyframes ls-land{to{transform:translateY(-40px) scale(.6);opacity:0}}\n.ls-earn .ls-gt b{color:var(--ink)}\n.ls-earn .ls-gt0 span{color:var(--ink-2)}\n.ls-acts{padding:var(--s-2)}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-1: "Sparky teaches", the lesson (part teach; docs/TEACH-PLAN-2.md, batch 1) ----------
    A lesson is a short class the child's pet runs, about 3 minutes (owner decision 2): it always opens with two "show me" items and
@@ -113,7 +113,7 @@ const LS = {
       if (c) it.unshift(c);
     } else if (B == 'name') {
       const n = L.name(st.ctx, r);
-      it = [{m: 'say', html: n.html, lines: n.lines}];
+      it = [{m: 'say', html: n.html, lines: n.lines}].concat(n.also || []); // TEACH-5S: Spanish "say it with me" after the naming
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = L.chk ? L.chk(st) : [LS.petItem(st)]; // TEACH-3: grades 3-5 have their own Check me (52i-bench35.js)
     else if (B == 'show') it = [0, 1].slice(st.post.length).map(k => { // fix179: a resumed Show asks only the items not yet answered
@@ -237,18 +237,20 @@ const LS = {
     const ok = lsOk(it.q, v), first = !it.tries, M = it.q.kind == 'make' && K2MM[it.q.model];
     if (first && it.rem) knowRemember(it.rem, ok, st.day, st.S);
     else if (first && !it.fix && !it.win && !it.warm) knowAdd(st.id, it.q, M && M.raw && Array.isArray(v) ? String(M.val(it.q, v)) : v, ok, st.S, st.day);
+    // TEACH-5S: "look", what really happens (a Discover prediction), said once the answer is in or shown; never before a retry
+    const lk = it.q.look ? [it.q.look] : [];
     if (it.one) {
       it.tries = 1;
       (B == 'pre' ? st.pre : st.post).push(ok);
       // LS-STOP: "I already know this!" and a miss: no more show-me items, straight into the lesson (no reveal, no penalty)
       if (B == 'pre' && !ok && st.slide) { st.items.length = st.i + 1; return {ok, act: 'next', slide: true, lines: [lsTone2().slide]}; }
-      return {ok, act: ok ? 'next' : 'reveal', lines: ok ? yay() : [T.tryMore]};
+      return {ok, act: ok ? 'next' : 'reveal', lines: (ok ? yay() : [T.tryMore]).concat(lk)};
     }
-    if (ok) return {ok, act: 'next', lines: it.tries ? [T.fixed] : yay(), mood: 'happy'};
+    if (ok) return {ok, act: 'next', lines: (it.tries ? [T.fixed] : yay()).concat(lk), mood: 'happy'};
     it.tries = (it.tries || 0) + 1;
     if (it.tog) st.drop = true;
     if (it.tries <= it.help) return {ok, act: 'retry', lines: [T.help]};
-    return {ok, act: 'reveal', lines: it.win ? [T.win] : [T.tryMore]};
+    return {ok, act: 'reveal', lines: (it.win ? [T.win] : [T.tryMore]).concat(lk)};
   },
   // on to the next item (Together grows one item at a time), the next beat, or the end
   next(st) {
@@ -389,10 +391,12 @@ const LS = {
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
   talk(lines, then, cap0) {
-    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = cap0 || t;
+    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = lsPlain(cap0 || t);
     if (b) { b.firstChild.textContent = c; b.classList.toggle('on', !!c); }
     // TEACH-4: a recorded line (EN_TEACH, 12-speech.js) plays wherever its sentence falls in the lines; the rest is the tablet's voice
-    if (t && LS.voice()) say(t);
+    // TEACH-5S: a line with «Spanish» in it, or any line of a Spanish lesson, is said piece by piece in its own voice (lsSay)
+    if (t && LS.voice() && (/«/.test(t) || me && me.L.p == 'es')) lsSay(t, me && me.L.p);
+    else if (t && LS.voice()) say(t);
     if (!then) return;
     // the controls wake once the line has been said (TEACH-PLAN-2 system H): poll the speech, at most WAKE ms (no voice: a short pause)
     const t0 = Date.now(), cap = t && LS.voice() && canSpeak() ? LS.WAKE : 600;
@@ -420,7 +424,7 @@ const LS = {
     const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS_PIPS.map(([k, ic, l], j) => `<span class="ls-pip${j < at || B == 'win' ? ' on' : j == at ? ' now' : ''}" aria-hidden="true">${ico(ic, 18)}</span>`).join('');
     const prompt = LS.prompt(it);
     let input = '';
-    if (it.m == 'say') input = UI.btn('Next', {kind: 'primary', size: 'lg', icon: 'go', id: 'lsnext'});
+    if (it.m == 'say') input = UI.btn(it.nx || 'Next', {kind: 'primary', size: 'lg', icon: it.nx ? 'check' : 'go', id: 'lsnext'}); // TEACH-5S: "I said it!" after say it with me
     else if (it.m == 'judge') {
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
     } else input = KIND[q.kind].render(q);
@@ -560,9 +564,9 @@ const LS = {
     SFX.fanfare();
     if (rec.pass) confetti(24);
     const said = `${line} ${L.idea} ${PT.sec ? T2.paid + ' ' : ''}${T.bye(lsName())}`;
-    $('#lshear2').onclick = () => say(said);
+    $('#lshear2').onclick = () => lsSay(said, p);
     UI.hear();
-    if (LS.voice()) say(said);
+    if (LS.voice()) lsSay(said, p);
     if (PT.sec) LS.land(rec);
   },
   /* LS-STOP: why the lesson itself paid nothing ('' when it paid). fix179: read from the lesson's own pay, not the end card's total, so a
@@ -589,7 +593,8 @@ const LS = {
   // never a front door). Placed above the stop, or beside it, wherever it covers nothing; no button when nothing is free.
   mapAdd() {
     const m = $('#map');
-    if (!m || MAPP != 'math' && MAPP != 'read' || TEACH.off || gradeOf() > 2 && !partReady('teach35')) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
+    const sm = MAPP == 'es' || MAPP == 'disc'; // TEACH-5S: and the Spanish and Discover maps, once their part is in
+    if (!m || MAPP != 'math' && MAPP != 'read' && !sm || TEACH.off || (sm ? !partReady('teaches') : gradeOf() > 2 && !partReady('teach35'))) return; // TEACH-3: grades 3 up once their lessons are in; TEACH-4: the reading map too
     const old = m.querySelector('.ls-go:not(.lsn)');
     if (old) old.remove();
     NB.mapBtn();
@@ -619,6 +624,24 @@ const LS = {
 // fix179: lesson time stops counting while the app is hidden (LS.vis)
 if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
 const lsName = () => (S.name || 'friend');
+/* TEACH-5S: Spanish in a spoken line is written «la vaca». lsRuns(t, es) cuts a line into [text, 1 when Spanish] pieces, in order; in a
+   Spanish lesson (es) "el" and "la" said alone are Spanish too. lsSay says each piece in its own voice, one after the other (say()
+   queues them; a Spanish piece is its ES-AUDIO recording when there is one); a line with no Spanish is said as before. lsPlain: the
+   caption, without the marks. */
+function lsRuns(t, es) {
+  const o = [];
+  String(t).split(/«([^»]*)»/).forEach((x, i) => {
+    if (i % 2) return o.push([x.trim(), 1]);
+    (es ? x.split(/\b(el|la|El|La)\b/) : [x]).forEach((y, j) => o.push([y.trim(), j % 2]));
+  });
+  return o.filter(x => /[a-z0-9áéíóúñü]/i.test(x[0]));
+}
+const lsPlain = t => String(t).replace(/[«»]/g, '');
+function lsSay(t, p) {
+  const rs = lsRuns(t, p == 'es');
+  if (!rs.some(x => x[1])) return say(lsPlain(t));
+  rs.forEach(([x, es], k) => say(x, null, es ? 'es' : null, k > 0));
+}
 // the state that shows value v on a make question's model (the pet's build, the child's fix)
 const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v]);
 /* TEACH-2b: the words of a drafted script (docs/drafts, reviewed; 52e-words.js) are lines with {slots}: lsFill fills them from a
@@ -833,13 +856,13 @@ const LS_SUBJ = ['math'];
    Practice that no lesson has taught; or none.
    Returns {id, i (the stop's index on the map), kind 'new' | 'again' | 'repair', code (repair), remember: [ids]} or null. */
 function planToday(S0, day, p = 'math') {
-  if (!LS_SUBJ.includes(p) || !NODES[p]) return null;
+  if (!LS_SUBJ.includes(p) || !NODES[p] || !S.maps || !S.maps[p]) return null; // TEACH-5S: a map the save has no state for yet (Discover before its first visit in a test save) has no plan
   // TEACH-4: the subject's own map (math, or reading): a lesson of another subject is never found on it
   const at = id => NODES[p].findIndex(n => nid(n) === id), open = id => { const i = at(id); return i >= 0 && unlocked(p, i); };
   const K = S0.know || {}, ps = id => at(id) >= 0 && passed(p, at(id)), learned = id => (K[id] || {}).s >= 2;
   // TEACH-4: a Pre-K world's lessons (Tiny Town, ABC Beach) are a Pre-K child's only (a Kindergartner starts above them, as the map does)
   const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS[p].worlds[NODES[p][at(x)].wi].g;
-  const band = x => (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0);
+  const band = x => p == 'es' || (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0); // TEACH-5S: the Spanish map is the same for every grade
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
     // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's);
@@ -1338,7 +1361,7 @@ const NB = {
     if (!t || $('#nbopen') || !NB.pages().length) return;
     const b = UI.ibtn('doc', 'My notebook', {size: 'sm', id: 'nbopen', cls: 'nbk-open'}), c = t.querySelector('.chip');
     if (c) c.insertAdjacentHTML('beforebegin', b); else t.insertAdjacentHTML('beforeend', b);
-    const mp = MAPP == 'read' ? 'read' : 'math'; // TEACH-4: back to the map it was opened from
+    const mp = ['read', 'es', 'disc'].includes(MAPP) ? MAPP : 'math'; // TEACH-4: back to the map it was opened from (TEACH-5S: Spanish, Discover)
     $('#nbopen').onclick = () => { SFX.whoosh(); NB.open(() => pathMap(mp)); };
   },
 };
@@ -1419,4 +1442,4 @@ const LSREP = {
   },
 };
 
-var TEACH_VER='v186'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH_VER='v187'; // last line: the whole file ran (checked by dataReady() before the app starts)

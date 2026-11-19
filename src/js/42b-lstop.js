@@ -25,9 +25,11 @@ const LS_STOPS = {
     + 'story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8').split(' ')), // TEACH-3b (v182)
   read: new Set(('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4 pic6 build6 ' // TEACH-3b: pic6 build6 (v182)
     + 'sight1 rhyme1 sight2 rhyme2 comp1 syl2 spell1 sight3 comp2 spell2 vocab1 gram1 sight4 spell3 sent3 sight5 gram2 vocab2 gram3').split(' ')), // READ-SHAPES (v184)
+  es: new Set('es_animal1 es_food1 es_body1 es_family1 es_house1 es_clothes1 es_school1 es_trans1 es_art1'.split(' ')), // TEACH-5S (v187): every grade
+  disc: new Set('sci_life1 sci_earth1 sci_phys1'.split(' ')),
 };
 const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
-function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
+function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return p == 'es' || (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
 function lsStopAt(p, i) { const n = NODES[p] && NODES[p][i]; return !!(n && !TEACH.off && LS_STOPS[p] && LS_STOPS[p].has(nid(n)) && lsBand(p, i)); }
 const lsLearned = id => !!(S.know && S.know[id] && S.know[id].s >= 2);
 const LS_PASS = {}; // fix179: stops whose lesson could not load, open for this session (not saved: the next start tries the lesson again)
@@ -36,8 +38,8 @@ function lsGate(p, i) {
   const id = nid(NODES[p][i]);
   return !lsLearned(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
 }
-// the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35
-const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'] : []);
+// the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35, Spanish and Discover in teaches
+const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'es' || p == 'disc' ? ['teachrd', 'teaches'] : p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'] : []);
 function lsOpen(p, i) {
   const id = nid(NODES[p][i]), a = typeof $ == 'function' && $('#app'), scr = a && a.firstElementChild, here = () => !scr || scr.isConnected;
   SFX.whoosh();

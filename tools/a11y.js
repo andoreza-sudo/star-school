@@ -381,6 +381,21 @@ const SCREENS = {
   'read5-order': { run: async p => teach4Beat(p, 'sent3', 'tog', 0) },
   'read5-pos': { run: async p => teach4Beat(p, 'gram2', 'exp', 0) },
   'read5-plural': { run: async p => teach4Beat(p, 'gram3', 'tog', 0) },
+  // TEACH-5S: the Spanish shape (the el / la sort, say it with me, a word heard, words to pick, the pet's el or la) and the Discover shape (the guess, the look
+  // picture, a prediction, the sun and the shade, a reason, the pet's prediction)
+  'teach5s-es-sort': { run: async p => teach5Beat(p, 'es_animal1', 'exp', 0) },
+  'teach5s-es-name': { run: async p => teach5Beat(p, 'es_food1', 'name', 0) },
+  'teach5s-es-with': { run: async p => teach5Beat(p, 'es_food1', 'name', 1) },
+  'teach5s-es-hear': { run: async p => teach5Beat(p, 'es_body1', 'tog', 1) },
+  'teach5s-es-pick': { run: async p => teach5Beat(p, 'es_house1', 'tog', 2) },
+  'teach5s-es-pet': { run: async p => teach5Beat(p, 'es_trans1', 'chk', 0) },
+  'teach5s-disc-guess': { run: async p => teach5Beat(p, 'sci_phys1', 'exp', 0) },
+  'teach5s-disc-look': { run: async p => teach5Beat(p, 'sci_phys1', 'name', 0) },
+  'teach5s-disc-look2': { run: async p => teach5Beat(p, 'sci_life1', 'name', 0) },
+  'teach5s-disc-predict': { run: async p => teach5Beat(p, 'sci_life1', 'tog', 1) },
+  'teach5s-disc-sun': { run: async p => teach5Beat(p, 'sci_earth1', 'show', 0, 1) },
+  'teach5s-disc-why': { run: async p => teach5Beat(p, 'sci_earth1', 'tog', 2) },
+  'teach5s-disc-pet': { run: async p => teach5Beat(p, 'sci_life1', 'chk', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   // LS-STOP: the lesson stop on the map (its ticket, Make Ten's practice locked behind it), the start card, the top bar's ticket meter, the
   // end card with its game time
@@ -508,6 +523,17 @@ async function teach4Beat(p, id, beat, k) {
     const st = LS.make(id, { seed: 3, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat));
     for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
     LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k]);
+  await p.waitForTimeout(1500);
+}
+// TEACH-5S: a beat of a Spanish or Discover lesson (part teaches, after teachrd); seed: a seed that draws the item wanted
+async function teach5Beat(p, id, beat, k, seed) {
+  await p.evaluate(() => partsLoad(['teach', 'teach12', 'teachrd', 'teaches']));
+  await p.waitForFunction(() => typeof LS_B5 != 'undefined', null, { timeout: 30000 });
+  await p.evaluate(([id, beat, k, seed]) => { window.say = window.__a11y.say; teachSave(); S.grade = Math.max(0, LESSONS[id].g); LS.WAKE = 400; LS.PET_OK = 0;
+    const st = LS.make(id, { seed: seed || 3, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat));
+    if (beat == 'name' && !Object.keys(st.ctx).length) { st.exp = st.L.exp(st.r); Object.assign(st.ctx, st.exp.react(lsRight(st.exp.q)).ctx); LS.beat(st, LSB.indexOf('name')); }
+    for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : it.m == 'say' ? 'ok' : lsRight(it.q)); LS.next(st); }
+    LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, seed]);
   await p.waitForTimeout(1500);
 }
 async function gamesReady(p) {

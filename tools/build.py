@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v186'
+VER = 'v187'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -31,7 +31,8 @@ WORDS_KEYS = ('idea', 'beats', 'reasons', 'home')
 # src/js/52h-words.js (LSW3), so the grade 1-2 part does not carry them. One entry per words file: (file, const, the call that names a draft).
 WORDS = (('52e-words.js', 'LSW', r"\blsDraft\('(\w+)'", 'TEACH-2b', 'teach12', '52g-drafted.js'),
          ('52h-words.js', 'LSW3', r"\blsDraft3\('(\w+)'", 'TEACH-3', 'teach35', '52j-lessons35.js'),
-         ('52k-words4.js', 'LSW4', r"\blsDraft4\('(\w+)'", 'TEACH-4', 'teachrd', '52m-lessons4.js'))  # TEACH-4: the reading and Pre-K lessons
+         ('52k-words4.js', 'LSW4', r"\blsDraft4\('(\w+)'", 'TEACH-4', 'teachrd', '52m-lessons4.js'),  # TEACH-4: the reading and Pre-K lessons
+         ('52s-words5.js', 'LSW5', r"\blsDraft5\('(\w+)'", 'TEACH-5S', 'teaches', '52t-lessons5s.js'))  # TEACH-5S: the Spanish and Discover lessons
 def words_js(root, w=WORDS[0]):
     fn, const, rx, chunk, part, src = w
     d, out = os.path.join(root, 'src', 'js'), {}
@@ -52,7 +53,7 @@ def words_js(root, w=WORDS[0]):
     return ('/* ---------- %s: the words of the drafted lessons the owner has reviewed (part %s) ----------\n'
             '   BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (%s, %s):\n'
             '   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live%s. */\n'
-            'const %s = {\n' % (chunk, part, {'LSW': 'lsDraft', 'LSW3': 'lsDraft3'}.get(const, 'lsDraft4'), src,
+            'const %s = {\n' % (chunk, part, {'LSW': 'lsDraft', 'LSW3': 'lsDraft3', 'LSW5': 'lsDraft5'}.get(const, 'lsDraft4'), src,
                                  '' if const == 'LSW' else ' with its words (it runs on its hand-written fallback words)', const) + body + '};\n')
 WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
 # HINT-01: the mistake hints of Practice (src/js/39m-mist.js) take their words from docs/drafts/hints/<code>.md (drafted by
@@ -149,7 +150,7 @@ if '--words-check' in sys.argv:
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js and src/js/39t-askon.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js and src/js/39t-askon.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -175,6 +176,7 @@ PARTS = [
     ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
+    ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s)\.js|52s-teach5s\.css'),  # TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
     ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw)\.js|(39p-pers|39r-ask)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
 ]
@@ -185,8 +187,9 @@ PARTS = [
 # TEACH-2b: teach12 too (the grade 1-2 lessons), loaded with teach by the math map. PET-AGE2: petage (Home's: petAgeWarm, 17-pets-svg.js).
 # TEACH-3: teach35 (the grade 3-5 lessons), loaded with teach and teach12 by the math map for a child in 3rd grade or up.
 # TEACH-4: teachrd (the reading lessons and the Pre-K lessons), loaded with teach and teach12 by the reading map (Pre-K to 2nd), and by the math map for a Pre-K child.
+# TEACH-5S: teaches (the Spanish and Discover lessons), loaded with teach, teach12 and teachrd by the Spanish and Discover maps.
 # v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints')
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'petage', 'hints')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):
