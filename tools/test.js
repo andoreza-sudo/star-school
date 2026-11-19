@@ -21340,6 +21340,13 @@ run('teach: the model up front, the beat label, the Remember line TEACH-UX',()=>
     // the owner's case: add3 as a 1st grader, with the doubles and +9 lesson (add2) to remember: a ten frame over the sum
     {S.grade=1;let n=0;for(let s=1;s<=20;s++){const {it}=remOf('add3','add2',s);if(it&&it.mdl&&/ten frame/.test(LS.model(it.q)))n++}
       if(n!==20)bad.push('add3 with add2 to remember: the ten frame shows in '+n+' of 20')}
+    // the owner's "two colors yes" (v184): an add fact's ten frame (the model, the hint after a miss, Together's hint) shows the
+    // first addend in the first colour and the second in the second; take away keeps its faded counters, Add Three one colour
+    {const dots=(h,c)=>{const i=h.indexOf('<g class="'+c+'">');return i<0?0:(h.slice(i,h.indexOf('</g>',i)).match(/<circle/g)||[]).length};
+      for(const id of ['add2','add3','sub2','add5'])for(let s=1;s<=20;s++)for(const st of [0,1,2]){const q=LS_DRAFTED[id].q(st,mulberry32(s*7+st)),h=q.hint.html,at=id+' seed '+s+' step '+st+': ';
+        const [a,b]=[q.sl.a,q.sl.b];
+        if(id=='add2'||id=='add3'){if(dots(h,'v1')!==a||dots(h,'v2')!==b)bad.push(at+'the hint frame is not '+a+' then '+b+' in two colours: '+dots(h,'v1')+'/'+dots(h,'v2'))}
+        else if(/<g class="v2/.test(h))bad.push(at+'the hint frame has a second colour')}}
     if(seen.model.size<23)bad.push('only '+seen.model.size+' lessons carry a model at Remember: '+[...seen.model].join());
     // 2. grades 3 to 6 are as before: no model up front; their pet's own "then we build" line
     for(const g of [3,4,5,6]){S.grade=g;const T=lsTone();

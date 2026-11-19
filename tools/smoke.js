@@ -13523,13 +13523,16 @@ async function main() {
             const st = document.querySelector('#lsstep'), top = document.querySelector('.ls-top'), h0 = top.getBoundingClientRect().height;
             st.style.display = 'none'; const h1 = top.getBoundingClientRect().height; st.style.display = '';
             const it = LS.cur(LS.st);
-            return { q: it.q.label, kind: it.q.kind, mdl: !!it.mdl, tf: box('#prompt .ls-model svg[aria-label="ten frame"]'), eq: box('#prompt .eq'), inp: box('#lsinp'),
+            const dots = c => document.querySelectorAll('#prompt .ls-model g.' + c + '>circle').length;
+            return { q: it.q.label, kind: it.q.kind, mdl: !!it.mdl, tf: box('#prompt .ls-model svg[aria-label="ten frame"]'), two: [dots('v1'), dots('v2'), it.q.sl.a, it.q.sl.b], eq: box('#prompt .eq'), inp: box('#lsinp'),
               step: st.textContent, clip: st.scrollWidth > st.clientWidth + 1, sb: box('#lsstep'), top: box('.ls-top'), withLabel: h0, without: h1, typed: LS.u.typed, know: JSON.stringify(S.know.add2),
               hint: document.querySelector('#hint').innerHTML, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
               sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]') };
           }, null, { timeout: 15000 }).then(x => x.jsonValue());
           if (!/^add2 /.test(r0.q) || r0.kind !== 'num' || !r0.mdl || !r0.tf || r0.tf.h < 60 || r0.tf.t < r0.top.b || r0.tf.b > r0.eq.t + 1 || r0.typed || r0.hint)
             bad.push(at + 'the ten frame before any answer: ' + JSON.stringify(r0));
+          // the owner's "two colors yes" (v184): the first addend in the first colour, the second in the second
+          if (r0.two[0] !== r0.two[2] || r0.two[1] !== r0.two[3]) bad.push(at + 'the ten frame is not the two addends in two colours: ' + JSON.stringify(r0.two));
           if (!/^Step 1 of 6 · Remember$/.test(r0.step) || r0.clip || !r0.read || r0.sb.r > r0.vw || r0.sb.l < 0 || r0.sb.b > r0.top.b) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.top]));
           if (Math.abs(r0.withLabel - r0.without) > .5) bad.push(at + 'the label makes the top bar taller: ' + r0.without + ' -> ' + r0.withLabel);
           if (r0.sw > r0.vw || r0.tf.r > r0.vw || (w < 1000 && r0.eq.b > r0.inp.t + 1)) bad.push(at + 'does not fit: ' + JSON.stringify(r0));

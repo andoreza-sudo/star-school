@@ -353,7 +353,11 @@ function lsFactStop(id, t, kind, bugs) {
       c = a + b; eq = `${a} + ${b}`; say = `${a} plus ${b}`; ab = [a, b, '+'];
     }
     built = c;
-    const sl = k3 ? {a, b, k: k3} : {a, b}, pic = kind == 'sub' ? VIZ.tenFrame(a, 20, {fade: b}) : VIZ.tenFrame(c, 20, {b: kind == 'add3' ? 0 : b}), hint = lsFrameHint(c, 20, {}, h);
+    const sl = k3 ? {a, b, k: k3} : {a, b}, pic = kind == 'sub' ? VIZ.tenFrame(a, 20, {fade: b}) : VIZ.tenFrame(c, 20, {b: kind == 'add3' ? 0 : b}),
+      // TEACH-UX (owner: "two colors yes"): the add facts' hint (and so the Remember model and Together's hint) draws the two
+      // addends in two colours, a then b, as the picture stage does, so the child sees "make a ten"; take away keeps one colour
+      // (its hint's words do the taking), Add Three keeps one colour (three addends, two colours would pair the wrong two)
+      hint = lsFrameHint(c, 20, kind == 'sub' || kind == 'add3' ? {} : {b}, h);
     if (st == 0) return lsFrame(D.sk, D.lv, 0, built, 20, {s0, ab, sl, bug, hint, pk: false, html: lsEq(eq) + lsCap(kind == 'sub' ? `Take away ${b}.` : 'Make the answer on the frame.'),
       say: `${say}. ${kind == 'sub' ? `Take away ${b}.` : 'Make the answer on the frame.'}`});
     if (st == 1) return lsDq(D, 1, {kind: 'num', ans: c, ab, sl, bug, hint, html: `<div class="pkq">${pic}</div>` + lsEq(`${eq} = ${SLOT}`), say: `${say} equals what?`});
