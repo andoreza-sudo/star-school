@@ -20,6 +20,12 @@ function ptGate(){const c=ptCfg(),p=pt(),need=c.need*60,open=p.open===today();
   return{need,done:Math.min(done,need),more:Math.max(0,need-done),open,locked:done<need&&!open}}
 function ptLeft(){const p=pt(),c=ptCfg();if(c.pause||ptGate().locked)return 0;const cap=c.max?c.max*60-p.used:1e9;return Math.max(0,Math.min(p.bank,cap))}
 function ptEarn(sec){pt().bank+=sec;save()}
+/* RC-1 (owner): a grown-up gives (+) or takes away (-) game time in Grown-ups. It goes straight into the bank, never below 0. It is not
+   learning: the activity log keeps it apart (ACT.gift, the report card's "from a grown-up" line), so "learn first" does not count it;
+   the daily max still caps how much is played. S.pt.gift holds what was given since Home last said so ("A grown-up gave you ...").
+   Returns the seconds the bank changed by. */
+function ptGift(sec){const p=pt(),b0=p.bank;p.bank=Math.max(0,b0+Math.round(sec));const d=p.bank-b0;
+  if(d){ACT.gift(d);p.gift=Math.max(0,(p.gift|0)+d)}save();return d}
 // everything the screens and tests need to know about game time right now; why: ok, paused, learn, max or empty
 function ptState(){const p=pt(),c=ptCfg(),g=ptGate(),left=ptLeft(),capSec=c.max?c.max*60:0;
   const why=c.pause?'paused':g.locked?'learn':c.max&&p.used>=capSec?'max':p.bank<=0?'empty':'ok';

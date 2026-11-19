@@ -428,6 +428,21 @@ const SCREENS = {
   'props-map': { run: ev(() => { const wi = PATHS.math.worlds.findIndex(w => w.id == 'm_reef'), last = WR.math[wi][1]; S.grade = 1; S.know = {};
     NODES.math.forEach((n, i) => { setSt('math', i, i <= last ? 2 : 0); if (i <= last && LS_STOPS.math.has(nid(n))) S.know[nid(n)] = { s: 2 }; });
     pathMap('math', wi); [...document.querySelectorAll('.lsn.done')].find(e => NODES.math[+e.dataset.ls].wi == wi).scrollIntoView({ block: 'center' }); }) },
+  // RC-1 (v188): a fresh 1st grader's math map, opened on their own stop (add2's lesson stop, ringed); the grown-up question (no word of
+  // the hold); Grown-ups offering Undo erase; Home with the "can't save" banner
+  'rc1-map-g1': { fixture: 'fresh', run: async p => { await p.evaluate(() => { loadSave(null); S.name = 'Sam'; S.grade = 1; migrate(); for (const q in PATHS) S.maps[q] = S.maps[q] || {}; save(); pathMap('math'); });
+    await teachReady(p); await p.waitForTimeout(800); } },
+  'rc1-gate': { run: ev(() => home()), sheet: async p => { await p.click('#gear'); await p.waitForTimeout(500); return { close: 'escape' }; } },
+  'rc1-undo-erase': { adult: true, run: ev(() => { localStorage.setItem(KEY + '-undo', JSON.stringify(S)); localStorage.setItem(BAK.ERASED, KEY + '|new'); grown();
+    document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }); }) },
+  // owner decisions 2026-11-19: the Grown-ups PIN pad and Forgot PIN?, a child's picture password grid, Grown-ups' game time card
+  'rc1-pin-pad': { run: ev(async () => { await partLoad('gate'); PIN.set('2580'); home(); }), sheet: async p => { await p.click('#gear'); await p.waitForTimeout(600); return { close: 'escape' }; } },
+  'rc1-pin-forgot': { run: async p => { await p.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); home(); PIN.forgot(() => {}); }); await p.waitForTimeout(700); } },
+  'rc1-kids-grid': { run: async p => { await p.evaluate(async () => { await partLoad('gate'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben' }), false); KPW.set('p2', ['sun', 'sun', 'cake']);
+    window.say = window.__a11y.say; PRF.pick(); KPW.ask('p2', () => {}); }); await p.waitForTimeout(700); } },
+  'rc1-gametime': { adult: true, run: ev(() => { grown(); document.querySelector('#gw-give').scrollIntoView({ block: 'center' }); }) },
+  'rc1-gift-home': { run: ev(() => { pt().gift = 600; home(); }) },
+  'rc1-save-banner': { run: ev(() => { SAVE_FAILED = true; SAVE_WARNED = false; home(); }) },
   'lstop-start': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.open('tenf2'); }); await p.waitForTimeout(600); } },
   'lstop-meter': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.WAKE = 400; LS.start('tenf2', { learn: 1 }); }); await p.waitForTimeout(1500); } },
   'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();

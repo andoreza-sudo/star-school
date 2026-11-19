@@ -101,8 +101,8 @@ const LESSONS = {
       if (st == 1) return lsNum('tenf', 2, 1, 10 - f, `<div class="pkq">${VIZ.tenFrame(f, 10)}</div>${SLOT}`, 'How many more to make ten?', {hint, bug: {given: [f]}});
       return lsNum('tenf', 2, 2, 10 - f, lsEq(`${f} + ${SLOT} = 10`), `${f} and how many make ten?`, {hint, bug: {given: [f], op: [10 + f]}});
     },
-    exp: () => ({q: lsFrame2('tenf', 2, 10, 'fill', {html: lsAsk('Fill the frame. Use both colours!'), say: 'Fill the whole frame. Use both colours. Any way you like!'}),
-      nudge: 'Fill every box. Use both colours.',
+    exp: () => ({q: lsFrame2('tenf', 2, 10, 'fill', {html: lsAsk('Fill the frame. Use both colors!'), say: 'Fill the whole frame. Use both colors. Any way you like!'}),
+      nudge: 'Fill every box. Use both colors.',
       react: v => {
         const [a, b] = v;
         return {ctx: {a, b}, lines: [`You made ${a} and ${b}.`, `${a} and ${b} make ten!`]};
@@ -131,8 +131,8 @@ const LESSONS = {
       if (st == 1) return lsNum('add', 4, 1, c, `<div class="pkq">${VIZ.tenFrame(c, 5, {b})}</div>` + lsEq(`${a} + ${b} = ${SLOT}`), `${a} plus ${b} equals what?`, {hint, bug});
       return lsNum('add', 4, 2, c, lsEq(`${a} + ${b} = ${SLOT}`), `${a} plus ${b} equals what?`, {hint, bug});
     },
-    exp: () => ({q: lsFrame2('add', 4, 5, 'both', {html: lsAsk('Use both colours!'), say: 'Put in some blue and some orange. Any way you like!'}),
-      nudge: 'Use both colours.',
+    exp: () => ({q: lsFrame2('add', 4, 5, 'both', {html: lsAsk('Use both colors!'), say: 'Put in some blue and some orange. Any way you like!'}),
+      nudge: 'Use both colors.',
       react: ([a, b]) => ({ctx: {a, b}, lines: [`${a} and ${b} make ${a + b}.`]})}),
     name: c => ({html: `<div class="pkq">${VIZ.tenFrame(c.a + c.b, 5, {b: c.b})}</div>` + lsEq(`${c.a} + ${c.b} = ${c.a + c.b}`),
       lines: [`${c.a} and ${c.b} make ${c.a + c.b}.`, `We write ${c.a} plus ${c.b} equals ${c.a + c.b}.`]}),
@@ -145,8 +145,8 @@ const LESSONS = {
       if (st == 1) return lsNum('add', 1, 1, c, `<div class="pkq">${VIZ.tenFrame(c, 10, {b})}</div>` + lsEq(`${a} + ${b} = ${SLOT}`), `${a} plus ${b} equals what?`, {hint, bug});
       return lsNum('add', 1, 2, c, lsEq(`${a} + ${b} = ${SLOT}`), `${a} plus ${b} equals what?`, {hint, bug});
     },
-    exp: () => ({q: lsFrame2('add', 1, 10, 'both', {html: lsAsk('Use both colours!'), say: 'Put in some blue and some orange. Any way you like!'}),
-      nudge: 'Use both colours.',
+    exp: () => ({q: lsFrame2('add', 1, 10, 'both', {html: lsAsk('Use both colors!'), say: 'Put in some blue and some orange. Any way you like!'}),
+      nudge: 'Use both colors.',
       react: ([a, b]) => ({ctx: {a, b}, lines: [`${a} and ${b} make ${a + b}.`]})}),
     name: c => ({html: `<div class="pkq">${VIZ.tenFrame(c.a + c.b, 10, {b: c.b})}</div>` + lsEq(`${c.a} + ${c.b} = ${c.a + c.b}`),
       lines: [`${c.a} blue and ${c.b} orange.`, `${c.a} plus ${c.b} equals ${c.a + c.b}.`]}),
@@ -179,8 +179,8 @@ const LESSONS = {
     },
     exp: r => {
       const t = lsRi(r, 5, 9);
-      return {q: lsFrame2('miss', 1, 10, 'sum', {target: t, html: lsEq(t) + lsAsk(`Make ${t} with both colours!`), say: `Make ${t}. Use both colours, any way you like!`}),
-        nudge: `Make ${t}. Use both colours.`,
+      return {q: lsFrame2('miss', 1, 10, 'sum', {target: t, html: lsEq(t) + lsAsk(`Make ${t} with both colors!`), say: `Make ${t}. Use both colors, any way you like!`}),
+        nudge: `Make ${t}. Use both colors.`,
         react: ([a, b]) => ({ctx: {a, b, t}, lines: [`${a} and ${b} make ${t}.`, `So ${a} and ${b} more make ${t}.`]})};
     },
     name: c => ({html: `<div class="pkq">${VIZ.tenFrame(c.t, 10, {b: c.b})}</div>` + lsEq(`${c.a} + ${c.b} = ${c.t}`),
@@ -219,7 +219,7 @@ const LESSONS = {
         hint: lsFrameHint(n, 10, {}, st == 0 ? 'Match each dot with a counter.' : st == 1 ? 'Match each dot. Then put in one more.' : 'Match each dot. Then take one away.')});
     },
     exp: () => ({q: lsFrame2('pk_more', 2, 10, 'both', {html: lsAsk('Put in blue and orange!'), say: 'Put in some blue and some orange. Any way you like!'}),
-      nudge: 'Use both colours.',
+      nudge: 'Use both colors.',
       react: ([a, b]) => ({ctx: {a, b}, lines: [`You made ${a} blue and ${b} orange.`, a > b ? 'Blue has more.' : a < b ? 'Orange has more.' : 'They are the same!']})}),
     name: c => {
       const a = c.a != c.b ? c.a : 6, b = c.a != c.b ? c.b : 4, big = Math.max(a, b);

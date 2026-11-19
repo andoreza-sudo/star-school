@@ -1,5 +1,5 @@
-/* Star School gen v187. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v187 loads this file with <script src="gen.v187.js"> after its own code, before data.v187.js. */
+/* Star School gen v188. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v188 loads this file with <script src="gen.v188.js"> after its own code, before data.v188.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -4004,6 +4004,7 @@ function aboutCard(){
   return GW.card('gw-about','info','About Star School',
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
+    <p class="gw-note" id="ab-gate">${ico('gear',22)}<span>To open Grown-ups, tap Grown-ups on Home and type your PIN. Forgot it? Tap Forgot PIN? on the number pad.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
     <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">${BUILD}</span></div><div><b>Edition</b> <span id="ab-ed">${PLAY.edition()}</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
@@ -4066,7 +4067,9 @@ function grown(){let armed=false;
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <p class="gw-sub" id="lspayh">Lessons with ${esc(petN())} pay game time when Show is passed with no help (guessing pays nothing). Minutes:</p>
     ${[['ls1','First pass'],['ls2','Second pass'],['ls3','Later passes (once a day)'],['lsT','Good try, not passed (once a day)']].map(([k,l])=>`<div class="gw-row"><span class="gw-rl">${l}</span>${GW.seg(k,LS_PAY_OPT,lsPayCfg()[k],'Lesson game time, '+l+', minutes',v=>v||'None')}</div>`).join('')}
-    <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
+    <div class="gw-row" id="gw-give"><span class="gw-rl">Give game time</span><span class="gw-btns">${[5,10,15].map(m=>UI.btn('+'+m+' min',{size:'sm',icon:'plus',id:m==5?'pt5':'pt'+m,attrs:`data-give="${m}" aria-label="Give ${m} minutes of game time"`})).join('')}</span></div>
+    <div class="gw-row"><span class="gw-rl">Take away</span><span class="gw-btns">${UI.btn('−5 min',{size:'sm',kind:'ghost',icon:'minus',id:'ptm5',attrs:'data-give="-5" aria-label="Take away 5 minutes of game time"'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
+    <p class="gw-sub" id="ptgifth">Given time goes straight into the bank. It does not count as learning, and the daily max still applies.</p>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>
     <div class="gw-row" id="gw-hcas"><span class="gw-rl">4x4 Hill Climb driving help</span>${GW.seg('hcas',['auto',3,2,1,0],hcAsGrown(),'4x4 Hill Climb driving help',v=>HCAS_NAMES[v])}</div>
     <p class="gw-sub">Auto starts from the grade, gives a little less help as your child wins stars, and more after a few crashes in a row.</p>
@@ -4092,6 +4095,7 @@ function grown(){let armed=false;
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
   ${BAK.card()}
   ${aboutCard()}
+  ${GW.card('gw-pin','lock','Grown-ups PIN',`<p class="gw-p">The PIN keeps children out of the settings.</p>${UI.btn('Change PIN',{size:'sm',icon:'edit',id:'pn-change'})}`)}
   ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:(PRF.many()?'Erases '+esc(S.name||'this child')+"'s progress, pet, stars, coins and voice recordings. The other children are kept.":'Erases all progress, the pet, stars, coins and voice recordings on this tablet.')+' This cannot be undone, so save a backup first if you may want it back.'})}
   </div></div>`);
   $('#back').onclick=()=>home(true);
@@ -4109,7 +4113,9 @@ function grown(){let armed=false;
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
-  $('#pt5').onclick=()=>{ptEarn(300);grown()};$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
+  // RC-1 (owner): give or take away game time, in place (the bank shows the change; the page does not jump to the top)
+  $$('[data-give]').forEach(b=>b.onclick=()=>{const d=ptGift(+b.dataset.give*60),v=$('#gw-time .gw-st b');if(v)v.textContent=fmtT(pt().bank);
+    fb(d>0?`Gave ${fmtM(d)} of game time`:d<0?`Took away ${fmtM(-d)}`:'The bank is already empty','info')});$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
   $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
   for(const k in LS_PAY_D)$$(`[data-${k.toLowerCase()}]`).forEach(b=>b.onclick=()=>{ptCfg()[k]=+b.dataset[k.toLowerCase()];save();grown()}); // LS-STOP: what lessons pay
@@ -4130,15 +4136,19 @@ function grown(){let armed=false;
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
-  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent=PRF.many()?'Tap again to erase '+(S.name||'this child'):'Tap again to erase ALL progress';return}
+  $('#pn-change').onclick=()=>partLoad('gate').then(ok=>{if(ok)PIN.change()}); // RC-1: the Grown-ups PIN (41b-pin.js, part gate)
+  $('#reset').onclick=e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent=PRF.many()?'Tap again to erase '+(S.name||'this child'):'Tap again to erase ALL progress';return}
+    NAV.quiz(eraseAll)}} // RC-1: the Grown-ups PIN again, right before erasing
+// Erase everything (Start over), after the second tap and the grown-up question. RC-1: the erased save is kept for "Undo erase" (BAK.keepErased)
+async function eraseAll(){
     if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');PRF.setWho(PRF.cur);reloadSaved();return} // P5-10: only this child
-    SAVE_HOLD=true;try{localStorage.removeItem(SKEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
+    const raw=JSON.stringify(S);SAVE_HOLD=true;try{localStorage.removeItem(SKEY)}catch(x){}BAK.keepErased(SKEY,raw);
     // the voice clips (IndexedDB) go too; the reload never waits on IndexedDB for long (an open that never finished on a busy
     // tablet left the old progress on screen): it comes when the delete is done, blocked or failed, or after 1.5 s at most
     let gone=false;const go=()=>{if(!gone){gone=true;reloadSaved()}};
     try{if(SPKR.db){SPKR.db.close();SPKR.db=null}indexedDB.deleteDatabase('starschool-say')}catch(x){} // S-SPK2: the Say it! recordings
     try{if(DB.db){DB.db.close();DB.db=null}const r=indexedDB.deleteDatabase('starschool');r.onsuccess=r.onerror=r.onblocked=go}catch(x){go()}
-    setTimeout(go,1500)}}
+    setTimeout(go,1500)}
 async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
   try{const pm=await navigator.permissions.query({name:'microphone'});if(pm.state=='denied')return micHelp('denied')}catch(e){}
   let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return micHelp(e&&e.name=='NotFoundError'?'none':'denied')}
@@ -4242,6 +4252,24 @@ const BAK = {
     return {ok: true, data: m, info: {name: m.name || '', grade: m.grade, stars: m.stars || 0, coins: m.coins || 0, date}};
   },
   hasUndo() { return !!BAK.undoKey(); },
+  // RC-1: Erase everything and deleting a child keep the erased save the way a load keeps the one it replaced: under <key>-undo (one
+  // copy on the tablet: the other children's go), marked in ERASED as "<key>|new". Grown-ups offers "Undo erase" (BAK.undo) on its
+  // first visit after that and marks it "<key>|seen"; the next start drops a seen copy (PRF.boot), so it is offered once.
+  ERASED: KEY + '-erased',
+  keepErased(k, raw) {
+    if (raw && PRF.put(k + '-undo', raw) && PRF.put(BAK.ERASED, k + '|new')) {
+      for (const s of PRF.SLOTS) if (PRF.key(s) !== k) PRF.drop(PRF.key(s) + '-undo');
+      return true;
+    }
+    PRF.drop(k + '-undo'); // no room: the erase goes on without a copy (nothing of another child changes)
+    PRF.drop(BAK.ERASED);
+    return false;
+  },
+  // {k, seen, name} of the erased save that can come back, or null
+  erased() {
+    const m = /^(.+)\|(new|seen)$/.exec(PRF.get(BAK.ERASED) || ''), o = m && PRF.obj(PRF.get(m[1] + '-undo'));
+    return o ? {k: m[1], seen: m[2] == 'seen', name: String(o.name || '').slice(0, 40)} : null;
+  },
   // Replaces a child's save (the one playing unless id says another, P5-10) with data from read(). Returns '' or a message;
   // on a message nothing was changed. The replaced save is kept for "Undo last load" (only the last load: other copies go).
   apply(data, id = PRF.cur) {
@@ -4256,6 +4284,7 @@ const BAK = {
       return 'The tablet storage is full, so nothing was changed.';
     }
     for (const s of PRF.SLOTS) if (s !== id) PRF.drop(PRF.key(s) + '-undo');
+    PRF.drop(BAK.ERASED); // RC-1: the copy is a load's now, not an erase's
     if (me) {
       loadSave(raw);
       migrate();
@@ -4269,6 +4298,7 @@ const BAK = {
     try { o = JSON.parse(raw); } catch (e) {}
     if (!o || typeof o != 'object' || Array.isArray(o)) return 'There is nothing to undo.';
     try { localStorage.setItem(k, raw); localStorage.removeItem(u); } catch (e) { return 'The tablet storage is full, so nothing was changed.'; }
+    PRF.drop(BAK.ERASED); // RC-1: an erased child comes back (PRF.boot finds its save at the next start)
     if (k === SKEY) {
       loadSave(raw);
       migrate();
@@ -4368,11 +4398,16 @@ const BAK = {
     });
   },
   card() {
+    const er = BAK.erased();
+    if (er && !er.seen) PRF.put(BAK.ERASED, er.k + '|seen'); // RC-1: offered on this visit; the next start drops it
     return GW.card('gw-bak', 'download', 'Backup',
+      (er ? `<div class="gw-bkrow">${UI.btn('Undo erase', {kind: 'primary', size: 'sm', icon: 'undo', id: 'bk-unerase'})}</div>` +
+        `<p class="gw-sub" id="bk-ersub">Erased by mistake? This brings back ${esc(er.name || 'the progress')}${er.name ? "'s progress" : ''}. ` +
+        'You can undo it until Star School is opened again.</p>' : '') +
       `<div class="gw-bk"><div class="gw-bkrow">${UI.btn('Save a backup', {kind: 'primary', size: 'sm', icon: 'download', id: 'bk-save'})}${onlineNote()}</div>` +
       (PRF.many() ? `<div class="gw-bkrow">${UI.btn('Save all children', {size: 'sm', icon: 'download', id: 'bk-all'})}${onlineNote()}</div>` : '') +
       `<div class="gw-bkrow">${UI.btn('Load a backup', {size: 'sm', icon: 'upload', id: 'bk-load'})}<input type="file" id="bk-file" accept=".json,application/json" hidden>` +
-      `${BAK.hasUndo() ? UI.btn('Undo last load', {size: 'sm', kind: 'ghost', icon: 'undo', id: 'bk-undo'}) : ''}</div>` +
+      `${BAK.hasUndo() && !er ? UI.btn('Undo last load', {size: 'sm', kind: 'ghost', icon: 'undo', id: 'bk-undo'}) : ''}</div>` +
       `<div id="bk-msg" role="status"></div></div>`,
       {sub: 'A backup is one small file with all progress, the pet, stars and coins. Keep it somewhere safe, or load it on another tablet.'});
   },
@@ -4389,8 +4424,7 @@ const BAK = {
       try { text = await f.text(); } catch (x) {}
       BAK.review(text);
     };
-    const u = $('#bk-undo');
-    if (u) u.onclick = () => {
+    for (const u of [$('#bk-undo'), $('#bk-unerase')]) if (u) u.onclick = () => {
       const bad = BAK.undo();
       if (bad) return BAK.msg(bad);
       PRF.setWho(PRF.cur);
@@ -4565,8 +4599,9 @@ const REP = {
   },
   weeks(m) {
     const c = m.cur, p = m.prev;
+    const gift = c.gt ? `<p class="rp-p" id="rp-gift">Game time from a grown-up this week: ${c.gt > 0 ? '+' : '−'}${REP.fmtMin(Math.abs(c.gt))} min (not learning time).</p>` : ''; // RC-1
     if (!c.q && !c.sec && !p.q && !p.sec)
-      return `<div class="rp-empty">No learning time recorded yet. Once ${esc(m.name || 'your child')} plays a round, minutes, rounds and accuracy appear here.</div>`;
+      return gift + `<div class="rp-empty">No learning time recorded yet. Once ${esc(m.name || 'your child')} plays a round, minutes, rounds and accuracy appear here.</div>`;
     const cm = Math.round(c.sec / 60), pm = Math.round(p.sec / 60), d = cm - pm;
     const cmp = !p.sec ? 'Nothing was recorded in the week before.'
       : !c.sec ? 'Nothing recorded this week yet; last week was ' + pm + ' min.'
@@ -4578,7 +4613,7 @@ const REP = {
     const tip = acc === null ? '' : acc >= .85 ? 'Most answers are right on the first try. A good time to try "Find my level" or a higher grade.'
       : acc < .6 ? 'Many questions needed a second try this week. Sitting beside them for a round or two can help; see Needs practice below.'
       : 'A steady week. Short, regular rounds help more than long ones.';
-    return row('This week', c) + row('Last week', p) + `<p class="rp-p"><b>${cmp}</b>${tip ? ' ' + tip : ''}</p>`
+    return row('This week', c) + row('Last week', p) + `<p class="rp-p"><b>${cmp}</b>${tip ? ' ' + tip : ''}</p>` + gift
       + `<h3 class="rp-h3">Minutes per day</h3>${REP.chart(m)}`
       + (m.by.length ? `<h3 class="rp-h3">This week by subject</h3>${m.by.map(b => `<div class="rp-sub"><span class="rp-sn">${esc(b.label)}</span>`
         + `<span class="rp-sbar"><i style="width:${Math.max(4, Math.round(b.sec / m.cur.sec * 100))}%"></i></span><span class="rp-sm">${REP.fmtMin(b.sec)} min</span></div>`).join('')}` : '');
@@ -4758,9 +4793,9 @@ function needOnline(action, o = {}) {
    Children never see a price or a way to pay. What a child sees on locked content is one calm line and an OK button (PLAY.kid):
    "This world opens when a grown-up unlocks Star School." No timer, no repeat, no "ask your parent". Next to locked content there
    is one quiet button for grown-ups (PLAY.bandHTML on a locked world of the map, PLAY.rowHTML in Brain Teasers). It asks the grown-up
-   question first (NAV.quiz, the same times-table question as the Grown-ups button); only then does the Unlock Star School sheet ask
+   PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Star School sheet ask
    Google Play for the price and offer to buy or restore. Grown-ups has a card that says what the unlock includes, with no price and
-   no buttons but "Unlock or restore", which asks the same question first (the 3-second hold opens Grown-ups without the question).
+   no buttons but "Unlock or restore", which asks for the PIN again first.
 
    The purchase goes through Google Play billing in the Trusted Web Activity: the Digital Goods API (getDigitalGoodsService(BILLING),
    getDetails([SKU]) for the price, listPurchases() to restore) and the Payment Request API (supportedMethods BILLING, data {sku}).
@@ -5054,4 +5089,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v187'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v188'; // last line: the whole file ran (checked by dataReady() before the app starts)

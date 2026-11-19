@@ -165,8 +165,8 @@ function lsMentStop(id, t) {
 }
 
 /* ---- facts to 20 on the double ten frame: +9 & Doubles, All the Facts, Take Away to 18, Missing to 18, Add Three ---- */
-const LS_BRIEF_FACT = `Explore: a double ten frame (two rows of ten). The child puts in counters in two colours, any way (no slots in the task).
-Name it: the frame they made; lines on it (slots {a} {b} {sum}: {a} of one colour and {b} of the other make {sum}) and the idea.
+const LS_BRIEF_FACT = `Explore: a double ten frame (two rows of ten). The child puts in counters in two colors, any way (no slots in the task).
+Name it: the frame they made; lines on it (slots {a} {b} {sum}: {a} of one color and {b} of the other make {sum}) and the idea.
 Together (SLOTS): line 1 before a build on the frame, line 2 before a picture of the frame (they type the answer), line 3 before the fact in symbols only.
 Remember: a warm-up: fill a ten frame to make ten (slot {n}: the counters already in).
 Show: two facts to type, no help, inside a job in the world (SLOTS).`;
@@ -200,7 +200,7 @@ function lsFactStop(id, t, kind, bugs) {
     return lsDq(D, 2, {kind: 'num', ans: c, ab, sl, bug, hint, html: lsEq(`${eq} = ${SLOT}`), say: `${say} equals what?`});
   };
   D.warm = lsWarmTen(D);
-  D.exp = () => ({q: lsFrame2(D.sk, D.lv, 20, 'both', {pk: false, sl: {}, html: lsCap('Use both colours!'), say: 'Put in some blue and some orange.'}), nudge: 'Use both colours.',
+  D.exp = () => ({q: lsFrame2(D.sk, D.lv, 20, 'both', {pk: false, sl: {}, html: lsCap('Use both colors!'), say: 'Put in some blue and some orange.'}), nudge: 'Use both colors.',
     react: ([a, b]) => ({ctx: {a, b, sum: a + b}, lines: [`${a} and ${b} make ${a + b}.`]})});
   D.name = c => ({html: `<div class="pkq">${VIZ.tenFrame(c.sum, 20, {b: c.b})}</div>` + lsEq(`${c.a} + ${c.b} = ${c.sum}`), sl: c});
   return D;

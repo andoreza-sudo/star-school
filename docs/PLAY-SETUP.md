@@ -82,8 +82,15 @@ waits and opens by itself once paid), and Restore purchase after reinstalling (t
 
 **Families policy points the app already meets**: no ads, no analytics, no accounts; children never see a price or a purchase
 prompt (locked content shows "This world opens when a grown-up unlocks Star School." and OK); the price and the Unlock button are
-only behind the grown-up question (a times-table question), including in Grown-ups; no timers, no repeated prompts, no "ask your
-parent" screens.
+only behind the Grown-ups PIN (v188, owner decision 2026-11-19: 4 digits the parent chooses the first time Grown-ups opens, which is
+guarded by a times-table question until a PIN exists; 5 wrong PINs wait 1, 5, 15, 30, then 60 minutes; Forgot PIN? asks three 2-digit
+x 2-digit multiplications and then lets the parent choose a new PIN), including in Grown-ups; Google Play's own purchase check still
+protects the payment itself; no timers, no repeated prompts, no "ask your parent" screens. Children with a picture password (optional,
+set by the parent) open only their own progress.
+
+**Reviewer note (paste into App content > App access, "All or some functionality is restricted")**: "Settings and the one-time unlock
+are behind a parent PIN. On a fresh install: tap Grown-ups at the top of the home screen, answer the multiplication question, then
+choose any 4-digit PIN (for example 2580) and type it again. Use that PIN afterwards. No account or login is needed." 
 
 **Store listing**: say "Free to try, one-time unlock". Screenshots from `node tools/shots.js` (and `tools/out/play/` from the
 smoke step PLAY-01 for the unlock screens).

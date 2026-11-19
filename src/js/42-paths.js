@@ -136,12 +136,15 @@ function defStart(p,g0){
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
    Falls back to any open unpassed stop (not in an untouched world below the start world), then to the very last stop (everything done). */
+// RC-1: the worlds curNode passes over (below), as a test the lesson planner shares (planToday, 52b-know.js), so the map's ring, the
+// planner's offer, Ask the pet and the missions all name the same stop. sw: startWorld(p); lp: lastWorld(p)
+function lastWorld(p){const N=NODES[p];let lp=-1;for(let i=0;i<N.length;i++)if(passed(p,i))lp=Math.max(lp,N[i].wi);return lp} // the furthest world with a passed stop
+const worldBelow=(p,wi,sw,lp)=>(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)))||(wi<lp&&!worldHasProgress(p,wi));
 function curNode(p){
-  const N=NODES[p],sw=startWorld(p);let any=-1,lp=-1;
-  for(let i=0;i<N.length;i++)if(passed(p,i))lp=Math.max(lp,N[i].wi); // the furthest world with a passed stop
+  const N=NODES[p],sw=startWorld(p),lp=lastWorld(p);let any=-1;
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    const wi=N[i].wi,below=(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)))||(wi<lp&&!worldHasProgress(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child), or behind the child's furthest progress (a K world added in front of Number Meadow)
+    const wi=N[i].wi,below=worldBelow(p,wi,sw,lp); // an untouched world below the start world (Pre-K Tiny Town for a K child), or behind the child's furthest progress (a K world added in front of Number Meadow)
     if(any<0&&!below&&!stopNew(p,i))any=i; // (P2-24: a NEW stop never becomes the fallback) a finished child is not sent back down to a world they never needed
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;

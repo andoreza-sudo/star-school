@@ -2,9 +2,9 @@
    Children never see a price or a way to pay. What a child sees on locked content is one calm line and an OK button (PLAY.kid):
    "This world opens when a grown-up unlocks Star School." No timer, no repeat, no "ask your parent". Next to locked content there
    is one quiet button for grown-ups (PLAY.bandHTML on a locked world of the map, PLAY.rowHTML in Brain Teasers). It asks the grown-up
-   question first (NAV.quiz, the same times-table question as the Grown-ups button); only then does the Unlock Star School sheet ask
+   PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Star School sheet ask
    Google Play for the price and offer to buy or restore. Grown-ups has a card that says what the unlock includes, with no price and
-   no buttons but "Unlock or restore", which asks the same question first (the 3-second hold opens Grown-ups without the question).
+   no buttons but "Unlock or restore", which asks for the PIN again first.
 
    The purchase goes through Google Play billing in the Trusted Web Activity: the Digital Goods API (getDigitalGoodsService(BILLING),
    getDetails([SKU]) for the price, listPurchases() to restore) and the Payment Request API (supportedMethods BILLING, data {sku}).

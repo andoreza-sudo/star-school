@@ -191,6 +191,7 @@ const UI = {
       bg.classList.remove('on');
       setTimeout(() => bg.remove(), 340);
       if (o.onClose) o.onClose();
+      if (typeof SWU != 'undefined' && SWU.due === 1) setTimeout(SWU.try, 400); // RC-1: an update waiting for a hub screen (90-app.js)
     };
     if (!o.stay) {
       bg.onclick = e => { if (e.target === bg) close(); };

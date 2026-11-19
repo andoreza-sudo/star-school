@@ -20,3 +20,5 @@
 .lsn-tk.dn .ic{color:var(--good)}
 .nlab.lsn-lab{color:var(--ink-2)}
 html.calm .btn.lsn.cur::after{animation:none}
+/* RC-1: the planner's pick (LS.mapAdd, .ls-go) pulses only when it is the child's own stop (.cur): one ring on the map */
+.btn.lsn.ls-go:not(.cur)::after{content:none;animation:none}
