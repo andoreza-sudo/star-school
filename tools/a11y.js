@@ -401,6 +401,10 @@ const SCREENS = {
   // end card with its game time
   'lstop-map': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); pathMap('math', NODES.math[lstopI()].wi); });
     await p.waitForTimeout(800); await p.evaluate(() => document.querySelector(`.lsn[data-ls="${lstopI()}"]`).scrollIntoView({ block: 'center' })); await p.waitForTimeout(300); } },
+  // G-PROPS: the map with the job props by the learned lesson stops of Ocean Reef (a 1st grader, stops and lessons passed up to it)
+  'props-map': { run: ev(() => { const wi = PATHS.math.worlds.findIndex(w => w.id == 'm_reef'), last = WR.math[wi][1]; S.grade = 1; S.know = {};
+    NODES.math.forEach((n, i) => { setSt('math', i, i <= last ? 2 : 0); if (i <= last && LS_STOPS.math.has(nid(n))) S.know[nid(n)] = { s: 2 }; });
+    pathMap('math', wi); [...document.querySelectorAll('.lsn.done')].find(e => NODES.math[+e.dataset.ls].wi == wi).scrollIntoView({ block: 'center' }); }) },
   'lstop-start': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.open('tenf2'); }); await p.waitForTimeout(600); } },
   'lstop-meter': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.WAKE = 400; LS.start('tenf2', { learn: 1 }); }); await p.waitForTimeout(1500); } },
   'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();

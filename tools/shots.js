@@ -2074,6 +2074,20 @@ Object.assign(SCREENS, {
   'scene-disc': { run: async p => { await p.evaluate(() => { S.grade = 4; pathMap('disc'); }); } },
   'scene-top': { run: async p => { await p.evaluate(() => pathMap('math', 6)); } },
   'scene-space': { run: async p => { await p.evaluate(() => pathMap('read', 4)); } },
+  // G-PROPS: a 1st grader with every math stop and lesson passed up to the end of world w: the job props by the learned lesson stops
+  // (look at 380x780, 360x740 and 1024x600: SHOTS_SIZES=380x780,360x740,1024x600 node tools/shots.js map-props map-props-reef)
+  ...Object.fromEntries([['map-props', 'm_shape'], ['map-props-reef', 'm_reef'], ['map-props-space', 'm_space']].map(([name, wid]) => [name, {
+    run: async p => {
+      await p.evaluate(wid => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id == wid), last = WR.math[wi][1];
+        S.grade = 1; S.know = {};
+        NODES.math.forEach((n, i) => { setSt('math', i, i <= last ? 2 : 0); if (i <= last && LS_STOPS.math.has(nid(n))) S.know[nid(n)] = { s: 2 }; });
+        pathMap('math', wi);
+        const b = [...document.querySelectorAll('.lsn.done')].find(e => NODES.math[+e.dataset.ls].wi == wi);
+        if (b) b.scrollIntoView({ block: 'center' });
+      }, wid);
+    },
+  }])),
 });
 
 

@@ -6999,6 +6999,82 @@ async function main() {
       else step(`P4-09: ${worlds} world maps (every world of every path at 380x780 and 1024x600): every band has its scene behind the map, ${stops} stops, their labels, titles and Test out banners on top, trail stones, no sideways scroll`);
     }
 
+    // G-PROPS: the job done at each learned lesson stop. A midway child in 1st grade whose math stops and lessons are passed up to
+    //    the end of Ocean Reef: every learned lesson stop (.lsn.done) and only those are flagged to the scene (SCN.band), the job
+    //    props stand clear of every stop, lesson stop, label, ticket, check-in medal, title, banner and the pet on the real page at
+    //    380x780, 360x740 and 1024x600, scenes stay aria-hidden and in budget; with no lesson learned there are none. Screenshots in
+    //    tools/out/props/.
+    if (seg('G-PROPS')) {
+      const bad = [], notes = [], path = require('path'), shots = process.env.PROPS_SHOTS || path.join(__dirname, 'out', 'props');
+      require('fs').mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, sz = w + 'x' + h, at = 'G-PROPS ' + sz + ' ';
+        try {
+          await pg.evaluate(() => {
+            S.grade = 1; delete S.lsOpen; delete S.les; S.know = {};
+            const last = WR.math[PATHS.math.worlds.findIndex(w => w.id == 'm_reef')][1];
+            NODES.math.forEach((n, i) => { setSt('math', i, i <= last ? 2 : 0); if (i <= last && LS_STOPS.math.has(nid(n))) S.know[nid(n)] = { s: 2 }; });
+            save();
+            // every band drawn: its stops as the scene got them, and the job props it placed (map px)
+            window.__bands = [];
+            const b0 = SCN.band;
+            SCN.band = (wd, W, top, hh, o) => { SCN.cache.clear(); const html = b0(wd, W, top, hh, o);
+              window.__bands.push({ id: wd.id, top, stops: o.stops.map(q => [Math.round(q[0]), Math.round(q[1]), !!q[5]]),
+                jobs: (SCN.placed || []).filter(q => q.length > 2).map(q => [q[0], q[1].map((v, k) => v + (k % 2 ? top : 0)), q[2]]),
+                el: (html.match(/<(path|circle)\b/g) || []).length }); return html; };
+          });
+          const look = async (wid, learned) => pg.evaluate(([wid, learned]) => {
+            if (!learned) S.know = {};
+            window.__bands = [];
+            const wi = PATHS.math.worlds.findIndex(w => w.id == wid);
+            pathMap('math', wi);
+            const o = [], m = document.querySelector('#map'), mr = m.getBoundingClientRect();
+            const rel = e => { const r = e.getBoundingClientRect(); return [r.left - mr.left, r.top - mr.top, r.right - mr.left, r.bottom - mr.top]; };
+            const done = new Set([...m.querySelectorAll('.lsn.done')].map(b => Math.round(parseFloat(b.style.left)) + ',' + Math.round(parseFloat(b.style.top))));
+            let jobs = 0, flagged = 0;
+            for (const B of window.__bands) {
+              if (B.el > 75) o.push(B.id + ': ' + B.el + ' elements');
+              for (const [x, y, job] of B.stops) { if (job) flagged++; if (job !== done.has(x + ',' + y)) o.push(B.id + ': stop at ' + x + ',' + y + (job ? ' flagged, not a learned lesson stop' : ' is a learned lesson stop, not flagged')); }
+              const per = {};
+              for (const [name, box, i] of B.jobs) {
+                jobs++;
+                if (per[i]) o.push(B.id + ': two job props at stop ' + i); per[i] = 1;
+                if (!B.stops[i] || !B.stops[i][2]) o.push(B.id + ': ' + name + ' by a stop that is not learned');
+                if (box[0] < 0 || box[2] > m.clientWidth) o.push(B.id + ': ' + name + ' sticks out');
+                for (const e of m.querySelectorAll('.node,.lsn,.nlab,.nnew,.lsn-tk,.ck-go,.ck-mapm,.mappet,.wtitle,.tobtn,.ak-mp,.wmore')) {
+                  const r = rel(e);
+                  if (r[2] > r[0] && box[0] < r[2] && box[2] > r[0] && box[1] < r[3] && box[3] > r[1]) o.push(B.id + ': ' + name + ' under ' + (e.className.baseVal || e.className).split(' ').slice(0, 2).join(' '));
+                }
+              }
+            }
+            if (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1) o.push('sideways scroll');
+            for (const b of m.querySelectorAll('.wband')) if (b.getAttribute('aria-hidden') !== 'true' || getComputedStyle(b).pointerEvents !== 'none') o.push('a band is not decoration only');
+            // show the first job prop of the picked world
+            const B = window.__bands.find(b => b.id == wid), j = B && B.jobs[0];
+            if (j) document.querySelector('#ms').scrollTop += j[1][1] - (document.querySelector('#ms').getBoundingClientRect().top - mr.top) - 120;
+            return { o, jobs, flagged, done: done.size, labels: m.querySelectorAll('.wband [aria-label], .wband [role]').length };
+          }, [wid, learned]);
+          for (const wid of ['m_shape', 'm_reef']) {
+            const r = await look(wid, true);
+            r.o.forEach(x => bad.push(at + wid + ' ' + x));
+            if (!r.jobs || r.done < 1) bad.push(at + wid + ': no job props (' + JSON.stringify({ jobs: r.jobs, done: r.done }) + ')');
+            if (r.labels) bad.push(at + wid + ': something in a scene is named for a screen reader');
+            notes.push(sz + ' ' + wid + ' ' + r.jobs + ' props by ' + r.flagged + ' learned lesson stops');
+            await vwait(pg, 200);
+            await pg.screenshot({ path: path.join(shots, `props-map-${wid.slice(2)}-${sz}.png`) });
+          }
+          const r0 = await look('m_reef', false);
+          if (r0.jobs || r0.flagged || r0.done) bad.push(at + 'no lesson learned, still job props: ' + JSON.stringify({ jobs: r0.jobs, flagged: r0.flagged, done: r0.done }));
+        } catch (e) { bad.push(at + 'threw ' + e.message); }
+        network.push(...ta.network);
+        for (const e of ta.errors) fail(e);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('G-PROPS:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-PROPS: job props only by learned lesson stops, at most one each (' + notes.join('; ') + '), clear of stops, labels, tickets and medals, aria-hidden, none with no lesson learned; shots in tools/out/props/');
+    }
+
     // P4-12 setup, Grown-ups, Pet Care at 380x780 and 1024x600: first-run setup with real taps (steps tick, saved), Grown-ups opened
     //    by holding the gear, every section looked at (App log opened, a segmented row, a switch, a field, Erase armed only, report card
     //    with its online note), Pet Care feed, bath and play with drawn sparkles (none with reduced motion or calm mode). Every screen:
