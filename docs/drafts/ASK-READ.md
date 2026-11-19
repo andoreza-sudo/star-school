@@ -1,6 +1,6 @@
 # "Ask the pet" read-through (ASK-01)
 
-8 questions (8 unreviewed). A child taps the Ask button beside the pet (on Home, and
+8 questions (8 reviewed). A child taps the Ask button beside the pet (on Home, and
 beside the pet on a map), picks a question from a short menu, and the pet says the answer in the tablet's voice; the answer is
 also written in the pet's speech bubble. No typing and no talking to the tablet: only these questions, only these answers.
 
@@ -43,7 +43,7 @@ To change a word: edit the JSON in docs/drafts/ask/<id>.md. When you are happy, 
 Not built (later steps in ROADMAP ASK-01, for the owner to look at again): typed questions, asking out loud, and any
 on-device model.
 
-## What should I do next? (next)
+## What should I do next? (next) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -73,7 +73,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: Rewrote every line. The API had the pet say "with {pet}" about itself, told the child the same stop twice in one answer, and said "We finished all of {subject}" twice over. Now one answer per situation (one or two lines said together); the lesson stop is "learn it together first" (the map shows "Learn with <pet>" in front of the stop); "next to me on the map" is true: the pet stands beside the stop curNode() picks, which is what fills {stop}.
 
-## How do I do {stop}? (how)
+## How do I do {stop}? (how) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -91,7 +91,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: The API answered under a variant "0" (no such situation) and wrapped the idea in "It shows {idea}" / "It says {idea}", which reads badly with a full sentence. Now the idea line is said as it is (the approved line of the stop's lesson), then a pointer to the lesson. Only shown at a stop whose lesson the child has not passed, so "the lesson shows it" is true.
 
-## Why did I get that wrong? (why)
+## Why did I get that wrong? (why) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -115,7 +115,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: The API treated {hint} as a thing ("Let's look at the {hint}", "The {hint} might help"), but it is a whole sentence (the approved HINT-01 line for the mistake, else the question's usual hint), so it now comes last, after a colon. "We can try again" was dropped: the question is over by the time the child is on Home or the map. The look answer (no hint can be said without its answer) points to the Help button instead of "read it again slowly".
 
-## How much game time do I have? (time)
+## How much game time do I have? (time) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -157,7 +157,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: Rewrote every line. The API said each slot twice ("We have {time} ... our {time}"), said "It will start again soon" for a pause (only the grown-up decides), and lower-cased the Game Room. {time} is said in minutes ("4 and a half minutes", "half a minute"), not "4:30". "Tap Games" names the bar button.
 
-## How do I get more game time? (earn)
+## How do I get more game time? (earn) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -181,7 +181,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: The API's "paused" answer ("We will earn more once it starts again") was not true: rounds still add to the bank while a grown-up pauses spending (ptEarn), so that situation is gone and the question answers the same way then. "Pass a lesson" is now "a new lesson" (only the first pass pays the full time, lsPrice). The extras named are the Game time card's own list (ptEarnList).
 
-## When will you grow? (grow)
+## When will you grow? (grow) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -211,7 +211,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: The API said {stars} twice per answer and "level up" (a game word the app does not use). {stars} reads "12 more stars" or "1 more star", so the lines say it once. Nothing about changing into something else: the pet grows bigger, as on Home.
 
-## How are you feeling? (feel)
+## How are you feeling? (feel) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):
@@ -247,7 +247,7 @@ Answers of the teen-like pet (5th and 6th grade):
 
 What changed after the API draft: The API had the pet talk to itself ("Let's eat together {pet}!", "Want to play with me {pet}?") and said "lonely" for a pet that wants to play (sad, and not what the care meter means). Each need now names where to fix it (Pet Care), as Home's thought bubble does.
 
-## What if it is too hard? (stuck)
+## What if it is too hard? (stuck) (reviewed)
 
 ```text
 Answers of the little pet (Pre-K to 2nd grade):

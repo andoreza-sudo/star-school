@@ -21215,15 +21215,27 @@ run('teach: Spanish and Discover lessons, the part, their shapes, their read-thr
   if(!/'teaches', typeof TEACHES_VER === 'undefined' \? null : TEACHES_VER/.test(rd('src/js/90-app.js')))p.push('appFiles() does not list teaches');
   // nothing in these lessons listens or sends: "say it with me" has the child say the word aloud and tap "I said it!"
   for(const f of ['52s-bench5s.js','52t-lessons5s.js'])if(/getUserMedia|MediaRecorder|SpeechRecognition|webkitSpeech|fetch\(|XMLHttpRequest|sendBeacon|WebSocket/.test(rd('src/js/'+f)))p.push(f+' records, listens or sends');
-  // 1. the lessons: these 12 stops, live, in LS_B5 (not LS_B4) and LS_STOPS, real stops with their names, their shape; drafts that pass, unreviewed
+  // 1. the lessons: these 12 stops, live, in LS_B5 (not LS_B4) and LS_STOPS, real stops with their names, their shape; drafts that pass,
+  //    unreviewed or reviewed (the owner approved batch 5s on 2026-11-19), their words live exactly when reviewed
   const g=R(`(()=>{const o={};for(const id of ${JSON.stringify(B5S_IDS)}){const L=LESSONS[id],D=LS_DRAFTED[id],p=L&&L.p,i=p?NODES[p].findIndex(n=>nid(n)===id):-1;
     o[id]={i,p,live:!!L,b5:LS_B5.includes(id),b4:LS_B4.includes(id),stop:!!(p&&LS_STOPS[p]&&LS_STOPS[p].has(id)),b5s:!!(D&&D.b5s),fam:D&&D.fam,t:L&&L.t,nt:i<0?null:NODES[p][i].t,
-      wn:i<0?null:PATHS[p].worlds[NODES[p][i].wi].n,band:L&&L.band}}return o})()`);
+      wn:i<0?null:PATHS[p].worlds[NODES[p][i].wi].n,band:L&&L.band,words:!!(L&&!L.fb),lsw:typeof LSW5!='undefined'&&LSW5[id]?JSON.stringify(LSW5[id]):null}}return o})()`);
   for(const id of B5S_IDS){const x=g[id],sp=id.startsWith('es_');if(x.i<0){p.push(id+': no such stop');continue}
     if(!x.live||!x.b5||x.b4||!x.stop||!x.b5s||x.band!=='5'||x.p!==(sp?'es':'disc')||x.fam!==(sp?'es':'disc'))p.push(id+': not a live batch 5s lesson with its lesson stop '+JSON.stringify(x));
     if(x.t!==x.nt)p.push(id+': not named as its stop');if(!sp&&x.wn!=='Nature Trail')p.push(id+': not a Nature Trail stop');
-    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));if(d.status!=='unreviewed')p.push(id+': draft '+d.status+' (only the owner approves)')}}
+    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      // owner approved 2026-11-19: a draft is unreviewed or reviewed (by a named reviewer, with the date); its words are live exactly when
+      // reviewed, and the live words (LSW5) are exactly the reviewed draft's
+      if(d.status!=='unreviewed'&&d.status!=='reviewed')p.push(id+': draft '+d.status);
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date');
+      if(x.words!==(d.status==='reviewed')||!!x.lsw!==(d.status==='reviewed'))p.push(id+': its words live '+x.words+' (LSW5 '+!!x.lsw+') but its draft is '+d.status);
+      if(d.status==='reviewed'&&x.lsw&&x.lsw!==JSON.stringify({idea:d.idea,beats:d.beats,reasons:d.reasons,home:d.home}))p.push(id+': LSW5 is not its reviewed draft\'s words')}}
   if(R('LS_B5.slice().sort().join()')!==B5S_IDS.slice().sort().join())p.push('the batch 5s lessons are not these 12');
+  // the gate in the app (owner approved 2026-11-19, so the live drafts are reviewed): on a fresh app, the same lesson made again with its
+  // words taken out of LSW5, as an unreviewed draft is, runs on the hand-written fallback words; with them back, on its reviewed words
+  {const R2=teachApp(),gt=R2(`(()=>{const o={};for(const id of ['es_animal1','es_art1','sci_life1','sci_phys1']){const D=LS_DRAFTED[id],w=LSW5[id];if(!w){o[id]='no reviewed words';continue}
+    delete LSW5[id];lsDraft5(id,D);const off=!!(LESSONS[id]&&LESSONS[id].fb);LSW5[id]=w;lsDraft5(id,D);const on=!!(LESSONS[id]&&!LESSONS[id].fb&&LESSONS[id].w===w);o[id]=off&&on?'':'unreviewed fallback '+off+', reviewed words '+on}return o})()`);
+    for(const id in gt)if(gt[id]&&DW[id]&&DW[id].status==='reviewed')p.push(id+' (batch 5s gate): '+gt[id])}
   for(const m of ['es','disc'])if(R(`[...LS_STOPS.${m}].sort().join()`)!==R(`LS_IDS.filter(id=>LESSONS[id].p=='${m}').sort().join()`))p.push('LS_STOPS.'+m+' is not the live lessons of that map');
   // 2. who gets them: Spanish at every grade (one map for all), Nature Trail's for Pre-K to 2nd; their parts; lessons off; the planner inside each subject
   const b=R(`(()=>{const o={},at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id);loadSave(null);for(const p in PATHS)S.maps[p]=S.maps[p]||{};
@@ -21284,9 +21296,11 @@ run('teach: Spanish and Discover lessons, the part, their shapes, their read-thr
   if(rt.split('\n').some(l=>l.length>140))p.push('the batch 5s read-through has lines too long for a phone');
   if(un.includes('es_animal1')&&un.includes('sci_phys1')&&!(rt.indexOf('(es_animal1)')>=0&&rt.indexOf('(es_animal1)')<rt.indexOf('(es_art1)')&&rt.indexOf('(es_art1)')<rt.indexOf('(sci_life1)')))p.push('the batch 5s read-through is not in map order');
   const bf=path.join(ROOT,'docs/drafts/BATCH5S-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH5S-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH5S-READ.md is not what node tools/author.js --read <file> --batch 5s gives now');
+  // owner approved 2026-11-19: with nothing waiting the tool says so (BATCH5S-READ.md stays as the record of what was approved, as batches 2, 3, 4, 3b and 5r)
+  if(!un.length&&!/Nothing is waiting/.test(rt))p.push('nothing in batch 5s waits, but the read-through does not say so');
   for(const bt of [2,3,4,'3b','5r']){const t=A.readThrough([],{batch:bt});for(const id of B5S_IDS)if(t.includes('('+id+')'))p.push('the batch '+bt+' read-through has the batch 5s lesson '+id)}
   if(A.batchOf('es_animal1')!=='5s'||A.batchOf('sci_phys1')!=='5s'||A.batchOf('sight1')!=='5r')p.push('batchOf: batch 5s');
-  if(!/approve all --batch 5s/.test(rt))p.push('the read-through does not say how to approve this batch only');
+  if(!/approve all --batch 5s/.test(un.length||!fs.existsSync(bf)?rt:fs.readFileSync(bf,'utf8')))p.push('the read-through does not say how to approve this batch only');
   // 5. migration 9 (save v9 -> v10): a save that reached a batch 5s stop keeps it open; idempotent; a new save keeps none
   const mg=R(`(()=>{const bad=[],at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id);
     loadSave(null);for(const p in PATHS)S.maps[p]=S.maps[p]||{};S.grade=1;const i=at('es','es_animal1'),d=at('disc','sci_earth1');for(let n=0;n<i;n++)setSt('es',n,2);setSt('disc',d-1,2);
@@ -22480,7 +22494,8 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
 });
 
 // ---- ASK-01: "Ask the pet" ----
-// a fresh app (every part) with every question draft's words as if the owner had approved them (ASKW) and the button on (ASK_ON)
+// a fresh app (every part) with every question draft's words (ASKW) and the button on (ASK_ON): the live words since the owner approved
+// all 8 on 2026-11-19; a draft not yet reviewed is added here as if approved (the ASK-01 gate check tests the words as built)
 const askApp=()=>{const R=hintApp(),A=require('./author.js'),ds=A.askDrafts().filter(x=>x.d);
   R('Object.assign(ASKW,'+JSON.stringify(Object.fromEntries(ds.map(x=>[x.d.id,{q:x.d.q,a:x.d.a}])))+');ASK_ON='+ds.length+';S.voice=false;');
   return {R,A,ds}};
@@ -22508,10 +22523,15 @@ run('ask the pet: the gate, the words, the tone, the parts, nothing saved ASK-01
   bad(d=>d.a.little.empty=['That was bad. No time.'],/tells the child off/,'telling the child off');
   bad(d=>{delete d.a.teen.paused},/a\.teen\.paused: one or two lines/,'a missing situation');
   bad(d=>d.q='How much game time do I have and when can I play it?',/longer than 9 words/,'a long question');
-  // 3. the gate: 39s-askw.js has the reviewed questions only (none yet), 39t-askon.js counts them; the words check holds; the gate on a copy
+  // 3. the gate: 39s-askw.js has the reviewed questions only (all 8 since the owner approved them on 2026-11-19), 39t-askon.js counts them;
+  //    a draft is unreviewed or reviewed, a reviewed one names its reviewer and the date, and its live words are exactly its draft's;
+  //    the words check holds; the gate on a copy
   const rev=ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.id).sort();
-  const live=Object.keys(Function(rd('src/js/39s-askw.js')+';return ASKW')()).sort(),on=Function(rd('src/js/39t-askon.js')+';return ASK_ON')();
+  const AW=Function(rd('src/js/39s-askw.js')+';return ASKW')(),live=Object.keys(AW).sort(),on=Function(rd('src/js/39t-askon.js')+';return ASK_ON')();
   if(JSON.stringify(rev)!==JSON.stringify(live))p.push('39s-askw.js has '+JSON.stringify(live)+' but the reviewed questions are '+JSON.stringify(rev));
+  for(const x of ds)if(x.d){if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(x.d.id+': status '+x.d.status); // owner approved 2026-11-19
+    if(x.d.status==='reviewed'){if(!revNamed(x.file))p.push(x.d.id+': reviewed, but its status line names no reviewer and date');
+      if(JSON.stringify(AW[x.d.id])!==JSON.stringify({q:x.d.q,a:x.d.a}))p.push(x.d.id+': 39s-askw.js is not its reviewed draft\'s words')}}
   if(on!==rev.length)p.push('ASK_ON is '+on+' with '+rev.length+' reviewed');
   try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'ask-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/ask'),{recursive:true});
@@ -22530,9 +22550,13 @@ run('ask the pet: the gate, the words, the tone, the parts, nothing saved ASK-01
   fs.rmSync(tmp,{recursive:true,force:true});
   // 4. in the app: nothing reviewed = no button, no menu; reviewed = a 48 px button with a spoken name beside the pet on Home and the map;
   // the pet's age as the lessons'; asking saves nothing and changes no score, star or game time; no migration
+  // (owner approved 2026-11-19: the app as built has the reviewed questions' words exactly and a menu of them; the gate is then tested
+  // in that same fresh app by setting ASK_ON to 0 and emptying ASKW, as for questions not reviewed)
   const R=hintApp();
-  p.push(...R(`(()=>{const bad=[];
+  p.push(...R(`(()=>{const bad=[],rev=${JSON.stringify(Object.fromEntries(ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>[x.d.id,{q:x.d.q,a:x.d.a}])))};
     if(ASK_ON!==${rev.length})bad.push('ASK_ON in the app is '+ASK_ON);
+    if(Object.keys(ASKW).sort().join()!==Object.keys(rev).sort().join()||Object.keys(rev).some(k=>JSON.stringify(ASKW[k])!==JSON.stringify(rev[k])))bad.push('ASKW in the app is not the reviewed drafts\\' words');
+    if(${rev.length}&&!askItems({p:'math'}).length)bad.push('no menu with '+${rev.length}+' questions reviewed');
     const keep=ASK_ON;ASK_ON=0;if(askBtn('ak-hm')!=='')bad.push('a button with nothing reviewed');ASK_ON=3;
     const b=askBtn('ak-hm');if(!/^<button class="btn icon ak-btn ak-hm" aria-label="Ask .+ a question">/.test(b)||!b.includes('ic-question')&&!b.includes('question'))bad.push('the button: '+b.slice(0,120));ASK_ON=keep;
     for(const k in ASKW)delete ASKW[k];if(askItems({p:'math'}).length)bad.push('a menu with nothing reviewed');

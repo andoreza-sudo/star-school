@@ -14788,13 +14788,16 @@ async function main() {
     }
     // end PERS-01
     if (seg('ASK-01')) {
-      // ASK-01: "Ask the pet". With nothing reviewed there is no Ask button on Home or the map. With the drafts' words as if the owner had
-      // approved them (simulated in the page: ASKW and ASK_ON), the button beside the pet loads the hints part, opens the menu, and every
+      // ASK-01: "Ask the pet". With nothing reviewed there is no Ask button on Home or the map. The owner approved all 8 questions on
+      // 2026-11-19, so the page as built has ASK_ON = the reviewed count and ASKW = exactly the reviewed drafts' words; the gate is then
+      // tested on that page by setting ASK_ON to 0 and emptying ASKW (as for questions not reviewed) and putting them back. The button
+      // beside the pet loads the hints part, opens the menu, and every
       // question tapped shows its answer and says it; the "why" answer carries the approved hint of the child's real first wrong try
       // (a sum typed without the carry) and never its answer. Home and the map, at 380x780, 600x960 and 1024x600.
       const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'ask'), A = require('./author.js');
       require('fs').mkdirSync(shots, { recursive: true });
       const W = Object.fromEntries(A.askDrafts().filter(x => x.d).map(x => [x.d.id, { q: x.d.q, a: x.d.a }]));
+      const WR = Object.fromEntries(A.askDrafts().filter(x => x.d && x.d.status === 'reviewed').map(x => [x.d.id, { q: x.d.q, a: x.d.a }])); // owner approved 2026-11-19
       const LN = Object.fromEntries(A.hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d.line]));
       // the Ask button and the open sheet on screen: sizes, inside the screen, nothing under the button, no sideways scroll
       const FIT = () => {
@@ -14835,22 +14838,32 @@ async function main() {
           // the pet's voice is captured (say): each line with the question lit while it was said (ASK-READ)
           await pg.evaluate(() => { S.grade = 1; S.voice = false; window.__said = []; window.__lit = [];
             window.say = t => { window.__said.push(String(t)); window.__lit.push([...document.querySelectorAll('.ak-q.ak-now')].map(b => b.dataset.ask).join(',')); }; });
-          // 1. nothing reviewed (ASK_ON 0, as built): no Ask button on Home or on the map, and the hints part is not loaded at start
+          // 1. the page as built (owner approved 2026-11-19): ASK_ON is the number of reviewed questions; the hints part is not loaded at start.
+          //    The gate: nothing reviewed (ASK_ON set to 0): no Ask button on Home or on the map
           const none = await pg.evaluate(async () => {
+            const on = ASK_ON; ASK_ON = 0;
             home(); const h0 = document.querySelectorAll('.ak-btn').length;
             pathMap('math'); await new Promise(r => setTimeout(r, 50)); const m0 = document.querySelectorAll('.ak-btn').length;
-            return { on: ASK_ON, h0, m0, hints: partReady('hints') };
+            ASK_ON = on;
+            return { on, h0, m0, hints: partReady('hints') };
           });
-          if (none.on !== 0 || none.h0 || none.m0 || none.hints) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
-          // 2. reviewed (simulated): Home draws the button by the pet; the first tap loads the hints part
-          await pg.evaluate(() => { ASK_ON = 8; home(); });
+          if (none.on !== Object.keys(WR).length) bad.push(at + 'ASK_ON as built is ' + none.on + ' with ' + Object.keys(WR).length + ' questions reviewed');
+          if (none.h0 || none.m0 || none.hints) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
+          // 2. reviewed (as built, ASK_ON put back): Home draws the button by the pet; the first tap loads the hints part
+          await pg.evaluate(() => { home(); });
           await pg.waitForSelector('.hm-stage .ak-btn', { timeout: 5000 });
           await animsDone(pg);
           (await pg.evaluate(FIT)).forEach(x => bad.push(at + 'Home: ' + x));
           await pg.click('.ak-btn');
           await pg.waitForFunction(() => partReady('hints') && typeof askOpen == 'function', null, { timeout: 15000 });
+          // the page's words are exactly the reviewed drafts' (owner approved 2026-11-19); with ASKW emptied (nothing reviewed) the menu is empty;
+          // then the words are put back
+          const aw = await pg.evaluate(() => { const k = JSON.stringify(ASKW); for (const id in ASKW) delete ASKW[id]; const n = askItems({ p: 'math' }).length; Object.assign(ASKW, JSON.parse(k)); return { k, n }; });
+          if (Object.keys(JSON.parse(aw.k)).sort().join() !== Object.keys(WR).sort().join() || Object.entries(JSON.parse(aw.k)).some(([k, v]) => JSON.stringify(v) !== JSON.stringify(WR[k])))
+            bad.push(at + 'ASKW on the page is not the reviewed drafts\' words');
+          if (aw.n) bad.push(at + 'with ASKW emptied (nothing reviewed) the menu has ' + aw.n + ' questions');
           await pg.evaluate(W => { Object.assign(ASKW, W); }, W);
-          // 3. a real mistake: a Practice sum typed without its carry, with that mistake's hint approved (simulated)
+          // 3. a real mistake: a Practice sum typed without its carry, with that mistake's hint approved (HINT-01, approved by the owner 2026-11-19)
           await pg.evaluate(l => { HINTW.nocarry = l; }, LN.nocarry);
           const MQ = `(()=>{for(let s=1;s<600;s++){const q=genQ('big',6,s);const p=q.kind=='num'&&/^\\d+ \\+ \\d+ = \\?$/.test(q.label)&&hmPredict(q).find(p=>p.c=='nocarry');if(p&&!(q.why&&q.why[p.v]))return q}})()`;
           await K.round(MQ, '#slot');
@@ -14956,8 +14969,8 @@ async function main() {
         await pa.ctx.close();
       }
       if (bad.length) fail('ASK-01 Ask the pet:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('ASK-01: Ask the pet at ' + notes.join(', ') + ': with nothing reviewed no Ask button on Home or the map and no hints part at start; ' +
-        'approved (simulated), the button beside the pet loads the hints part and opens the menu, every question tapped shows and says its answer ' +
+      else step('ASK-01: Ask the pet at ' + notes.join(', ') + ': as built ASK_ON is the reviewed count and ASKW the reviewed drafts\' words; with nothing reviewed (ASK_ON 0, ASKW emptied) no Ask button on Home or the map and an empty menu; no hints part at start; ' +
+        'approved, the button beside the pet loads the hints part and opens the menu, every question tapped shows and says its answer ' +
         '(the menu = askItems), the "why" answer carries the approved hint of a real first wrong try and not its answer; 48 px buttons, on screen, ' +
         'nothing covered; stars, coins, game time and the round unchanged; a 5th grader hears the teen-like pet. ASK-READ: a 1st grader hears the menu ' +
         'read on opening in the order shown with each question lit, a tap stops it at once, Hear the questions again restarts it, a tap says the ' +
