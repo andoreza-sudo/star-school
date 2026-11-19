@@ -88,7 +88,7 @@ function genArr(lv) {
 // One-step times or divide stories within 100: equal groups, arrays, sharing (4 templates each).
 function genStoryMul(lv) {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const th = pick(THINGS)[0], who = pick([me, n2]);
+  const th = persTh(pick(THINGS))[0], who = pick([me, n2]); // PERS-01: a themed thing (30p-pers.js)
   let t, ans, hint, label;
   if (coin()) { // times: a groups of b
     const a = R(2, 9), b = R(2, Math.min(10, Math.floor(100 / a)));
@@ -601,7 +601,7 @@ function ffMeas4() {
 // story 6: two steps with all four operations within 1,000
 function ffStory6() {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const T = pick(THINGS), th = T[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  const T = persTh(pick(THINGS)), th = T[0], who = pick([me, n2]), other = who == me ? n2 : me;
   const f = R(1, 5);
   let t, ans, s, label;
   if (f == 1) { // multiply, then add

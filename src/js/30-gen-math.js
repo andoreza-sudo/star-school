@@ -99,7 +99,7 @@ const storyRow=(n,body)=>`<div class="st-row" style="--n:${Math.max(n,5)}">${bod
 function storyHint(st,th,pic,txt){return{k:'html',st,html:`<div class="st-h">${pic}</div><div>${esc(txt)}</div>`,w:txt}}
 function genStory(lv){
   const me=S.name||'Sam',n2=pick([S.buddy,S.buddy,petN(),...NAMES].filter(n=>n&&n!==me));
-  const th=pick(THINGS),pl=th[0],N=k=>qN(k,th[2],pl);
+  const th=persTh(pick(THINGS)),pl=th[0],N=k=>qN(k,th[2],pl); // PERS-01: a themed thing and its sentences, or the default (30p-pers.js)
   const who=pick([me,n2]),other=who==me?n2:me;
   let r=rnd(),kind;
   for(const [k,p] of STORY_KINDS[lv]){kind=k;if((r-=p)<0)break}
@@ -108,60 +108,60 @@ function genStory(lv){
   if(kind=='join'){
     let a,b;
     if(lv==1){const s=R(3,10);a=R(1,s-1);b=s-a}else if(lv==2){a=R(4,9);b=R(3,9)}else{a=R(6,12);b=R(4,8)}
-    t=pick([`${who} has ${N(a)}. ${other} gives ${who} ${b} more. How many ${pl} does ${who} have now?`,
+    t=stT(th,'join',[`${who} has ${N(a)}. ${other} gives ${who} ${b} more. How many ${pl} does ${who} have now?`,
       `${who} found ${N(a)} in the yard and ${b} more by the door. How many ${pl} in all?`,
-      `${who} got ${N(a)} on Monday and ${N(b)} on Tuesday. How many ${pl} is that?`]);
+      `${who} got ${N(a)} on Monday and ${N(b)} on Tuesday. How many ${pl} is that?`],{who,other,a,b});
     ans=a+b;eq=`${a} + ${b} = ?`;
     pic=`<div class="st-pic"><span class="st-g">${O(a)}</span><b class="st-op">+</b><span class="st-g">${O(b)}</span></div>`;
     hint=storyHint('join',th,storyRow(a+b+1,O(a)+'<b class="st-op">+</b>'+O(b)),`Count them all. Start at ${Math.max(a,b)} and count on ${Math.min(a,b)}.`);
   }else if(kind=='sep'){
     let a,b;
     if(lv==1){a=R(3,10);b=R(1,a-1)}else if(lv==2){a=R(4,10);b=R(1,a-1)}else{a=R(10,18);b=R(2,9)}
-    t=pick([`${who} had ${N(a)}. ${who} gave ${b} to ${other}. How many ${pl} are left?`,
-      `There were ${N(a)} on the table. ${b} fell off. How many are still on the table?`]);
+    t=stT(th,'sep',[`${who} had ${N(a)}. ${who} gave ${b} to ${other}. How many ${pl} are left?`,
+      `There were ${N(a)} on the table. ${b} fell off. How many are still on the table?`],{who,other,a,b});
     ans=a-b;eq=`${a} − ${b} = ?`;
     pic=`<div class="st-pic"><span class="st-g">${O(a-b)}${O(b,' st-x')}</span></div>`;
     hint=storyHint('sep',th,storyRow(a,O(a-b)+O(b,' st-x')),`${b} went away. They are the pale ones. Count the ones that are left.`);
   }else if(kind=='chg'){
     const a=R(3,9),b=R(2,9),c=a+b;
-    t=pick([`${who} has ${N(a)}. ${other} gives ${who} some more. Now ${who} has ${N(c)}. How many ${pl} did ${other} give ${who}?`,
-      `${who} had ${N(a)}. ${who} found some more. Now ${who} has ${N(c)}. How many ${pl} did ${who} find?`]);
+    t=stT(th,'chg',[`${who} has ${N(a)}. ${other} gives ${who} some more. Now ${who} has ${N(c)}. How many ${pl} did ${other} give ${who}?`,
+      `${who} had ${N(a)}. ${who} found some more. Now ${who} has ${N(c)}. How many ${pl} did ${who} find?`],{who,other,a,c});
     ans=b;eq=`${a} + ? = ${c}`;
     hint=storyHint('chg',th,storyRow(c,O(a)+O(b,' st-n')),`Start at ${a}. Count on until you get to ${c}. How many did you count?`);
   }else if(kind=='chgS'){
     const c=R(6,15),b=R(2,c-2),a=c-b;
-    t=`${who} had ${N(c)}. ${who} gave some to ${other}. Now ${who} has ${N(a)}. How many ${pl} did ${who} give away?`;
+    t=stT(th,'chgS',`${who} had ${N(c)}. ${who} gave some to ${other}. Now ${who} has ${N(a)}. How many ${pl} did ${who} give away?`,{who,other,c,a});
     ans=b;eq=`${c} − ? = ${a}`;
     hint=storyHint('chgS',th,storyRow(c,O(a)+O(b,' st-x')),`${c} at the start. ${a} are still here. How many went away?`);
   }else if(kind=='part'){
     const c=R(6,15),a=R(2,c-2);
-    t=`${who} has ${N(c)}. ${a} are big and the rest are small. How many small ${pl} does ${who} have?`;
+    t=stT(th,'part',`${who} has ${N(c)}. ${a} are big and the rest are small. How many small ${pl} does ${who} have?`,{who,other,c,a});
     ans=c-a;eq=`${a} + ? = ${c}`;
     hint=storyHint('part',th,storyRow(c,O(a)+O(c-a,' st-sm')),`${c} in all. ${a} are big. Take them away. How many small ones are left?`);
   }else if(kind=='cmpD'){
     const x=lv==2?R(5,15):R(8,18),y=lv==2?R(2,x-1):R(3,x-2),fewer=coin();
-    t=fewer?`${who} has ${N(x)}. ${other} has ${N(y)}. How many fewer ${pl} does ${other} have than ${who}?`
-      :`${who} has ${N(x)}. ${other} has ${N(y)}. How many more ${pl} does ${who} have than ${other}?`;
+    t=stT(th,fewer?'cmpDf':'cmpDm',fewer?`${who} has ${N(x)}. ${other} has ${N(y)}. How many fewer ${pl} does ${other} have than ${who}?`
+      :`${who} has ${N(x)}. ${other} has ${N(y)}. How many more ${pl} does ${who} have than ${other}?`,{who,other,x,y});
     ans=x-y;eq=`${x} − ${y} = ?`;
     hint=storyHint('cmpD',th,storyRow(x,O(x))+storyRow(x,O(y)+O(x-y,' st-e')),`Top row: ${who}. Bottom row: ${other}. Line them up. How many in the top row have no partner?`);
   }else if(kind=='start'){
     const a=R(3,10),b=R(2,9),c=a+b;
-    t=`${who} had some ${pl}. Then ${other} gave ${who} ${b} more. Now ${who} has ${N(c)}. How many ${pl} did ${who} have at the start?`;
+    t=stT(th,'start',`${who} had some ${pl}. Then ${other} gave ${who} ${b} more. Now ${who} has ${N(c)}. How many ${pl} did ${who} have at the start?`,{who,other,b,c});
     ans=a;eq=`? + ${b} = ${c}`;
     hint=storyHint('start',th,storyRow(c,O(a,' st-x')+O(b)),`Think: what and ${b} make ${c}? Take the ${b} new ones away from ${c}.`);
   }else if(kind=='startS'){
     const a=R(3,9),b=R(2,9),c=a+b;
-    t=`${who} had some ${pl}. ${who} gave ${b} to ${other}. Now ${who} has ${N(a)} left. How many ${pl} did ${who} have at the start?`;
+    t=stT(th,'startS',`${who} had some ${pl}. ${who} gave ${b} to ${other}. Now ${who} has ${N(a)} left. How many ${pl} did ${who} have at the start?`,{who,other,b,a});
     ans=c;eq=`? − ${b} = ${a}`;
     hint=storyHint('startS',th,storyRow(c,O(a)+O(b,' st-x')),`Put them back together: ${a} left and ${b} given away. How many in all?`);
   }else if(kind=='cmpB'){
     const y=R(3,10),d=R(2,8);
-    t=`${other} has ${N(y)}. ${who} has ${d} more than ${other}. How many ${pl} does ${who} have?`;
+    t=stT(th,'cmpB',`${other} has ${N(y)}. ${who} has ${d} more than ${other}. How many ${pl} does ${who} have?`,{who,other,y,d});
     ans=y+d;eq=`${y} + ${d} = ?`;
     hint=storyHint('cmpB',th,storyRow(y+d,O(y))+storyRow(y+d,O(y)+O(d,' st-x')),`Top row: ${other}. Bottom row: ${who}. ${who} has the same, and ${d} more.`);
   }else{ // cmpS
     const x=R(8,18),d=R(2,x-3);
-    t=`${who} has ${N(x)}. ${other} has ${d} fewer than ${who}. How many ${pl} does ${other} have?`;
+    t=stT(th,'cmpS',`${who} has ${N(x)}. ${other} has ${d} fewer than ${who}. How many ${pl} does ${other} have?`,{who,other,x,d});
     ans=x-d;eq=`${x} − ${d} = ?`;
     hint=storyHint('cmpS',th,storyRow(x,O(x))+storyRow(x,O(x-d)+O(d,' st-e')),`Top row: ${who}. Bottom row: ${other}. ${other} has ${d} fewer. Take ${d} away from ${x}.`);
   }

@@ -911,7 +911,7 @@ function genBayCnt5() {
 // story 4: two-step add/subtract within 100 (get some then lose some, lose then get, compare then total)
 function genBayStory4() {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const th = pick(THINGS)[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  const th = persTh(pick(THINGS))[0], who = pick([me, n2]), other = who == me ? n2 : me;
   let t, ans, label, hint;
   const form = pick(['gl', 'lg', 'more', 'fewer']);
   if (form == 'gl' || form == 'lg') {
