@@ -13414,6 +13414,88 @@ async function main() {
         'reinstall is restored as the sheet opens; every Game Room game opens; normal Chrome with ?src=play and the web version lock nothing; no console errors, no network requests');
     }
     // end PLAY-01
+    // HINT-01 (docs/ROADMAP.md 10d): a hint for each common mistake in Practice. In a real round at 380x780 and 600x960: a math question
+    // (5747 + 9829 style, answered as if the child forgot to carry; 2-digit sums have their own why sentences, KINDS2-D) and a reading question (a picture word, the wrong first sound) show the
+    // mistake's line above the generic hint, with the question's numbers filled in, once its line is approved (HINTW, simulated here
+    // with the draft's own line); with no approved line the generic hint alone shows, as before. The second try, the score and the
+    // round go on as they always did. Screenshots in tools/out/hints/.
+    if (seg('HINT-01')) {
+      const bad = [], notes = [], shots = require('path').join(__dirname, 'out', 'hints'), A = require('./author.js');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const LN = Object.fromEntries(A.hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d.line]));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ha = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ha.page, at = 'HINT-01 ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), sz = w + 'x' + h;
+        try {
+          await pg.evaluate(() => { S.grade = 2; S.voice = false; for (const k in HINTW) delete HINTW[k]; });
+          const HM_ = () => { const e = document.querySelector('#hint .why.hm'); return e ? { code: e.dataset.hm, text: e.textContent.trim() } : null; };
+          const fitHint = async tag => {
+            await animsDone(pg);
+            const r = await pg.evaluate(() => {
+              const o = [], vw = document.documentElement.clientWidth, e = document.querySelector('#hint .why.hm');
+              if (!e) return ['no mistake hint on screen'];
+              const b = e.getBoundingClientRect();
+              if (b.left < -1 || b.right > vw + 1) o.push('the mistake hint is outside the screen sideways');
+              if (b.width < 40 || b.height < 16) o.push('the mistake hint is not drawn (' + Math.round(b.width) + 'x' + Math.round(b.height) + ')');
+              if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+              const qa = document.querySelector('.qarea'); if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+              return o;
+            });
+            r.forEach(x => bad.push(at + tag + ': ' + x));
+          };
+          const type = async v => { for (const d of String(v)) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); };
+          // a math question: two numbers, a carry, no why sentence of its own; the child adds each column and drops the ten
+          const MQ = `(()=>{for(let s=1;s<600;s++){const q=genQ('big',6,s);const p=q.kind=='num'&&/^\\d+ \\+ \\d+ = \\?$/.test(q.label)&&hmPredict(q).find(p=>p.c=='nocarry');if(p&&!(q.why&&q.why[p.v]))return q}})()`;
+          // 1. no approved line: the generic hint alone, as before
+          await K.round(MQ, '#slot');
+          let mq = await pg.evaluate(() => ({ ans: G.q.ans, v: hmPredict(G.q).find(p => p.c == 'nocarry').v, label: G.q.label }));
+          const r0 = await K.at(() => type(mq.v), 300, `() => ({ hm: (${HM_})() })`, 'click', '.k[data-k="go"]');
+          if (r0.hm || r0.tries !== 1 || !r0.hint) bad.push(at + 'an unapproved hint showed (or no generic hint): ' + JSON.stringify(r0));
+          await vwait(pg, 600); await type(mq.ans); await K.settle('generic');
+          // 2. the line approved: the mistake hint above the generic one, its numbers filled in; then the second try as always
+          await pg.evaluate(l => { HINTW.nocarry = l; }, LN.nocarry);
+          await K.round(MQ, '#slot');
+          mq = await pg.evaluate(() => ({ ans: G.q.ans, v: hmPredict(G.q).find(p => p.c == 'nocarry').v, label: G.q.label, m: hmMatch(G.q, hmPredict(G.q).find(p => p.c == 'nocarry').v) }));
+          const want = await pg.evaluate(m => hmFill(HINTW.nocarry, m.s), mq.m);
+          const r1 = await K.at(() => type(mq.v), 300, `() => ({ hm: (${HM_})(), first: (document.querySelector('#hint').firstElementChild || {}).className, gen: document.querySelector('#hint').textContent.trim().length })`, 'click', '.k[data-k="go"]');
+          if (!r1.hm || r1.hm.code !== 'nocarry' || r1.hm.text !== want || !/\d \+ \d = \d+\. Carry one/.test(r1.hm.text) || !/why hm/.test(r1.first || '')) bad.push(at + 'math hint: ' + JSON.stringify([r1, want]));
+          if (r1.tries !== 1 || r1.s !== 0 || r1.done !== 0 || r1.lock || r1.gen <= (r1.hm ? r1.hm.text.length : 0)) bad.push(at + 'math hint: the round is not as before a second try: ' + JSON.stringify(r1));
+          await fitHint('math');
+          await pg.screenshot({ path: require('path').join(shots, 'hint-math-' + sz + '.png') }).catch(() => {});
+          await vwait(pg, 600);
+          await type(mq.ans);
+          const after = await pg.evaluate(() => ({ s: G.score, done: G.done, res: G.res[0] }));
+          if (after.s !== 0 || after.done !== 1 || after.res !== 'try') bad.push(at + 'math second try scored differently: ' + JSON.stringify(after));
+          await K.settle('math');
+          // 3. reading: a picture word, the child taps a word with the wrong first sound
+          await pg.evaluate(l => { HINTW.first = l; }, LN.first);
+          await K.round(`(()=>{for(let s=1;s<600;s++){const q=genQ('pic',1,s);if(q.kind=='choice'&&q.choices.length>2&&hmPredict(q).some(p=>p.c=='first'))return q}})()`, '.ch');
+          const rq = await pg.evaluate(() => { const v = hmPredict(G.q).find(p => p.c == 'first').v; return { i: G.q.choices.findIndex(c => String(c.v) === v), ans: G.q.choices.findIndex(c => String(c.v) === String(G.q.ans)), v }; });
+          const r2 = await K.at(() => pg.click(`.ch[data-i="${rq.i}"]`), 300, `() => ({ hm: (${HM_})() })`);
+          if (!r2.hm || r2.hm.code !== 'first' || r2.hm.text !== LN.first || r2.tries !== 1 || r2.s !== 0) bad.push(at + 'reading hint: ' + JSON.stringify([r2, rq]));
+          await fitHint('reading');
+          await pg.screenshot({ path: require('path').join(shots, 'hint-read-' + sz + '.png') }).catch(() => {});
+          await vwait(pg, 600);
+          await pg.click(`.ch[data-i="${rq.ans}"]`);
+          await K.settle('reading');
+          // 4. a right first answer: no hint at all
+          await K.round(MQ, '#slot');
+          const ra = await pg.evaluate(() => G.q.ans);
+          const r3 = await K.at(() => type(ra), 300, `() => ({ hm: (${HM_})() })`, 'click', '.k[data-k="go"]');
+          if (r3.hm || r3.s !== 1) bad.push(at + 'a right answer: ' + JSON.stringify(r3));
+          await K.settle('right');
+          notes.push(sz);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ha.errors) bad.push(at + e);
+        for (const u of ha.network) bad.push(at + 'network request: ' + u);
+        await ha.ctx.close();
+      }
+      if (bad.length) fail('HINT-01 mistake hints:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('HINT-01: mistake hints at ' + notes.join(' and ') + ': with no approved line the generic hint alone; approved, "forgot to carry" on 4-digit adding shows ' +
+        'its line with the column\'s numbers above the generic hint, the second try scores as before; a picture word with the wrong first sound shows its line; ' +
+        'a right answer shows none; on screen, no sideways scroll; no console errors, no network requests');
+    }
+    // end HINT-01
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

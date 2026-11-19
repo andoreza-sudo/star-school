@@ -21265,6 +21265,123 @@ run('play PLAY-01: free sample (5 stops of the grade\'s start world), Play mode,
   })()`);
   return r.then(x=>({problems:uniq(x.bad),note:x.notes.join('; ')}));
 });
+// ---- HINT-01: a hint for each common mistake in every Practice question (src/js/39m-mist.js, words in src/js/39n-hintw.js) ----
+// The app works out what each known mistake would answer for a Practice question (hmPredict) and, when a child's wrong first try is
+// one of those, shows that mistake's approved line above the generic hint (hmHint, called by check() in 50-round.js). Simulated
+// children on every Practice skill: the hint fires on its own mistake, never on a right answer; a random guess rarely matches; every
+// coded mistake is reachable; every line's slots fill from the question; no line gives the answer away.
+const hintApp=()=>{const E=require('./es-audio.js'),vm=require('vm'),ctx=E.loadApp(null);vm.runInContext("loadSave(null);S.name='Mia';S.grade=2;",ctx);return x=>vm.runInContext(x,ctx)};
+const hintLines=()=>{const A=require('./author.js'),o={};for(const x of A.hintDrafts())if(x.d)o[x.d.code]=x.d.line;return o};
+let HINT_SIM=null;
+const hintSim=()=>HINT_SIM||(HINT_SIM=hintApp()(`(()=>{S.voice=false;S.grade=6;const LINES=${JSON.stringify(hintLines())},bad=[],reach={},match={},kinds={},sk={};
+  const rng=mulberry32(4242),ri=(a,b)=>a+Math.floor(rng()*(b-a+1)),cnt={q:0,pred:0,fills:0};
+  const tok=t=>String(t).split(/[^A-Za-z0-9.\\/:,$-]+/).map(x=>x.replace(/[.,:]+$/,'').toLowerCase()).filter(Boolean); // shch names sh and ch: the child still picks one of four
+  // a random answer of the question's own form (null: a kind a guess is not drawn for)
+  const guess=q=>{
+    if(q.kind=='choice'){const w=q.choices.map(c=>String(c.v)).filter(v=>!hmRight(q,v));return w.length?w[ri(0,w.length-1)]:null}
+    if(q.kind=='num'&&!q.sep&&(!q.pad||q.pad=='int'))return String(ri(0,Math.max(20,2*(+q.ans||0))));
+    if(q.kind=='num'&&q.pad=='frac'&&!q.sep)return ri(0,12)+'/'+ri(1,12);
+    if(q.kind=='spell')return Array.from({length:q.word.length},()=>'abcdefghijklmnopqrstuvwxyz'[ri(0,25)]).join('');
+    if(q.kind=='build'){const t=q.tiles.slice(),o=[];for(let i=0;i<q.word.length;i++)o.push(t.splice(ri(0,t.length-1),1)[0]);return o.join('')}
+    return null};
+  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))continue;
+    for(let i=0;i<120;i++){let q;try{q=genQ(id,lv,7000+i)}catch(e){continue}cnt.q++;
+      const at=id+lv+' '+q.label+': ';
+      if(hmMatch(q,q.ans))bad.push(at+'the right answer matches a mistake');
+      if(q.alt!=null&&hmMatch(q,q.alt))bad.push(at+'another right form matches a mistake');
+      const pr=hmPredict(q),src=tok(q.label+' '+(q.say||''));
+      for(const p of pr){cnt.pred++;
+        if(hmRight(q,p.v))bad.push(at+p.c+' predicts the right answer '+p.v);
+        const m=hmMatch(q,p.v);
+        if(!m){bad.push(at+p.c+' gives '+p.v+' but nothing matches it');continue}
+        if(!pr.some(x=>x.c===m.c&&hmSame(q,p.v,x.v)))bad.push(at+'the hint shown ('+m.c+') is not a mistake that gives '+p.v);
+        if(m.c===p.c){reach[p.c]=(reach[p.c]||0)+1;(sk[p.c]=sk[p.c]||{})[id]=1}
+        const line=LINES[m.c];if(!line){bad.push(m.c+' has no line');continue}
+        const f=hmFill(line,m.s);cnt.fills++;
+        if(f==null){bad.push(at+m.c+': a slot did not fill: '+line+' '+JSON.stringify(m.s));continue}
+        if(/[{}]|undefined|NaN|null/.test(f))bad.push(at+m.c+': '+f);
+        // a line whose slots happen to hold the answer is never shown (hmLeaks; the generic hint shows): counted, and checked through hmHint
+        if(hmLeaks(q,f)){cnt.leak=(cnt.leak||0)+1;HINTW[m.c]=line;G={q,tries:0,built:[]};const h=hmHint(q,p.v);delete HINTW[m.c];if(h)bad.push(at+m.c+' shows a line that gives the answer away: '+f)}
+        else if(tok(f).includes(String(q.ans).toLowerCase())&&!src.includes(String(q.ans).toLowerCase())&&m.c!=='shch')bad.push(at+m.c+' gives the answer away: '+f)}
+      // the simulated child who guesses: a random answer of the question's own form
+      const g=guess(q);if(g!=null&&!hmRight(q,g)&&!twoWay(q)){const k=q.kind=='num'?'num '+(q.pad||'int'):q.kind,x=kinds[k]=kinds[k]||{n:0,m:0};x.n++;if(hmMatch(q,g))x.m++}
+    }}
+  return{bad,reach,kinds,cnt,sk:Object.fromEntries(Object.entries(sk).map(([c,o])=>[c,Object.keys(o)])),codes:Object.keys(HM)}})()`));
+run('hints: simulated children on every Practice question HINT-01',()=>{
+  const r=hintSim(),p=r.bad.slice(0,40);
+  if(r.bad.length>40)p.push('... '+(r.bad.length-40)+' more');
+  for(const c of r.codes)if(!r.reach[c])p.push(c+': no Practice question where this mistake shows its hint (unreachable)');
+  // a random guess rarely matches: typed answers almost never; tapped choices more often, because their wrong choices are made from
+  // these very mistakes (a child who taps "41" for 14 gets the tens-and-ones hint, which is true of what they tapped)
+  const rate=k=>r.kinds[k]&&r.kinds[k].n?r.kinds[k].m/r.kinds[k].n:0;
+  if(rate('num int')>0.12)p.push('a random typed number matches a mistake '+Math.round(rate('num int')*100)+'% of the time (want 12% or less)');
+  if(rate('num frac')>0.05)p.push('a random typed fraction matches '+Math.round(rate('num frac')*100)+'%');
+  if(rate('spell')>0.01)p.push('a random spelling matches '+Math.round(rate('spell')*100)+'%');
+  const rates=Object.entries(r.kinds).map(([k,x])=>k+' '+(Math.round(x.m/x.n*1000)/10)+'% of '+x.n).join(', ');
+  return{problems:p,note:r.cnt.q+' questions, '+r.cnt.pred+' mistake answers, '+r.codes.length+' codes all reachable, '+(r.cnt.leak||0)+' lines held back (their slots held the answer); random guesses that match: '+rates};
+});
+run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
+  const p=[],R=hintApp(),A=require('./author.js'),os=require('os'),cpx=require('child_process'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  // 1. the part and the size: the engine and its words are in gen (loaded at start), index.html stays under 1,000,000 bytes
+  for(const f of ['39m-mist.js','39n-hintw.js'])if(partOf(f)!=='gen')p.push(f+' is not in the gen part');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size;if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  // 2. the round: the first miss puts this mistake's line above the generic hint, the retry keeps it; nothing else in check() changed
+  const rs=rd('src/js/50-round.js');
+  if(!/G\.hm='';const mh=typeof hmHint=='function'\?hmHint\(q,v\):''/.test(rs)||!/\$\('#hint'\)\.innerHTML=mh\+hintHTML\(q\);fit\(\);hintIn\(\);\n    K\.retry\(q,G,\(\)=>\{\$\('#hint'\)\.innerHTML=mh\+hintHTML\(q\)/.test(rs))p.push('check() in 50-round.js does not show the mistake hint at the first miss');
+  const hs=R('String(hmHint)');if(/G\.(score|res|done|tries|lock|missed|streak|retry)\s*[+\-]?=(?!=)/.test(hs)||/save\(|S\.\w+\s*=(?!=)/.test(hs))p.push('hmHint writes to the round or the save');
+  // 3. the gate in the round: no reviewed line, the generic hint; a reviewed one, its line above it; two choices, lessons off, a why,
+  // a Challenge question or a word that is not kid-safe: none
+  const r=R(`(()=>{const bad=[];let q=null,qw=null;for(let s=1;!q&&s<2000;s++){const x=genQ('big',6,s);if(x.kind=='num'&&/^\\d+ \\+ \\d+ = \\?$/.test(x.label)&&hmPredict(x).some(p=>p.c=='nocarry')&&!x.why)q=x}
+    if(!q)return['no 4-digit adding question with a carry'];
+    const v=hmPredict(q).find(p=>p.c=='nocarry').v;G={q,tries:0,built:[]};S.voice=false;
+    for(const k in HINTW)delete HINTW[k];
+    if(hmHint(q,v)!=='')bad.push('a hint with no reviewed line showed');
+    HINTW.nocarry='{x} + {y} = {n}. Carry one to the next place.';
+    const h=hmHint(q,v);if(!/^<div class="why hm" data-hm="nocarry">/.test(h)||!/Carry one to the next place\\./.test(h)||G.hm!=='nocarry')bad.push('a reviewed line did not show: '+h);
+    if(hmHint(q,q.ans)!=='')bad.push('a hint on the right answer');
+    TEACH.off=true;if(hmHint(q,v)!=='')bad.push('lessons off still shows hints');TEACH.off=false;
+    G.why={q};if(hmHint(q,v)!=='')bad.push('a hint over a why sentence');G.why=null;
+    G.mq=new Map([[q,'ch']]);if(hmHint(q,v)!=='')bad.push('a hint on a Challenge question');G.mq=null;
+    const two={kind:'choice',choices:[{v:'>'},{v:'<'}],ans:'>',label:'66 ? 65',sk:'cmp',lv:2};if(hmMatch(two,'<')&&hmHint(two,'<')!=='')bad.push('a hint on a two-choice question');
+    let b=null;for(let s=1;!b&&s<2000;s++){const x=genQ('build',1,s);if(hmPredict(x).some(p=>p.c=='lswap'))b=x}
+    HINTW.lswap='Check the order of the letters in {o}.';const lv=hmPredict(b).find(p=>p.c=='lswap').v;G.q=b;
+    if(!/order of the letters in/.test(hmHint(b,lv)))bad.push('a built word did not show its hint');
+    const kb=ksBad;ksBad=()=>true;if(hmHint(b,lv)!=='')bad.push('a word that is not kid-safe was said back');ksBad=kb;
+    for(const k in HINTW)delete HINTW[k];
+    return bad})()`);
+  p.push(...r);
+  // 4. the lessons' codes with their own function (BUGS, 52b-know.js) give the same answers on the Practice questions they read
+  p.push(...R(`(()=>{const bad=[],cs=['nocarry','cat','col','keep','op','count','hands'];
+    for(const [sk,lvs] of [['big',[2,3,4,5,6]],['sub',[2,3,4,5,6]],['coins',[1,2,3]],['time',[1,2,3,4]],['add',[2,3,6]]])for(const lv of lvs)for(let s=1;s<=80;s++){
+      const q=genQ(sk,lv,s),n=lsNums(q),kp=knowPredict(n);
+      for(const p of hmPredict(q))if(cs.includes(p.c)&&!(kp[p.c]||[]).includes(p.v))bad.push(sk+lv+' '+q.label+': '+p.c+' gives '+p.v+', the lessons\\' code '+JSON.stringify(kp[p.c]||[]))}
+    return bad.slice(0,10)})()`));
+  // 5. the drafts: one per code, every one passes its checks; only reviewed lines are in 39n-hintw.js; the gate on a copy
+  const codes=R('Object.keys(HM)'),hd=A.checkHints(),have=hd.filter(x=>x.d).map(x=>x.d.code);
+  for(const c of codes)if(!have.includes(c))p.push(c+': no draft in docs/drafts/hints');
+  for(const x of hd){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.code+': '+x.problems.slice(0,3).join('; '))}
+  const rev=hd.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.code).sort(),live=R('Object.keys(HINTW).sort()');
+  if(JSON.stringify(rev)!==JSON.stringify(live))p.push('HINTW has '+JSON.stringify(live)+' but the reviewed drafts are '+JSON.stringify(rev));
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('src/js/39n-hintw.js (or a lesson words file) is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hints-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/hints'),{recursive:true});
+  const lw="/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n";
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),lw);
+  const hw=b=>"/* ---------- HINT-01: the mistake hints the owner has reviewed (part gen) ----------\n   BUILT by tools/build.py from docs/drafts/hints/<code>.md (\"status: reviewed ...\"): never edit by hand. A hint that is\n   not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */\nconst HINTW = {\n"+b+"};\n";
+  const dj='\n```json\n{"code":"zz","line":"Look again.","api":"","notes":""}\n```\n',chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  fs.writeFileSync(path.join(tmp,'docs/drafts/hints/zz.md'),'# Hint: zz\n\nstatus: unreviewed\n'+dj);
+  fs.writeFileSync(path.join(tmp,'src/js/39n-hintw.js'),hw('  "zz": "Look again.",\n'));if(chk()!==1)p.push('the words check passes an unreviewed hint');
+  fs.writeFileSync(path.join(tmp,'src/js/39n-hintw.js'),hw(''));if(chk()!==0)p.push('the words check refuses an empty hints file for an unreviewed hint');
+  fs.writeFileSync(path.join(tmp,'docs/drafts/hints/zz.md'),'# Hint: zz\n\nstatus: reviewed Test Owner 2026-11-18\n'+dj);if(chk()!==1)p.push('the words check passes a reviewed hint left out');
+  fs.writeFileSync(path.join(tmp,'src/js/39n-hintw.js'),hw('  "zz": "Look again.",\n'));if(chk()!==0)p.push('the words check refuses a reviewed hint\'s line');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // 6. the read-through: every code under each skill it shows in, the line as the child sees it; the same as the tool writes now
+  const rf=path.join(ROOT,'docs/drafts/HINTS-READ.md');
+  if(!fs.existsSync(rf))p.push('no docs/drafts/HINTS-READ.md');else{const t=fs.readFileSync(rf,'utf8');
+    if(t!==A.hintRead())p.push('docs/drafts/HINTS-READ.md is not what node tools/author.js --hints-read gives now');
+    for(const c of codes)if(!t.includes('**'+c+'**'))p.push('the read-through has no '+c);
+    if(t.split('\n').some(l=>l.length>200))p.push('the read-through has a line over 200 characters')}
+  return{problems:p,note:codes.length+' codes, '+have.length+' drafts, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
+});
 
 // ---- report ----
 Promise.all(PENDING).then(()=>{
