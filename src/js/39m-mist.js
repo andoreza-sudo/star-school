@@ -1,4 +1,4 @@
-/* ---------- HINT-01: a hint for each common mistake, in every Practice question (part gen) ----------
+/* ---------- HINT-01: a hint for each common mistake, in every Practice question (part hints since v182: loaded when a Practice round starts) ----------
    docs/ROADMAP.md 10d (owner decisions 2026-11-18). For a Practice question the app works out what each known mistake would answer
    (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cat" as "cap", la for el ...). When the child's
    wrong answer is one of those, the round shows that mistake's hint, with the question's own numbers filled in, where it shows its

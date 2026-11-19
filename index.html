@@ -3195,6 +3195,13 @@ const MIGRATIONS=[null,
     if(Object.keys(o).length)S.lsOpen=o;
   }
 ];
+/* MIGRATIONS[from] ... MIGRATIONS[LATEST-1] on the global S. The one way to run them (migrate() below, a loaded backup BAK.one in
+   81-backup.js, another child's save PRF.up in 01-profiles.js): PLAY-01, migrations see every stop as in the web version (nothing
+   locked by the Play app's free sample, PLAY.mig), so a migration that keeps stops open (6, 7) keeps the same ones everywhere. */
+function runMigrations(from){
+  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1;
+  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
+}
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
@@ -3205,8 +3212,7 @@ function migrate(){
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
   if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
-  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1; // PLAY-01: migrations see every stop as in the web version (nothing locked)
-  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
+  runMigrations(from);
   S.v=LATEST;
   save();
 }
@@ -3344,7 +3350,7 @@ const PRF = {
       loadSave(raw);
       if (S.maps && typeof PATHS != 'undefined') for (const p in PATHS) S.maps[p] = S.maps[p] || {};
       const from = Number.isInteger(S.v) && S.v >= 1 ? S.v : 1;
-      for (let n = from; n < LATEST; n++) MIGRATIONS[n]();
+      runMigrations(from); // v182: under the Play lock's PLAY.mig, as migrate() (00-core.js)
       if (from < LATEST) S.v = LATEST;
       m = S;
     } catch (e) { m = null; }
@@ -9811,7 +9817,13 @@ function kindLabel(list,v){
 }
 /* ---------- game ---------- */
 let G;
-const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
+// v182: the Practice mistake hints (HINT-01, 39m-mist.js) are the lazy part hints: a round starts loading it once its first screen
+// is painted; check() shows the generic hint alone until it is in (typeof hmHint). Nothing happens when it is in or loading.
+function hintsWarm(){
+  if(typeof hmHint=='function'||typeof partLoad!='function'||typeof requestAnimationFrame!='function')return;
+  requestAnimationFrame(()=>setTimeout(()=>partLoad('hints'),0));
+}
+const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
@@ -9957,7 +9969,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
   if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
-    G.hm='';const mh=typeof hmHint=='function'?hmHint(q,v):''; // HINT-01: this mistake's hint (39m-mist.js) above the generic one, once its words are approved
+    G.hm='';let mh='';try{mh=typeof hmHint=='function'?hmHint(q,v):''}catch(e){} // HINT-01 (v182: guarded, a lazy part): this mistake's hint (39m-mist.js) above the generic one, once its words are approved
     $('#hint').innerHTML=mh+hintHTML(q);fit();hintIn();
     K.retry(q,G,()=>{$('#hint').innerHTML=mh+hintHTML(q);fit();hintIn()});
     save();return}
@@ -12528,6 +12540,7 @@ function appFiles() {
     ['teach35', typeof TEACH35_VER === 'undefined' ? null : TEACH35_VER],
     ['teachrd', typeof TEACHRD_VER === 'undefined' ? null : TEACHRD_VER],
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
+    ['hints', typeof HINTS_VER === 'undefined' ? null : HINTS_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
@@ -12555,7 +12568,7 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints']; // v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {

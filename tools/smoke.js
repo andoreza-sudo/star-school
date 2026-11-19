@@ -621,7 +621,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -672,9 +672,9 @@ async function main() {
       const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
-        ready: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^petage\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // PET-AGE2: petage is Home's (grade 3+), not the Game Room's
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
-        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+        ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -10684,7 +10684,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
@@ -10710,7 +10710,7 @@ async function main() {
         await p2.locator('#groom').waitFor({ timeout: 15000 });
         const s2 = await p2.evaluate(() => {
           S.pt = { bank: 900, day: today(), used: 0 }; save(); home();
-          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
         if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false' || // ten lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage), less petage (Home's, filtered above): nine
@@ -10727,7 +10727,7 @@ async function main() {
         await p2.click('#groom');
         await p2.locator('.gh-room .gh-card').first().waitFor({ timeout: 15000 });
         const wait = await p2.evaluate(() => window.__w);
-        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
@@ -13611,10 +13611,23 @@ async function main() {
         for (const u of ha.network) bad.push(at + 'network request: ' + u);
         await ha.ctx.close();
       }
+      // v182: the hints are the lazy part hints: not loaded at a cold start, loaded when a Practice round starts (hintsWarm)
+      {
+        const hc = await openApp(browser, { fixture: 'midway', lazy: true });
+        try {
+          const c0 = await hc.page.evaluate(() => ({ ready: partReady('hints'), hm: typeof hmHint, tag: [...document.scripts].some(s => /^hints\./.test(s.getAttribute('src') || '')) }));
+          if (c0.ready || c0.hm !== 'undefined' || c0.tag) bad.push('v182: the hints part is loaded at start: ' + JSON.stringify(c0));
+          await hc.page.evaluate(() => { const i = NODES.math.findIndex(n => n.sk === 'add'); start('math', i); });
+          await hc.page.waitForFunction(() => partReady('hints') && typeof hmHint == 'function', null, { timeout: 15000 })
+            .catch(() => bad.push('v182: a Practice round did not load the hints part'));
+        } catch (e) { bad.push('v182 lazy hints: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of hc.errors) bad.push('v182 lazy hints: ' + e);
+        await hc.ctx.close();
+      }
       if (bad.length) fail('HINT-01 mistake hints:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('HINT-01: mistake hints at ' + notes.join(' and ') + ': with no approved line the generic hint alone; approved, "forgot to carry" on 4-digit adding shows ' +
         'its line with the column\'s numbers above the generic hint, the second try scores as before; a picture word with the wrong first sound shows its line; ' +
-        'a right answer shows none; on screen, no sideways scroll; no console errors, no network requests');
+        'a right answer shows none; on screen, no sideways scroll; no console errors, no network requests; the hints part loads with a round, not at start');
     }
     // end HINT-01
 

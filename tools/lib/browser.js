@@ -110,7 +110,9 @@ async function openApp(browser, opts = {}) {
   // P6-03: the app loads the Brain Teaser code (bt.<VER>.js) on demand (BT.start; the hub starts it early). Steps that drive BT.start,
   // BT.make or a puzzle's globals (MZ, RB ...) straight from page.evaluate expect it in, so it is loaded here, as the hub would.
   // opts.lazy: true keeps the cold start (steps that check what loads at start, and the on-demand load itself).
-  if (!opts.lazy) await page.evaluate(() => (typeof partLoad == 'function' && dataReady() ? partLoad('bt') : null)).catch(() => {});
+  // v182: and the Practice mistake hints (hints.<VER>.js, HINT-01), which a round loads as it starts (hintsWarm): steps that set HINTW
+  // or call hmHint straight from page.evaluate expect them in.
+  if (!opts.lazy) await page.evaluate(() => (typeof partLoad == 'function' && dataReady() ? partLoad('bt').then(() => partLoad('hints')) : null)).catch(() => {});
   return { ctx, page, errors, network };
 }
 

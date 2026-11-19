@@ -165,11 +165,16 @@ const LS4_KEY = {
   silent: w => (/^[^aeiou]+([aeiou])[^aeiou]e$/.exec(w) || [])[1] ? (/^[^aeiou]+([aeiou])[^aeiou]e$/.exec(w)[1] + '_e') : null,
   team: w => (/(oa|ee|ea|ai|oo)/.exec(w) || [])[1] || null,
 };
+// v182 (review): keys of a sort that make the same sound, so a sort of pictures (heard, not read) could not tell them apart: never
+// drawn as the two sides of one sort. Per key, so no other lesson's draw changes (ou in house and ow in cow: Vowel Teams 2, 52p).
+const LS4_SAME = {team2: [['ou', 'ow']]};
+const ls4Same = (key, a, b) => (LS4_SAME[key] || []).some(s => s.includes(a) && s.includes(b));
 // two keys of a pool with at least two drawn pictures each, and two pictures of each (a sort of four)
 function ls4Pairs(pool, key, r, want) {
   const by = {};
   for (const w of pool) { const k = LS4_KEY[key](w); if (k && ART[w]) (by[k] = by[k] || []).push(w); }
-  const ks = Object.keys(by).filter(k => by[k].length >= 2), a = want && ks.includes(want) ? want : ls4Pick(r, ks), b = ls4Pick(r, ks.filter(k => k !== a));
+  const ks = Object.keys(by).filter(k => by[k].length >= 2), a = want && ks.includes(want) ? want : ls4Pick(r, ks);
+  const b = ls4Pick(r, ks.filter(k => k !== a && !ls4Same(key, a, k)));
   return {a, b, wa: ls4Shuf(r, by[a]).slice(0, 2), wb: ls4Shuf(r, by[b]).slice(0, 2)};
 }
 

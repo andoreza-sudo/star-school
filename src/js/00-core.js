@@ -169,6 +169,13 @@ const MIGRATIONS=[null,
     if(Object.keys(o).length)S.lsOpen=o;
   }
 ];
+/* MIGRATIONS[from] ... MIGRATIONS[LATEST-1] on the global S. The one way to run them (migrate() below, a loaded backup BAK.one in
+   81-backup.js, another child's save PRF.up in 01-profiles.js): PLAY-01, migrations see every stop as in the web version (nothing
+   locked by the Play app's free sample, PLAY.mig), so a migration that keeps stops open (6, 7) keeps the same ones everywhere. */
+function runMigrations(from){
+  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1;
+  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
+}
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
@@ -179,8 +186,7 @@ function migrate(){
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
   if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
-  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1; // PLAY-01: migrations see every stop as in the web version (nothing locked)
-  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
+  runMigrations(from);
   S.v=LATEST;
   save();
 }

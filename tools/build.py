@@ -57,7 +57,7 @@ def words_js(root, w=WORDS[0]):
 WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
 # HINT-01: the mistake hints of Practice (src/js/39m-mist.js) take their words from docs/drafts/hints/<code>.md (drafted by
 # node tools/author.js --hints-draft). Only a draft whose status line says "reviewed" is copied into src/js/39n-hintw.js (HINTW, part
-# gen); a code with no reviewed line shows the round's generic hint. --words-only and --words-check cover this file too.
+# hints, v182); a code with no reviewed line shows the round's generic hint. --words-only and --words-check cover this file too.
 HINTS_FILE = '39n-hintw.js'
 def hints_js(root):
     dd, out = os.path.join(root, 'docs', 'drafts', 'hints'), {}
@@ -71,7 +71,7 @@ def hints_js(root):
             if w.get('code') == n[:-3] and isinstance(w.get('line'), str) and w['line'].strip():
                 out[n[:-3]] = w['line'].strip()
     body = ''.join('  %s: %s,\n' % (json.dumps(k), json.dumps(out[k], ensure_ascii=False)) for k in sorted(out))
-    return ('/* ---------- HINT-01: the mistake hints the owner has reviewed (part gen) ----------\n'
+    return ('/* ---------- HINT-01: the mistake hints the owner has reviewed (part hints) ----------\n'
             '   BUILT by tools/build.py from docs/drafts/hints/<code>.md ("status: reviewed ..."): never edit by hand. A hint that is\n'
             '   not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */\n'
             'const HINTW = {\n' + body + '};\n')
@@ -105,7 +105,7 @@ write_words(ROOT)  # TEACH-2b: the reviewed words, before the parts are read (TE
 # is <stem>.<VER>.js: a <style> it adds to <head> (its src/css files, if any), its src/js files (sorted), and a last line
 # `var <STEM>_VER='<VER>'`. Keep one entry per line: tools/test.js reads this list. See CONTRIBUTING 3.3.
 PARTS = [
-    ('gen', r'(23-viz|30-gen-math|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|39m-mist|39n-hintw|80-grown|81-backup|82-report|88-online|89-play)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note); PLAY-01: the Play app's unlock screens and purchase
+    ('gen', r'(23-viz|30-gen-math|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|80-grown|81-backup|82-report|88-online|89-play)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note); PLAY-01: the Play app's unlock screens and purchase
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2|51b-checkin)\.js|(37b-kinds-c|51b-checkin)\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds; CHECK-IN: check-ins and stop badges
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
     ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
@@ -117,6 +117,7 @@ PARTS = [
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b)\.js|52k-teach4\.css'),  # TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
+    ('hints', r'(39m-mist|39n-hintw)\.js'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
@@ -125,7 +126,8 @@ PARTS = [
 # TEACH-2b: teach12 too (the grade 1-2 lessons), loaded with teach by the math map. PET-AGE2: petage (Home's: petAgeWarm, 17-pets-svg.js).
 # TEACH-3: teach35 (the grade 3-5 lessons), loaded with teach and teach12 by the math map for a child in 3rd grade or up.
 # TEACH-4: teachrd (the reading lessons and the Pre-K lessons), loaded with teach and teach12 by the reading map (Pre-K to 2nd), and by the math map for a Pre-K child.
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage')
+# v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):

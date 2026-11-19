@@ -1782,7 +1782,7 @@ function ls3bSt5(id, t, g, idea, home) {
   D.warm = ls3WarmFact(D, 2, 9);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'tape', m: {g: 3, n: 4}, goal: 'moved', eq: 'value', ans: 12, raw: 1, sl: {}, demo: [3, 5],
     html: lsCap('Build any bar model you like.'), say: 'Build any bar model. Pick the boxes, and how many go in each.'}), nudge: 'Change the boxes or how many in each, then check.',
-  react: v => { const [a, b] = Array.isArray(v) ? v : [3, 5]; return {ctx: {a, b, sum: a * b}, lines: [`${a} boxes of ${b} make ${a * b}.`]}; }});
+  react: v => { const [a, b] = Array.isArray(v) ? v : [3, 5]; return {ctx: {a, b, sum: a * b}, lines: [`${qN(a, 'box', 'boxes')} of ${b} ${qW(a, 'makes', 'make')} ${a * b}.`]}; }});
   D.name = c => ({html: `<div class="pkq">${ls3bTape(c.a, c.b, {tot: c.sum})}</div>` + lsEq(`${c.a} × ${c.b} = ${c.sum}`), sl: c});
   return D;
 }
@@ -1804,7 +1804,7 @@ function ls3bSt6(id, t, g, idea, home) {
   D.warm = ls3WarmFact(D, 2, 9);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'tape', m: {g: 3, n: 4, ex: [5, '+']}, goal: 'moved', eq: 'value', ans: 12, raw: 1, sl: {k: 5}, demo: [3, 4],
     html: lsCap('Build any bar model. One more box of 5 is there.'), say: 'Build any equal boxes. One more box of 5 is there too.'}), nudge: 'Change the boxes or how many in each, then check.',
-  react: v => { const [a, b] = Array.isArray(v) ? v : [3, 4]; return {ctx: {a, b, k: 5, sum: a * b + 5}, lines: [`${a} boxes of ${b} is ${a * b}, and 5 more make ${a * b + 5}.`]}; }});
+  react: v => { const [a, b] = Array.isArray(v) ? v : [3, 4]; return {ctx: {a, b, k: 5, sum: a * b + 5}, lines: [`${qN(a, 'box', 'boxes')} of ${b} is ${a * b}, and 5 more make ${a * b + 5}.`]}; }});
   D.name = c => ({html: `<div class="pkq">${ls3bTape(c.a, c.b, {ex: [c.k, '+'], tot: c.sum})}</div>` + lsEq(`${c.a} × ${c.b} + ${c.k} = ${c.sum}`), sl: c});
   return D;
 }
@@ -1876,7 +1876,7 @@ function ls3bData3(id, t, g, idea, home) {
       return lsDq(D, 1, {kind: 'num', ans, sl: {}, bug, hint: {k: 'text', s: pic ? `Each picture stands for ${sc}. Count by ${sc}s.` : `Each line counts ${sc}. Count by ${sc}s up the side.`},
         html: head + `<div class="pkq">${g0}</div>` + lsCap(ask) + SLOT, say: `${pic ? `Each picture stands for ${sc}.` : `Each line counts ${sc}.`} ${ask}`});
     }
-    return lsDq(D, 2, {kind: 'num', ans: vals[i], sl: {}, bug: {scale: [ks[i]], skip: [vals[i] + sc, vals[i] - sc].filter(x => x > 0), mulAdd: [ks[i] + sc]}, hint: {k: 'text', s: `${ks[i]} pictures, each ${sc}: count by ${sc}s.`},
+    return lsDq(D, 2, {kind: 'num', ans: vals[i], sl: {}, bug: {scale: [ks[i]], skip: [vals[i] + sc, vals[i] - sc].filter(x => x > 0), mulAdd: [ks[i] + sc]}, hint: {k: 'text', s: `${qN(ks[i], 'picture')}, each ${sc}: count by ${sc}s.`},
       html: lsCap(`In a picture graph, each picture stands for ${sc}. ${names[i]} has ${ks[i]} picture${ks[i] > 1 ? 's' : ''}. How many is that?`) + SLOT,
       say: `Each picture stands for ${sc}. ${names[i]} has ${ks[i]} picture${ks[i] > 1 ? 's' : ''}. How many?`});
   };
@@ -1915,7 +1915,7 @@ function ls3bData4(id, t, g, idea, home) {
   D.warm = ls3bFrWarm(D);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'plot', m: {den: 4, ks: [1, 2, 3, 4], target: [1, 2, 1, 0]}, goal: 'some2', eq: 'value', ans: '1,2,1,0', raw: 1, sl: {}, demo: [1, 2, 1, 0],
     html: lsCap('Put any dots on the line plot.'), say: 'Put dots on any marks of the line plot. Each dot is one length.'}), nudge: 'Put a dot on a mark, then check.',
-  react: v => { const s = Array.isArray(v) ? v : [1, 2, 1, 0], n = s.reduce((a, b) => a + b, 0); return {ctx: {n, s: s.slice()}, lines: [`You put ${n} dots on the line plot.`]}; }});
+  react: v => { const s = Array.isArray(v) ? v : [1, 2, 1, 0], n = s.reduce((a, b) => a + b, 0); return {ctx: {n, s: s.slice()}, lines: [`You put ${qN(n, 'dot')} on the line plot.`]}; }});
   D.name = c => { const s = c.s || [c.n, 0, 0, 0]; return {html: `<div class="pkq">${VIZ.linePlot([1, 2, 3, 4].flatMap((k, i) => Array(s[i]).fill(k / 4)), {min: 0, max: 1, step: .25, den: 4, w: 250})}</div>` + lsEq(`${c.n} dots`), sl: c}; };
   return D;
 }
@@ -2225,9 +2225,9 @@ function ls3bFop4(id, t, g, idea, home) {
     while (add ? a + c <= d : a >= c);
     const W = add ? w1 + w2 + 1 : w1 - w2 - 1, P = add ? a + c - d : a + d - c, ans = `${W} ${P}/${d}`, F = (w, n) => `${w} ${fcFr(n, d)}`, Fs = (w, n) => `${w} and ${ls3Frs(n, d)}`;
     const e = `${F(w1, a)} ${add ? '+' : '−'} ${F(w2, c)}`, se = `${Fs(w1, a)} ${add ? 'plus' : 'minus'} ${Fs(w2, c)}`;
-    const bug = add ? {addBot: [`${w1 + w2} ${a + c}/${2 * d}`]} : {mixSub: [`${w1 - w2} ${c - a}/${d}`]}, hint = {k: 'text', s: add ? `The parts make ${a + c} ${FC_NAMES[d]}s: trade ${d} of them for a whole.` : `${a} ${FC_NAMES[d]}s is not enough to take ${c}: break a whole into ${d} parts.`};
+    const bug = add ? {addBot: [`${w1 + w2} ${a + c}/${2 * d}`]} : {mixSub: [`${w1 - w2} ${c - a}/${d}`]}, hint = {k: 'text', s: add ? `The parts make ${a + c} ${FC_NAMES[d]}s: trade ${d} of them for a whole.` : `${qN(a, FC_NAMES[d])} is not enough to take ${c}: break a whole into ${d} parts.`};
     if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'mixb', m: {d, target: ans, s0: add ? [w1 + w2, a + c] : [w1, a]}, s0: add ? [w1 + w2, a + c] : [w1, a], goal: 'mixv', eq: 'value', ans, sl: {}, bug, hint, vsay: ls3Say, ansSay: ls3Say(ans),
-      html: lsEq(e) + lsCap(add ? 'All the bars are in. Trade parts for a whole.' : `Take away ${w2} wholes and ${c} parts.`), say: `${se}. ${add ? 'Trade parts for a whole.' : 'Break a whole if you need to.'}`});
+      html: lsEq(e) + lsCap(add ? 'All the bars are in. Trade parts for a whole.' : `Take away ${qN(w2, 'whole')} and ${qN(c, 'part')}.`), say: `${se}. ${add ? 'Trade parts for a whole.' : 'Break a whole if you need to.'}`});
     const o = {kind: 'num', sep: 'mix', eq: 'value', ans, sl: {}, bug, hint, vsay: ls3Say};
     if (st == 1) return lsDq(D, 1, Object.assign(o, {html: `<div class="pkq">${ls3bMixBars(w1, a, d)}${add ? ls3bMixBars(w2, c, d) : ''}</div>` + lsEq(`${e} = ${SLOT_MIX}`), say: `${se} equals what?`}));
     return lsDq(D, 2, Object.assign(o, {html: lsEq(`${e} = ${SLOT_MIX}`), say: `${se} equals what?`}));

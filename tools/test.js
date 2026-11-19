@@ -7961,7 +7961,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage,hints')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7971,7 +7971,7 @@ run('code split A11b (and data file split A11)',()=>{
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
   // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); //  v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -8142,7 +8142,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','petage','data']; // TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','petage','hints','data']; // TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8576,11 +8576,11 @@ run('performance P6-02',()=>{
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teachrd (TEACH-4) and petage (PET-AGE2): '+JSON.stringify(LAZY));
-  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','petage']; // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
+  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','petage','hints']; // v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
   const GAME_FILES=LAZY_FILES.filter((f,i)=>!NOT_GAME.includes(LAZY[i])),parts_=on=>LAZY.map(x=>String(!NOT_GAME.includes(x)&&on)).join(); // parts_(true): the games in, bt, teach and teach12 (TEACH-1/2b, the math map's) and petage not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
-  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd and petage');
+  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd, petage and hints');
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -18105,7 +18105,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage,hints,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
@@ -20673,6 +20673,48 @@ run('teach: batch 3b lessons, their models, their read-through, migration 7 TEAC
   p.push(...mg);
   return{problems:p,note:B3B_IDS.length+' batch 3b lessons ('+B3B_IDS.filter(id=>g[id].g==3).length+' 3rd, '+B3B_IDS.filter(id=>g[id].g==4).length+' 4th, '+B3B_IDS.filter(id=>g[id].g==5).length+' 5th grade); '+un.length+' drafts wait for the owner in BATCH3B-READ.md; 13 models'};
 });
+// v182 (Fable review): only migrate() raised PLAY.mig, so a backup loaded (BAK.one) or another child's save read (PRF.up) in the locked
+// Play app ran migrations 6 and 7 with the stops outside the free sample locked, and kept none of them open. runMigrations() (00-core.js)
+// is now the one way to run them, under PLAY.mig, so the Play app keeps exactly the stops the web version keeps.
+run('migrations under the Play lock: a restored backup keeps the same lesson stops as on the web v182',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id),i=at('mbig1');
+    if(at('story5')!==i+1)bad.push('story5 is not the stop after mbig1');
+    for(const v of [7,6]){
+      loadSave(null);S.grade=3;for(let n=0;n<=i;n++)setSt('math',n,2);S.v=v;delete S.lsOpen;const d=JSON.parse(JSON.stringify(S)),raw=JSON.stringify(d);
+      const got={};
+      for(const lock of [false,true]){
+        PLAY.on=lock;PLAY.own=false;
+        if(PLAY.locked()!==lock)bad.push('the Play lock is not '+lock);
+        const b=BAK.one(JSON.parse(raw),v,'2026-11-19'),u=PRF.up(raw);
+        got[lock?'play':'web']=[b.ok?JSON.stringify(b.data.lsOpen||{}):b.msg,u?JSON.stringify(u.lsOpen||{}):'null'];
+        if(PLAY.mig!==0)bad.push('PLAY.mig is '+PLAY.mig+' after the migrations');
+        if(PLAY.locked()!==lock)bad.push('the Play lock changed after the migrations');
+      }
+      PLAY.on=false;
+      const [wb,wu]=got.web,[pb,pu]=got.play;
+      if(!/"story5":1/.test(wb))bad.push('v'+v+' backup on the web: story5 not kept open: '+wb);
+      if(pb!==wb)bad.push('v'+v+' backup restored in the locked Play app keeps '+pb+', the web '+wb);
+      if(pu!==wu||!/"story5":1/.test(pu))bad.push('v'+v+' save read by PRF.up in the locked Play app keeps '+pu+', the web '+wu);
+    }
+    return bad})()`);
+  return{problems:r};
+});
+// v182 (Fable review): Vowel Teams 2 and Build Vowel Teams 2 (pic6, build6) sort pictures the child hears, not reads; ou (house) and ow
+// (cow) make the same sound, so a sort of ou against ow cannot be heard. ls4Pairs never draws two teams of LS4_SAME as the two sides.
+run('teach: pic6 and build6 never sort ou against ow (500 seeds), other lessons draw as before v182',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],seen={};S.grade=2;
+    for(const id of ['pic6','build6'])for(let s=1;s<=500;s++){const L=LESSONS[id]||LS_DRAFTED[id],e=L.exp(mulberry32(s)),b=e.q.bins.map(x=>x.v).sort().join('/');
+      seen[b]=1;if(b==='ou/ow')bad.push(id+' seed '+s+' sorts ou against ow')}
+    if(!seen['oo/ou']||!seen['oo/ow'])bad.push('pic6/build6 no longer draw both oo/ou and oo/ow: '+Object.keys(seen));
+    const same=JSON.stringify(LS4_SAME);
+    const draw=()=>LS_B4.filter(id=>!['pic6','build6'].includes(id)&&LESSONS[id]&&LESSONS[id].exp).map(id=>[0,1,2,3,4,5,6,7].map(s=>{const e=LESSONS[id].exp(mulberry32(s+1));return (e.q.bins||[]).map(x=>x.v).join('/')+':'+(e.q.label||'')}).join());
+    const now=draw();for(const k in LS4_SAME)delete LS4_SAME[k];const without=draw();Object.assign(LS4_SAME,JSON.parse(same));
+    if(JSON.stringify(now)!==JSON.stringify(without))bad.push('another reading lesson draws a different Explore sort than without LS4_SAME');
+    return bad.slice(0,10)})()`);
+  return{problems:r};
+});
 run('teach: simulated children on batch 3b lessons, Check me always wrong when forced TEACH-3B',()=>{
   // the TEACH-1 children on the 19 batch 3b lessons alone (TEACH-3's check runs them among all 74): the learner gains on every lesson, the guesser
   // and the partial knower do not, the knower tests out and a guesser almost never; every forced-wrong pet turn is wrong; no show-me or Show
@@ -21414,12 +21456,15 @@ run('hints: simulated children on every Practice question HINT-01',()=>{
 });
 run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
   const p=[],R=hintApp(),A=require('./author.js'),os=require('os'),cpx=require('child_process'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
-  // 1. the part and the size: the engine and its words are in gen (loaded at start), index.html stays under 1,000,000 bytes
-  for(const f of ['39m-mist.js','39n-hintw.js'])if(partOf(f)!=='gen')p.push(f+' is not in the gen part');
+  // 1. the part and the size: the engine and its words are in the lazy part hints (v182: moved out of gen, which loads at start, to keep
+  //    start-up under P6-03's 2.5 MB; a Practice round loads it, hintsWarm in 50-round.js), index.html stays under 1,000,000 bytes
+  for(const f of ['39m-mist.js','39n-hintw.js'])if(partOf(f)!=='hints')p.push(f+' is not in the hints part');
+  if(!LAZY.includes('hints'))p.push('the hints part is not LAZY (tools/build.py)');
+  if(!/const newG=o=>\(bankRound\(\),hintsWarm\(\),/.test(rd('src/js/50-round.js'))||!/partLoad\('hints'\)/.test(rd('src/js/50-round.js')))p.push('a Practice round does not load the hints part (hintsWarm in newG, 50-round.js)');
   const ih=fs.statSync(path.join(ROOT,'index.html')).size;if(ih>=1000000)p.push('index.html is '+ih+' bytes');
   // 2. the round: the first miss puts this mistake's line above the generic hint, the retry keeps it; nothing else in check() changed
   const rs=rd('src/js/50-round.js');
-  if(!/G\.hm='';const mh=typeof hmHint=='function'\?hmHint\(q,v\):''/.test(rs)||!/\$\('#hint'\)\.innerHTML=mh\+hintHTML\(q\);fit\(\);hintIn\(\);\n    K\.retry\(q,G,\(\)=>\{\$\('#hint'\)\.innerHTML=mh\+hintHTML\(q\)/.test(rs))p.push('check() in 50-round.js does not show the mistake hint at the first miss');
+  if(!/G\.hm='';let mh='';try\{mh=typeof hmHint=='function'\?hmHint\(q,v\):''\}catch\(e\)\{\}/.test(rs)||!/\$\('#hint'\)\.innerHTML=mh\+hintHTML\(q\);fit\(\);hintIn\(\);\n    K\.retry\(q,G,\(\)=>\{\$\('#hint'\)\.innerHTML=mh\+hintHTML\(q\)/.test(rs))p.push('check() in 50-round.js does not show the mistake hint at the first miss');
   const hs=R('String(hmHint)');if(/G\.(score|res|done|tries|lock|missed|streak|retry)\s*[+\-]?=(?!=)/.test(hs)||/save\(|S\.\w+\s*=(?!=)/.test(hs))p.push('hmHint writes to the round or the save');
   // 3. the gate in the round: no reviewed line, the generic hint; a reviewed one, its line above it; two choices, lessons off, a why,
   // a Challenge question or a word that is not kid-safe: none
@@ -21458,7 +21503,7 @@ run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hints-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/hints'),{recursive:true});
   const lw="/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n";
   fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),lw);
-  const hw=b=>"/* ---------- HINT-01: the mistake hints the owner has reviewed (part gen) ----------\n   BUILT by tools/build.py from docs/drafts/hints/<code>.md (\"status: reviewed ...\"): never edit by hand. A hint that is\n   not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */\nconst HINTW = {\n"+b+"};\n";
+  const hw=b=>"/* ---------- HINT-01: the mistake hints the owner has reviewed (part hints) ----------\n   BUILT by tools/build.py from docs/drafts/hints/<code>.md (\"status: reviewed ...\"): never edit by hand. A hint that is\n   not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */\nconst HINTW = {\n"+b+"};\n";
   const dj='\n```json\n{"code":"zz","line":"Look again.","api":"","notes":""}\n```\n',chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
   fs.writeFileSync(path.join(tmp,'docs/drafts/hints/zz.md'),'# Hint: zz\n\nstatus: unreviewed\n'+dj);
   fs.writeFileSync(path.join(tmp,'src/js/39n-hintw.js'),hw('  "zz": "Look again.",\n'));if(chk()!==1)p.push('the words check passes an unreviewed hint');
