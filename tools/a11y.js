@@ -827,6 +827,9 @@ async function sheetCheck(p, how) {
     window.__sheet = s;
     const sel = 'button:not([disabled]),a[href],input:not([type=hidden]):not([disabled]),select,textarea,summary,[tabindex]:not([tabindex="-1"])';
     const ctl = [...s.querySelectorAll(sel)].filter(e => e.getClientRects().length);
+    // each control gets its own number, so two different controls that read the same (the Blocks Builder's next goals can list
+    // a big project that is also in "Big projects") are not counted as one
+    ctl.forEach((e, i) => { e.dataset.a11yN = i; });
     return { n: ctl.length, inside: s.contains(document.activeElement) };
   });
   if (!info) { f('no sheet opened'); return fails; }
@@ -836,7 +839,7 @@ async function sheetCheck(p, how) {
     await p.keyboard.press('Tab');
     const r = await p.evaluate(() => {
       const a = document.activeElement;
-      return { inside: window.__sheet.contains(a), d: a === document.body ? 'body' : a.tagName + (a.id ? '#' + a.id : '') + '|' + (a.textContent || '').trim().slice(0, 20) + '|' + [...a.parentNode.children].indexOf(a) };
+      return { inside: window.__sheet.contains(a), d: a === document.body ? 'body' : (a.dataset && a.dataset.a11yN != null ? '#' + a.dataset.a11yN + ' ' : '') + a.tagName + (a.id ? '#' + a.id : '') + '|' + (a.textContent || '').trim().slice(0, 20) + '|' + [...a.parentNode.children].indexOf(a) };
     });
     if (!r.inside) { f('Tab left the open sheet (to ' + r.d + ')'); break; }
     visited.add(r.d);
