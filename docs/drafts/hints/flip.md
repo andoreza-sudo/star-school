@@ -1,6 +1,6 @@
 # Hint: flip
 
-status: unreviewed
+status: reviewed owner 2026-11-19
 made: 2026-11-18 by tools/author.js --hints-draft (xAI API); read and fixed by hand
 
 <!-- For the owner: read the examples below, change the line in the JSON if you like, then replace "unreviewed" above with
