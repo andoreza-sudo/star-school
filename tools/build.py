@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v179'
+VER = 'v181'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -55,18 +55,42 @@ def words_js(root, w=WORDS[0]):
             'const %s = {\n' % (chunk, part, {'LSW': 'lsDraft', 'LSW3': 'lsDraft3'}.get(const, 'lsDraft4'), src,
                                  '' if const == 'LSW' else ' with its words (it runs on its hand-written fallback words)', const) + body + '};\n')
 WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
+# HINT-01: the mistake hints of Practice (src/js/39m-mist.js) take their words from docs/drafts/hints/<code>.md (drafted by
+# node tools/author.js --hints-draft). Only a draft whose status line says "reviewed" is copied into src/js/39n-hintw.js (HINTW, part
+# gen); a code with no reviewed line shows the round's generic hint. --words-only and --words-check cover this file too.
+HINTS_FILE = '39n-hintw.js'
+def hints_js(root):
+    dd, out = os.path.join(root, 'docs', 'drafts', 'hints'), {}
+    for n in sorted(os.listdir(dd)) if os.path.isdir(dd) else []:
+        if not re.fullmatch(r'[A-Za-z0-9]+\.md', n):
+            continue
+        t = open(os.path.join(dd, n), encoding='utf-8').read()
+        st, js = re.search(r'^status:\s*(\w+)', t, re.M), re.search(r'```json\n([\s\S]*?)\n```', t)
+        if st and st.group(1).lower() == 'reviewed' and js:
+            w = json.loads(js.group(1))
+            if w.get('code') == n[:-3] and isinstance(w.get('line'), str) and w['line'].strip():
+                out[n[:-3]] = w['line'].strip()
+    body = ''.join('  %s: %s,\n' % (json.dumps(k), json.dumps(out[k], ensure_ascii=False)) for k in sorted(out))
+    return ('/* ---------- HINT-01: the mistake hints the owner has reviewed (part gen) ----------\n'
+            '   BUILT by tools/build.py from docs/drafts/hints/<code>.md ("status: reviewed ..."): never edit by hand. A hint that is\n'
+            '   not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */\n'
+            'const HINTW = {\n' + body + '};\n')
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
+    open(os.path.join(root, 'src', 'js', HINTS_FILE), 'w', encoding='utf-8', newline='').write(hints_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
             and not (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) and open(os.path.join(_w, 'src', 'js', w[0]), encoding='utf-8', newline='').read() == words_js(_w, w))]
+    _hf = os.path.join(_w, 'src', 'js', HINTS_FILE)
+    if os.path.isfile(_hf) and open(_hf, encoding='utf-8', newline='').read() != hints_js(_w):
+        _bad.append(HINTS_FILE)
     print('words: the words files match the reviewed drafts' if not _bad else 'words: %s is not what the reviewed drafts say (run python3 tools/build.py)' % ', '.join(_bad))
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js and src/js/52k-words4.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js and src/js/39n-hintw.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -81,7 +105,7 @@ write_words(ROOT)  # TEACH-2b: the reviewed words, before the parts are read (TE
 # is <stem>.<VER>.js: a <style> it adds to <head> (its src/css files, if any), its src/js files (sorted), and a last line
 # `var <STEM>_VER='<VER>'`. Keep one entry per line: tools/test.js reads this list. See CONTRIBUTING 3.3.
 PARTS = [
-    ('gen', r'(23-viz|30-gen-math|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|80-grown|81-backup|82-report|88-online)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note)
+    ('gen', r'(23-viz|30-gen-math|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|39m-mist|39n-hintw|80-grown|81-backup|82-report|88-online)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note)
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2|51b-checkin)\.js|(37b-kinds-c|51b-checkin)\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds; CHECK-IN: check-ins and stop badges
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
     ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look

@@ -672,6 +672,8 @@ known mistake would answer (forgot to carry, wrote 15 in the ones place, added i
 and, when the child's wrong answer matches one, shows that mistake's approved hint with the real numbers filled in. Hints are
 drafted with tools/author.js and go live only after the owner's read-through. Accept: every Practice skill has its common
 mistakes coded; simulated children show the hint fires on the matching mistake and never on a right answer or a random guess.
+*Built v181 (HINT-01): 117 mistake codes over the Practice skills whose wrong answers can be worked out; the hints are drafted and wait
+for the owner's read-through (docs/drafts/HINTS-READ.md, then `node tools/author.js --hints-approve`). See PROGRESS.md HINT-01.*
 
 **PERS-01 · Problems about the child's interests** · Sonnet: a grown-up or child picks a few interests (soccer, dinosaurs,
 horses, space, cooking, ...); approved word lists per interest fill approved templates in word problems and stories. No sentence

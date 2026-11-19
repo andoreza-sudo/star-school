@@ -10,6 +10,16 @@
    node tools/author.js --approve <stop ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
                                            TEACH-2b: the owner's one step: mark drafts "status: reviewed NAME DATE (NOTE)" (only drafts
                                            that pass every check), then write src/js/52e-words.js, so their lessons go live at the next build
+   node tools/author.js --hints-draft [code ...] [--dry]
+                                           HINT-01: ask the xAI API for the words of the Practice mistake hints (src/js/39m-mist.js,
+                                           HM) and write docs/drafts/hints/<code>.md, "status: unreviewed" (no codes: every code with
+                                           no draft yet; --dry: print the request)
+   node tools/author.js --hints-approve <code ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
+                                           HINT-01: the owner's step for hints: mark hint drafts reviewed (only those that pass every
+                                           check), then write src/js/39n-hintw.js, so those hints show at the next build
+   node tools/author.js --hints-read <file>
+                                           HINT-01: one read-through of every hint, by subject and skill: an example question, the
+                                           wrong answer, and the hint as the child sees it (docs/drafts/HINTS-READ.md)
    node tools/author.js --read <file> [--batch 3|4] [stop ...]
                                            TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
                                            TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md);
@@ -335,11 +345,202 @@ function readThrough(ids, o = {}) {
   return head.concat(xs.map((x, i) => `## ${i + 1}. ${x.d.t} (${x.d.id})\n\n\`\`\`text\n${sheet(x.d).split('\n').slice(1).join('\n')}\n\`\`\`\n`)).join('\n');
 }
 
-module.exports = {approve, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
+// ---- HINT-01: the Practice mistake hints (src/js/39m-mist.js: HM, the codes; HM_SLOTS, the slots a line may use) ----
+const HINTS = path.join(DRAFTS, 'hints');
+// the subject of a skill, and every grade (Pre-K is -1) whose map has a stop of that skill and level
+function hintStops() {
+  return app()(`(()=>{const o={};for(const p in NODES)for(const n of NODES[p]){if(!SK[n.sk])continue;const w=PATHS[p].worlds[n.wi],k=n.sk+'|'+n.lv;
+    (o[k]=o[k]||{sk:n.sk,lv:n.lv,p,area:SK[n.sk].area,t:SK[n.sk].t,stop:n.t,g:[]}).g.push(w.g)}return o})()`);
+}
+const SUBJ = {math: 'Math', read: 'Reading', es: 'Spanish', disc: 'Discover'};
+/* every code with its examples: Practice questions (seeded, so the read-through is the same each run) where a child holding the
+   mistake gives that code's answer, the slots it fills, and the grades of the stops it shows in. o.per: examples kept per skill. */
+function hintExamples(o = {}) {
+  const per = o.per || 1, seeds = o.seeds || 200;
+  return app()(`(()=>{const out={},stops=${JSON.stringify(hintStops())};
+    for(const k in stops){const st=stops[k];if(skLvEmpty(st.sk,st.lv))continue;
+      for(let i=0;i<${seeds};i++){let q;try{q=genQ(st.sk,st.lv,1000+i)}catch(e){continue}
+        if(twoWay(q))continue;
+        const P=hmProb(q);if(!P)continue;
+        for(const p of hmPredict(q)){const m=hmMatch(q,p.v);if(!m||m.c!==p.c)continue;
+          const c=out[p.c]=out[p.c]||{code:p.c,d:HM[p.c].d,s:HM[p.c].s,g:[],ex:{}};
+          for(const g of st.g)if(!c.g.includes(g))c.g.push(g);
+          const e=c.ex[st.sk]=c.ex[st.sk]||[];
+          if(e.length<${per}&&!e.some(x=>x.lv==st.lv&&x.label==q.label))e.push({sk:st.sk,lv:st.lv,area:st.area,t:st.t,stop:st.stop,g:Math.min(...st.g),label:q.label,
+            say:String(q.say||'').replace(/\\s+/g,' ').trim(),ans:String(q.ans),v:p.v,slots:m.s,kind:q.kind})}}}
+    return out})()`);
+}
+const hintAges = g => [...new Set(g.map(x => ageOf(x)))];
+// one hint line: its problems ([] when fine), for the ages of the pets whose children see it and the slots its code fills
+function checkHint(code, t, ages) {
+  const R = app(), out = [], s = String(t == null ? '' : t), slots = R(`HM[${JSON.stringify(code)}]?HM[${JSON.stringify(code)}].s.concat(['v']):null`);
+  if (!slots) return ['no such mistake code (HM in src/js/39m-mist.js)'];
+  if (!s.trim()) return ['an empty line'];
+  const bare = s.replace(/\{[^}]*\}/g, 'X');
+  if (BANNED.test(s)) out.push(`a theme the parent ruled out: "${s.match(BANNED)[0]}"`);
+  if (/\d/.test(bare)) out.push('a number written into the words (numbers come from code: use a {slot})');
+  if (NUMWORDS.test(bare)) out.push(`a number word "${bare.match(NUMWORDS)[0]}" (use a {slot})`);
+  for (const m of s.matchAll(/\{([^}]*)\}/g)) if (!slots.includes(m[1])) out.push(`{${m[1]}} is not a slot of ${code} (it has ${slots.map(x => '{' + x + '}').join(' ')})`);
+  if (/[{}]/.test(s.replace(/\{[a-z]+\}/g, ''))) out.push('a broken {slot}');
+  if (R.ctx.ksBad(bare.replace(/X/g, ' '), true)) out.push('a word that is not kid-safe (ksBad)');
+  if (/\b(wrong|bad|silly|oops|no!)\b/i.test(bare)) out.push('a word that tells the child off (wrong, bad, silly): say what to look at instead');
+  for (const a of ages) for (const p of R.ctx.lsToneBad(bare, a)) out.push(p);
+  return out;
+}
+function hintDrafts() {
+  if (!fs.existsSync(HINTS)) return [];
+  return fs.readdirSync(HINTS).filter(f => /^[A-Za-z0-9]+\.md$/.test(f)).sort().map(f => {
+    const file = path.join(HINTS, f);
+    try { const d = parseDraft(fs.readFileSync(file, 'utf8')); return {file, d}; } catch (e) { return {file, d: null, problems: ['cannot read: ' + e.message]}; }
+  });
+}
+// every hint draft with its problems (the ages come from where its code shows)
+function checkHints(ex = hintExamples()) {
+  const codes = app()('Object.keys(HM)');
+  return hintDrafts().map(x => {
+    if (!x.d) return x;
+    const c = x.d.code, e = ex[c], p = [];
+    if (c + '.md' !== path.basename(x.file)) p.push(`the code ${c} does not match the file name`);
+    if (!codes.includes(c)) p.push(`${c} is not a mistake code of src/js/39m-mist.js`);
+    if (!e) p.push(`${c} never shows in Practice (no question where its mistake can be made)`);
+    for (const y of checkHint(c, x.d.line, hintAges(e ? e.g : [0]))) p.push(y);
+    return Object.assign(x, {problems: p});
+  });
+}
+// the line as the child sees it, with this example's numbers and words
+const hintSee = (line, ex) => app().ctx.hmFill(line, ex.slots);
+function hintFile(code, line, api, e, problems, notes) {
+  const exs = Object.values(e.ex).flat().slice(0, 4);
+  return `# Hint: ${code}\n\nstatus: unreviewed\nmade: ${new Date().toISOString().slice(0, 10)} by tools/author.js --hints-draft (xAI API)\n\n`
+    + '<!-- For the owner: read the examples below, change the line in the JSON if you like, then replace "unreviewed" above with\n'
+    + '     "reviewed <your name> <date>" (or run: node tools/author.js --hints-approve <code> --by <your name>). Until then this\n'
+    + '     mistake shows the generic hint: tools/build.py copies reviewed lines only (src/js/39n-hintw.js). -->\n\n'
+    + `## What the child did\n\n${e.d}. Grades: ${e.g.slice().sort((a, b) => a - b).map(g => (g < 0 ? 'Pre-K' : g == 0 ? 'K' : g)).join(', ')}.\n\n`
+    + '## As the child sees it\n\n' + exs.map(x => `- ${x.t} (${x.sk}${x.lv}): "${x.say}" answered ${x.v}: "${hintSee(line, x)}"`).join('\n') + '\n\n'
+    + '## Checks\n\n' + (problems.length ? problems.map(x => '- ' + x).join('\n') : '- All checks pass (slots, numbers, themes, kid-safe, the pet\'s tone for every grade it shows in).') + '\n\n'
+    + '## Words\n\n```json\n' + JSON.stringify({code, line, api, notes: notes || ''}, null, 1) + '\n```\n';
+}
+// ask the API for the lines of these codes (one request for up to 14 codes), check them, write the drafts
+function hintDraft(codes, o = {}) {
+  const ex = hintExamples(), R = app(), slotsTxt = R('JSON.stringify(HM_SLOTS)');
+  codes = (codes.length ? codes : R('Object.keys(HM)').filter(c => !fs.existsSync(path.join(HINTS, c + '.md')))).filter(c => ex[c]);
+  const out = [];
+  for (let i = 0; i < codes.length; i += 14) {
+    const part = codes.slice(i, i + 14), spec = part.map(c => {
+      const e = ex[c], x = Object.values(e.ex).flat().slice(0, 2), ages = hintAges(e.g);
+      return `- ${c}: the child ${e.d}. Shown to the ${ages.join(' and ')} pet's children (${ages.map(a => R(`LS_RULES.${a}.words`) + ' words at most').join(', ')}). `
+        + `Slots: ${e.s.concat(['v']).map(k => '{' + k + '}').join(' ')}. Examples: ` + x.map(y => `"${y.say}" answered ${y.v} (slots ${JSON.stringify(y.slots)})`).join('; ');
+    }).join('\n');
+    const sys = 'You write the short hints a children\'s learning app (Pre-K to 6th grade) shows after a child makes a known mistake in a practice question. '
+      + 'You write only words; the app fills every number and word of the question into {slots}. Reply with one JSON object and nothing else.';
+    const user = `For each mistake code below, write ONE hint line the child sees (and young children hear) right after making that mistake. The child then tries again.
+Rules for every line:
+- Say what to look at or do next, kindly, as the child's pet friend would. One idea. Never say "wrong", "oops", "silly" or "no".
+- NEVER give the right answer, and never a slot that holds it. You may name the child's own answer {v} (or {o}).
+- NEVER write a digit or a number word (two, five, twenty, sixty ...). Use only the slots listed for that code; "one", "ten", "hundred" are fine as words for places and pieces ("carry the ten", "the ones").
+- Short: within the word limit given for the code; plain words a young child understands.
+- For the older kid pet (grades 3-4) and the teen-like pet (5-6): no baby words (yay, hooray, super, awesome), no double exclamation marks.
+- No magic, spells, wizards, fairies, unicorns or evolution.
+Slot meanings: ${slotsTxt}
+The codes:
+${spec}
+Reply as {"<code>": "<line>", ...} for exactly these codes: ${part.join(', ')}.`;
+    if (o.dry) { out.push({prompt: [sys, user]}); continue; }
+    const m = model(), res = api('POST', API + '/chat/completions', {model: m, messages: [{role: 'system', content: sys}, {role: 'user', content: user}], temperature: 0.6});
+    const txt = String(res.choices[0].message.content || '');
+    const j = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+    fs.mkdirSync(HINTS, {recursive: true});
+    for (const c of part) {
+      const line = String(j[c] || '').trim(), probs = checkHint(c, line, hintAges(ex[c].g));
+      fs.writeFileSync(path.join(HINTS, c + '.md'), hintFile(c, line, line, ex[c], probs));
+      out.push({code: c, line, problems: probs});
+    }
+  }
+  return out;
+}
+// after reading a drafted line: write the line as fixed, keep the API's first draft (api) and say what changed (notes); still unreviewed
+function hintSet(code, line, notes, ex = hintExamples()) {
+  const f = path.join(HINTS, code + '.md'), old = fs.existsSync(f) ? parseDraft(fs.readFileSync(f, 'utf8')) : {};
+  if (!ex[code]) throw new Error(code + ' never shows in Practice');
+  const probs = checkHint(code, line, hintAges(ex[code].g));
+  fs.mkdirSync(HINTS, {recursive: true});
+  fs.writeFileSync(f, hintFile(code, line, old.api || old.line || '', ex[code], probs, notes).replace('by tools/author.js --hints-draft (xAI API)',
+    'by tools/author.js --hints-draft (xAI API); read and fixed by hand' + (old.status && old.status !== 'unreviewed' ? '' : '')));
+  return probs;
+}
+// the owner's step for hints: mark them reviewed (only those that pass), then write src/js/39n-hintw.js
+function hintApprove(ids, o = {}) {
+  const by = String(o.by || 'owner').replace(/\s+/g, ' ').trim(), date = o.date || new Date().toISOString().slice(0, 10), done = [], bad = [];
+  if (!/^\d{4}-\d\d-\d\d$/.test(date)) throw new Error('--date must be YYYY-MM-DD');
+  for (const x of checkHints()) {
+    if (!x.d || !(ids.includes('all') ? x.d.status === 'unreviewed' : ids.includes(x.d.code))) continue;
+    if (x.problems.length) { bad.push(`${x.d.code}: ${x.problems.length} problems (fix them first: node tools/author.js --check)`); continue; }
+    const t = fs.readFileSync(x.file, 'utf8');
+    fs.writeFileSync(x.file, t.replace(/^status:.*$/m, `status: reviewed ${by} ${date}${o.note ? ' (' + o.note + ')' : ''}`));
+    done.push(x.d.code);
+  }
+  for (const id of ids) if (id !== 'all' && !done.includes(id) && !bad.some(b => b.startsWith(id + ':'))) bad.push(`${id}: no such hint draft`);
+  if (done.length) cp.execFileSync('python3', [path.join(ROOT, 'tools', 'build.py'), '--words-only'], {stdio: 'pipe'});
+  return {done, bad};
+}
+// the read-through: by subject, then skill (in map order), each code that shows there with one example as the child sees it
+function hintRead() {
+  const ex = hintExamples(), drafts = Object.fromEntries(hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d]));
+  const order = app()(`(()=>{const o=[];for(const p of ['math','read','es'])for(const n of NODES[p])if(SK[n.sk]&&!o.includes(n.sk))o.push(n.sk);for(const k in SK)if(!o.includes(k))o.push(k);return o})()`);
+  const rows = {};
+  for (const c in ex) for (const sk in ex[c].ex) for (const x of ex[c].ex[sk]) (rows[sk] = rows[sk] || []).push(Object.assign({code: c}, x));
+  const st = Object.values(drafts).reduce((a, d) => (a[d.status] = (a[d.status] || 0) + 1, a), {});
+  const L = ['# Hint read-through: a hint for each common mistake in Practice (HINT-01)', '',
+    `${Object.keys(drafts).length} hints (${Object.entries(st).map(([k, v]) => v + ' ' + k).join(', ')}), one per mistake.`,
+    'When a child\'s wrong answer is the answer that mistake gives, the round shows its hint', 'where it shows "Try again" and the generic hint today. The app fills each {slot}',
+    'from the question (its numbers, the child\'s own answer, a word or letter), so the numbers are always right.', '',
+    'Below, by subject and skill: an example question (as the app says it), the wrong answer,', 'and the hint as the child sees it. A hint shows in every skill listed with its code.', '',
+    'Until you approve a hint, its mistake shows the generic hint, as before.', 'To change a hint: edit "line" in docs/drafts/hints/<code>.md. When you are happy, say so, or run:', '',
+    '`node tools/author.js --hints-approve <code ...|all> --by <your name>`', '',
+    'Hints show only after the first wrong try, never on a two-choice question (one try there),', 'never in a check-in, and not when Grown-ups has lessons off.', ''];
+  for (const subj of ['math', 'read', 'es']) {
+    const sks = order.filter(sk => rows[sk] && rows[sk][0].area === subj);
+    if (!sks.length) continue;
+    L.push(`## ${SUBJ[subj]}`, '');
+    for (const sk of sks) {
+      L.push(`### ${rows[sk][0].t} (${sk})`, '');
+      for (const x of rows[sk]) {
+        const d = drafts[x.code], line = d ? d.line : null;
+        const say = x.say.length > 140 ? x.say.slice(0, x.say.lastIndexOf(' ', 136)) + ' ...' : x.say;
+        L.push(`- **${x.code}** (level ${x.lv}): "${say}" Answer given: ${x.v}`,
+          `  Hint: ${line ? '"' + hintSee(line, x) + '"' : '(no draft yet)'}${d && d.status !== 'reviewed' ? '' : d ? ' (reviewed)' : ''}`);
+      }
+      L.push('');
+    }
+  }
+  L.push('## The lines with their slots', '', 'Each line as written, with the {slots} the app fills, and what the child did.', '');
+  for (const c of Object.keys(ex)) { const d = drafts[c]; L.push(`- **${c}** (${ex[c].d}): ${d ? '"' + d.line + '"' : '(no draft yet)'}`); }
+  const none = app()(`Object.keys(SK).filter(k=>!${JSON.stringify(Object.keys(rows))}.includes(k)&&SK[k].area!='disc')`);
+  L.push('', '## Skills with no coded mistake', '', 'These skills keep the generic hint: their wrong answers do not come from a mistake the app can work out',
+    '(stories and facts to recall, word meanings, shapes by name, tracing, sorting by eye, pictures to match).', '',
+    none.join(', ').replace(/(.{1,110})(, |$)/g, '$1$2\n').replace(/ \n/g, '\n').trim(), '',
+    'Discover (science, maps, citizens) has none either: its questions are facts to recall.', '');
+  return L.join('\n');
+}
+
+module.exports = {hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
 
 if (require.main === module) {
   const a = process.argv.slice(2), has = f => a.includes(f), val = f => (a.indexOf(f) >= 0 ? a[a.indexOf(f) + 1] : null);
-  if (has('--approve')) {
+  if (has('--hints-draft')) {
+    const ids = a.filter((x, i) => !x.startsWith('--'));
+    const r = hintDraft(ids, {dry: has('--dry')});
+    for (const x of r) console.log(x.prompt ? x.prompt.join('\n\n') : `${x.code}: ${x.problems.length ? x.problems.length + ' problems: ' + x.problems.join('; ') : 'ok'}  "${x.line}"`);
+  } else if (has('--hints-approve')) {
+    const ids = a.slice(a.indexOf('--hints-approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note'].includes(all[i - 1]));
+    const r = hintApprove(ids, {by: val('--by'), date: val('--date'), note: val('--note')});
+    console.log((r.done.length ? 'reviewed: ' + r.done.join(', ') + '\nwrote src/js/39n-hintw.js: these hints show at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
+      + (r.bad.length ? '\nnot marked:\n  ' + r.bad.join('\n  ') : ''));
+    process.exitCode = r.bad.length ? 1 : 0;
+  } else if (has('--hints-read')) {
+    fs.writeFileSync(path.resolve(val('--hints-read')), hintRead());
+    console.log('wrote ' + val('--hints-read'));
+  } else if (has('--approve')) {
     const ids = a.slice(a.indexOf('--approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note'].includes(all[i - 1]));
     const r = approve(ids, {by: val('--by'), date: val('--date'), note: val('--note')});
     console.log((r.done.length ? 'reviewed: ' + r.done.join(', ') + '\nwrote src/js/52e-words.js: these lessons go live at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
@@ -363,6 +564,11 @@ if (require.main === module) {
     for (const x of drafts()) {
       const rel = path.relative(ROOT, x.file);
       if (x.problems.length) { bad++; console.log('FAIL  ' + rel + '\n  ' + x.problems.slice(0, 20).join('\n  ')); }
+      else console.log(`ok    ${rel} (${x.d.status})`);
+    }
+    for (const x of checkHints()) {
+      const rel = path.relative(ROOT, x.file);
+      if (x.problems && x.problems.length) { bad++; console.log('FAIL  ' + rel + '\n  ' + x.problems.slice(0, 20).join('\n  ')); }
       else console.log(`ok    ${rel} (${x.d.status})`);
     }
     console.log(bad ? bad + ' with problems' : 'all scripts and drafts pass');
