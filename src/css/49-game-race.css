@@ -151,3 +151,17 @@
 .rl-pro #rlgo{right:14px;background:var(--play-shade);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}
 .rl-pro #rlgo .ic{width:44px;height:44px}
 @media (max-width:420px){.rl-pro .rl-btn{width:96px;height:96px}.rl-pro #rlr{left:118px}}
+/* G-MOVES (v188): the Drift button above the right-hand button (Easy: steer right; Pro: Go); the champion's face on its card and end card */
+#rldr{right:14px;bottom:calc(28px + clamp(96px,15vw,132px) + env(safe-area-inset-bottom,0px));width:clamp(76px,11vw,100px);height:clamp(76px,11vw,100px);
+  border-radius:50%;background:var(--play-shade);color:var(--surface);font-size:var(--fs-2);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}
+#rldr .ic{width:40px;height:40px}
+@media (max-width:420px){.rl-pro #rldr{bottom:calc(124px + env(safe-area-inset-bottom,0px))}}
+.rl-champ{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:96px;padding:var(--s-3);border:0;
+  border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;
+  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.rl-champ:active{transform:translateY(4px)}
+.rl-champ.won{box-shadow:inset 0 0 0 3px var(--star),0 5px 0 var(--star-shade)}
+.rl-champ.lock{background:var(--surface-2)}.rl-champ.lock .rl-cpic svg{opacity:.35}
+.rl-champ.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}
+.rl-champ .rl-cpic{background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}
+.rl-epic .gh-face{height:90%;width:auto}

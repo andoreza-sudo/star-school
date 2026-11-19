@@ -447,6 +447,22 @@ const SCREENS = {
   // G-04a2: the recipe book and the café journey in the shop (8 days played opens it)
   'snack-book': { run: ev(() => { snSave(); S.snack.book = { cheesy: 2, jamtoast: 1 }; snBook(); }) },
   'snack-cafe': { run: ev(() => { snSave(); S.snack.days = 8; S.snack.coins = 400; S.snack.cafe = { cart: 1 }; snShop('c:lights'); }) },
+  // G-MOVES (v188): the new move's card (once, over a menu), each game's boss screen (GH.boss), the rival run with the Hop button, the
+  // chef's taste test with the Star serve button, the champion race with the Drift button, Bea's mirror build, the sky race's Dash
+  'game-move': { run: ev(() => { gtime(); S.garage = { st: { m1: 7, m2: 7 } }; garage(); }) }, // the Hop's card at the top of the menu
+  'hill-boss': { run: ev(() => { gtime(); S.garage = { st: { m5: 1 } }; hcBossMenu(0); }), main: '#gbgo' },
+  'hill-race': { run: ev(() => { gtime(); S.garage = { st: { m1: 7, m2: 7, m5: 7 } }; hcStart(0, null, null, true); }), main: '.pedal, #hchop', sheet: pauseSheet },
+  'rally-boss': { run: ev(() => { rlSave(); S.rally.cups = { sprout: { best: 1, runs: 1 } }; S.rally.bs = { sprout: { n: 2, w: 1 } }; rlChampMenu(0); }), main: '#gbgo' },
+  'rally-champ': { run: async p => { await p.evaluate(() => { rlSave(); S.rally.races = 5; S.rally.cups = { sprout: { best: 1, runs: 1 } }; rlRace('meadow-1', { champ: 0 }); }); await p.waitForTimeout(4500); },
+    main: '.rl-btn', sheet: pauseSheet },
+  'snack-boss': { run: ev(() => { snSave(); S.snack.stars = { park: 2 }; S.snack.place = 'park'; snChefMenu(); }), main: '#gbgo' },
+  'snack-chef': { run: async p => { await p.evaluate(() => { snSave(); S.snack.days = 2; S.snack.stars = { park: 2 }; S.snack.place = 'park'; S.snack.mode = 'calm'; snDay({ chef: true }); });
+    await p.waitForTimeout(2500); }, main: '.sn-fb, .sn-serve, .sn-undo, .sn-star', sheet: pauseSheet },
+  'game-hop-boss': { run: ev(() => { gtime(); const best = {}; for (const c of HOP_COURSES.slice(0, 6)) best[c.id] = 60000; S.hop = { mode: 'one', best, runs: 6 }; hopBossMenu(0); }), main: '#gbgo' },
+  'game-hop-race': { run: async p => { await p.evaluate(() => { gtime(); const best = {}; for (const c of HOP_COURSES.slice(0, 6)) best[c.id] = 60000; S.hop = { mode: 'one', best, runs: 6 };
+    hopPlay(HOP_COURSES[5].id, null, true); }); await p.waitForTimeout(2500); }, main: '.hp-btn', sheet: pauseSheet },
+  'blocks-boss': { run: ev(() => { gtime(); for (let i = 0; i < 6; i++) bbBP()[BBP[i].id] = 2; bbBossMenu(0); }), main: '#gbgo' },
+  'blocks-mirror': { run: ev(() => { gtime(); for (let i = 0; i < 6; i++) bbBP()[BBP[i].id] = 2; blockBuilder('boss0'); }), main: '.bb-pal button', sheet: pauseSheet },
   'game-timeup': {
     run: async p => { await p.evaluate(() => { gtime(); artPage('m:17'); }); await p.waitForTimeout(600); await p.evaluate(() => timeUpOverlay()); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }),
