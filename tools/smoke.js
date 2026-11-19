@@ -616,7 +616,7 @@ async function main() {
         return { src, files: appFiles(), lazy: LAZY_PARTS, btIn: partReady('bt') || typeof MZ != 'undefined', dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
           pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
-          css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
+          css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
@@ -671,7 +671,8 @@ async function main() {
       await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
       const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
-      const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
+      // MERGE-185: the hints part (with PERS-01's picker <style>) loads on its own when a round starts, so like its <script> tag its <style> is left out of these lists
+      const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
       if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
         || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
@@ -10710,7 +10711,7 @@ async function main() {
         await p2.locator('#groom').waitFor({ timeout: 15000 });
         const s2 = await p2.evaluate(() => {
           S.pt = { bank: 900, day: today(), used: 0 }; save(); home();
-          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
         if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false' || // ten lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage), less petage (Home's, filtered above): nine
@@ -10727,7 +10728,7 @@ async function main() {
         await p2.click('#groom');
         await p2.locator('.gh-room .gh-card').first().waitFor({ timeout: 15000 });
         const wait = await p2.evaluate(() => window.__w);
-        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
@@ -10755,7 +10756,7 @@ async function main() {
           S.grade = 2; save(); BT.start('maze', BT.band(), 1);
         });
         await p2.locator('#btstage .mz-cv').waitFor({ timeout: 15000 }).catch(() => {});
-        const s5 = await p2.evaluate(() => ({ wait: window.__w, maze: !!document.querySelector('#btstage .mz-cv'), bt: partReady('bt'), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+        const s5 = await p2.evaluate(() => ({ wait: window.__w, maze: !!document.querySelector('#btstage .mz-cv'), bt: partReady('bt'), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
           cur: S.bt.cur && S.bt.cur.id }));
         if (!s5.wait || s5.wait.line !== 'Getting the puzzles ready...' || !s5.wait.back || !s5.maze || !s5.bt || s5.cur !== 'maze' || !/css-bt$/.test(s5.css)) bad.push('a puzzle offline: ' + JSON.stringify(s5));
         else notes.push('a maze opened offline from the cached ' + 'bt.' + c1.ver + '.js');
