@@ -14,7 +14,26 @@ A question only shows when it fits: "How do I do ...?" only at a stop that has a
 "why" answer never says the answer of the question it is about (the app checks every filled answer).
 
 Also on the screen (button and title words, not the pet's answers): the button is read as "Ask <pet> a question";
-the sheet says "Ask <pet>", then "Pick a question." until a question is tapped, and has a "Done" button.
+the sheet says "Ask <pet>", then "Pick a question." until a question is tapped, and has a Close button (read as "Close").
+
+For children who cannot read yet (ASK-READ): when the sheet opens, the pet reads the menu aloud ("You can ask me:", then each
+question in order, its button lit while it is said; a tap anywhere stops it), and "Hear the questions again" reads it again.
+A tapped question is said first, then its answer, so a child who tapped the wrong one hears what they picked. Each question
+has its own picture. The little pet (Pre-K to 2nd grade) shows at most 5 questions, so the whole menu is heard quickly:
+
+- What should I do next? (next)
+- Why did I get that wrong? (why)
+- How much game time do I have? (time)
+- When will you grow? (grow)
+- How are you feeling? (feel)
+
+It leaves out (the older pets keep them):
+
+- How do I do {stop}? (how)
+- How do I get more game time? (earn)
+- What if it is too hard? (stuck)
+
+The sheet's own two lines are at the end of this page (unreviewed).
 
 Until you approve a question it is not on the menu, and with none approved there is no Ask button at all.
 To change a word: edit the JSON in docs/drafts/ask/<id>.md. When you are happy, say so, or run:
@@ -399,3 +418,17 @@ What changed after the API draft: Kept the API's idea (Help, go slowly, a grown-
 - kid help: You can ask a grown-up, or try an easier stop.
 - teen help: Tap Help and work through the hint.
 - teen help: Slow down, ask a grown-up, or go back a stop. Mistakes are how you learn.
+
+## The sheet's own words (unreviewed)
+
+Written in src/js/39r-ask.js (ASK_SHEET); the same for every pet age. Change them there, or say which words you want.
+
+```text
+Said by the pet before it reads the questions aloud:
+    "You can ask me:"
+The button at the top of the sheet (a speaker picture; a tap reads the questions again):
+    "Hear the questions again"
+```
+
+- intro: You can ask me:
+- again: Hear the questions again

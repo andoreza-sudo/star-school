@@ -21906,7 +21906,8 @@ run('ask the pet: every slot from real state across fixtures and grades, no answ
         if(x.id!='why'){const y=its0.find(z=>z.id==x.id);if(!y||y.a!==x.a)bad.push(w+'changes with the open question')}
       }
       if(ASK_LM&&ASK_LM.k===SKEY&&!its.some(x=>x.id=='why'))bad.push(tag+' '+p+': no why after a mistake');
-      if(its.length<5||its.length>10)bad.push(tag+' '+p+': '+its.length+' questions')};
+      const age=askAge(),lo=age=='little'?3:5; // ASK-READ: the little pet offers at most 5 (ASK_LITTLE), the older pets 5 to 10
+      if(its.length<lo||its.length>ASK_MAX[age])bad.push(tag+' '+p+': '+its.length+' questions for the '+age+' pet')};
     for(const k in saves)for(let g=-1;g<=6;g++){
       for(const s in store)delete store[s];loadSave(saves[k]);migrate();S.name=S.name||'Mia';S.grade=g;G=null;ASK_LM=null;
       for(const p of ['math','read','es','disc'])check(k+' grade '+g,p);
@@ -21946,6 +21947,82 @@ run('ask the pet: every slot from real state across fixtures and grades, no answ
   for(const q of A.askDefs())for(const v in q.v)if(!r.seen[q.id+'/'+v])p.push('never answered: '+q.id+'/'+v);
   if(r.approved<100)p.push('the approved mistake hint was the why answer only '+r.approved+' times');
   return{problems:p,note:r.n+' answers over 6 saves x 8 grades x 4 maps and forced states, every situation reached; '+r.miss+' mistakes: '+r.tips+' with a hint ('+r.approved+' approved HINT-01 lines), '+r.looks+' with none, never the answer'};
+});
+run('ask the pet: audio-first for non-readers (the menu read in the order shown, a tap stops it, question before answer, distinct icons, 5 for the little pet) ASK-READ ASK-01',()=>{
+  const {R,A}=askApp(),p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const r=R(`(()=>{const bad=[],log=[],Q=[];let T=1e6,H=0;
+    // a tablet that can speak (canSpeak: speechSynthesis and SpeechSynthesisUtterance on window)
+    if(typeof window=='undefined')globalThis.window=globalThis;globalThis.SpeechSynthesisUtterance=globalThis.SpeechSynthesisUtterance||function(){};
+    const keep={say,hush,speakBusy,setTimeout,now:Date.now,sheet:UI.sheet,pop:SFX.pop,noVoice};
+    say=(t,b,l,q)=>log.push([String(t),q?1:0,lit()]);hush=()=>{H++};speakBusy=()=>false;setTimeout=f=>{Q.push(f)};Date.now=()=>T;SFX.pop=()=>{};
+    // a pretend sheet: the buttons in the order askOpen draws them, with the listeners it binds
+    let el=null,L={},html='';
+    const btn=id=>{const c=new Set();return{dataset:{ask:id},attrs:{},classList:{add:x=>c.add(x),remove:x=>c.delete(x),contains:x=>c.has(x)},setAttribute(k,v){this.attrs[k]=v},onclick:null}};
+    const lit=()=>el?el.bs.filter(b=>b.classList.contains('ak-now')).map(b=>b.dataset.ask).join(','):'';
+    UI.sheet=(h,o)=>{html=h;const bs=[...h.matchAll(/class="btn soft ak-q" data-ask="([a-z]+)"/g)].map(m=>btn(m[1])),hear={onclick:null};
+      el={bs,isConnected:true,parentNode:{addEventListener:(t,f,c)=>{if(c)L[t]=f}},querySelectorAll:s=>s=='.ak-q'?bs:[],
+        querySelector:s=>s=='#ak-hear'?hear:s=='#ak-done'?{}:s=='#ak-a'?(el.ans||(el.ans={dataset:{},textContent:''})):null,hear};
+      return{el,close(){if(o&&o.onClose)o.onClose()}}};
+    const drain=(n=400)=>{while(Q.length&&n--){T+=200;Q.shift()()}};
+    const off=TEACH.off;TEACH.off=true; // no lesson part to load in this pretend app (the little pet has no "how" anyway)
+    try{
+      S.grade=1;S.voice=false;ASK_LM={q:genQ('add',2,3),v:'99',k:SKEY};
+      const items=askItems({p:'math'}),ids=items.map(x=>x.id);
+      if(!askReadOn())bad.push('a 1st grader with the voice setting off does not hear the menu');
+      askOpen(null);
+      const shown=el?el.bs.map(b=>b.dataset.ask):[];
+      if(JSON.stringify(shown)!==JSON.stringify(ids))bad.push('the sheet shows '+shown+' not '+ids);
+      // 1. the reading: "You can ask me:", then every question in the order shown, each button lit while it is said, all queued
+      drain();
+      const want=[ASK_SHEET.intro].concat(items.map(x=>x.q)),said=log.map(x=>x[0]),lits=log.map(x=>x[2]);
+      if(JSON.stringify(said)!==JSON.stringify(want))bad.push('the menu is read as '+JSON.stringify(said)+', not '+JSON.stringify(want));
+      if(JSON.stringify(lits)!==JSON.stringify([''].concat(ids)))bad.push('the light moved '+JSON.stringify(lits)+', not with the reading');
+      if(log.some(x=>!x[1]))bad.push('a line of the reading cut what was being said (not queued)');
+      if(lit()||ASKR.on)bad.push('the reading did not end: '+lit());
+      // 2. a tap anywhere stops it at once: no more lines, no light, the voice hushed
+      log.length=0;el.hear.onclick({currentTarget:el.hear});drain(3);const n0=log.length,h0=H;
+      if(n0<2||!ASKR.on)bad.push('"Hear the questions again" did not start the reading ('+n0+' lines)');
+      if(!L.pointerdown||!L.keydown)bad.push('no tap or key on the sheet stops the reading');else L.pointerdown({});
+      drain();
+      if(log.length!==n0)bad.push('the reading went on after a tap: '+JSON.stringify(log.slice(n0)));
+      if(lit()||ASKR.on||H<=h0)bad.push('a tap left the reading on (lit '+lit()+', hushed '+(H-h0)+')');
+      // 3. a tap on a question (while it reads) stops the reading, then says the question, then the answer (queued behind it)
+      for(const x of items){
+        el.hear.onclick({currentTarget:el.hear});drain(2);log.length=0;
+        const b=el.bs.find(y=>y.dataset.ask==x.id);if(L.pointerdown)L.pointerdown({});b.onclick();drain();
+        const s2=log.map(y=>y[0]);
+        if(JSON.stringify(s2)!==JSON.stringify([x.q,x.a])||log[0][1]||!log[1][1])bad.push(x.id+': a tap says '+JSON.stringify(log)+', not the question then the answer');
+        if(el.ans.textContent!==x.a||b.attrs['aria-pressed']!=='true'||lit())bad.push(x.id+': the answer is not shown, or the light stayed')}
+      // closing the sheet stops it too
+      el.hear.onclick({currentTarget:el.hear});drain(2);askHush.call(null);if(ASKR.on)bad.push('closing did not stop the reading');
+      // 4. the little pet: at most 5, only ASK_LITTLE, on every map and grade, after a mistake or not; the older pets keep the rest
+      const seen={little:new Set(),kid:new Set(),teen:new Set()};TEACH.off=off;
+      for(let g=-1;g<=6;g++)for(const lm of [null,{q:genQ('add',2,3),v:'99',k:SKEY}])for(const mp of ['math','read','es','disc']){S.grade=g;ASK_LM=lm;
+        const its=askItems({p:mp}),age=askAge();its.forEach(x=>seen[age].add(x.id));
+        if(age=='little'&&(its.length>5||its.some(x=>!ASK_LITTLE.includes(x.id))))bad.push('grade '+g+' '+mp+': the little pet offers '+its.map(x=>x.id))}
+      if(seen.little.size!==5||[...seen.kid].length<7)bad.push('menus seen: little '+[...seen.little]+'; kid '+[...seen.kid]);
+      // who hears it on its own: the little and older kid pets when prompts are read aloud; the teen on the button only
+      S.grade=1;S.voice=false;const a1=askReadOn();S.grade=3;const a3=askReadOn();S.voice=true;const a3v=askReadOn();S.grade=5;const a5=askReadOn();
+      if(!a1||a3||!a3v||a5)bad.push('read on its own: grade 1 '+a1+', grade 3 (voice off) '+a3+', grade 3 '+a3v+', grade 5 '+a5);
+      // 5. one icon each, 32 px, matching its meaning
+      const ics=ASK_Q.map(q=>q.icon),M={next:['pin'],time:['clock','ticket'],grow:['egg','star'],feel:['heart'],stuck:['help'],how:['hint'],why:['question']};
+      if(new Set(ics).size!==ics.length)bad.push('two questions share an icon: '+ics);
+      for(const q of ASK_Q){if(!ICONS[q.icon])bad.push(q.id+': no icon '+q.icon);if(M[q.id]&&!M[q.id].includes(q.icon))bad.push(q.id+': icon '+q.icon+' is not '+M[q.id].join(' or '))}
+      if((html.match(/class="btn soft ak-q"[^>]*><svg class="ic" width="32"/g)||[]).length!==items.length)bad.push('a question icon is not 32 px on the left');
+      if(!/id="ak-hear"[^>]*><svg[^>]*><use href="#i-speak"\\/><\\/svg><span>Hear the questions again<\\/span>/.test(html)||!/btn soft sm ak-hear/.test(html))bad.push('no 48 px "Hear the questions again" button with the speaker');
+      if(html.indexOf('ak-hear')>html.indexOf('ak-bub'))bad.push('"Hear the questions again" is not at the top');
+    }catch(e){bad.push(String(e&&e.stack||e).split('\\n').slice(0,3).join(' '))}
+    finally{({say,hush,speakBusy,setTimeout}=keep);Date.now=keep.now;UI.sheet=keep.sheet;SFX.pop=keep.pop;TEACH.off=off;ASK_LM=null;ASKR.on=false}
+    return bad})()`);
+  p.push(...r);
+  // the words: only the intro and the button label are new, both in the read-through for the owner (unreviewed)
+  const W=A.askSheetWords(),t=rd('docs/drafts/ASK-READ.md');
+  if(W.intro!=='You can ask me:'||W.again!=='Hear the questions again')p.push('the sheet words are '+JSON.stringify(W));
+  if(!t.includes('## The sheet\'s own words (unreviewed)')||!t.includes('- intro: '+W.intro)||!t.includes('- again: '+W.again))p.push('the read-through misses the sheet\'s own words');
+  const ak=rd('src/js/39r-ask.js'),css=rd('src/css/39r-ask.css');
+  if(!/\.btn\.ak-q\.ak-now\{/.test(css)||/ak-now[^}]*(animation|transition)/.test(css))p.push('the lit question has no style, or it moves');
+  if(/new Audio|\.play\(|getUserMedia|SpeechRecognition/.test(ak))p.push('39r-ask.js plays a recording or listens');
+  return{problems:p,note:'menu read in shown order with the light, a tap stops it, question then answer; little pet: '+A.askSheetWords().little.join(', ')};
 });
 
 // ---- report ----

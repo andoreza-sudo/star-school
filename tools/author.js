@@ -955,6 +955,7 @@ function askApprove(ids, o = {}) {
 // the read-through: docs/drafts/ASK-READ.md
 function askRead() {
   const xs = askDrafts().filter(x => x.d), defs = askDefs(), st = xs.reduce((a, x) => (a[x.d.status] = (a[x.d.status] || 0) + 1, a), {});
+  const sheet = askSheetWords(), qOf = id => ((xs.find(x => x.d.id === id) || {d: {q: id}}).d.q) + ' (' + id + ')';
   const order = id => defs.findIndex(q => q.id === id);
   xs.sort((a, b) => order(a.d.id) - order(b.d.id));
   const L = ['# "Ask the pet" read-through (ASK-01)', '',
@@ -969,7 +970,14 @@ function askRead() {
     '"Why did I get that wrong?" only after a mistake in a Practice round this session. Ask is not inside a round, and the',
     '"why" answer never says the answer of the question it is about (the app checks every filled answer).', '',
     'Also on the screen (button and title words, not the pet\'s answers): the button is read as "Ask <pet> a question";',
-    'the sheet says "Ask <pet>", then "Pick a question." until a question is tapped, and has a "Done" button.', '',
+    'the sheet says "Ask <pet>", then "Pick a question." until a question is tapped, and has a Close button (read as "Close").', '',
+    'For children who cannot read yet (ASK-READ): when the sheet opens, the pet reads the menu aloud ("You can ask me:", then each',
+    'question in order, its button lit while it is said; a tap anywhere stops it), and "Hear the questions again" reads it again.',
+    'A tapped question is said first, then its answer, so a child who tapped the wrong one hears what they picked. Each question',
+    'has its own picture. The little pet (Pre-K to 2nd grade) shows at most 5 questions, so the whole menu is heard quickly:', '',
+    ...sheet.little.map(id => '- ' + qOf(id)), '', 'It leaves out (the older pets keep them):', '',
+    ...defs.filter(q => !sheet.little.includes(q.id)).map(q => '- ' + qOf(q.id)), '',
+    'The sheet\'s own two lines are at the end of this page (unreviewed).', '',
     'Until you approve a question it is not on the menu, and with none approved there is no Ask button at all.',
     'To change a word: edit the JSON in docs/drafts/ask/<id>.md. When you are happy, say so, or run:', '',
     '`node tools/author.js --ask-approve <id ...|all> --by <your name>`', '',
@@ -984,10 +992,18 @@ function askRead() {
     for (const age of app()('ASK_AGES')) for (const v in (x.d.a || {})[age] || {}) for (const t of [].concat(x.d.a[age][v])) L.push(`- ${age} ${v}: ${t}`);
     L.push('');
   }
+  // ASK-READ: the sheet's own words (ASK_SHEET in src/js/39r-ask.js), for the owner to read like the answers
+  L.push('## The sheet\'s own words (unreviewed)', '', 'Written in src/js/39r-ask.js (ASK_SHEET); the same for every pet age. Change them there, or say which words you want.', '',
+    '```text', 'Said by the pet before it reads the questions aloud:', `    "${sheet.intro}"`, 'The button at the top of the sheet (a speaker picture; a tap reads the questions again):', `    "${sheet.again}"`, '```', '',
+    '- intro: ' + sheet.intro, '- again: ' + sheet.again, '');
   return L.join('\n');
 }
+// ASK-READ: the sheet's own lines and the little pet's questions, as the app has them
+function askSheetWords() {
+  return JSON.parse(app()('JSON.stringify(Object.assign({little: ASK_LITTLE}, ASK_SHEET))'));
+}
 
-module.exports = {askDraft, askDrafts, checkAsk, askFix, askApprove, askRead, askSheet, askDefs, persDraft, persDrafts, checkPers, persFix, persApprove, persRead, persSee, PERS_KINDS, PERS_IDS, hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
+module.exports = {askSheetWords, askDraft, askDrafts, checkAsk, askFix, askApprove, askRead, askSheet, askDefs, persDraft, persDrafts, checkPers, persFix, persApprove, persRead, persSee, PERS_KINDS, PERS_IDS, hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
 
 if (require.main === module) {
   const a = process.argv.slice(2), has = f => a.includes(f), val = f => (a.indexOf(f) >= 0 ? a[a.indexOf(f) + 1] : null);

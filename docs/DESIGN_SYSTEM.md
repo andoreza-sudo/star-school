@@ -227,6 +227,8 @@ backspace, go, calendar, crown`
 | Skills (17) | `skill-count, skill-num, skill-shape, skill-frac, skill-abc, skill-story, skill-pattern, skill-array, skill-geo, scale, ruler, ear, doc, music, clap, pin, wave` |
 | Refined in P4-03 (same names) | `home` (soft walls), `map` (soft middle panel), `gift` (soft box), `hint` (soft base), `path-disc` (soft lens), `target` (soft ring), `calendar` (soft page) |
 
+Added later: `help` (ASK-READ, a life ring for "What if it is too hard?" on the Ask the pet menu; the round's Help button keeps `hint`).
+
 Skill icons: `ICO_SK` in `15-icons.js` maps every skill id to an icon and `icoSk(id)` returns it (a skill missing from the map gets its
 subject's icon, so new content never shows a blank). Shared drawings are reused instead of drawn twice: `add` plus, `sub` minus, `mult`/`mfact`/`mbig`
 times, `dfact` divide, `time` clock, `coins` coin, `data` chart, `meas` ruler, `sight` eye, `spell` edit, `pic` image, `sort`/`build` puzzle,

@@ -1,6 +1,6 @@
 /* Star School hints v186. BUILT by tools/build.py from 39p-pers.css, 39r-ask.css, 39m-mist.js, 39n-hintw.js, 39p-pers.js, 39q-persw.js, 39r-ask.js, 39s-askw.js: never edit by hand.
    index.html v186 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v186.js. */
-(function(){var s=document.createElement('style');s.id='css-hints';s.textContent="/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */\n.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}\n.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}\n.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}\n.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;\n  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}\n.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}\n.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}\n.pp-emo{line-height:1}\n.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}\n.btn.pp-c.on .pp-ok{opacity:1}\n.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}\n.pp-exl{font-weight:700;color:var(--ink-2)}\n.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}\n@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}\n/* ASK-01: the \"Ask the pet\" sheet (askOpen, 39r-ask.js, part hints). Tokens only; every question a 48 px button with its words.\n   The pet and the title in a row with Close, the answer in a speech bubble under the pet, then the questions (two columns when wide). */\n.ak-top{display:flex;align-items:center;gap:var(--s-3)}\n.ak-pet{flex:none;font-size:32px;line-height:1}\n.ak-pet .pet-svg{width:1.95em;height:1.95em}\n.sheet .ak-top h2{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-5);line-height:var(--lh-5)}\n.sheet .ak-bub{position:relative;margin:var(--s-3) 0 var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--brand-tint);\n  color:var(--ink);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3);min-height:2.9em}\n.ak-bub::before{content:'';position:absolute;left:var(--s-6);top:calc(-1 * var(--s-2));border:var(--s-2) solid transparent;border-top:0;border-bottom-color:var(--brand-tint)}\n.ak-qs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--s-2)}\n.btn.ak-q{justify-content:flex-start;gap:var(--s-2);min-height:var(--tap);padding:var(--s-2) var(--s-3);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3)}\n.btn.ak-q .ic{flex:none;color:var(--brand)}\n.btn.ak-q[aria-pressed=\"true\"]{background:var(--brand-tint);box-shadow:0 0 0 3px var(--brand) inset}\n@media (max-height:640px){.sheet .ak-bub{margin:var(--s-2) 0 var(--s-3)}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+(function(){var s=document.createElement('style');s.id='css-hints';s.textContent="/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */\n.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}\n.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}\n.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}\n.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;\n  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}\n.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}\n.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}\n.pp-emo{line-height:1}\n.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}\n.btn.pp-c.on .pp-ok{opacity:1}\n.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}\n.pp-exl{font-weight:700;color:var(--ink-2)}\n.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}\n@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}\n/* ASK-01: the \"Ask the pet\" sheet (askOpen, 39r-ask.js, part hints). Tokens only; every question a 48 px button with its words.\n   The pet and the title in a row with Close, \"Hear the questions again\" (48 px), the answer in a speech bubble under the pet, then the\n   questions (two columns when wide), each with its own 32 px icon on the left. ASK-READ: the question being read aloud is lit\n   (.ak-now: a thick ring, no movement, so reduced motion needs nothing more). */\n.ak-top{display:flex;align-items:center;gap:var(--s-3)}\n.ak-pet{flex:none;font-size:32px;line-height:1}\n.ak-pet .pet-svg{width:1.95em;height:1.95em}\n.sheet .ak-top h2{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-5);line-height:var(--lh-5)}\n.sheet .ak-bub{position:relative;margin:var(--s-3) 0 var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--brand-tint);\n  color:var(--ink);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3);min-height:2.9em}\n.ak-bub::before{content:'';position:absolute;left:var(--s-6);top:calc(-1 * var(--s-2));border:var(--s-2) solid transparent;border-top:0;border-bottom-color:var(--brand-tint)}\n.ak-qs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--s-2)}\n.btn.ak-q{justify-content:flex-start;gap:var(--s-2);min-height:var(--tap);padding:var(--s-2) var(--s-3);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3)}\n.btn.ak-q .ic{flex:none;width:32px;height:32px;color:var(--brand)}\n.ak-tools{margin-top:var(--s-3);text-align:left}\n.btn.ak-q.ak-now{background:var(--brand-tint);box-shadow:0 0 0 4px var(--brand)}\n.btn.ak-q[aria-pressed=\"true\"]{background:var(--brand-tint);box-shadow:0 0 0 3px var(--brand) inset}\n@media (max-height:640px){.sheet .ak-bub{margin:var(--s-2) 0 var(--s-3)}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- HINT-01: a hint for each common mistake, in every Practice question (part hints since v182: loaded when a Practice round starts) ----------
    docs/ROADMAP.md 10d (owner decisions 2026-11-18). For a Practice question the app works out what each known mistake would answer
    (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cat" as "cap", la for el ...). When the child's
@@ -920,14 +920,15 @@ const PERSW = {
      ASK_Q          the questions in menu order: what each answer variant means and the slots it may use (tools/author.js reads it)
      askState(id)   which variant fits now and its slot values, or null when the question does not fit now (it is then not on the menu)
      askItems()     the menu: the reviewed questions (ASKW, built from the approved drafts) that fit now, each with its filled answer
-     askOpen(btn)   the sheet: the pet, the answer bubble, one 48 px button per question (a tap shows and says the answer), Close
+     askOpen(btn)   the sheet: the pet, "Hear the questions again", the answer bubble, one 48 px button per question with its own
+                    32 px icon (a tap says the question, then shows and says the answer), Close; the pet reads the menu aloud (askRead)
    The gate: ASKW holds reviewed questions only (tools/build.py), and ASK_ON (39t-askon.js, index.html) counts them, so with none
    reviewed Home and the map draw no Ask button (askBtn in 46-home.js). Nothing here is saved, and nothing changes a score, a star or
    game time. Ask is not offered inside a round: an answer can never land beside a Practice question. The "why" answer still never
    holds the answer of the question it is about, nor of a question left open (askLeak), since a missed question comes back in review.
    CSS: src/css/39r-ask.css (part hints, tokens only). */
 const ASK_Q = [
-  {id: 'next', icon: 'map', q: [], v: {
+  {id: 'next', icon: 'pin', q: [], v: {
     lesson: {slots: ['stop', 'world'], about: 'the next stop on the map is {stop} (in the world {world}); its lesson with the pet comes first ("Learn with <pet>" stop in front of it)', ex: {stop: 'Make Ten', world: 'Shape Garden'}},
     stop: {slots: ['stop', 'world'], about: 'the next stop to play on the map is {stop}, in the world {world}', ex: {stop: 'Take Away', world: 'Number Meadow'}},
     done: {slots: ['subject'], about: 'every stop on this map ({subject}) is done', ex: {subject: 'Math'}}}},
@@ -936,28 +937,40 @@ const ASK_Q = [
   {id: 'why', icon: 'question', q: [], v: {
     tip: {slots: ['hint'], about: 'the child got a Practice question wrong; {hint} is the approved hint for that mistake (or the question\'s usual hint), one or two sentences', ex: {hint: 'Line up the ones. Then add the tens.'}},
     look: {slots: [], about: 'the child got a Practice question wrong, but there is no hint that can be said without giving its answer away', ex: {}}}},
-  {id: 'time', icon: 'ticket', q: [], v: {
+  {id: 'time', icon: 'clock', q: [], v: {
     ok: {slots: ['time'], about: 'the child has {time} of game time to spend now', ex: {time: '4 and a half minutes'}},
     empty: {slots: [], about: 'the child has no game time saved yet', ex: {}},
     learn: {slots: ['more'], about: 'a grown-up set a rule: learn {more} more today before the Game Room opens', ex: {more: '6 minutes'}},
     max: {slots: ['max'], about: 'today\'s game time is used up (the daily limit is {max}); more tomorrow', ex: {max: '30 minutes'}},
     paused: {slots: [], about: 'a grown-up has paused game time', ex: {}}}},
-  {id: 'earn', icon: 'star', q: [], v: {
+  {id: 'earn', icon: 'ticket', q: [], v: {
     lesson: {slots: ['min'], about: 'how to earn game time: passing a lesson with the pet pays {min}; finishing learning rounds earns time too', ex: {min: '5 minutes'}},
     round: {slots: [], about: 'how to earn game time: finishing learning rounds (lessons with the pet are off, or a grown-up set them to pay nothing)', ex: {}}}},
-  {id: 'grow', icon: 'heart', q: [], v: {
+  {id: 'grow', icon: 'star', q: [], v: {
     egg: {slots: ['stars'], about: 'the pet is still an egg; {stars} until it hatches (stars come from learning)', ex: {stars: '12 more stars'}},
     grow: {slots: ['stars'], about: 'the pet grows to its next stage in {stars} (stars come from learning)', ex: {stars: '40 more stars'}},
     big: {slots: [], about: 'the pet is fully grown (a super pet)', ex: {}}}},
-  {id: 'feel', icon: 'paw', q: [], v: {
+  {id: 'feel', icon: 'heart', q: [], v: {
     hungry: {slots: [], about: 'the pet is hungry (Pet Care: feed it)', ex: {}},
     messy: {slots: [], about: 'the pet needs a bath (Pet Care: wash it)', ex: {}},
     bored: {slots: [], about: 'the pet wants to play (Pet Care: play with it)', ex: {}},
     happy: {slots: [], about: 'the pet is happy and cared for', ex: {}}}},
-  {id: 'stuck', icon: 'thumbs-up', q: [], v: {
+  {id: 'stuck', icon: 'help', q: [], v: {
     help: {slots: [], about: 'what to do when a question is too hard: tap Help (in a round) for a hint, go slowly, ask a grown-up, try an easier stop; mistakes help us learn', ex: {}}}},
 ];
 const ASK_AGES = ['little', 'kid', 'teen'];
+/* ASK-READ (2026-11-19, the owner: "if a first grader does not know how to read well how will they answer those questions?"): the menu is
+   audio-first. Each question has its own icon (ASK_Q icon, 32 px, no two alike: next a map pin, how a light bulb, why a question
+   mark, time a clock, earn a ticket (game time, as on the lesson's end card), grow a star, feel a heart, stuck the help ring). The
+   sheet's own words (the owner reads them in docs/drafts/ASK-READ.md, tools/author.js --ask-read reads them from here):
+     intro   said before the questions when the pet reads the menu
+     again   the button at the top of the sheet that reads the menu again (speaker icon, 48 px) */
+const ASK_SHEET = {intro: 'You can ask me:', again: 'Hear the questions again'};
+/* The little pet (Pre-K to 2nd grade) offers at most 5 questions, so the whole menu is heard in a few seconds. Left out for little
+   children: "How do I do {stop}?" (the stop's lesson says its idea itself), "How do I get more game time?" (the game time they have
+   is what matters; earning is the grown-up's rule) and "What if it is too hard?" (a round's Help button does that in the moment). */
+const ASK_LITTLE = ['next', 'why', 'time', 'grow', 'feel'];
+const ASK_MAX = {little: 5, kid: 10, teen: 10};
 // the pet's age for the child's grade: the same rule as lsAge (52c-scripts.js, part teach; tools/test.js checks they agree)
 const askAge = (g = gradeOf()) => g <= 2 ? 'little' : g <= 4 ? 'kid' : 'teen';
 const askPl = (n, w) => n + ' ' + w + (n == 1 ? '' : 's');
@@ -1075,7 +1088,7 @@ function askItems(o = {}) {
   const age = o.age || askAge(), out = [];
   for (const Q of ASK_Q) {
     const W = typeof ASKW != 'undefined' && ASKW[Q.id];
-    if (!W) continue;
+    if (!W || age == 'little' && !ASK_LITTLE.includes(Q.id)) continue;
     let st = null;
     try { st = askState(Q.id, o); } catch (e) { st = null; }
     if (!st) continue;
@@ -1084,10 +1097,66 @@ function askItems(o = {}) {
     const q = askFill(W.q, st.s), a = askFill(ls.join(' '), st.s); // one or two lines, said one after the other
     if (q && a) out.push({id: Q.id, icon: Q.icon, q, a, v: st.v});
   }
-  return out;
+  return out.slice(0, ASK_MAX[age] || 10);
 }
 // the lesson parts the "how" question needs (the idea line of the current stop's lesson), as the map's lesson stop loads them
 const askParts = p => { const i = curNode(p); return !TEACH.off && lsStopAt(p, i) ? lsParts(p, i) : []; };
+/* ASK-READ: the pet reads the menu aloud: ASK_SHEET.intro, then each question in the order shown, its button lit (.ak-now) while it
+   is said. Each line goes through say() queued (q), so it waits for whatever the pet is already saying (a cheer is never cut off),
+   in the tablet's voice at the child's voice settings; the next line starts once the voice is quiet (speakBusy, at least ASKR.MIN ms
+   a line, at most ASKR.CAP). A tap or a key anywhere on the sheet stops it at once (askHush: the voice, the queue, the light).
+   Read on its own when the sheet opens for the little and older kid pets when the child's prompts are read aloud (the voice setting
+   "Read questions out loud", or Pre-K to 1st grade, as LS.voice); the teen-like pet reads it on "Hear the questions again". */
+const ASKR = {gen: 0, on: false, el: null, MIN: 450, CAP: 9000};
+const askReadOn = (age = askAge()) => age != 'teen' && (!!S.voice || gradeCfg().auto != 'tap');
+const askReadLines = items => [ASK_SHEET.intro].concat(items.map(x => x.q));
+function askHush() {
+  if (!ASKR.on) return false;
+  ASKR.on = false;
+  ASKR.gen++;
+  hush();
+  if (ASKR.el) for (const b of ASKR.el.querySelectorAll('.ak-q')) b.classList.remove('ak-now');
+  return true;
+}
+// el: the sheet; items: the menu as shown; btn: the Hear button when the child asked (it shows "no voice here" when nothing can speak)
+function askRead(el, items, btn) {
+  askHush();
+  if (!canSpeak()) { if (btn) noVoice(btn); return false; }
+  const g = ++ASKR.gen, bs = [...el.querySelectorAll('.ak-q')], lines = askReadLines(items);
+  ASKR.on = true;
+  ASKR.el = el;
+  let i = 0;
+  const step = () => {
+    if (g !== ASKR.gen) return;
+    bs.forEach(b => b.classList.remove('ak-now'));
+    if (i >= lines.length || !el.isConnected) { ASKR.on = false; return; }
+    const b = i ? bs.find(x => x.dataset.ask == items[i - 1].id) : null;
+    if (b) { b.classList.add('ak-now'); if (b.scrollIntoView) b.scrollIntoView({block: 'nearest'}); }
+    say(lines[i++], null, null, 1);
+    const t0 = Date.now(), w = () => {
+      if (g !== ASKR.gen) return;
+      const d = Date.now() - t0;
+      if (d < ASKR.MIN || d < ASKR.CAP && speakBusy()) return setTimeout(w, 150);
+      step();
+    };
+    setTimeout(w, 150);
+  };
+  step();
+  return true;
+}
+// a question tapped: the reading stops, the pet says the question (so a mistap is heard), then its answer, shown in the bubble
+function askTap(el, items, b) {
+  askHush();
+  const x = items.find(y => y.id == b.dataset.ask);
+  if (!x) return;
+  for (const c of el.querySelectorAll('.ak-q')) c.setAttribute('aria-pressed', c === b ? 'true' : 'false');
+  const ans = el.querySelector('#ak-a');
+  if (ans) { ans.textContent = x.a; ans.dataset.ask = x.id; }
+  SFX.pop();
+  anim(el.querySelector('#ak-pet'), 'jump');
+  say(x.q); // the tablet's voice, as the pet's other lines on Home (no recording)
+  say(x.a, null, null, 1);
+}
 /* The sheet. from: the Ask button that opened it (the sheet opens only while it is still on screen). */
 async function askOpen(from) {
   const p = askMap();
@@ -1099,19 +1168,18 @@ async function askOpen(from) {
   const s = UI.sheet(`<div class="ak">
     <div class="ak-top"><span class="ak-pet ${petAura()}" id="ak-pet" aria-hidden="true">${petHTML()}</span><h2>Ask ${pn}</h2>
       ${UI.ibtn('close', 'Close', {size: 'sm', id: 'ak-done', cls: 'ak-x'})}</div>
+    <div class="ak-tools">${UI.btn(ASK_SHEET.again, {size: 'sm', icon: 'speak', id: 'ak-hear', cls: 'ak-hear'})}</div>
     <p class="ak-bub" id="ak-a" role="status" aria-live="polite">Pick a question.</p>
-    <div class="ak-qs">${items.map(x => `<button class="btn soft ak-q" data-ask="${x.id}" aria-pressed="false">${ico(x.icon, 28)}<span>${esc(x.q)}</span></button>`).join('')}</div></div>`);
-  const el = s.el, ans = el.querySelector('#ak-a');
-  el.querySelectorAll('.ak-q').forEach(b => b.onclick = () => {
-    const x = items.find(y => y.id == b.dataset.ask);
-    el.querySelectorAll('.ak-q').forEach(c => c.setAttribute('aria-pressed', c === b ? 'true' : 'false'));
-    ans.textContent = x.a;
-    ans.dataset.ask = x.id;
-    SFX.pop();
-    anim(el.querySelector('#ak-pet'), 'jump');
-    say(x.a); // the tablet's voice, as the pet's other lines on Home (no recording)
-  });
+    <div class="ak-qs">${items.map(x => `<button class="btn soft ak-q" data-ask="${x.id}" aria-pressed="false">${ico(x.icon, 32)}<span>${esc(x.q)}</span></button>`).join('')}</div></div>`,
+  {onClose: askHush});
+  const el = s.el, bg = el.parentNode;
+  // a tap or a key anywhere on the sheet (or its backdrop) stops the reading before the tap does anything else
+  bg.addEventListener('pointerdown', askHush, true);
+  bg.addEventListener('keydown', askHush, true);
+  el.querySelectorAll('.ak-q').forEach(b => b.onclick = () => askTap(el, items, b));
+  el.querySelector('#ak-hear').onclick = e => askRead(el, items, e.currentTarget);
   el.querySelector('#ak-done').onclick = () => s.close();
+  if (askReadOn()) askRead(el, items);
   return s;
 }
 /* ---------- ASK-01: the "Ask the pet" questions and answers the owner has reviewed (part hints) ----------

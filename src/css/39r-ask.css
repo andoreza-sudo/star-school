@@ -1,5 +1,7 @@
 /* ASK-01: the "Ask the pet" sheet (askOpen, 39r-ask.js, part hints). Tokens only; every question a 48 px button with its words.
-   The pet and the title in a row with Close, the answer in a speech bubble under the pet, then the questions (two columns when wide). */
+   The pet and the title in a row with Close, "Hear the questions again" (48 px), the answer in a speech bubble under the pet, then the
+   questions (two columns when wide), each with its own 32 px icon on the left. ASK-READ: the question being read aloud is lit
+   (.ak-now: a thick ring, no movement, so reduced motion needs nothing more). */
 .ak-top{display:flex;align-items:center;gap:var(--s-3)}
 .ak-pet{flex:none;font-size:32px;line-height:1}
 .ak-pet .pet-svg{width:1.95em;height:1.95em}
@@ -9,6 +11,8 @@
 .ak-bub::before{content:'';position:absolute;left:var(--s-6);top:calc(-1 * var(--s-2));border:var(--s-2) solid transparent;border-top:0;border-bottom-color:var(--brand-tint)}
 .ak-qs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--s-2)}
 .btn.ak-q{justify-content:flex-start;gap:var(--s-2);min-height:var(--tap);padding:var(--s-2) var(--s-3);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3)}
-.btn.ak-q .ic{flex:none;color:var(--brand)}
+.btn.ak-q .ic{flex:none;width:32px;height:32px;color:var(--brand)}
+.ak-tools{margin-top:var(--s-3);text-align:left}
+.btn.ak-q.ak-now{background:var(--brand-tint);box-shadow:0 0 0 4px var(--brand)}
 .btn.ak-q[aria-pressed="true"]{background:var(--brand-tint);box-shadow:0 0 0 3px var(--brand) inset}
 @media (max-height:640px){.sheet .ak-bub{margin:var(--s-2) 0 var(--s-3)}}

@@ -13974,7 +13974,9 @@ async function main() {
         const pa = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true });
         const pg = pa.page, at = 'ASK-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h, K = k2Kit(pg, at, bad);
         try {
-          await pg.evaluate(() => { S.grade = 1; S.voice = false; window.__said = []; window.say = t => { window.__said.push(String(t)); }; });
+          // the pet's voice is captured (say): each line with the question lit while it was said (ASK-READ)
+          await pg.evaluate(() => { S.grade = 1; S.voice = false; window.__said = []; window.__lit = [];
+            window.say = t => { window.__said.push(String(t)); window.__lit.push([...document.querySelectorAll('.ak-q.ak-now')].map(b => b.dataset.ask).join(',')); }; });
           // 1. nothing reviewed (ASK_ON 0, as built): no Ask button on Home or on the map, and the hints part is not loaded at start
           const none = await pg.evaluate(async () => {
             home(); const h0 = document.querySelectorAll('.ak-btn').length;
@@ -14005,14 +14007,54 @@ async function main() {
             await pg.waitForSelector('.ak-btn', { timeout: 5000 });
             await animsDone(pg);
             (await pg.evaluate(FIT)).forEach(x => bad.push(at + where + ': ' + x));
+            // the captured say() takes no time: on the map each line is held 1.5 s, as long as a real voice takes, so the tap lands mid-reading
+            await pg.evaluate(w => { window.__said = []; window.__lit = []; ASKR.MIN = w == 'map' ? 1500 : 450; }, where);
             await pg.click('.ak-btn');
             await pg.waitForSelector('.sheet .ak .ak-q', { timeout: 15000 });
+            // ASK-READ: a 1st grader (voice setting off) hears the menu as soon as it opens: "You can ask me:", then every question in
+            // the order shown, its button lit while it is said. On Home it is heard to the end; on the map a tap on the bubble stops it.
+            const items = await pg.evaluate(() => askItems({ p: askMap() }).map(x => [x.id, x.q])), ASK_INTRO = await pg.evaluate(() => ASK_SHEET.intro);
+            const wantSaid = [ASK_INTRO].concat(items.map(x => x[1])), wantLit = [''].concat(items.map(x => x[0]));
+            if (where == 'home') {
+              await pg.waitForFunction(() => window.__said.length >= 3, null, { timeout: 5000 });
+              await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-reading-' + sz + '.png') }).catch(() => {});
+              await pg.waitForFunction(() => !ASKR.on, null, { timeout: 15000 });
+              const r = await pg.evaluate(() => ({ said: window.__said.slice(), lit: window.__lit.slice(), now: document.querySelectorAll('.ak-now').length }));
+              if (JSON.stringify(r.said) !== JSON.stringify(wantSaid)) bad.push(at + where + ': the menu is read as ' + JSON.stringify(r.said));
+              if (JSON.stringify(r.lit) !== JSON.stringify(wantLit)) bad.push(at + where + ': the light moved ' + JSON.stringify(r.lit) + ', not ' + JSON.stringify(wantLit));
+              if (r.now) bad.push(at + where + ': a question is still lit after the reading');
+            } else {
+              await pg.waitForFunction(() => window.__said.length >= 3, null, { timeout: 5000 });
+              await pg.click('#ak-a');
+              const n0 = await pg.evaluate(() => window.__said.length);
+              await vwait(pg, 1500);
+              const r = await pg.evaluate(() => ({ said: window.__said.slice(), lit: window.__lit.slice(), on: ASKR.on, now: document.querySelectorAll('.ak-now').length }));
+              if (JSON.stringify(r.said) !== JSON.stringify(wantSaid.slice(0, r.said.length)) || JSON.stringify(r.lit) !== JSON.stringify(wantLit.slice(0, r.lit.length)))
+                bad.push(at + where + ': the reading before the tap: ' + JSON.stringify(r));
+              if (r.said.length !== n0 || r.on || r.now || n0 >= wantSaid.length) bad.push(at + where + ': a tap did not stop the reading at once: ' + JSON.stringify(r) + ' (' + n0 + ' lines when tapped)');
+              // "Hear the questions again" starts it over
+              await pg.evaluate(() => { window.__said = []; window.__lit = []; });
+              await pg.click('#ak-hear');
+              await pg.waitForFunction(() => window.__said.length >= 2, null, { timeout: 5000 });
+              await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-reading-' + sz + '.png') }).catch(() => {});
+              const r2 = await pg.evaluate(() => window.__said.slice(0, 2));
+              if (JSON.stringify(r2) !== JSON.stringify(wantSaid.slice(0, 2))) bad.push(at + where + ': Hear the questions again says ' + JSON.stringify(r2));
+              await pg.click('#ak-a'); // stopped again before the questions are tapped one by one
+              if (await pg.evaluate(() => ASKR.on)) bad.push(at + where + ': a tap did not stop the reading after Hear the questions again');
+            }
             await pg.waitForSelector('.sheet-bg.on', { timeout: 5000 }); // slid up (UI.sheet adds .on two frames after it is drawn)
             await animsDone(pg);
             const want = await pg.evaluate(() => askItems({ p: askMap() }).map(x => [x.id, x.q, x.a]));
             const ids = await pg.evaluate(() => [...document.querySelectorAll('.ak-q')].map(b => b.dataset.ask));
             if (JSON.stringify(ids) !== JSON.stringify(want.map(x => x[0]))) bad.push(at + where + ': the menu is ' + ids.join(', ') + ', not ' + want.map(x => x[0]).join(', '));
-            if (ids.length < 6 || ids.length > 10 || !ids.includes('why') || !ids.includes('next') || !ids.includes('time')) bad.push(at + where + ': the menu: ' + ids.join(', '));
+            // the little pet (a 1st grader): at most 5 questions (ASK_LITTLE); each with its own icon
+            if (ids.length < 4 || ids.length > 5 || !ids.includes('why') || !ids.includes('next') || !ids.includes('time')) bad.push(at + where + ': the menu: ' + ids.join(', '));
+            const icons = await pg.evaluate(() => [...document.querySelectorAll('.ak-q')].map(b => { const i = b.querySelector('svg.ic'), r = i.getBoundingClientRect(), br = b.getBoundingClientRect();
+              return [i.querySelector('use').getAttribute('href'), Math.round(r.width), Math.round(r.left - br.left), b.firstElementChild === i]; }));
+            if (new Set(icons.map(x => x[0])).size !== icons.length || icons.some(x => x[1] < 32 || !x[3] || x[2] > 24)) bad.push(at + where + ': the icons: ' + JSON.stringify(icons));
+            const hear = await pg.evaluate(() => { const b = document.querySelector('#ak-hear'), r = b.getBoundingClientRect(), q = document.querySelector('.ak-q').getBoundingClientRect();
+              return { h: Math.round(r.height), above: r.bottom <= q.top, t: b.textContent.trim(), ic: !!b.querySelector('use[href="#i-speak"]') }; });
+            if (hear.h < 48 || !hear.above || hear.t !== 'Hear the questions again' || !hear.ic) bad.push(at + where + ': Hear the questions again: ' + JSON.stringify(hear));
             (await pg.evaluate(FIT)).forEach(x => bad.push(at + where + ' sheet: ' + x));
             const heard = [];
             for (const [id, q, a] of want) {
@@ -14020,7 +14062,8 @@ async function main() {
               await pg.click(`.ak-q[data-ask="${id}"]`);
               const r = await pg.evaluate(id => ({ shown: document.querySelector('#ak-a').textContent, said: window.__said.slice(),
                 pressed: document.querySelector(`.ak-q[data-ask="${id}"]`).getAttribute('aria-pressed'), label: document.querySelector(`.ak-q[data-ask="${id}"]`).textContent.trim() }), id);
-              if (r.shown !== a || r.said[r.said.length - 1] !== a || r.pressed !== 'true' || r.label !== q) bad.push(at + where + ' ' + id + ': ' + JSON.stringify([r, a]));
+              // ASK-READ: the question first (a mistap is heard), then the answer
+              if (r.shown !== a || JSON.stringify(r.said) !== JSON.stringify([q, a]) || r.pressed !== 'true' || r.label !== q) bad.push(at + where + ' ' + id + ': ' + JSON.stringify([r, q, a]));
               if (/[{}]|undefined|NaN|null/.test(a)) bad.push(at + where + ' ' + id + ': a slot left: ' + a);
               heard.push(id);
               if (id == 'why') {
@@ -14058,7 +14101,9 @@ async function main() {
       else step('ASK-01: Ask the pet at ' + notes.join(', ') + ': with nothing reviewed no Ask button on Home or the map and no hints part at start; ' +
         'approved (simulated), the button beside the pet loads the hints part and opens the menu, every question tapped shows and says its answer ' +
         '(the menu = askItems), the "why" answer carries the approved hint of a real first wrong try and not its answer; 48 px buttons, on screen, ' +
-        'nothing covered; stars, coins, game time and the round unchanged; a 5th grader hears the teen-like pet');
+        'nothing covered; stars, coins, game time and the round unchanged; a 5th grader hears the teen-like pet. ASK-READ: a 1st grader hears the menu ' +
+        'read on opening in the order shown with each question lit, a tap stops it at once, Hear the questions again restarts it, a tap says the ' +
+        'question then the answer, at most 5 questions with distinct 32 px icons');
     }
     // end ASK-01
 
