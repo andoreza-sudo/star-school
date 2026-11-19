@@ -8111,7 +8111,8 @@ run('parts split A11c',()=>{
   parts.forEach((t,i)=>{const b=Buffer.byteLength(t);if(b>PART_FAIL)p.push(PART_FILES[i]+' is '+b+' bytes, over the '+PART_FAIL+' limit')});
   // the moved files: in gen / gen2, not in index.html
   // ROOM: the Grown-ups screens (80-grown, 81-backup, 82-report, 88-online) moved to gen too, for room in index.html
-  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','80-grown','81-backup','82-report','88-online'],
+  // MERGE-186 (ROOM 2): placement, Say it! (and its sound check and listening corner) and Fact Sprint moved to gen too
+  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','45-placement','50-say','50-say-cmp','50-say-corner','57-fluency','80-grown','81-backup','82-report','88-online'],
     gen2:['35-gen-math-upper','36-gen-phonics','37-bank','37-comp','39b-steps']};
   for(const [stem,list] of Object.entries(want)){
     const i=PARTS.findIndex(x=>x.stem===stem);

@@ -1,4 +1,4 @@
-/* Star School gen v186. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+/* Star School gen v186. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
    index.html v186 loads this file with <script src="gen.v186.js"> after its own code, before data.v186.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
@@ -3074,6 +3074,897 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
   for(let k=0;k<2;k++){const di=bankChoose('S:es_story',pool,bankSub(s0,k));pool=pool.filter(i=>i!=di);
     D[di].qs.forEach((_,qi)=>{const q=bankWith(bankSub(s0,di*8+qi),()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;out.push(q)})}
   return out}
+/* ---------- placement quiz "Find my level" (P1-07; ROADMAP 3.2 step 3) ----------
+   Optional, per graded path (math, reading; not Spanish, whose worlds are word sets in an order, not a ladder), not for Pre-K.
+   Rules (ROADMAP 3.2):
+     - starts one grade below the child's grade: the first world with g >= grade - 1 (the last world if none is)
+     - a testlet is 4 questions from one world. 3 or 4 right: pass, go up one world. 0 or 1 right: not yet, go down one world.
+       2 right: one more testlet at the same world, which then passes at 6 of 8.
+       R-01b: the first pass of a quiz is confirmed: until a world has passed, 3 right also asks one more testlet (6 of 8 passes);
+       4 of 4 passes at once. The quiz still stops at 20 questions, so a child far above the start world is placed a little lower
+       more often (harmless: they can test out); a struggling child is placed too high far less often.
+     - stops when a "not yet" world sits directly above a passed world, at either end of the path, or after 5 testlets (20 questions)
+     - result: the map starts at the lowest world not passed (the one above the highest passed world). The worlds below it get
+       S.skip[worldId] = 1: a check mark, no stars, still playable. With no world passed it starts at the lowest world asked.
+   Two parts:
+     PLACE.*      pure state machine: takes the world list, a seed and the number right per testlet; no S, no DOM, no Math.random.
+                  The same seed and answers always give the same questions and the same result (tests rely on it).
+     place*()     a thin screen on the question kinds (KIND render/bind): no stars, no buzz, no hints, one try per question,
+                  a neutral "Got it!" and progress dots. Nothing is saved until the last testlet is answered; quitting
+                  (the X, or leaving the screen) changes nothing.
+   Saved (only by placeApply, at the end): S.place[path] = {world, date, asked, right, g} (world id, today(), questions asked,
+   right answers, the grade it was taken at) and S.skip[worldId] = 1 for the worlds below the result. It only ever adds: no star,
+   stop, coin or skip is removed, nothing is re-locked. startWorld() (42-paths.js) reads the result through placeWorld(p) while
+   the grade is unchanged, so the map opens on the placed world. A later run replaces S.place[path]; earlier skips stay. */
+const PLACE={
+  TL:4,  // questions per testlet
+  MAX:5, // testlets at most: 20 questions
+  // The start world for a grade: the first world with g >= grade - 1, else the last world.
+  first(worlds,grade){
+    const k=worlds.findIndex(w=>w.g>=grade-1);
+    return k<0?worlds.length-1:k;
+  },
+  // A new quiz. rec[wi] = {t: testlets, r: right, v: 'pass' | 'fail'} per world asked.
+  begin(worlds,grade,seed){
+    return{n:worlds.length,wi:PLACE.first(worlds,grade),seed:seed>>>0,k:0,asked:0,right:0,rec:{},done:false,at:-1,skip:[]};
+  },
+  // The 4 questions of the next testlet: [{sk, lv, seed}], from the stops (not the boss, not a skill marked noPlace) of world st.wi.
+  // Stops are shuffled by a private stream from (seed, testlet number) and taken in turn, so a world with 2 stops gives 2 each.
+  items(worlds,st){
+    const r=mulberry32((st.seed^Math.imul(st.k+1,0x9E3779B1))>>>0);
+    const ns=worlds[st.wi].nodes.filter(nd=>!(SK[nd[0]]&&SK[nd[0]].noPlace)); // P2-16: tracing is not asked in the quiz
+    for(let i=ns.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[ns[i],ns[j]]=[ns[j],ns[i]]}
+    const out=[];
+    for(let i=0;i<PLACE.TL;i++){const nd=ns[i%ns.length];out.push({sk:nd[0],lv:nd[1],seed:Math.floor(r()*4294967296)>>>0})}
+    return out;
+  },
+  // Score one testlet (right = how many of the 4 were right) and move on. Returns a new state; st is not changed.
+  step(st,right){
+    const s=JSON.parse(JSON.stringify(st));
+    if(s.done)return s;
+    right=Math.max(0,Math.min(PLACE.TL,right|0));
+    const w=s.wi,rec=s.rec[w]||(s.rec[w]={t:0,r:0});
+    rec.t++;rec.r+=right;s.k++;s.asked+=PLACE.TL;s.right+=right;
+    let v=null;
+    // R-01b: the quiz's first pass must be confirmed. While no world has passed yet, 3 of 4 is not enough (a lucky guess or two
+    // moved a struggling child up): it asks one more testlet here like 2 of 4 does, and 4 of 4 still passes at once.
+    const first=!Object.values(s.rec).some(x=>x.v=='pass'),need1=first?PLACE.TL:3;
+    if(rec.t==1)v=right>=need1?'pass':right<=1?'fail':null; // 2 right (3 on the first pass): one more testlet here
+    else v=rec.r>=6?'pass':'fail';                          // two testlets: pass at 6 of 8
+    if(v)rec.v=v;
+    const R=s.rec;
+    let stop=s.k>=PLACE.MAX;
+    if(v=='pass'){if(w+1>=s.n||(R[w+1]&&R[w+1].v=='fail'))stop=true;else if(!stop)s.wi=w+1}
+    if(v=='fail'){if(w==0||(R[w-1]&&R[w-1].v=='pass'))stop=true;else if(!stop)s.wi=w-1}
+    if(stop)PLACE.finish(s);
+    return s;
+  },
+  // Work out the result: s.at = the world to start at, s.skip = worlds to mark skipped, s.all = every world passed.
+  finish(s){
+    s.done=true;
+    const ws=Object.keys(s.rec).map(Number),hi=Math.max(-1,...ws.filter(w=>s.rec[w].v=='pass'));
+    s.all=hi>=s.n-1;
+    s.at=hi>=0?Math.min(hi+1,s.n-1):Math.min(...ws);
+    s.skip=[];
+    for(let i=0;i<=hi;i++)s.skip.push(i);
+    return s;
+  },
+  // Run a whole quiz with an answer function ans(world index, item) -> true/false. Used by the tests.
+  sim(worlds,grade,seed,ans){
+    let st=PLACE.begin(worlds,grade,seed);
+    while(!st.done){const its=PLACE.items(worlds,st);st=PLACE.step(st,its.filter(it=>ans(st.wi,it)).length)}
+    return st;
+  }
+};
+
+/* ---------- saved result ---------- */
+// Paths that offer placement: graded ones (byLevel paths open by order).
+const placePaths=()=>Object.keys(PATHS).filter(p=>!PATHS[p].byLevel&&!PATHS[p].noPlace); // Discover (noPlace) has no placement quiz
+const placeOK=()=>gradeOf()>=0; // not for Pre-K
+// The placed start world of path p (index), or -1. Only while the grade is the one it was taken at.
+function placeWorld(p){
+  const r=S.place&&S.place[p];
+  if(!r||r.g!==gradeOf())return -1;
+  return PATHS[p].worlds.findIndex(w=>w.id===r.world);
+}
+// Save a finished quiz. Adds skips and the record; never removes or lowers anything.
+function placeApply(p,st){
+  if(!st||!st.done)return null;
+  const ws=PATHS[p].worlds;
+  S.skip=S.skip||{};
+  for(const wi of st.skip)S.skip[ws[wi].id]=1;
+  S.place=S.place||{};
+  S.place[p]={world:ws[st.at].id,date:today(),asked:st.asked,right:st.right,g:gradeOf()};
+  save();
+  return S.place[p];
+}
+
+/* ---------- screens ---------- */
+let PL=null;          // the quiz on screen (this session only; never saved)
+let PLACE_HIDE=false; // "Not now" on the home card hides it until the app is opened again
+// Home card: offered to a new child (no stop passed on a graded path, never placed), K and up.
+function placeAsk(){
+  if(PLACE_HIDE||!placeOK()||(S.place&&Object.keys(S.place).length))return false;
+  return placePaths().every(p=>!NODES[p].some((n,i)=>passed(p,i)));
+}
+const placeSubBtn=p=>`<button class="btn pl-sub s-${p}" data-place="${p}"><span class="pl-pe">${ico(UI.SUBJ_ICON[p]||'map',26)}</span>${esc(placeName(p))}</button>`; // P4-18: drawn subject icon
+const placeName=p=>PATHS[p].n.replace(/ Adventure$/,'');
+function placeBanner(){
+  if(!placeAsk())return'';
+  return`<div class="pl-card" id="plcard"><div class="pl-ct">${ico('target',28)}<span>Not sure where to start? <b>Find my level!</b></span></div>
+   <div class="pl-row">${placePaths().map(placeSubBtn).join('')}<button class="btn pl-no" id="plno">Not now</button></div></div>`;
+}
+function placeBannerBind(){
+  if(!$('#plcard'))return;
+  $$('#plcard [data-place]').forEach(b=>b.onclick=()=>{SFX.whoosh();placeIntro(b.dataset.place,'home')});
+  $('#plno').onclick=()=>{PLACE_HIDE=true;SFX.click();const c=$('#plcard');if(c)c.remove()};
+}
+// Grown-ups row: start a quiz for either path and see the last result.
+function placeGrownHTML(){
+  const last=placePaths().map(p=>{
+    const r=S.place&&S.place[p],w=r&&PATHS[p].worlds.find(x=>x.id===r.world);
+    return r&&w?`${esc(placeName(p))}: ${esc(w.n)} (${esc(gradeLabel(r.g))}, ${r.right|0} of ${r.asked|0} right, ${esc(r.date||'')})`:'';
+  }).filter(Boolean).join('<br>');
+  return`<div class="pl-grown"><b>Find my level</b> <span class="small">A short quiz (4 to 20 questions, no stars) that picks where each map
+   starts. It can open worlds; it never removes stars or locks anything. Not for Pre-K.</span>
+   <div class="pl-row">${placePaths().map(placeSubBtn).join('')}</div>${last?`<div class="small">Last result:<br>${last}</div>`:''}</div>`;
+}
+function placeGrownBind(){
+  $$('.pl-grown [data-place]').forEach(b=>b.onclick=()=>{
+    if(!placeOK())return fb('Find my level starts at K','warn');
+    SFX.whoosh();placeIntro(b.dataset.place,'grown');
+  });
+}
+const placeBack=from=>from=='grown'?grown():home();
+function placeIntro(p,from){
+  PL=null;
+  if(G)G.dead=true; // a finished or left round must not fire its next-question timer into this screen
+  const nm=esc(placeName(p));
+  view(`<div class="center pl-in s-${p}"><div class="pl-big">${ico(UI.SUBJ_ICON[p]||'map',64)}<i class="pl-tg">${ico('target',26)}</i></div><h1>Let's find your level!</h1>
+   <p class="sub">A few ${nm} questions. Some may be tricky, and that's OK. Just do your best!</p>
+   <p class="small">No stars to win or lose. You can stop any time.</p>
+   <div class="rowh">${UI.btn('Start',{kind:'primary',size:'lg',icon:'play',id:'plgo'})}${UI.btn('Not now',{id:'plback'})}</div></div>`);
+  if(S.voice)say(`Let's find your level! Some questions may be tricky. Just do your best!`);
+  $('#plback').onclick=()=>{SFX.click();placeBack(from)};
+  $('#plgo').onclick=()=>{
+    SFX.whoosh();
+    const seed=Math.floor(Math.random()*4294967296)>>>0;
+    placeStart(p,from,seed);
+  };
+}
+// Start the quiz on path p with a seed (smoke and shots pass a fixed one).
+function placeStart(p,from,seed){
+  const ws=PATHS[p].worlds;
+  PL={p,from:from||'home',ws,st:PLACE.begin(ws,gradeOf(),seed),its:null,qi:0,right:0,lock:false};
+  placeTestlet();
+}
+function placeTestlet(){
+  PL.its=PLACE.items(PL.ws,PL.st).map(it=>genQ(it.sk,it.lv,it.seed));
+  PL.qi=0;PL.right=0;
+  placeQ();
+}
+function placeQ(){if(NAV.held&&PL){PL.pend=true;return} // NAV-01: the next question waits while Go Home? is open
+  const me=PL,q=PL.its[PL.qi],K=KIND[q.kind];
+  PL.q=q;PL.lock=false;PL.typed='';PL.tries=0;PL.built=[];
+  const dots=PL.its.map((_,i)=>`<span class="pl-dot ${i<PL.qi?'on':i==PL.qi?'now':''}"></span>`).join('');
+  view(`<div class="top tbar round qtop pl-top s-${PL.p}">${NAV.house('quit')}
+   <div class="pl-dots" aria-label="Question ${PL.qi+1} of ${PL.its.length}">${dots}</div><div class="sp"></div>
+   <div class="pl-tag">${ico(UI.SUBJ_ICON[PL.p]||'map',24)}<span>Find my level</span></div></div>
+  <div class="play qs s-${PL.p}"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="tools">${q.say?UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'}):''}</div></div>
+  <div class="inp">${K.render(q)}</div></div>`);
+  NAV.wire('quit',{hold:on=>{if(!on&&PL&&PL.pend){PL.pend=false;placeQ()}},leave:()=>{PL=null}}); // NAV-01: the corner house (nothing is saved until the end, as before)
+  if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
+  UI.hear(); // P6-01
+  $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
+  $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
+  $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
+  K.bind(q,PL,placeSubmit);esQFix(q);
+  fit();if(document.fonts)document.fonts.ready.then(fit);
+  if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>{if(PL===me&&me.q===q)say(q.say,null,q.lang=='es'?'es':null)},400);
+}
+// One try per question. Right or not, the child hears the same neutral "Got it!"; nothing is saved here.
+function placeSubmit(v,el){
+  if(!PL||PL.lock)return;
+  const me=PL,q=PL.q,K=KIND[q.kind];
+  PL.lock=true;
+  if(K.same?K.same(q,v):String(v)===String(q.ans))PL.right++;
+  if(el)el.classList.add('pl-pick');
+  SFX.pop(2);fb(pick(['Got it!','Thanks!','Okay!']),'pl-fb'); // brand blue, not the green of a right answer
+  const d=$$('.pl-dot')[PL.qi];if(d)d.className='pl-dot on';
+  setTimeout(()=>{
+    if(PL!==me)return; // quit or left meanwhile
+    PL.qi++;
+    if(PL.qi<PL.its.length)return placeQ();
+    PL.st=PLACE.step(PL.st,PL.right);
+    if(PL.st.done)placeDone();else placeTestlet();
+  },700);
+}
+function placeDone(){
+  const {p,st,from}=PL,ws=PL.ws;
+  PL=null;
+  placeApply(p,st);
+  const w=ws[st.at],sk=st.skip.map(i=>ws[i]);
+  const other=placePaths().find(x=>x!=p&&!(S.place&&S.place[x]));
+  view(`<div class="center pl-in"><div class="pl-done">${ico('trophy',64)}</div><h1>All done! Great work${S.name?', '+esc(S.name):''}!</h1>
+   <p class="sub">${st.all?`You know a lot! Your ${esc(placeName(p))} map opens at the last world:`:`Your ${esc(placeName(p))} map starts here:`}</p>
+   <div class="pl-res">${wBadge(p,st.at)}${esc(w.n)}</div>
+   ${sk.length?`<p class="small pl-skip">${ico('check','1.2em')} Skipped: ${sk.map(x=>esc(x.n)).join(', ')}. You can still play ${sk.length>1?"them":"it"} any time.</p>`:''}
+   <div class="pl-end">${NAV.end3({next:'plmap',home:'plhome',extra:other?UI.btn(placeName(other)+' next',{icon:UI.SUBJ_ICON[other]||'map',id:'plnext',attrs:`data-place="${other}"`}):''})}</div></div>`); // NAV-01
+  SFX.fanfare();
+  if(S.voice)say(`All done! Great work! Your map starts at ${w.n}.`);
+  $('#plmap').onclick=()=>{SFX.whoosh();pathMap(p,st.at)};
+  if($('#plnext'))$('#plnext').onclick=()=>{SFX.whoosh();placeIntro(other,from)};
+  $('#plhome').onclick=()=>{SFX.click();home()};
+}
+/* ---------- S-SPK2 B: the offline sound check of "Say it!" (every tablet; used when the tablet cannot recognise Spanish itself) ----------
+   The child's recording is compared with the recorded model of the same line (ES-AUDIO, audio/es/<file>.ogg) and with up to 3
+   recorded lines that are spelled and sound close to it (the distractors). Standard, documented method:
+     1. decode both with Web Audio (OfflineAudioContext at 16 kHz, mono; decodeAudioData resamples)
+     2. levels: silence or a whisper (no 0.15 s of voice) -> 'quiet'; clipped (over 6% of samples at full scale) -> 'loud'
+     3. trim the silence (frames 30 dB under the loudest frame, or under the floor), pre-emphasis 0.97
+     4. MFCC: 25 ms Hamming frames every 10 ms, 512-point FFT, 26 mel filters 80-6800 Hz, log, DCT, coefficients 1-12 (c0, the
+        loudness, is left out), minus their mean over the utterance (cepstral mean normalisation: another microphone, room or voice
+        shifts every frame the same way, and this takes it out). The child's recording is also measured with the filters moved
+        by 0.85, 0.92, 1.08 and 1.16 (vocal tract length normalisation by a small grid search: a child's voice has higher
+        formants than the grown-up model) and the closest of the five is used, for the model and the distractors alike
+     5. dynamic time warping (Sakoe-Chiba band, Euclidean frame distance, steps right / down / diagonal), the path cost divided by
+        n + m: the same word said faster or slower still lines up
+   Judgement (SPKC.judge): 'great' when the target is the best match by a clear margin (its distance at most RATIO times the
+   nearest distractor's) and under ABS; otherwise 'again' ("Close! Listen again"). A child is never told they were wrong.
+   Thresholds come from tools/spk-calib.js on the recordings themselves (docs/PROGRESS.md S-SPK2 has the numbers; tools/test.js
+   "Spanish speaking check S-SPK2" checks them again). Nothing here stores or sends anything: the only file read is the app's own
+   recording of the line (from the service worker's cache), and the child's recording is only decoded in memory.
+   It runs in small steps (a yield between the files) so a cheap tablet keeps drawing; about 1 s at 6x CPU throttle. */
+const SPKC={SR:16000,WIN:400,HOP:160,NFFT:512,NM:26,NC:12,LO:80,HI:6800,WARPS:[0.85,0.92,1.08,1.16],
+  ABS:1.6,RATIO:1.15, // calibrated (tools/spk-calib.js): see docs/PROGRESS.md S-SPK2
+  QUIET:0.004,MINV:15,CLIP:0.06,DROP:30,
+  mel:{},win:null,dct:null,cache:new Map()};
+// the mel filterbank (for a warp al: every filter's frequencies times al), made once each
+function spkcMel(al){if(SPKC.mel[al])return SPKC.mel[al];const {SR,NFFT,NM,LO,HI}=SPKC,hz=m=>700*(Math.pow(10,m/2595)-1),mel=h=>2595*Math.log10(1+h/700);
+  const m0=mel(LO),m1=mel(HI),pts=[];for(let i=0;i<NM+2;i++)pts.push(Math.min(NFFT/2,Math.floor((NFFT+1)*hz(m0+(m1-m0)*i/(NM+1))*al/SR)));
+  const B=[];for(let k=1;k<=NM;k++){const a=pts[k-1],b=pts[k],c=pts[k+1],f=[];
+    for(let j=a;j<=c;j++){const w=j<b?(j-a)/Math.max(1,b-a):(c-j)/Math.max(1,c-b);if(w>0)f.push([j,w])}if(!f.length)f.push([b,1]);B.push(f)}
+  return SPKC.mel[al]=B}
+// the Hamming window and the DCT matrix, made once
+function spkcInit(){if(SPKC.win)return;const {NM,NC,WIN}=SPKC;
+  SPKC.win=new Float32Array(WIN);for(let i=0;i<WIN;i++)SPKC.win[i]=0.54-0.46*Math.cos(2*Math.PI*i/(WIN-1));
+  SPKC.dct=[];for(let c=1;c<=NC;c++){const r=new Float32Array(NM);for(let k=0;k<NM;k++)r[k]=Math.cos(Math.PI*c*(k+0.5)/NM);SPKC.dct.push(r)}}
+// in-place radix-2 FFT
+function spkcFFT(re,im){const n=re.length;
+  for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+  for(let len=2;len<=n;len<<=1){const a=-2*Math.PI/len,wr=Math.cos(a),wi=Math.sin(a);
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let k=0;k<len/2;k++){const p=i+k,q=p+len/2,xr=re[q]*cr-im[q]*ci,xi=re[q]*ci+im[q]*cr;
+      re[q]=re[p]-xr;im[q]=im[p]-xi;re[p]+=xr;im[p]+=xi;const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t}}}}
+// x: Float32Array at 16 kHz -> {k:'ok'|'quiet'|'loud', f:[Float32Array(NC)] (the trimmed, normalised MFCC frames), fw:[f, one per
+// warp in SPKC.WARPS] (only with warp true: the child's side), sec}
+function spkcFeat(x,warp){spkcInit();const {WIN,HOP,NFFT,NM,NC}=SPKC,n=x.length;
+  if(n<WIN)return{k:'quiet',f:[],sec:0};
+  let clip=0;for(let i=0;i<n;i++)if(Math.abs(x[i])>=0.985)clip++;
+  const nf=Math.floor((n-WIN)/HOP)+1,en=new Float32Array(nf);let emax=-1e9;
+  for(let t=0;t<nf;t++){let s=0;for(let i=0;i<WIN;i++){const v=x[t*HOP+i];s+=v*v}en[t]=10*Math.log10(s/WIN+1e-12);if(en[t]>emax)emax=en[t]}
+  const floor=20*Math.log10(SPKC.QUIET),cut=Math.max(emax-SPKC.DROP,floor);let a=-1,b=-1,voiced=0;
+  for(let t=0;t<nf;t++)if(en[t]>cut){voiced++;if(a<0)a=t;b=t}
+  if(a<0||voiced<SPKC.MINV)return{k:'quiet',f:[],sec:voiced*HOP/SPKC.SR};
+  if(clip/n>SPKC.CLIP)return{k:'loud',f:[],sec:(b-a+1)*HOP/SPKC.SR};
+  a=Math.max(0,a-2);b=Math.min(nf-1,b+2);
+  const re=new Float32Array(NFFT),im=new Float32Array(NFFT),lm=new Float32Array(NM),als=[1].concat(warp?SPKC.WARPS:[]),fs=als.map(()=>[]),pws=[];
+  for(let t=a;t<=b;t++){re.fill(0);im.fill(0);const o=t*HOP,pw=new Float32Array(NFFT/2+1);
+    for(let i=0;i<WIN;i++)re[i]=(x[o+i]-0.97*(o+i>0?x[o+i-1]:0))*SPKC.win[i];
+    spkcFFT(re,im);for(let j=0;j<=NFFT/2;j++)pw[j]=re[j]*re[j]+im[j]*im[j];
+    als.forEach((al,w)=>{const M=spkcMel(al);for(let k=0;k<NM;k++){let s=0;for(const [j,v] of M[k])s+=pw[j]*v;lm[k]=Math.log(s+1e-10)}
+      const c=new Float32Array(NC);for(let q=0;q<NC;q++){let s=0;const r=SPKC.dct[q];for(let k=0;k<NM;k++)s+=r[k]*lm[k];c[q]=s}fs[w].push(c)})}
+  for(const f of fs){const mu=new Float32Array(NC);for(const c of f)for(let q=0;q<NC;q++)mu[q]+=c[q]/f.length;
+    for(const c of f)for(let q=0;q<NC;q++)c[q]=(c[q]-mu[q])/10}
+  return{k:'ok',f:fs[0],fw:fs.slice(1),sec:fs[0].length*HOP/SPKC.SR}}
+// DTW distance between two frame lists (lower = closer); Infinity when one is more than 3 times as long as the other
+function spkcDTW(A,B){const n=A.length,m=B.length;if(!n||!m)return Infinity;if(n>3*m||m>3*n)return Infinity;
+  const w=Math.max(Math.abs(n-m),Math.ceil(0.25*Math.max(n,m)))+2,NC=A[0].length;let p=new Float64Array(m+1).fill(Infinity),c=new Float64Array(m+1);p[0]=0;
+  for(let i=1;i<=n;i++){c.fill(Infinity);const ci=i*m/n,a=A[i-1];
+    for(let j=Math.max(1,Math.floor(ci-w));j<=Math.min(m,Math.ceil(ci+w));j++){const b=B[j-1];let d=0;for(let q=0;q<NC;q++){const e=a[q]-b[q];d+=e*e}
+      c[j]=Math.sqrt(d)+Math.min(p[j],c[j-1],p[j-1])}
+    const t=p;p=c;c=t}
+  return p[m]/(n+m)}
+// the child's distance to a recorded line: the closest of the child's warps
+const spkcDist=(kid,ref)=>Math.min(spkcDTW(kid.f,ref.f),...(kid.fw||[]).map(f=>spkcDTW(f,ref.f)));
+// the decision from the child's features and the target's and distractors' (pure; tools/test.js and tools/spk-calib.js use it)
+function spkcDecide(kid,tgt,dis){if(kid.k!='ok')return{k:kid.k,d:Infinity,dk:Infinity};
+  const d=spkcDist(kid,tgt),dk=Math.min(Infinity,...dis.map(x=>spkcDist(kid,x)));
+  return{k:d<=SPKC.ABS&&d<=dk*SPKC.RATIO?'great':'again',d,dk}}
+/* the distractors of a line: up to 3 other recorded lines spelled most like it (letters, articles left out), each a different word, a
+   line the matcher would accept left out, lines of the same voice first (so the voice never decides), then by name; deterministic */
+function spkcNear(text,k=3){if(typeof ES_AUDIO=='undefined')return[];const L=ES_AUDIO.lines,key=esKey(text),me=L[key];if(!me)return[];
+  const t=spkNorm(text).replace(/ /g,''),out=[];
+  for(const s in L){if(s==key||L[s][0]==me[0])continue;const h=spkNorm(s).replace(/ /g,'');if(!h||spkMatch(text,s)||spkMatch(s,text))continue;
+    const sc=spkDist(t,h)/Math.max(t.length,h.length)+(L[s][1]==me[1]?0:0.15);out.push([sc,s])}
+  const seen=new Set(),pick=[];for(const [,s] of out.sort((a,b)=>a[0]-b[0]||(a[1]<b[1]?-1:1))){const w=spkNorm(s);if(seen.has(w))continue;seen.add(w);pick.push(s);if(pick.length>=k)break}
+  return pick} // one line per word: el pato, pato and un pato count once
+const spkcYield=()=>new Promise(r=>setTimeout(r,0));
+// decode an audio file's bytes to 16 kHz mono samples (Web Audio)
+async function spkcDecode(buf){const C=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!C)throw new Error('no Web Audio');
+  const ctx=new C(1,1,SPKC.SR),ab=await new Promise((res,rej)=>{const p=ctx.decodeAudioData(buf,res,rej);if(p&&p.then)p.then(res,rej)});
+  if(ab.numberOfChannels==1)return ab.getChannelData(0);const x=new Float32Array(ab.length);
+  for(let c=0;c<ab.numberOfChannels;c++){const d=ab.getChannelData(c);for(let i=0;i<x.length;i++)x[i]+=d[i]/ab.numberOfChannels}return x}
+// a recorded line's features (cached for the session): the app's own file, from the service worker's cache when offline
+async function spkcLine(text){const fs=esFiles(text);if(!fs||fs.length!=1||location.protocol=='file:')return null;const f=fs[0][0]; // file:// (a page opened from a file) cannot read its own files: no check
+  if(SPKC.cache.has(f))return SPKC.cache.get(f);
+  const r=await fetch(ES_AUDIO.dir+f+ES_AUDIO.ext);if(!r.ok)return null;
+  const ft=spkcFeat(await spkcDecode(await r.arrayBuffer()));if(SPKC.cache.size>40)SPKC.cache.delete(SPKC.cache.keys().next().value);
+  SPKC.cache.set(f,ft);return ft}
+// the whole check: the child's recording (a Blob) against the line -> {k:'great'|'again'|'quiet'|'loud', ms} or null (no check here)
+async function spkcJudge(blob,text){const t0=performance.now();let at='model';
+  try{const tg=await spkcLine(text);if(!tg||tg.k!='ok')return null;await spkcYield();at='recording '+blob.type+' '+blob.size;
+    let x;try{x=await spkcDecode(await blob.arrayBuffer())}catch(e){return{k:'quiet',ms:performance.now()-t0}} // no sound in it at all
+    const kid=spkcFeat(x,true);await spkcYield();
+    if(kid.k!='ok')return{k:kid.k,ms:performance.now()-t0};at='similar words';
+    const dis=[];for(const s of spkcNear(text)){const x=await spkcLine(s);if(x&&x.k=='ok')dis.push(x);await spkcYield()}
+    return Object.assign(spkcDecide(kid,tg,dis),{ms:performance.now()-t0})}catch(e){SPKC.err=at+': '+e;return null}} // SPKC.err: the last failure (no check then)
+/* ---------- S-SPK2 A and C: Spanish listening on the tablet itself, and the grown-ups' listening corner ----------
+   A. Spanish listening (Grown-ups card #gw-lis). Chrome can recognise speech ON THE DEVICE (Web Speech API: the static
+      SpeechRecognition.available({langs, processLocally: true}) says 'available', 'downloadable', 'downloading' or 'unavailable';
+      SpeechRecognition.install({langs, processLocally: true}) downloads the language once; a recogniser with processLocally = true
+      never sends audio away. Older Chrome: availableOnDevice(lang) / installOnDevice(lang) / mode 'ondevice-only'). The card says
+      what this tablet can do and, when Spanish can be downloaded, offers "Download Spanish listening" (needs internet once:
+      onlineNote and needOnline, 88-online.js). Then "Say it!" (50-say.js spkSR) says what it heard and whether it matches. A server
+      recogniser is never used: no on-device Spanish means the offline sound check (B, 50-say-cmp.js).
+   C. The listening corner (Grown-ups card #gw-corner). The child's last Say it! recordings (at most SPKR.MAX per child) stay ON THIS
+      TABLET in IndexedDB (database 'starschool-say', store 'rec': {id, kid, t, es, say, blob, star}; id is PRF.k('spk') + ':' + time,
+      so each child's are their own) and are deleted after the period the grown-up picks (S.spkKeep: 'day' (absent), 'week', or
+      'never': not kept at all). The card lists them with the word: Listen plays the model then the child, Give a star marks it and
+      queues "Your grown-up gave you a star for '<word>'!" for Home (S.spkStars, shown once, with a sticker), and "Delete all
+      recordings" removes them. Nothing is ever sent anywhere. */
+const SPKL={LANGS:['es-MX','es-US','es-ES'],busy:0};
+const spkSRC=()=>typeof window!='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition)||null;
+// what this tablet can do on the device: {s:'available'|'downloadable'|'downloading'|'unavailable'|'none', lang}
+async function spkLisState(){const SR=spkSRC();if(!SR)return{s:'none',lang:''};const rank={unavailable:0,downloadable:1,downloading:2,available:3};
+  let best={s:'unavailable',lang:''};
+  try{for(const l of SPKL.LANGS){let a='';
+      if(typeof SR.available=='function')a=await SR.available({langs:[l],processLocally:true});
+      else if(typeof SR.availableOnDevice=='function')a=await SR.availableOnDevice(l);else return{s:'none',lang:''};
+      if((rank[a]|0)>rank[best.s])best={s:a,lang:l};if(a=='available')break}}catch(e){}
+  return best}
+// download a language for on-device use (true when it is installed)
+async function spkLisInstall(lang){const SR=spkSRC();if(!SR)return false;
+  try{if(typeof SR.install=='function')return !!(await SR.install({langs:[lang],processLocally:true}));
+    if(typeof SR.installOnDevice=='function')return !!(await SR.installOnDevice(lang))}catch(e){}
+  return false}
+const SPKL_TXT={available:'This tablet can listen to Spanish on the device. In “Say it!” it tells your child what it heard.',
+  downloadable:'This tablet can listen to Spanish on the device after a one-time download.',
+  downloading:'Spanish listening is downloading. It works once the download is done.',
+  unavailable:'This tablet cannot listen to Spanish on the device. “Say it!” compares your child’s voice with the recorded Spanish instead.',
+  none:'This browser cannot listen to Spanish on the device. “Say it!” compares your child’s voice with the recorded Spanish instead.'};
+function spkLisCard(){return GW.card('gw-lis','ear','Spanish listening',
+  `<p class="gw-note" id="lis-st" role="status">${ico('clock',22)}<span>Checking this tablet…</span></p><div id="lis-act"></div>
+  <p class="gw-sub">Listening happens on the tablet itself. Your child’s voice is never sent anywhere.</p>`)}
+async function spkLisBind(){const st=$('#lis-st');if(!st)return;const r=await spkLisState();if(!st.isConnected)return;
+  const ok=r.s=='available';st.innerHTML=`${ico(ok?'check-circle':r.s=='downloadable'||r.s=='downloading'?'download':'info',22,ok?'ic-good':'')}<span>${SPKL_TXT[r.s]||SPKL_TXT.none}</span>`;
+  const a=$('#lis-act');if(!a)return;
+  if(r.s!='downloadable'){a.innerHTML='';return}
+  a.innerHTML=`<div class="gw-bkrow">${UI.btn('Download Spanish listening',{size:'sm',icon:'download',id:'lis-dl'})}${onlineNote('Needs the internet once, for the download.')}</div>`;
+  $('#lis-dl').onclick=e=>needOnline(async()=>{if(SPKL.busy)return;SPKL.busy=1;const b=e.currentTarget;b.disabled=true;
+      st.innerHTML=`${ico('download',22)}<span>${SPKL_TXT.downloading}</span>`;
+      const ok=await spkLisInstall(r.lang);SPKL.busy=0;if(!st.isConnected)return;
+      if(ok){SPK.sr='';spkSrProbe();fb('Spanish listening is ready on this tablet.')}else fb('The download did not finish. Try again later.','warn');
+      spkLisBind()},{block:true,msg:'You’re offline. Connect to wifi to download Spanish listening.'})}
+
+/* ---- C: the listening corner ---- */
+const SPKR={MAX:6,DAY:864e5,KEEP:{day:1,week:7,never:0},db:null,
+  open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);const r=indexedDB.open('starschool-say',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('rec',{keyPath:'id'});r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>rej(r.error)})},
+  async all(){const d=await this.open();return new Promise(res=>{const out=[],c=d.transaction('rec').objectStore('rec').openCursor();
+    c.onsuccess=e=>{const x=e.target.result;if(x){out.push(x.value);x.continue()}else res(out)};c.onerror=()=>res(out)})},
+  async put(v){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('rec','readwrite');t.objectStore('rec').put(v);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})},
+  async del(id){const d=await this.open();return new Promise(res=>{const t=d.transaction('rec','readwrite');t.objectStore('rec').delete(id);t.oncomplete=()=>res();t.onerror=()=>res()})}};
+const spkKeep=()=>SPKR.KEEP[S.spkKeep]!=null?S.spkKeep:'day';
+const spkKid=r=>r&&typeof r.id=='string'&&r.id.startsWith(PRF.k('spk')+':');
+// which of a child's recordings go (pure): older than the period, or past the newest MAX; 'never' keeps none
+function spkrGone(recs,now,keep){const days=SPKR.KEEP[keep]!=null?SPKR.KEEP[keep]:1,s=recs.slice().sort((a,b)=>b.t-a.t);
+  return s.filter((r,i)=>!days||i>=SPKR.MAX||!(now-r.t<days*SPKR.DAY)||r.t>now+SPKR.DAY).map(r=>r.id)}
+// this child's recordings, newest first, after deleting what is past its time
+async function spkrList(){try{const all=(await SPKR.all()).filter(spkKid),gone=new Set(spkrGone(all,Date.now(),spkKeep()));
+    for(const id of gone)await SPKR.del(id);return all.filter(r=>!gone.has(r.id)).sort((a,b)=>b.t-a.t)}catch(e){return[]}}
+// keep a Say it! recording (50-say.js, after each recording); nothing when the grown-up picked "Don't keep"
+async function spkrAdd(blob,it){if(!blob||!blob.size||!it||spkKeep()=='never')return;
+  try{await SPKR.put({id:PRF.k('spk')+':'+Date.now(),kid:PRF.cur,t:Date.now(),es:it.es,say:it.say,blob,star:0});await spkrList()}catch(e){}}
+// delete a child's recordings (this child: Delete all; another: when that child is removed or starts over, PRF.dropClips)
+async function spkrDrop(id=PRF.cur){try{const p=PRF.k('spk',id)+':';for(const r of await SPKR.all())if(String(r.id).startsWith(p))await SPKR.del(r.id)}catch(e){}}
+// a star from the grown-up: marked on the recording and queued for Home (once)
+async function spkrStar(r){if(!r||r.star)return;r.star=1;try{await SPKR.put(r)}catch(e){}
+  S.spkStars=(Array.isArray(S.spkStars)?S.spkStars:[]).concat([{es:String(r.es),t:Date.now()}]).slice(-10);save()}
+const SPKC_URLS=[];
+function spkrFree(){while(SPKC_URLS.length)try{URL.revokeObjectURL(SPKC_URLS.pop())}catch(e){}}
+function spkCornerCard(){const k=spkKeep();
+  return GW.card('gw-corner','ear','Listening corner',`<div id="lc-list" class="lc-list" aria-live="polite"><p class="gw-sub">Looking for recordings…</p></div>
+    <div class="gw-row"><span class="gw-rl">Keep recordings</span>${GW.seg('keep',['day','week','never'],k,'Keep Say it! recordings for',v=>({day:'1 day',week:'1 week',never:'Don’t keep'})[v])}</div>
+    ${UI.btn('Delete all recordings',{size:'sm',kind:'ghost',icon:'trash',id:'lc-del',cls:'gw-risk'})}`,
+    {sub:'Hear your child’s last “Say it!” tries: the Spanish first, then your child. Tap the star to cheer them on. Recordings stay on this tablet and are deleted automatically.'})}
+const spkWhen2=t=>{const d=new Date(t),n=new Date();const hm=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  return d.toDateString()==n.toDateString()?'Today '+hm:d.toLocaleDateString([],{weekday:'short'})+' '+hm};
+async function spkCornerBind(){
+  $$('[data-keep]').forEach(b=>b.onclick=async()=>{S.spkKeep=b.dataset.keep;save();
+    $$('[data-keep]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});await spkCornerFill()});
+  const del=$('#lc-del');let armed=false;
+  if(del)del.onclick=async()=>{if(!armed){armed=true;del.querySelector('span').textContent='Tap again to delete them';return}
+    armed=false;del.querySelector('span').textContent='Delete all recordings';await spkrDrop();fb('Recordings deleted.');await spkCornerFill()};
+  await spkCornerFill()}
+async function spkCornerFill(){const L=$('#lc-list');if(!L)return;const rs=await spkrList();if(!L.isConnected)return;spkrFree();
+  if(!rs.length){L.innerHTML=`<p class="gw-note">${ico('mic',22)}<span>${spkKeep()=='never'?'Recordings are not kept. Pick 1 day or 1 week to hear them here.':'No recordings yet. They show here after your child uses “Say it!”.'}</span></p>`;return}
+  const nm=esc(S.name||'your child');
+  L.innerHTML=rs.map((r,i)=>`<div class="lc-row"><span class="lc-w"><b lang="es">${esc(r.es)}</b><small>${esc(spkWhen2(r.t))}</small></span>
+    <span class="lc-b">${UI.btn('Listen',{size:'sm',icon:'play',attrs:`data-lcp="${i}" aria-label="Listen: ${esc(r.es)}, the Spanish then ${nm}"`})}
+    <button class="btn soft sm lc-star${r.star?' on':''}" data-lcs="${i}" aria-pressed="${!!r.star}" aria-label="${r.star?'Star given for ':'Give a star for '}${esc(r.es)}">${ico('star',24,r.star?'ic-star':'')}<span>${r.star?'Star given':'Star'}</span></button></span></div>`).join('');
+  $$('[data-lcp]').forEach(b=>b.onclick=()=>spkCornerPlay(rs[+b.dataset.lcp],b));
+  $$('[data-lcs]').forEach(b=>b.onclick=async()=>{const r=rs[+b.dataset.lcs];if(r.star)return;await spkrStar(r);SFX.chime();
+    fb((S.name||'Your child')+' will see your star on Home.');spkCornerFill()})}
+// the model (the recording of the line, or the tablet's voice), then the child's recording
+function spkCornerPlay(r,btn){if(!r)return;hush();say(r.say||r.es,btn,'es');const t0=Date.now();
+  const w=()=>{if(speakBusy()&&Date.now()-t0<6000)return setTimeout(w,150);
+    try{const u=URL.createObjectURL(r.blob);SPKC_URLS.push(u);const a=new Audio(u);a.play().catch(()=>{})}catch(e){}};setTimeout(w,400)}
+
+/* ---- Home: "Your grown-up gave you a star for 'mariposa'!" once, with a sticker for each star (at most 3) ---- */
+function spkStarHTML(){const q=Array.isArray(S.spkStars)?S.spkStars.filter(x=>x&&x.es):[];if(!q.length)return'';
+  const ws=[...new Set(q.map(x=>String(x.es)))],st=[];for(let i=0;i<Math.min(3,q.length);i++)st.push(award().s);
+  S.spkStars=[];save();const said=`Your grown-up gave you a star for ${ws.join(' and ')}!`;
+  setTimeout(()=>{if($('#hmgstar')&&(S.voice||gradeOf()<=0))say(said,null,null,1)},600); // Pre-K and K hear it too
+  const list=ws.length==1?`‘${esc(ws[0])}’`:ws.slice(0,-1).map(w=>`‘${esc(w)}’`).join(', ')+` and ‘${esc(ws[ws.length-1])}’`;
+  return`<div class="hm-gstar" id="hmgstar" role="status"><span class="hm-gsi">${ico('star',36)}</span><p>Your grown-up gave you a star for <span lang="es">${list}</span>! <span class="hm-gsk">You got a sticker: <span class="hm-gse" role="img" aria-label="sticker">${st.join(' ')}</span></span></p></div>`}
+/* ---------- S-SPK: Spanish speaking practice, the "Say it!" step (docs/reviews/R-01-spanish.md Should 7) ----------
+   One "Say it!" step per Spanish stop round (every level of every unit, Las Frases and Los Cuentos; not bosses, Test out or Tricky
+   Mix), after the 3rd question, and one in Daily Review after its first Spanish question. It is a step between questions (next() in
+   50-round.js asks spkHook first), not a question: the seeded questions, the round length, stars and review are unchanged, and
+   skipping it or having no microphone never counts as wrong.
+   The step says the Spanish of the question just answered (q.after: the word, phrase, sentence, or in Los Cuentos the dialogue line;
+   the child plays the character who says it). The child hears the model (the Spanish voice; with no Spanish voice the text is shown
+   big and the grown-up note shows once, esNote), taps the big microphone, talks for up to 4 s (MediaRecorder), then hears the model
+   and their own recording one after the other, and checks themselves: "I said it!" or "Try again". "Skip for now" always goes on.
+   Pre-K and K: every instruction is also spoken (the English voice), nothing needs reading.
+   Microphone: probed once per session (spkProbe: the API, then a microphone in enumerateDevices, then a denied permission). No
+   microphone: one note for the session and the step is skipped. Denied (or refused on the first tap): the step shows a grown-up how to
+   allow it, then goes on by itself; later steps that session are skipped.
+   Recordings never leave the tablet. In the step they are an object URL (revoked when the step ends); S-SPK2: each one is also kept
+   for the grown-ups' listening corner (spkrAdd, 50-say-corner.js: IndexedDB on this tablet, deleted after 1 day by default, or not
+   kept at all), never sent.
+   The speaking check (S-SPK2, a kind line under the buttons, never needed to go on; "I said it!" / "Try again" always stay):
+   A. when the tablet recognises Spanish ON THE DEVICE (SpeechRecognition.available({processLocally}) or the older
+      availableOnDevice; the recogniser is started with processLocally (or mode 'ondevice-only'), so no audio ever leaves the
+      tablet): "That sounded like ..." and whether it matches (the lenient matcher below);
+   B. otherwise (or when A heard nothing): the offline sound check (spkcJudge, 50-say-cmp.js) compares the recording with the
+      recorded model and a few similar words: "Great job!", "Close! Listen again", "I couldn't hear you" (or a softer voice).
+   Never a server recogniser, never "wrong".
+   Saved: S.esSpk (Grown-ups switch "Spanish speaking practice", per child; absent = on), S.day.spk (Spanish things said today; the
+   daily mission "Say 5 Spanish words", 55-missions.js). Styles: src/css/42-say.css. */
+const SPK={MAX:4,AT:3,GOAL:5,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,jd:null,told:0,it:null,done:null};
+const spkOn=()=>S.esSpk!==false&&S.esSpk!==0;
+// once per session: is there a microphone? ('?' not asked, 'wait' asking, 'yes', 'no'); SPK.deny: the permission is blocked
+function spkProbe(){if(SPK.mic!='?')return;
+  try{const md=typeof navigator!='undefined'&&navigator.mediaDevices;
+    if(inFrame||!md||!md.getUserMedia||typeof MediaRecorder=='undefined'){SPK.mic='no';return}
+    SPK.mic='wait';
+    Promise.resolve(md.enumerateDevices?md.enumerateDevices():[{kind:'audioinput'}]).then(ds=>{SPK.mic=ds.some(d=>d.kind=='audioinput')?'yes':'no'},()=>{SPK.mic='yes'});
+    if(navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:'microphone'}).then(p=>{if(p.state=='denied')SPK.deny=1},()=>{});
+    spkSrProbe()}catch(e){SPK.mic='no'}}
+// on-device Spanish recognition only; '' = none (never a recogniser that might send audio to a server)
+async function spkSrProbe(){SPK.sr='';try{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
+  for(const l of ['es-MX','es-US','es-ES']){
+    const a=typeof SR.available=='function'?await SR.available({langs:[l],processLocally:true}):typeof SR.availableOnDevice=='function'?await SR.availableOnDevice(l):'';
+    if(!a)return;if(a=='available'){SPK.sr=l;return}}}catch(e){SPK.sr=''}}
+// the round asks this before each question: the question just answered, when a "Say it!" step is due now (else null)
+function spkWhen(g){if(!g||g.spk||g.dead||!spkOn())return null;const q=g.q;
+  if(!q||q.afterLang!='es'||!q.after||!/^es_/.test(q.sk||''))return null;
+  if(!(g.daily||g.path=='es'&&g.node>=0&&!g.boss&&!g.test&&!g.mix))return null;
+  return g.done>=(g.daily?1:Math.min(SPK.AT,g.n))?q:null}
+function spkHook(){const q=spkWhen(G);if(!q)return false;spkProbe();
+  if(SPK.mic=='wait')return false; // still asking the tablet: try again after the next question
+  G.spk=1;
+  if(SPK.mic=='no'){if(!SPK.note){SPK.note=1;fb('No microphone here, so “Say it!” is skipped. Grown-ups: Spanish speaking practice needs a microphone.','info long',4000)}return false}
+  if(SPK.deny&&SPK.note)return false; // blocked, and the grown-up was told once this session
+  spkOpen(q,()=>next());return true}
+// what to say: the Spanish, its picture and English (a unit word), or the character and the line before it (a dialogue line)
+function spkItem(q){const t=String(q.after),o={es:t,say:t,en:'',pic:'',who:'',cue:null};
+  try{if(q.dl&&q.ctx){const D=ES_STORY.dialogues.find(d=>d.title==q.ctx.title),i=D?D.lines.findIndex(l=>l[1]==t):-1;
+      if(i>=0){o.who=D.lines[i][0];if(i>0)o.cue=D.lines[i-1];const f=ES_STORY.people[o.who];if(f)o.pic=picFor('',f)}}
+    else{for(const k in SPN){const it=SPN[k].find(x=>esFull(x)==t);if(it){o.pic=picHTML(it,false);o.en=it[1];o.say=esSay(it);break}}
+      if(!o.en&&q.sk=='es_phrase'&&q.lv==1)o.en=String(q.ans)}}catch(e){}
+  return o}
+/* ---- the lenient matcher (pure; tools/test.js "Spanish speaking S-SPK"): accents, case, punctuation and articles do not count,
+   numerals are read as words, a few letters may differ in a longer phrase (not counting the articles), and the word inside a longer answer counts ("es la casa").
+   target may hold alternatives split by " / " (cansado / cansada). Returns true or false. */
+const SPK_ART=['el','la','los','las','un','una','unos','unas'];
+const SPK_N=['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciseis','diecisiete','dieciocho','diecinueve','veinte'],
+  SPK_T=['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+function spkNum(w){if(!/^\d{1,3}$/.test(w))return w;const n=+w;if(n<=20)return SPK_N[n];if(n==100)return'cien';if(n>100)return w;
+  const t=Math.floor(n/10),u=n%10;return !u?SPK_T[t]:t==2?'veinti'+SPK_N[u]:SPK_T[t]+' y '+SPK_N[u]}
+function spkNorm(s,keepArt){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[¿?¡!.,;:«»“”"'…()–—-]/g,' ')
+  .split(/\s+/).filter(Boolean).map((w,i,a)=>w=='1'&&a[i-1]=='la'?'una':spkNum(w)).join(' ').split(' ').filter(w=>w&&(keepArt||!SPK_ART.includes(w))).join(' ')}
+function spkDist(a,b){if(a==b)return 0;let p=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]==b[j-1]?0:1));p=c}return p[b.length]}
+function spkClose(t,h,fuzzy){if(!t||!h)return false;if(t==h)return true;
+  const a=t.replace(/ /g,''),b=h.replace(/ /g,''),n=a.length,tol=n<=4?0:n<=8?1:Math.min(4,Math.floor(n/6));
+  if(fuzzy&&spkDist(a,b)<=tol)return true;
+  return n>=3&&(' '+h+' ').includes(' '+t+' ')} // the target said inside a longer answer
+function spkMatch(target,heard){const hs=(Array.isArray(heard)?heard:[heard]).filter(x=>x!=null&&String(x).trim());
+  for(const t of String(target).split(' / '))for(const h of hs)for(const k of [0,1]){const a=spkNorm(t,k),b=spkNorm(h,k);if(spkClose(a,b,!k))return true}
+  return false}
+/* ---- the screen ---- */
+const spkLive=t=>t===SPK.tok&&!!$('#spkact');
+function spkLeave(){SPK.tok++;clearInterval(SPK.iv);SPK.tm.forEach(clearTimeout);SPK.tm=[];
+  try{if(SPK.mr&&SPK.mr.state=='recording')SPK.mr.stop()}catch(e){}
+  try{if(SPK.rec)SPK.rec.abort()}catch(e){}
+  try{if(SPK.st)SPK.st.getTracks().forEach(t=>t.stop())}catch(e){}
+  try{if(SPK.au)SPK.au.pause()}catch(e){}
+  if(SPK.url)try{URL.revokeObjectURL(SPK.url)}catch(e){}
+  SPK.url='';SPK.st=SPK.mr=SPK.rec=SPK.au=null;SPK.state=''}
+const spkT=(f,ms)=>{const t=SPK.tok;SPK.tm.push(setTimeout(()=>{if(spkLive(t))f()},ms))};
+// an English line on screen; spoken too for Pre-K and K (and with "Read questions out loud" on)
+function spkTip(t,speak){const e=$('#spktip');if(e)e.textContent=t;if(speak&&(SPK.pk||S.voice))say(t)}
+function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!esHas(it.say);SPK.it=it;SPK.done=done;SPK.pk=gradeOf()<=0;SPK.nov=nov;SPK.heard=null;
+  view(`<div class="top tbar gx-mtop spk-top s-es">${NAV.house('quit')}<div class="ttl gx-ttl"><span class="gx-tb">${ico('mic',24)}</span><span>Say it!</span></div></div>
+  <div class="play spk s-es"><div class="spk-card">
+   ${it.who?`<p class="spk-role">You are <b>${esc(it.who)}</b>! Say ${esc(it.who)}’s line.</p>`:''}
+   ${it.cue?`<p class="spk-cue" lang="es"><b>${esc(it.cue[0])}:</b> ${esc(it.cue[1])}</p>`:''}
+   ${it.pic?`<div class="spk-pic" aria-hidden="true">${it.pic}</div>`:''}
+   <div class="spk-word"><span class="spk-es" lang="es">${esc(it.es)}</span>${nov?'':UI.ibtn('speak','Hear it again',{kind:'subject',p:'es',size:'lg',id:'spkhear'})}</div>
+   ${it.en?`<p class="spk-en">${esc(it.en)}</p>`:''}
+   <p class="spk-tip" id="spktip" role="status"></p>
+   <div class="spk-act" id="spkact"></div>
+   <p class="spk-heard" id="spkheard" role="status"></p></div>
+  <div class="spk-foot">${UI.btn('Skip for now',{kind:'ghost',icon:'arrow-right',id:'spkskip'})}</div></div>`);
+  NAV.wire('quit',{leave:()=>{spkLeave();if(G)G.dead=true}}); // NAV-01
+  $('#spkskip').onclick=()=>spkEnd(false);
+  if($('#spkhear'))$('#spkhear').onclick=e=>say(it.say,e.currentTarget,'es');
+  if(nov)esNote();
+  if(SPK.deny&&!SPK.note)return spkGU('denied');
+  spkReady(true)}
+// ready: the big microphone
+function spkReady(first){SPK.state='ready';const a=$('#spkact');
+  a.innerHTML=`<button class="spk-mic" id="spkmic" aria-label="Record: say it in Spanish">${ico('mic',48)}</button><span class="spk-ml" aria-hidden="true">Tap, then say it</span>`;
+  $('#spkmic').onclick=spkRec;
+  // the English tip is spoken only the first time this session (or when there is no Spanish voice): an English line right
+  // before the Spanish model made the tablet switch its speech engine, a gap of seconds; after that only the model is spoken.
+  // ES-AUDIO: a recorded model plays straight after the English (no engine switch), so the tip is spoken every time
+  const tipSay=SPK.nov||!spkReady.told||esHas(SPK.it.say);spkReady.told=true;
+  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',tipSay);
+  if(!SPK.nov)say(SPK.it.say,null,'es',tipSay?1:0)} // the model (after the English line only the first time)
+async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='ready')return;
+  SPK.state='ask';const t=SPK.tok;let st;
+  try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){if(spkLive(t))spkGU(e&&e.name=='NotFoundError'?'none':'denied');return}
+  if(!spkLive(t)){st.getTracks().forEach(x=>x.stop());return}
+  hush();
+  SPK.st=st;const ch=[];let mr;
+  try{mr=new MediaRecorder(st)}catch(e){st.getTracks().forEach(x=>x.stop());SPK.st=null;return spkGU('none')}
+  SPK.mr=mr;mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
+  mr.onstop=()=>{try{st.getTracks().forEach(x=>x.stop())}catch(e){}SPK.st=null;if(!spkLive(t))return;
+    const b=new Blob(ch,{type:mr.mimeType||'audio/webm'});
+    if(!b.size){spkReady(false);return spkTip('I didn’t hear anything. Tap the microphone and try again!',true)}
+    SPK.url=URL.createObjectURL(b);spkJudge(b);if(typeof spkrAdd=='function')spkrAdd(b,SPK.it);spkPlay()};
+  try{mr.start()}catch(e){st.getTracks().forEach(x=>x.stop());SPK.st=null;return spkGU('none')}
+  spkSR(st);SPK.state='rec';let s=SPK.MAX;
+  const a=$('#spkact'),dots=n=>`<span class="spk-dots" role="img" aria-label="${n} seconds left">${Array.from({length:SPK.MAX},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`;
+  a.innerHTML=`<button class="spk-mic on" id="spkmic" aria-label="Stop recording">${ico('stop',48)}</button>${dots(s)}`;
+  $('#spkmic').onclick=spkRec;spkTip('Say it now!');
+  SPK.iv=setInterval(()=>{s--;const d=a.querySelector('.spk-dots');if(d)d.outerHTML=dots(Math.max(0,s));if(s<=0)spkStop()},1000)}
+function spkStop(){clearInterval(SPK.iv);try{if(SPK.mr&&SPK.mr.state=='recording')SPK.mr.stop()}catch(e){}try{if(SPK.rec)SPK.rec.stop()}catch(e){}}
+// on-device recognition alongside the recording (fed the same microphone track where the browser takes one)
+function spkSR(st){SPK.heard=null;SPK.jd=null;SPK.told=0;SPK.rec=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SPK.sr||!SR)return;
+  try{const r=new SR(),t=SPK.tok;r.lang=SPK.sr;r.interimResults=false;r.maxAlternatives=3;r.continuous=false;
+    if('processLocally' in r)r.processLocally=true;else if('mode' in r)r.mode='ondevice-only';
+    if(r.processLocally!==true&&r.mode!=='ondevice-only')return; // cannot promise on-device: not used
+    r.onresult=e=>{if(t!==SPK.tok)return;const a=[];for(const x of e.results)for(let i=0;i<x.length;i++)a.push(x[i].transcript);SPK.heard=a;spkHeard()};
+    r.onerror=e=>{if(/network|not-allowed|service|language|unavailable/.test(e&&e.error||''))SPK.sr=''};
+    SPK.rec=r;const tr=st.getAudioTracks?st.getAudioTracks()[0]:null;r.start(tr)}catch(e){SPK.rec=null}}
+// B: the offline sound check of this recording (S-SPK2), in the background while the comparison plays
+function spkJudge(b){SPK.jd=null;if(typeof spkcJudge!='function'||SPK.nov)return;const t=SPK.tok;
+  spkcJudge(b,SPK.it.say).then(r=>{if(t!==SPK.tok||!r)return;SPK.jd=r;spkHeard()},()=>{})}
+const SPK_SAY={great:['check-circle','ic-good','Great job! That sounds like the Spanish. ¡Muy bien!','Great job!'],
+  again:['ear','ic-brand','Close! Listen again, then try once more.','Close! Listen again.'],
+  quiet:['mic','ic-brand','I couldn’t hear you. Hold the tablet close and say it again!','I couldn’t hear you.'],
+  loud:['mic','ic-brand','That was very loud! Try your normal voice.','Try your normal voice.']};
+// the kind line, once the comparison has played: A (what the tablet heard) when it heard something, else B (the sound check)
+function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check')return;let k,txt;
+  if(h&&h.length){const ok=spkMatch(SPK.it.es,h),said=(ok&&h.find(x=>spkMatch(SPK.it.es,x)))||h[0];k=ok?'great':'again';
+    txt=`That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' Great job! ¡Muy bien!':' Close! Listen again and compare.'}`}
+  else if(SPK.jd&&SPK_SAY[SPK.jd.k]){k=SPK.jd.k;txt=esc(SPK_SAY[k][2])}else return;
+  const s=SPK_SAY[k];e.innerHTML=`${ico(s[0],22,s[1])}<span>${txt}</span>`;e.dataset.k=k;e.classList.add('on');
+  if(!SPK.told&&(SPK.pk||S.voice)){SPK.told=1;say(s[3])}} // Pre-K and K hear it too (once per try)
+// the model, then the child's own recording, then the self-check
+function spkModel(cb){const t=SPK.tok;if(SPK.nov)return spkT(cb,200);say(SPK.it.say,null,'es');const t0=Date.now();
+  const w=()=>{if(!spkLive(t))return;const busy=speakBusy(); // the voice or the recording (ES-AUDIO)
+    if(busy&&Date.now()-t0<6000)spkT(w,150);else spkT(cb,250)};spkT(w,400)}
+function spkMine(cb){const t=SPK.tok;let fired=false;const go=()=>{if(fired||!spkLive(t))return;fired=true;cb()};
+  try{const a=new Audio(SPK.url);SPK.au=a;a.onended=a.onerror=go;a.play().catch(go);sfxDuck(()=>!a.ended&&!a.paused)}catch(e){return go()}
+  spkT(go,SPK.MAX*1000+1500)}
+function spkPlay(){SPK.state='play';const a=$('#spkact');
+  a.innerHTML=`<span class="spk-lis">${ico('ear',40)}</span>`;spkTip(SPK.nov?'Listen to yourself!':'Listen: first Spanish, then you!');
+  spkModel(()=>spkMine(spkCheck))}
+function spkCheck(){SPK.state='check';const a=$('#spkact');const cd=$('.spk-card');if(cd)cd.classList.add('chk');
+  a.innerHTML=`<div class="spk-cmp">${SPK.nov?'':UI.btn('Hear it',{size:'sm',icon:'speak',id:'spkm'})}${UI.btn('Hear me',{size:'sm',icon:'play',id:'spkme'})}</div>
+   <div class="spk-self">${UI.btn('I said it!',{kind:'primary',size:'lg',icon:'thumbs-up',id:'spkok'})}${UI.btn('Try again',{size:'lg',icon:'replay',id:'spkagain'})}</div>`;
+  if($('#spkm'))$('#spkm').onclick=e=>say(SPK.it.say,e.currentTarget,'es');
+  $('#spkme').onclick=()=>{try{if(SPK.au)SPK.au.pause();SPK.au=new Audio(SPK.url);SPK.au.play().catch(()=>{})}catch(e){}};
+  $('#spkok').onclick=()=>spkEnd(true);
+  $('#spkagain').onclick=()=>{const cd=$('.spk-card');if(cd)cd.classList.remove('chk');if(SPK.url)try{URL.revokeObjectURL(SPK.url)}catch(e){}SPK.url='';const h=$('#spkheard');if(h){h.innerHTML='';h.classList.remove('on');delete h.dataset.k}SPK.jd=SPK.heard=null;spkReady(false)};
+  spkTip(SPK.pk?'Did you say it? Tap the thumbs up, or try again!':'Did it sound the same? Tap “I said it!” or “Try again”.',true);
+  spkHeard();spkT(spkHeard,1200)}
+// a grown-up note: how to allow the microphone (or that none was found); goes on by itself
+function spkGU(kind){SPK.state='gu';SPK.note=1;if(kind=='denied')SPK.deny=1;else SPK.mic='no';const a=$('#spkact');if(!a)return;const cd=$('.spk-card');if(cd)cd.classList.add('gu');
+  const steps=kind=='denied'?`<p>The microphone is blocked for Star School. To allow it:</p><ol><li><b>Installed app:</b> press and hold the Star School icon, then App info, Permissions, Microphone, Allow.</li>
+    <li><b>In Chrome:</b> tap the icon left of the web address, then Permissions (or Site settings), Microphone, Allow.</li></ol><p>Speaking practice tries again the next time Star School opens. Recordings are never kept.</p>`
+    :`<p>No microphone was found on this device, so speaking practice is skipped. You can turn it off in Grown-ups.</p>`;
+  a.innerHTML=`<div class="spk-gu" role="note"><h2 class="spk-guh">${ico('mic',24)}<span>For a grown-up</span></h2>${steps}</div>${UI.btn('Go on',{kind:'primary',icon:'arrow-right',id:'spkgo'})}`;
+  $('#spkgo').onclick=()=>spkEnd(false);
+  spkTip(SPK.pk?'Ask a grown-up to help with the microphone. Let’s go on!':'The microphone is not working here. Let’s go on!',true);
+  spkT(()=>spkEnd(false),15000)}
+// leave the step: "I said it!" counts one Spanish thing said today (the mission); a skip counts nothing and is never a miss
+function spkEnd(said){const cb=SPK.done;spkLeave();
+  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.chime();fb(d.spk==SPK.GOAL?'¡Muy bien! 5 Spanish words said today!':'¡Muy bien!')}
+  SPK.done=null;if(cb)cb()}
+/* ---------- Fact Sprint (P5-01): 60 seconds or 20 facts, beat your best ---------- */
+/* Saved in S.flu = {key: {best, hist: [[day, sec, right]] (last 30)}}.
+   key is the set id ('add10') for the 60-second mode and set id + '-20' ('add10-20') for the 20-facts mode.
+   best is the most right answers (60 s) or the fastest seconds (20 facts). Missing fields are read with defaults.
+   S.flu[set].paid holds the day game time was last earned for that set. */
+// Highest level (1-4) of a math skill the child has passed, 0 when none.
+const fluLv = sk => [4, 3, 2, 1].find(l => passedAny('math', sk, l)) || 0;
+// R-01b: a set that opens with stop (sk, lv) opens once that stop, or any later stop of the same skill on the math path, is passed,
+// or its world was skipped (placement, test out). passedAny counted any level at or above lv anywhere, so Kindergarten's
+// "Add to 5" (add 4, before "Adding to 10") opened the sums to 10 and to 20.
+function fluFrom(sk, lv) {
+  const N = NODES.math || [], a = N.findIndex(n => n.sk == sk && n.lv == lv);
+  if (a < 0) return passedAny('math', sk, lv);
+  if (worldSkipped('math', N[a].wi)) return true;
+  for (let i = a; i < N.length; i++) if (N[i].sk == sk && passed('math', i)) return true;
+  return false;
+}
+const FLU = {
+  GOAL: 20, SECS: 60, KEEP: 30, MIN_RIGHT: 5,
+  // Sets. `ok` says whether the child has reached the matching skill; mul/div sets are added here later (P2-05).
+  SETS: [
+    {id: 'add10', e: '➕', t: 'Adding to 10', ok: () => fluFrom('add', 1), // R-01b: after the first adding stop (was always open)
+      gen: () => {const a = R(1, 9), b = R(1, 10 - a); return {a, op: '+', b, c: a + b}}},
+    {id: 'sub10', e: '➖', t: 'Take away from 10', ok: () => passedAny('math', 'sub', 1),
+      gen: () => {const a = R(2, 10), b = R(1, a); return {a, op: '−', b, c: a - b}}},
+    {id: 'add20', e: '➕', t: 'Adding to 20', ok: () => fluFrom('add', 2),
+      gen: () => {const a = R(1, 10), b = R(Math.max(1, 11 - a), 10); return {a, op: '+', b, c: a + b}}},
+    {id: 'sub20', e: '➖', t: 'Take away from 20', ok: () => passedAny('math', 'sub', 2),
+      gen: () => {const a = R(11, 20), b = R(1, Math.min(10, a - 1)); return {a, op: '−', b, c: a - b}}},
+    // Times and divide facts (P2-05). The facts grow with the highest level of the matching skill the child has passed.
+    {id: 'mfact', e: '✖️', t: 'Times facts', ok: () => passedAny('math', 'mfact', 1),
+      gen: () => {
+        const l = fluLv('mfact'), keys = MF_KEYS.slice(0, Math.max(1, l)).flat();
+        let a = l >= 4 ? R(0, 10) : pick(keys), b = R(0, 10);
+        if (coin()) [a, b] = [b, a];
+        return {a, op: '×', b, c: a * b};
+      }},
+    {id: 'dfact', e: '÷', t: 'Divide facts', ok: () => passedAny('math', 'dfact', 1),
+      gen: () => {
+        const l = fluLv('dfact'), d = l >= 4 ? R(1, 10) : pick(DF_KEYS.slice(0, Math.max(1, l)).flat()), q = R(1, 10);
+        return {a: d * q, op: '÷', b: d, c: q};
+      }},
+  ],
+  set: id => FLU.SETS.find(s => s.id == id),
+  sets: () => FLU.SETS.filter(s => s.ok()),
+  // R-01b (R-01 practice review, Must 1): timed fact practice is for facts a child already knows by a strategy, from grade 1. Fact
+  // Sprint shows (Home tile, daily mission) from grade 1 once a set is open; Pre-K and K never see it. A save with no grade (older
+  // than grades) shows it once a set is open, as before.
+  on: () => (GRADES.includes(S.grade) ? S.grade >= 1 : true) && FLU.sets().length > 0,
+  key: (set, mode) => mode == 'n20' ? set + '-20' : set,
+  fkey: f => f.a + f.op + f.b,
+  // Next fact for a sprint. st = {set, last, redo: [{f, wait}]}. A missed fact comes back after 3 other facts.
+  // Never the same fact twice in a row.
+  next: st => {
+    st.redo.forEach(r => r.wait--);
+    const i = st.redo.findIndex(r => r.wait <= 0 && FLU.fkey(r.f) != st.last);
+    let f;
+    if (i >= 0) f = st.redo.splice(i, 1)[0].f;
+    else {
+      const s = FLU.set(st.set);
+      for (let t = 0; t < 40; t++) {f = s.gen(); if (FLU.fkey(f) != st.last) break}
+    }
+    st.last = FLU.fkey(f);
+    return f;
+  },
+  miss: (st, f) => st.redo.push({f, wait: 4}),
+  // Is v a new record? The first run always is; a tie is not.
+  isRecord: (best, v, lower) => best == null || (lower ? v < best : v > best),
+  // Store one finished sprint. Returns {rec, prev}.
+  record: (flu, key, d, sec, right, lower) => {
+    const e = flu[key] || (flu[key] = {best: null, hist: []});
+    const v = lower ? sec : right, prev = e.best;
+    const rec = FLU.isRecord(prev, v, lower);
+    if (rec) e.best = v;
+    e.hist = (e.hist || []).concat([[d, sec, right]]).slice(-FLU.KEEP);
+    return {rec, prev};
+  },
+  // Game time in seconds: 1 min once per set per day, +1 min for any new record. A 60 s sprint needs MIN_RIGHT right answers.
+  earn: (flu, set, d, rec, right, mode) => {
+    if (mode != 'n20' && right < FLU.MIN_RIGHT) return 0;
+    const base = flu[set] || (flu[set] = {best: null, hist: []});
+    let t = 0;
+    if (base.paid !== d) {t += 60; base.paid = d}
+    if (rec) t += 60;
+    return t;
+  },
+  // Pausing clock. Call with document.hidden; time spent hidden is not counted.
+  tick: (c, now, hidden) => {
+    if (!hidden) c.ms += now - c.last;
+    c.last = now;
+    return c.ms;
+  },
+  // Best value for each of the last 7 days (oldest first); null where the child did not play.
+  week: (e, lower, now) => {
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const dt = new Date(now || Date.now());
+      dt.setDate(dt.getDate() - i);
+      const k = dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate();
+      const v = ((e && e.hist) || []).filter(h => h[0] == k).map(h => lower ? h[1] : h[2]);
+      out.push(v.length ? (lower ? Math.min(...v) : Math.max(...v)) : null);
+    }
+    return out;
+  },
+};
+
+let FL = null; // the sprint being played
+function stopFlu() {
+  if (!FL) return;
+  clearInterval(FL.iv);
+  clearTimeout(FL.to);
+  document.removeEventListener('visibilitychange', FL.vis);
+  FL = null;
+}
+const fluSecs = ms => (Math.round(ms / 100) / 10).toFixed(1);
+const fluBest = (key, lower) => {
+  const b = ((S.flu || {})[key] || {}).best;
+  return b == null ? 'not yet' : lower ? b + ' s' : '' + b;
+};
+
+// P4-18: drawn set badges (the sign of the facts, and 10 or 20 on a tag) instead of the set emoji
+const fluIco = id => /^add/.test(id) ? 'plus' : /^sub/.test(id) ? 'minus' : /^mf/.test(id) ? 'times' : /^df/.test(id) ? 'divide' : 'bolt';
+const fluTag = id => (/(10|20)$/.exec(id) || [])[1] || '';
+// Top bar of the sprint menus: back, a math badge with the bolt, the title
+const fluTop = (t, icon) => `<div class="top tbar gx-mtop s-math">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}` +
+  `<div class="ttl gx-ttl"><span class="gx-tb">${ico(icon, 24)}</span><span>${esc(t)}</span></div></div>`;
+
+function fluMenu() {
+  const sets = FLU.sets();
+  view(`${fluTop('Fact Sprint', 'bolt')}
+  <div class="scroll gx-list"><p class="gx-lead">Pick your facts. Beat your best!</p>
+  <div class="games">${sets.map(s => GFX.card({ cls: 'game', attrs: `data-s="${s.id}"`, p: 'math', icon: fluIco(s.id), tag: fluTag(s.id), title: s.t,
+    sub: `<span class="gx-ln">${ico('timer', 18)}<span>60 s best: <b>${fluBest(s.id, false)}</b></span></span>` +
+      `<span class="gx-ln">${ico('target', 18)}<span>20 facts best: <b>${fluBest(s.id + '-20', true)}</b></span></span>` })).join('')}</div></div>`);
+  NAV.bar('learn');
+  $('#back').onclick = () => NAV.back();
+  $$('[data-s]').forEach(b => b.onclick = () => fluModes(b.dataset.s));
+}
+
+function fluModes(set) {
+  const s = FLU.set(set);
+  view(`${fluTop(s.t, fluIco(set))}
+  <div class="scroll gx-list"><div class="games">
+   ${GFX.card({ cls: 'game', attrs: 'data-m="t60"', p: 'play', icon: 'timer', title: '60 seconds', sub: `How many can you get? Best: <b>${fluBest(set, false)}</b>` })}
+   ${GFX.card({ cls: 'game', attrs: 'data-m="n20"', p: 'es', icon: 'target', title: '20 facts', sub: `Beat your time! Best: <b>${fluBest(set + '-20', true)}</b>` })}</div>
+   <p class="gx-note">${ico('ticket', 24)}<span>A first sprint each day earns game time.</span></p></div>`);
+  NAV.bar('learn');
+  $('#back').onclick = fluMenu;
+  $$('[data-m]').forEach(b => b.onclick = () => fluPlay(set, b.dataset.m));
+}
+
+function fluPlay(set, mode) {
+  stopFlu();
+  const timed = mode != 'n20', key = FLU.key(set, mode);
+  view(`${GFX.speedTop('math', 'fbar', timed ? 1 : 0, UI.chip('bolt', timed ? 0 : '0 / ' + FLU.GOAL, { id: 'fsc', aria: 'Right answers' }) +
+    UI.chip('timer', timed ? '60 s' : '0.0 s', { id: 'ftm', aria: 'Time' }))}
+   <div class="play qs s-math" id="fplay"></div>`);
+  FL = {set, mode, key, timed, right: 0, typed: '', lock: true, clock: {ms: 0, last: Date.now()}, st: {set, last: '', redo: []}, f: null};
+  // NAV-01: the corner house; the clock does not count while Go Home? is open
+  NAV.wire('quit', {hold: on => {if (!FL) return; FLU.tick(FL.clock, Date.now(), document.hidden || !on); FL.held = on}, leave: stopFlu});
+  FL.vis = () => {if (FL) FLU.tick(FL.clock, Date.now(), document.hidden)};
+  document.addEventListener('visibilitychange', FL.vis);
+
+  const show = () => {
+    if (!FL) return;
+    const f = FL.f = FLU.next(FL.st);
+    FL.typed = '';
+    FL.lock = false;
+    $('#fplay').innerHTML = `<div class="qarea"><div class="prompt" id="prompt"><div class="eq">${f.a} ${f.op} ${f.b} = ${SLOT}</div></div></div>
+     <div class="inp">${GFX.pad()}</div>`;
+    fit();
+    $$('.k').forEach(b => b.onclick = () => {
+      if (!FL || FL.lock) return;
+      const k = b.dataset.k, want = String(FL.f.c);
+      if (k == 'del') FL.typed = FL.typed.slice(0, -1);
+      else if (FL.typed.length < want.length) {FL.typed += k; SFX.key(+k)}
+      $('#slot').textContent = FL.typed;
+      if (FL.typed.length == want.length) answer(FL.typed == want); // auto-submit when the digit count matches
+    });
+  };
+
+  const answer = ok => {
+    FL.lock = true;
+    const slot = $('#slot');
+    if (ok) {
+      FL.right++;
+      SFX.right(FL.right % 10);
+      slot.classList.add('ok');
+      if (timed) UI.setChip($('#fsc'), FL.right);
+      else {
+        UI.setChip($('#fsc'), FL.right + ' / ' + FLU.GOAL);
+        GFX.bar($('#fbar'), FL.right / FLU.GOAL);
+      }
+      if (!timed && FL.right >= FLU.GOAL) return finish();
+      FL.to = setTimeout(show, 250);
+    } else {
+      SFX.wrong();
+      FLU.miss(FL.st, FL.f);
+      slot.textContent = FL.f.c;
+      slot.className = 'slot rev'; // show the fact for 1 second, then it comes back a few facts later
+      FL.to = setTimeout(show, 1000);
+    }
+  };
+
+  const finish = () => {
+    FLU.tick(FL.clock, Date.now(), document.hidden);
+    const sec = timed ? FLU.SECS : Math.round(FL.clock.ms / 100) / 10, right = FL.right;
+    stopFlu();
+    S.flu = S.flu || {};
+    const r = FLU.record(S.flu, key, today(), sec, right, !timed);
+    actFlu(sec); // P5-05
+    const rec = r.rec && (!timed || right > 0); // no fireworks for a first 60 s run of zero
+    const earned = FLU.earn(S.flu, set, today(), rec, right, mode);
+    if (earned) ptEarn(earned);
+    const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
+    save();
+    rec ? (SFX.fanfare(), confetti(40)) : SFX.chime();
+    fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
+  };
+
+  // Clock counts only while the page is visible. It starts after a short "ready" beat.
+  FL.to = setTimeout(() => {
+    if (!FL) return;
+    fb('Ready… GO!', 'zap');
+    SFX.fanfare();
+    FL.clock.last = Date.now();
+    show();
+    FL.iv = setInterval(() => {
+      if (!FL) return;
+      const ms = FLU.tick(FL.clock, Date.now(), document.hidden || FL.held), left = FLU.SECS - ms / 1000;
+      if (timed) {
+        GFX.bar($('#fbar'), left / FLU.SECS);
+        $('#ftm b').textContent = Math.max(0, Math.ceil(left)) + ' s';
+        if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); SFX.tick()}
+        if (left <= 0) finish();
+      } else $('#ftm b').textContent = fluSecs(ms) + ' s';
+    }, 200);
+  }, 300);
+}
+
+// Sparkline of the last 7 days: higher is always better (faster times are flipped).
+function fluSpark(vals, lower) {
+  const W = 168, H = 48, pad = 6, got = vals.filter(v => v != null);
+  if (!got.length) return '';
+  const lo = Math.min(...got), hi = Math.max(...got), span = hi - lo || 1;
+  const pts = vals.map((v, i) => {
+    if (v == null) return null;
+    const t = (v - lo) / span, up = lower ? 1 - t : t;
+    return [pad + i * (W - 2 * pad) / 6, H - pad - (got.length > 1 ? up : .5) * (H - 2 * pad)];
+  });
+  const line = pts.filter(Boolean).map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
+  const dots = pts.map((p, i) => p ? `<circle class="${i == 6 ? 'gx-sn' : 'gx-sd'}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i == 6 ? 6 : 4}"/>` : '').join('');
+  return `<svg class="gx-spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Your last 7 days"><polyline class="gx-sl" points="${line}"/>${dots}</svg>`;
+}
+
+function fluEnd(r) {
+  const lower = !r.timed, e = (S.flu || {})[r.key], bestNow = e && e.best;
+  const title = r.timed ? `${r.right} in 60 seconds!` : `20 facts in ${r.sec} s!`;
+  const sp = fluSpark(FLU.week(e, lower), lower);
+  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: (sp ? `<div class="gx-week">${sp}</div>` : '') + (r.mis || ''),
+    earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
+    btns: NAV.end3({again: 'frepeat', home: 'fhome'}) }); // NAV-01
+  document.body.appendChild(o);
+  if (S.voice) say(r.rec ? 'New record!' : 'Good job!');
+  o.querySelector('#frepeat').onclick = () => {o.remove(); fluPlay(r.set, r.mode)};
+  o.querySelector('#fhome').onclick = () => {o.remove(); home()};
+}
 /* ---------- grown-ups ----------
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in

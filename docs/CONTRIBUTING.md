@@ -133,7 +133,11 @@ index.html        shell + CSS + fonts + <script>src/js</script>                 
                    P6-03: nor for bt.<VER>.js, LAZY too, loaded the first time a puzzle opens)
 gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math, 31-gen-math-early, 32-gen-read, 33-gen-math-mid,
                   34-gen-es; ROOM: the Grown-ups screens 80-grown, 81-backup, 82-report, 88-online (room in index.html, under its 1 MB
-                  limit; loaded at start, so every caller has them), then  var GEN_VER='<VER>';
+                  limit; loaded at start, so every caller has them); MERGE-186 (ROOM 2): 45-placement, 50-say, 50-say-cmp, 50-say-corner,
+                  57-fluency (placement, Say it! and its sound check and listening corner, Fact Sprint: JS only, their CSS stays in
+                  index.html; index.html 999 -> 930 KB), then  var GEN_VER='<VER>';
+                  Rule for anything moved here: index.html's code may call it only inside functions that run after start-up (view()
+                  calls stopFlu behind typeof, so the A11 Try again screen works without gen)
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
                   then  var GEN2_VER='<VER>';
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
