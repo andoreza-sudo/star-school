@@ -156,6 +156,19 @@ async function g5Kit(pg, sel) {
   // card must still be up. Then a new touch on btn must work. Returns the problems found.
   const heldEnd = async (name, play, open, btn) => {
     const out = [], clear = () => pg.evaluate(() => document.querySelectorAll('.ovl').forEach(o => o.remove()));
+    // RC-2: read the button only once the card has settled: no animation running on the card (its pop-in transform moves the button)
+    // and the same rect on two animation frames in a row. Under load the card was read mid pop-in ("moved between two openings").
+    const settled = async sel => {
+      await pg.waitForFunction(s => {
+        const e = document.querySelector(s), c = e && e.closest('.ovl, .gh-end');
+        if (!e || !c) return false;
+        const run = [...(c.getAnimations ? c.getAnimations({ subtree: true }) : [])].some(a => a.playState === 'running' || a.playState === 'pending');
+        const r = e.getBoundingClientRect(), k = [r.x, r.y, r.width, r.height].map(Math.round).join();
+        if (run || window.__g5Set !== s + k) { window.__g5Set = s + k; window.__g5SetN = 0; return false; }
+        return ++window.__g5SetN >= 2; // unchanged on 2 more frames
+      }, sel, { polling: 'raf', timeout: 8000 }).catch(() => {});
+      return box(sel);
+    };
     let b = null;
     for (let k = 0, last = null; k < 5; k++) { // until the button sits where it sat the time before (a first-time line moves it)
       await clear();
@@ -163,19 +176,33 @@ async function g5Kit(pg, sel) {
       await pg.waitForTimeout(700);
       await pg.evaluate(open);
       await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
-      b = await box('.gh-end ' + btn);
+      b = await settled('.gh-end ' + btn);
       if (last && Math.hypot(b.x - last.x, b.y - last.y) <= 2) break;
       last = b;
     }
-    await clear();
-    await pg.evaluate(play);
-    await pg.waitForTimeout(700);
-    await down(b.x, b.y);
-    await pg.waitForTimeout(400);
-    await pg.evaluate(open);
-    await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
-    const b2 = await box('.gh-end ' + btn);
-    if (Math.hypot(b2.x - b.x, b2.y - b.y) > 6) out.push(name + ': the card\'s ' + btn + ' moved between two openings; the held finger is not on it');
+    // the game with a finger held on that spot, the card opened under it. RC-2: a run played with the finger down can end with a
+    // different card (a line more or less) than the runs played without it, so the button can sit elsewhere; then the held finger is
+    // put where the card from a held run placed it and the run is played again (up to 3 tries). The proof is unchanged: the card
+    // opens under a finger already down on the button, and that finger's lift must not press it.
+    let b2 = null, on = false, seen = [];
+    for (let k = 0; k < 3 && !on; k++) {
+      await clear();
+      await pg.evaluate(play);
+      await pg.waitForTimeout(700);
+      await down(b.x, b.y);
+      await pg.waitForTimeout(400);
+      await pg.evaluate(open);
+      await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
+      b2 = await settled('.gh-end ' + btn);
+      on = Math.hypot(b2.x - b.x, b2.y - b.y) <= 6;
+      seen.push([Math.round(b.x), Math.round(b.y), Math.round(b2.x), Math.round(b2.y)]);
+      if (!on) { await up(); b = b2; }
+    }
+    if (!on) {
+      out.push(name + ': the card\'s ' + btn + ' moved between two openings; the held finger is not on it ' + JSON.stringify(seen));
+      await clear();
+      return out;
+    }
     await pg.waitForTimeout(300);
     await up();
     await pg.waitForTimeout(600);
@@ -15506,7 +15533,7 @@ async function main() {
         slow = 0;
         if (dt < 2500 || dt > 7500 || !slowSeen) bad.push('slow network: Home after ' + dt + ' ms (want about 3 s from the cache), network asked ' + slowSeen + ' times');
         else notes.push('Home after ' + dt + ' ms with an 8 s network');
-        await p2.waitForTimeout(6000); // the late network page finishes (it updates the cache)
+        await p2.waitForTimeout(6000); // the late network page finishes (RC-2: it no longer goes into the cache: RC2-SKEW)
         // (b) an update during a Practice round
         await p2.evaluate(() => { K2.off = true; S.unlockAll = true; start('math', NODES.math.findIndex(n => [1, 2, 3, 4, 5, 6].every(s => { const q = genQ(n.sk, n.lv, s); return q && !q.after && (q.kind == 'choice' || q.kind == 'num'); }))); });
         await p2.waitForSelector('#prompt');
@@ -15667,6 +15694,204 @@ async function main() {
       if (bad.length) fail('RC1-KIDS picture passwords:\n  ' + bad.join('\n  '));
       else step('RC1-KIDS: two children with picture passwords at 380x780, 360x740 and 1024x600: set in Grown-ups behind the PIN, the picker asks them ' +
         '(48 px pictures said on tap, dots only), a wrong try shakes and says so, the right 3 open the child, Grown-up help shows the pictures and opens the child');
+    }
+
+    // RC2-SKEW (v189, RC-2 item 1): the 3-second race in sw.js must never cache a late network page. http + service worker, midway save:
+    //    this release installed; then "the next release" is put up (index.html and sw.js with the next version, its part files missing,
+    //    so its service worker cannot install) and the page takes 8 s from the network: the cached page comes at 3 s, the late network
+    //    page arrives, and the cache must still hold this release's page (was: the new index.html with the old parts); then offline, the
+    //    next start is Home (was: "Star School needs to finish updating").
+    if (seg('RC2-SKEW')) {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const CUR = /BUILD='(v\d+)'/.exec(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'))[1], NEW = 'v' + (+CUR.slice(1) + 1);
+      const socks = new Set(), bad = [], notes = [];
+      let next = 0, slow = 0, slowSeen = 0, down = 0;
+      const srv = http.createServer((req, res) => {
+        if (down) return req.socket.destroy(); // offline: no answer at all (the service worker's fetch fails)
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
+        const nu = next ? u.replace('.' + NEW + '.js', '.' + CUR + '.js') : u, f = path.join(ROOT, nu);
+        if ((next && nu !== u) || !f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        const send = () => {
+          res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+          // the next release: its version in index.html and sw.js (quotes and dots around it only: never inside the base64 fonts)
+          if (next && (u === 'index.html' || u === 'sw.js')) return res.end(fs.readFileSync(f, 'utf8').replace(new RegExp(`(['".])${CUR}(?=['".])`, 'g'), '$1' + NEW));
+          fs.createReadStream(f).pipe(res);
+        };
+        if (slow && u === 'index.html') { slowSeen++; setTimeout(send, slow); } else send();
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      const ctx = await browser.newContext({ viewport: { width: 380, height: 780 } }), errs = [];
+      await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+      const cached = pg => pg.evaluate(async () => { const o = {};
+        for (const k of await caches.keys()) { if (k == 'starschool-audio') continue; const r = await (await caches.open(k)).match('./index.html');
+          o[k] = r ? (/BUILD='(v\d+)'/.exec(await r.text()) || [])[1] : null; }
+        return o; });
+      try {
+        const p1 = await ctx.newPage();
+        p1.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p1.goto(base + 'index.html');
+        await p1.locator('#groom').waitFor({ timeout: 15000 });
+        await p1.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 60000 });
+        // the next release goes up, and the network is slow: the cached page at 3 s
+        next = 1;
+        slow = 8000;
+        await p1.reload({ waitUntil: 'commit', timeout: 20000 });
+        await p1.locator('#groom').waitFor({ timeout: 20000 });
+        const b1 = await p1.evaluate(() => BUILD);
+        if (b1 !== CUR || !slowSeen) bad.push('slow network: the page is ' + b1 + ' (want the cached ' + CUR + '), network asked ' + slowSeen + ' times');
+        await p1.waitForTimeout(8000); // the late network page arrives
+        slow = 0;
+        const c1 = await cached(p1);
+        if (c1['starschool-' + CUR] !== CUR) bad.push('the late network page went into the ' + CUR + ' cache: ' + JSON.stringify(c1));
+        else notes.push('the late ' + NEW + ' page was not cached (' + JSON.stringify(c1) + ')');
+        // offline (the server gives no answer: setOffline does not reach the service worker's own fetches): the next start is this release, whole
+        down = 1;
+        await p1.reload({ timeout: 20000 }).catch(e => bad.push('offline reload: ' + e.message.split('\n')[0]));
+        await p1.waitForSelector('#groom, #datamiss', { timeout: 20000 });
+        const r2 = await p1.evaluate(() => ({ build: BUILD, miss: !!document.querySelector('#datamiss') }));
+        if (r2.miss || r2.build !== CUR) bad.push('offline start after the late page: ' + JSON.stringify(r2) + ' (version skew: "needs to finish updating")');
+        else notes.push('offline, the next start is Home (' + CUR + ')');
+        down = 0;
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      for (const e of errs) fail('RC2-SKEW ' + e);
+      await ctx.close();
+      await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
+      if (bad.length) fail('RC2-SKEW a late network page and the cache:\n  ' + bad.join('\n  '));
+      else step('RC2-SKEW: ' + notes.join('; '));
+    }
+
+    // RC2-UNDO (v189, RC-2 item 2): two children; Erase everything (behind the PIN) opens setup for the erased child; Back on setup puts
+    //    the erased save back (BAK.undo; was: PRF.remove dropped the child and its "Undo erase" copy). 380x780, real taps.
+    if (seg('RC2-UNDO')) {
+      const bad = [];
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      try {
+        await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false); save(); });
+        const s0 = await pg.evaluate(() => ({ name: S.name, stars: S.stars, id: PRF.cur }));
+        await pg.evaluate(() => home());
+        await pg.click('#gear');
+        await pinIn(pg, '2580');
+        await pg.waitForSelector('#reset');
+        await pg.evaluate(() => document.querySelector('#gw-reset').scrollIntoView({ block: 'center' }));
+        await pg.click('#reset');
+        await pg.click('#reset');
+        await pg.waitForSelector('.sheet-bg.on #pnpad');
+        await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pinType(pg, '2580')]);
+        await pg.waitForSelector('.su-step', { timeout: 60000 });
+        const z = await pg.evaluate(() => ({ stars: S.stars, name: S.name, er: BAK.erased() && BAK.erased().k, back: !!document.querySelector('#suback') }));
+        if (z.stars !== 0 || z.name !== '' || !z.er || !z.back) bad.push('after Erase everything: ' + JSON.stringify(z));
+        await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pg.click('#suback')]);
+        await pg.waitForSelector('.pf-kid, .game[data-p]', { timeout: 30000 });
+        const b = await pg.evaluate(id => { const o = PRF.obj(PRF.get(PRF.key(id))) || {};
+          return { ids: PRF.ids.join(), name: o.name, stars: o.stars, left: Object.keys(localStorage).filter(k => /-undo$|-erased$/.test(k)) }; }, s0.id);
+        if (!b.ids.includes(s0.id) || b.name !== s0.name || b.stars !== s0.stars) bad.push('Back on setup after Erase everything lost the erased save: ' + JSON.stringify(b));
+        else if (await pg.$('.pf-kid')) {
+          await pg.click(`.pf-kid[data-kid="${s0.id}"]`); // (the child who is already loaded opens without a reload)
+          await pg.waitForSelector('.game[data-p]', { timeout: 30000 });
+          await pg.waitForFunction(x => typeof S != 'undefined' && S.name === x.name && S.stars === x.stars, s0, { timeout: 15000 })
+            .catch(() => bad.push('the child came back in the list but did not open with the progress'));
+        }
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('RC2-UNDO ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('RC2-UNDO Back on setup after Erase everything:\n  ' + bad.join('\n  '));
+      else step('RC2-UNDO: with two children, Back on setup after Erase everything puts the erased progress back (the child opens with it)');
+    }
+
+    // RC2-GATE (v189, RC-2 items 4-6 and the owner notes): 380x780, midway save, real taps. A PIN wait stored 2 years ahead (a clock
+    //    change) has expired; Find my level from Grown-ups goes Home, never back into Grown-ups; Story themes' Done goes back to
+    //    Grown-ups while the grown-up session is valid, Home once it ran out; a child screen ends the session; Empty bank goes through
+    //    ptGift (logged); the learn-first hint on the gift row; a Forgot PIN reset is named at the next entry by the PIN; an update
+    //    never reloads Grown-ups.
+    if (seg('RC2-GATE')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc2');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      const toGrown = async () => { await pg.evaluate(() => home()); await pg.click('#gear'); await pinIn(pg, '2580'); await pg.waitForSelector('#gw-time'); };
+      try {
+        await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); });
+        // 4. a wait set with the clock 2 years ahead: expired, the right PIN opens Grown-ups, Forgot PIN? asks its questions
+        await pg.evaluate(() => { const o = PIN.get(); o.t = o.f = Date.now() + 2 * 365 * 864e5; PIN.put(o); home(); });
+        await pg.click('#gear');
+        await pg.waitForSelector('.sheet-bg.on #pnpad');
+        const ln = await pg.evaluate(() => document.querySelector('.sheet-bg.on #pnpad').textContent);
+        if (/Too many/.test(ln)) bad.push('a wait stored 2 years ahead still locks the pad');
+        await pinType(pg, '2580');
+        await pg.waitForSelector('#gw-time', { timeout: 10000 }).catch(() => bad.push('the right PIN did not open Grown-ups after a clock change'));
+        await pg.evaluate(() => { const o = PIN.get(); o.f = Date.now() + 2 * 365 * 864e5; PIN.put(o); home(); });
+        await pg.click('#gear');
+        await pg.click('.sheet-bg.on #pnforgot');
+        await pg.waitForSelector('.sheet-bg.on #pfa0', { timeout: 10000 }).catch(() => bad.push('Forgot PIN? still waits after a clock change'));
+        // the Forgot PIN reset: a new PIN, then the next entry by the PIN names it
+        const ans = await pg.evaluate(() => NAV.gateSheet.ans);
+        for (let i = 0; i < 3; i++) await pg.fill('.sheet-bg.on #pfa' + i, String(ans[i]));
+        await pg.click('.sheet-bg.on #pfgo');
+        await padH(pg, /^Choose a new PIN/);
+        await pinType(pg, '2580');
+        await padH(pg, /^Type it again/);
+        await pinType(pg, '2580');
+        await pg.waitForSelector('#gw-time');
+        if (await pg.$('#pnreset')) bad.push('the reset note shows to whoever just reset the PIN');
+        await toGrown();
+        const note = await pg.evaluate(() => (document.querySelector('#pnreset') || {}).textContent || '');
+        if (!/^Your PIN was reset with Forgot PIN on .+\.$/.test(note)) bad.push('the next entry: no reset note (' + note + ')');
+        await pg.screenshot({ path: P_.join(shots, 'rc2-pin-reset-note-380x780.png') }).catch(() => {});
+        await toGrown();
+        if (await pg.$('#pnreset')) bad.push('the reset note shows again on the entry after');
+        // 5. Find my level from Grown-ups: Back goes Home
+        await pg.evaluate(() => { S.grade = 1; save(); grown(); });
+        await pg.click('.pl-grown [data-place]');
+        await pg.waitForSelector('#plback');
+        await pg.click('#plback');
+        await pg.waitForSelector('#hs, .gw', { timeout: 10000 });
+        if (await pg.$('.gw')) bad.push('Find my level\'s Back from Grown-ups opened Grown-ups without the PIN');
+        // Story themes: Done back to Grown-ups within the session; Home once it ran out; a child screen ends it
+        await toGrown();
+        await pg.waitForSelector('#pers-open', { timeout: 15000 });
+        await pg.click('#pers-open');
+        await pg.waitForSelector('#pers-done');
+        await pg.click('#pers-done');
+        await pg.waitForSelector('.gw, #hs');
+        if (!(await pg.$('.gw'))) bad.push('Story themes\' Done within the session did not go back to Grown-ups');
+        await pg.waitForSelector('#pers-open', { timeout: 15000 });
+        await pg.click('#pers-open');
+        await pg.waitForSelector('#pers-done');
+        await pg.evaluate(() => { NAV.gwT = Date.now() - NAV.GW_MS - 1000; });
+        await pg.click('#pers-done');
+        await pg.waitForSelector('.gw, #hs');
+        if (await pg.$('.gw')) bad.push('Story themes\' Done after the session ran out opened Grown-ups without the PIN');
+        await toGrown();
+        const ses = await pg.evaluate(() => { const a = NAV.gwOk(); pathMap('math'); const b = NAV.gwOk(); return { a, b }; });
+        if (!ses.a || ses.b) bad.push('the grown-up session: ' + JSON.stringify(ses) + ' (want valid in Grown-ups, ended by a map)');
+        // the report card's Back
+        await toGrown();
+        await pg.click('#rp-open');
+        await pg.waitForSelector('#back');
+        await pg.click('#back');
+        await pg.waitForSelector('#gw-time', { timeout: 10000 }).catch(() => bad.push('the report card\'s Back did not go back to Grown-ups'));
+        // 6. Empty bank through ptGift; the learn-first hint; SWU never reloads Grown-ups
+        await pg.evaluate(() => { pt().bank = 600; pt().gift = 0; ptCfg().need = 10; pt().open = ''; save(); grown(); });
+        const h = await pg.evaluate(() => document.querySelector('#ptgifth').textContent);
+        if (!/unlock after today's learning/.test(h)) bad.push('no learn-first hint on the gift row: ' + h);
+        await pg.evaluate(() => document.querySelector('#gw-give').scrollIntoView({ block: 'center' }));
+        await pg.screenshot({ path: P_.join(shots, 'rc2-gift-learn-first-380x780.png') }).catch(() => {});
+        await pg.click('#pt10');
+        await pg.click('#pt0');
+        await pg.waitForSelector('#gw-time');
+        const e = await pg.evaluate(() => ({ bank: pt().bank, gift: pt().gift | 0, gt: (ACT.entry(today()) || {}).gt, hub: SWU.hub() }));
+        if (e.bank !== 0 || e.gift !== 0 || e.gt !== -600 || e.hub) bad.push('Empty bank and the update hub: ' + JSON.stringify(e) + ' (want bank 0, gift 0, logged -600 s, Grown-ups no hub)');
+        await pg.evaluate(() => { ptCfg().need = 0; save(); });
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('RC2-GATE ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('RC2-GATE lockouts, the grown-up session, Empty bank, the owner notes:\n  ' + bad.join('\n  '));
+      else step('RC2-GATE: a PIN wait from a clock change has expired; Find my level goes Home; Story themes back to Grown-ups only in the ' +
+        'grown-up session; a child screen ends it; Empty bank logged through ptGift; the learn-first hint; the Forgot PIN note once; Grown-ups is no update hub');
     }
 
     for (const u of network) fail('network request: ' + u);

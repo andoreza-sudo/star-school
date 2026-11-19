@@ -139,7 +139,7 @@ const NAV = {
   // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
   // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
-    const go = typeof then == 'function' ? then : grown;
+    const go0 = typeof then == 'function' ? then : grown, go = () => { NAV.gwT = Date.now(); go0(); }; // RC-2: the grown-up session starts
     if (typeof PIN != 'undefined') return PIN.gate(go);
     return partLoad('gate').then(ok => {
       if (ok && typeof PIN != 'undefined') return PIN.gate(go);
@@ -147,6 +147,12 @@ const NAV = {
       return NAV.askQ(go);
     });
   },
+  // RC-2: the grown-up session: from the gate (NAV.quiz) until any child screen opens (view() ends it unless the screen set gwK first:
+  // Grown-ups, the report card, Story themes). Back from a grown-up screen goes to Grown-ups only while it is valid, else Home; away
+  // from the Grown-ups screens (Story themes, which a grown-up may hand to the child) it lasts GW_MS from the last Grown-ups screen.
+  gwT: 0, gwK: 0, GW_MS: 180000,
+  gwOk() { return NAV.gwT > 0 && (!!document.querySelector('#app .gw') || Date.now() - NAV.gwT < NAV.GW_MS); },
+  gwBack() { return NAV.gwOk() ? grown() : home(); },
   // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in; then: what a right answer opens.
   // RC-1: only the first way in on a tablet with no Grown-ups PIN yet (PIN.gate), which then asks the grown-up to choose one
   askQ(then) {

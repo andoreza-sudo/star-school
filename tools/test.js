@@ -20604,6 +20604,9 @@ run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
     // 4. a year of daily lessons for a Kindergartner and a 1st grader who learn: never a learned stop as new, Remember one item at most,
     //    never today's, every due stop comes back within 30 days of its day, every lesson of the grade reached
     for(const gr of [0,1]){loadSave(null);S.grade=gr;S.name='Mia';let fail=0,maxLate=0;const did=new Set(),rem={};
+      // RC-2 (design change): the lessons of a world the map passes over (worldBelow at the fresh save: a 1st grader's K worlds) are not
+      // offered, so they are not wanted (was: every lesson of the band, the K ones first)
+      const below=new Set(LS_IDS.filter(x=>at(x)>=0&&worldBelow('math',NODES.math[at(x)].wi,startWorld('math'),lastWorld('math'))));
       for(let d=100;d<465;d++){NODES.math.forEach((n,i)=>{if(!LESSONS[nid(n)]&&!passed('math',i)&&unlocked('math',i))setSt('math',i,2)}); // the rest of the map, played in Practice
         pl=planToday(S,d);if(!pl)continue;if(pl.kind==='new'&&((S.know||{})[pl.id]||{}).s>=2){fail++;bad.push('day '+d+': learned '+pl.id+' as new')}
         if(pl.remember.length>1||pl.remember.includes(pl.id))bad.push('day '+d+': remember '+pl.remember);
@@ -20611,7 +20614,7 @@ run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
         const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
         if(f.pass)setSt('math',pl.i,2);if(fail>3)break}
       const due=LS_IDS.filter(x=>S.know[x]&&S.know[x].s>=2&&S.know[x].due<465-30);
-      const want=LS_IDS.filter(x=>at(x)>=0&&g(x)<=gr&&(g(x)>=0||gr<0)); // TEACH-4: the math map's lessons (reading has its own year); a Pre-K world's lessons are a Pre-K child's
+      const want=LS_IDS.filter(x=>at(x)>=0&&g(x)<=gr&&(g(x)>=0||gr<0)&&!below.has(x)); // TEACH-4: the math map's lessons (reading has its own year); a Pre-K world's lessons are a Pre-K child's
       for(const x of want)if(!did.has(x))bad.push('grade '+gr+': never reached '+x);
       if(due.length)bad.push('grade '+gr+': due and never remembered: '+due.join());
       rows.push('grade '+gr+': '+did.size+' lessons reached, latest Remember '+maxLate+' days after due')}
@@ -21781,13 +21784,15 @@ run('teach: the reading and Pre-K planner, the stop record, the notebook TEACH-4
     // 2. a year of daily lessons on each map for a Pre-K, a K, a 1st and a 2nd grader who learn: never a learned stop as new, Remember one item
     //    at most and never today's, every lesson of the child's band reached
     for(const [p,gr] of [['read',-1],['math',-1],['read',0],['read',1],['read',2]]){loadSave(null);S.grade=gr;S.name='Mia';const did=new Set();let fail=0;
+      // RC-2 (design change): not the lessons of a world the map passes over at the fresh save (a 1st or 2nd grader's K reading worlds)
+      const below=new Set(LS_IDS.filter(x=>at(p,x)>=0&&worldBelow(p,NODES[p][at(p,x)].wi,startWorld(p),lastWorld(p))));
       for(let d=100;d<400;d++){NODES[p].forEach((n,i)=>{if(!LESSONS[nid(n)]&&!passed(p,i)&&unlocked(p,i))setSt(p,i,2)});
         pl=planToday(S,d,p);if(!pl)continue;if(pl.kind==='new'&&((S.know||{})[pl.id]||{}).s>=2){fail++;bad.push(p+' '+gr+' day '+d+': learned '+pl.id+' as new')}
         if(pl.remember.length>1||pl.remember.includes(pl.id))bad.push(p+' '+gr+' day '+d+': remember '+pl.remember);
         if((LESSONS[pl.id].p||'math')!==p)bad.push(p+' '+gr+': a lesson of another subject '+pl.id);
         const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
         if(f.pass)setSt(p,pl.i,2);if(fail>3)break}
-      const want=LS_B4.filter(x=>LESSONS[x].p===p&&at(p,x)>=0&&g(p,x)<=Math.max(gr,0)&&(g(p,x)>=0||gr<0)&&(gr<0?g(p,x)<0:true));
+      const want=LS_B4.filter(x=>LESSONS[x].p===p&&at(p,x)>=0&&g(p,x)<=Math.max(gr,0)&&(g(p,x)>=0||gr<0)&&(gr<0?g(p,x)<0:true)&&!below.has(x));
       for(const x of want)if(!did.has(x))bad.push(p+' grade '+gr+': never reached '+x);
       rows.push(p+' '+gr+': '+did.size)}
     // 3. the stop record of a reading lesson is the reading map's: its stars, the next stop, the end card's map
@@ -23041,15 +23046,15 @@ run('update: a new service worker reloads the page only on a hub screen, never i
   p.push(...R(`(()=>{const bad=[];let on=null,sheets=[];
     document.querySelector=s=>on&&s.split(',').includes(on)?{}:null;document.querySelectorAll=()=>sheets;
     // the hub screens are PLAY.redraw's (the screens it may draw again) and the Game Room
-    for(const m of String(PLAY.redraw).matchAll(/\\$\\('([^']+)'\\)/g))if(m[1]!=='.sheet-bg'&&!String(SWU.hub).includes(m[1]))bad.push('PLAY.redraw draws '+m[1]+' again, SWU.hub does not count it');
+    for(const m of String(PLAY.redraw).matchAll(/\\$\\('([^']+)'\\)/g))if(m[1]!=='.sheet-bg'&&m[1]!=='.gw'&&!String(SWU.hub).includes(m[1]))bad.push('PLAY.redraw draws '+m[1]+' again, SWU.hub does not count it'); // RC-2: Grown-ups is no hub (a voice recording there is never lost)
     if(!/SWU\\.due===1\\)setTimeout\\(SWU\\.try/.test(String(view)))bad.push('view() does not try a waiting update');
     const r0=__rl();SWU.due=0;
-    for(const s of ['#prompt','.ls','#btstage','#hcv','.gh-play','#snack'])if((on=s,SWU.go(),__rl())!==r0)bad.push('reloaded on '+s);
+    for(const s of ['#prompt','.ls','#btstage','#hcv','.gh-play','#snack','.gw'])if((on=s,SWU.go(),__rl())!==r0)bad.push('reloaded on '+s); // RC-2 (design change): .gw moved here from the hub list
     if(SWU.due!==1)bad.push('the update was not kept for later');
     on='#hs';sheets=[{_closing:false}];SWU.try();if(__rl()!==r0)bad.push('reloaded under an open sheet');
     sheets=[{_closing:true}];SWU.try();if(__rl()!==r0+1||SWU.due!==2)bad.push('Home after the round did not reload');
     on='#map';SWU.try();SWU.go();if(__rl()!==r0+1)bad.push('reloaded twice');
-    for(const s of ['#map','.gw','.lh','.bt-hub','.gh-room']){SWU.due=1;on=s;sheets=[];const r=__rl();SWU.try();if(__rl()!==r+1)bad.push(s+' is not a hub screen')}
+    for(const s of ['#map','.lh','.bt-hub','.gh-room']){SWU.due=1;on=s;sheets=[];const r=__rl();SWU.try();if(__rl()!==r+1)bad.push(s+' is not a hub screen')}
     SWU.due=0;return bad})()`));
   return{problems:p};
 });
@@ -23091,11 +23096,16 @@ run('service worker: a page open waits 3 s for the network, then the cached page
   const tick=()=>new Promise(r=>setImmediate(r));
   const page={ok:true,clone(){return this}};
   return (async()=>{
-    // a slow network: nothing before 3 s, the cached page at 3 s; the network copy still goes into the cache
+    // a slow network: nothing before 3 s, the cached page at 3 s; RC-2 (design change, was: the late network copy goes into the cache):
+    // the late network page is NOT cached, since the cache's parts are the old release's (version skew: offline, the next start would
+    // pair the new index.html with the old parts and show "needs to finish updating")
     let done;const slow=new Promise(r=>{done=r}),a=mk(slow,'CACHED');await tick();
     if(a.resp||a.T.length!==1||a.T[0].ms!==3000)p.push('slow network: '+JSON.stringify({resp:a.resp,T:a.T.map(t=>t.ms)}));
     a.T[0].f();await tick();await tick();if(a.resp!=='CACHED')p.push('after 3 s the cached page was not served: '+a.resp);
-    done(page);await tick();await tick();if(a.puts!==1)p.push('the late network page did not update the cache');
+    done(page);await tick();await tick();if(a.puts!==0)p.push('the late network page went into the old cache after the cached page was served (version skew) RC-2');
+    // the timer fires but the network page comes before the cache answers: the network page is served and cached
+    {let dn,dc;const e=mk(new Promise(r=>{dn=r}),new Promise(r=>{dc=r}));await tick();e.T[0].f();dn(page);
+      await tick();await tick();dc('CACHED');await tick();await tick();if(e.resp!==page||e.puts!==1)p.push('network first after the timer: '+JSON.stringify({resp:e.resp,puts:e.puts}))}
     // a fast network: its page, the timer cleared
     const b=mk(Promise.resolve(page),'CACHED');await tick();await tick();if(b.resp!==page||!b.T[0].off||b.puts!==1)p.push('fast network: '+JSON.stringify({resp:b.resp,off:b.T[0]&&b.T[0].off}));
     // offline: the cached page at once
@@ -23103,7 +23113,7 @@ run('service worker: a page open waits 3 s for the network, then the cached page
     // slow and nothing cached yet: waits for the network
     let done2;const d=mk(new Promise(r=>{done2=r}),undefined);await tick();d.T[0].f();await tick();await tick();if(d.resp)p.push('no cache: answered before the network');
     done2(page);await tick();await tick();if(d.resp!==page)p.push('no cache: the network page did not come');
-    return{problems:p,note:'slow, fast, offline, first visit'}})();
+    return{problems:p,note:'slow (late page not cached), fast, offline, first visit'}})();
 });
 
 run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under the old question, change, forgot, Start over keeps it, no backup carries it, every way in RC-1',()=>{
@@ -23247,6 +23257,102 @@ run('picture passwords: the hash, right and wrong, the wait, Grown-up help behin
 });
 
 // ---- report ----
+// RC-2 (v189): Fable's confirming review of RC-1. Each part below failed on v188 (mutation-checked by putting v188's code back).
+run('lockouts after a clock change, Back on setup keeps Undo erase, every way into Grown-ups through the gate, Empty bank through ptGift RC-2',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};let reloads=0;
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,location:{protocol:'file:',reload(){reloads++}}}),R=x=>vm.runInContext(x,ctx);ctx.__st=store;ctx.clearInterval=()=>{};
+  const p=[],src=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8'),strip=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/.*$/gm,'');
+  // 5. every caller of grown() is the gate (NAV.quiz's default, Change PIN behind PIN.enter), the Grown-ups screen itself (its own
+  //    handlers redraw it), or NAV.gwBack (Grown-ups only while the grown-up session is valid, else Home)
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){let c=strip(src(f));
+    if(f==='80-grown.js'){const a=c.indexOf('function grown(){'),b=c.indexOf('\nfunction ',a+1);c=c.slice(0,a)+c.slice(b<0?c.length:b)}
+    c=c.replace(/^\s*grown\(\w*\)\s*\{/gm,''); // a method named grown (PLAY.grown) is not the screen
+    const calls=[...c.matchAll(/(^|[^.\w$])grown\(/g)].length,refs=[...c.matchAll(/[?:=,(]\s*grown\s*[,;)}]/g)].length;
+    const ok={'41-nav.js':[1,1],'41b-pin.js':[1,0]}[f]||[0,0];
+    if(calls!==ok[0]||refs!==ok[1])p.push(f+': '+calls+' call(s) of grown() and '+refs+' reference(s) outside the gate (want '+ok+')')}
+  if(!/gwBack\(\) \{ return NAV\.gwOk\(\) \? grown\(\) : home\(\); \}/.test(src('41-nav.js')))p.push('NAV.gwBack is not "Grown-ups while the session is valid, else Home"');
+  if(!/const go0 = typeof then == 'function' \? then : grown, go = \(\) => \{ NAV\.gwT = Date\.now\(\); go0\(\); \};/.test(src('41-nav.js')))p.push('NAV.quiz does not start the grown-up session');
+  if(!/change\(\) \{ PIN\.enter\(\(\) => PIN\.choose\(\(\) => grown\(\)/.test(src('41b-pin.js')))p.push('Change PIN reaches Grown-ups without PIN.enter');
+  if(!/const placeBack=\(\)=>home\(\);/.test(src('45-placement.js')))p.push('Find my level\'s Back does not go Home');
+  if(!/persPick\(\(\) => NAV\.gwBack\(\)\)/.test(src('39p-pers.js')))p.push('Story themes does not return through NAV.gwBack');
+  if(!/\$\('#pt0'\)\.onclick=\(\)=>\{ptGift\(-pt\(\)\.bank\);grown\(\)\}/.test(src('80-grown.js')))p.push('Empty bank does not go through ptGift');
+  if(/\.gw[,']/.test(String(/hub:\(\)=>[^\n]*/.exec(src('90-app.js'))||'')))p.push('Grown-ups is an update hub (a voice recording there would be lost)');
+  const r=R(`(async()=>{const bad=[];RELOAD_WAIT=0;let now=1.8e12;const D0=Date.now;Date.now=()=>now;
+    const keep={home,grown,qs:document.querySelector,pad:PIN.pad,sheet:UI.sheet};let to='';
+    try{
+    const start=()=>{SKEY=KEY;SAVE_OFF=false;SAVE_HOLD=false;loadSave(localStorage.getItem(KEY));PRF.boot();migrate()};
+    for(const k in __st)delete __st[k];start();S.name='Mia';S.stars=42;save();
+    // 4. a wait stored longer than its longest length has expired: PIN 60 min, Forgot PIN 15 min, a picture password 1 minute
+    PIN.set('1234');const put=x=>{const o=PIN.get();Object.assign(o,x);PIN.put(o)};
+    put({t:now+2*365*864e5});if(PIN.check('1234')!=='ok')bad.push('a PIN wait 2 years ahead still locks');
+    put({t:now+61*60000});if(PIN.check('1234')!=='ok')bad.push('a PIN wait of 61 minutes still locks');
+    put({t:now+59*60000});if(PIN.check('1234')!=='locked')bad.push('a 59-minute PIN wait does not lock');
+    put({t:0});for(let i=0;i<5;i++)PIN.check('0000');if(PIN.check('1234')!=='locked')bad.push('5 wrong PINs no longer lock');
+    put({t:now+2*365*864e5,n:0});if(PIN.check('0000')!=='wrong'||PIN.check('1234')!=='ok')bad.push('a wrong PIN after a stale wait: not counted as a wrong PIN');
+    let html='';UI.sheet=h=>{html=h;return{el:{querySelector:()=>({})},close(){}}};
+    put({f:now+2*365*864e5});PIN.forgot(()=>{});if(!/pfa0/.test(html))bad.push('Forgot PIN? waits 2 years after a clock change');
+    put({f:now+16*60000});PIN.forgot(()=>{});if(!/pfa0/.test(html))bad.push('Forgot PIN? waits 16 minutes');
+    put({f:now+10*60000});PIN.forgot(()=>{});if(!/Not yet/.test(html))bad.push('a 10-minute Forgot PIN wait does not hold');
+    put({f:0});UI.sheet=keep.sheet;
+    const ad=PRF.add(Object.assign(PRF.fresh(),{name:'Ben'}),false);start();
+    KPW.set('p1',['dog','star','apple']);const kx=x=>{const o=KPW.of('p1');Object.assign(o,x);KPW.write('p1',o)};
+    kx({t:now+2*365*864e5});if(KPW.check('p1',['dog','star','apple'])!=='ok')bad.push('a picture password wait 2 years ahead still locks');
+    kx({t:now+90000});if(KPW.check('p1',['dog','star','apple'])!=='ok')bad.push('a picture password wait of 90 s still locks');
+    kx({t:now+30000});if(KPW.check('p1',['dog','star','apple'])!=='locked')bad.push('a 30 s picture password wait does not lock');
+    KPW.off('p1');
+    // the Forgot PIN reset is named at the next entry by the PIN (not to whoever just did it), once
+    PIN.noteR=0;PIN.stamp(0);const r0=PIN.get().r;if(r0!==now||PIN.noteR)bad.push('a reset is not marked: '+JSON.stringify(PIN.get()));
+    now+=864e5;if(PIN.check('1234')!=='ok'||PIN.noteR!==r0||PIN.get().r)bad.push('the next entry by the PIN does not name the reset');
+    if(!/Your PIN was reset with Forgot PIN on /.test(String(grown))||!/PIN\\.stamp\\(r0\\)/.test(String(PIN.forgot)))bad.push('the reset note is not drawn or not stamped');
+    PIN.noteR=0;PIN.stamp(r0);if(PIN.noteR!==r0)bad.push('a second reset hides the first one');PIN.noteR=0;
+    // 2. two children: Erase everything, then Back on the setup screen: the erased save comes back (was: PRF.remove dropped it)
+    S.name='Mia';S.stars=42;save();await eraseAll();start();
+    if(S.name!==''||!BAK.erased()||BAK.erased().k!==KEY)bad.push('after Erase everything: '+JSON.stringify(BAK.erased()));
+    await PRF.cancelNew();start();
+    const back=JSON.parse(__st[KEY]||'null');
+    if(!back||back.name!=='Mia'||back.stars!==42||!PRF.ids.includes('p1')||BAK.erased())bad.push('Back on setup after Erase everything: '+JSON.stringify({back:back&&[back.name,back.stars],ids:PRF.ids}));
+    // a new child who never finished setup still goes away again (RC-1, P5-10)
+    const nw=PRF.add(PRF.fresh(),false);SKEY=PRF.key(nw.id);PRF.cur=nw.id;loadSave(__st[SKEY]);await PRF.cancelNew();
+    if(PRF.ids.includes(nw.id))bad.push('a new child cancelled at setup is still there');
+    // 5. the grown-up session: the gate starts it, a grown-up screen keeps it, any other screen ends it; Back goes Home without it
+    home=()=>{to='home'};grown=()=>{to='grown'};
+    NAV.gwT=0;NAV.gwBack();if(to!=='home')bad.push('no session: Back went to '+to);
+    PIN.pad=o=>{o.done('1234',{close(){},msg(){}});return{}};NAV.quiz(()=>{});if(NAV.gwT!==now)bad.push('the gate does not start the session');
+    document.querySelector=s=>s==='#app .gw'?{}:null;to='';NAV.gwBack();if(to!=='grown')bad.push('on Grown-ups, Back went to '+to);
+    // view()'s first lines end the session unless the screen set gwK (the fake page here has no #app to draw into)
+    if(!String(view).includes("if(typeof NAV!='undefined'){if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0}"))bad.push('view() does not end the grown-up session');
+    const vw=()=>{if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0};
+    document.querySelector=keep.qs;NAV.gwK=1;vw();if(!NAV.gwT)bad.push('a grown-up screen ended the session');
+    document.querySelector=()=>null;now+=NAV.GW_MS-1000;to='';NAV.gwBack();if(to!=='grown')bad.push('Story themes in time: Back went to '+to);
+    now+=2000;to='';NAV.gwBack();if(to!=='home')bad.push('Story themes after the session ran out: Back went to '+to);
+    document.querySelector=keep.qs;NAV.gwT=now;vw();to='';NAV.gwBack();if(NAV.gwT||to!=='home')bad.push('a child screen did not end the session');
+    placeBack('grown');if(to!=='home')bad.push('Find my level from Grown-ups went back to '+to);
+    // 6. Empty bank: the log and Home's line follow (ptGift)
+    home=keep.home;grown=keep.grown;document.querySelector=keep.qs;
+    pt().bank=0;pt().gift=0;ptGift(600);pt().bank+=300;const d=ptGift(-pt().bank);
+    const e=ACT.entry(today())||{};if(d!==-900||pt().bank||pt().gift||e.gt!==-300)bad.push('Empty bank: '+JSON.stringify({d,bank:pt().bank,gift:pt().gift,gt:e.gt}));
+    // the learn-first hint on the gift row
+    if(!/gt\\.locked\\?' Learn first is on: given minutes unlock after today\\\\'s learning\\.':''/.test(String(grown)))bad.push('no learn-first hint on the gift row');
+    }finally{Date.now=D0;home=keep.home;grown=keep.grown;document.querySelector=keep.qs;PIN.pad=keep.pad;UI.sheet=keep.sheet}
+    return bad})()`);
+  return r.then(b=>({problems:p.concat(b),note:'PIN, Forgot PIN and picture password waits; the reset note; Back on setup; the grown-up session; Empty bank'}));
+});
+
+// RC-2 item 3: the lesson planner's pick and the map agree for a fresh save of every grade and subject, web and Play-locked
+run('planner: a fresh save is offered a lesson where the map opens (the ringed stop or the child\'s own world), every grade and subject, web and Play-locked RC-2',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],rows=[];let n=0;
+    for(const lock of [false,true])for(const g of GRADES)for(const p of LS_SUBJ){loadSave(null);S.name='Sam';S.grade=g;migrate();for(const q in PATHS)S.maps[q]=S.maps[q]||{};
+      PLAY.on=lock;PLAY.own=false;
+      const pl=planToday(S,100,p);if(!pl)continue;n++;
+      const cn=curNode(p),wi=i=>NODES[p][i].wi,w=(lock?'Play ':'web ')+p+' grade '+g+': ';
+      if(pl.i!==cn&&wi(pl.i)!==wi(cn))bad.push(w+'the planner offers '+pl.id+' (world '+wi(pl.i)+'), the map rings '+nid(NODES[p][cn])+' (world '+wi(cn)+')');
+      if(!lock&&(g===1||g===2))rows.push(p+' '+g+': '+pl.id)}
+    PLAY.on=false;return{bad,n,rows}})()`);
+  return{problems:r.bad,note:r.n+' plans checked ('+r.rows.join(', ')+')'};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){

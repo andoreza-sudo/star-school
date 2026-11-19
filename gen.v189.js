@@ -1,5 +1,5 @@
-/* Star School gen v188. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v188 loads this file with <script src="gen.v188.js"> after its own code, before data.v188.js. */
+/* Star School gen v189. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v189 loads this file with <script src="gen.v189.js"> after its own code, before data.v189.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3215,7 +3215,7 @@ function placeGrownBind(){
     SFX.whoosh();placeIntro(b.dataset.place,'grown');
   });
 }
-const placeBack=from=>from=='grown'?grown():home();
+const placeBack=()=>home(); // RC-2: a child is handed the quiz: Back goes Home, never into Grown-ups (was: Grown-ups when started there)
 function placeIntro(p,from){
   PL=null;
   if(G)G.dead=true; // a finished or left round must not fire its next-question timer into this screen
@@ -4044,9 +4044,10 @@ function grown(){let armed=false;
       ${lines.map((t,i)=>row('“'+esc(t.replace('{name}',S.name))+'”',cs.find(c=>c.line==i),i)).join('')}
       ${extra.map((c,i)=>row('Your own #'+(i+1),c,null)).join('')}
       <div class="vline gw-vl"><span class="vtxt">${ico('plus',22,'ic-off')}<span>Say anything you like</span></span>${UI.btn('Record',{size:'sm',icon:'record',cls:'rec gw-rec',attrs:`data-rec="${k}|x"`})}</div></div>`}).join('');
-  const nstk=STK.filter(s=>stkN(s)).length;
+  const nstk=STK.filter(s=>stkN(s)).length,pr=typeof PIN!='undefined'&&PIN.noteR;
+  NAV.gwK=1;NAV.gwT=Date.now(); // RC-2: a grown-up screen: the session goes on
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
-  <div class="scroll gw"><div class="gw-cols">
+  <div class="scroll gw">${pr?`<p class="gw-note" id="pnreset">${ico('lock',22)}<span>Your PIN was reset with Forgot PIN on ${esc(new Date(pr).toLocaleDateString())}.</span></p>`:''}<div class="gw-cols">
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
@@ -4069,7 +4070,7 @@ function grown(){let armed=false;
     ${[['ls1','First pass'],['ls2','Second pass'],['ls3','Later passes (once a day)'],['lsT','Good try, not passed (once a day)']].map(([k,l])=>`<div class="gw-row"><span class="gw-rl">${l}</span>${GW.seg(k,LS_PAY_OPT,lsPayCfg()[k],'Lesson game time, '+l+', minutes',v=>v||'None')}</div>`).join('')}
     <div class="gw-row" id="gw-give"><span class="gw-rl">Give game time</span><span class="gw-btns">${[5,10,15].map(m=>UI.btn('+'+m+' min',{size:'sm',icon:'plus',id:m==5?'pt5':'pt'+m,attrs:`data-give="${m}" aria-label="Give ${m} minutes of game time"`})).join('')}</span></div>
     <div class="gw-row"><span class="gw-rl">Take away</span><span class="gw-btns">${UI.btn('−5 min',{size:'sm',kind:'ghost',icon:'minus',id:'ptm5',attrs:'data-give="-5" aria-label="Take away 5 minutes of game time"'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
-    <p class="gw-sub" id="ptgifth">Given time goes straight into the bank. It does not count as learning, and the daily max still applies.</p>
+    <p class="gw-sub" id="ptgifth">Given time goes straight into the bank. It does not count as learning, and the daily max still applies.${gt.locked?' Learn first is on: given minutes unlock after today\'s learning.':''}</p>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>
     <div class="gw-row" id="gw-hcas"><span class="gw-rl">4x4 Hill Climb driving help</span>${GW.seg('hcas',['auto',3,2,1,0],hcAsGrown(),'4x4 Hill Climb driving help',v=>HCAS_NAMES[v])}</div>
     <p class="gw-sub">Auto starts from the grade, gives a little less help as your child wins stars, and more after a few crashes in a row.</p>
@@ -4115,7 +4116,7 @@ function grown(){let armed=false;
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
   // RC-1 (owner): give or take away game time, in place (the bank shows the change; the page does not jump to the top)
   $$('[data-give]').forEach(b=>b.onclick=()=>{const d=ptGift(+b.dataset.give*60),v=$('#gw-time .gw-st b');if(v)v.textContent=fmtT(pt().bank);
-    fb(d>0?`Gave ${fmtM(d)} of game time`:d<0?`Took away ${fmtM(-d)}`:'The bank is already empty','info')});$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
+    fb(d>0?`Gave ${fmtM(d)} of game time`:d<0?`Took away ${fmtM(-d)}`:'The bank is already empty','info')});$('#pt0').onclick=()=>{ptGift(-pt().bank);grown()}; // RC-2: through ptGift, so the log and Home's line follow
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
   $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
   for(const k in LS_PAY_D)$$(`[data-${k.toLowerCase()}]`).forEach(b=>b.onclick=()=>{ptCfg()[k]=+b.dataset[k.toLowerCase()];save();grown()}); // LS-STOP: what lessons pay
@@ -4370,7 +4371,7 @@ const BAK = {
         reloadSaved(); // nothing saves over the new save before the reload
       }
       else {
-        grown();
+        NAV.gwBack();
         fb(PRF.label(PRF.info(id)) + "'s progress was loaded", 'info');
       }
     });
@@ -4379,7 +4380,7 @@ const BAK = {
       const res = PRF.add(r.data, false);
       sh.close();
       if (res.msg) return BAK.msg(res.msg);
-      grown();
+      NAV.gwBack();
       fb(PRF.label(PRF.info(res.id)) + ' was added', 'info');
     };
   },
@@ -4725,12 +4726,13 @@ const REP = {
 function report() {
   let m;
   try {m = REP.data()} catch (e) {m = null}
+  NAV.gwK = 1; // RC-2: a grown-up screen: the grown-up session goes on
   view(`<div class="top tbar adult gw-top rp-noprint">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}`
     + `<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('chart', 24)}</span><span>Report card</span></div>`
     + `${UI.btn('Print', {size: 'sm', icon: 'doc', id: 'rp-print'})}</div>`
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
-  $('#back').onclick = () => grown();
+  $('#back').onclick = () => NAV.gwBack();
   // TEACH-2: the lessons' card comes with the teach part: load it when the save has lessons, then draw again
   if (m && m.ls) LSREP.bind(m, () => report());
   else if (S.know && Object.keys(S.know).length && !partReady('teach')) partLoad('teach').then(ok => {if (ok && $('.rp-scroll')) report()});
@@ -4973,7 +4975,7 @@ Object.assign(PLAY, {
       if (document.querySelector('.sheet-bg')) return;
       if ($('#map')) return pathMap(MAPP, MAPW[MAPP]);
       if ($('.bt-hub')) return BT.hub();
-      if ($('.gw')) return grown();
+      if ($('.gw')) return NAV.gwBack();
       if ($('.lh')) return learnHub();
       if ($('#hs')) return home();
     } catch (e) {}
@@ -5028,7 +5030,7 @@ Object.assign(PLAY, {
   },
   cardBind() {
     const b = $('#plgo');
-    if (b) b.onclick = () => PLAY.grown(() => grown());
+    if (b) b.onclick = () => PLAY.grown(() => NAV.gwBack());
   },
   sheet(back) {
     const body = `<p class="pl-price" id="plprice">${PLAY.own ? 'Unlocked. Thank you!' : 'Asking Google Play for the price...'}</p>` +
@@ -5089,4 +5091,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v188'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v189'; // last line: the whole file ran (checked by dataReady() before the app starts)

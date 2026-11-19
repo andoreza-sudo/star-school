@@ -443,6 +443,9 @@ const SCREENS = {
   'rc1-gametime': { adult: true, run: ev(() => { grown(); document.querySelector('#gw-give').scrollIntoView({ block: 'center' }); }) },
   'rc1-gift-home': { run: ev(() => { pt().gift = 600; home(); }) },
   'rc1-save-banner': { run: ev(() => { SAVE_FAILED = true; SAVE_WARNED = false; home(); }) },
+  // RC-2 (v189): Grown-ups naming a Forgot PIN reset; the Give game time row with "learn first" on (the hint under it)
+  'rc2-pin-note': { adult: true, run: ev(async () => { await partLoad('gate'); PIN.noteR = Date.now() - 864e5; grown(); }) },
+  'rc2-gift-learn': { adult: true, run: ev(() => { ptCfg().need = 10; pt().open = ''; grown(); document.querySelector('#gw-give').scrollIntoView({ block: 'center' }); }) },
   'lstop-start': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.open('tenf2'); }); await p.waitForTimeout(600); } },
   'lstop-meter': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.WAKE = 400; LS.start('tenf2', { learn: 1 }); }); await p.waitForTimeout(1500); } },
   'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();

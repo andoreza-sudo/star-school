@@ -28,12 +28,12 @@ const KPW = {
   check(id, seq) {
     const x = KPW.of(id), now = Date.now();
     if (!x) return 'ok';
-    if (x.t > now) return 'locked';
+    if (PIN.waits(x.t, KPW.WAIT / 60000)) return 'locked'; // RC-2: a wait stored longer than 1 minute has expired (a clock change)
     if (PIN.hash(KPW.key(seq), x.s) === x.h) { KPW.write(id, { s: x.s, h: x.h }); return 'ok'; }
     x.n = (x.n | 0) + 1;
     if (x.n >= KPW.TRIES) { x.t = now + KPW.WAIT; x.n = 0; }
     KPW.write(id, x);
-    return x.t > now ? 'locked' : 'wrong';
+    return PIN.waits(x.t, KPW.WAIT / 60000) ? 'locked' : 'wrong';
   },
   // the order, found by trying every one (Grown-up help, behind the PIN)
   find(id) {
@@ -57,8 +57,9 @@ const KPW = {
       el.querySelector('#kpdots').setAttribute('aria-label', seq.length + ' of 3 pictures');
     };
     const x0 = KPW.of(id);
-    if (x0 && x0.t > Date.now()) msg('Wait a minute, then try again.');
-    say(x0 && x0.t > Date.now() ? 'Wait a minute, then try again.' : line);
+    const w0 = x0 && PIN.waits(x0.t, KPW.WAIT / 60000);
+    if (w0) msg('Wait a minute, then try again.');
+    say(w0 ? 'Wait a minute, then try again.' : line);
     el.querySelectorAll('[data-pic]').forEach(b => b.onclick = () => {
       if (seq.length >= KPW.LEN) return;
       say(b.dataset.pic, b);

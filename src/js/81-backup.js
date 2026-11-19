@@ -208,7 +208,7 @@ const BAK = {
         reloadSaved(); // nothing saves over the new save before the reload
       }
       else {
-        grown();
+        NAV.gwBack();
         fb(PRF.label(PRF.info(id)) + "'s progress was loaded", 'info');
       }
     });
@@ -217,7 +217,7 @@ const BAK = {
       const res = PRF.add(r.data, false);
       sh.close();
       if (res.msg) return BAK.msg(res.msg);
-      grown();
+      NAV.gwBack();
       fb(PRF.label(PRF.info(res.id)) + ' was added', 'info');
     };
   },

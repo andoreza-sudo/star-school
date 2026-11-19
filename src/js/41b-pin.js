@@ -19,6 +19,11 @@ const PIN = {
   get() { const o = PRF.obj(PRF.get(PIN.KEY)); return o && o.v === 1 ? o : { v: 1 }; },
   put(o) { return PRF.put(PIN.KEY, JSON.stringify(o)); },
   has() { const o = PIN.get(); return typeof o.h == 'string' && typeof o.s == 'string'; },
+  // RC-2: a wait is running only while it ends no later than its longest length from now: a wait stored longer than that (the clock was
+  // set back, or was far ahead when it was set) has expired, so a lockout can never last for good. max in minutes
+  waits(t, max) { const d = (+t || 0) - Date.now(); return d > 0 && d <= max * 60000; },
+  locked(o) { return PIN.waits(o.t, PIN.WAIT[PIN.WAIT.length - 1]); },
+  noteR: 0, // RC-2: when the PIN was last reset with Forgot PIN (shown once in Grown-ups: "Your PIN was reset ...")
   // a slow (2000 rounds), salted 64-bit hash: the PIN cannot be read from storage at a glance
   hash(pin, salt) {
     const t = salt + ':' + pin;
@@ -43,24 +48,29 @@ const PIN = {
   // 'ok' | 'wrong' | 'locked' (a wait is running: nothing is counted)
   check(pin) {
     const o = PIN.get(), now = Date.now();
-    if (o.t > now) return 'locked';
-    if (PIN.hash(String(pin), o.s) === o.h) { PIN.put({ v: 1, s: o.s, h: o.h, f: o.f }); return 'ok'; }
+    if (PIN.locked(o)) return 'locked';
+    if (PIN.hash(String(pin), o.s) === o.h) {
+      if (o.r) PIN.noteR = o.r; // RC-2: the next Grown-ups entry after a Forgot PIN reset says so
+      PIN.put({ v: 1, s: o.s, h: o.h, f: o.f });
+      return 'ok';
+    }
     o.n = (o.n | 0) + 1;
     if (o.n >= PIN.TRIES) { o.t = now + PIN.WAIT[Math.min(o.k | 0, PIN.WAIT.length - 1)] * 60000; o.k = (o.k | 0) + 1; o.n = 0; }
     PIN.put(o);
-    return o.t > now ? 'locked' : 'wrong';
+    return PIN.locked(o) ? 'locked' : 'wrong';
   },
   mins(t) { const m = Math.max(1, Math.ceil((t - Date.now()) / 60000)); return m + (m == 1 ? ' minute' : ' minutes'); },
   lockLine() { return 'Too many wrong PINs. Try again in ' + PIN.mins(PIN.get().t) + ', or tap Forgot PIN?'; },
 
   // the way in (NAV.quiz): no PIN yet: the old question, then choose one; else the PIN
   gate(then) {
+    PIN.noteR = 0; // RC-2: the Forgot PIN note is shown on one entry only (the one right after the next right PIN)
     if (!PIN.has()) return NAV.askQ(() => PIN.choose(then, 'Choose a Grown-ups PIN', 'Pick 4 numbers. The PIN keeps children out of the settings.'));
     return PIN.enter(then);
   },
   enter(then, title = 'Grown-ups PIN') {
     const o = PIN.get();
-    return PIN.pad({ title, line: o.t > Date.now() ? PIN.lockLine() : 'Type your 4-digit PIN.', forgot: then, done: (v, p) => {
+    return PIN.pad({ title, line: PIN.locked(o) ? PIN.lockLine() : 'Type your 4-digit PIN.', forgot: then, done: (v, p) => {
       const r = PIN.check(v);
       if (r == 'ok') { p.close(); then(); return; }
       SFX.wrong();
@@ -120,10 +130,16 @@ const PIN = {
     return s;
   },
 
+  // RC-2: mark a PIN reset with Forgot PIN (its time, r), so the next Grown-ups entry by the PIN says so
+  stamp(r0) {
+    const x = PIN.get();
+    if (r0) PIN.noteR = r0;
+    if (PIN.has()) { x.r = Date.now(); PIN.put(x); }
+  },
   // Forgot PIN?: three 2-digit x 2-digit multiplications, typed; all right: choose a new PIN, then go where the PIN was going
   forgot(then) {
     const o = PIN.get();
-    if (o.f > Date.now()) {
+    if (PIN.waits(o.f, PIN.FORGOT_WAIT)) {
       const w = UI.sheet(`<div class="pn"><h2>Forgot PIN?</h2><p class="pn-line" role="status">Not yet. Try again in ${PIN.mins(o.f)}.</p>` +
         `<div class="acts">${UI.btn('OK', { kind: 'primary', wide: true, id: 'pfok' })}</div></div>`);
       w.el.querySelector('#pfok').onclick = w.close;
@@ -138,7 +154,12 @@ const PIN = {
       `${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'pfno' })}</div></div>`);
     const go = () => {
       const ok = qs.every(([a, b], i) => s.el.querySelector('#pfa' + i).value.trim() === String(a * b));
-      if (ok) { s.close(); PIN.choose(then, 'Choose a new PIN', 'Pick 4 numbers. Use them next time.'); return; }
+      if (ok) {
+        s.close();
+        const r0 = PIN.get().r; // an earlier reset nobody has seen yet is shown now
+        PIN.choose(() => { PIN.stamp(r0); then(); }, 'Choose a new PIN', 'Pick 4 numbers. Use them next time.');
+        return;
+      }
       SFX.wrong();
       const x = PIN.get();
       x.f = Date.now() + PIN.FORGOT_WAIT * 60000;

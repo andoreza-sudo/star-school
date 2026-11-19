@@ -182,7 +182,7 @@ Object.assign(PLAY, {
       if (document.querySelector('.sheet-bg')) return;
       if ($('#map')) return pathMap(MAPP, MAPW[MAPP]);
       if ($('.bt-hub')) return BT.hub();
-      if ($('.gw')) return grown();
+      if ($('.gw')) return NAV.gwBack();
       if ($('.lh')) return learnHub();
       if ($('#hs')) return home();
     } catch (e) {}
@@ -237,7 +237,7 @@ Object.assign(PLAY, {
   },
   cardBind() {
     const b = $('#plgo');
-    if (b) b.onclick = () => PLAY.grown(() => grown());
+    if (b) b.onclick = () => PLAY.grown(() => NAV.gwBack());
   },
   sheet(back) {
     const body = `<p class="pl-price" id="plprice">${PLAY.own ? 'Unlocked. Thank you!' : 'Asking Google Play for the price...'}</p>` +

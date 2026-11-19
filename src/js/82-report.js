@@ -291,12 +291,13 @@ const REP = {
 function report() {
   let m;
   try {m = REP.data()} catch (e) {m = null}
+  NAV.gwK = 1; // RC-2: a grown-up screen: the grown-up session goes on
   view(`<div class="top tbar adult gw-top rp-noprint">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}`
     + `<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('chart', 24)}</span><span>Report card</span></div>`
     + `${UI.btn('Print', {size: 'sm', icon: 'doc', id: 'rp-print'})}</div>`
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
-  $('#back').onclick = () => grown();
+  $('#back').onclick = () => NAV.gwBack();
   // TEACH-2: the lessons' card comes with the teach part: load it when the save has lessons, then draw again
   if (m && m.ls) LSREP.bind(m, () => report());
   else if (S.know && Object.keys(S.know).length && !partReady('teach')) partLoad('teach').then(ok => {if (ok && $('.rp-scroll')) report()});

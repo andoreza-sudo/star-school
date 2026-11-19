@@ -77,9 +77,10 @@ function grown(){let armed=false;
       ${lines.map((t,i)=>row('“'+esc(t.replace('{name}',S.name))+'”',cs.find(c=>c.line==i),i)).join('')}
       ${extra.map((c,i)=>row('Your own #'+(i+1),c,null)).join('')}
       <div class="vline gw-vl"><span class="vtxt">${ico('plus',22,'ic-off')}<span>Say anything you like</span></span>${UI.btn('Record',{size:'sm',icon:'record',cls:'rec gw-rec',attrs:`data-rec="${k}|x"`})}</div></div>`}).join('');
-  const nstk=STK.filter(s=>stkN(s)).length;
+  const nstk=STK.filter(s=>stkN(s)).length,pr=typeof PIN!='undefined'&&PIN.noteR;
+  NAV.gwK=1;NAV.gwT=Date.now(); // RC-2: a grown-up screen: the session goes on
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
-  <div class="scroll gw"><div class="gw-cols">
+  <div class="scroll gw">${pr?`<p class="gw-note" id="pnreset">${ico('lock',22)}<span>Your PIN was reset with Forgot PIN on ${esc(new Date(pr).toLocaleDateString())}.</span></p>`:''}<div class="gw-cols">
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
@@ -102,7 +103,7 @@ function grown(){let armed=false;
     ${[['ls1','First pass'],['ls2','Second pass'],['ls3','Later passes (once a day)'],['lsT','Good try, not passed (once a day)']].map(([k,l])=>`<div class="gw-row"><span class="gw-rl">${l}</span>${GW.seg(k,LS_PAY_OPT,lsPayCfg()[k],'Lesson game time, '+l+', minutes',v=>v||'None')}</div>`).join('')}
     <div class="gw-row" id="gw-give"><span class="gw-rl">Give game time</span><span class="gw-btns">${[5,10,15].map(m=>UI.btn('+'+m+' min',{size:'sm',icon:'plus',id:m==5?'pt5':'pt'+m,attrs:`data-give="${m}" aria-label="Give ${m} minutes of game time"`})).join('')}</span></div>
     <div class="gw-row"><span class="gw-rl">Take away</span><span class="gw-btns">${UI.btn('−5 min',{size:'sm',kind:'ghost',icon:'minus',id:'ptm5',attrs:'data-give="-5" aria-label="Take away 5 minutes of game time"'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
-    <p class="gw-sub" id="ptgifth">Given time goes straight into the bank. It does not count as learning, and the daily max still applies.</p>
+    <p class="gw-sub" id="ptgifth">Given time goes straight into the bank. It does not count as learning, and the daily max still applies.${gt.locked?' Learn first is on: given minutes unlock after today\'s learning.':''}</p>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>
     <div class="gw-row" id="gw-hcas"><span class="gw-rl">4x4 Hill Climb driving help</span>${GW.seg('hcas',['auto',3,2,1,0],hcAsGrown(),'4x4 Hill Climb driving help',v=>HCAS_NAMES[v])}</div>
     <p class="gw-sub">Auto starts from the grade, gives a little less help as your child wins stars, and more after a few crashes in a row.</p>
@@ -148,7 +149,7 @@ function grown(){let armed=false;
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
   // RC-1 (owner): give or take away game time, in place (the bank shows the change; the page does not jump to the top)
   $$('[data-give]').forEach(b=>b.onclick=()=>{const d=ptGift(+b.dataset.give*60),v=$('#gw-time .gw-st b');if(v)v.textContent=fmtT(pt().bank);
-    fb(d>0?`Gave ${fmtM(d)} of game time`:d<0?`Took away ${fmtM(-d)}`:'The bank is already empty','info')});$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
+    fb(d>0?`Gave ${fmtM(d)} of game time`:d<0?`Took away ${fmtM(-d)}`:'The bank is already empty','info')});$('#pt0').onclick=()=>{ptGift(-pt().bank);grown()}; // RC-2: through ptGift, so the log and Home's line follow
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
   $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
   for(const k in LS_PAY_D)$$(`[data-${k.toLowerCase()}]`).forEach(b=>b.onclick=()=>{ptCfg()[k]=+b.dataset[k.toLowerCase()];save();grown()}); // LS-STOP: what lessons pay

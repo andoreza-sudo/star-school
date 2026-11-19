@@ -8,10 +8,10 @@ document.addEventListener('pointerup',()=>{const d=document.documentElement;
 document.addEventListener('contextmenu',e=>e.preventDefault());
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
-   Grown-ups, Learn, the Brain Teasers hub, the Game Room; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
+   Learn, the Brain Teasers hub, the Game Room; RC-2: not Grown-ups; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
    is set, and view() (40-view.js) tries again after every new screen, UI.sheet (14-ui.js) when a sheet closes. */
 const SWU={due:0,
-  hub:()=>![...document.querySelectorAll('.sheet-bg,.ovl')].some(b=>!b._closing)&&!!document.querySelector('#hs,#map,.gw,.lh,.bt-hub,.gh-room'),
+  hub:()=>![...document.querySelectorAll('.sheet-bg,.ovl')].some(b=>!b._closing)&&!!document.querySelector('#hs,#map,.lh,.bt-hub,.gh-room'), // RC-2: not Grown-ups (a voice recording there is never lost)
   go(){if(!SWU.due)SWU.due=1;SWU.try()},
   try(){if(SWU.due!==1||!SWU.hub())return;SWU.due=2;save();location.reload()}};
 if('serviceWorker' in navigator&&navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',SWU.go);

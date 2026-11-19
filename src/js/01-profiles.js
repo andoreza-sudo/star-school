@@ -235,7 +235,10 @@ const PRF = {
   },
   // Back from setup when another child exists: a new child who never finished setup is removed again (nothing is lost).
   async cancelNew() {
-    if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur, false); // RC-1: nothing to undo
+    // RC-2: setup after Erase everything (the erased save waits for "Undo erase"): Back puts the erased save back, never drops it
+    const er = typeof BAK != 'undefined' && BAK.erased();
+    if (er && er.k === PRF.key(PRF.cur) && !S.name && !(S.stars > 0)) BAK.undo();
+    else if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur, false); // RC-1: nothing to undo
     PRF.setWho('');
     reloadSaved();
   },
@@ -333,7 +336,7 @@ const PRF = {
         return;
       }
       sh.close();
-      grown();
+      NAV.gwBack();
     };
   },
   // Delete asks twice; the first sheet also offers to save that child's backup first.
@@ -361,7 +364,7 @@ const PRF = {
           reloadSaved(); // the next child starts (the picker, when more than one is left)
           return;
         }
-        grown();
+        NAV.gwBack();
         fb(name + ' was deleted', 'info');
       }); };
     };

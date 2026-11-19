@@ -3044,7 +3044,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v188'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v188 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v189'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v189 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3272,7 +3272,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v188'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v189'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3521,7 +3521,10 @@ const PRF = {
   },
   // Back from setup when another child exists: a new child who never finished setup is removed again (nothing is lost).
   async cancelNew() {
-    if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur, false); // RC-1: nothing to undo
+    // RC-2: setup after Erase everything (the erased save waits for "Undo erase"): Back puts the erased save back, never drops it
+    const er = typeof BAK != 'undefined' && BAK.erased();
+    if (er && er.k === PRF.key(PRF.cur) && !S.name && !(S.stars > 0)) BAK.undo();
+    else if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur, false); // RC-1: nothing to undo
     PRF.setWho('');
     reloadSaved();
   },
@@ -3619,7 +3622,7 @@ const PRF = {
         return;
       }
       sh.close();
-      grown();
+      NAV.gwBack();
     };
   },
   // Delete asks twice; the first sheet also offers to save that child's backup first.
@@ -3647,7 +3650,7 @@ const PRF = {
           reloadSaved(); // the next child starts (the picker, when more than one is left)
           return;
         }
-        grown();
+        NAV.gwBack();
         fb(name + ' was deleted', 'info');
       }); };
     };
@@ -7031,7 +7034,8 @@ let ASK_ON = 8;
 // P4-17: calm mode (Grown-ups switch, S.calm, read with a default) sets html.calm: no large movement, no confetti, no loops.
 // Every screen adds it when S.calm is on; the switch (80-grown.js) turns it off again with calmApply(true).
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
-const view=h=>{music(false);calmApply();if(typeof NAV!='undefined'&&NAV.held){NAV.held=false;if(typeof GH!='undefined')GH.held=false} // NAV-01: a Go Home? sheet the new screen removed
+const view=h=>{music(false);calmApply();if(typeof NAV!='undefined'){if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0} // RC-2: a child screen ends the grown-up session
+  if(typeof NAV!='undefined'&&NAV.held){NAV.held=false;if(typeof GH!='undefined')GH.held=false} // NAV-01: a Go Home? sheet the new screen removed
   stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
@@ -7177,7 +7181,7 @@ const NAV = {
   // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
   // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
-    const go = typeof then == 'function' ? then : grown;
+    const go0 = typeof then == 'function' ? then : grown, go = () => { NAV.gwT = Date.now(); go0(); }; // RC-2: the grown-up session starts
     if (typeof PIN != 'undefined') return PIN.gate(go);
     return partLoad('gate').then(ok => {
       if (ok && typeof PIN != 'undefined') return PIN.gate(go);
@@ -7185,6 +7189,12 @@ const NAV = {
       return NAV.askQ(go);
     });
   },
+  // RC-2: the grown-up session: from the gate (NAV.quiz) until any child screen opens (view() ends it unless the screen set gwK first:
+  // Grown-ups, the report card, Story themes). Back from a grown-up screen goes to Grown-ups only while it is valid, else Home; away
+  // from the Grown-ups screens (Story themes, which a grown-up may hand to the child) it lasts GW_MS from the last Grown-ups screen.
+  gwT: 0, gwK: 0, GW_MS: 180000,
+  gwOk() { return NAV.gwT > 0 && (!!document.querySelector('#app .gw') || Date.now() - NAV.gwT < NAV.GW_MS); },
+  gwBack() { return NAV.gwOk() ? grown() : home(); },
   // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in; then: what a right answer opens.
   // RC-1: only the first way in on a tablet with no Grown-ups PIN yet (PIN.gate), which then asks the grown-up to choose one
   askQ(then) {
@@ -8185,7 +8195,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v188)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v189)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11177,7 +11187,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v188'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v189'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11754,10 +11764,10 @@ document.addEventListener('pointerup',()=>{const d=document.documentElement;
 document.addEventListener('contextmenu',e=>e.preventDefault());
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
-   Grown-ups, Learn, the Brain Teasers hub, the Game Room; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
+   Learn, the Brain Teasers hub, the Game Room; RC-2: not Grown-ups; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
    is set, and view() (40-view.js) tries again after every new screen, UI.sheet (14-ui.js) when a sheet closes. */
 const SWU={due:0,
-  hub:()=>![...document.querySelectorAll('.sheet-bg,.ovl')].some(b=>!b._closing)&&!!document.querySelector('#hs,#map,.gw,.lh,.bt-hub,.gh-room'),
+  hub:()=>![...document.querySelectorAll('.sheet-bg,.ovl')].some(b=>!b._closing)&&!!document.querySelector('#hs,#map,.lh,.bt-hub,.gh-room'), // RC-2: not Grown-ups (a voice recording there is never lost)
   go(){if(!SWU.due)SWU.due=1;SWU.try()},
   try(){if(SWU.due!==1||!SWU.hub())return;SWU.due=2;save();location.reload()}};
 if('serviceWorker' in navigator&&navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',SWU.go);
@@ -11796,12 +11806,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v188');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v189');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v188')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v188)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v189')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v189)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11823,15 +11833,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v188';
+  return !!f && f[1] === 'v189';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v188') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v189') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v188.js';
+    s.src = stem + '.v189.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11856,9 +11866,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v188.js"></script>
-<script src="gen2.v188.js"></script>
-<script src="data.v188.js"></script>
+<script src="gen.v189.js"></script>
+<script src="gen2.v189.js"></script>
+<script src="data.v189.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

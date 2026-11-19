@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v188'
+VER = 'v189'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -259,7 +259,8 @@ const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./man
 const A='starschool-audio';
 const AF=["""+','.join("'./audio/%s'" % n for n in AUDIO)+"""];
 const aName=u=>new URL(u,self.location).pathname.split('/').pop();
-const NAV_MS=3000; // RC-1: a page open waits this long for the network, then the cached page (the network copy still updates the cache)
+const NAV_MS=3000; // RC-1: a page open waits this long for the network, then the cached page (RC-2: once the cached page is served, a late
+// network page is NOT cached: it would pair a new index.html with the old cache's parts, "needs to finish updating" offline)
 self.addEventListener('install',e=>{e.waitUntil(Promise.all([caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))),
  caches.open(A).then(c=>c.keys().then(ks=>{const have=new Set(ks.map(r=>aName(r.url)));return c.addAll(AF.filter(u=>!have.has(aName(u))))}))]));self.skipWaiting()});
 self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName));e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.delete(k))))
@@ -268,10 +269,10 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
- if(e.request.mode==='navigate'){const net=fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok){const cp=res.clone();e.waitUntil(caches.open(C).then(c=>c.put('./index.html',cp)))}return res});
+ if(e.request.mode==='navigate'){let late=0;const net=fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok&&!late){const cp=res.clone();e.waitUntil(caches.open(C).then(c=>c.put('./index.html',cp)))}return res});
   e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
-   const t=setTimeout(()=>old().then(fin),NAV_MS);
+   const t=setTimeout(()=>old().then(r=>{if(r)late=1;fin(r)}),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);old().then(r=>fin(r||Response.error()))})}));return}
  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
 """)
