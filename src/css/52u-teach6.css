@@ -1,0 +1,47 @@
+/* TEACH-6M: the models of the grade 6 lessons (52u-bench6.js): the ratio table, the number line from -10 to 10, the hundred grid and the
+   percent bar, equations as bars, powers, the four-quadrant grid, shapes in their rectangles, hops of multiples, equal groups, level
+   towers, groups over a fraction bar. Tokens only; every button is at least var(--tap); text at least 16 px. */
+.ls6m-rt{border-collapse:separate;border-spacing:2px;margin:0 auto;font-weight:700}
+.ls6m-rt th{font-size:var(--fs-2);color:var(--ink-2);background:var(--surface-2);border-radius:var(--r-chip);padding:2px var(--s-2);text-align:left}
+.ls6m-rt td{font-size:var(--fs-3);color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);border-radius:var(--r-chip);text-align:center;padding:2px var(--s-2);min-width:2.4em}
+.ls6m-rt td.ls6m-last{background:var(--math-tint);box-shadow:inset 0 0 0 3px var(--math)}
+.ls6m-rt td.ls6m-gap{background:none;box-shadow:none;color:var(--ink-3);min-width:1em}
+.viz .ls6m-gl{fill:none;stroke:var(--ink-3);stroke-width:1;opacity:.55}
+.viz .ls6m-box{fill:none;stroke:var(--ink-2);stroke-width:2}
+.viz .ls6m-eq{fill:none;stroke:var(--good);stroke-width:4}
+.viz .ls6m-ht{stroke-dasharray:5 4}
+.viz text.ls6m-sl{fill:var(--ink-2)}
+.viz .ls6m-left{fill:var(--surface-2);stroke:var(--ink-2);stroke-width:2;stroke-dasharray:5 4}
+.viz .ls6m-gap6{fill:none;stroke:var(--play-shade);stroke-width:2;stroke-dasharray:4 3}
+.viz .ls6m-lv{fill:none;stroke:var(--brand-shade);stroke-width:4;stroke-dasharray:9 5}
+.viz .ls6m-br{fill:none;stroke:var(--math-shade);stroke-width:3}
+.viz .ls6m-br.ls6m-b2{stroke:var(--play-shade)}
+.viz .ls6m-far{fill:none;stroke:var(--try-ink);stroke-width:3;stroke-dasharray:6 4}
+.ls6m-pv{font-size:var(--fs-4)}
+.ls6m-st{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2);font-weight:700;font-size:var(--fs-2)}
+.ls6m-st span{padding:2px var(--s-2);border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink)}
+.ls6m-st .ls6m-up{box-shadow:inset 0 0 0 2px var(--play-shade)}
+.ls6m-st .ls6m-dn{box-shadow:inset 0 0 0 2px var(--math-shade)}
+.ls6m-hops{display:flex;flex-direction:column;gap:var(--s-1);align-items:flex-start;max-width:100%;overflow:hidden}
+.ls6m-hr{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.ls6m-hl{font-weight:700;color:var(--ink-2);min-width:2.6em;font-size:var(--fs-2)}
+.ls6m-ch{font-weight:700;font-size:var(--fs-2);min-width:2.2em;text-align:center;padding:2px 4px;border-radius:var(--r-chip);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);color:var(--ink)}
+.ls6m-ch.l1{background:var(--math-tint);box-shadow:inset 0 0 0 3px var(--math)}
+.ls6m-ch.l2{background:var(--play-tint);box-shadow:inset 0 0 0 3px var(--play-shade)}
+.ls6m-ch.ok{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good)}
+.ls6m-lists{display:flex;flex-direction:column;gap:var(--s-1);font-weight:700;font-size:var(--fs-3);color:var(--ink);text-align:center;margin:0 auto var(--s-1)}
+.ls6m-pow{display:flex;flex-direction:column;align-items:center;gap:var(--s-1)}
+.ls6m-pow .viz{max-height:150px;max-width:100%;height:auto}
+.ls6m-pow .eq{font-size:var(--fs-3)}
+.viz.ls6m-xy text{font-size:22px}
+.viz.ls6m-xyq text{font-size:30px}
+.viz.ls6m-nl text{font-size:18px}
+.viz-pbar text,.viz text.ls6m-sm{font-size:18px}
+.viz-tow text{font-size:19px}
+.ls6m-pow sup,.mm-pow sup{font-size:max(16px,.7em)}
+.mm-iline .mmv .viz,.mm-fit .mmv .viz,.mm-eqbar .mmv .viz,.mm-gcf .mmv .viz{max-width:100%;height:auto}
+.mm-pct .mmv .viz{max-height:200px;max-width:100%;height:auto}
+.mm-xy4 .mmv .viz{max-height:250px;max-width:100%;height:auto}
+.mm-tri .mmv .viz{max-height:220px;max-width:100%;height:auto}
+.mm-lev .mmv .viz{max-height:210px;max-width:100%;height:auto}
+@media (max-width:420px){.mm-xy4 .mmv .viz{max-height:250px}.mm-tri .mmv .viz,.mm-lev .mmv .viz{max-height:180px}.mm-pct .mmv .viz{max-height:170px}}

@@ -206,10 +206,10 @@ function planToday(S0, day, p = 'math') {
   const band = x => p == 'es' || (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0); // TEACH-5S: the Spanish map is the same for every grade
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
-    // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's);
+    // TEACH-3: a child in 3rd grade or up is offered the grade 3-6 lessons only, their own grade's first (TEACH-6M: 6th grade its own, v188);
     // a child below 3rd grade the Pre-K to 2nd grade lessons only (the app loads teach35 for 3rd grade up, teachWarm; this keeps the
     // plan the same when the part is in from an earlier grade setting, and a little one is never handed word-tile reasons to read)
-    const mine = x => (g0 >= 3 && wg(x) != Math.min(g0, 5) ? 1 : 0);
+    const mine = x => (g0 >= 3 && wg(x) != g0 ? 1 : 0);
     const cand = LS_IDS.filter(x => at(x) >= 0 && band(x)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
     const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
     let nx = cand[0] || null;

@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v186'
+VER = 'v188'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -177,6 +177,7 @@ PARTS = [
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s)\.js|52s-teach5s\.css'),  # TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
+    ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
     ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw)\.js|(39p-pers|39r-ask)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
 ]
@@ -189,7 +190,8 @@ PARTS = [
 # TEACH-4: teachrd (the reading lessons and the Pre-K lessons), loaded with teach and teach12 by the reading map (Pre-K to 2nd), and by the math map for a Pre-K child.
 # TEACH-5S: teaches (the Spanish and Discover lessons), loaded with teach, teach12 and teachrd by the Spanish and Discover maps.
 # v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'petage', 'hints')
+# TEACH-6M: teach6 (the grade 6 math lessons), loaded after teach35 by the math map for a 5th grader up and by a grade 6 lesson stop (lsParts).
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):
