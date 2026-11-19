@@ -147,6 +147,8 @@ teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons 
                   for a Pre-K child (teachWarm in 46-home.js)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
+hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js and the generated 39n-hintw.js, then  var HINTS_VER='<VER>';
+                  LAZY: a Practice round loads it as it starts (hintsWarm in 50-round.js, from newG); check() shows the generic hint until it is in
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
                   ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
@@ -180,7 +182,7 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
 - `games3` (G-BB2, v164): Block Builder (`60-blocks.js`, `60-game-blocks.css`) and its WebGL renderer `61-bb-gl.js`, moved out of `games` when that
   file passed its 400 KB warning (games 419 -> 263 KB). LAZY like the other two, loaded after games2; the games2 rule skips `60-game-blocks.css` by name.
 
-Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'petage')`) names the parts that index.html does not load at start, and
+Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints')`) names the parts that index.html does not load at start, and
 `LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
 the others. `partsThen(stems, go)` (90-app.js) is the one way in: when those parts are in it runs `go()` at once; otherwise it draws
 "Getting the games ready..." (a Back button and a drawn disc; `#partwait`), adds one plain `<script src="<stem>.<VER>.js">` per part, one

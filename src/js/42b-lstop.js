@@ -21,8 +21,9 @@ const LS_STOPS = {
     + 'add2 big1 cnt2 cmp1 miss2 sub2 pv1 add5 add6 add3 time1 big2 coins1 cmp2 time2 sub3 big3 mult1 coins2 sub4 time3 big4 mult2 cmp3 coins3 pv2 big5 pv3 '
     + 'sub5 time4 coins4 arr1 coins5 arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 '
     + 'frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 '
-    + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5').split(' ')),
-  read: new Set('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4'.split(' ')),
+    + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5 '
+    + 'story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8').split(' ')), // TEACH-3b (v182)
+  read: new Set('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4 pic6 build6'.split(' ')), // TEACH-3b: pic6 build6 (v182)
 };
 const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
 function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }

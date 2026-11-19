@@ -1,6 +1,12 @@
 /* ---------- game ---------- */
 let G;
-const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
+// v182: the Practice mistake hints (HINT-01, 39m-mist.js) are the lazy part hints: a round starts loading it once its first screen
+// is painted; check() shows the generic hint alone until it is in (typeof hmHint). Nothing happens when it is in or loading.
+function hintsWarm(){
+  if(typeof hmHint=='function'||typeof partLoad!='function'||typeof requestAnimationFrame!='function')return;
+  requestAnimationFrame(()=>setTimeout(()=>partLoad('hints'),0));
+}
+const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
@@ -145,8 +151,10 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
-  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
-    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
+    G.hm='';let mh='';try{mh=typeof hmHint=='function'?hmHint(q,v):''}catch(e){} // HINT-01 (v182: guarded, a lazy part): this mistake's hint (39m-mist.js) above the generic one, once its words are approved
+    $('#hint').innerHTML=mh+hintHTML(q);fit();hintIn();
+    K.retry(q,G,()=>{$('#hint').innerHTML=mh+hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture

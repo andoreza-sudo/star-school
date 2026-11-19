@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v180'
+VER = 'v182'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -55,18 +55,42 @@ def words_js(root, w=WORDS[0]):
             'const %s = {\n' % (chunk, part, {'LSW': 'lsDraft', 'LSW3': 'lsDraft3'}.get(const, 'lsDraft4'), src,
                                  '' if const == 'LSW' else ' with its words (it runs on its hand-written fallback words)', const) + body + '};\n')
 WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
+# HINT-01: the mistake hints of Practice (src/js/39m-mist.js) take their words from docs/drafts/hints/<code>.md (drafted by
+# node tools/author.js --hints-draft). Only a draft whose status line says "reviewed" is copied into src/js/39n-hintw.js (HINTW, part
+# hints, v182); a code with no reviewed line shows the round's generic hint. --words-only and --words-check cover this file too.
+HINTS_FILE = '39n-hintw.js'
+def hints_js(root):
+    dd, out = os.path.join(root, 'docs', 'drafts', 'hints'), {}
+    for n in sorted(os.listdir(dd)) if os.path.isdir(dd) else []:
+        if not re.fullmatch(r'[A-Za-z0-9]+\.md', n):
+            continue
+        t = open(os.path.join(dd, n), encoding='utf-8').read()
+        st, js = re.search(r'^status:\s*(\w+)', t, re.M), re.search(r'```json\n([\s\S]*?)\n```', t)
+        if st and st.group(1).lower() == 'reviewed' and js:
+            w = json.loads(js.group(1))
+            if w.get('code') == n[:-3] and isinstance(w.get('line'), str) and w['line'].strip():
+                out[n[:-3]] = w['line'].strip()
+    body = ''.join('  %s: %s,\n' % (json.dumps(k), json.dumps(out[k], ensure_ascii=False)) for k in sorted(out))
+    return ('/* ---------- HINT-01: the mistake hints the owner has reviewed (part hints) ----------\n'
+            '   BUILT by tools/build.py from docs/drafts/hints/<code>.md ("status: reviewed ..."): never edit by hand. A hint that is\n'
+            '   not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */\n'
+            'const HINTW = {\n' + body + '};\n')
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
+    open(os.path.join(root, 'src', 'js', HINTS_FILE), 'w', encoding='utf-8', newline='').write(hints_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
             and not (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) and open(os.path.join(_w, 'src', 'js', w[0]), encoding='utf-8', newline='').read() == words_js(_w, w))]
+    _hf = os.path.join(_w, 'src', 'js', HINTS_FILE)
+    if os.path.isfile(_hf) and open(_hf, encoding='utf-8', newline='').read() != hints_js(_w):
+        _bad.append(HINTS_FILE)
     print('words: the words files match the reviewed drafts' if not _bad else 'words: %s is not what the reviewed drafts say (run python3 tools/build.py)' % ', '.join(_bad))
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js and src/js/52k-words4.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js and src/js/39n-hintw.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -90,9 +114,10 @@ PARTS = [
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
     ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
-    ('teach35', r'(52h-words|52i-bench35|52j-lessons35)\.js|52h-teach35\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on
-    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4)\.js|52k-teach4\.css'),  # TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
+    ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
+    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b)\.js|52k-teach4\.css'),  # TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
+    ('hints', r'(39m-mist|39n-hintw)\.js'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
@@ -101,7 +126,8 @@ PARTS = [
 # TEACH-2b: teach12 too (the grade 1-2 lessons), loaded with teach by the math map. PET-AGE2: petage (Home's: petAgeWarm, 17-pets-svg.js).
 # TEACH-3: teach35 (the grade 3-5 lessons), loaded with teach and teach12 by the math map for a child in 3rd grade or up.
 # TEACH-4: teachrd (the reading lessons and the Pre-K lessons), loaded with teach and teach12 by the reading map (Pre-K to 2nd), and by the math map for a Pre-K child.
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage')
+# v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):

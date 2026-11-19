@@ -81,7 +81,7 @@ const BAK = {
       S = JSON.parse(JSON.stringify(d));
       const from = Number.isInteger(S.v) && S.v >= 1 ? S.v : save;
       if (S.maps && typeof PATHS != 'undefined') for (const p in PATHS) S.maps[p] = S.maps[p] || {};
-      for (let n = from; n < LATEST; n++) MIGRATIONS[n]();
+      runMigrations(from); // v182: under the Play lock's PLAY.mig, as migrate() (00-core.js)
       S.v = LATEST;
       m = S;
     } catch (e) { m = null; }

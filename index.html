@@ -3034,9 +3034,9 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v180'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v180 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v182'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v182 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
-const LATEST=7; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=8; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
    key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
@@ -3182,8 +3182,26 @@ const MIGRATIONS=[null,
     ['math','read'].forEach((p,k)=>{const ids=new Set(L[k].split(' '));if(!NODES[p]||!S.maps||!S.maps[p])return;
       NODES[p].forEach((n,i)=>{try{const id=nid(n);if(ids.has(id)&&!passed(p,i)&&unlocked(p,i)&&(reached(p,i)||stopBehind(p,i)))o[id]=1}catch(e){}})}); // never throws (a map that does not fit the save keeps nothing)
     if(Object.keys(o).length)S.lsOpen=o;
+  },
+  /* 7: TEACH-3b (v182). Nineteen more math stops and two reading stops (Vowel Teams 2, Build Vowel Teams 2) got lessons (and so lesson stops in front of them). As migration 6: every one of THESE
+     stops this save could already play because of its own progress (the stop before it passed, the first stop after a skipped world,
+     or a later stop of its world passed) and has not passed is kept open in S.lsOpen. Frozen list of the v182 additions (never LESSONS);
+     idempotent; never throws; removes nothing. */
+  ()=>{
+    const ids=new Set('story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8 pic6 build6'.split(' '));
+    const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
+    for(const p of['math','read'])if(NODES[p]&&S.maps&&S.maps[p])NODES[p].forEach((n,i)=>{try{const a=NODES[p][i-1];
+      if(ids.has(nid(n))&&!passed(p,i)&&unlocked(p,i)&&(a&&(passed(p,i-1)||a.wi!==n.wi&&worldSkipped(p,a.wi))||stopBehind(p,i)))o[nid(n)]=1}catch(e){}});
+    if(Object.keys(o).length)S.lsOpen=o;
   }
 ];
+/* MIGRATIONS[from] ... MIGRATIONS[LATEST-1] on the global S. The one way to run them (migrate() below, a loaded backup BAK.one in
+   81-backup.js, another child's save PRF.up in 01-profiles.js): PLAY-01, migrations see every stop as in the web version (nothing
+   locked by the Play app's free sample, PLAY.mig), so a migration that keeps stops open (6, 7) keeps the same ones everywhere. */
+function runMigrations(from){
+  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1;
+  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
+}
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
@@ -3194,8 +3212,7 @@ function migrate(){
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
   if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
-  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1; // PLAY-01: migrations see every stop as in the web version (nothing locked)
-  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
+  runMigrations(from);
   S.v=LATEST;
   save();
 }
@@ -3213,7 +3230,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v180'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v182'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3333,7 +3350,7 @@ const PRF = {
       loadSave(raw);
       if (S.maps && typeof PATHS != 'undefined') for (const p in PATHS) S.maps[p] = S.maps[p] || {};
       const from = Number.isInteger(S.v) && S.v >= 1 ? S.v : 1;
-      for (let n = from; n < LATEST; n++) MIGRATIONS[n]();
+      runMigrations(from); // v182: under the Play lock's PLAY.mig, as migrate() (00-core.js)
       if (from < LATEST) S.v = LATEST;
       m = S;
     } catch (e) { m = null; }
@@ -7345,8 +7362,9 @@ const LS_STOPS = {
     + 'add2 big1 cnt2 cmp1 miss2 sub2 pv1 add5 add6 add3 time1 big2 coins1 cmp2 time2 sub3 big3 mult1 coins2 sub4 time3 big4 mult2 cmp3 coins3 pv2 big5 pv3 '
     + 'sub5 time4 coins4 arr1 coins5 arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 '
     + 'frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 '
-    + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5').split(' ')),
-  read: new Set('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4'.split(' ')),
+    + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5 '
+    + 'story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8').split(' ')), // TEACH-3b (v182)
+  read: new Set('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4 pic6 build6'.split(' ')), // TEACH-3b: pic6 build6 (v182)
 };
 const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
 function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
@@ -8281,7 +8299,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v180)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v182)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -9799,7 +9817,13 @@ function kindLabel(list,v){
 }
 /* ---------- game ---------- */
 let G;
-const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
+// v182: the Practice mistake hints (HINT-01, 39m-mist.js) are the lazy part hints: a round starts loading it once its first screen
+// is painted; check() shows the generic hint alone until it is in (typeof hmHint). Nothing happens when it is in or loading.
+function hintsWarm(){
+  if(typeof hmHint=='function'||typeof partLoad!='function'||typeof requestAnimationFrame!='function')return;
+  requestAnimationFrame(()=>setTimeout(()=>partLoad('hints'),0));
+}
+const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
@@ -9944,8 +9968,10 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
-  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
-    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
+    G.hm='';let mh='';try{mh=typeof hmHint=='function'?hmHint(q,v):''}catch(e){} // HINT-01 (v182: guarded, a lazy part): this mistake's hint (39m-mist.js) above the generic one, once its words are approved
+    $('#hint').innerHTML=mh+hintHTML(q);fit();hintIn();
+    K.retry(q,G,()=>{$('#hint').innerHTML=mh+hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture
@@ -11913,7 +11939,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v180'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v182'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12514,17 +12540,18 @@ function appFiles() {
     ['teach35', typeof TEACH35_VER === 'undefined' ? null : TEACH35_VER],
     ['teachrd', typeof TEACHRD_VER === 'undefined' ? null : TEACHRD_VER],
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
+    ['hints', typeof HINTS_VER === 'undefined' ? null : HINTS_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v180');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v182');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v180')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v180)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v182')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v182)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12541,20 +12568,20 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints']; // v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v180';
+  return !!f && f[1] === 'v182';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v180') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v182') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v180.js';
+    s.src = stem + '.v182.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12579,9 +12606,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v180.js"></script>
-<script src="gen2.v180.js"></script>
-<script src="data.v180.js"></script>
+<script src="gen.v182.js"></script>
+<script src="gen2.v182.js"></script>
+<script src="data.v182.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
