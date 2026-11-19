@@ -3038,7 +3038,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v186'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v186 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v187'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v187 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=10; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3255,7 +3255,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v186'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v187'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -7570,14 +7570,15 @@ SCN.mark = (k, x, y, r) => {
   return r < .5 ? `M${x} ${y}l3.4 -2` : `M${x} ${y}l3.4 2`;
 };
 
-/* The band of world w, W wide, at top, h tall (map px). o = {test: Test out shown, stops: [[x, y, label, boss, isNew]...],
+/* The band of world w, W wide, at top, h tall (map px). o = {test: Test out shown, stops: [[x, y, label, boss, isNew, job]...],
    trail: points along the trail, pet: [x, y] or null}, all in map px. A plain band in the world colour without the data file.
+   job (G-PROPS): the stop is a learned lesson stop, so the world's job prop (T.job) stands beside it; a stop without it draws as before.
    Scenes are cached by what they depend on (in band px), so moving between worlds redraws known scenes for free. */
 SCN.cache = new Map();
 SCN.band = (w, W, top, h, o) => {
   const T = SCN.theme(w);
   if (!T) return `<div class="wband" style="top:${top}px;height:${h}px;background:${w.c}" aria-hidden="true"></div>`;
-  const stops = o.stops.map(([x, y, lab, boss, isNew]) => [scR(x), y - top, lab.length, boss ? 1 : 0, isNew ? 1 : 0]);
+  const stops = o.stops.map(([x, y, lab, boss, isNew, job]) => [scR(x), y - top, lab.length, boss ? 1 : 0, isNew ? 1 : 0, job ? 1 : 0]);
   const trail = o.trail.filter(q => q[1] > top - 30 && q[1] < top + h + 30).map(([x, y]) => [Math.round(x), Math.round(y - top)]);
   const pet = o.pet && [Math.round(o.pet[0]), Math.round(o.pet[1] - top)];
   const key = JSON.stringify([w.id, w.n, W, h, o.test ? 1 : 0, stops, trail, pet]);
@@ -7665,14 +7666,14 @@ SCN.draw = (w, T, W, h, test, stops, trail, pet) => {
     s += `<path d="${fwd}${back}" fill="${SCN.col(T.g[1])}" opacity=".55"/>`;
   });
   if (rim) s += `<path d="${rim}" fill="none" stroke="${SCN.col('w')}" stroke-width="3" opacity=".55"/>`;
-  const place = (name, x, y, k, pass = 1) => {
+  const place = (name, x, y, k, pass = 1, job = -1, keep = null) => {
     const P = SCN.prop(name);
     if (!P) return false;
     x = Math.min(Math.max(x, P.hw * k + 4), W - P.hw * k - 4);
     const box = [x - P.hw * k - 3, y - P.hh * k - 3, x + P.hw * k + 3, y + 5];
-    if (!free(...box)) return false;
+    if (!free(...box) || keep && keep.some(q => box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1])) return false;
     occ.push(box);
-    placed.push([name, box]);
+    placed.push(job < 0 ? [name, box] : [name, box, job]);
     stamp(P, x, y, k, pass);
     return true;
   };
@@ -7682,16 +7683,18 @@ SCN.draw = (w, T, W, h, test, stops, trail, pet) => {
     const k = big * (i ? .9 : 1.15);
     [[22, 1], [70, 1], [22, .8], [120, 1], [70, .8]].some(([dy, f]) => place(name, W * sides[i % 2], hz + dy, k * f));
   });
+  const nj = T.job && stops.some(q => q[5]) ? SCN.jobs(T.job, W, stops, place) : 0; // G-PROPS
   // props down the sides where there is room: a column by each edge and one where the trail swings out (free when the stops are
-  // on the other side); wide screens two loose columns a side. At most 24, one size per kind (its strokes share a layer).
+  // on the other side); wide screens two loose columns a side. At most 24 with the job props, one size per kind (its strokes share a layer).
   const amp = Math.min(W * .3, 200), z = W / 2 - amp - 40, wide = W >= 480;
   const cols = z > 150 ? [z * .3 + 10, z * .78 + 10] : [Math.max(26, z * .5)];
   if (z <= 150 && W / 2 - amp * .9 - cols[0] > 40) cols.push(W / 2 - amp * .9);
   const xs = cols.flatMap(c => [c, W - c]), last = xs.map(() => -1e9);
   let n = 0;
-  for (let y = hz + 84; y < h - 12 && n < 24; y += 30) {
+  const cap = 24 - nj;
+  for (let y = hz + 84; y < h - 12 && n < cap; y += 30) {
     xs.forEach((x0, ci) => {
-      if (y - last[ci] < (wide ? 110 : 92) || n >= 24) return;
+      if (y - last[ci] < (wide ? 110 : 92) || n >= cap) return;
       const name = T.pr[n % T.pr.length];
       const k = scR((wide ? 13 : 10) * (.88 + SCN.hash(name) % 25 / 100)) / 10;
       const x = x0 + (rnd() - .5) * (wide ? 70 : 16);
@@ -7723,6 +7726,25 @@ SCN.draw = (w, T, W, h, test, stops, trail, pet) => {
   // the band markup after its top (SCN.band adds the start)
   return `height:${h}px;background:linear-gradient(var(--sc-${T.sky[0]}),var(--sc-${T.sky[1]}) ${hz}px,var(--sc-${T.g[0]}) ${hz}px);` +
     `box-shadow:0 6px 0 var(--sc-${T.g[1]})" aria-hidden="true"><svg class="scn-art" width="${W}" height="${h}" focusable="false">${s}</svg></div>`;
+};
+
+/* G-PROPS: the job done at each learned lesson stop (stops[i][5]): one prop, name, beside the stop. First on its outer side (the
+   lesson ticket and a practice stop's check-in medal sit on the side toward the middle), else beyond them; none when there is no
+   room, so a prop never crowds a stop, label, ticket or medal. Placed before the side props and with no random numbers: a scene
+   with no learned lesson stop is the scene it was before. place: SCN.draw's, which records [name, box, stop index] in SCN.placed. */
+SCN.jobs = (name, W, stops, place) => {
+  const P = SCN.prop(name);
+  if (!P) return;
+  const k = W >= 480 ? 1.2 : 1, hw = P.hw * k;
+  // the side toward the middle of every stop: its ticket (x +-78, about 70 x 28) or check-in medal (x +-66, 60 x 60)
+  const keep = stops.map(([x, y]) => x > W / 2 ? [x - 124, y - 34, x - 30, y + 32] : [x + 30, y - 34, x + 124, y + 32]);
+  let n = 0;
+  stops.forEach(([x, y, , , , job], i) => {
+    if (!job) return;
+    const out = x > W / 2 ? 1 : -1;
+    if ([[out, 52 + hw], [-out, 128 + hw]].some(([d, dx]) => [26, 8, 44].some(dy => place(name, x + d * dx, y + dy, k, 1, i, keep)))) n++;
+  });
+  return n; // the side props make room: at most 24 props in all
 };
 
 // the trail's curve between stops a and b (drawMap's: leave and arrive straight down) at t
@@ -8115,7 +8137,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v186)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v187)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8193,9 +8215,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
   m.style.height=(y+tail)+'px';
   // P4-09: every world band gets its drawn scene (kept clear of the stops, labels, trail and pet); the trail gets stones and bridges
+  // G-PROPS: a learned lesson stop (lsLearned, 42b-lstop.js) passes job=true, and its world's job prop stands beside it (SCN.jobs)
   const tp=SCN.trailPts(pts),pet=cp?[cp[0]+side,cp[1]+18]:null;
   const scenes=wb.map(([wi,top,h,k0,k1,test])=>SCN.band(ws[wi],W,top,h,{test,trail:tp,pet,
-    stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls?[x,yy,'Learn with '+petN(),false,false]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
+    stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls?[x,yy,'Learn with '+petN(),false,false,lsLearned(nid(N[i]))]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
@@ -11093,7 +11116,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v186'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v187'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11701,12 +11724,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v186');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v187');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v186')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v186)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v187')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v187)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11728,15 +11751,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v186';
+  return !!f && f[1] === 'v187';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v186') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v187') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v186.js';
+    s.src = stem + '.v187.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11761,9 +11784,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v186.js"></script>
-<script src="gen2.v186.js"></script>
-<script src="data.v186.js"></script>
+<script src="gen.v187.js"></script>
+<script src="gen2.v187.js"></script>
+<script src="data.v187.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

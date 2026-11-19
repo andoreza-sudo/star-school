@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** the owner's read-throughs of ASK-01, G-MOVES and TEACH-5S and the 8 TEACH-5S recordings (MERGE-186); P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v186
+**Current version:** v187
 
 ## Chunk status
 
@@ -170,6 +170,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - ASK-01 v186 (the menu step, audio-first for non-readers (ASK-READ); the 8 questions and the 2 sheet lines wait for the owner's read-through)
 - G-MOVES v186 (built as v188 on games5; the new lines wait for the owner's read-through: .claude/GAMES5-READ.md)
 - TEACH-5S v186 (built as v187 on b5; 12 Spanish and Discover lessons; the drafts and 8 teacher recordings wait for the owner)
+- G-PROPS v187 (built on branch props from v186; job props on the maps; no job frames yet)
 
 ## Handoff notes
 
@@ -523,6 +524,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### G-PROPS Job props on the maps: a learned lesson stop shows the job done (v187, 2026-11-19, Claude; branch props from v186, not live)
+- **What** (TEACH-PLAN-2 System G, owner-approved roadmap item, part "job props on the maps"): when a lesson stop is learned (`lsLearned`: Show passed, `S.know[id].s >= 2`), one small prop that shows the world's job done stands beside it on the world's scene. drawMap (46-home.js) passes a 6th value `job` for each lesson stop (`lsLearned(nid(N[i]))`; practice stops never); `SCN.band` keys and draws with it; `SCN.jobs` (43-scenes.js) places them. Decoration only: inside the aria-hidden scene SVG, no taps, no motion. Derived from the save: no new save field, no migration, nothing re-locked. With lessons off (`TEACH.off`) there are no lesson stops, so no props.
+- **Props per world** (theme field `job` in src/data/d-scenes.js; 9 new drawings of 4 to 7 shapes, scene palette tones only, object-art volume recipe of DESIGN_SYSTEM 6.5): planks (Shape Garden, Word Workshop, island), a basket of scallop shells (Ocean Reef, Treasure Bay, beach), a fuel can with a bolt (Space Station, galaxy, lab, observatory), a crate of apples (Number Meadow, weather, nature), bricks (Tiny Town, desert, city), a sweets jar (Candy Canyon, fiesta), a cart of gems (volcano, caves, legend), a parcel (Clock Tower, factory, sky city, library, plaza, repaso), logs (Multiply Mountain, Fraction Forest). Every world uses its theme's prop; worlds with a lesson stop today: 26.
+- **Placement**: on the lesson stop's outer side first (dx 52 px + half the prop, three heights), else on the side toward the middle beyond the lesson ticket / check-in medal zone; never on a stop, label, New tag, title, Test out banner, pet, trail, ticket or medal (the usual `free()` plus a keep zone on every stop's inner side); none when there is no room. At most one per stop. Placed after the landmarks and before the side props, with no random numbers; the side props make room (24 props a scene in all, as before). Scale 1 under 480 px, 1.2 wider. A scene with no learned lesson stop is byte for byte v186's (checked over every world of every path, grades Pre-K, 1 and 4, at 352, 332 and 996 px against the v186 build).
+- **Placement rate** (test.js, every lesson stop learned, every world, both banner states): 352 px 538 of 552, 332 px 540 of 552, 996 px 552 of 552.
+- **Job frames** ("Help fill the reef stall: ..." around Show): not done. Show's first line is a spoken (and for K-2 recorded) teacher line per lesson shape, so a frame per world means new child-facing lines, recordings and a gate in every Show path of four lazy parts: not small. No .claude/PROPS-READ.md (no new words).
+- **Tests**: test.js new check "map job props G-PROPS" (drawMap's geometry with every lesson stop, 3 widths x 2 banner states x none/every other/all learned: deterministic, none learned = the scene without the flag, at most one job prop per stop and only by a learned lesson stop, the theme's prop, clear of stop, label, New tag, title, banner, pet, trail, ticket and medal, inside the band, tokens only, aria-hidden, 75 elements, every theme has a job prop of at most 8 shapes / 600 bytes in palette tones, drawMap flags only learned lesson stops; a mutation that ignored the keep zone failed it). P4-09 check: the job prop counts as a used prop of its theme (new theme field; nothing loosened). smoke new segment G-PROPS (midway, 1st grade, math stops and lessons passed up to Ocean Reef, at 380x780, 360x740, 1024x600: the flagged stops are exactly the `.lsn.done` buttons, job props never under any stop, lesson stop, label, ticket, medal, title, banner, pet, Ask or world button on the real page, bands aria-hidden, 75 elements, no sideways scroll, none with no lesson learned; screenshots tools/out/props/props-map-{shape,reef}-WxH.png). a11y new screen `props-map`. shots.js `map-props`, `map-props-reef`, `map-props-space`.
+- **Expected values changed**: none. No hash, threshold, KNOWN list or fixture changed. One note: P4-09's 36,000-byte scene budget is already exceeded by one v186 scene that its own check never draws (Word Workshop at 332 px with its lesson stops on the trail, 36,813 B, no job props); the G-PROPS check holds job scenes to the budget unless the same scene without props is already over it.
+- **Check**: `node tools/test.js` all 211 checks passed; `node tools/smoke.js --seg core,P4-09,LS-STOP,G-PROPS` smoke OK; `node tools/a11y.js map lstop-map ask-map props-map` 4 screens x 2 sizes, zero failures; contrast passes.
+- **Perf** (`node tools/perf.js --no-memory`, v186 with `--root` then v187, same machine back to back, midway save, which has no learned lesson): longest task map 206 / 246 ms (best / median) -> 195 / 281 ms, map open 225 / 266 -> 230 / 321 ms, start 734 -> 703 ms: noise, the same code path. With every math lesson learned (scratch script, 6x throttle, 1024x600, scene cache cleared before every draw, best of 3): median map draw 133 -> 146 ms, all 16 worlds twice 2182 -> 2340 ms (+7%) in the worst case of a cold scene; the cache keys on the flags, so a drawn scene is free again.
+- **Bytes**: index.html 930,285 -> 932,106 (+1,821: SCN.jobs, the flag); data.v187.js 780,978 -> 784,288 (+3,310: 9 drawings and the job field); loaded at start 2,470,778 -> 2,475,909 bytes (under 2.5 MB). The prop art is in the data file, which loads at start, so there is no state without it.
 
 ### Review fixes (v186): G-MOVES bosses can always be won, a held finger presses nothing on any end card, TEACH-5S review tile back (2026-11-19, Claude)
 A review of MERGE-186 (G-MOVES, TEACH-5S). VER stays v186.

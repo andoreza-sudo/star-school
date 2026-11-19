@@ -1,5 +1,5 @@
-/* Star School data banks v186. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v186 loads this file with <script src="data.v186.js"> between the code and the start-up script. */
+/* Star School data banks v187. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v187 loads this file with <script src="data.v187.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -7583,6 +7583,7 @@ var RIDDLES = {
      hz horizon ridges back to front [kind q|l|b|a, unit width, heights, tone, hang from the top, move up], lm landmarks, pr props
      (cycled down the sides), sm small companions set in front of some props, tx ground texture [[kind tuft|dot|spark|bub|dash, tone]], pp a papel picado garland (tones),
      rays light shafts from the top (under water).
+     job (G-PROPS) the prop that shows the world's job done: one stands beside each learned lesson stop (planks, shells, fuel ...).
    SCN_W: every world id -> theme, or [theme, overrides]. */
 var SCN_P = {
   tree: '18 56|k .1 e 1 0 16 3.5;n2 r -3.5 -22 7 22 2;n r -3.5 -22 4.5 22 2;g2 c 1 -33 17;g c -1.5 -35.5 14;g1 .7 c -7 -41 4.5',
@@ -7695,7 +7696,17 @@ var SCN_P = {
     ';b3 p M-3 -48C-1 -48.5 2 -48 3 -47.5V-24H-3Z;e2 l 4.5 M2 -40L22 -56;n3 r -4 -14 8 14 4;w .7 l 1.6 M-17 -28C-17 -38 -12 -44 -6 -46',
   tele: '16 44|k .1 e 0 0 12 2.5;k2 l 1.6 M0 -20L-9 0M0 -20L9 0M0 -20V0;b2 l 9 M-11 -26L12 -38;b l 5.5 M-12 -27.5L7 -37.5;c1 c 12.5 -38.5 3.4',
   kite: '12 50|k2 .6 l 1 M2 -20C-4 -12 6 -8 0 0;p c -1 -9 1.8;y c 2 -4 1.8;r2 p M0 -50L11 -36L2 -18L-10 -34Z;r p M0 -50L2 -34.5L2 -18L-10 -34Z;y l 1 M0 -50L2 -18M-10 -34L11 -36',
-  maracas: '14 34|r2 l 2.6 M-4 0L-8 -16;g2 l 2.6 M5 0L9 -16;r e -9.5 -22 6 8 @-15;g e 10.5 -22 6 8 @15;y l 1.6 M-14 -24L-6 -18M6 -18L14 -24;w .6 c -11 -26 1.6;w .6 c 9 -26 1.6'
+  maracas: '14 34|r2 l 2.6 M-4 0L-8 -16;g2 l 2.6 M5 0L9 -16;r e -9.5 -22 6 8 @-15;g e 10.5 -22 6 8 @15;y l 1.6 M-14 -24L-6 -18M6 -18L14 -24;w .6 c -11 -26 1.6;w .6 c 9 -26 1.6',
+  // G-PROPS (v187): the job done at a learned lesson stop (SCN_T job; SCN.draw places one beside the stop)
+  planks: '16 20|k .1 e 0 0 16 3;n2 p M-15 0V-6H14V0ZM-13 -6.5V-12.5H16V-6.5ZM-14 -13V-19H12V-13Z;n p M-15 -1V-6H10V-1ZM-13 -7.5V-12.5H12V-7.5ZM-14 -14V-19H8V-14Z;t1 .7 l 1.4 M-13 -4.5H6M-11 -11H9M-12 -17.5H4',
+  shells: '15 25|k .1 e 0 0 14 3;p2 p M-7 -11H-3L3 -17C3 -24 -13 -24 -13 -17ZM3 -11H7L14 -18C14 -26 -4 -26 -4 -18Z;p1 p M-7.5 -12H-4L1.5 -17.5C1.5 -23 -12.5 -23.5 -13 -17.5ZM2.5 -12H6L12 -18.5C12 -25 -3.5 -25.5 -4 -18.5Z;p2 .7 l 1 M-5 -11L-10 -19M-5 -11V-21.5M-5 -11L0 -19M5 -11L0 -21M5 -11V-23.5M5 -11L10 -21;n2 p M-14 -12L-11 0H11L14 -12Z;n p M-14 -12L-11 -1H6L8.5 -12Z;n3 .45 l 1.2 M-12.5 -8H12.5M-11.5 -4H11.5',
+  fuel: '11 30|k .1 e 0 0 11 2.5;e2 r -4 -29 8 6 1.5;r2 r -10 -24 20 24 3;r r -10 -24 16 23 3;y p M2 -20L-4 -11H0L-2 -4L5 -14H1Z;r1 .7 l 1.6 M-7 -20V-6',
+  apples: '15 24|k .1 e 0 0 15 3;r2 p M-12 -13a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0 -11 0M-1 -14a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0 -11 0;r p M-11.8 -13.8a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0M-0.8 -14.8a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0;t2 r -14 -12 28 12 2;t r -14 -12 23 11 2;t2 .6 l 1.2 M-12 -6H8;w .6 c -9 -16 1.3',
+  bricks: '16 16|k .1 e 0 0 16 3;r2 p M-15 0V-7H-5V0ZM-4 0V-7H6V0ZM7 0V-7H16V0ZM-10 -8V-15H0V-8ZM1 -8V-15H11V-8Z;r p M-15 -1V-7H-6.5V-1ZM-4 -1V-7H4.5V-1ZM7 -1V-7H14.5V-1ZM-10 -9V-15H-1.5V-9ZM1 -9V-15H9.5V-9Z;r1 .7 l 1.2 M-13.5 -5.5H-9M-2.5 -5.5H2M8.5 -5.5H13M-8.5 -13.5H-4M2.5 -13.5H7',
+  jar: '11 28|k .1 e 0 0 11 2.5;c1 .55 r -10 -23 20 23 5;p p M-7.4 -6a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0M-2.2 -14a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0;y p M0.1 -7a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0M-7.5 -15a3 3 0 1 0 6 0a3 3 0 1 0 -6 0;v r -8 -28 16 5 2;w .7 l 1.6 M-7 -19V-6',
+  gems: '16 26|k .1 e 0 0 16 3;v p M-10 -15L-6 -24L-2 -15Z;c p M-3 -15L2.5 -26L8 -15Z;w .6 l 1.2 M-6.5 -21L-7 -16M1.5 -22.5L.5 -16;e2 p M-15 -16L-11 -4H11L15 -16Z;e p M-15 -16L-11 -5H6L9 -16Z;w .7 l 1.4 M-12 -13L-10 -7;k2 p M-11 -2.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M5 -2.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0',
+  parcel: '16 24|k .1 e 0 0 15 3;t p M-13 0V-18H9V0Z;t2 p M9 0V-18L15 -22V-4Z;t1 p M-13 -18L-7 -22H15L9 -18Z;r l 2.4 M-2 0V-18L4 -22;r p M4 -22C-1 -28 -5 -24 4 -22C13 -24 9 -28 4 -22Z',
+  logs: '14 25|k .1 e 0 0 14 3;n2 p M-13 -6.5a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0M0 -6.5a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0M-6.5 -17.5a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0;t1 p M-11.9 -7.3a4.6 4.6 0 1 0 9.2 0a4.6 4.6 0 1 0 -9.2 0M1.1 -7.3a4.6 4.6 0 1 0 9.2 0a4.6 4.6 0 1 0 -9.2 0M-5.4 -18.3a4.6 4.6 0 1 0 9.2 0a4.6 4.6 0 1 0 -9.2 0;n2 .5 p M-8.8 -7.3a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0M4.2 -7.3a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0M-2.3 -18.3a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0'
 };
 var SCN_V = {
   treeO: ['tree', 'g', 'o'], treeP: ['tree', 'g', 'p'], treeY: ['tree', 'g', 'y'], houseB: ['house', 'r', 'b'], houseG: ['house', 'r', 'g'],
@@ -7707,63 +7718,63 @@ var SCN_V = {
   crateB: ['crate', 't', 'n'], towerB: ['tower', 'v', 'b']
 };
 var SCN_T = {
-  town: { sm: ['bush', 'flowers'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['q', 120, [26, 16, 22], 'g1 .45'], ['q', 170, [12, 18], 'green']],
+  town: { job: 'bricks', sm: ['bush', 'flowers'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['q', 120, [26, 16, 22], 'g1 .45'], ['q', 170, [12, 18], 'green']],
     lm: ['house', 'houseB'], pr: ['tree', 'houseB', 'bush', 'flowers', 'house', 'treeY'], tx: [['tuft', 'g2']] },
-  garden: { sm: ['flowers', 'bush'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 1, hz: [['a', 70, [16, 22, 12], 'g1 .5'], ['q', 160, [10, 16], 'green']],
+  garden: { job: 'planks', sm: ['flowers', 'bush'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 1, hz: [['a', 70, [16, 22, 12], 'g1 .5'], ['q', 160, [10, 16], 'green']],
     lm: ['topiary', 'tulip'], pr: ['tulip', 'bush', 'topiary', 'tulipY', 'flowers', 'tulipV'], tx: [['tuft', 'g2'], ['dot', 'p1']] },
-  meadow: { sm: ['flowers', 'bush'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['q', 110, [30, 18, 26], 'g1 .45'], ['q', 150, [14, 22, 10], 'green']],
+  meadow: { job: 'apples', sm: ['flowers', 'bush'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['q', 110, [30, 18, 26], 'g1 .45'], ['q', 150, [14, 22, 10], 'green']],
     lm: ['sunflower', 'tree'], pr: ['tree', 'flowers', 'bush', 'sunflower', 'tulip', 'treeY'], tx: [['tuft', 'g2'], ['dot', 'y']] },
-  candy: { sm: ['gum', 'gumC'], sky: ['candy', 'candy-1'], g: ['pink', 'pink-2'], sun: 'sun', cl: 2, hz: [['a', 60, [18, 26, 14], 'p1 .7'], ['q', 140, [12, 18], 'pink']],
+  candy: { job: 'jar', sm: ['gum', 'gumC'], sky: ['candy', 'candy-1'], g: ['pink', 'pink-2'], sun: 'sun', cl: 2, hz: [['a', 60, [18, 26, 14], 'p1 .7'], ['q', 140, [12, 18], 'pink']],
     lm: ['lolli', 'cane'], pr: ['lolli', 'gumG', 'cane', 'cupcake', 'lolliC', 'gumY', 'lolliV', 'gum'], tx: [['dash', 'c'], ['dash', 'y']] },
-  clock: { sm: ['bush', 'flowers'], sky: ['sky', 'sky-1'], g: ['sun', 'sun-2'], sun: 'sun', cl: 2, hz: [['b', 46, [26, 38, 20, 32], 'e1 .55'], ['q', 160, [10, 14], 'sun']],
+  clock: { job: 'parcel', sm: ['bush', 'flowers'], sky: ['sky', 'sky-1'], g: ['sun', 'sun-2'], sun: 'sun', cl: 2, hz: [['b', 46, [26, 38, 20, 32], 'e1 .55'], ['q', 160, [10, 14], 'sun']],
     lm: ['clocktower', 'tree'], pr: ['tree', 'lamp', 'bush', 'house', 'flowers', 'treeO'], tx: [['dot', 't1']] },
-  reef: { sm: ['shell', 'rock'], sky: ['sea-1', 'sea'], g: ['sea', 'sea-2'], rays: 1, hz: [['a', 80, [14, 20, 10], 'c1 .6'], ['q', 150, [8, 12], 'sea']],
+  reef: { job: 'shells', sm: ['shell', 'rock'], sky: ['sea-1', 'sea'], g: ['sea', 'sea-2'], rays: 1, hz: [['a', 80, [14, 20, 10], 'c1 .6'], ['q', 150, [8, 12], 'sea']],
     lm: ['coral', 'fan'], pr: ['coral', 'weed', 'fish', 'shell', 'fanC', 'coralO', 'fishB', 'star'], tx: [['bub', 'w']] },
-  space: { sm: ['crater'], sky: ['night', 'night-1'], g: ['lilac', 'lilac-2'], sun: 'moon', st: 12, hz: [['a', 90, [10, 16, 8], 'v1 .7'], ['q', 170, [8, 12], 'lilac']],
+  space: { job: 'fuel', sm: ['crater'], sky: ['night', 'night-1'], g: ['lilac', 'lilac-2'], sun: 'moon', st: 12, hz: [['a', 90, [10, 16, 8], 'v1 .7'], ['q', 170, [8, 12], 'lilac']],
     lm: ['rocket', 'planet'], pr: ['planet', 'crater', 'spark', 'planetC', 'rocket', 'crater'], tx: [['spark', 'y1']] },
-  bay: { sm: ['shell', 'rock'], sky: ['sky', 'sky-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 2, hz: [['q', 70, [2, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sand']],
+  bay: { job: 'shells', sm: ['shell', 'rock'], sky: ['sky', 'sky-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 2, hz: [['q', 70, [2, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sand']],
     lm: ['ship', 'palm'], pr: ['palm', 'chest', 'shell', 'rock', 'star', 'umbrellaB'], tx: [['dot', 't2']] },
-  mountain: { sm: ['rock', 'bush'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['l', 90, [44, 30, 52, 36], 'e1 .7'], ['q', 140, [14, 20], 'green']],
+  mountain: { job: 'logs', sm: ['rock', 'bush'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['l', 90, [44, 30, 52, 36], 'e1 .7'], ['q', 140, [14, 20], 'green']],
     lm: ['mountain', 'pine'], pr: ['pine', 'rock', 'mountain', 'pine', 'bush', 'flagB'], tx: [['tuft', 'g2']] },
-  forest: { sm: ['mushroom', 'bush'], sky: ['sky', 'sky-1'], g: ['mint', 'mint-2'], sun: 'sun', cl: 1, hz: [['l', 26, [26, 34, 22, 30], 'g1 .55'], ['q', 150, [12, 18], 'mint']],
+  forest: { job: 'logs', sm: ['mushroom', 'bush'], sky: ['sky', 'sky-1'], g: ['mint', 'mint-2'], sun: 'sun', cl: 1, hz: [['l', 26, [26, 34, 22, 30], 'g1 .55'], ['q', 150, [12, 18], 'mint']],
     lm: ['tree', 'mushroom'], pr: ['pine', 'tree', 'mushroom', 'bush', 'treeY', 'rock'], tx: [['tuft', 'g2']] },
-  factory: { sm: ['crate'], sky: ['sky', 'sky-1'], g: ['stone', 'stone-2'], sun: 'sun', cl: 2, hz: [['b', 40, [30, 44, 22, 36], 'b1 .4'], ['q', 170, [8, 12], 'stone']],
+  factory: { job: 'parcel', sm: ['crate'], sky: ['sky', 'sky-1'], g: ['stone', 'stone-2'], sun: 'sun', cl: 2, hz: [['b', 40, [30, 44, 22, 36], 'b1 .4'], ['q', 170, [8, 12], 'stone']],
     lm: ['factory', 'gear'], pr: ['gear', 'crate', 'lamp', 'gearO', 'crateB', 'bush'], tx: [['dot', 'e1']] },
-  desert: { sm: ['rock'], sky: ['dusk', 'dusk-1'], g: ['sand', 'sand-2'], sun: 'sun', hz: [['q', 160, [22, 30, 16], 't1 .8'], ['q', 200, [10, 16], 'sand']],
+  desert: { job: 'bricks', sm: ['rock'], sky: ['dusk', 'dusk-1'], g: ['sand', 'sand-2'], sun: 'sun', hz: [['q', 160, [22, 30, 16], 't1 .8'], ['q', 200, [10, 16], 'sand']],
     lm: ['pyramid', 'cactus'], pr: ['cactus', 'rock', 'dune', 'cactus', 'dune', 'pyramid'], tx: [['dot', 't2']] },
-  volcano: { sm: ['rock'], sky: ['dusk', 'dusk-1'], g: ['peach', 'peach-2'], sun: 'sun', cl: 1, hz: [['l', 110, [36, 22, 44], 'n1 .3'], ['q', 160, [10, 14], 'peach']],
+  volcano: { job: 'gems', sm: ['rock'], sky: ['dusk', 'dusk-1'], g: ['peach', 'peach-2'], sun: 'sun', cl: 1, hz: [['l', 110, [36, 22, 44], 'n1 .3'], ['q', 160, [10, 14], 'peach']],
     lm: ['volcano', 'flask'], pr: ['rock', 'flask', 'crystal', 'volcano', 'rock', 'crystalP'], tx: [['dot', 'n1']] },
-  caves: { sm: ['rock', 'crystalP'], sky: ['lilac-2', 'lilac'], g: ['lilac', 'lilac-2'], hz: [['l', 34, [-18, -28, -12, -24], 'v1 .55', 1], ['q', 160, [10, 14], 'lilac']],
+  caves: { job: 'gems', sm: ['rock', 'crystalP'], sky: ['lilac-2', 'lilac'], g: ['lilac', 'lilac-2'], hz: [['l', 34, [-18, -28, -12, -24], 'v1 .55', 1], ['q', 160, [10, 14], 'lilac']],
     lm: ['crystal', 'crystalB'], pr: ['crystal', 'rock', 'crystalB', 'mushroom', 'crystalP', 'rock'], tx: [['spark', 'w']] },
-  skycity: { sm: ['cloud'], sky: ['sky', 'sky-1'], g: ['sky-1', 'sky'], sun: 'sun', hz: [['a', 70, [16, 24, 12], 'w'], ['a', 90, [10, 14], 'sky-1']],
+  skycity: { job: 'parcel', sm: ['cloud'], sky: ['sky', 'sky-1'], g: ['sky-1', 'sky'], sun: 'sun', hz: [['a', 70, [16, 24, 12], 'w'], ['a', 90, [10, 14], 'sky-1']],
     lm: ['isle', 'balloon'], pr: ['cloud', 'balloon', 'isle', 'kite', 'balloonB', 'balloonG', 'kiteB'], tx: [['dot', 'w']] },
-  galaxy: { sm: ['spark'], sky: ['night', 'night-1'], g: ['blue', 'blue-2'], sun: 'moon', st: 14, hz: [['a', 100, [12, 8, 16], 'b1 .6'], ['q', 170, [8, 12], 'blue']],
+  galaxy: { job: 'fuel', sm: ['spark'], sky: ['night', 'night-1'], g: ['blue', 'blue-2'], sun: 'moon', st: 14, hz: [['a', 100, [12, 8, 16], 'b1 .6'], ['q', 170, [8, 12], 'blue']],
     lm: ['galaxy', 'planetP'], pr: ['planet', 'galaxy', 'spark', 'planetC', 'crater', 'planetP'], tx: [['spark', 'y1']] },
-  beach: { sm: ['shell', 'starY'], sky: ['sky', 'sky-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 2, hz: [['q', 70, [2, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sand']],
+  beach: { job: 'shells', sm: ['shell', 'starY'], sky: ['sky', 'sky-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 2, hz: [['q', 70, [2, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sand']],
     lm: ['umbrella', 'bucket'], pr: ['bucket', 'shell', 'star', 'umbrellaB', 'palm', 'starY'], tx: [['dot', 't2']] },
-  workshop: { sm: ['books'], sky: ['dusk', 'dusk-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 1, hz: [['b', 24, [14, 16], 'n1 .5'], ['q', 180, [8, 10], 'sand']],
+  workshop: { job: 'planks', sm: ['books'], sky: ['dusk', 'dusk-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 1, hz: [['b', 24, [14, 16], 'n1 .5'], ['q', 180, [8, 10], 'sand']],
     lm: ['pencils', 'books'], pr: ['crate', 'books', 'pencils', 'gearO', 'lamp', 'crateB'], tx: [['dot', 'n1']] },
-  library: { sm: ['books'], sky: ['candy', 'candy-1'], g: ['rose', 'rose-2'], sun: 'sun', cl: 1, hz: [['b', 22, [30, 24], 'e1 .6'], ['q', 170, [8, 12], 'rose']],
+  library: { job: 'parcel', sm: ['books'], sky: ['candy', 'candy-1'], g: ['rose', 'rose-2'], sun: 'sun', cl: 1, hz: [['b', 22, [30, 24], 'e1 .6'], ['q', 170, [8, 12], 'rose']],
     lm: ['tower', 'books'], pr: ['books', 'lamp', 'towerB', 'bush', 'flag', 'books'], tx: [['dot', 'r1']] },
-  island: { sm: ['shell', 'rock'], sky: ['sky', 'sky-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 2, hz: [['q', 260, [2, 18, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sand']],
+  island: { job: 'planks', sm: ['shell', 'rock'], sky: ['sky', 'sky-1'], g: ['sand', 'sand-2'], sun: 'sun', cl: 2, hz: [['q', 260, [2, 18, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sand']],
     lm: ['palm', 'chest'], pr: ['palm', 'shell', 'rock', 'bush', 'star', 'palm'], tx: [['dot', 't2']] },
-  legend: { sm: ['spark'], sky: ['lilac-2', 'lilac'], g: ['lilac', 'lilac-2'], sun: 'moon', st: 6, hz: [['l', 120, [30, 20, 40], 'v1 .5'], ['q', 160, [10, 14], 'lilac']],
+  legend: { job: 'gems', sm: ['spark'], sky: ['lilac-2', 'lilac'], g: ['lilac', 'lilac-2'], sun: 'moon', st: 6, hz: [['l', 120, [30, 20, 40], 'v1 .5'], ['q', 160, [10, 14], 'lilac']],
     lm: ['castle', 'crystal'], pr: ['tower', 'crystal', 'flagB', 'spark', 'flask', 'crystalP'], tx: [['spark', 'w']] },
-  plaza: { sm: ['flowers'], sky: ['sky', 'sky-1'], g: ['peach', 'peach-2'], sun: 'sun', pp: ['p', 'y', 'c', 'g'], hz: [['b', 52, [28, 20, 34], 'o1 .45'], ['q', 180, [8, 10], 'peach']],
+  plaza: { job: 'parcel', sm: ['flowers'], sky: ['sky', 'sky-1'], g: ['peach', 'peach-2'], sun: 'sun', pp: ['p', 'y', 'c', 'g'], hz: [['b', 52, [28, 20, 34], 'o1 .45'], ['q', 180, [8, 10], 'peach']],
     lm: ['fountain', 'cactus'], pr: ['cactus', 'lamp', 'umbrella', 'flowers', 'pballoons', 'tree'], tx: [['dot', 'o1']] },
-  fiesta: { sm: ['flowers'], sky: ['dusk', 'dusk-1'], g: ['sun', 'sun-2'], sun: 'sun', pp: ['r', 'c', 'y', 'v'], hz: [['q', 70, [2, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sun']],
+  fiesta: { job: 'jar', sm: ['flowers'], sky: ['dusk', 'dusk-1'], g: ['sun', 'sun-2'], sun: 'sun', pp: ['r', 'c', 'y', 'v'], hz: [['q', 70, [2, 3], 'c1 .8', 0, -22], ['q', 180, [8, 12], 'sun']],
     lm: ['pinata', 'palm'], pr: ['pballoons', 'maracas', 'palm', 'flowers', 'cactus', 'pinata'], tx: [['dash', 'p'], ['dash', 'c']] },
-  repaso: { sm: ['spark'], sky: ['sky', 'sky-1'], g: ['blue', 'blue-2'], sun: 'sun', cl: 2, pp: ['y', 'b', 'r'], hz: [['a', 90, [14, 20], 'b1 .5'], ['q', 170, [8, 12], 'blue']],
+  repaso: { job: 'parcel', sm: ['spark'], sky: ['sky', 'sky-1'], g: ['blue', 'blue-2'], sun: 'sun', cl: 2, pp: ['y', 'b', 'r'], hz: [['a', 90, [14, 20], 'b1 .5'], ['q', 170, [8, 12], 'blue']],
     lm: ['trophy', 'flag'], pr: ['flag', 'pballoons', 'spark', 'flagB', 'trophy', 'starY'], tx: [['spark', 'y']] },
-  tiempo: { sm: ['flowers'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['q', 130, [24, 16], 'g1 .45'], ['q', 160, [10, 16], 'green']],
+  tiempo: { job: 'apples', sm: ['flowers'], sky: ['sky', 'sky-1'], g: ['green', 'green-2'], sun: 'sun', cl: 2, hz: [['q', 130, [24, 16], 'g1 .45'], ['q', 160, [10, 16], 'green']],
     lm: ['rainbow', 'snowman'], pr: ['treeP', 'umbrellaB', 'tree', 'snowman', 'treeO', 'flowers'], tx: [['tuft', 'g2']] },
-  city: { sm: ['bush'], sky: ['sky', 'sky-1'], g: ['stone', 'stone-2'], sun: 'sun', cl: 2, hz: [['b', 34, [40, 26, 54, 32, 46], 'b1 .4'], ['q', 180, [8, 10], 'stone']],
+  city: { job: 'bricks', sm: ['bush'], sky: ['sky', 'sky-1'], g: ['stone', 'stone-2'], sun: 'sun', cl: 2, hz: [['b', 34, [40, 26, 54, 32, 46], 'b1 .4'], ['q', 180, [8, 10], 'stone']],
     lm: ['building', 'buildingO'], pr: ['buildingO', 'tree', 'lamp', 'traffic', 'buildingG', 'bush'], tx: [['dot', 'e1']] },
-  nature: { sm: ['mushroom', 'flowers'], sky: ['sky', 'sky-1'], g: ['mint', 'mint-2'], sun: 'sun', cl: 2, hz: [['l', 30, [24, 32, 20], 'g1 .55'], ['q', 150, [12, 18], 'mint']],
+  nature: { job: 'apples', sm: ['mushroom', 'flowers'], sky: ['sky', 'sky-1'], g: ['mint', 'mint-2'], sun: 'sun', cl: 2, hz: [['l', 30, [24, 32, 20], 'g1 .55'], ['q', 150, [12, 18], 'mint']],
     lm: ['sign', 'pine'], pr: ['pine', 'mushroom', 'tree', 'flowers', 'rock', 'bush'], tx: [['tuft', 'g2']] },
-  lab: { sm: ['flask'], sky: ['sky', 'sky-1'], g: ['sea', 'sea-2'], sun: 'sun', cl: 1, hz: [['b', 60, [24, 36], 'b1 .4'], ['q', 170, [8, 12], 'sea']],
+  lab: { job: 'fuel', sm: ['flask'], sky: ['sky', 'sky-1'], g: ['sea', 'sea-2'], sun: 'sun', cl: 1, hz: [['b', 60, [24, 36], 'b1 .4'], ['q', 170, [8, 12], 'sea']],
     lm: ['flask', 'bulb'], pr: ['flask', 'bulb', 'gear', 'books', 'flask', 'tele'], tx: [['bub', 'c1']] },
-  observatory: { sm: ['spark'], sky: ['night', 'night-1'], g: ['lilac', 'lilac-2'], sun: 'moon', st: 14, hz: [['q', 160, [26, 14, 30], 'v1 .6'], ['q', 170, [8, 12], 'lilac']],
+  observatory: { job: 'fuel', sm: ['spark'], sky: ['night', 'night-1'], g: ['lilac', 'lilac-2'], sun: 'moon', st: 14, hz: [['q', 160, [26, 14, 30], 'v1 .6'], ['q', 170, [8, 12], 'lilac']],
     lm: ['dome', 'tele'], pr: ['tele', 'planet', 'spark', 'rock', 'planetC', 'spark'], tx: [['spark', 'y1']] }
 };
 var SCN_W = {
@@ -9689,4 +9700,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v186'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v187'; // last line: the whole file ran (checked by dataReady() before the app starts)

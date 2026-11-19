@@ -14000,7 +14000,7 @@ run('map scenes P4-09',()=>{
   const used=new Set();
   for(const [k,t] of Object.entries(T)){
     for(const f of ['sky','g','hz','lm','pr'])if(!t[f])p.push('theme '+k+': no '+f);
-    for(const n of [...t.lm||[],...t.pr||[],...t.sm||[],'cloud']){if(!o.props.includes(n))p.push('theme '+k+': prop '+n+' missing');used.add(n)}
+    for(const n of [...t.lm||[],...t.pr||[],...t.sm||[],...t.job?[t.job]:[],'cloud']){if(!o.props.includes(n))p.push('theme '+k+': prop '+n+' missing');used.add(n)} // G-PROPS: and the job prop
     // the ground (base and ledge) is quiet behind the stops: ink 7:1, every path colour 3:1 (WCAG 1.4.11 for the stop rings)
     for(const g of t.g||[]){
       if(!TOK['sc-'+g]){p.push('theme '+k+': --sc-'+g+' is not a token');continue}
@@ -14011,7 +14011,7 @@ run('map scenes P4-09',()=>{
   }
   // a world's own changes to its theme (other landmarks or props)
   for(const [id,e] of Object.entries(o.worlds))if(Array.isArray(e))
-    for(const n of [...e[1].lm||[],...e[1].pr||[],...e[1].sm||[]]){if(!o.props.includes(n))p.push(id+': prop '+n+' missing');used.add(n)}
+    for(const n of [...e[1].lm||[],...e[1].pr||[],...e[1].sm||[],...e[1].job?[e[1].job]:[]]){if(!o.props.includes(n))p.push(id+': prop '+n+' missing');used.add(n)}
   // every drawn scene
   let maxEl=0,maxB=0,maxEl996=0,maxB996=0,np=0;
   const seen=new Set();
@@ -14085,6 +14085,105 @@ run('map scenes P4-09',()=>{
   if(idx.includes('var SCN_P')||!dat.includes('var SCN_P'))p.push('the scene drawings must be in the data file, not index.html');
   return{problems:[...new Set(p)].slice(0,60),note:o.draws.length+' scenes ('+Object.keys(o.worlds).length+' worlds, '+Object.keys(T).length+' themes, '+
     o.props.length+' props), '+np+' props placed; largest '+maxEl+' elements / '+maxB+' B at 352 px, '+maxEl996+' / '+maxB996+' B at 996 px'};
+});
+
+// ---- G-PROPS: the job done at each learned lesson stop (TEACH-PLAN-2 System G) ----
+// Every world of every path drawn as drawMap draws it, lesson stops included (LS_STOPS, every band), at the map widths of 380x780
+// (352), 360x740 (332) and 1024x600 (996), with and without the Test out banner, with no lesson stop learned, every other one and
+// all of them: the scene with none learned is the scene of stops without the flag (props add nothing then), deterministic, at most
+// one job prop per stop and only by a learned lesson stop, clear of every stop, label, New tag, title, Test out banner, pet, trail,
+// lesson ticket and check-in medal, inside the band, tokens only, aria-hidden, in the P4-09 budget; every theme has a small job prop.
+run('map job props G-PROPS',()=>{
+  const p=[];
+  const o=(()=>eval(js+`
+  const r={draws:[],themes:SCN_T,props:SCN_P,miss:{}};
+  const lay=(p,sel,W,test)=>{ // drawMap (46-home.js) with every lesson stop of LS_STOPS on the path
+    const ws=PATHS[p].worlds,amp=Math.min(W*.3,200),pts=[],wb=[];
+    const w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);
+    let y=10;if(w0>0)y+=72;
+    for(let wi=w0;wi<=w1;wi++){const y0=y,[a,b]=WR[p][wi],t=test(wi);y+=t?160:86;const k0=pts.length;
+      for(let i=a;i<=b;i++){if(LS_STOPS[p].has(nid(NODES[p][i]))){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}
+        pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
+      wb.push([wi,y0,y-y0-24,k0,pts.length,t]);y+=4}
+    return{pts,wb};
+  };
+  for(const p of Object.keys(PATHS))PATHS[p].worlds.forEach((w0,sel)=>{
+    for(const W of [352,332,996])for(const tf of [wi=>wi%2==0,wi=>wi%2==1]){
+      const L=lay(p,sel,W,tf),tp=SCN.trailPts(L.pts),cur=L.pts[Math.min(2,L.pts.length-1)];
+      const pet=[cur[0]+(cur[0]>W/2?-66:66),cur[1]+18];
+      const [wi,top,h,k0,k1,test]=L.wb.find(q=>q[0]==sel),w=PATHS[p].worlds[wi],seg=L.pts.slice(k0,k1);
+      if(!seg.some(q=>q[3]))continue;
+      const base=seg.map(([x,yy,i,ls])=>ls?[x,yy,'Learn with Sparky',false,false]:[x,yy,NODES[p][i].t,NODES[p][i].sk=='boss',i%5==1]);
+      const draw=stops=>{SCN.cache.clear();const html=SCN.band(w,W,top,h,{test,trail:tp,pet,stops});return[html,SCN.placed.slice()]};
+      const [plain]=draw(base);
+      for(const mode of ['none','alt','all']){
+        let n=0;
+        const stops=seg.map(([x,yy,i,ls],j)=>base[j].concat([!!ls&&(mode=='all'||mode=='alt'&&n++%2==0)]));
+        const [html,placed]=draw(stops),[again]=draw(stops);
+        r.draws.push({p,id:w.id,W,test,mode,h,html,placed,same:html===again,plain:mode=='none'?html===plain:true,plainLen:plain.length,
+          stops:stops.map(([x,yy,lab,boss,nw,job])=>[x,yy-top,lab.length,boss,nw,job]),ls:seg.map(q=>q[3]?1:0),
+          pet:[pet[0],pet[1]-top],trail:tp.filter(q=>q[1]>top-30&&q[1]<top+h+30).map(([x,yy])=>[x,yy-top]),tlen:w.n.length});
+      }
+    }
+  });
+  r;`))();
+  const hit=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
+  const per={},jobs={};
+  for(const d of o.draws){
+    const key=d.p+' '+d.id+' @'+d.W+(d.test?' test':'')+' '+d.mode,h=d.html,svg=(h.match(/<svg[^]*<\/svg>/)||[''])[0];
+    if(!d.same)p.push(key+': not deterministic');
+    if(!d.plain)p.push(key+': no lesson stop learned, but the scene differs from the scene without the flag');
+    if(!h.startsWith('<div class="wband scn sc-')||!h.includes('aria-hidden="true"'))p.push(key+': not an aria-hidden band');
+    if(/\sid=|<defs|gradient|filter|url\(|<use|<text|<animate|<style|\sstyle=|transform=|NaN|undefined/i.test(svg))p.push(key+': ids, filters, transforms or NaN in the scene');
+    for(const a of svg.matchAll(/\s(fill|stroke)="([^"]*)"/g))if(a[2]!=='none'&&!/^var\(--(ill|sc)-[a-z0-9-]+\)$/.test(a[2]))p.push(key+': colour '+a[2]);
+    const el=(svg.match(/<(path|circle)\b/g)||[]).length;
+    if(el>75)p.push(key+': '+el+' elements (budget 75, P4-09)');
+    // P4-09's 36,000 bytes; one scene without job props is over it already at 332 px with its lesson stops (r_workshop, v186):
+    // the job props never make a scene bigger than that budget or than the same scene without them
+    if(svg.length>36000&&h.length>d.plainLen)p.push(key+': '+svg.length+' bytes (budget 36,000, P4-09)');
+    // the job props: one at most per stop, only by a learned lesson stop, the theme's job prop
+    const js=d.placed.filter(q=>q.length>2),seen=new Set();
+    const nflag=d.stops.filter(s=>s[5]).length;
+    per[d.W]=per[d.W]||[0,0];per[d.W][0]+=nflag;per[d.W][1]+=js.length;
+    if(d.mode=='all'){const k=d.p+' '+d.id;jobs[k]=jobs[k]||{};jobs[k][d.W]=(jobs[k][d.W]||0)+js.length}
+    for(const [name,box,i] of js){
+      if(seen.has(i))p.push(key+': two job props at stop '+i);seen.add(i);
+      const s=d.stops[i];
+      if(!s||!s[5]||!d.ls[i])p.push(key+': a job prop by stop '+i+', which is not a learned lesson stop');
+      const T=o.themes[(h.match(/data-scene="([a-z]+)"/)||[])[1]];
+      if(!T||name!==T.job)p.push(key+': job prop '+name+' is not the theme\'s');
+      if(box[0]<0||box[2]>d.W||box[1]<0||box[3]>d.h)p.push(key+': '+name+' sticks out of the band');
+      const keep=[];
+      for(const [x,y,ln,boss,nw] of d.stops){const r=boss?50:44,lw=Math.min(140,ln*7.6+18),m=x>d.W/2?-1:1;
+        keep.push(['stop',[x-r,y-r,x+r,y+r+5]],['label',[x-lw/2,y+40,x+lw/2,y+84]],
+          ['ticket',[x+m*78-36,y-14,x+m*78+36,y+14]],['check-in medal',[x+m*66-30,y-34,x+m*66+30,y+26]]);
+        if(nw)keep.push(['New tag',[x-26,y-62,x+26,y-30]])}
+      const tw=64+d.tlen*12.5;keep.push(['title',[(d.W-tw)/2,10,(d.W+tw)/2,66]]);
+      if(d.test)keep.push(['Test out',[d.W/2-140,54,d.W/2+140,110]]);
+      keep.push(['pet',[d.pet[0]-36,d.pet[1]-68,d.pet[0]+36,d.pet[1]+20]]);
+      for(const [x,y] of d.trail)keep.push(['trail',[x-14,y-14,x+14,y+14]]);
+      for(const [what,k] of keep)if(hit(box,k)){p.push(key+': job prop '+name+' covers the '+what);break}
+    }
+    if(d.mode=='none'&&js.length)p.push(key+': job props with no lesson stop learned');
+    if(js.length>nflag)p.push(key+': more job props than learned lesson stops');
+  }
+  // every world with a lesson stop shows its job when every lesson is learned, at every width
+  for(const [k,v] of Object.entries(jobs))for(const W of [352,332,996])if(!v[W])p.push(k+' @'+W+': no job prop with every lesson learned');
+  // the drawings: every theme has a job prop; small (at most 8 shapes, 600 bytes), scene palette tones only (d-scenes.js header)
+  for(const [k,t] of Object.entries(o.themes)){
+    if(!t.job){p.push('theme '+k+': no job prop');continue}
+    const src=o.props[t.job];
+    if(!src){p.push('theme '+k+': job prop '+t.job+' is not drawn');continue}
+    const sh=src.split('|')[1].split(';');
+    if(sh.length>8||src.length>600)p.push('job prop '+t.job+': '+sh.length+' shapes, '+src.length+' bytes (at most 8 and 600)');
+    for(const q of sh)if(!/^[roygcbvpntsmewk][1-3]?$/.test(q.trim().split(/\s+/)[0]))p.push('job prop '+t.job+': tone '+q.trim().split(/\s+/)[0]+' is not a scene palette tone');
+  }
+  // drawMap flags only lesson stops, and only learned ones (lsLearned: Show passed)
+  const home=fs.readFileSync(path.join(SRC,'js/46-home.js'),'utf8');
+  if(!/ls\?\[x,yy,'Learn with '\+petN\(\),false,false,lsLearned\(nid\(N\[i\]\)\)\]:\[x,yy,N\[i\]\.t,N\[i\]\.sk=='boss',stopNew\(p,i\)\]/.test(home))
+    p.push('46-home.js: drawMap must flag only learned lesson stops (lsLearned) for the job props');
+  const pc=W=>per[W]?per[W][1]+' of '+per[W][0]:'0';
+  return{problems:[...new Set(p)].slice(0,60),note:o.draws.length+' scenes, job props placed at 352 px '+pc(352)+', 332 px '+pc(332)+', 996 px '+pc(996)+' learned lesson stops'};
 });
 
 // ---- P4-12: setup, Grown-ups, Pet Care, app icon ----

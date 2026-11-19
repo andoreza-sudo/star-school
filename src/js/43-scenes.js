@@ -133,14 +133,15 @@ SCN.mark = (k, x, y, r) => {
   return r < .5 ? `M${x} ${y}l3.4 -2` : `M${x} ${y}l3.4 2`;
 };
 
-/* The band of world w, W wide, at top, h tall (map px). o = {test: Test out shown, stops: [[x, y, label, boss, isNew]...],
+/* The band of world w, W wide, at top, h tall (map px). o = {test: Test out shown, stops: [[x, y, label, boss, isNew, job]...],
    trail: points along the trail, pet: [x, y] or null}, all in map px. A plain band in the world colour without the data file.
+   job (G-PROPS): the stop is a learned lesson stop, so the world's job prop (T.job) stands beside it; a stop without it draws as before.
    Scenes are cached by what they depend on (in band px), so moving between worlds redraws known scenes for free. */
 SCN.cache = new Map();
 SCN.band = (w, W, top, h, o) => {
   const T = SCN.theme(w);
   if (!T) return `<div class="wband" style="top:${top}px;height:${h}px;background:${w.c}" aria-hidden="true"></div>`;
-  const stops = o.stops.map(([x, y, lab, boss, isNew]) => [scR(x), y - top, lab.length, boss ? 1 : 0, isNew ? 1 : 0]);
+  const stops = o.stops.map(([x, y, lab, boss, isNew, job]) => [scR(x), y - top, lab.length, boss ? 1 : 0, isNew ? 1 : 0, job ? 1 : 0]);
   const trail = o.trail.filter(q => q[1] > top - 30 && q[1] < top + h + 30).map(([x, y]) => [Math.round(x), Math.round(y - top)]);
   const pet = o.pet && [Math.round(o.pet[0]), Math.round(o.pet[1] - top)];
   const key = JSON.stringify([w.id, w.n, W, h, o.test ? 1 : 0, stops, trail, pet]);
@@ -228,14 +229,14 @@ SCN.draw = (w, T, W, h, test, stops, trail, pet) => {
     s += `<path d="${fwd}${back}" fill="${SCN.col(T.g[1])}" opacity=".55"/>`;
   });
   if (rim) s += `<path d="${rim}" fill="none" stroke="${SCN.col('w')}" stroke-width="3" opacity=".55"/>`;
-  const place = (name, x, y, k, pass = 1) => {
+  const place = (name, x, y, k, pass = 1, job = -1, keep = null) => {
     const P = SCN.prop(name);
     if (!P) return false;
     x = Math.min(Math.max(x, P.hw * k + 4), W - P.hw * k - 4);
     const box = [x - P.hw * k - 3, y - P.hh * k - 3, x + P.hw * k + 3, y + 5];
-    if (!free(...box)) return false;
+    if (!free(...box) || keep && keep.some(q => box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1])) return false;
     occ.push(box);
-    placed.push([name, box]);
+    placed.push(job < 0 ? [name, box] : [name, box, job]);
     stamp(P, x, y, k, pass);
     return true;
   };
@@ -245,16 +246,18 @@ SCN.draw = (w, T, W, h, test, stops, trail, pet) => {
     const k = big * (i ? .9 : 1.15);
     [[22, 1], [70, 1], [22, .8], [120, 1], [70, .8]].some(([dy, f]) => place(name, W * sides[i % 2], hz + dy, k * f));
   });
+  const nj = T.job && stops.some(q => q[5]) ? SCN.jobs(T.job, W, stops, place) : 0; // G-PROPS
   // props down the sides where there is room: a column by each edge and one where the trail swings out (free when the stops are
-  // on the other side); wide screens two loose columns a side. At most 24, one size per kind (its strokes share a layer).
+  // on the other side); wide screens two loose columns a side. At most 24 with the job props, one size per kind (its strokes share a layer).
   const amp = Math.min(W * .3, 200), z = W / 2 - amp - 40, wide = W >= 480;
   const cols = z > 150 ? [z * .3 + 10, z * .78 + 10] : [Math.max(26, z * .5)];
   if (z <= 150 && W / 2 - amp * .9 - cols[0] > 40) cols.push(W / 2 - amp * .9);
   const xs = cols.flatMap(c => [c, W - c]), last = xs.map(() => -1e9);
   let n = 0;
-  for (let y = hz + 84; y < h - 12 && n < 24; y += 30) {
+  const cap = 24 - nj;
+  for (let y = hz + 84; y < h - 12 && n < cap; y += 30) {
     xs.forEach((x0, ci) => {
-      if (y - last[ci] < (wide ? 110 : 92) || n >= 24) return;
+      if (y - last[ci] < (wide ? 110 : 92) || n >= cap) return;
       const name = T.pr[n % T.pr.length];
       const k = scR((wide ? 13 : 10) * (.88 + SCN.hash(name) % 25 / 100)) / 10;
       const x = x0 + (rnd() - .5) * (wide ? 70 : 16);
@@ -286,6 +289,25 @@ SCN.draw = (w, T, W, h, test, stops, trail, pet) => {
   // the band markup after its top (SCN.band adds the start)
   return `height:${h}px;background:linear-gradient(var(--sc-${T.sky[0]}),var(--sc-${T.sky[1]}) ${hz}px,var(--sc-${T.g[0]}) ${hz}px);` +
     `box-shadow:0 6px 0 var(--sc-${T.g[1]})" aria-hidden="true"><svg class="scn-art" width="${W}" height="${h}" focusable="false">${s}</svg></div>`;
+};
+
+/* G-PROPS: the job done at each learned lesson stop (stops[i][5]): one prop, name, beside the stop. First on its outer side (the
+   lesson ticket and a practice stop's check-in medal sit on the side toward the middle), else beyond them; none when there is no
+   room, so a prop never crowds a stop, label, ticket or medal. Placed before the side props and with no random numbers: a scene
+   with no learned lesson stop is the scene it was before. place: SCN.draw's, which records [name, box, stop index] in SCN.placed. */
+SCN.jobs = (name, W, stops, place) => {
+  const P = SCN.prop(name);
+  if (!P) return;
+  const k = W >= 480 ? 1.2 : 1, hw = P.hw * k;
+  // the side toward the middle of every stop: its ticket (x +-78, about 70 x 28) or check-in medal (x +-66, 60 x 60)
+  const keep = stops.map(([x, y]) => x > W / 2 ? [x - 124, y - 34, x - 30, y + 32] : [x + 30, y - 34, x + 124, y + 32]);
+  let n = 0;
+  stops.forEach(([x, y, , , , job], i) => {
+    if (!job) return;
+    const out = x > W / 2 ? 1 : -1;
+    if ([[out, 52 + hw], [-out, 128 + hw]].some(([d, dx]) => [26, 8, 44].some(dy => place(name, x + d * dx, y + dy, k, 1, i, keep)))) n++;
+  });
+  return n; // the side props make room: at most 24 props in all
 };
 
 // the trail's curve between stops a and b (drawMap's: leave and arrive straight down) at t
