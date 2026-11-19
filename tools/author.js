@@ -29,6 +29,15 @@
                                            PERS-01: the owner's step: mark interests reviewed (only those that pass every check), then
                                            write src/js/39q-persw.js, so they are offered at the next build
    node tools/author.js --pers-read <file> PERS-01: one read-through of every interest (docs/drafts/PERS-READ.md)
+   node tools/author.js --ask-draft [id ...] [--dry]
+                                           ASK-01: ask the xAI API for an "Ask the pet" question's words (the question, and the pet's
+                                           answer for each age and each situation of ASK_Q in src/js/39r-ask.js) and write
+                                           docs/drafts/ask/<id>.md, "status: unreviewed" (no ids: every question with no draft yet)
+   node tools/author.js --ask-fix          ASK-01: redraw every docs/drafts/ask/<id>.md from its JSON after a hand edit (status kept)
+   node tools/author.js --ask-approve <id ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
+                                           ASK-01: the owner's step: mark questions reviewed (only those that pass every check), then
+                                           write src/js/39s-askw.js and 39t-askon.js, so they are on the Ask menu at the next build
+   node tools/author.js --ask-read <file>  ASK-01: one read-through of every question and answer (docs/drafts/ASK-READ.md)
    node tools/author.js --read <file> [--batch 3|4|3b|5r] [stop ...]
                                            TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
                                            TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md);
@@ -793,11 +802,226 @@ function persRead() {
   return L.join('\n');
 }
 
-module.exports = {persDraft, persDrafts, checkPers, persFix, persApprove, persRead, persSee, PERS_KINDS, PERS_IDS, hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
+// ---- ASK-01: "Ask the pet" (src/js/39r-ask.js; words: docs/drafts/ask/<id>.md, built into 39s-askw.js, counted in 39t-askon.js) ----
+const ASKD = path.join(DRAFTS, 'ask');
+const ASK_AGE_NAMES = {little: 'the little pet (Pre-K to 2nd grade)', kid: 'the older kid pet (3rd and 4th grade)', teen: 'the teen-like pet (5th and 6th grade)'};
+// the questions as the app defines them (ASK_Q): id, the slots the question may use, and each answer variant's slots, meaning and example
+function askDefs() {
+  return JSON.parse(app()('JSON.stringify(ASK_Q.map(Q=>({id:Q.id,q:Q.q,v:Q.v})))'));
+}
+const ASK_ALWAYS = ['name', 'pet'];
+// one draft's problems ([] when fine)
+function checkAsk(d) {
+  const p = [], R = app(), defs = askDefs(), Q = d && defs.find(x => x.id === d.id), ages = R('ASK_AGES');
+  if (!d || typeof d != 'object') return ['not a draft'];
+  if (!Q) return [`no question "${d && d.id}" in ASK_Q (src/js/39r-ask.js): ${defs.map(x => x.id).join(', ')}`];
+  const words = (s, slots, w) => {
+    const bare = s.replace(/\{[^}]*\}/g, 'X');
+    if (BANNED.test(s)) p.push(`${w}: a theme the parent ruled out: "${s.match(BANNED)[0]}" — "${s}"`);
+    if (/\d/.test(bare)) p.push(`${w}: a number written into the words (numbers come from code: use a {slot}) — "${s}"`);
+    if (NUMWORDS.test(bare) || /\b(one|zero|hundred)\b/i.test(bare)) p.push(`${w}: a number word (use a {slot}) — "${s}"`);
+    for (const m of s.matchAll(/\{([^}]*)\}/g)) if (!slots.includes(m[1])) p.push(`${w}: {${m[1]}} is not a slot here (it has ${slots.map(x => '{' + x + '}').join(' ')}) — "${s}"`);
+    if (/[{}]/.test(s.replace(/\{[a-z]+\}/g, ''))) p.push(`${w}: a broken {slot} — "${s}"`);
+    if (R.ctx.ksBad(bare.replace(/X/g, ' '), true)) p.push(`${w}: a word that is not kid-safe (ksBad) — "${s}"`);
+    return bare;
+  };
+  // the question: short, a real question, the slots it needs (once each)
+  const q = String(d.q || '');
+  if (!q.trim()) p.push('q: no question');
+  else {
+    const bare = words(q, Q.q.concat(ASK_ALWAYS), 'q');
+    if (!/\?$/.test(q) || (q.match(/\?/g) || []).length !== 1) p.push(`q: one question, ending with "?" — "${q}"`);
+    if (bare.split(/\s+/).length > 9 || q.length > 60) p.push(`q: longer than 9 words or 60 characters (a button a child reads) — "${q}"`);
+    for (const s of Q.q) if ((q.match(new RegExp('\\{' + s + '\\}', 'g')) || []).length !== 1) p.push(`q: needs {${s}} once — "${q}"`);
+  }
+  // the answers: every age, every variant, 1 to 3 lines each, in the age's tone, with the variant's main slot once
+  for (const age of ages) {
+    const A = ((d.a || {})[age]) || {};
+    for (const v in Q.v) {
+      const ls = [].concat(A[v] || []), V = Q.v[v];
+      if (!ls.length || ls.length > 2) { p.push(`a.${age}.${v}: one or two lines (said one after the other)`); continue; }
+      const all = ls.join(' '), cnt = k => (all.match(new RegExp('\\{' + k + '\\}', 'g')) || []).length;
+      if (V.slots[0] && cnt(V.slots[0]) !== 1) p.push(`a.${age}.${v}: says {${V.slots[0]}} ${cnt(V.slots[0])} times (once) — "${all}"`);
+      for (const s2 of V.slots.slice(1)) if (cnt(s2) > 1) p.push(`a.${age}.${v}: says {${s2}} more than once — "${all}"`);
+      ls.forEach((t, i) => {
+        const s = String(t), w = `a.${age}.${v} ${i + 1}`, bare = words(s, V.slots.concat(ASK_ALWAYS), w);
+        if (!s.trim()) { p.push(w + ': an empty line'); return; }
+        if (/\b(wrong|bad|silly|lazy|stupid|dumb|failed?)\b/i.test(bare)) p.push(`${w}: a word that tells the child off: say what to do instead — "${s}"`);
+        if (/\b(my powers?|i can (do|make) anything|wish)\b/i.test(bare)) p.push(`${w}: the pet has no powers — "${s}"`);
+        for (const x of R.ctx.lsToneBad(bare, age)) p.push(`${w}: ${x} — "${s}"`);
+      });
+    }
+    for (const v in A) if (!Q.v[v]) p.push(`a.${age}.${v}: not an answer of ${d.id} (${Object.keys(Q.v).join(', ')})`);
+  }
+  for (const age in d.a || {}) if (!ages.includes(age)) p.push(`a.${age}: not a pet age (${ages.join(', ')})`);
+  return p;
+}
+function askDrafts() {
+  if (!fs.existsSync(ASKD)) return [];
+  return fs.readdirSync(ASKD).filter(f => /^[a-z]+\.md$/.test(f)).sort().map(f => {
+    const file = path.join(ASKD, f);
+    try { const d = parseDraft(fs.readFileSync(file, 'utf8')), problems = checkAsk(d); if (d.id + '.md' !== f) problems.push('the id does not match the file name'); return {file, d, problems}; }
+    catch (e) { return {file, d: null, problems: ['cannot read: ' + e.message]}; }
+  });
+}
+// a line as the child hears it, with the variant's example slots (Mia and her pet Sparky)
+const askSee = (t, ex) => app()(`(()=>{const n=S.name,pn=S.petName;S.name='Mia';S.petName='Sparky';try{return askFill(${JSON.stringify(t)},${JSON.stringify(ex)})}finally{S.name=n;S.petName=pn}})()`);
+function askSheet(d) {
+  const Q = askDefs().find(x => x.id === d.id), L = [`Question: ${askSee(d.q, Object.assign({}, ...Object.values(Q.v).map(v => v.ex)))}`];
+  for (const age of app()('ASK_AGES')) {
+    L.push('', `Answers of ${ASK_AGE_NAMES[age]}:`);
+    for (const v in Q.v) {
+      L.push(`- when ${Q.v[v].about}${Object.keys(Q.v[v].ex).length ? ' (here: ' + Object.entries(Q.v[v].ex).map(([k, x]) => '{' + k + '} = ' + x).join(', ') + ')' : ''}:`);
+      L.push(`    "${askSee([].concat(((d.a || {})[age] || {})[v] || []).join(' '), Q.v[v].ex)}"`);
+    }
+  }
+  return L.join('\n');
+}
+function askFile(d, problems, status = 'unreviewed', made = '') {
+  const clean = Object.assign({}, d);
+  delete clean.status;
+  return `# Ask the pet: ${d.q} (${d.id})\n\nstatus: ${status}\nmade: ${made || new Date().toISOString().slice(0, 10) + ' by tools/author.js --ask-draft (xAI API); read and rewritten by hand'}\n\n`
+    + '<!-- For the owner: read the question and its answers below as the child sees and hears them, change any wording in the JSON\n'
+    + '     ("q" and "a"), then replace "unreviewed" above with "reviewed <your name> <date>" (or run: node tools/author.js --ask-approve <id> --by <name>).\n'
+    + '     Until then this question is never on the Ask menu, and with no question reviewed there is no Ask button at all: tools/build.py\n'
+    + '     copies reviewed questions only (src/js/39s-askw.js). After editing the JSON, node tools/author.js --ask-fix redraws this page. -->\n\n'
+    + '## As the child sees and hears it (example slots)\n\n```text\n' + askSheet(d) + '\n```\n\n## Checks\n\n'
+    + (problems.length ? problems.map(x => '- ' + x).join('\n') : '- All checks pass (slots, the tone of each pet age, numbers, themes, kid-safe).') + '\n\n'
+    + '## Words (the draft itself)\n\n```json\n' + JSON.stringify(clean, null, 1) + '\n```\n';
+}
+function askFix() {
+  const out = [];
+  for (const x of askDrafts()) {
+    if (!x.d) { out.push(x); continue; }
+    const t = fs.readFileSync(x.file, 'utf8'), st = /^status:\s*(.*)$/m.exec(t)[1], made = (/^made:\s*(.*)$/m.exec(t) || [])[1];
+    fs.writeFileSync(x.file, askFile(x.d, x.problems, st, made));
+    out.push(x);
+  }
+  return out;
+}
+// ask the API for a first draft of these questions (all with no draft yet when none named)
+function askDraft(ids, o = {}) {
+  const defs = askDefs(), R = app();
+  ids = ids.length ? ids : defs.map(x => x.id).filter(id => !fs.existsSync(path.join(ASKD, id + '.md')));
+  const rules = R('ASK_AGES').map(a => { const r = R(`(()=>{const r=LS_RULES[${JSON.stringify(a)}];return{words:r.words,no:r.no?String(r.no):''}})()`);
+    return `- ${a}: ${ASK_AGE_NAMES[a]}: at most ${r.words} words per answer${r.no ? ', never these words: ' + r.no : ''}`; }).join('\n');
+  const tone = 'little: warm and playful, short, says "we" and "let\'s"; kid: an older kid, friendly, a little jokey, no baby talk; teen: calm, dry, a partner, never talks down.';
+  const out = [];
+  for (const id of ids) {
+    const Q = defs.find(x => x.id === id);
+    if (!Q) throw new Error('no question ' + id + ' in ASK_Q');
+    const sys = 'You write the words of a pet in a children\'s learning app (Pre-K to 6th grade). A child taps a question from a short menu and the pet '
+      + 'answers out loud. You write only words; the app fills every number, name and fact into {slots} from the child\'s real progress. Reply with one JSON object and nothing else.';
+    const vs = Object.entries(Q.v).map(([v, V]) => `- ${v}: when ${V.about}. Slots: ${V.slots.length ? V.slots.map(s => '{' + s + '}').join(' ') + ' (' + V.slots[0] + ' exactly once)' : 'none'}, plus {name} (the child) and {pet} (the pet). Example: ${JSON.stringify(V.ex)}`).join('\n');
+    const user = `The question "${id}". Suggested wording: ${JSON.stringify({next: 'What should I do next?', how: 'How do I do {stop}?', why: 'Why did I get that wrong?', time: 'How much game time do I have?', earn: 'How do I get more game time?', grow: 'When will you grow?', feel: 'How are you feeling?', stuck: 'What if it is too hard?'}[id] || '')}
+1. q: the question as the child reads it on a button: short, plain, what a child really asks${Q.q.length ? ' (must use ' + Q.q.map(s => '{' + s + '}').join(' ') + ' once)' : ''}.
+2. a: the pet's answer for each pet age (little, kid, teen) and each situation below: an array of one or two short lines, said one after the other.
+Situations:
+${vs}
+The pet's ages and their rules:
+${rules}
+Tone: ${tone}
+Rules: never a digit or a number word (use the slots); the pet is a friend with no powers; no magic, spells, wishes, fairies, unicorns, wizards, evolution or "millions of years"; nothing scary; never "wrong", "bad" or "silly" about the child; kind and encouraging; never give the answer to a question; plain words a child knows.
+The JSON keys: id ("${id}"), q, a {little: {${Object.keys(Q.v).join(', ')}}, kid: {...}, teen: {...}} (arrays of lines).`;
+    if (o.dry) { out.push({id, prompt: [sys, user]}); continue; }
+    const m = model(), res = api('POST', API + '/chat/completions', {model: m, messages: [{role: 'system', content: sys}, {role: 'user', content: user}], temperature: 0.7});
+    const txt = String(res.choices[0].message.content || '');
+    const d = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+    d.id = id;
+    d.api = {q: d.q, a: d.a};
+    d.notes = '';
+    fs.mkdirSync(ASKD, {recursive: true});
+    const probs = checkAsk(d), f = path.join(ASKD, id + '.md');
+    fs.writeFileSync(f, askFile(d, probs, 'unreviewed', new Date().toISOString().slice(0, 10) + ' by tools/author.js --ask-draft (xAI API, ' + m + ')'));
+    out.push({id, file: f, problems: probs});
+  }
+  return out;
+}
+// the owner's step: mark questions reviewed (only those that pass), then write src/js/39s-askw.js and 39t-askon.js
+function askApprove(ids, o = {}) {
+  const by = String(o.by || 'owner').replace(/\s+/g, ' ').trim(), date = o.date || new Date().toISOString().slice(0, 10), done = [], bad = [];
+  if (!/^\d{4}-\d\d-\d\d$/.test(date)) throw new Error('--date must be YYYY-MM-DD');
+  for (const x of askDrafts()) {
+    if (!x.d || !(ids.includes('all') ? x.d.status === 'unreviewed' : ids.includes(x.d.id))) continue;
+    if (x.problems.length) { bad.push(`${x.d.id}: ${x.problems.length} problems (fix them first: node tools/author.js --check)`); continue; }
+    const t = fs.readFileSync(x.file, 'utf8');
+    fs.writeFileSync(x.file, t.replace(/^status:.*$/m, `status: reviewed ${by} ${date}${o.note ? ' (' + o.note + ')' : ''}`));
+    done.push(x.d.id);
+  }
+  for (const id of ids) if (id !== 'all' && !done.includes(id) && !bad.some(b => b.startsWith(id + ':'))) bad.push(`${id}: no such question draft`);
+  if (done.length) cp.execFileSync('python3', [path.join(ROOT, 'tools', 'build.py'), '--words-only'], {stdio: 'pipe'});
+  return {done, bad};
+}
+// the read-through: docs/drafts/ASK-READ.md
+function askRead() {
+  const xs = askDrafts().filter(x => x.d), defs = askDefs(), st = xs.reduce((a, x) => (a[x.d.status] = (a[x.d.status] || 0) + 1, a), {});
+  const sheet = askSheetWords(), qOf = id => ((xs.find(x => x.d.id === id) || {d: {q: id}}).d.q) + ' (' + id + ')';
+  const order = id => defs.findIndex(q => q.id === id);
+  xs.sort((a, b) => order(a.d.id) - order(b.d.id));
+  const L = ['# "Ask the pet" read-through (ASK-01)', '',
+    `${xs.length} questions (${Object.entries(st).map(([k, v]) => v + ' ' + k).join(', ')}). A child taps the Ask button beside the pet (on Home, and`,
+    'beside the pet on a map), picks a question from a short menu, and the pet says the answer in the tablet\'s voice; the answer is',
+    'also written in the pet\'s speech bubble. No typing and no talking to the tablet: only these questions, only these answers.', '',
+    'Each answer is chosen by simple rules from what is true for the child right now, and its {slots} are filled from the app:',
+    'the next stop on the map, the game time in the bank, the hint for the child\'s last mistake, the idea line of the lesson.',
+    'The pet answers in its age\'s tone: the little pet (Pre-K to 2nd grade, 12 words at most), the older kid (3rd and 4th,',
+    '16 words) and the teen-like partner (5th and 6th, 20 words). Below, every answer with example slots (Mia, her pet Sparky).', '',
+    'A question only shows when it fits: "How do I do ...?" only at a stop that has a lesson for the child\'s grade;',
+    '"Why did I get that wrong?" only after a mistake in a Practice round this session. Ask is not inside a round, and the',
+    '"why" answer never says the answer of the question it is about (the app checks every filled answer).', '',
+    'Also on the screen (button and title words, not the pet\'s answers): the button is read as "Ask <pet> a question";',
+    'the sheet says "Ask <pet>", then "Pick a question." until a question is tapped, and has a Close button (read as "Close").', '',
+    'For children who cannot read yet (ASK-READ): when the sheet opens, the pet reads the menu aloud ("You can ask me:", then each',
+    'question in order, its button lit while it is said; a tap anywhere stops it), and "Hear the questions again" reads it again.',
+    'A tapped question is said first, then its answer, so a child who tapped the wrong one hears what they picked. Each question',
+    'has its own picture. The little pet (Pre-K to 2nd grade) shows at most 5 questions, so the whole menu is heard quickly:', '',
+    ...sheet.little.map(id => '- ' + qOf(id)), '', 'It leaves out (the older pets keep them):', '',
+    ...defs.filter(q => !sheet.little.includes(q.id)).map(q => '- ' + qOf(q.id)), '',
+    'The sheet\'s own two lines are at the end of this page (unreviewed).', '',
+    'Until you approve a question it is not on the menu, and with none approved there is no Ask button at all.',
+    'To change a word: edit the JSON in docs/drafts/ask/<id>.md. When you are happy, say so, or run:', '',
+    '`node tools/author.js --ask-approve <id ...|all> --by <your name>`', '',
+    'Not built (later steps in ROADMAP ASK-01, for the owner to look at again): typed questions, asking out loud, and any', 'on-device model.', ''];
+  for (const x of xs) {
+    L.push(`## ${x.d.q} (${x.d.id})${x.d.status === 'reviewed' ? ' (reviewed)' : ''}`, '', '```text', askSheet(x.d).split('\n').slice(2).join('\n'), '```', '');
+    if (x.d.notes) L.push('What changed after the API draft: ' + x.d.notes, '');
+  }
+  L.push('## The lines with their slots', '', '{name} is the child, {pet} the pet; the other slots are filled by the app as described above.', '');
+  for (const x of xs) {
+    L.push(`### ${x.d.id}: ${x.d.q}`, '');
+    for (const age of app()('ASK_AGES')) for (const v in (x.d.a || {})[age] || {}) for (const t of [].concat(x.d.a[age][v])) L.push(`- ${age} ${v}: ${t}`);
+    L.push('');
+  }
+  // ASK-READ: the sheet's own words (ASK_SHEET in src/js/39r-ask.js), for the owner to read like the answers
+  L.push('## The sheet\'s own words (unreviewed)', '', 'Written in src/js/39r-ask.js (ASK_SHEET); the same for every pet age. Change them there, or say which words you want.', '',
+    '```text', 'Said by the pet before it reads the questions aloud:', `    "${sheet.intro}"`, 'The button at the top of the sheet (a speaker picture; a tap reads the questions again):', `    "${sheet.again}"`, '```', '',
+    '- intro: ' + sheet.intro, '- again: ' + sheet.again, '');
+  return L.join('\n');
+}
+// ASK-READ: the sheet's own lines and the little pet's questions, as the app has them
+function askSheetWords() {
+  return JSON.parse(app()('JSON.stringify(Object.assign({little: ASK_LITTLE}, ASK_SHEET))'));
+}
+
+module.exports = {askSheetWords, askDraft, askDrafts, checkAsk, askFix, askApprove, askRead, askSheet, askDefs, persDraft, persDrafts, checkPers, persFix, persApprove, persRead, persSee, PERS_KINDS, PERS_IDS, hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
 
 if (require.main === module) {
   const a = process.argv.slice(2), has = f => a.includes(f), val = f => (a.indexOf(f) >= 0 ? a[a.indexOf(f) + 1] : null);
-  if (has('--pers-draft')) {
+  if (has('--ask-draft')) {
+    const r = askDraft(a.filter(x => !x.startsWith('--')), {dry: has('--dry')});
+    for (const x of r) console.log(x.prompt ? x.prompt.join('\n\n') : `${path.relative(ROOT, x.file)}: status unreviewed, ${x.problems.length ? x.problems.length + ' problems:\n  ' + x.problems.join('\n  ') : 'all checks pass'}`);
+  } else if (has('--ask-fix')) {
+    for (const x of askFix()) console.log((x.problems.length ? 'FAIL  ' : 'ok    ') + path.relative(ROOT, x.file) + (x.problems.length ? '\n  ' + x.problems.join('\n  ') : ''));
+  } else if (has('--ask-approve')) {
+    const ids = a.slice(a.indexOf('--ask-approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note'].includes(all[i - 1]));
+    const r = askApprove(ids, {by: val('--by'), date: val('--date'), note: val('--note')});
+    console.log((r.done.length ? 'reviewed: ' + r.done.join(', ') + '\nwrote src/js/39s-askw.js and 39t-askon.js: these questions are on the Ask menu at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
+      + (r.bad.length ? '\nnot marked:\n  ' + r.bad.join('\n  ') : ''));
+    process.exitCode = r.bad.length ? 1 : 0;
+  } else if (has('--ask-read')) {
+    fs.writeFileSync(path.resolve(val('--ask-read')), askRead());
+    console.log('wrote ' + val('--ask-read'));
+  } else if (has('--pers-draft')) {
     const r = persDraft(a.filter(x => !x.startsWith('--')), {dry: has('--dry')});
     for (const x of r) console.log(x.prompt ? x.prompt.join('\n\n') : `${path.relative(ROOT, x.file)}: status unreviewed, ${x.problems.length ? x.problems.length + ' problems:\n  ' + x.problems.join('\n  ') : 'all checks pass'}`);
   } else if (has('--pers-fix')) {
@@ -853,6 +1077,11 @@ if (require.main === module) {
     for (const x of checkHints()) {
       const rel = path.relative(ROOT, x.file);
       if (x.problems && x.problems.length) { bad++; console.log('FAIL  ' + rel + '\n  ' + x.problems.slice(0, 20).join('\n  ')); }
+      else console.log(`ok    ${rel} (${x.d.status})`);
+    }
+    for (const x of askDrafts()) { // ASK-01: the Ask the pet questions
+      const rel = path.relative(ROOT, x.file);
+      if (x.problems.length) { bad++; console.log('FAIL  ' + rel + '\n  ' + x.problems.slice(0, 20).join('\n  ')); }
       else console.log(`ok    ${rel} (${x.d.status})`);
     }
     for (const x of persDrafts()) { // PERS-01: the interest themes

@@ -13986,6 +13986,183 @@ async function main() {
         'problem with the default answer and label, said as shown, with its picture; the right answer scores; no sideways scroll, no console errors, no network requests');
     }
     // end PERS-01
+    if (seg('ASK-01')) {
+      // ASK-01: "Ask the pet". With nothing reviewed there is no Ask button on Home or the map. With the drafts' words as if the owner had
+      // approved them (simulated in the page: ASKW and ASK_ON), the button beside the pet loads the hints part, opens the menu, and every
+      // question tapped shows its answer and says it; the "why" answer carries the approved hint of the child's real first wrong try
+      // (a sum typed without the carry) and never its answer. Home and the map, at 380x780, 600x960 and 1024x600.
+      const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'ask'), A = require('./author.js');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const W = Object.fromEntries(A.askDrafts().filter(x => x.d).map(x => [x.d.id, { q: x.d.q, a: x.d.a }]));
+      const LN = Object.fromEntries(A.hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d.line]));
+      // the Ask button and the open sheet on screen: sizes, inside the screen, nothing under the button, no sideways scroll
+      const FIT = () => {
+        const o = [], vw = document.documentElement.clientWidth, vh = innerHeight, box = e => e.getBoundingClientRect();
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        const btn = document.querySelector('.ak-btn'), sheet = document.querySelector('.sheet .ak');
+        if (btn && !sheet) {
+          const r = box(btn);
+          if (r.width < 47.5 || r.height < 47.5) o.push('the Ask button is ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) o.push('the Ask button is outside the screen sideways');
+          if (!btn.getAttribute('aria-label') || !/^Ask .+ a question$/.test(btn.getAttribute('aria-label'))) o.push('the Ask button has no spoken name');
+          for (const e of document.querySelectorAll('.node, .lsn, .nlab, .tobtn, .wtitle, .hm-think')) {
+            const b = box(e);
+            if (b.width && r.left < b.right - 2 && r.right > b.left + 2 && r.top < b.bottom - 2 && r.bottom > b.top + 2) o.push('the Ask button covers ' + e.className);
+          }
+          const pet = document.querySelector('#pet .pet-svg, .mappet .pet-svg');
+          if (pet) { const b = box(pet), cx = (b.left + b.right) / 2, cy = (b.top + b.bottom) / 2; if (cx > r.left && cx < r.right && cy > r.top && cy < r.bottom) o.push('the Ask button covers the pet'); }
+        }
+        if (sheet) {
+          const s = box(document.querySelector('.sheet'));
+          if (s.left < -1 || s.right > vw + 1 || s.top < -1) o.push('the sheet is outside the screen');
+          for (const e of sheet.querySelectorAll('.ak-q, #ak-done')) {
+            const b = box(e);
+            if (b.height < 47.5 || b.width < 47.5) o.push('small ' + (e.dataset.ask || e.id) + ' ' + Math.round(b.width) + 'x' + Math.round(b.height));
+            if (b.left < s.left - 1 || b.right > s.right + 1) o.push('outside the sheet ' + (e.dataset.ask || e.id));
+            if (!e.textContent.trim() && !e.getAttribute('aria-label')) o.push('a button with no spoken name');
+          }
+          const q = document.querySelector('.sheet');
+          if (q.scrollWidth > q.clientWidth + 1) o.push('the sheet scrolls sideways');
+          if (s.bottom > vh + 1) o.push('the sheet runs below the screen (' + Math.round(s.top) + '-' + Math.round(s.bottom) + ' of ' + vh + ', page scrolled ' + document.scrollingElement.scrollTop + ')');
+        }
+        return o;
+      };
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true });
+        const pg = pa.page, at = 'ASK-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h, K = k2Kit(pg, at, bad);
+        try {
+          // the pet's voice is captured (say): each line with the question lit while it was said (ASK-READ)
+          await pg.evaluate(() => { S.grade = 1; S.voice = false; window.__said = []; window.__lit = [];
+            window.say = t => { window.__said.push(String(t)); window.__lit.push([...document.querySelectorAll('.ak-q.ak-now')].map(b => b.dataset.ask).join(',')); }; });
+          // 1. nothing reviewed (ASK_ON 0, as built): no Ask button on Home or on the map, and the hints part is not loaded at start
+          const none = await pg.evaluate(async () => {
+            home(); const h0 = document.querySelectorAll('.ak-btn').length;
+            pathMap('math'); await new Promise(r => setTimeout(r, 50)); const m0 = document.querySelectorAll('.ak-btn').length;
+            return { on: ASK_ON, h0, m0, hints: partReady('hints') };
+          });
+          if (none.on !== 0 || none.h0 || none.m0 || none.hints) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
+          // 2. reviewed (simulated): Home draws the button by the pet; the first tap loads the hints part
+          await pg.evaluate(() => { ASK_ON = 8; home(); });
+          await pg.waitForSelector('.hm-stage .ak-btn', { timeout: 5000 });
+          await animsDone(pg);
+          (await pg.evaluate(FIT)).forEach(x => bad.push(at + 'Home: ' + x));
+          await pg.click('.ak-btn');
+          await pg.waitForFunction(() => partReady('hints') && typeof askOpen == 'function', null, { timeout: 15000 });
+          await pg.evaluate(W => { Object.assign(ASKW, W); }, W);
+          // 3. a real mistake: a Practice sum typed without its carry, with that mistake's hint approved (simulated)
+          await pg.evaluate(l => { HINTW.nocarry = l; }, LN.nocarry);
+          const MQ = `(()=>{for(let s=1;s<600;s++){const q=genQ('big',6,s);const p=q.kind=='num'&&/^\\d+ \\+ \\d+ = \\?$/.test(q.label)&&hmPredict(q).find(p=>p.c=='nocarry');if(p&&!(q.why&&q.why[p.v]))return q}})()`;
+          await K.round(MQ, '#slot');
+          const mq = await pg.evaluate(() => ({ ans: String(G.q.ans), v: hmPredict(G.q).find(p => p.c == 'nocarry').v, label: G.q.label }));
+          for (const d of String(mq.v)) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await vwait(pg, 300);
+          const lm = await pg.evaluate(() => ASK_LM && { v: ASK_LM.v, label: ASK_LM.q.label, k: ASK_LM.k === SKEY });
+          if (!lm || String(lm.v) !== String(mq.v) || lm.label !== mq.label || !lm.k) bad.push(at + 'the last mistake was not kept: ' + JSON.stringify([lm, mq]));
+          // the child leaves the round with the question still open, and asks at Home
+          const tryAll = async (where) => {
+            await pg.waitForSelector('.ak-btn', { timeout: 5000 });
+            await animsDone(pg);
+            (await pg.evaluate(FIT)).forEach(x => bad.push(at + where + ': ' + x));
+            // the captured say() takes no time: on the map each line is held 1.5 s, as long as a real voice takes, so the tap lands mid-reading
+            await pg.evaluate(w => { window.__said = []; window.__lit = []; ASKR.MIN = w == 'map' ? 1500 : 450; }, where);
+            await pg.click('.ak-btn');
+            await pg.waitForSelector('.sheet .ak .ak-q', { timeout: 15000 });
+            // ASK-READ: a 1st grader (voice setting off) hears the menu as soon as it opens: "You can ask me:", then every question in
+            // the order shown, its button lit while it is said. On Home it is heard to the end; on the map a tap on the bubble stops it.
+            const items = await pg.evaluate(() => askItems({ p: askMap() }).map(x => [x.id, x.q])), ASK_INTRO = await pg.evaluate(() => ASK_SHEET.intro);
+            const wantSaid = [ASK_INTRO].concat(items.map(x => x[1])), wantLit = [''].concat(items.map(x => x[0]));
+            if (where == 'home') {
+              await pg.waitForFunction(() => window.__said.length >= 3, null, { timeout: 5000 });
+              await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-reading-' + sz + '.png') }).catch(() => {});
+              await pg.waitForFunction(() => !ASKR.on, null, { timeout: 15000 });
+              const r = await pg.evaluate(() => ({ said: window.__said.slice(), lit: window.__lit.slice(), now: document.querySelectorAll('.ak-now').length }));
+              if (JSON.stringify(r.said) !== JSON.stringify(wantSaid)) bad.push(at + where + ': the menu is read as ' + JSON.stringify(r.said));
+              if (JSON.stringify(r.lit) !== JSON.stringify(wantLit)) bad.push(at + where + ': the light moved ' + JSON.stringify(r.lit) + ', not ' + JSON.stringify(wantLit));
+              if (r.now) bad.push(at + where + ': a question is still lit after the reading');
+            } else {
+              await pg.waitForFunction(() => window.__said.length >= 3, null, { timeout: 5000 });
+              await pg.click('#ak-a');
+              const n0 = await pg.evaluate(() => window.__said.length);
+              await vwait(pg, 1500);
+              const r = await pg.evaluate(() => ({ said: window.__said.slice(), lit: window.__lit.slice(), on: ASKR.on, now: document.querySelectorAll('.ak-now').length }));
+              if (JSON.stringify(r.said) !== JSON.stringify(wantSaid.slice(0, r.said.length)) || JSON.stringify(r.lit) !== JSON.stringify(wantLit.slice(0, r.lit.length)))
+                bad.push(at + where + ': the reading before the tap: ' + JSON.stringify(r));
+              if (r.said.length !== n0 || r.on || r.now || n0 >= wantSaid.length) bad.push(at + where + ': a tap did not stop the reading at once: ' + JSON.stringify(r) + ' (' + n0 + ' lines when tapped)');
+              // "Hear the questions again" starts it over
+              await pg.evaluate(() => { window.__said = []; window.__lit = []; });
+              await pg.click('#ak-hear');
+              await pg.waitForFunction(() => window.__said.length >= 2, null, { timeout: 5000 });
+              await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-reading-' + sz + '.png') }).catch(() => {});
+              const r2 = await pg.evaluate(() => window.__said.slice(0, 2));
+              if (JSON.stringify(r2) !== JSON.stringify(wantSaid.slice(0, 2))) bad.push(at + where + ': Hear the questions again says ' + JSON.stringify(r2));
+              await pg.click('#ak-a'); // stopped again before the questions are tapped one by one
+              if (await pg.evaluate(() => ASKR.on)) bad.push(at + where + ': a tap did not stop the reading after Hear the questions again');
+            }
+            await pg.waitForSelector('.sheet-bg.on', { timeout: 5000 }); // slid up (UI.sheet adds .on two frames after it is drawn)
+            await animsDone(pg);
+            const want = await pg.evaluate(() => askItems({ p: askMap() }).map(x => [x.id, x.q, x.a]));
+            const ids = await pg.evaluate(() => [...document.querySelectorAll('.ak-q')].map(b => b.dataset.ask));
+            if (JSON.stringify(ids) !== JSON.stringify(want.map(x => x[0]))) bad.push(at + where + ': the menu is ' + ids.join(', ') + ', not ' + want.map(x => x[0]).join(', '));
+            // the little pet (a 1st grader): at most 5 questions (ASK_LITTLE); each with its own icon
+            if (ids.length < 4 || ids.length > 5 || !ids.includes('why') || !ids.includes('next') || !ids.includes('time')) bad.push(at + where + ': the menu: ' + ids.join(', '));
+            const icons = await pg.evaluate(() => [...document.querySelectorAll('.ak-q')].map(b => { const i = b.querySelector('svg.ic'), r = i.getBoundingClientRect(), br = b.getBoundingClientRect();
+              return [i.querySelector('use').getAttribute('href'), Math.round(r.width), Math.round(r.left - br.left), b.firstElementChild === i]; }));
+            if (new Set(icons.map(x => x[0])).size !== icons.length || icons.some(x => x[1] < 32 || !x[3] || x[2] > 24)) bad.push(at + where + ': the icons: ' + JSON.stringify(icons));
+            const hear = await pg.evaluate(() => { const b = document.querySelector('#ak-hear'), r = b.getBoundingClientRect(), q = document.querySelector('.ak-q').getBoundingClientRect();
+              return { h: Math.round(r.height), above: r.bottom <= q.top, t: b.textContent.trim(), ic: !!b.querySelector('use[href="#i-speak"]') }; });
+            if (hear.h < 48 || !hear.above || hear.t !== 'Hear the questions again' || !hear.ic) bad.push(at + where + ': Hear the questions again: ' + JSON.stringify(hear));
+            (await pg.evaluate(FIT)).forEach(x => bad.push(at + where + ' sheet: ' + x));
+            const heard = [];
+            for (const [id, q, a] of want) {
+              await pg.evaluate(() => { window.__said = []; });
+              await pg.click(`.ak-q[data-ask="${id}"]`);
+              const r = await pg.evaluate(id => ({ shown: document.querySelector('#ak-a').textContent, said: window.__said.slice(),
+                pressed: document.querySelector(`.ak-q[data-ask="${id}"]`).getAttribute('aria-pressed'), label: document.querySelector(`.ak-q[data-ask="${id}"]`).textContent.trim() }), id);
+              // ASK-READ: the question first (a mistap is heard), then the answer
+              if (r.shown !== a || JSON.stringify(r.said) !== JSON.stringify([q, a]) || r.pressed !== 'true' || r.label !== q) bad.push(at + where + ' ' + id + ': ' + JSON.stringify([r, q, a]));
+              if (/[{}]|undefined|NaN|null/.test(a)) bad.push(at + where + ' ' + id + ': a slot left: ' + a);
+              heard.push(id);
+              if (id == 'why') {
+                const hint = await pg.evaluate(m => hmFill(HINTW.nocarry, hmMatch(G.q, m.v).s), mq);
+                if (!a.includes(hint)) bad.push(at + where + ' why: no approved hint "' + hint + '" in "' + a + '"');
+                if (new RegExp('(^|[^\\d])' + mq.ans + '([^\\d]|$)').test(a)) bad.push(at + where + ' why: says the answer ' + mq.ans + ': ' + a);
+                await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-why-' + sz + '.png') }).catch(() => {});
+              }
+              if (id == 'next') await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-next-' + sz + '.png') }).catch(() => {});
+            }
+            // the score, stars and game time did not move while asking
+            await pg.click('#ak-done');
+            await pg.waitForFunction(() => !document.querySelector('.sheet .ak'), null, { timeout: 5000 });
+            return heard;
+          };
+          const before = await pg.evaluate(() => JSON.stringify([S.stars, S.coins, pt().bank, G.score, G.done]));
+          await pg.evaluate(() => home());
+          const hh = await tryAll('home');
+          await pg.evaluate(() => pathMap('math'));
+          await pg.waitForSelector('#map .ak-mp', { timeout: 5000 });
+          await pg.evaluate(() => document.querySelector('.ak-mp').scrollIntoView({ block: 'center' }));
+          const hm = await tryAll('map');
+          const after = await pg.evaluate(() => JSON.stringify([S.stars, S.coins, pt().bank, G.score, G.done]));
+          if (before !== after) bad.push(at + 'asking changed the score, stars or game time: ' + before + ' -> ' + after);
+          // the pet's age: a 5th grader hears the teen-like pet's answer
+          const teen = await pg.evaluate(() => { S.grade = 5; const x = askItems({ p: 'math' }).find(y => y.id == 'stuck'); S.grade = 1; return x && x.a; });
+          if (teen !== W.stuck.a.teen.help.join(' ')) bad.push(at + 'a 5th grader hears ' + teen);
+          notes.push(sz + ' (Home ' + hh.length + ', map ' + hm.length + ' questions)');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of pa.errors) bad.push(at + e);
+        for (const u of pa.network) bad.push(at + 'network request: ' + u);
+        await pa.ctx.close();
+      }
+      if (bad.length) fail('ASK-01 Ask the pet:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('ASK-01: Ask the pet at ' + notes.join(', ') + ': with nothing reviewed no Ask button on Home or the map and no hints part at start; ' +
+        'approved (simulated), the button beside the pet loads the hints part and opens the menu, every question tapped shows and says its answer ' +
+        '(the menu = askItems), the "why" answer carries the approved hint of a real first wrong try and not its answer; 48 px buttons, on screen, ' +
+        'nothing covered; stars, coins, game time and the round unchanged; a 5th grader hears the teen-like pet. ASK-READ: a 1st grader hears the menu ' +
+        'read on opening in the order shown with each question lit, a tap stops it at once, Hear the questions again restarts it, a tap says the ' +
+        'question then the answer, at most 5 questions with distinct 32 px icons');
+    }
+    // end ASK-01
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

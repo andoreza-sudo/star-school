@@ -278,6 +278,11 @@ const SCREENS = {
   'pers-pick': { run: async p => { await persReady(p); await p.evaluate(() => { window.say = window.__a11y.say; S.ints = ['dinosaurs']; persPick(() => grown()); }); await p.waitForTimeout(400); } },
   'grown-pers': { adult: true, run: async p => { await persReady(p); await p.evaluate(() => { S.ints = ['space', 'music']; grown(); });
     await p.waitForSelector('#pers-open', { timeout: 10000 }); await p.evaluate(() => document.querySelector('#gw-pers').scrollIntoView()); await p.waitForTimeout(300); } },
+  // ASK-01: the Ask the pet sheet from Home and from the map (every question draft as if the owner had approved it; a real last mistake
+  // so the "why" question is on the menu), one question tapped so its answer shows in the bubble
+  'ask-home': { run: async p => { await askReady(p); await p.evaluate(() => home()); await askTap(p); } },
+  'ask-map': { run: async p => { await askReady(p); await p.evaluate(() => pathMap('math')); await p.waitForSelector('.ak-mp', { timeout: 5000 });
+    await p.evaluate(() => document.querySelector('.ak-mp').scrollIntoView({ block: 'center' })); await askTap(p); } },
   'grown-children': {
     adult: true,
     run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),
@@ -451,6 +456,20 @@ const SCREENS = {
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 // P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
 // PERS-01: the hints part (the picker and PERSW) loaded, with the interest drafts' words in PERSW (nothing is reviewed yet)
+// ASK-01: the hints part loaded, the question drafts' words in ASKW (nothing is reviewed yet), the Ask button on (ASK_ON), a last mistake
+async function askReady(p) {
+  await p.evaluate(() => partLoad('hints'));
+  await p.waitForFunction(() => typeof askOpen == 'function', null, { timeout: 30000 });
+  const W = Object.fromEntries(require('./author.js').askDrafts().filter(x => x.d).map(x => [x.d.id, { q: x.d.q, a: x.d.a }]));
+  await p.evaluate(W => { window.say = window.__a11y.say; Object.assign(ASKW, W); ASK_ON = Object.keys(W).length; S.grade = 1;
+    const q = genQ('add', 2, 3); ASK_LM = { q, v: String(+q.ans + 1), k: SKEY }; }, W);
+}
+async function askTap(p) {
+  await p.click('.ak-btn');
+  await p.waitForSelector('.sheet-bg.on .ak-q', { timeout: 15000 });
+  await p.click('.ak-q[data-ask="next"]');
+  await p.waitForTimeout(400);
+}
 async function persReady(p) {
   await p.evaluate(() => partLoad('hints'));
   await p.waitForFunction(() => typeof persPick == 'function', null, { timeout: 30000 });

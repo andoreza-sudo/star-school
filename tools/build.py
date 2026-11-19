@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v185'
+VER = 'v186'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -96,11 +96,41 @@ def pers_js(root):
             '   BUILT by tools/build.py from docs/drafts/pers/<id>.md ("status: reviewed ..."): never edit by hand. An interest that\n'
             '   is not reviewed is never here, so it is never offered and its story problems stay the default ones (30p-pers.js). */\n'
             'const PERSW = {\n' + body + '};\n')
+# ASK-01: "Ask the pet" (src/js/39r-ask.js, part hints) takes its questions and answers from docs/drafts/ask/<id>.md (drafted by
+# node tools/author.js --ask-draft, then read and rewritten by hand). Only a draft whose status line says "reviewed" is copied into
+# src/js/39s-askw.js (ASKW, part hints), and src/js/39t-askon.js (ASK_ON, in index.html) counts them: with none reviewed, Home and the
+# map draw no Ask button at all. --words-only and --words-check cover both files too.
+ASK_FILE, ASKON_FILE = '39s-askw.js', '39t-askon.js'
+def ask_words(root):
+    dd, out = os.path.join(root, 'docs', 'drafts', 'ask'), {}
+    for n in sorted(os.listdir(dd)) if os.path.isdir(dd) else []:
+        if not re.fullmatch(r'[a-z]+\.md', n):
+            continue
+        t = open(os.path.join(dd, n), encoding='utf-8').read()
+        st, js = re.search(r'^status:\s*(\w+)', t, re.M), re.search(r'```json\n([\s\S]*?)\n```', t)
+        if st and st.group(1).lower() == 'reviewed' and js:
+            w = json.loads(js.group(1))
+            if w.get('id') == n[:-3] and isinstance(w.get('q'), str) and isinstance(w.get('a'), dict):
+                out[n[:-3]] = {'q': w['q'], 'a': w['a']}
+    return out
+def ask_js(root):
+    out = ask_words(root)
+    body = ''.join('  %s: %s,\n' % (json.dumps(k), json.dumps(out[k], ensure_ascii=False, separators=(',', ':'))) for k in sorted(out))
+    return ('/* ---------- ASK-01: the "Ask the pet" questions and answers the owner has reviewed (part hints) ----------\n'
+            '   BUILT by tools/build.py from docs/drafts/ask/<id>.md ("status: reviewed ..."): never edit by hand. A question that is\n'
+            '   not reviewed is never here, so it is never on the menu (39r-ask.js). */\n'
+            'const ASKW = {\n' + body + '};\n')
+def askon_js(root):
+    return ('/* ASK-01: BUILT by tools/build.py (never edit): how many "Ask the pet" questions are reviewed (ASKW, 39s-askw.js, part hints).\n'
+            '   0: Home and the map draw no Ask button (a let: tools/smoke.js sets it to try the menu). */\n'
+            'let ASK_ON = %d;\n' % len(ask_words(root)))
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
     open(os.path.join(root, 'src', 'js', HINTS_FILE), 'w', encoding='utf-8', newline='').write(hints_js(root))
     open(os.path.join(root, 'src', 'js', PERS_FILE), 'w', encoding='utf-8', newline='').write(pers_js(root))
+    open(os.path.join(root, 'src', 'js', ASK_FILE), 'w', encoding='utf-8', newline='').write(ask_js(root))
+    open(os.path.join(root, 'src', 'js', ASKON_FILE), 'w', encoding='utf-8', newline='').write(askon_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
@@ -111,11 +141,15 @@ if '--words-check' in sys.argv:
     _pf = os.path.join(_w, 'src', 'js', PERS_FILE)
     if os.path.isfile(_pf) and open(_pf, encoding='utf-8', newline='').read() != pers_js(_w):
         _bad.append(PERS_FILE)
+    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js)):
+        _af = os.path.join(_w, 'src', 'js', _f)
+        if os.path.isfile(_af) and open(_af, encoding='utf-8', newline='').read() != _fn(_w):
+            _bad.append(_f)
     print('words: the words files match the reviewed drafts' if not _bad else 'words: %s is not what the reviewed drafts say (run python3 tools/build.py)' % ', '.join(_bad))
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/39n-hintw.js and src/js/39q-persw.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js and src/js/39t-askon.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -142,7 +176,7 @@ PARTS = [
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
-    ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw)\.js|39p-pers\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones
+    ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw)\.js|(39p-pers|39r-ask)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.

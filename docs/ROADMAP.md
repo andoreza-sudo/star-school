@@ -690,6 +690,10 @@ family) against TinyDecide (huggingface.co/TheREZOR/TinyDecide, 6.2 MB, Apache-2
 self-scored, published Oct 2026). Pass bar: 90%+ right when confident on 200 kid-style questions with real misspellings, under
 0.5 s on the cheapest tablet, list fallback when unsure. The model only picks among approved answers; it never writes words and
 never marks a child wrong.
+*Built v186 (ASK-01, the menu step only): 8 questions ("What should I do next?", "How do I do <stop>?", "Why did I get that wrong?", game
+time, earning it, growing, feelings, "What if it is too hard?"), each answer chosen and filled from the child's real state; an Ask button
+beside the pet on Home and on the map; drafted and waiting for the owner's read-through (docs/drafts/ASK-READ.md, then
+`node tools/author.js --ask-approve all --by <name>`). See PROGRESS.md ASK-01. The later steps are not started.*
 
 ## 11. Later ideas (not planned)
 

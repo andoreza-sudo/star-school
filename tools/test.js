@@ -21954,6 +21954,230 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
   return{problems:p,note:ids.length+' interests drafted, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
 });
 
+// ---- ASK-01: "Ask the pet" ----
+// a fresh app (every part) with every question draft's words as if the owner had approved them (ASKW) and the button on (ASK_ON)
+const askApp=()=>{const R=hintApp(),A=require('./author.js'),ds=A.askDrafts().filter(x=>x.d);
+  R('Object.assign(ASKW,'+JSON.stringify(Object.fromEntries(ds.map(x=>[x.d.id,{q:x.d.q,a:x.d.a}])))+');ASK_ON='+ds.length+';S.voice=false;');
+  return {R,A,ds}};
+run('ask the pet: the gate, the words, the tone, the parts, nothing saved ASK-01',()=>{
+  const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  // 1. the parts: the menu and its words in the lazy part hints; only the count (ASK_ON), the button and the last mistake in index.html
+  for(const f of ['39r-ask.js','39s-askw.js','39r-ask.css'])if(partOf(f)!=='hints')p.push(f+' is not in the hints part');
+  if(partOf('39t-askon.js'))p.push('39t-askon.js is not in index.html');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size;if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  // 2. the drafts: one per question of ASK_Q, each passes every check; the menu is short (6 to 10)
+  const defs=A.askDefs(),ds=A.askDrafts(),ids=ds.filter(x=>x.d).map(x=>x.d.id);
+  if(defs.length<6||defs.length>10)p.push('ASK_Q has '+defs.length+' questions (about 6 to 10)');
+  for(const q of defs)if(!ids.includes(q.id))p.push(q.id+': no draft in docs/drafts/ask');
+  for(const x of ds){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.id+': '+x.problems.slice(0,3).join('; '))}
+  // the checks catch what they are for (the tone of each age, slots, numbers, themes, telling off)
+  const d0=JSON.parse(JSON.stringify(ds.find(x=>x.d&&x.d.id==='time').d)),bad=(f,re,w)=>{const d=JSON.parse(JSON.stringify(d0));f(d);if(!A.checkAsk(d).some(x=>re.test(x)))p.push('checkAsk misses '+w)};
+  bad(d=>d.a.little.ok=['You have {time} of game time and that is a lot of time to play with today!'],/little: 12 at most/,'a little pet line over 12 words');
+  bad(d=>d.a.kid.ok=['Yay! You have {time} of game time.'],/not how the kid pet talks/,'baby praise from the older kid');
+  bad(d=>d.a.teen.ok=['Awesome, {time} of game time.'],/not how the teen pet talks/,'the little one\'s words from the teen');
+  bad(d=>d.a.little.ok=['You have game time!'],/says \{time\} 0 times/,'an answer without its main slot');
+  bad(d=>d.a.little.ok=['You have {time} and {stop}.'],/is not a slot here/,'a slot the situation does not have');
+  bad(d=>d.a.little.ok=['You have {time}, five more!'],/number word/,'a number word');
+  bad(d=>d.a.little.ok=['You have {time}, 5 more!'],/a number written/,'a digit');
+  bad(d=>d.a.little.ok=['A magic spell gives you {time}.'],/ruled out/,'a banned theme');
+  bad(d=>d.a.little.empty=['That was bad. No time.'],/tells the child off/,'telling the child off');
+  bad(d=>{delete d.a.teen.paused},/a\.teen\.paused: one or two lines/,'a missing situation');
+  bad(d=>d.q='How much game time do I have and when can I play it?',/longer than 9 words/,'a long question');
+  // 3. the gate: 39s-askw.js has the reviewed questions only (none yet), 39t-askon.js counts them; the words check holds; the gate on a copy
+  const rev=ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.id).sort();
+  const live=Object.keys(Function(rd('src/js/39s-askw.js')+';return ASKW')()).sort(),on=Function(rd('src/js/39t-askon.js')+';return ASK_ON')();
+  if(JSON.stringify(rev)!==JSON.stringify(live))p.push('39s-askw.js has '+JSON.stringify(live)+' but the reviewed questions are '+JSON.stringify(rev));
+  if(on!==rev.length)p.push('ASK_ON is '+on+' with '+rev.length+' reviewed');
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'ask-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/ask'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),"/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n");
+  const one={id:'zz',q:'Is it so?',a:{little:{help:['Yes.']}}};
+  const aw=b=>"/* ---------- ASK-01: the \"Ask the pet\" questions and answers the owner has reviewed (part hints) ----------\n   BUILT by tools/build.py from docs/drafts/ask/<id>.md (\"status: reviewed ...\"): never edit by hand. A question that is\n   not reviewed is never here, so it is never on the menu (39r-ask.js). */\nconst ASKW = {\n"+b+"};\n";
+  const ao=n=>"/* ASK-01: BUILT by tools/build.py (never edit): how many \"Ask the pet\" questions are reviewed (ASKW, 39s-askw.js, part hints).\n   0: Home and the map draw no Ask button (a let: tools/smoke.js sets it to try the menu). */\nlet ASK_ON = "+n+";\n";
+  const line='  "zz": '+JSON.stringify({q:one.q,a:one.a})+',\n';
+  const dj='\n```json\n'+JSON.stringify(one)+'\n```\n',chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(st,w,n)=>{fs.writeFileSync(path.join(tmp,'docs/drafts/ask/zz.md'),'# Ask the pet: Is it so? (zz)\n\nstatus: '+st+'\n'+dj);fs.writeFileSync(path.join(tmp,'src/js/39s-askw.js'),aw(w));fs.writeFileSync(path.join(tmp,'src/js/39t-askon.js'),ao(n))};
+  put('unreviewed',line,1);if(chk()!==1)p.push('the words check passes an unreviewed question');
+  put('unreviewed','',1);if(chk()!==1)p.push('the words check passes ASK_ON 1 with nothing reviewed');
+  put('unreviewed','',0);if(chk()!==0)p.push('the words check refuses an empty menu for an unreviewed question');
+  put('reviewed Test Owner 2026-11-19','',0);if(chk()!==1)p.push('the words check passes a reviewed question left out');
+  put('reviewed Test Owner 2026-11-19',line,1);if(chk()!==0)p.push('the words check refuses a reviewed question');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // 4. in the app: nothing reviewed = no button, no menu; reviewed = a 48 px button with a spoken name beside the pet on Home and the map;
+  // the pet's age as the lessons'; asking saves nothing and changes no score, star or game time; no migration
+  const R=hintApp();
+  p.push(...R(`(()=>{const bad=[];
+    if(ASK_ON!==${rev.length})bad.push('ASK_ON in the app is '+ASK_ON);
+    const keep=ASK_ON;ASK_ON=0;if(askBtn('ak-hm')!=='')bad.push('a button with nothing reviewed');ASK_ON=3;
+    const b=askBtn('ak-hm');if(!/^<button class="btn icon ak-btn ak-hm" aria-label="Ask .+ a question">/.test(b)||!b.includes('ic-question')&&!b.includes('question'))bad.push('the button: '+b.slice(0,120));ASK_ON=keep;
+    for(const k in ASKW)delete ASKW[k];if(askItems({p:'math'}).length)bad.push('a menu with nothing reviewed');
+    for(let g=-1;g<=6;g++)if(askAge(g)!==lsAge(g))bad.push('askAge('+g+') is '+askAge(g)+', lsAge '+lsAge(g));
+    if(LATEST!==9)bad.push('LATEST is '+LATEST+' (ASK-01 adds no migration)');
+    return bad})()`));
+  const {R:R2}=askApp();
+  // (pt(), ptCfg() and careTick() fill in their own defaults and the care meters' time when read: those are left out)
+  p.push(...R2(`(()=>{const bad=[],sv=save;let calls=0;save=()=>{calls++};const snap=()=>JSON.stringify(Object.assign({},S,{care:0,pt:0,ptCfg:0}));
+    askItems({p:'math'});const before=snap();ASK_LM={q:genQ('add',2,3),v:'1',k:SKEY};
+    try{for(const p of ['math','read','es','disc'])for(let g=-1;g<=6;g++){S.grade=g;askItems({p})}}finally{save=sv}S.grade=2;
+    if(snap()!==before.replace(/"grade":-?\\d+/,'"grade":2'))bad.push('asking changed the save');if(calls)bad.push('asking saved '+calls+' times');ASK_LM=null;return bad})()`));
+  const hm=rd('src/js/46-home.js'),rnd=rd('src/js/50-round.js'),ak=rd('src/js/39r-ask.js'),css=rd('src/css/39r-ask.css');
+  if(!/\$\{askBtn\('ak-hm'\)\}<\/div>/.test(hm)||!/askBtn\('ak-mp'/.test(hm)||(hm.match(/askBind\(\)/g)||[]).length<3)p.push('Home or the map does not draw and bind the Ask button');
+  if(/askBtn|askOpen/.test(rnd))p.push('the round draws an Ask button (Ask is never inside a round)');
+  if(!/ASK_LM=\{q,v,k:SKEY\};/.test(rnd))p.push('check() does not keep the last mistake');
+  if(/save\(|S\.[a-z]+\s*=[^=]/.test(ak))p.push('39r-ask.js writes the save');
+  if(/#[0-9a-f]{3,6}\b|rgba?\(/i.test(css))p.push('39r-ask.css has a colour that is not a token');
+  // 5. the read-through: every question and answer; the same as the tool writes now
+  const rf=path.join(ROOT,'docs/drafts/ASK-READ.md');
+  if(!fs.existsSync(rf))p.push('no docs/drafts/ASK-READ.md');else{const t=fs.readFileSync(rf,'utf8');
+    if(t!==A.askRead())p.push('docs/drafts/ASK-READ.md is not what node tools/author.js --ask-read gives now');
+    for(const x of ds.filter(y=>y.d)){if(!t.includes(x.d.q))p.push('the read-through misses '+x.d.id);for(const a in x.d.a)for(const v in x.d.a[a])for(const l of x.d.a[a][v])if(!t.includes(l))p.push('the read-through misses '+x.d.id+' '+a+' '+v)}}
+  return{problems:p,note:defs.length+' questions drafted, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
+});
+run('ask the pet: every slot from real state across fixtures and grades, no answer gives a Practice answer away, kid-safe ASK-01',()=>{
+  const {R,A}=askApp(),p=[],fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const saves={fresh:null};for(const n of ['midway','maxed','tricky','legacy-single-map','legacy-index-maps'])saves[n]=fx(n);
+  const HL=hintLines();
+  const r=R(`(()=>{const bad=[],seen={},saves=${JSON.stringify(saves)},BANNED=${String(A.BANNED)},HL=${JSON.stringify(HL)};let n=0;
+    const store={};localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const has=(a,x)=>String(a).includes(String(x));
+    // one menu, checked: every answer filled, its slots the real state, kid-safe, the same whether a question is left open or not
+    const check=(tag,p)=>{const its=askItems({p}),keepG=G;G=null;const its0=askItems({p});G=keepG;
+      for(const x of its){n++;seen[x.id+'/'+x.v]=(seen[x.id+'/'+x.v]||0)+1;const w=tag+' '+p+' '+x.id+'/'+x.v+': ';
+        if(/[{}]|undefined|NaN|null|\\[object/.test(x.q+' '+x.a))bad.push(w+'a slot left: '+x.q+' / '+x.a);
+        const i=curNode(p),nd=NODES[p][i],own=t=>t.split(nd.t).join(' ').split(PATHS[p].worlds[nd.wi].n).join(' '); // the app's own stop names ("Spell Big Words") are not the pet's words
+        if(ksBad(x.a,true)||ksBad(x.q,true)||BANNED.test(own(x.a))||BANNED.test(own(x.q)))bad.push(w+'not kid-safe: '+x.a);
+        if(x.id=='next'&&x.v!='done'&&(!has(x.a,nd.t)||(x.v=='lesson')!==lsGate(p,i)))bad.push(w+'not the next stop '+nd.t+': '+x.a);
+        if(x.id=='next'&&x.v=='done'&&(!passed(p,i)||!has(x.a,placeName(p))))bad.push(w+'done but '+nd.t+' is not passed: '+x.a);
+        if(x.id=='how'&&(!lsStopAt(p,i)||!has(x.a,LESSONS[nid(nd)].idea)||!has(x.q,nd.t)))bad.push(w+'not the idea line of '+nid(nd)+': '+x.a);
+        if(x.id=='time'){const t=ptState();if(x.v!==(t.why=='ok'&&t.left<=0?'empty':t.why))bad.push(w+'game time is '+t.why);
+          if(x.v=='ok'&&!has(x.a,askMins(t.left)))bad.push(w+'not the bank '+t.left+' s: '+x.a);if(x.v=='learn'&&!has(x.a,askMins(t.more)))bad.push(w+'not the time to learn: '+x.a);
+          if(x.v=='max'&&!has(x.a,t.max+' minutes'))bad.push(w+'not the limit: '+x.a)}
+        if(x.id=='earn'&&(x.v=='lesson')!==(!TEACH.off&&lsPayCfg().ls1>0)||x.id=='earn'&&x.v=='lesson'&&!has(x.a,lsPayCfg().ls1+' minute'))bad.push(w+'not what a lesson pays: '+x.a);
+        if(x.id=='grow'){const st=stage(),nx=GROW[st+1];if(nx==null?x.v!='big':(x.v!=(st?'grow':'egg')||!new RegExp('\\\\b'+(nx-S.stars)+' more stars?\\\\b').test(x.a)))bad.push(w+'not the stars to grow ('+S.stars+'): '+x.a)}
+        if(x.id=='feel'){const c=careTick(),v=c.food<30?'hungry':c.clean<30?'messy':c.fun<30?'bored':'happy';if(x.v!=v)bad.push(w+'the pet is '+v)}
+        if(x.id=='why'&&!ASK_LM)bad.push(w+'a why with no mistake');
+        if(x.id!='why'){const y=its0.find(z=>z.id==x.id);if(!y||y.a!==x.a)bad.push(w+'changes with the open question')}
+      }
+      if(ASK_LM&&ASK_LM.k===SKEY&&!its.some(x=>x.id=='why'))bad.push(tag+' '+p+': no why after a mistake');
+      const age=askAge(),lo=age=='little'?3:5; // ASK-READ: the little pet offers at most 5 (ASK_LITTLE), the older pets 5 to 10
+      if(its.length<lo||its.length>ASK_MAX[age])bad.push(tag+' '+p+': '+its.length+' questions for the '+age+' pet')};
+    for(const k in saves)for(let g=-1;g<=6;g++){
+      for(const s in store)delete store[s];loadSave(saves[k]);migrate();S.name=S.name||'Mia';S.grade=g;G=null;ASK_LM=null;
+      for(const p of ['math','read','es','disc'])check(k+' grade '+g,p);
+      // the states each answer is about, forced: game time (paused, a rule to learn first, today's limit, empty, a bank), what a lesson
+      // pays (lessons off, a grown-up's 0), the pet's stars (egg, growing, grown) and care (each need), every stop of a map passed
+      const pc=JSON.stringify(S.ptCfg||{}),pp=JSON.stringify(pt()),st=S.stars,cr=JSON.stringify(careTick()),off=S.lsOff;
+      const set=[()=>{S.ptCfg={pause:true}},()=>{S.ptCfg={need:15};pt().open=''},()=>{S.ptCfg={max:20};pt().used=1200;pt().bank=300},()=>{pt().bank=0},()=>{pt().bank=270},
+        ()=>{TEACH.off=true},()=>{S.ptCfg={ls1:0}},()=>{S.stars=0},()=>{S.stars=55},()=>{S.stars=9999},
+        ()=>{S.care={food:5,clean:80,fun:80,t:Date.now(),gift:''}},()=>{S.care={food:80,clean:5,fun:80,t:Date.now(),gift:''}},()=>{S.care={food:80,clean:80,fun:5,t:Date.now(),gift:''}}];
+      for(const f of set){f();check(k+' grade '+g+' forced',g%2?'math':'read');S.ptCfg=JSON.parse(pc);S.pt=JSON.parse(pp);S.stars=st;S.care=JSON.parse(cr);if(off)S.lsOff=off;else delete S.lsOff}
+      if(g==1){const keep=JSON.stringify(S.maps.read);NODES.read.forEach((nd,i)=>S.maps.read[nid(nd)]=3);check(k+' all read passed','read');S.maps.read=JSON.parse(keep)}
+    }
+    // the last mistake: every Practice skill, every level, a few seeds; the child's wrong answer is a known mistake when there is one
+    // (else the answer and one), with and without the HINT-01 lines approved; the question is left open (G.q). The why answer never
+    // holds the answer (as a number, its number word, or a word), and is the approved line, else the question's usual hint, else none
+    loadSave(null);S.name='Mia';migrate();let tips=0,looks=0,approved=0,miss=0;
+    for(const sk of Object.keys(SK))for(let lv=1;lv<=(SK[sk].max||1);lv++)for(let seed=1;seed<=3;seed++){
+      let q;try{q=genQ(sk,lv,seed)}catch(e){continue}if(!q||q.ans==null||Array.isArray(q.ans))continue;
+      let v=null;try{const pr=typeof hmPredict=='function'?hmPredict(q):[];v=pr.length?pr[0].v:null}catch(e){}
+      if(v==null)v=/^\\d+$/.test(String(q.ans))?String(+q.ans+1):'zzz';
+      for(const on of [false,true]){for(const k in HINTW)delete HINTW[k];if(on)Object.assign(HINTW,HL);
+        S.grade=[0,2,4,6][seed%4];G={q};ASK_LM={q,v,k:SKEY};miss++;
+        const x=askItems({p:'math'}).find(y=>y.id=='why');
+        if(!x){bad.push(sk+lv+': no why');continue}
+        if(x.v=='tip')tips++;else looks++;seen['why/'+x.v]=(seen['why/'+x.v]||0)+1;
+        const a=String(q.ans).toLowerCase(),low=x.a.toLowerCase();
+        for(const part of a.split('|').map(z=>z.trim().replace(/^\\+/,'')).filter(z=>z&&!['yes','no'].includes(z))){
+          if(/^\\d+$/.test(part)?new RegExp('(^|[^\\\\d.])'+part+'([^\\\\d]|$)').test(low)||ASK_NUMW[+part]&&new RegExp('\\\\b'+ASK_NUMW[+part]+'\\\\b').test(low):part.length>1&&low.includes(part)&&!/^[\\d.,\\/ ]+$/.test(part)&&new RegExp('(^|[^a-z0-9])'+part.replace(/[.*+?^$()|[\\]\\\\{}]/g,'\\\\$&')+'([^a-z0-9]|$)').test(low))
+            bad.push(sk+lv+' seed '+seed+': the why answer says the answer '+q.ans+': '+x.a)}
+        const m=on&&!TEACH.off&&!twoWay(q)?hmMatch(q,v):null,line=m&&HINTW[m.c]?hmFill(HINTW[m.c],m.s):null;
+        if(x.v=='tip'&&line&&!askLeak(q,line)&&!ksBad(line,true)){approved++;if(!x.a.includes(line))bad.push(sk+lv+': not the approved hint "'+line+'": '+x.a)}
+        else if(x.v=='tip'&&!x.a.includes(askGenHint(q)))bad.push(sk+lv+': not the usual hint: '+x.a);
+        if(ksBad(x.a,true))bad.push(sk+lv+': not kid-safe: '+x.a)}}
+    G=null;ASK_LM=null;for(const k in HINTW)delete HINTW[k];
+    return {bad,n,seen,tips,looks,approved,miss}})()`);
+  p.push(...r.bad.slice(0,25));
+  for(const q of A.askDefs())for(const v in q.v)if(!r.seen[q.id+'/'+v])p.push('never answered: '+q.id+'/'+v);
+  if(r.approved<100)p.push('the approved mistake hint was the why answer only '+r.approved+' times');
+  return{problems:p,note:r.n+' answers over 6 saves x 8 grades x 4 maps and forced states, every situation reached; '+r.miss+' mistakes: '+r.tips+' with a hint ('+r.approved+' approved HINT-01 lines), '+r.looks+' with none, never the answer'};
+});
+run('ask the pet: audio-first for non-readers (the menu read in the order shown, a tap stops it, question before answer, distinct icons, 5 for the little pet) ASK-READ ASK-01',()=>{
+  const {R,A}=askApp(),p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const r=R(`(()=>{const bad=[],log=[],Q=[];let T=1e6,H=0;
+    // a tablet that can speak (canSpeak: speechSynthesis and SpeechSynthesisUtterance on window)
+    if(typeof window=='undefined')globalThis.window=globalThis;globalThis.SpeechSynthesisUtterance=globalThis.SpeechSynthesisUtterance||function(){};
+    const keep={say,hush,speakBusy,setTimeout,now:Date.now,sheet:UI.sheet,pop:SFX.pop,noVoice};
+    say=(t,b,l,q)=>log.push([String(t),q?1:0,lit()]);hush=()=>{H++};speakBusy=()=>false;setTimeout=f=>{Q.push(f)};Date.now=()=>T;SFX.pop=()=>{};
+    // a pretend sheet: the buttons in the order askOpen draws them, with the listeners it binds
+    let el=null,L={},html='';
+    const btn=id=>{const c=new Set();return{dataset:{ask:id},attrs:{},classList:{add:x=>c.add(x),remove:x=>c.delete(x),contains:x=>c.has(x)},setAttribute(k,v){this.attrs[k]=v},onclick:null}};
+    const lit=()=>el?el.bs.filter(b=>b.classList.contains('ak-now')).map(b=>b.dataset.ask).join(','):'';
+    UI.sheet=(h,o)=>{html=h;const bs=[...h.matchAll(/class="btn soft ak-q" data-ask="([a-z]+)"/g)].map(m=>btn(m[1])),hear={onclick:null};
+      el={bs,isConnected:true,parentNode:{addEventListener:(t,f,c)=>{if(c)L[t]=f}},querySelectorAll:s=>s=='.ak-q'?bs:[],
+        querySelector:s=>s=='#ak-hear'?hear:s=='#ak-done'?{}:s=='#ak-a'?(el.ans||(el.ans={dataset:{},textContent:''})):null,hear};
+      return{el,close(){if(o&&o.onClose)o.onClose()}}};
+    const drain=(n=400)=>{while(Q.length&&n--){T+=200;Q.shift()()}};
+    const off=TEACH.off;TEACH.off=true; // no lesson part to load in this pretend app (the little pet has no "how" anyway)
+    try{
+      S.grade=1;S.voice=false;ASK_LM={q:genQ('add',2,3),v:'99',k:SKEY};
+      const items=askItems({p:'math'}),ids=items.map(x=>x.id);
+      if(!askReadOn())bad.push('a 1st grader with the voice setting off does not hear the menu');
+      askOpen(null);
+      const shown=el?el.bs.map(b=>b.dataset.ask):[];
+      if(JSON.stringify(shown)!==JSON.stringify(ids))bad.push('the sheet shows '+shown+' not '+ids);
+      // 1. the reading: "You can ask me:", then every question in the order shown, each button lit while it is said, all queued
+      drain();
+      const want=[ASK_SHEET.intro].concat(items.map(x=>x.q)),said=log.map(x=>x[0]),lits=log.map(x=>x[2]);
+      if(JSON.stringify(said)!==JSON.stringify(want))bad.push('the menu is read as '+JSON.stringify(said)+', not '+JSON.stringify(want));
+      if(JSON.stringify(lits)!==JSON.stringify([''].concat(ids)))bad.push('the light moved '+JSON.stringify(lits)+', not with the reading');
+      if(log.some(x=>!x[1]))bad.push('a line of the reading cut what was being said (not queued)');
+      if(lit()||ASKR.on)bad.push('the reading did not end: '+lit());
+      // 2. a tap anywhere stops it at once: no more lines, no light, the voice hushed
+      log.length=0;el.hear.onclick({currentTarget:el.hear});drain(3);const n0=log.length,h0=H;
+      if(n0<2||!ASKR.on)bad.push('"Hear the questions again" did not start the reading ('+n0+' lines)');
+      if(!L.pointerdown||!L.keydown)bad.push('no tap or key on the sheet stops the reading');else L.pointerdown({});
+      drain();
+      if(log.length!==n0)bad.push('the reading went on after a tap: '+JSON.stringify(log.slice(n0)));
+      if(lit()||ASKR.on||H<=h0)bad.push('a tap left the reading on (lit '+lit()+', hushed '+(H-h0)+')');
+      // 3. a tap on a question (while it reads) stops the reading, then says the question, then the answer (queued behind it)
+      for(const x of items){
+        el.hear.onclick({currentTarget:el.hear});drain(2);log.length=0;
+        const b=el.bs.find(y=>y.dataset.ask==x.id);if(L.pointerdown)L.pointerdown({});b.onclick();drain();
+        const s2=log.map(y=>y[0]);
+        if(JSON.stringify(s2)!==JSON.stringify([x.q,x.a])||log[0][1]||!log[1][1])bad.push(x.id+': a tap says '+JSON.stringify(log)+', not the question then the answer');
+        if(el.ans.textContent!==x.a||b.attrs['aria-pressed']!=='true'||lit())bad.push(x.id+': the answer is not shown, or the light stayed')}
+      // closing the sheet stops it too
+      el.hear.onclick({currentTarget:el.hear});drain(2);askHush.call(null);if(ASKR.on)bad.push('closing did not stop the reading');
+      // 4. the little pet: at most 5, only ASK_LITTLE, on every map and grade, after a mistake or not; the older pets keep the rest
+      const seen={little:new Set(),kid:new Set(),teen:new Set()};TEACH.off=off;
+      for(let g=-1;g<=6;g++)for(const lm of [null,{q:genQ('add',2,3),v:'99',k:SKEY}])for(const mp of ['math','read','es','disc']){S.grade=g;ASK_LM=lm;
+        const its=askItems({p:mp}),age=askAge();its.forEach(x=>seen[age].add(x.id));
+        if(age=='little'&&(its.length>5||its.some(x=>!ASK_LITTLE.includes(x.id))))bad.push('grade '+g+' '+mp+': the little pet offers '+its.map(x=>x.id))}
+      if(seen.little.size!==5||[...seen.kid].length<7)bad.push('menus seen: little '+[...seen.little]+'; kid '+[...seen.kid]);
+      // who hears it on its own: the little and older kid pets when prompts are read aloud; the teen on the button only
+      S.grade=1;S.voice=false;const a1=askReadOn();S.grade=3;const a3=askReadOn();S.voice=true;const a3v=askReadOn();S.grade=5;const a5=askReadOn();
+      if(!a1||a3||!a3v||a5)bad.push('read on its own: grade 1 '+a1+', grade 3 (voice off) '+a3+', grade 3 '+a3v+', grade 5 '+a5);
+      // 5. one icon each, 32 px, matching its meaning
+      const ics=ASK_Q.map(q=>q.icon),M={next:['pin'],time:['clock','ticket'],grow:['egg','star'],feel:['heart'],stuck:['help'],how:['hint'],why:['question']};
+      if(new Set(ics).size!==ics.length)bad.push('two questions share an icon: '+ics);
+      for(const q of ASK_Q){if(!ICONS[q.icon])bad.push(q.id+': no icon '+q.icon);if(M[q.id]&&!M[q.id].includes(q.icon))bad.push(q.id+': icon '+q.icon+' is not '+M[q.id].join(' or '))}
+      if((html.match(/class="btn soft ak-q"[^>]*><svg class="ic" width="32"/g)||[]).length!==items.length)bad.push('a question icon is not 32 px on the left');
+      if(!/id="ak-hear"[^>]*><svg[^>]*><use href="#i-speak"\\/><\\/svg><span>Hear the questions again<\\/span>/.test(html)||!/btn soft sm ak-hear/.test(html))bad.push('no 48 px "Hear the questions again" button with the speaker');
+      if(html.indexOf('ak-hear')>html.indexOf('ak-bub'))bad.push('"Hear the questions again" is not at the top');
+    }catch(e){bad.push(String(e&&e.stack||e).split('\\n').slice(0,3).join(' '))}
+    finally{({say,hush,speakBusy,setTimeout}=keep);Date.now=keep.now;UI.sheet=keep.sheet;SFX.pop=keep.pop;TEACH.off=off;ASK_LM=null;ASKR.on=false}
+    return bad})()`);
+  p.push(...r);
+  // the words: only the intro and the button label are new, both in the read-through for the owner (unreviewed)
+  const W=A.askSheetWords(),t=rd('docs/drafts/ASK-READ.md');
+  if(W.intro!=='You can ask me:'||W.again!=='Hear the questions again')p.push('the sheet words are '+JSON.stringify(W));
+  if(!t.includes('## The sheet\'s own words (unreviewed)')||!t.includes('- intro: '+W.intro)||!t.includes('- again: '+W.again))p.push('the read-through misses the sheet\'s own words');
+  const ak=rd('src/js/39r-ask.js'),css=rd('src/css/39r-ask.css');
+  if(!/\.btn\.ak-q\.ak-now\{/.test(css)||/ak-now[^}]*(animation|transition)/.test(css))p.push('the lit question has no style, or it moves');
+  if(/new Audio|\.play\(|getUserMedia|SpeechRecognition/.test(ak))p.push('39r-ask.js plays a recording or listens');
+  return{problems:p,note:'menu read in shown order with the light, a tap stops it, question then answer; little pet: '+A.askSheetWords().little.join(', ')};
+});
+
 // ---- report ----
 Promise.all(PENDING).then(()=>{
 let failed=0;

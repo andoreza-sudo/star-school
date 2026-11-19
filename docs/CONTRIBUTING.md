@@ -150,6 +150,8 @@ petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js and the generated 39n-hintw.js, then  var HINTS_VER='<VER>';
                   LAZY: a Practice round loads it as it starts (hintsWarm in 50-round.js, from newG); check() shows the generic hint until it is in
+                  (PERS-01: the story themes 39p-pers.js, 39q-persw.js; ASK-01: the Ask the pet menu 39r-ask.js and its reviewed words 39s-askw.js,
+                  loaded by the Ask button beside the pet; 39t-askon.js, the count of reviewed questions, stays in index.html)
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
                   ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
