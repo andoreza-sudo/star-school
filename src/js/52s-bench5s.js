@@ -82,8 +82,10 @@ const LS6_SL = {
 
 /* ================= Spanish ================= */
 // the nouns of a lesson: [unit item, unit] of the units named, "el" or "la" only (one thing; los / las are the plural units' and left
-// out), never el agua (a la word that takes el), never a word whose picture does not show it (la clase is a bell)
-const LS6_NOPIC = ['agua', 'clase'];
+// out), never el agua (a la word that takes el), never a word whose picture does not show it (la clase is a bell). Review fix (v186):
+// nor el bebé (its picture fits a baby girl too, so "la bebé" is no wrong choice) or la cocina (its picture is a frying pan with an
+// egg, which fits el huevo as well)
+const LS6_NOPIC = ['agua', 'clase', 'bebé', 'cocina'];
 const ls6Nouns = us => us.flatMap(id => { const u = ES_UNITS.find(x => x.id == id); return u ? u.items.filter(it => (it[3] == 'el' || it[3] == 'la') && !LS6_NOPIC.includes(it[0])).map(it => [it, u]) : []; });
 const ls6Bare = w => String(w).normalize('NFD').replace(/[̀-ͯ]/g, '');
 // the ending rule a child may lean on: -o words el, -a words la (null: no such ending); a word that breaks it (la mano, el papá, la moto)

@@ -35,7 +35,7 @@ Reasons the pet gives when it is caught:
   esArt: Oops. I put the wrong little word in front.
   esEnd: Oops. I went by the last letter. It is only a clue.
   esWord: Oops. I picked a different word.
-Tonight's question: Ask {name}: "la moto" ends in o. Is it el or la?
+Tonight's question: Ask {name}: "moto" ends in o. Is it "el moto" or "la moto"?
 About 3.3 minutes.
 ```
 
@@ -53,7 +53,7 @@ The first draft's lines were read one by one; most were kept or shortened. Chang
 - The reasons were advice to the child ("Look again", "Some words break the rule", "That word belongs to a different picture"); each is now the pet's own slip, as the engine says them right after "You caught my mistake!".
 - Every line is checked for the little one, the older kid and the teen-like pet (the Spanish map is the same at every grade).
 - The reason for esArt said "the el word and la word" (unclear); it is now the pet's slip with the little word.
-- Tonight's question names la moto, the word here that breaks the last-letter rule.
+- Tonight's question names la moto, the word here that breaks the last-letter rule. Review fix (v186, Claude): it said "la moto" and then asked "el or la?", so it gave its own answer; it now asks "el moto" or "la moto". Still unreviewed.
 - The first draft from the API is kept below as it came, for comparison.
 
 ## Words (the draft itself)
@@ -101,7 +101,7 @@ The first draft's lines were read one by one; most were kept or shortened. Chang
    "Oops. I picked a different word."
   ]
  },
- "home": "Ask {name}: \"la moto\" ends in o. Is it el or la?"
+ "home": "Ask {name}: \"moto\" ends in o. Is it \"el moto\" or \"la moto\"?"
 }
 ```
 

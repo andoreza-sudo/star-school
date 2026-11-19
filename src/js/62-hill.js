@@ -141,7 +141,7 @@ function garageS(){const g=S.garage||(S.garage={});
   // G-FEEL1: driving help ('auto' or 0-3), Auto's step up (0-3) and the struggle count on one stage
   if(g.as!=='auto'&&!(g.as===0||g.as===1||g.as===2||g.as===3))delete g.as;
   if(g.asu!=null&&!(g.asu===1||g.asu===2||g.asu===3))delete g.asu;
-  if(g.asf!=null&&!(g.asf&&typeof g.asf=='object'&&hcStage(g.asf.s)&&g.asf.n>=1&&g.asf.n<HC_AS_RS&&Number.isInteger(g.asf.n)))delete g.asf;
+  if(g.asf!=null&&!(g.asf&&typeof g.asf=='object'&&(hcStage(g.asf.s)||/^hb\d$/.test(g.asf.s))&&g.asf.n>=1&&g.asf.n<HC_AS_RS&&Number.isInteger(g.asf.n)))delete g.asf;
   // G-HC3: garage level 2 (own2 {itemId: 1}; rim, trail, top: the item in use or '') and day (the date today's drive paid its bonus)
   if(!g.own2||typeof g.own2!='object'||Array.isArray(g.own2))g.own2={};
   for(const k of Object.keys(g.own2))if(!HC_T2.some(t=>t[0]==k))delete g.own2[k];
@@ -187,7 +187,7 @@ const hcAsLevel=()=>{const p=hcAsPick();return p=='auto'?hcAsAuto():p};
 const hcEasy=()=>hcAsLevel()>0;
 // after a stage drive (won or quit): Auto's step up after struggling drives in a row on one stage, or down after a clean win; the
 // help a drive took on by itself (H.asUp) is kept too. Returns the new step (S.garage.asu).
-function hcAsNote(H){const g=garageS();if(!H.st)return g.asu||0;const id=H.st[0],win=H.result=='win';
+function hcAsNote(H){const g=garageS();if(!H.st)return g.asu||0;const id=H.st[0],win=H.result=='win'&&!(H.boss&&H.boss.lost);
   let u=(g.asu||0)+(H.asUp||0);
   if(!win||H.crashes>=3){const n=g.asf&&g.asf.s==id?g.asf.n+1:1;if(n>=HC_AS_RS){u++;delete g.asf}else g.asf={s:id,n}}
   else{delete g.asf;if(H.crashes<=1&&!H.asUp)u--}
@@ -265,8 +265,12 @@ const hcBossOpen=w=>w<HC_ST.length&&hcWOpen(w)&&hcStars(HC_ST[w][HC_SPW-1][0])>0
 const hcBossRec=w=>garageS().bs[hcBossId(w)]||{n:0,w:0};
 const hcBossT=(w,n)=>HC_BOSS[w][3]*(1+HC_BOSS_EASE*Math.min(HC_BOSS_MAX,Math.max(0,n|0)));
 const hcBossSt=w=>{const strip=p=>p.replace(/(^|\s)[LS][\d.,]*(?=\s|$)/g,'');return['hb'+w,'Rival run',['flag'],[],HC_ST[w][2][4],strip(HC_ST[w][2][5])+' '+strip(HC_ST[w][HC_SPW-1][5]).replace(/^f12 /,'')]};
-// where the rival is at time t: a steady pace from the start line to the flag in T seconds (after a half-second start)
-const hcRivalX=(H,t=H.t)=>{const B=H.boss,C=H.C;return 60+(C.fin-60)*Math.min(1,Math.max(0,t-.5)/B.T)};
+// where the rival is at time t: a steady pace from the start line to the flag in T seconds (after a half-second start).
+// Review fix (v186): once the runs not won reach HC_BOSS_MAX the rival may not pass the child: it stays HC_BOSS_GAP px (about
+// 3 m) behind the furthest the truck has got (H.maxX, which a crash never takes back), so it drives on at its pace until it
+// catches up, then keeps just behind. hcStep works it out once a step (H.boss.x); the drawing and the progress bar read that.
+const HC_BOSS_GAP=70;
+const hcRivalX=(H,t=H.t)=>{const B=H.boss,C=H.C,x=60+(C.fin-60)*Math.min(1,Math.max(0,t-.5)/B.T);return B.n<HC_BOSS_MAX?x:Math.min(x,Math.max(60,Math.min(H.maxX-HC_BOSS_GAP,C.fin-20)))};
 function hcHop(H,dt){if(!H.hop||H.crashT>0||H.hopT>0||!(H.w1.g||H.w2.g))return false;const v=HC_HOPV*Math.sqrt(HCW[H.wi].g*(H.gm||1)/620);
   for(const p of[H.w1,H.w2]){p.py=p.y-v*dt;p.g=false}H.hopT=HC_HOP_CD;H.hops++;if(H.ui){hcPop('Hop!');HSND.balloon()}return true}
 function hcBossMenu(w){const B=HC_BOSS[w],r=hcBossRec(w);
@@ -275,13 +279,18 @@ function hcBossMenu(w){const B=HC_BOSS[w],r=hcBossRec(w);
     go:`Race ${B[0]}!`,start:()=>hcStart(w,null,null,true),back:()=>{hcMW=w;garage()}})}
 // a rival run's record and pay (the drive's own bolts too): won when the flag was reached before the rival; else one more run not won
 function hcBossDone(H,why){const gs=garageS(),id=hcBossId(H.wi),r=gs.bs[id]||(gs.bs[id]={n:0,w:0}),won=why=='win'&&!H.boss.lost;
-  const first=won&&!r.w,pay=won?HC_BOSS_PAY[first?0:1]:0;if(won)r.w++;else r.n=Math.min(999,r.n+1);gs.bolts+=H.bolts+pay;save();return{won,first,pay}}
+  const first=won&&!r.w,pay=won?HC_BOSS_PAY[first?0:1]:0;if(won)r.w++;else r.n=Math.min(999,r.n+1);gs.bolts+=H.bolts+pay;
+  // review fix (v186): a rival run counts for Auto driving help like a stage drive (a run the rival won is a struggling drive), so
+  // Auto steps the help up after lost runs; a run left in its first 8 s does not count (as in stopHC)
+  if(!H.noted&&(won||why=='win'||H.t>=8)){H.noted=1;hcAsNote(H)}
+  save();return{won,first,pay}}
 function hcBossEnd(H,why){const w=H.wi,B=HC_BOSS[w],{won,first,pay}=hcBossDone(H,why);
   if(why=='quit'){stopHC();return hcLevels(w)}
   won?SFX.fanfare():SFX.chime();if(S.voice)say(won?`You beat ${B[0]}!`:why=='time'?`Game time is up! Let's learn and earn more!`:`${B[0]} won this time. Try again!`);
   const lines=won?[['crown',first?`A crown for ${esc(HCW[w].n)}!`:`You won again!`]]:why=='win'?[['heart',`${esc(B[0])} got there first. Nothing is lost!`],['go',`${esc(B[0])} will go a little slower next time.`]]:[['nut',`Your ${H.bolts} bolts are saved.`]];
   hcCard(H,{win:won,title:won?`You beat ${B[0]}!`:why=='time'?"Game time's up!":`${B[0]} won this time`,pic:GH.faceSVG(B[1],'helmet',B[2]),
-    stats:[[Math.round(H.t)+' s','your time','timer'],[Math.round(H.boss.T)+' s',B[0]+"'s time",'go'],['+'+(H.bolts+pay),'bolts','nut']],lines,
+    // a win after the rival was held back (review fix: it never reached the flag) shows its place, not a time it never drove
+    stats:[[Math.round(H.t)+' s','your time','timer'],won&&H.t>H.boss.T+.5?['2nd',B[0]+"'s place",'go']:[Math.round(H.boss.T)+' s',B[0]+"'s time",'go'],['+'+(H.bolts+pay),'bolts','nut']],lines,
     btns:ptLeft()<=0?NAV.end3({next:'hcnext',home:'hchome'}):NAV.end3({again:'hcagain',home:'hchome'})})} // NAV-01: game time up, Next goes to Learn
 
 /* ---- G-HC3 (R-03 A1): music while driving, a calm loop per world made with tone() (the Sky Hop and Star Rally way): only with
@@ -398,9 +407,9 @@ const hcAV=H=>{let d=hcAng(H)-Math.atan2(H.w2.py-H.w1.py,H.w2.px-H.w1.px);if(d>M
 const hcWrap=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
 function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,ui=H.ui;
   H.t+=dt;H.bobV+=(-H.bob*260-H.bobV*(14+H.susp*4))*dt;H.bob+=H.bobV*dt;
+  if(H.boss){H.boss.x=hcRivalX(H);if(!H.boss.lost&&H.boss.x>=C.fin){H.boss.lost=true;if(ui){hcMsg(`${HC_BOSS[H.wi][0]} is at the flag! Keep going!`,2200)}}} // G-MOVES
   if(H.crashT>0){H.crashT-=dt;hcParts(H,dt);if(H.crashT<=0)hcRespawn(H);return}
   if(H.hopT>0)H.hopT-=dt;if(H.hopQ){H.hopQ=0;hcHop(H,dt)} // G-MOVES: the Hop
-  if(H.boss&&!H.boss.lost&&H.t-.5>=H.boss.T){H.boss.lost=true;if(ui){hcMsg(`${HC_BOSS[H.wi][0]} is at the flag! Keep going!`,2200)}}
   if(H.lockT>0)H.lockT-=dt;if(H.boostT>0)H.boostT-=dt;if(H.comboT>0){H.comboT-=dt;if(H.comboT<=0)H.combo=0}
   if(H.ballT>0){H.ballT-=dt;if(H.ballT<=0&&ui)hcPop('Pop!')}
   const ang0=hcAng(H),cx0=(H.w1.x+H.w2.x)/2,err0=hcWrap(ang0-hcSlopeL(C,cx0,20));
@@ -549,7 +558,7 @@ function hcStart(world,si,day,boss){const wi=typeof world=='number'?world:Math.m
    ${GH.top('hill',{play:true,hud:true,sub:H.boss?`${HCW[wi].n}: race ${HC_BOSS[wi][0]}`:st?`${HCW[wi].n}, stage ${si+1}: ${st[1]}`:day?`Today's drive: ${HCW[wi].n}`:`${HCW[wi].n}, distance drive`,timeId:'hct',
     chips:`<span class="stat gh-nut" aria-label="Bolts">${ico('nut',32)}<b id="hcb">0</b></span>`,sound:GH.tool(HC_SNDI[S.hcSnd||0],'Sound','hcsnd')})}
    <div class="hc-hud2"><div class="hc-fuel" id="hcfuel" role="img" aria-label="Fuel">${ico('drop',28)}<span class="hc-gauge"><i id="hcf"></i></span></div>
-   <div class="hc-prog"><b id="hcd">0 m</b><span class="hc-track"><i id="hcpb"></i>${ticks}<i class="hc-bestm" id="hcbest"></i>${H.boss?'<i class="hc-rv" id="hcrv"></i>':''}</span></div></div>
+   <div class="hc-prog"><b id="hcd">0 m</b><span class="hc-track"><i id="hcpb"></i>${ticks}<i class="hc-bestm" id="hcbest"></i>${H.boss?'<span class="hc-rvw" id="hcrv"><i class="hc-rv"></i></span>':''}</span></div></div>
    <div class="pedal brake" id="pb">${ico('chevron-left',48)}<small>Brake</small></div><div class="pedal gas" id="pg">${ico('chevron-right',48)}<small>Gas</small></div>
    ${H.hop?`<button class="hc-hop" id="hchop" aria-label="Hop">${ico('arrow-up',40)}<small>Hop</small></button>`:''}
    <div class="hcmsg" id="hcm" role="status"></div><div class="hcpop" id="hcp" aria-hidden="true"></div><div class="hccombo" id="hcc" aria-hidden="true"></div></div>`);
@@ -1043,16 +1052,23 @@ function hcHud(H){const f=$('#hcf');if(f){const v=Math.round(H.fuel);if(v!==H._f
   if(d){const L=C.fin!=null?Math.floor((C.fin-60)/20):0,txt=C.fin!=null?`${Math.min(m,L)} / ${L} m`:`${m} m`;if(txt!==H._dt){H._dt=txt;d.textContent=txt;const pb=$('#hcpb'),goal=C.fin!=null?L:Math.max(H.best,100)*1.05;if(pb)pb.style.transform=`scaleX(${Math.min(1,m/goal).toFixed(3)})`;
     const bs=$('#hcbest');if(bs){bs.style.left=Math.min(100,H.best/goal*100)+'%';bs.style.display=C.fin==null&&H.best>5?'block':'none'}}}
   const b=$('#hcb');if(b&&b.textContent!=String(H.bolts))b.textContent=H.bolts;
-  const rv=$('#hcrv');if(rv&&H.boss&&C.fin){const f=Math.round((hcRivalX(H)-60)/(C.fin-60)*200)/2;if(f!==H._rv){H._rv=f;rv.style.left=f+'%'}}}
+  // G-MOVES: the rival's dot (looked up once; moved by transform, a layer of its own: no layout each frame)
+  if(H.boss&&C.fin){const rv=H._rvEl||(H._rvEl=$('#hcrv'));if(rv){const f=Math.round(((H.boss.x||60)-60)/(C.fin-60)*200)/2;if(f!==H._rv){H._rv=f;rv.style.transform=`translateX(${f}%)`}}}}
 // G-MOVES: the rival's truck, a small sprite drawn once (body in its helmet colour, two wheels, a round head), on the road at its place
-function hcRivalDraw(x,R,H,SX,SY,sc,left,right,T){const C=H.C,rx=hcRivalX(H);if(rx<left||rx>right)return;const B=HC_BOSS[H.wi];
-  const spr=hcSpr(R,'rival'+H.wi,150*sc,120*sc,(y,w,h)=>{const s=sc,cx=w/2,gy=h-24*s;
+function hcRivalDraw(x,R,H,SX,SY,sc,left,right,T){const C=H.C,rx=H.boss.x!=null?H.boss.x:hcRivalX(H);if(rx<left||rx>right)return;const B=HC_BOSS[H.wi];
+  // review fix (perf): the truck alone in a small sprite, the name in a sprite of its own drawn upright above it; no alpha, no
+  // rotation on (nearly) flat ground
+  const spr=hcSpr(R,'rival'+H.wi,124*sc,84*sc,(y,w,h)=>{const s=sc,cx=w/2,gy=h-6*s;
     y.fillStyle=hcC(B[2]+'2');rr(y,cx-54*s,gy-44*s,108*s,30*s,10*s);y.fill();y.fillStyle=hcC(B[2]);rr(y,cx-52*s,gy-46*s,104*s,26*s,10*s);y.fill();
     y.fillStyle=hcC('w');rr(y,cx-4*s,gy-70*s,34*s,26*s,6*s);y.fill();y.fillStyle=hcC('c1');rr(y,cx,gy-66*s,26*s,18*s,4*s);y.fill();
     y.fillStyle=hcC(B[2]+'2');y.beginPath();y.arc(cx+11*s,gy-56*s,10*s,Math.PI,0);y.fill();y.fillStyle=hcC('w');y.beginPath();y.arc(cx+16*s,gy-58*s,3.4*s,0,7);y.fill(); // the driver, facing ahead
     y.fillStyle=hcC('k');y.beginPath();y.arc(cx+17*s,gy-58*s,1.8*s,0,7);y.fill();
     y.fillStyle=hcC('e3');for(const ox of[-34,34]){y.beginPath();y.arc(cx+ox*s,gy-12*s,17*s,0,7);y.fill()}
     y.fillStyle=hcC('e1');for(const ox of[-34,34]){y.beginPath();y.arc(cx+ox*s,gy-12*s,7*s,0,7);y.fill()}
-    y.fillStyle=hcC('y');rr(y,cx+46*s,gy-42*s,8*s,8*s,2*s);y.fill(); // a headlight at the front
-    y.fillStyle=hcC('w');y.font=`bold ${15*s}px sans-serif`;y.textAlign='center';y.textBaseline='middle';y.strokeStyle=hcC('k');y.lineWidth=4*s;y.strokeText(B[0],cx,gy-90*s);y.fillText(B[0],cx,gy-90*s)});
-  const a=hcSlope(C,rx),px=SX(rx),py=SY(hcH(C,rx));x.save();x.translate(px,py);x.rotate(-a);x.globalAlpha=.92;x.drawImage(spr,-spr.width/2,-spr.height+6*sc);x.restore()}
+    y.fillStyle=hcC('y');rr(y,cx+46*s,gy-42*s,8*s,8*s,2*s);y.fill()}); // a headlight at the front
+  const lab=hcSpr(R,'rivaln'+H.wi,Math.max(40,B[0].length*11+16)*sc,26*sc,(y,w,h)=>{const s=sc;
+    y.fillStyle=hcC('w');y.font=`bold ${15*s}px sans-serif`;y.textAlign='center';y.textBaseline='middle';y.strokeStyle=hcC('k');y.lineWidth=4*s;y.strokeText(B[0],w/2,h/2);y.fillText(B[0],w/2,h/2)});
+  const a=hcSlope(C,rx),px=SX(rx),py=SY(hcH(C,rx)),ox=-spr.width/2,oy=-spr.height-12*sc; // the wheels where they were on the old, taller sprite
+  if(Math.abs(a)<.03)x.drawImage(spr,px+ox,py+oy);
+  else{x.save();x.translate(px,py);x.rotate(-a);x.drawImage(spr,ox,oy);x.restore()}
+  x.drawImage(lab,px-lab.width/2,py+oy-lab.height-4*sc)}

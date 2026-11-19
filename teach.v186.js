@@ -636,17 +636,32 @@ const LS = {
 if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
 const lsName = () => (S.name || 'friend');
 /* TEACH-5S: Spanish in a spoken line is written «la vaca». lsRuns(t, es) cuts a line into [text, 1 when Spanish] pieces, in order; in a
-   Spanish lesson (es) "el" and "la" said alone are Spanish too. lsSay says each piece in its own voice, one after the other (say()
+   Spanish lesson (es) "el" and "la" said alone (the article named as a word) are Spanish too, never one inside a title or a quote. lsSay says each piece in its own voice, one after the other (say()
    queues them; a Spanish piece is its ES-AUDIO recording when there is one); a line with no Spanish is said as before. lsPlain: the
    caption, without the marks. */
 function lsRuns(t, es) {
   const o = [];
   String(t).split(/«([^»]*)»/).forEach((x, i) => {
     if (i % 2) return o.push([x.trim(), 1]);
-    (es ? x.split(/\b(el|la|El|La)\b/) : [x]).forEach((y, j) => o.push([y.trim(), j % 2]));
+    if (!es) return o.push([x.trim(), 0]);
+    // review fix (v186): el / la alone is the article named as a word ("an el word", "el or la?"): Spanish. Followed by a word of the
+    // Spanish units ("la vaca" left unmarked) the two are one Spanish piece; inside a title or a quote ("A la Escuela", "la moto")
+    // it stays with the English piece, so a phrase is never cut across two voices
+    let k = 0;
+    for (const m of x.matchAll(/(?<![\p{L}\p{N}])(el|la|El|La)(?![\p{L}\p{N}])(\s+(\p{L}+))?/gu)) {
+      const prev = x.slice(0, m.index).trimEnd().slice(-1), w = m[3] || '', noun = w && lsEsWords().has(w);
+      if (/["'“‘]/.test(prev) || /^\p{Lu}/u.test(w)) continue; // a quote, or a title's next word
+      const len = noun ? m[0].length : m[1].length;
+      o.push([x.slice(k, m.index).trim(), 0], [x.substr(m.index, len).trim(), 1]);
+      k = m.index + len;
+    }
+    o.push([x.slice(k).trim(), 0]);
   });
   return o.filter(x => /[a-z0-9áéíóúñü]/i.test(x[0]));
 }
+// the words of the Spanish units (lowercase), made once: what may follow an unmarked el or la as one Spanish piece
+let LS_ESW = null;
+const lsEsWords = () => LS_ESW || (LS_ESW = new Set(typeof ES_UNITS != 'undefined' ? ES_UNITS.flatMap(u => u.items.map(it => String(it[0]).toLowerCase())) : []));
 const lsPlain = t => String(t).replace(/[«»]/g, '');
 function lsSay(t, p) {
   const rs = lsRuns(t, p == 'es');

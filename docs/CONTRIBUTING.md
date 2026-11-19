@@ -282,7 +282,7 @@ example of drawing the child's own pet into a canvas picture, and of a determini
 Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Back on menus; `{play: true}` gives Pause; `sub`, `tools`,
 `chips`, `sound` as in 59-game-hub.js), then calls `GH.wire({quit: () => ...})` on a play screen (Quit runs it; `hold: on => ...` pauses
 the game while the sheet is open). The game-time clock is `gtStart('#gtm', onEnd)` (64-gtimer.js); it holds by itself while the sheet is
-open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})`; time running out: `timeUpOverlay()`. CSS goes in
+open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})` (since v186 a card's buttons ignore a finger still down from the game: a pointer click works only after a new press on the card); time running out: `timeUpOverlay()`. CSS goes in
 `src/css/NN-game-<name>.css`: since P4-16 the games rule also moves `NN-game-*.css` into `games.<VER>.js` (keep it scoped to the game's
 own classes). Do not change `gameRoom()`; it only loads the games parts and calls `GH.hub()` (`partsThen(LAZY_PARTS, () => GH.hub())`, P6-02).
 

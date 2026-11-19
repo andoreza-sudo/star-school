@@ -98,7 +98,9 @@
   font:inherit;font-weight:700;box-shadow:0 5px 0 var(--shadow-ink);touch-action:none;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
 .hc-hop:active{transform:translateY(4px)}
 .hc-hop small{font-size:var(--fs-2);line-height:1}
-.hc-rv{position:absolute;top:-6px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:var(--ill-purple);box-shadow:0 0 0 3px var(--surface)}
+/* the rival's dot rides on a box as wide as the track, moved by transform (translateX(n%) is n% of the track) */
+.hc-rvw{position:absolute;inset:0;pointer-events:none;will-change:transform}
+.hc-rv{position:absolute;left:0;top:-6px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:var(--ill-purple);box-shadow:0 0 0 3px var(--surface)}
 .hc-boss{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;margin-top:var(--s-3);padding:var(--s-2) var(--s-3);
   text-align:left;min-height:72px}
 .hc-boss.lock{opacity:.75}

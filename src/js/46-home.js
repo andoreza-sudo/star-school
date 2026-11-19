@@ -249,15 +249,16 @@ function hmPlace() {
 // Today row: review (same ids as revCard(); revCardBind() wires #rev), Fact Sprint, Mixed Practice.
 // R-01b: the review tile says how many the next review round asks ("10 to review": the due count, at most REVIEW_N), in the tile's
 // own words, not as a red count bubble over the icon; Fact Sprint only when FLU.on() (grade 1 up, a set open).
-// TEACH-5S: with lessons on, no review tile while every item due is at a stop whose lesson the child learned (its Remember brings it back)
-const revCovered = () => { const d = dueItems(); return !TEACH.off && d.length > 0 && d.every(it => { const p = Object.keys(NODES).find(k => NODES[k].some(x => x.sk == it.sk && x.lv == it.lv)); return p && lsLearned(it.sk + it.lv); }); };
+// TEACH-5S review fix (v186): the review tile shows whenever anything is due, lessons on or off. (TEACH-5S had hidden it while
+// every due item was at a learned lesson's stop, but lesson Remember asks one lesson a day and never clears S.rev, so those
+// items stayed due with no way in but a mission that is not always drawn.)
 function hmToday() {
-  const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on(), cov = n && revCovered(), k = (cov ? 1 : 2) + (flu ? 1 : 0);
-  const rev = cov ? '' : n
+  const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on();
+  const rev = n
     ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}</span>` +
       `<span class="hm-tl"><b class="hm-rn" id="revn">${n}</b> to review</span></button></div>`
     : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">All caught up!</span></div>`;
-  return `<div class="hm-today${k == 3 ? '' : ' n' + k}">${rev}
+  return `<div class="hm-today${flu ? '' : ' n2'}">${rev}
     ${flu ? `<button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>` : ''}
     <button class="hm-tile" id="mix"><span class="hm-ti t-mix">${hmMixIco()}</span><span class="hm-tl">Mixed Practice</span></button></div>`;
 }

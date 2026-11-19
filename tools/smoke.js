@@ -75,6 +75,9 @@ const HOME_ON = '#navbar .nb-home[aria-current="page"]';
 // G-MOVES (v188): real touch on a game page (CDP touch events, like the G-* segments), the 48 px / no sideways scroll look over the
 // given controls, a screenshot into tools/out/games5/, and the frame time of a running game at 6x CPU throttle (best of up to 4
 // passes while the machine is busy). sel: the controls the look measures.
+// review fix (v186): the most JS one frame of a boss race may take at 6x CPU throttle (ms). At 60 Hz a frame has 16.7 ms; the
+// browser's own drawing needs the rest
+const G5_JS_MS = 10;
 async function g5Kit(pg, sel) {
   const cdp = await pg.context().newCDPSession(pg);
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 3 });
@@ -115,28 +118,77 @@ async function g5Kit(pg, sel) {
   require('fs').mkdirSync(dir, { recursive: true });
   const shots = [];
   const shot = async n => { await pg.waitForTimeout(250); await pg.screenshot({ path: require('path').join(dir, n + '.png') }).catch(() => {}); shots.push('tools/out/games5/' + n + '.png'); };
-  // frame intervals (rAF) for 3 s at 6x CPU throttle; restart() is called between passes when the run may have ended
+  // frame intervals (rAF) for 3 s at 6x CPU throttle; restart() is called between passes when the run may have ended.
+  // Review fix (v186): the interval alone comes in vsync buckets (16.7, 33.3 ms) and shows no margin, so each pass also measures
+  // the JS time per frame: the page's script time (CDP Performance ScriptDuration, at the throttle) over the window / frames drawn
   const frames = async (restart) => {
     const os = require('os'), cores = os.cpus().length;
     let best = null, tries = 0, load = os.loadavg()[0];
+    await cdp.send('Performance.enable', { timeDomain: 'threadTicks' }).catch(() => cdp.send('Performance.enable'));
+    const metric = async () => { const m = (await cdp.send('Performance.getMetrics')).metrics, v = n => (m.find(q => q.name == n) || { value: 0 }).value; return [v('ScriptDuration'), v('TaskDuration')]; };
     for (;;) {
       await pg.evaluate(() => { window.__g5F = []; let last = 0; const f = ts => { if (last) window.__g5F.push(ts - last); last = ts; if (window.__g5F.length < 3000) requestAnimationFrame(f); }; requestAnimationFrame(f); });
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
       await pg.waitForTimeout(2000);
       await pg.evaluate(() => { window.__g5F.length = 0; });
+      const s0 = await metric();
       await pg.waitForTimeout(3000);
+      const s1 = await metric();
       const r = await pg.evaluate(() => { const a = window.__g5F.slice().sort((x, y) => x - y); return { med: a[Math.floor(a.length / 2)] || 999, p90: a[Math.floor(a.length * .9)] || 999, n: a.length }; });
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      r.js = r.n ? +((s1[0] - s0[0]) * 1000 / r.n).toFixed(2) : 999;
+      r.task = r.n ? +((s1[1] - s0[1]) * 1000 / r.n).toFixed(2) : 999; // all main-thread work a frame (JS, style, layout, paint), for the notes
       tries++;
       load = os.loadavg()[0];
-      if (!best || r.med < best.med) best = r;
-      if (best.med <= 34 || tries >= 4 || load <= cores) break;
+      if (!best || r.js < best.js) best = Object.assign(r, { med: Math.min(r.med, best ? best.med : 999) });
+      else best.med = Math.min(best.med, r.med);
+      // a pass over a limit is tried again: up to 4 passes while the machine is busy, 2 when it is not (one slow pass is often a GC)
+      if ((best.med <= 34 && best.js <= G5_JS_MS) || tries >= 4 || (load <= cores && tries >= 2)) break;
       if (restart) await restart();
       await pg.waitForTimeout(600);
     }
     return Object.assign(best, { tries, load: +load.toFixed(1), cores });
   };
-  return { cdp, box, down, up, press, touch, look, shot, shots, frames };
+  // review fix (v186): a finger still down from the game when an end card opens (Hold to float, Dash, a build tap) must not press the
+  // card's button under it when it lifts (GH.end: a button needs a new press on the card). play(): starts the game (in the page),
+  // open(): opens its end card (in the page). The card is opened twice to find where btn sits (the second time, so a first-time line
+  // does not move it), then the game again with a finger held on that spot, the card opened under the finger, the finger lifted: the
+  // card must still be up. Then a new touch on btn must work. Returns the problems found.
+  const heldEnd = async (name, play, open, btn) => {
+    const out = [], clear = () => pg.evaluate(() => document.querySelectorAll('.ovl').forEach(o => o.remove()));
+    let b = null;
+    for (let k = 0, last = null; k < 5; k++) { // until the button sits where it sat the time before (a first-time line moves it)
+      await clear();
+      await pg.evaluate(play);
+      await pg.waitForTimeout(700);
+      await pg.evaluate(open);
+      await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
+      b = await box('.gh-end ' + btn);
+      if (last && Math.hypot(b.x - last.x, b.y - last.y) <= 2) break;
+      last = b;
+    }
+    await clear();
+    await pg.evaluate(play);
+    await pg.waitForTimeout(700);
+    await down(b.x, b.y);
+    await pg.waitForTimeout(400);
+    await pg.evaluate(open);
+    await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
+    const b2 = await box('.gh-end ' + btn);
+    if (Math.hypot(b2.x - b.x, b2.y - b.y) > 6) out.push(name + ': the card\'s ' + btn + ' moved between two openings; the held finger is not on it');
+    await pg.waitForTimeout(300);
+    await up();
+    await pg.waitForTimeout(600);
+    if (!await pg.evaluate(s => !!document.querySelector('.gh-end ' + s), btn)) out.push(name + ': the finger held from the game pressed ' + btn + ' on the end card when it lifted');
+    else {
+      await touch('.gh-end ' + btn);
+      await pg.waitForTimeout(600);
+      if (await pg.evaluate(s => !!document.querySelector('.gh-end ' + s), btn)) out.push(name + ': a new touch on ' + btn + ' did nothing');
+    }
+    await clear();
+    return out;
+  };
+  return { cdp, box, down, up, press, touch, look, shot, shots, frames, heldEnd };
 }
 async function btLevelsAgain(pg) {
   const run = await pg.evaluate(() => BT.act && [BT.act.run.id, BT.act.run.band]);
@@ -11864,8 +11916,8 @@ async function main() {
             const f = await K.frames(async () => { await K.up(); await go(); });
             await K.up();
             const drawn = await pg.evaluate(() => !!(HC && HC.boss));
-            if (f.med > 34 || !drawn) bad.push(at + 'frame interval in a rival run at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms)');
-            notes.push(`6x throttle, rival run: median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            if (f.med > 34 || !drawn || f.js > G5_JS_MS) bad.push(at + 'frame interval in a rival run at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms, JS ' + G5_JS_MS + ' ms a frame)');
+            notes.push(`6x throttle, rival run: JS ${f.js.toFixed(1)} ms a frame (main thread ${f.task.toFixed(1)} ms), median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
             await pg.evaluate(() => { if (HC) hcEnd('quit'); });
           }
         } catch (x) {
@@ -11954,8 +12006,8 @@ async function main() {
             const go = async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); rlRace('meadow-1', { champ: 0 }); }); await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 }); };
             await go();
             const f = await K.frames(go);
-            if (f.med > 34) bad.push(at + 'frame interval in a champion race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms)');
-            notes.push(`6x throttle, champion race: median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            if (f.med > 34 || f.js > G5_JS_MS) bad.push(at + 'frame interval in a champion race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms, JS ' + G5_JS_MS + ' ms a frame)');
+            notes.push(`6x throttle, champion race: JS ${f.js.toFixed(1)} ms a frame (main thread ${f.task.toFixed(1)} ms), median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
             await pg.evaluate(() => { if (RL) rlQuit(); });
           }
         } catch (x) {
@@ -12022,6 +12074,10 @@ async function main() {
             const q = await pg.evaluate(() => S.snack.bs.park);
             if (!q || q.n !== 1 || q.w !== 0) bad.push(at + 'leaving the test: ' + JSON.stringify(q));
             notes.push('1024x600: left the test, one test not won, nothing lost');
+            // review fix (v186): a finger held from the counter when the end card opens (a day's and the taste test's) presses nothing
+            for (const o of await K.heldEnd('Snack Stand day card', () => { snS().days = 60; snDay(); }, () => snFinish(), '#snagain')) bad.push(at + o);
+            for (const o of await K.heldEnd('Snack Stand taste test card', () => snDay({ chef: true }), () => snFinish(), '#snagain')) bad.push(at + o);
+            notes.push('a finger held from the game presses nothing on the day and taste test cards');
           } else {
             let plates = 0, wrong = 0, armed = false, starTxt = '';
             for (let guard = 0; guard < 12; guard++) {
@@ -12191,14 +12247,18 @@ async function main() {
             await pg.waitForSelector(HOME_ON, { timeout: 8000 });
           } else {
             const f = await K.frames(async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hopPlay(HOP_COURSES[5].id, null, true); }); await pg.waitForTimeout(1500); });
-            if (f.med > 34) bad.push(at + 'frame interval in a sky race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms)');
-            notes.push(`6x throttle, sky race: median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            if (f.med > 34 || f.js > G5_JS_MS) bad.push(at + 'frame interval in a sky race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms, JS ' + G5_JS_MS + ' ms a frame)');
+            notes.push(`6x throttle, sky race: JS ${f.js.toFixed(1)} ms a frame (main thread ${f.task.toFixed(1)} ms), median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
             const n0 = await pg.evaluate(() => S.hop.bs['0'].n);
             await K.touch('#gpause');
             await pg.waitForSelector('#gquit', { timeout: 5000 });
             await K.touch('#gquit');
             await pg.waitForSelector(HOME_ON, { timeout: 8000 });
             if (await pg.evaluate(() => S.hop.bs['0'].n) !== n0 + 1) bad.push(at + 'leaving a race should count one race not won');
+            // review fix (v186): a finger held from Hold to float when the end card opens (a course's and a sky race's) presses nothing
+            for (const o of await K.heldEnd('Sky Hop course card', () => hopPlay(HOP_COURSES[0].id), () => hopFinish(), '#hpagain')) bad.push(at + o);
+            for (const o of await K.heldEnd('Sky Hop race card', () => hopPlay(HOP_COURSES[5].id, null, true), () => hopBossEnd(), '#hpagain')) bad.push(at + o);
+            notes.push('a finger held from the game presses nothing on the course and race cards');
           }
         } catch (x) {
           bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
@@ -12317,6 +12377,12 @@ async function main() {
           notes.push(w + 'x' + h + ': Bea\'s Tower Gate in ' + taps + ' touches');
           await K.touch('.gh-end #bbls');
           await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          if (w == 1024) {
+            // review fix (v186): a finger held from a build tap when the end card opens (a blueprint's and Bea's) presses nothing
+            for (const o of await K.heldEnd('Block Builder blueprint card', () => blockBuilder(0), () => bbWin(), '#bbre')) bad.push(at + o);
+            for (const o of await K.heldEnd('Block Builder mirror card', () => blockBuilder('boss0'), () => bbWin(), '#bbre')) bad.push(at + o);
+            notes.push('a finger held from the game presses nothing on the blueprint and mirror cards');
+          }
         } catch (x) {
           bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
         }
@@ -13949,8 +14015,8 @@ async function main() {
     // lesson stop in front of Animals (Spanish lessons are for every grade), the Discover map one in front of Living Things; Animals (a Kindergartner),
     // El or La? (a 5th grader: the teen-like pet's lines), Push, Pull & Stuff and Sky & Earth run through every beat by the real controls, the pet's
     // mistake forced (LS.PET_OK 0). Spanish pieces are said in the Spanish voice (say(..., 'es')); "say it with me" ends Name it with "I said it!",
-    // and nothing asks for the microphone; a Discover answer is followed by what happens ("Look! ..."). Home's review tile is gone while every due item
-    // is at a learned lesson's stop, and back with lessons off. Every screen fits, 48 px named buttons, no hole; screenshots (TEACH5S_SHOTS).
+    // and nothing asks for the microphone; a Discover answer is followed by what happens ("Look! ..."). Home's review tile shows while anything is due (review
+    // fix v186: also when every due item is at a learned lesson's stop), with lessons on and off. Every screen fits, 48 px named buttons, no hole; screenshots (TEACH5S_SHOTS).
     if (seg('TEACH-5S')) {
       const bad = [], notes = [], shots = process.env.TEACH5S_SHOTS || require('path').join(__dirname, 'out', 'teach5s');
       require('fs').mkdirSync(shots, { recursive: true });
@@ -14038,13 +14104,14 @@ async function main() {
             if (!end.k || !end.idea || /\{/.test(end.tq) || !/Ask /.test(end.tq) || !end.top.includes(id.startsWith('es_') ? 's-es' : 's-disc')) bad.push(at + id + ' the end: ' + JSON.stringify(end));
           }
           if (await pg.evaluate(() => window.__mic)) bad.push(at + 'a lesson asked for the microphone or speech recognition');
-          // 3. Home's review tile: gone while every due item is at a learned lesson's stop, back with lessons off
+          // 3. Home's review tile (review fix v186): shown whenever anything is due, also while every due item is at a learned
+          //    lesson's stop (lesson Remember does not clear the review queue), with lessons on and off
           const rv = await pg.evaluate(() => { LS.PET_OK = .25; LS.st = null; S.grade = 1; S.rev = [{ sk: 'add', lv: 1, seed: 5, label: '3 + 4', box: 0, due: 0, n: 1 }];
             S.know = { add1: { s: 2, box: 0, due: 999, d: 1, last: 1, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {} } }; save(); home();
             const a = !!document.querySelector('#revcard'), row = document.querySelector('.hm-today').className; TEACH.off = true; home(); const b = !!document.querySelector('#revcard'); TEACH.off = false; home(); return { a, b, row }; });
-          if (rv.a || !rv.b) bad.push(at + 'the review tile: ' + JSON.stringify(rv));
+          if (!rv.a || !rv.b) bad.push(at + 'the review tile: ' + JSON.stringify(rv));
           await pg.evaluate(() => document.querySelector('.hm-today').scrollIntoView({ block: 'center' }));
-          await shot(pg, `teach5s-home-covered-${w}x${h}`);
+          await shot(pg, `teach5s-home-review-${w}x${h}`);
           notes.push(w + 'x' + h);
         } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
         for (const e of ta.errors) bad.push(at + e);
@@ -14054,7 +14121,7 @@ async function main() {
       if (bad.length) fail('TEACH-5S the Spanish and Discover lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('TEACH-5S: the Spanish and Discover lessons at ' + notes.join(' and ') + ': lesson stops in front of Animals and Living Things; Animals, El or La? (the teen-like pet), ' +
         'Push, Pull & Stuff and Sky & Earth through every beat by the real controls (the el / la sort heard in Spanish, say it with me and "I said it!" with no microphone, ' +
-        'the pet\'s forced el or la slip said in Spanish and fixed, predictions followed by "Look!"); the review tile gone while Remember covers it; every screen fits ' +
+        'the pet\'s forced el or la slip said in Spanish and fixed, predictions followed by "Look!"); the review tile shown while items are due, also at a learned lesson\'s stop; every screen fits ' +
         'with 48 px named buttons and no hole; no console errors, no network requests');
     }
     // end TEACH-5S

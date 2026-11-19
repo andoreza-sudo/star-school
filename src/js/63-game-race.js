@@ -230,6 +230,10 @@ const rlDriftOpen = (r = rlPeek()) => rlNum(r.races, 0, 1e7) >= RL_DRIFT_RACES;
 // the champion of each of the five forward cups: a rival (RL_RIVALS) and their face for the boss screen
 const RL_CHAMP = [['fox', 'fox'], ['bunny', 'rabbit'], ['bear', 'bear'], ['penguin', 'penguin'], ['frog', 'frog']];
 const RL_CHAMP_PACE = { easy: 1.04, pro: 1.02 }, RL_CHAMP_EASE = .04, RL_CHAMP_MAX = 8, RL_CHAMP_PAY = [80, 15];
+// review fix (v186): once the races not won reach RL_CHAMP_MAX the champion may not pass the child: within RL_CHAMP_NEAR of the
+// child, or ahead, its pace is at most RL_CHAMP_HOLD of the child's (rlStep), so the child finishes first
+const RL_CHAMP_HOLD = .92, RL_CHAMP_NEAR = 3;
+const rlChampHold = (st, c) => !!(st.champ && st.champ.n >= RL_CHAMP_MAX && c.d > st.P.d - RL_SEG * RL_CHAMP_NEAR);
 const rlChampOpen = (i, r = rlPeek()) => i < RL_CHAMP.length && rlNum(rlCupRec(r, RL_CUPS[i].id).runs, 0, 1e6) >= 1;
 const rlChampRec = (i, r = rlPeek()) => rlObj(rlObj(r.bs)[RL_CUPS[i].id]);
 // the champion's base pace (share of RL_VMAX) for cup i in a mode, after n races not won
@@ -1500,9 +1504,25 @@ function rlStep(st, inp = {}) {
       c.tx = Math.max(-(crw - .25), Math.min(crw - .25, c.tx));
       c.x += Math.max(-.9 * dt, Math.min(.9 * dt, c.tx - c.x));
     }
+    const hold = rlChampHold(st, c);
+    if (hold) {
+      // G-MOVES review fix: the champion after RL_CHAMP_MAX races not won never outpaces the child. Near or ahead of the
+      // child it drives a little under the child's speed and keeps out of the child's lane, so the child always gets by
+      ct = Math.min(ct, P.v * RL_CHAMP_HOLD);
+      if (c.d > P.d - RL_SEG && Math.abs(c.x - P.x) < .5) c.tx = Math.max(-(crw - .25), Math.min(crw - .25, P.x + (P.x > 0 ? -.6 : .6)));
+    }
     c.v += Math.max(-.6 * RL_VMAX * dt, Math.min(.42 * RL_VMAX * dt, ct - c.v));
     const cd0 = c.d;
     c.d += c.v * dt;
+    if (hold) {
+      // ... and never goes by: from behind it stays just behind (the child stopped by a wall or a spin is waited for), and it
+      // never reaches the line before the child
+      if (cd0 <= P.d && c.d > P.d - RL_SEG * .4) {
+        c.d = Math.max(cd0, P.d - RL_SEG * .4);
+        c.v = Math.min(c.v, P.v);
+      }
+      if (P.d < st.fin && c.d > st.fin - RL_SEG * .5) c.d = Math.max(cd0, st.fin - RL_SEG * .5);
+    }
     if (c.spin <= 0) rlHits(st, c, cd0, c.d);
     if (c.dizzy > 0) c.dizzy -= dt;
     if (!c.fin && c.d >= st.fin) c.fin = st.rt;
@@ -2047,14 +2067,15 @@ function rlDrawMe(R, top) {
   }
   if (P.spin > 0 || P.dizzy > 0) rlDizzy(R, x, y - h * 1.05, w);
   if (P.drifting) {
-    const p = new Path2D();
+    // review fix (v186, perf): the dots move every frame, so they go straight into the context's own path (no new Path2D a frame)
+    c.beginPath();
     for (let i = 0; i < 6; i++) {
       const sx = x + (i < 3 ? -1 : 1) * w * .38 + Math.sin(t * 50 + i * 2) * w * .05, sy = y - h * .05 - Math.abs(Math.cos(t * 37 + i)) * h * .25;
-      p.moveTo(sx + w * .025, sy);
-      p.arc(sx, sy, w * .025, 0, Math.PI * 2);
+      c.moveTo(sx + w * .025, sy);
+      c.arc(sx, sy, w * .025, 0, Math.PI * 2);
     }
     c.fillStyle = P.dsp > 1 ? V.col.dr2 : V.col.dr1;
-    c.fill(p);
+    c.fill();
   }
   if (P.boost > 0) {
     const p = new Path2D(), cx = V.W / 2, cy = V.hz + (V.ground - V.hz) * .3;
@@ -2346,13 +2367,8 @@ function rlMenu(place) {
     if (r.tilt && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().catch(() => {});
   };
 }
-// G-MOVES: a finger still on Drift (or an arrow) when the end card opens must not press the card's buttons when it lifts: a button
-// works after a new press on the card (a key press always works; the Hill Climb way, hcGuard)
-const rlGuard = o => {
-  o.addEventListener('pointerdown', () => { o._armed = 1; }, true);
-  o.addEventListener('click', e => { if (e.detail && !o._armed) { e.stopPropagation(); e.preventDefault(); } }, true);
-  return o;
-};
+// G-MOVES: a finger still on Drift (or an arrow) when the end card opens must not press the card's buttons when it lifts: since the
+// v186 review fix GH.end does that for every game's card (its own guard here, rlGuard, was the same lines and is gone)
 // G-MOVES: a cup's champion race on the menu (the champion's face; a crown once beaten; a lock until the cup was raced to the end)
 function rlChampCard(i, r) {
   const c = RL_CUPS[i], rv = RL_RIVALS.find(v => v.id === RL_CHAMP[i][0]), ok = rlChampOpen(i, r), rec = rlChampRec(i, r);
@@ -2390,9 +2406,9 @@ function rlChampEnd() {
     [['heart', `${esc(rv.name)} won this time. Nothing is lost!`], ['go', `${esc(rv.name)} will drive a little slower next time.`]];
   if (st.drifts) lines.push(['rotate', `${st.drifts} drift ${st.drifts == 1 ? 'zoom' : 'zooms'}!`]);
   const time = ptLeft() > 0;
-  const o = rlGuard(GH.end('rally', { win: won, title: won ? `You beat ${rv.name}!` : `${rv.name} won this time`, pic: `<div class="rl-epic">${GH.faceSVG(RL_CHAMP[i][1], 'helmet', 'y')}</div>`,
+  const o = GH.end('rally', { win: won, title: won ? `You beat ${rv.name}!` : `${rv.name} won this time`, pic: `<div class="rl-epic">${GH.faceSVG(RL_CHAMP[i][1], 'helmet', 'y')}</div>`,
     stats: [[rlOrd(P.place), 'place', 'trophy'], [rlTime(Math.round(P.time * 1000)), 'your time', 'timer'], ['+' + pay, 'sparkles', 'sparkle']], lines,
-    btns: time ? NAV.end3({ again: 'rlagain', home: 'rlmenu' }) : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) }));
+    btns: time ? NAV.end3({ again: 'rlagain', home: 'rlmenu' }) : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) });
   if (S.voice) say(won ? `You beat ${rv.name}! Well done, ${S.name}!` : `${rv.name} won this time. Try again!`);
   const go = f => { o.remove(); f(); };
   if (o.querySelector('#rlagain')) o.querySelector('#rlagain').onclick = () => go(() => rlRace(c.races[2][0], { champ: i }));
@@ -2822,7 +2838,8 @@ function rlEvents() {
 function rlQuit() {
   const r = rlS();
   if (RL) r.spk += RL.st.P.spk;
-  if (RL && RL.st.champ && !RL.st.champRec) rlChampDone(RL.st, RL.st.done && RL.st.P.place == 1); // G-MOVES: a race left counts once
+  // G-MOVES: a race left counts once; a win left before its card (the 1.1 s after the finish) still pays its sparkles
+  if (RL && RL.st.champ && !RL.st.champRec) r.spk += rlChampDone(RL.st, RL.st.done && RL.st.P.place == 1);
   save();
   rlStop();
   gtStop();
@@ -2831,7 +2848,7 @@ function rlQuit() {
 function rlTimeUp() {
   const r = rlS();
   if (RL) r.spk += RL.st.P.spk;
-  if (RL && RL.st.champ && !RL.st.champRec) rlChampDone(RL.st, RL.st.done && RL.st.P.place == 1); // G-MOVES
+  if (RL && RL.st.champ && !RL.st.champRec) r.spk += rlChampDone(RL.st, RL.st.done && RL.st.P.place == 1); // G-MOVES (and its pay)
   save();
   rlStop();
   timeUpOverlay();
@@ -2910,10 +2927,10 @@ function rlFinish() {
   if (!trial && P.place > 3 && !cup) lines.push(['hint', st.mode == 'pro' ? 'Tip: drift through the bends, then let go to zoom.' : 'Tip: drive over the orange pads and grab the stars to zoom past.']);
   const time = ptLeft() > 0, nextC = cup && !final;
   const next = RL_ALL[RL_ALL.indexOf(tid) + 1], nextOk = !cup && !trial && !twist && next && rlTrackOpen(next, r) && !r.stars[next];
-  const o = rlGuard(GH.end('rally', { win, title, stars: n, tag, pic: pic || undefined, stats, lines, extra,
+  const o = GH.end('rally', { win, title, stars: n, tag, pic: pic || undefined, stats, lines, extra,
     // NAV-01: Play again, Next (the cup's next race, or the next track), Home; with no game time left, Next goes to Learn
     btns: time ? NAV.end3({ again: nextC ? '' : 'rlagain', next: nextC ? 'rlnextc' : nextOk ? 'rlnext' : '', home: 'rlmenu' })
-      : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) }));
+      : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) });
   if (S.voice) say(final && rank <= 3 ? `${RL_TROPHY[rank]} trophy! Well done, ${S.name}!` : trial ? (rec ? 'New best lap!' : 'Good driving!') :
     P.place == 1 ? `You won! Well done, ${S.name}!` : P.place <= 3 ? `${rlOrd(P.place)} place! Great racing!` : 'You finished the race! Well done!');
   const go = f => { o.remove(); f(); };

@@ -267,7 +267,7 @@ Reasons the pet gives when it is caught:
   esArt: Oops. I put the wrong little word in front.
   esEnd: Oops. I went by the last letter. It is only a clue.
   esWord: Oops. I picked a different word.
-Tonight's question: Ask {name}: "la moto" ends in o. Is it el or la?
+Tonight's question: Ask {name}: "moto" ends in o. Is it "el moto" or "la moto"?
 About 3.3 minutes.
 ```
 

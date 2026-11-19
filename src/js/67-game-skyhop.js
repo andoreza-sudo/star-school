@@ -334,7 +334,8 @@ function hopStep(st, inp = {}) {
   if (!inp.jump && p.held && st.mode == 'free' && p.vy > P.LOW * st.jm && !p.spr) p.vy = P.LOW * st.jm; // a short press: a small hop
   p.held = !!inp.jump;
   st.t += dt;
-  if (st.boss && !st.boss.lost && st.t - .8 >= st.boss.T) { // G-MOVES: the bird is at the flag (the race goes on)
+  if (st.boss) st.boss.x = hopRivalX(st); // G-MOVES: the bird's place, once a step (the drawing reads it)
+  if (st.boss && !st.boss.lost && st.boss.x >= C.goal.x) { // G-MOVES: the bird is at the flag (the race goes on)
     st.boss.lost = true;
     st.ev.push(['rival']);
   }
@@ -628,8 +629,16 @@ const hopBossCourse = w => HOP_COURSES[w * 6 + 5];
 const hopBossOpen = (w, r = hopPeek()) => w < HOP_BOSS.length && hopNum(hopObj(r.best)[hopBossCourse(w).id], 0, 36e5) > 0;
 const hopBossRec = (w, r = hopPeek()) => hopObj(hopObj(r.bs)[String(w)]);
 const hopBossT = (w, n) => (hopGold(hopBossCourse(w)) - 3) * (HOP_BOSS_PACE + HOP_BOSS_EASE * Math.min(HOP_BOSS_MAX, Math.max(0, n | 0)));
-// where the bird is at time t: from the start to the flag in T seconds (after the 0.8 s start)
-const hopRivalX = (st, t = st.t) => { const C = st.C, x0 = C.cps[0].x; return x0 + (C.goal.x - x0) * Math.min(1, Math.max(0, t - .8) / st.boss.T); };
+// where the bird is at time t: from the start to the flag in T seconds (after the 0.8 s start). Review fix (v186): once the races
+// not won reach HOP_BOSS_MAX the bird may not pass the child: it stays HOP_BOSS_GAP tiles behind the furthest the pet has got
+// (st.boss.px, which a fall never takes back), so it flies on at its pace until it catches up, then keeps just behind
+const HOP_BOSS_GAP = 1.5;
+const hopRivalX = (st, t = st.t) => {
+  const C = st.C, B = st.boss, x0 = C.cps[0].x, x = x0 + (C.goal.x - x0) * Math.min(1, Math.max(0, t - .8) / B.T);
+  if (B.n < HOP_BOSS_MAX) return x;
+  B.px = Math.max(B.px || x0, st.p.x);
+  return Math.min(x, Math.max(x0, Math.min(B.px - HOP_BOSS_GAP, C.goal.x - .5))); // (the pet can be past the flag's x before it lands there)
+};
 function hopBossMenu(w) {
   const B = HOP_BOSS[w], c = hopBossCourse(w), rec = hopBossRec(w, hopS());
   GH.boss({ id: 'hop', key: `${HOP_WORLDS[w].name}: sky race`, name: B[0], kind: B[1], hat: 'goggles', line: B[3], goal: `Reach the flag on ${c.name} before ${B[0]}.`,
@@ -657,7 +666,7 @@ function hopBossEnd() {
   if (st.dashes) lines.push(['arrow-right', `${st.dashes} ${st.dashes == 1 ? 'dash' : 'dashes'}!`]);
   const time = ptLeft() > 0;
   const o = GH.end('hop', { win: won, title: won ? `You beat ${B[0]}!` : `${B[0]} won this time`, pic: `<div class="hp-epic">${GH.faceSVG(B[1], 'goggles', B[2])}</div>`,
-    stats: [[hopTime(Math.round(st.t * 1000)), 'your time', 'timer'], [hopTime(Math.round((st.boss.T + .8) * 1000)), `${B[0]}'s time`, 'go'], [String(hopWallet(r)), 'stars to spend', 'star']], lines,
+    stats: [[hopTime(Math.round(st.t * 1000)), 'your time', 'timer'], won && st.t > st.boss.T + .8 ? ['2nd', `${B[0]}'s place`, 'go'] : [hopTime(Math.round((st.boss.T + .8) * 1000)), `${B[0]}'s time`, 'go'], [String(hopWallet(r)), 'stars to spend', 'star']], lines,
     btns: time ? NAV.end3({ again: 'hpagain', home: 'hpmenu' }) : NAV.end3({ next: 'hplearn', home: 'hpmenu' }) });
   if (S.voice) say(won ? `You beat ${B[0]}!` : `${B[0]} won this time. Try again!`);
   const go = f => { o.remove(); f(); };
@@ -1475,7 +1484,8 @@ function hopDraw(R, dt) {
   }
   // G-MOVES: the rival bird of a sky race, flying a little over the clouds at its place (its face, drawn once into a picture)
   if (st.boss) {
-    const B = HOP_BOSS[st.boss.w], bx = hopRivalX(st), gy = hopGround(st, bx, 60), s = hopSprite('rival' + st.boss.w, 100, 100, GH.face(B[1], 'goggles', B[2]), 1.6 * T);
+    const B = HOP_BOSS[st.boss.w], bx = st.boss.x != null ? st.boss.x : hopRivalX(st), gy = hopGround(st, bx, 60);
+    const s = hopSprite('rival' + st.boss.w, 100, 100, R.rvf || (R.rvf = GH.face(B[1], 'goggles', B[2])), 1.6 * T); // the face's SVG made once
     R.rvy = gy != null ? gy : R.rvy != null ? R.rvy : p.y;
     const by = R.rvy + 1.6 + (calm ? 0 : Math.sin(tt * 4) * .15);
     hopImg(c, s, X(bx) - .8 * T, Y(by) - .8 * T, 1.6 * T);

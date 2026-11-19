@@ -12,25 +12,25 @@
    Community (geography and civics: no prediction to test), and the grade 3-6 science stops (their ideas need diagrams the app does not
    draw: food webs, the water cycle, moon phases, circuits). */
 // Hola Plaza
-lsDraft5('es_animal1', ls6Spanish('es_animal1', 'Animals', ['animal'], {warmU: 'color', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_animal1', ls6Spanish('es_animal1', 'Animals', ['animal'], {warmU: 'color', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name} to say "el perro" and "la vaca" with you.'}));
 // Fiesta Island
-lsDraft5('es_food1', ls6Spanish('es_food1', 'Food', ['food'], {warmU: 'animal', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_food1', ls6Spanish('es_food1', 'Food', ['food'], {warmU: 'animal', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name}: is it "el pan" or "la pan"?'}));
-lsDraft5('es_body1', ls6Spanish('es_body1', 'My Body', ['body'], {warmU: 'food', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_body1', ls6Spanish('es_body1', 'My Body', ['body'], {warmU: 'food', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name} to point and say "la mano" and "el pie".'}));
-lsDraft5('es_family1', ls6Spanish('es_family1', 'Family', ['family'], {warmU: 'body', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_family1', ls6Spanish('es_family1', 'Family', ['family'], {warmU: 'body', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name} who is "la mamá" and who is "el papá".'}));
 // La Casa
-lsDraft5('es_house1', ls6Spanish('es_house1', 'Casa Dulce Casa', ['house'], {warmU: 'family', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_house1', ls6Spanish('es_house1', 'Casa Dulce Casa', ['house'], {warmU: 'family', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name} to show you "la puerta" and "la ventana".'}));
-lsDraft5('es_clothes1', ls6Spanish('es_clothes1', '¡A Vestirse!', ['clothes'], {warmU: 'house', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_clothes1', ls6Spanish('es_clothes1', '¡A Vestirse!', ['clothes'], {warmU: 'house', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name}: is your shirt "el camisa" or "la camisa"?'}));
-lsDraft5('es_school1', ls6Spanish('es_school1', 'A la Escuela', ['school'], {warmU: 'clothes', idea: 'Every Spanish word comes with el or la. Learn them together.',
+lsDraft5('es_school1', ls6Spanish('es_school1', 'A la Escuela', ['school'], {warmU: 'clothes', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
   fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name} to say "el libro" and "la mochila".'}));
 // La Ciudad
-lsDraft5('es_trans1', ls6Spanish('es_trans1', 'Transport', ['trans'], {warmU: 'school', idea: 'Every Spanish word comes with el or la. Learn them together.',
-  fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name}: "la moto" ends in o. Is it el or la?'}));
+lsDraft5('es_trans1', ls6Spanish('es_trans1', 'Transport', ['trans'], {warmU: 'school', idea: 'Every Spanish naming word comes with el or la. Learn them together.',
+  fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name}: "moto" ends in o. Is it "el moto" or "la moto"?'}));
 // Las Frases: every noun the lessons above teach, and the words that break the ending rule (la mano, el papá, la moto)
 lsDraft5('es_art1', ls6Spanish('es_art1', 'El or La?', ['animal', 'food', 'body', 'family', 'house', 'clothes', 'school', 'trans'], {warmU: 'trans',
   idea: 'Listen for el or la. The last letter is only a clue.', fb: '{a} is an el word. {b} is a la word.', home: 'Ask {name} for a word that ends in o but takes la.'}));

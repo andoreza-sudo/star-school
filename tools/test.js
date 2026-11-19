@@ -19926,6 +19926,32 @@ run('game moves and bosses G-MOVES',()=>{
       if(n>2)bad('Hill rival '+w+': holding the gas only wins after '+n+' runs (3rd run at most)');
       if(!(hcBossT(w,0)+.5<g.t+1.5))bad('Hill rival '+w+': the first run is no race ('+hcBossT(w,0)+' s against '+g.t.toFixed(1)+' s)')}
     r.notes.push('Hill rival runs won by held gas after '+hrow.join(', ')+' runs not won');
+    // review fix (v186): weak drivers win within the capped number of runs on every world. Once the runs not won reach HC_BOSS_MAX
+    // the rival may not pass the truck (it keeps HC_BOSS_GAP behind the furthest the truck got), and a rival run feeds Auto
+    // driving help (hcAsNote) like a stage drive, so a lost run steps the help up.
+    {const kg=S.garage,kgr=S.grade,wrow=[];
+      // (a) Auto driving help from No help (a 5th grader: hcAsBase 0), Gas held all the way; every run through hcBossDone
+      for(let w=0;w<HC_BOSS.length;w++){S.garage={as:'auto'};S.grade=5;let won=-1,k=0,as=[];
+        for(;k<=HC_BOSS_MAX&&won<0;k++){const H=hcNew(w,null,{as:hcAsLevel(),auto:true,boss:{n:hcBossRec(w).n}});as.push(H.as);
+          while(!H.over&&H.t<400){H.gas=true;H.brake=false;hcStep(H,1/120)}
+          if(hcBossDone(H,H.result=='win'?'win':'quit').won)won=k}
+        wrow.push(HCW[w].id+' '+won+' (help '+as.join('>')+')');
+        if(won<0)bad('Hill rival '+w+': Auto help from No help with Gas held never wins in '+(HC_BOSS_MAX+1)+' runs (help '+as.join('>')+')');
+}
+      // (b) at the cap, fixed No help (the grown-up's choice) driven with Gas pressed and let go (no help can catch a truck that
+      // only ever holds Gas on No help: it cannot finish stages 3 and 5 either); and fixed Most help held: the rival never passes
+      for(const [as,duty] of [[0,.7],[3,1]])for(let w=0;w<HC_BOSS.length;w++){const H=hcNew(w,null,{as,boss:{n:HC_BOSS_MAX}});let i=0,ahead=0;
+        while(!H.over&&H.t<400){i++;H.gas=duty>=1||(i%240)<240*duty;H.brake=false;hcStep(H,1/120);if(H.boss.x>Math.max(60,H.maxX-HC_BOSS_GAP)+1e-6)ahead++}
+        if(!(H.result=='win'&&!H.boss.lost)||ahead)bad('Hill rival '+w+' at the cap, help '+as+' gas '+duty+': '+H.result+' lost '+H.boss.lost+', ahead of the truck '+ahead+' steps');
+        if(as==3&&H.boss.x>=H.C.fin)bad('Hill rival '+w+': at the flag at the cap')}
+      // below the cap the rival keeps its own pace (it can win)
+      {const H=hcNew(0,null,{as:3,boss:{n:0}});H.t=hcBossT(0,0)+.5;if(Math.abs(hcRivalX(H)-H.C.fin)>1e-6)bad('Hill rival: held back below the cap')}
+      // a lost rival run counts for Auto: two in a row step the help up (the drive's own steps are kept too)
+      {S.garage={as:'auto'};S.grade=5;const H=hcNew(0,null,{as:0,auto:true,boss:{n:0}});H.result='win';H.boss.lost=true;H.t=40;hcBossDone(H,'win');
+        const H2=hcNew(0,null,{as:0,auto:true,boss:{n:1}});H2.result='win';H2.boss.lost=true;H2.t=40;hcBossDone(H2,'win');
+        if(garageS().asu!==1)bad('Hill: two lost rival runs should step Auto help up (asu '+garageS().asu+')');
+        S.garage={as:'auto',asf:{s:'hb2',n:1}};if(!garageS().asf)bad('Hill: a rival run\'s struggle count is dropped from the save')}
+      S.garage=kg;S.grade=kgr;r.notes.push('Hill rival runs won by Auto help from No help, Gas held, after '+wrow.join(', ')+' runs not won')}
     // what it opens, what it pays, a run not won
     S.garage={};const gb=garageS();
     if(hcBossOpen(0))bad('Hill: the rival run is open on a new save');
@@ -19986,6 +20012,23 @@ run('game moves and bosses G-MOVES',()=>{
         if(n>RL_CHAMP_MAX)bad('Rally champion '+i+': the '+mode+' '+kind+' bot never wins (no fail-forever)');
         if(kind=='good'&&n>3)bad('Rally champion '+i+': a child who steers well should win within 3 races not won ('+n+')')}}
     r.notes.push('Rally champion races won by both seeds after (cup, mode, bot, races not won): '+crow.join(' '));
+    // review fix (v186): weak drivers win by the cap (RL_CHAMP_MAX races not won) on every cup, both seeds: a random steerer (a new
+    // arrow, or none, every half second), one arrow held all race, and Pro with Go held and random arrows. At the cap the champion
+    // never outpaces the child (rlChampHold): never ahead after being behind, never at the line first
+    {const wb={rand:(st,m)=>{if(!(m.k++%30))m.s=[-1,0,1][Math.floor(m.r()*3)];return{steer:m.s}},left:()=>({steer:-1}),
+        prand:(st,m)=>{if(!(m.k++%30))m.s=[-1,0,1][Math.floor(m.r()*3)];return{steer:m.s,go:true}}};
+      for(const [mode,kind] of [['easy','rand'],['easy','left'],['pro','prand']])for(let i=0;i<RL_CHAMP.length;i++)for(const seed of [1,2]){
+        const st=rlNew(RL_CUPS[i].races[2][0],{mode,seed,drift:true,champ:{i,n:RL_CHAMP_MAX}}),m={k:0,s:0,r:rlRng(seed*31+7)},c=st.cars[0];let n=0,was=false,passed=0;
+        while(!st.done&&n<60*400){const behind=c.d<=st.P.d;rlStep(st,wb[kind](st,m));st.ev.length=0;n++;if(behind&&c.d>st.P.d&&!st.done)passed++}
+        if(!st.done||st.P.place!==1||passed||c.fin)bad('Rally champion '+i+' at the cap, '+mode+' '+kind+' seed '+seed+': '+(st.done?'place '+st.P.place:'did not finish')+', passed '+passed)}
+      // below the cap the champion races as before
+      {const st=rlNew(RL_CUPS[0].races[2][0],{mode:'easy',seed:1,champ:{i:0,n:RL_CHAMP_MAX-1}});if(rlChampHold(st,st.cars[0]))bad('Rally: the champion held back below the cap')}}
+    // review fix (v186): leaving a won champion race in the moment before its card (rlQuit, rlTimeUp) still pays the sparkles
+    {const keepF={rlStop,rlMenu,gtStop,timeUpOverlay};rlStop=()=>{RL=null};rlMenu=()=>{};gtStop=()=>{};timeUpOverlay=()=>{};
+      try{for(const f of ['rlQuit','rlTimeUp']){S.rally={cups:{sprout:{best:4,runs:1}}};const rr=rlS(),s0=rr.spk,st=rlNew('meadow-1',{champ:{i:0,n:0}});
+          st.done=true;st.P.place=1;st.P.spk=4;RL={st};(f=='rlQuit'?rlQuit:rlTimeUp)();
+          if(rr.spk!==s0+4+RL_CHAMP_PAY[0]||JSON.stringify(rr.bs.sprout)!=='{"n":0,"w":1}')bad('Rally: '+f+' after a won champion race pays '+(rr.spk-s0)+' (want '+(4+RL_CHAMP_PAY[0])+') '+JSON.stringify(rr.bs))}}
+      finally{rlStop=keepF.rlStop;rlMenu=keepF.rlMenu;gtStop=keepF.gtStop;timeUpOverlay=keepF.timeUpOverlay;RL=null}}
     // what opens, what pays, a race not won, quitting
     S.rally={cups:{sprout:{best:4,runs:1}}};const r1=rlS();
     if(!rlChampOpen(0,r1)||rlChampOpen(1,r1))bad('Rally: a champion race opens once its cup was raced to the end');
@@ -20042,6 +20085,16 @@ run('game moves and bosses G-MOVES',()=>{
         bad('Sky Hop race '+w+': the bird should beat a perfect run first ('+hopBossT(w,0).toFixed(1)+' < '+perfect+'), lose to it after one race, and wait for slower runs later');
       const st=hopNew(c.id,{mode:'one',boss:{w,n:0}});let n=0;while(!st.boss.lost&&n<60*200){hopStep(st,{});if(st.wait=='offer')hopHelp(st,false);st.ev.length=0;n++}
       if(Math.abs(st.t-.8-st.boss.T)>.02||Math.abs(hopRivalX(st)-st.C.goal.x)>1e-6)bad('Sky Hop race '+w+': the bird reaches the flag at '+st.t.toFixed(2)+' s')}
+    // review fix (v186): a child who falls a lot (random presses, 5 to 16 falls, the helper balloon taken) wins by the cap
+    // (HOP_BOSS_MAX races not won) on every world: from then on the bird stays HOP_BOSS_GAP behind the furthest the pet got
+    {const frow=[];for(let w=0;w<HOP_BOSS.length;w++)for(const sd of [1,2]){const rn=rlRng(sd*13+w),st=hopNew(hopBossCourse(w).id,{mode:'one',boss:{w,n:HOP_BOSS_MAX}});let hold=0,ahead=0,px=0;
+        while(!st.done&&st.t<600){if(hold>0)hold--;else if(rn()<.03)hold=2+Math.floor(rn()*18);hopStep(st,{jump:hold>0});if(st.wait=='offer')hopHelp(st,true);st.ev.length=0;
+          px=Math.max(px,st.p.x);if(st.boss.x>Math.max(st.C.cps[0].x,px-HOP_BOSS_GAP)+1e-6)ahead++}
+        if(sd==1)frow.push(w+':'+st.falls);
+        if(!st.done||st.boss.lost||ahead)bad('Sky Hop race '+w+' at the cap, a faller (seed '+sd+'): '+(st.done?'finished':'did not finish')+' with '+st.falls+' falls, bird first '+st.boss.lost+', ahead '+ahead);
+        if(sd==1&&st.falls<3)bad('Sky Hop race '+w+': the faller bot fell only '+st.falls+' times')}
+      const st=hopNew(hopBossCourse(0).id,{mode:'one',boss:{w:0,n:HOP_BOSS_MAX-1}});st.t=st.boss.T+.8;if(Math.abs(hopRivalX(st)-st.C.goal.x)>1e-6)bad('Sky Hop: the bird held back below the cap');
+      r.notes.push('Sky Hop races at the cap won by a faller (world: falls) '+frow.join(' '))}
     {S.hop={};const hr=hopS(),st=hopNew(HOP_COURSES[5].id,{boss:{w:0,n:0}}),b0=hr.bonus;
       const x=hopBossDone(st,false),y=hopBossDone(st,true),z=hopBossDone(st,true);
       if(x.pay||y.pay!==HOP_BOSS_PAY[0]||z.pay!==HOP_BOSS_PAY[1]||hr.bonus!==b0+HOP_BOSS_PAY[0]+HOP_BOSS_PAY[1]||JSON.stringify(hr.bs['0'])!=='{"n":1,"w":2}')bad('Sky Hop race pays: '+JSON.stringify([x,y,z,hr.bs]))}
@@ -21213,6 +21266,11 @@ run('teach: Spanish and Discover lessons, the part, their shapes, their read-thr
     // Spanish in a line: «...» is said in Spanish, and in a Spanish lesson el and la said alone too; the caption drops the marks
     const sr=JSON.stringify(lsRuns('«el perro» is an el word.',true)),sn=JSON.stringify(lsRuns('Is it el or la?',false));
     if(sr!=='[["el perro",1],["is an",0],["el",1],["word.",0]]'||sn!=='[["Is it el or la?",0]]'||lsPlain('«la vaca».')!=='la vaca.')bad.push('lsRuns '+sr+' '+sn);
+    // review fix (v186): a phrase is never cut across two voices: a title ("A la Escuela") or a quote stays English, an unmarked units
+    // word after el / la is one Spanish piece with it
+    for(const [t,w] of [['A la Escuela','[["A la Escuela",0]]'],['Ask Sam: "la moto" ends in o.','[["Ask Sam: \\\\"la moto\\\\" ends in o.",0]]'],
+      ['Is it la vaca?','[["Is it",0],["la vaca",1]]'],['El or La? Listen for el or la.','[["El",1],["or",0],["La",1],["? Listen for",0],["el",1],["or",0],["la",1]]']]){
+      const g=JSON.stringify(lsRuns(t,true));if(g!==w)bad.push('lsRuns('+t+'): '+g)}
     // the engine: Name it's extra items, "look" after an answer (never before a retry), "I said it!", Spanish said in its own voice
     if(!/concat\\(n\\.also \\|\\| \\[\\]\\)/.test(String(LS.beat)))bad.push('Name it does not add say it with me (LS.beat)');
     if(!/it\\.q\\.look/.test(String(LS.answer))||!/it\\.nx \\|\\| 'Next'/.test(String(LS.show))||!/lsSay\\(t, me && me\\.L\\.p\\)/.test(String(LS.talk)))bad.push('the engine does not say look, I said it! or Spanish');
@@ -21265,6 +21323,8 @@ run('teach: every Spanish noun of the lessons has the article and gender of the 
         for(const st of [0,1,2,3]){const q=L.q(st,r);n++;
           if(q.kind=='sort'){for(const c of q.items){isR(c.v,id);if(c.say!==c.v||c.lang!=='es'||art(c.v)[0]!==c.b)bad.push(id+': '+c.v+' is said '+c.say+' and sorted into '+c.b)}continue}
           isR(q.ans,id);for(const c of q.choices)if(c.v!==q.ans)(ok(c.v)?isR:isW)(c.v,id);
+          // review fix (v186): no picture that fits two answers: el bebé (a baby girl is la bebé) and la cocina (its pan and egg fit el huevo)
+          for(const c of q.choices)if(/^(?:el|la) (?:bebé|cocina)$/.test(c.v))bad.push(id+': '+c.v+' offered (its picture fits another answer)');
           for(const c of ['esArt','esEnd'])for(const v of q.bug[c]||[]){isW(v,id);if(art(v)[1]!==art(q.ans)[1])bad.push(id+': '+c+' '+v+' is not the answer with the other article')}
           const br=ls6Breaks([art(q.ans)[1],'','',art(q.ans)[0]]);if(br&&q.bug.esArt||!br&&q.bug.esEnd&&st>0)bad.push(id+': esArt / esEnd on '+q.ans)}
         const e=L.exp(r);e.q.items.forEach(c=>isR(c.v,id));const c=e.react().ctx;isR(c.a,id);isR(c.b,id);if(art(c.a)[0]!=='el'||art(c.b)[0]!=='la')bad.push(id+': Name it el / la '+JSON.stringify(c));
@@ -21306,30 +21366,29 @@ run('teach: simulated children on Spanish and Discover lessons, Check me always 
   if(r.fresh<r.res)p.push('a resumed Show asked an item already seen in '+(r.res-r.fresh)+' of '+r.res+' resumes');
   return{problems:p,note:Object.entries(o).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')+'; '+r.fresh+' of '+r.res+' resumes fresh; the Spanish pet\'s forced slip is el or la in '+r.art+' of 360'};
 });
-run('home: the review tile retires where lesson Remember covers it TEACH-5S',()=>{
-  // TEACH-PLAN-2 system D: Remember "can replace Daily Review as a separate tile once lessons cover a child's grade". With lessons on, Home draws no
-  // review tile while every item due is at a stop whose lesson the child has learned (its Remember brings that stop back); an item anywhere else, or
-  // lessons off, keeps the tile; the round stays reachable through the "Do today's review" mission, and the items still come back in practice rounds
+run('home: the review tile shows whenever anything is due, lessons on or off TEACH-5S',()=>{
+  // Review fix (v186; a design change from TEACH-5S, which hid the tile while every due item was at a stop whose lesson the child had learned):
+  // lesson Remember asks one lesson a day and updates S.know only, never the review queue (S.rev), so those items stayed due, and the "Do today's
+  // review" mission is one of up to six shuffled candidates for two slots, so it was no sure way in. Now the tile shows whenever anything is due:
+  // at a learned lesson's stop too, with lessons on or off; nothing due still shows "All caught up!"; the row keeps its two or three tiles
   const R=teachApp();
   const o=R(`(()=>{const o={},item=(sk,lv,l)=>({sk,lv,seed:5,label:l,box:0,due:0,n:1});loadSave(null);for(const p in PATHS)S.maps[p]=S.maps[p]||{};S.grade=1;
-    const tile=()=>{const h=hmToday(),k=(h.match(/class="hm-tile/g)||[]).length+(/id="revcard"/.test(h)&&!/id="revcard"><button/.test(h)?0:0);
-      return{rev:/id="revcard"/.test(h),tiles:(h.match(/<button class="hm-tile"/g)||[]).length+(/<div class="hm-tile ok"/.test(h)?1:0),cls:(h.match(/class="hm-today( n\\d)?"/)||[])[1]||''}};
+    const tile=()=>{const h=hmToday();
+      return{rev:/<button class="hm-tile" id="rev"/.test(h),ok:/All caught up!/.test(h),tiles:(h.match(/<button class="hm-tile"/g)||[]).length+(/<div class="hm-tile ok"/.test(h)?1:0),
+        flu:/id="flu"/.test(h),cls:(h.match(/class="hm-today( n\\d)?"/)||[])[1]||''}};
     S.rev=[item('add',1,'3 + 4')];S.know={};o.unlearned=tile();
-    S.know={add1:{s:2,box:0,due:200,d:1,last:1,n:1,lv:[[0,0],[0,0],[0,0]],b:{}}};o.covered=tile();o.cov=revCovered();
+    S.know={add1:{s:2,box:0,due:200,d:1,last:1,n:1,lv:[[0,0],[0,0],[0,0]],b:{}}};o.learned=tile();o.gone=typeof revCovered!='undefined';
     TEACH.off=true;o.off=tile();TEACH.off=false;
     S.rev.push(item('es_greet',1,'hola'));o.mixed=tile();
     S.rev=[];o.none=tile();
-    S.rev=[item('add',1,'3 + 4')];o.mis=MIS.KINDS.includes('review')&&typeof startReview=='function';
     return o})()`);
   const p=[];
-  if(!o.unlearned.rev)p.push('a due item at a stop with no learned lesson: no review tile');
-  if(o.covered.rev||!o.cov)p.push('every item due is covered by a learned lesson, but the review tile shows');
-  if(!o.off.rev)p.push('lessons off: no review tile');if(!o.mixed.rev)p.push('an item not covered (no lesson): no review tile');
-  if(!o.none.rev)p.push('nothing due: "All caught up!" is gone');
-  for(const k of ['unlearned','covered','off','mixed','none']){const x=o[k],want=x.tiles==3?'':' n'+x.tiles;if(x.cls!==want)p.push(k+': '+x.tiles+' tiles in a row of class "'+x.cls+'"')}
-  if(!o.mis)p.push('the review round is not reachable from its mission');
-  if(!/\.hm-today\.n1\{grid-template-columns:minmax\(0,1fr\)\}/.test(fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8')))p.push('no one-tile row style');
-  return{problems:p,note:'covered: '+o.covered.tiles+' tiles (no review tile); not covered or lessons off: the tile stays'};
+  for(const k of ['unlearned','learned','off','mixed'])if(!o[k].rev||o[k].ok)p.push(k+': items are due but there is no review tile');
+  if(o.none.rev||!o.none.ok)p.push('nothing due: "All caught up!" is gone');
+  if(o.gone)p.push('revCovered (the rule that hid the tile) is still in the code');
+  for(const k of ['unlearned','learned','off','mixed','none']){const x=o[k],want=x.flu?'':' n2';if(x.tiles!==(x.flu?3:2)||x.cls!==want)p.push(k+': '+x.tiles+' tiles in a row of class "'+x.cls+'"')}
+  if(/\.hm-today\.n1\b/.test(fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8')))p.push('the one-tile row style is left over');
+  return{problems:p,note:'a due item at a learned lesson\'s stop keeps its review tile; lessons off the same; nothing due: All caught up!'};
 });
 
 // ---- TEACH-4: reading for K to 2nd grade, and the Pre-K lessons of Tiny Town and ABC Beach (docs/TEACH-PLAN-2.md batch 4; src/js/52k-words4.js,

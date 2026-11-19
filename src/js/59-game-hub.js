@@ -403,6 +403,13 @@ const GH = {
       `<div class="rw-acts gh-acts">${o.btns || ''}</div></div>`;
     document.body.appendChild(el);
     if (o.win) RW.burst(el.firstChild, 28); // drawn confetti (hidden in calm mode)
+    // review fix (v186, was Star Rally's rlGuard): a finger still down from the game when the card opens (Gas, Drift, Hold to
+    // float, Dash, a build tap) must not press a button when it lifts. A pointer click works only after a new press on the card;
+    // a key press (click with detail 0) always works
+    if (el.addEventListener) { // (tools/test.js draws cards on a stub document)
+      el.addEventListener('pointerdown', () => { el._armed = 1; }, true);
+      el.addEventListener('click', e => { if (e.detail && !el._armed) { e.stopPropagation(); e.preventDefault(); } }, true);
+    }
     return el;
   },
 
