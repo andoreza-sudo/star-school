@@ -356,6 +356,29 @@ const SCREENS = {
   'teach3b-qtry': { run: async p => teach35Beat(p, 'dbig4', 'tog', 0) },
   'teach3b-mixb': { run: async p => teach35Beat(p, 'fop4', 'tog', 0) },
   'teach3b-cut': { run: async p => teach35Beat(p, 'fop6', 'tog', 0) },
+  // TEACH-6M: the grade 6 lessons (teach6): each new model on its first Together item (model: the item wanted), the pet's written steps and
+  // "your problem" in One-Step Equations, a typed negative answer (Integers on a Line)
+  'teach6m-rtab': { run: async p => teach6Beat(p, 'ratio1', 'tog', 0, 'rtab') },
+  'teach6m-iline': { run: async p => teach6Beat(p, 'int3', 'tog', 0, 'iline') },
+  'teach6m-pbar': { run: async p => teach6Beat(p, 'ratio3', 'tog', 0, 'pct') },
+  'teach6m-grid': { run: async p => teach6Beat(p, 'ratio4', 'tog', 0, 'pct') },
+  'teach6m-fit': { run: async p => teach6Beat(p, 'fop7', 'tog', 0, 'fit') },
+  'teach6m-pow': { run: async p => teach6Beat(p, 'ooo2', 'tog', 0, 'pow') },
+  'teach6m-eqbar': { run: async p => teach6Beat(p, 'alg3', 'tog', 0, 'eqbar') },
+  'teach6m-tri': { run: async p => teach6Beat(p, 'geo5', 'tog', 0, 'tri') },
+  'teach6m-xy4': { run: async p => teach6Beat(p, 'coord2', 'tog', 0, 'xy4') },
+  'teach6m-mults': { run: async p => teach6Beat(p, 'fact3', 'tog', 0, 'mults') },
+  'teach6m-gcf': { run: async p => teach6Beat(p, 'fact3', 'tog', 0, 'gcf') },
+  'teach6m-lev': { run: async p => teach6Beat(p, 'data5', 'tog', 0, 'lev') },
+  'teach6m-mine': { run: async p => teach6Beat(p, 'alg1', 'chk', 0, 'pickn') },
+  'teach6m-steps': { run: async p => teach6Beat(p, 'alg1', 'chk', 1, 'pickn') },
+  'teach6m-neg': { run: async p => teach6Beat(p, 'int1', 'tog', 0, 'num') },
+  'teach6m-pic-tri': { run: async p => teach6Beat(p, 'geo5', 'tog', 0, 'pic') },
+  'teach6m-pic-tow': { run: async p => teach6Beat(p, 'data5', 'tog', 0, 'pic') },
+  'teach6m-pic-xy4': { run: async p => teach6Beat(p, 'coord2', 'tog', 0, 'pic') },
+  'teach6m-pic-pbar': { run: async p => teach6Beat(p, 'ratio3', 'tog', 0, 'pic') },
+  'teach6m-pic-fit': { run: async p => teach6Beat(p, 'fop7', 'tog', 0, 'pic') },
+  'teach6m-pic-rtab': { run: async p => teach6Beat(p, 'ratio1', 'tog', 0, 'pic') },
   // TEACH-4: the reading and Pre-K lessons (teachrd): the sound sort with pictures (First Sounds), the letter named (Name it), building a word
   // from letter tiles (Build a Word), the pet's letters in Check me and its fix, the sentence matched to a picture (Picture Words), a Pre-K
   // picture choice (Which Has More)
@@ -401,6 +424,10 @@ const SCREENS = {
   // end card with its game time
   'lstop-map': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); pathMap('math', NODES.math[lstopI()].wi); });
     await p.waitForTimeout(800); await p.evaluate(() => document.querySelector(`.lsn[data-ls="${lstopI()}"]`).scrollIntoView({ block: 'center' })); await p.waitForTimeout(300); } },
+  // G-PROPS: the map with the job props by the learned lesson stops of Ocean Reef (a 1st grader, stops and lessons passed up to it)
+  'props-map': { run: ev(() => { const wi = PATHS.math.worlds.findIndex(w => w.id == 'm_reef'), last = WR.math[wi][1]; S.grade = 1; S.know = {};
+    NODES.math.forEach((n, i) => { setSt('math', i, i <= last ? 2 : 0); if (i <= last && LS_STOPS.math.has(nid(n))) S.know[nid(n)] = { s: 2 }; });
+    pathMap('math', wi); [...document.querySelectorAll('.lsn.done')].find(e => NODES.math[+e.dataset.ls].wi == wi).scrollIntoView({ block: 'center' }); }) },
   'lstop-start': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.open('tenf2'); }); await p.waitForTimeout(600); } },
   'lstop-meter': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.WAKE = 400; LS.start('tenf2', { learn: 1 }); }); await p.waitForTimeout(1500); } },
   'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();
@@ -529,6 +556,19 @@ async function teach35Beat(p, id, beat, k, form) {
       if (!form || (form == 'mine' ? it.mine : it.steps)) break; }
     for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
     LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, form]);
+  await p.waitForTimeout(1500);
+}
+// TEACH-6M: a grade 6 lesson at a beat, as a 6th grader (part teach6, after teach35); model: the first item's model (or 'num') wanted, found by seed
+async function teach6Beat(p, id, beat, k, model) {
+  await p.evaluate(() => partsLoad(['teach', 'teach12', 'teach35', 'teach6']));
+  await p.waitForFunction(() => typeof LS_B35 != 'undefined' && typeof ls6mRatio == 'function', null, { timeout: 30000 });
+  await p.evaluate(([id, beat, k, model]) => { window.say = window.__a11y.say; teachSave(); S.grade = 6; LS.WAKE = 400; LS.PET_OK = 0;
+    let st = null;
+    for (let s = 1; s < 80; s++) { st = LS.make(id, { seed: s, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat)); const q = LS.cur(st).q;
+      if (model == 'pic') { LS.cur(st).q = LESSONS[id].q(1, mulberry32(s)); break; } // the stage 1 picture with its typed answer
+      if ((q.model || q.kind) == model && (model != 'pct' || !!q.m.grid == (id == 'ratio4')) && (model != 'num' || q.pad == 'neg')) break; }
+    for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
+    LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, model]);
   await p.waitForTimeout(1500);
 }
 // TEACH-4: a reading or Pre-K lesson at a beat (k: the item; in Check me, 1 is the fix after the pet's mistake)

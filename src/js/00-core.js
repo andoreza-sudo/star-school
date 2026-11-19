@@ -10,7 +10,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 const BUILD='__VER__'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over __VER__ in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
-const LATEST=10; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
    key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
@@ -186,6 +186,17 @@ const MIGRATIONS=[null,
     const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
     for(const p of['es','disc'])if(NODES[p]&&S.maps&&S.maps[p])NODES[p].forEach((n,i)=>{try{const a=NODES[p][i-1];
       if(ids.has(nid(n))&&!passed(p,i)&&unlocked(p,i)&&(a&&(passed(p,i-1)||a.wi!==n.wi&&worldSkipped(p,a.wi))||stopBehind(p,i)))o[nid(n)]=1}catch(e){}});
+    if(Object.keys(o).length)S.lsOpen=o;
+  },
+  /* 10: TEACH-6M (v188). The grade 6 math stops of Sky City and Galaxy Core got lessons (and so lesson stops in front of them). The same
+     rule as 6-9: every one of THESE stops this save could already play because of its own progress (the stop before it passed, the first
+     stop after a skipped world, or a later stop of its world passed) and has not passed is kept open in S.lsOpen. Frozen list of the v188
+     additions (never LESSONS); idempotent; never throws; removes nothing. */
+  ()=>{
+    const ids=new Set('ratio1 ratio2 int1 ratio3 int2 ratio4 fop7 int3 ooo2 alg1 ooo3 alg2 geo5 coord2 fact3 data5 alg3 story9'.split(' '));
+    const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
+    if(NODES.math&&S.maps&&S.maps.math)NODES.math.forEach((n,i)=>{try{const a=NODES.math[i-1];
+      if(ids.has(nid(n))&&!passed('math',i)&&unlocked('math',i)&&(a&&(passed('math',i-1)||a.wi!==n.wi&&worldSkipped('math',a.wi))||stopBehind('math',i)))o[nid(n)]=1}catch(e){}});
     if(Object.keys(o).length)S.lsOpen=o;
   }
 ];

@@ -395,6 +395,15 @@ As built (P4-09, `src/js/43-scenes.js` `SCN`, data in `src/data/d-scenes.js`, CS
   stones up to the current stop ("the walked part"), and a little plank bridge with rails over each gap between two worlds.
 - No ids, gradients, filters, `<use>` or text inside the SVG; no animation (reduced motion and calm mode need nothing).
 - Review: `node tools/shots.js scenes` (every world, a sheet) and `scene-math`, `scene-read`, `scene-es`, `scene-disc`.
+- Job props (G-PROPS, v187; TEACH-PLAN-2 System G): when a lesson stop is learned (`lsLearned`, Show passed), one small prop that shows
+  the world's job done stands beside it: planks (Shape Garden, Workshop, Island), a basket of shells (reef, bay, beach), a fuel can
+  (space, galaxy, lab, observatory), a crate of apples (meadow, weather, nature), bricks (town, desert, city), a sweets jar (candy,
+  fiesta), a cart of gems (volcano, caves, legend), a parcel (clock, factory, sky city, library, plaza, repaso) or logs (mountain,
+  forest): theme field `job` in `d-scenes.js`, 9 drawings of at most 7 shapes in the scene palette. `SCN.jobs` (43-scenes.js) puts
+  it on the stop's outer side, else beyond its ticket and check-in medal on the side toward the middle, never on a stop, label,
+  ticket, medal, title, banner, pet or trail; none when there is no room. At most one per stop, placed before the side props (which
+  make room: 24 props in all) and with no random numbers, so a scene with no learned lesson stop is byte for byte the scene it was.
+  Derived from the save (`S.know`), nothing new saved. Review: `SHOTS_SIZES=380x780,360x740,1024x600 node tools/shots.js map-props map-props-reef map-props-space`.
 
 ## 8. Motion and sound (chunk P4-17)
 
