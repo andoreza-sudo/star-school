@@ -204,3 +204,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .mis-win .rw-stk{width:48px;height:48px;border-radius:16px}
 .mis-win .rw-se{font-size:30px}
 @media (min-width:900px){.hm-mis{gap:var(--s-3)}}
+/* ASK-01: the Ask button beside the pet (askBtn, 46-home.js): a speech bubble on Home's stage and beside the map's pet. Tokens only. */
+.btn.icon.ak-btn{width:var(--tap);height:var(--tap);min-height:var(--tap);background:var(--surface);color:var(--brand);box-shadow:var(--shadow),0 3px 0 var(--line)}
+.hm-stage .btn.ak-hm{position:absolute;top:var(--s-2);left:var(--s-2);z-index:2}
+.map .btn.ak-mp{position:absolute;margin:calc(var(--tap) / -2) 0 0 calc(var(--tap) / -2);z-index:4}

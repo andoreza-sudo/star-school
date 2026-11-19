@@ -224,6 +224,11 @@ const SCREENS = {
   'pers-pick': { run: async p => { await p.evaluate(() => partLoad('hints')); await p.waitForFunction(() => typeof persPick == 'function');
     const W = Object.fromEntries(require('./author.js').persDrafts().filter(x => x.d).map(x => [x.d.id, { name: x.d.name, pic: x.d.pic, things: x.d.things, st: x.d.st }]));
     await p.evaluate(W => { Object.assign(PERSW, W); S.ints = ['dinosaurs']; persPick(() => grown()); }, W); await p.waitForTimeout(400); } },
+  // ASK-01: the Ask the pet sheet on Home (every question draft's words as if approved; nothing is reviewed yet), "What should I do next?" tapped
+  'ask': { run: async p => { await p.evaluate(() => partLoad('hints')); await p.waitForFunction(() => typeof askOpen == 'function');
+    const W = Object.fromEntries(require('./author.js').askDrafts().filter(x => x.d).map(x => [x.d.id, { q: x.d.q, a: x.d.a }]));
+    await p.evaluate(W => { Object.assign(ASKW, W); ASK_ON = Object.keys(W).length; window.say = () => {}; home(); }, W);
+    await p.click('.ak-btn'); await p.waitForSelector('.sheet-bg.on .ak-q'); await p.click('.ak-q[data-ask="next"]'); await p.waitForTimeout(400); } },
   // PLAY-01: the Play app's free sample with a mocked Google Play billing: a locked world, the child's line, the unlock sheet, the Grown-ups card
   'play-map': { run: async p => { await p.evaluate(PLAY_MOCK); await p.evaluate(() => { S.grade = 0; pathMap('math', PATHS.math.worlds.findIndex(w => w.id == 'm_meadow')); }); } },
   'play-kid': { run: async p => { await p.evaluate(PLAY_MOCK); await p.evaluate(() => { S.grade = 0; pathMap('math', PATHS.math.worlds.findIndex(w => w.id == 'm_meadow')); PLAY.kid('world', 'math'); }); await p.waitForTimeout(600); } },
