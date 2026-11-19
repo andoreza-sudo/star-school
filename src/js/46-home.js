@@ -231,7 +231,7 @@ function hmHero() {
     `<button class="stat flame${n ? '' : ' off'}" id="stkb" aria-label="Streak calendar">${ico('flame', 32)}<b>${n}</b></button>` +
     (left > 0 ? UI.chip('ticket', fmtT(left), { aria: 'Game time' }) : '');
   return `<div class="hm-hero">
-    <div class="hm-stage sc-${esc(S.wear.scene || 'meadow')}">${hmScene(S.wear.scene)}<div class="petbig ${petAura()}" id="pet" role="button" tabindex="0" aria-label="Pat ${esc(petN())}">${petHTML()}</div>${need}</div>
+    <div class="hm-stage sc-${esc(S.wear.scene || 'meadow')}">${hmScene(S.wear.scene)}<div class="petbig ${petAura()}" id="pet" role="button" tabindex="0" aria-label="Pat ${esc(petN())}">${petHTML()}</div>${need}${askBtn('ak-hm')}</div>
     <div class="hm-name"><b>${esc(S.name)}</b> <span>&amp; ${pn}</span></div>
     <div class="hm-grow">${UI.meter(v, { kind: 'grow', label: growTxt('stars', petN()) })}<div class="hm-gt">${grow}</div></div>
     ${mission}
@@ -249,6 +249,9 @@ function hmPlace() {
 // Today row: review (same ids as revCard(); revCardBind() wires #rev), Fact Sprint, Mixed Practice.
 // R-01b: the review tile says how many the next review round asks ("10 to review": the due count, at most REVIEW_N), in the tile's
 // own words, not as a red count bubble over the icon; Fact Sprint only when FLU.on() (grade 1 up, a set open).
+// TEACH-5S review fix (v186): the review tile shows whenever anything is due, lessons on or off. (TEACH-5S had hidden it while
+// every due item was at a learned lesson's stop, but lesson Remember asks one lesson a day and never clears S.rev, so those
+// items stayed due with no way in but a mission that is not always drawn.)
 function hmToday() {
   const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on();
   const rev = n
@@ -319,7 +322,7 @@ function home(first){
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
-  placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();
+  placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
@@ -328,6 +331,10 @@ function home(first){
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
+// ASK-01: the Ask button beside the pet (Home's stage, the map's pet), only once the owner has reviewed a question (ASK_ON, 39t-askon.js);
+// a tap loads the hints part, then opens the menu (askOpen, 39r-ask.js) if the button is still on screen
+const askBtn=(c,st='')=>ASK_ON?`<button class="btn icon ak-btn ${c}"${st?` style="${st}"`:''} aria-label="Ask ${esc(petN())} a question">${ico('question',30)}</button>`:'';
+function askBind(){$$('.ak-btn').forEach(b=>b.onclick=e=>{e.stopPropagation();partLoad('hints').then(ok=>{if(ok&&b.isConnected&&typeof askOpen=='function')askOpen(b)})})}
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
 /* P4-18: drawn map chrome (until P4-09 draws world scenes). A world badge is a disc in the world's own colour with the icon of
    the first skill that is new in that world (else its first skill); a stop shows its skill icon, a boss stop the drawn boss. */
@@ -347,7 +354,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   view(`<div class="top tbar mp-top s-${p}">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl mp-ttl">${ico(UI.SUBJ_ICON[p]||'map',30)}<span>${esc(P.n)}</span></div>${UI.chip('star',S.stars,{aria:'Stars'})}</div>
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
-  NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read'); // NAV-01: Back goes one step back
+  NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read');if(p=='es'||p=='disc')teachWarm(p); // NAV-01: Back goes one step back
   if(wi!=null)return mapTop(p);
   const c=$('.node.cur')||$('.lsn.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 /* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */
@@ -393,7 +400,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls?[x,yy,'Learn with '+petN(),false,false]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
-    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
+    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
@@ -403,9 +410,9 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2);
-  if((p=='math'||p=='read')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
+  if((p=='es'||p=='disc')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0);if((p=='math'||p=='read')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
 // TEACH-1: the lessons' part loads once the math map is drawn (Pre-K to 2nd), then adds its offer; a part that does not load just shows no offer
-function teachWarm(p='math'){const up=gradeOf()>2,rd=p=='read'||gradeOf()<0;if(TEACH.off||p=='read'&&up||partReady(up?'teach35':rd?'teachrd':'teach12'))return;(up?partsLoad(['teach','teach12','teach35']):rd?partsLoad(['teach','teach12','teachrd']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons too (teach35); TEACH-4: the reading map (Pre-K to 2nd), and the math map of a Pre-K child, load the reading and Pre-K lessons (teachrd)
+function teachWarm(p='math'){const up=gradeOf()>2,rd=p=='read'||gradeOf()<0,sd=p=='es'||p=='disc';if(sd&&!TEACH.off&&!partReady('teaches'))return partsLoad(['teach','teach12','teachrd','teaches']).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()});if(sd||TEACH.off||p=='read'&&up||partReady(up?'teach35':rd?'teachrd':'teach12'))return;(up?partsLoad(['teach','teach12','teach35']):rd?partsLoad(['teach','teach12','teachrd']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons too (teach35); TEACH-4: the reading map (Pre-K to 2nd), and the math map of a Pre-K child, load the reading and Pre-K lessons (teachrd); TEACH-5S: the Spanish and Discover maps, their lessons (teaches)
 function open(p,i){const n=NODES[p][i];if(lsGate(p,i))return lsOpen(p,i);if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded

@@ -133,7 +133,11 @@ index.html        shell + CSS + fonts + <script>src/js</script>                 
                    P6-03: nor for bt.<VER>.js, LAZY too, loaded the first time a puzzle opens)
 gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math, 31-gen-math-early, 32-gen-read, 33-gen-math-mid,
                   34-gen-es; ROOM: the Grown-ups screens 80-grown, 81-backup, 82-report, 88-online (room in index.html, under its 1 MB
-                  limit; loaded at start, so every caller has them), then  var GEN_VER='<VER>';
+                  limit; loaded at start, so every caller has them); MERGE-186 (ROOM 2): 45-placement, 50-say, 50-say-cmp, 50-say-corner,
+                  57-fluency (placement, Say it! and its sound check and listening corner, Fact Sprint: JS only, their CSS stays in
+                  index.html; index.html 999 -> 930 KB), then  var GEN_VER='<VER>';
+                  Rule for anything moved here: index.html's code may call it only inside functions that run after start-up (view()
+                  calls stopFlu behind typeof, so the A11 Try again screen works without gen)
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
                   then  var GEN2_VER='<VER>';
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
@@ -146,10 +150,15 @@ teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons 
                   52m-lessons4, 52p-lessons4b (TEACH-3b), 52q-bench5r and 52r-lessons5r (READ-SHAPES: the reading lesson shapes) and
                   src/css/52k-teach4.css, 52q-teach5r.css; LAZY: the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too
                   for a Pre-K child (teachWarm in 46-home.js)
+teaches.<VER>.js  TEACH-5S: the Spanish and Discover lessons, src/js/52s-bench5s (their shapes), 52s-words5 (reviewed words, LSW5) and
+                  52t-lessons5s, and src/css/52s-teach5s.css; LAZY: the Spanish and Discover maps load it with teach, teach12 and teachrd
+                  (teachWarm in 46-home.js)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js and the generated 39n-hintw.js, then  var HINTS_VER='<VER>';
                   LAZY: a Practice round loads it as it starts (hintsWarm in 50-round.js, from newG); check() shows the generic hint until it is in
+                  (PERS-01: the story themes 39p-pers.js, 39q-persw.js; ASK-01: the Ask the pet menu 39r-ask.js and its reviewed words 39s-askw.js,
+                  loaded by the Ask button beside the pet; 39t-askon.js, the count of reviewed questions, stays in index.html)
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
                   ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
@@ -273,9 +282,14 @@ example of drawing the child's own pet into a canvas picture, and of a determini
 Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Back on menus; `{play: true}` gives Pause; `sub`, `tools`,
 `chips`, `sound` as in 59-game-hub.js), then calls `GH.wire({quit: () => ...})` on a play screen (Quit runs it; `hold: on => ...` pauses
 the game while the sheet is open). The game-time clock is `gtStart('#gtm', onEnd)` (64-gtimer.js); it holds by itself while the sheet is
-open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})`; time running out: `timeUpOverlay()`. CSS goes in
+open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})` (since v186 a card's buttons ignore a finger still down from the game: a pointer click works only after a new press on the card); time running out: `timeUpOverlay()`. CSS goes in
 `src/css/NN-game-<name>.css`: since P4-16 the games rule also moves `NN-game-*.css` into `games.<VER>.js` (keep it scoped to the game's
 own classes). Do not change `gameRoom()`; it only loads the games parts and calls `GH.hub()` (`partsThen(LAZY_PARTS, () => GH.hub())`, P6-02).
+
+G-MOVES (v188): a game's new move and its boss use the shared pieces in `59-game-hub.js`: `GH.moveNew({name, icon, line, done})` puts the
+"New move" card at the top of the game's menu once (the game saves that it was seen in `done`); `GH.boss({...})` is the boss's screen (the
+rival's face from `GH.face`, its line, the goal, the prize, Back and the start button); `GH.bossRec` keeps the save's `{id: {n, w}}`
+records (tries not won, wins). Each game keeps its own rules: what opens the move and the boss, how the boss gets easier each try, the pay.
 
 Adding another part file (only if a part passes its budget, or a big new on-demand area comes): one line in `PARTS` (build.py), one line
 in `appFiles()` (90-app.js, same order), and the expected stems in the A11b check and smoke's `// A11` block. sw.js and the shell

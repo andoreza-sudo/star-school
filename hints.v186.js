@@ -1,6 +1,6 @@
-/* Star School hints v185. BUILT by tools/build.py from 39p-pers.css, 39m-mist.js, 39n-hintw.js, 39p-pers.js, 39q-persw.js: never edit by hand.
-   index.html v185 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v185.js. */
-(function(){var s=document.createElement('style');s.id='css-hints';s.textContent="/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */\n.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}\n.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}\n.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}\n.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;\n  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}\n.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}\n.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}\n.pp-emo{line-height:1}\n.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}\n.btn.pp-c.on .pp-ok{opacity:1}\n.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}\n.pp-exl{font-weight:700;color:var(--ink-2)}\n.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}\n@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School hints v186. BUILT by tools/build.py from 39p-pers.css, 39r-ask.css, 39m-mist.js, 39n-hintw.js, 39p-pers.js, 39q-persw.js, 39r-ask.js, 39s-askw.js: never edit by hand.
+   index.html v186 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v186.js. */
+(function(){var s=document.createElement('style');s.id='css-hints';s.textContent="/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */\n.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}\n.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}\n.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}\n.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;\n  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}\n.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}\n.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}\n.pp-emo{line-height:1}\n.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}\n.btn.pp-c.on .pp-ok{opacity:1}\n.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}\n.pp-exl{font-weight:700;color:var(--ink-2)}\n.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}\n@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}\n/* ASK-01: the \"Ask the pet\" sheet (askOpen, 39r-ask.js, part hints). Tokens only; every question a 48 px button with its words.\n   The pet and the title in a row with Close, \"Hear the questions again\" (48 px), the answer in a speech bubble under the pet, then the\n   questions (two columns when wide), each with its own 32 px icon on the left. ASK-READ: the question being read aloud is lit\n   (.ak-now: a thick ring, no movement, so reduced motion needs nothing more). */\n.ak-top{display:flex;align-items:center;gap:var(--s-3)}\n.ak-pet{flex:none;font-size:32px;line-height:1}\n.ak-pet .pet-svg{width:1.95em;height:1.95em}\n.sheet .ak-top h2{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-5);line-height:var(--lh-5)}\n.sheet .ak-bub{position:relative;margin:var(--s-3) 0 var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--brand-tint);\n  color:var(--ink);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3);min-height:2.9em}\n.ak-bub::before{content:'';position:absolute;left:var(--s-6);top:calc(-1 * var(--s-2));border:var(--s-2) solid transparent;border-top:0;border-bottom-color:var(--brand-tint)}\n.ak-qs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--s-2)}\n.btn.ak-q{justify-content:flex-start;gap:var(--s-2);min-height:var(--tap);padding:var(--s-2) var(--s-3);text-align:left;font-size:var(--fs-3);line-height:var(--lh-3)}\n.btn.ak-q .ic{flex:none;width:32px;height:32px;color:var(--brand)}\n.ak-tools{margin-top:var(--s-3);text-align:left}\n.btn.ak-q.ak-now{background:var(--brand-tint);box-shadow:0 0 0 4px var(--brand)}\n.btn.ak-q[aria-pressed=\"true\"]{background:var(--brand-tint);box-shadow:0 0 0 3px var(--brand) inset}\n@media (max-height:640px){.sheet .ak-bub{margin:var(--s-2) 0 var(--s-3)}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- HINT-01: a hint for each common mistake, in every Practice question (part hints since v182: loaded when a Practice round starts) ----------
    docs/ROADMAP.md 10d (owner decisions 2026-11-18). For a Practice question the app works out what each known mistake would answer
    (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cat" as "cap", la for el ...). When the child's
@@ -1037,5 +1037,288 @@ const PERSW = {
   "sports": {"name":"Sports","pic":["ball","⚽"],"things":[["soccer balls","soccer ball","ball","⚽"],["basketballs","basketball","","🏀"],["tennis balls","tennis ball","","🎾"],["trophies","trophy","","🏆"],["team flags","team flag","flag","🚩"],["team caps","team cap","cap",""]],"st":{"join":["{who} packs {a things} for practice. {other} packs {b} more. How many {pl} are in the bags?","At the game, {who} lines up {a things} and {other} lines up {b} more. How many {pl} in all?"],"sep":["{who} had {a things} at practice. {who} gave {b} to {other}. How many {pl} does {who} have left?","There were {a things} on the bench. {b} fell off. How many are still on the bench?"],"chg":["{who} has {a things} in the team bag. {other} puts in some more. Now there are {c things}. How many {pl} did {other} put in?"],"chgS":["{who} had {c things} at the game. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} for the team. {a} are big and the rest are small, for the little kids. How many small {pl} are there?"],"cmpDm":["After the game, {who} has {x things} and {other} has {y things}. How many more {pl} does {who} have than {other}?"],"cmpDf":["After the game, {who} has {x things} and {other} has {y things}. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} at practice. Then {other} brought {b} more. Now {who} has {c things}. How many {pl} did {who} have at the start?"],"startS":["{who} had some {pl} in the team bag. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} were in the bag at the start?"],"cmpB":["On the field, {other} has {y things}. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["On the field, {who} has {x things}. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
   "vehicles": {"name":"Vehicles","pic":["car","🚗"],"things":[["toy cars","toy car","car","🚗"],["toy trucks","toy truck","truck","🚚"],["toy buses","toy bus","bus","🚌"],["toy trains","toy train","train","🚂"],["toy boats","toy boat","boat","⛵"],["toy planes","toy plane","plane","✈"]],"st":{"join":["{who} parks {a things} on the play mat. {other} parks {b} more. How many {pl} are on the mat?","{who} has {a things}. {other} gives {who} {b} more for the race. How many {pl} does {who} have now?"],"sep":["{who} had {a things} on the play mat. {who} gave {b} to {other}. How many {pl} are left on the mat?","There were {a things} on the toy bridge. {b} fell off. How many are still on the bridge?"],"chg":["{who} has {a things} in the toy garage. {other} brings in some more. Now there are {c things} in the garage. How many {pl} did {other} bring in?"],"chgS":["{who} had {c things} in the toy box. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} on the play mat. {a} are big and the rest are small. How many small {pl} does {who} have?"],"cmpDm":["{who} has {x things} in the race. {other} has {y things} in the race. How many more {pl} does {who} have than {other}?"],"cmpDf":["{who} has {x things} in the race. {other} has {y things} in the race. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} in the toy garage. Then {other} brought {b} more. Now there are {c things}. How many {pl} were in the garage at the start?"],"startS":["{who} had some {pl} on the shelf. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} have at the start?"],"cmpB":["{other} has {y things} at the toy show. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} at the toy show. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
 };
+/* ---------- ASK-01: "Ask the pet", a short menu of questions a child can ask the pet (part hints) ----------
+   Owner rules (2026-11-18): no AI on the tablet. Every question and every answer is a sentence written at authoring time and approved
+   by the owner (docs/drafts/ask/<id>.md, tools/author.js --ask-draft / --ask-approve); the tablet only picks the approved answer
+   that fits the moment and fills its {slots} from the child's real state (the next stop of the map, the game-time bank, the hint of
+   the last mistake, the lesson's idea line). No free text, no typing, no speech input.
+     ASK_Q          the questions in menu order: what each answer variant means and the slots it may use (tools/author.js reads it)
+     askState(id)   which variant fits now and its slot values, or null when the question does not fit now (it is then not on the menu)
+     askItems()     the menu: the reviewed questions (ASKW, built from the approved drafts) that fit now, each with its filled answer
+     askOpen(btn)   the sheet: the pet, "Hear the questions again", the answer bubble, one 48 px button per question with its own
+                    32 px icon (a tap says the question, then shows and says the answer), Close; the pet reads the menu aloud (askRead)
+   The gate: ASKW holds reviewed questions only (tools/build.py), and ASK_ON (39t-askon.js, index.html) counts them, so with none
+   reviewed Home and the map draw no Ask button (askBtn in 46-home.js). Nothing here is saved, and nothing changes a score, a star or
+   game time. Ask is not offered inside a round: an answer can never land beside a Practice question. The "why" answer still never
+   holds the answer of the question it is about, nor of a question left open (askLeak), since a missed question comes back in review.
+   CSS: src/css/39r-ask.css (part hints, tokens only). */
+const ASK_Q = [
+  {id: 'next', icon: 'pin', q: [], v: {
+    lesson: {slots: ['stop', 'world'], about: 'the next stop on the map is {stop} (in the world {world}); its lesson with the pet comes first ("Learn with <pet>" stop in front of it)', ex: {stop: 'Make Ten', world: 'Shape Garden'}},
+    stop: {slots: ['stop', 'world'], about: 'the next stop to play on the map is {stop}, in the world {world}', ex: {stop: 'Take Away', world: 'Number Meadow'}},
+    done: {slots: ['subject'], about: 'every stop on this map ({subject}) is done', ex: {subject: 'Math'}}}},
+  {id: 'how', icon: 'hint', q: ['stop'], v: {
+    idea: {slots: ['idea', 'stop'], about: 'the lesson of the current stop {stop} has this idea line (one sentence, already approved): {idea}. The answer says the idea, then may point to the lesson', ex: {idea: 'Two parts make ten.', stop: 'Make Ten'}}}},
+  {id: 'why', icon: 'question', q: [], v: {
+    tip: {slots: ['hint'], about: 'the child got a Practice question wrong; {hint} is the approved hint for that mistake (or the question\'s usual hint), one or two sentences', ex: {hint: 'Line up the ones. Then add the tens.'}},
+    look: {slots: [], about: 'the child got a Practice question wrong, but there is no hint that can be said without giving its answer away', ex: {}}}},
+  {id: 'time', icon: 'clock', q: [], v: {
+    ok: {slots: ['time'], about: 'the child has {time} of game time to spend now', ex: {time: '4 and a half minutes'}},
+    empty: {slots: [], about: 'the child has no game time saved yet', ex: {}},
+    learn: {slots: ['more'], about: 'a grown-up set a rule: learn {more} more today before the Game Room opens', ex: {more: '6 minutes'}},
+    max: {slots: ['max'], about: 'today\'s game time is used up (the daily limit is {max}); more tomorrow', ex: {max: '30 minutes'}},
+    paused: {slots: [], about: 'a grown-up has paused game time', ex: {}}}},
+  {id: 'earn', icon: 'ticket', q: [], v: {
+    lesson: {slots: ['min'], about: 'how to earn game time: passing a lesson with the pet pays {min}; finishing learning rounds earns time too', ex: {min: '5 minutes'}},
+    round: {slots: [], about: 'how to earn game time: finishing learning rounds (lessons with the pet are off, or a grown-up set them to pay nothing)', ex: {}}}},
+  {id: 'grow', icon: 'star', q: [], v: {
+    egg: {slots: ['stars'], about: 'the pet is still an egg; {stars} until it hatches (stars come from learning)', ex: {stars: '12 more stars'}},
+    grow: {slots: ['stars'], about: 'the pet grows to its next stage in {stars} (stars come from learning)', ex: {stars: '40 more stars'}},
+    big: {slots: [], about: 'the pet is fully grown (a super pet)', ex: {}}}},
+  {id: 'feel', icon: 'heart', q: [], v: {
+    hungry: {slots: [], about: 'the pet is hungry (Pet Care: feed it)', ex: {}},
+    messy: {slots: [], about: 'the pet needs a bath (Pet Care: wash it)', ex: {}},
+    bored: {slots: [], about: 'the pet wants to play (Pet Care: play with it)', ex: {}},
+    happy: {slots: [], about: 'the pet is happy and cared for', ex: {}}}},
+  {id: 'stuck', icon: 'help', q: [], v: {
+    help: {slots: [], about: 'what to do when a question is too hard: tap Help (in a round) for a hint, go slowly, ask a grown-up, try an easier stop; mistakes help us learn', ex: {}}}},
+];
+const ASK_AGES = ['little', 'kid', 'teen'];
+/* ASK-READ (2026-11-19, the owner: "if a first grader does not know how to read well how will they answer those questions?"): the menu is
+   audio-first. Each question has its own icon (ASK_Q icon, 32 px, no two alike: next a map pin, how a light bulb, why a question
+   mark, time a clock, earn a ticket (game time, as on the lesson's end card), grow a star, feel a heart, stuck the help ring). The
+   sheet's own words (the owner reads them in docs/drafts/ASK-READ.md, tools/author.js --ask-read reads them from here):
+     intro   said before the questions when the pet reads the menu
+     again   the button at the top of the sheet that reads the menu again (speaker icon, 48 px) */
+const ASK_SHEET = {intro: 'You can ask me:', again: 'Hear the questions again'};
+/* The little pet (Pre-K to 2nd grade) offers at most 5 questions, so the whole menu is heard in a few seconds. Left out for little
+   children: "How do I do {stop}?" (the stop's lesson says its idea itself), "How do I get more game time?" (the game time they have
+   is what matters; earning is the grown-up's rule) and "What if it is too hard?" (a round's Help button does that in the moment). */
+const ASK_LITTLE = ['next', 'why', 'time', 'grow', 'feel'];
+const ASK_MAX = {little: 5, kid: 10, teen: 10};
+// the pet's age for the child's grade: the same rule as lsAge (52c-scripts.js, part teach; tools/test.js checks they agree)
+const askAge = (g = gradeOf()) => g <= 2 ? 'little' : g <= 4 ? 'kid' : 'teen';
+const askPl = (n, w) => n + ' ' + w + (n == 1 ? '' : 's');
+// seconds as the pet says them: "4 minutes", "1 and a half minutes", "half a minute", "less than half a minute"
+function askMins(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec / 60), half = sec % 60 >= 30;
+  if (!m) return half ? 'half a minute' : 'less than half a minute';
+  return half ? m + ' and a half minutes' : askPl(m, 'minute');
+}
+// the map the child means: the one on screen, else the last one opened this session (MAPP, 46-home.js), else Math
+const askMap = () => (typeof MAPP == 'string' && NODES[MAPP] ? MAPP : 'math');
+// the question's usual hint as plain words, without drawing or saying anything ('' when it has none in words)
+function askGenHint(q) {
+  const h = q && q.hint;
+  if (!h) return '';
+  const strip = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  // the words of a drawn hint are its last caption (<div>...</div>): the rods, dots and signs before it say nothing without the picture
+  const cap = x => { const m = [...String(x).matchAll(/<div>([^<]*)<\/div>/g)]; return m.length ? m[m.length - 1][1] : x; };
+  let t = '';
+  if (h.k == 'text' || h.k == 'say') t = h.s;
+  else if (h.k == 'html') t = h.w || cap(h.html);
+  else if (h.k == 'steps') t = h.w || (h.steps && h.steps[0] && h.steps[0].say) || '';
+  else if (h.k == 'pairs' || h.k == 'emoji' || h.k == 'blocks') t = cap(hintHTML(q)); // these three only draw: no sound, no DOM
+  t = strip(t).replace(/\p{Extended_Pictographic}|\uFE0F/gu, '').replace(/\s+/g, ' ').trim();
+  // a long one (a table of units) is cut after the sentence that passes 160 characters
+  if (t.length > 160) t = (t.match(/^.{0,160}?[.?!](?=\s|$)/) || [''])[0];
+  // words only: a bare number or sign under a picture ("3 went away") says nothing on its own
+  return /[A-Za-z]{3}/.test(t) ? t : '';
+}
+// the number words a line may say an answer with ("Count with me. one.")
+const ASK_NUMW = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ');
+/* Would this line give away the answer of question q? Stricter than the round's hmLeaks: the question may come back in review, and
+   by then the child has neither heard nor seen it, so any part of its answer (a number, its number word, a word, a letter) in the
+   line counts, even when the question's own words held it. */
+function askLeak(q, line) {
+  if (!q || q.ans == null || !line) return false;
+  const t0 = typeof hmToks == 'function' ? hmToks(line) : String(line).toLowerCase().split(/[^a-z0-9.]+/);
+  const toks = t0.concat(t0.map(x => x.replace(/^-/, ''))); // "-20" holds the answer 20 too
+  const parts = String(q.ans).toLowerCase().split('|').map(x => x.trim().replace(/^\+/, '')).filter(x => x && !['yes', 'no'].includes(x));
+  return parts.some(a => toks.includes(a) || /^\d+$/.test(a) && toks.includes(ASK_NUMW[+a]) || a.length > 2 && /[a-z]/.test(a) && String(line).toLowerCase().includes(a));
+}
+// the hint for the last mistake: its approved HINT-01 line when it has one (as hmHint picks it), else the question's usual hint
+function askTip(lm) {
+  const q = lm.q, v = lm.v, open = typeof G != 'undefined' && G && G.q;
+  const ok = t => t && !askLeak(q, t) && !(open && open !== q && askLeak(open, t)) && !(typeof ksBad == 'function' && ksBad(t, true));
+  try {
+    const own = !TEACH.off && !twoWay(q) && !(typeof mastTag == 'function' && mastTag(q) == 'ch');
+    const m = own && typeof hmMatch == 'function' ? hmMatch(q, v) : null, w = m && HINTW[m.c];
+    const line = w && !(m.s.o != null && ksBad(m.s.o, true)) ? hmFill(w, m.s) : null;
+    if (ok(line)) return line;
+  } catch (e) {}
+  const g = askGenHint(q);
+  return ok(g) ? g : '';
+}
+/* Which answer fits now: {v, s} (the variant and its slot values), or null when the question does not fit now. o.p: the map. */
+function askState(id, o = {}) {
+  const p = o.p || askMap(), N = NODES[p];
+  if (id == 'next' || id == 'how') {
+    const i = curNode(p), n = N[i], w = PATHS[p].worlds[n.wi];
+    if (id == 'next') {
+      if (passed(p, i)) return PLAY.locked() ? null : {v: 'done', s: {subject: placeName(p)}}; // the Play sample done: no "all done"
+      return {v: lsGate(p, i) ? 'lesson' : 'stop', s: {stop: n.t, world: w.n}};
+    }
+    // the lesson's idea line (its parts loaded: askOpen asks for them); only a stop with a lesson for this child (lsStopAt)
+    const L = typeof LESSONS != 'undefined' && lsStopAt(p, i) && !passed(p, i) ? LESSONS[nid(n)] : null;
+    return L && typeof L.idea == 'string' && L.idea && !/[{}]/.test(L.idea) ? {v: 'idea', s: {stop: n.t, idea: L.idea}} : null;
+  }
+  if (id == 'why') {
+    const lm = typeof ASK_LM != 'undefined' ? ASK_LM : null;
+    if (!lm || lm.k !== SKEY || !lm.q) return null; // no mistake yet this session (or it was another child's)
+    const t = askTip(lm);
+    return t ? {v: 'tip', s: {hint: t}} : {v: 'look', s: {}};
+  }
+  if (id == 'time') {
+    const t = ptState();
+    if (t.why == 'paused') return {v: 'paused', s: {}};
+    if (t.why == 'learn') return {v: 'learn', s: {more: askMins(t.more)}};
+    if (t.why == 'max') return {v: 'max', s: {max: askPl(t.max, 'minute')}};
+    if (t.why == 'empty' || t.left <= 0) return {v: 'empty', s: {}};
+    return {v: 'ok', s: {time: askMins(t.left)}};
+  }
+  if (id == 'earn') {
+    const m = lsPayCfg().ls1; // earning goes on while game time is paused (ptEarn): only spending stops
+    return !TEACH.off && m > 0 ? {v: 'lesson', s: {min: askPl(m, 'minute')}} : {v: 'round', s: {}};
+  }
+  if (id == 'grow') {
+    const st = stage(), nx = GROW[st + 1];
+    if (nx == null) return {v: 'big', s: {}};
+    const k = nx - S.stars;
+    return {v: st == 0 ? 'egg' : 'grow', s: {stars: k + ' more star' + (k == 1 ? '' : 's')}};
+  }
+  if (id == 'feel') {
+    const c = careTick();
+    return {v: c.food < 30 ? 'hungry' : c.clean < 30 ? 'messy' : c.fun < 30 ? 'bored' : 'happy', s: {}};
+  }
+  if (id == 'stuck') return {v: 'help', s: {}};
+  return null;
+}
+// a line with its slots filled ({name} the child, {pet} the pet, and the variant's own); null when a slot has no value
+function askFill(t, s) {
+  let bad = false;
+  const all = Object.assign({name: S.name, pet: petN()}, s);
+  const out = String(t).replace(/\{([a-z]+)\}/g, (_, k) => {
+    if (all[k] == null || all[k] === '') { bad = true; return ''; }
+    return String(all[k]);
+  });
+  const r = out.replace(/\s+/g, ' ').trim();
+  return bad ? null : r.charAt(0).toUpperCase() + r.slice(1); // a line that starts with a slot starts with a capital
+}
+/* The menu now: [{id, icon, q (the question, filled), a (the answer, filled), v}] for every reviewed question that fits now.
+   o.age: the pet's age (default the child's), o.p: the map. */
+function askItems(o = {}) {
+  const age = o.age || askAge(), out = [];
+  for (const Q of ASK_Q) {
+    const W = typeof ASKW != 'undefined' && ASKW[Q.id];
+    if (!W || age == 'little' && !ASK_LITTLE.includes(Q.id)) continue;
+    let st = null;
+    try { st = askState(Q.id, o); } catch (e) { st = null; }
+    if (!st) continue;
+    const ls = [].concat(((W.a || {})[age] || {})[st.v] || []);
+    if (!ls.length) continue;
+    const q = askFill(W.q, st.s), a = askFill(ls.join(' '), st.s); // one or two lines, said one after the other
+    if (q && a) out.push({id: Q.id, icon: Q.icon, q, a, v: st.v});
+  }
+  return out.slice(0, ASK_MAX[age] || 10);
+}
+// the lesson parts the "how" question needs (the idea line of the current stop's lesson), as the map's lesson stop loads them
+const askParts = p => { const i = curNode(p); return !TEACH.off && lsStopAt(p, i) ? lsParts(p, i) : []; };
+/* ASK-READ: the pet reads the menu aloud: ASK_SHEET.intro, then each question in the order shown, its button lit (.ak-now) while it
+   is said. Each line goes through say() queued (q), so it waits for whatever the pet is already saying (a cheer is never cut off),
+   in the tablet's voice at the child's voice settings; the next line starts once the voice is quiet (speakBusy, at least ASKR.MIN ms
+   a line, at most ASKR.CAP). A tap or a key anywhere on the sheet stops it at once (askHush: the voice, the queue, the light).
+   Read on its own when the sheet opens for the little and older kid pets when the child's prompts are read aloud (the voice setting
+   "Read questions out loud", or Pre-K to 1st grade, as LS.voice); the teen-like pet reads it on "Hear the questions again". */
+const ASKR = {gen: 0, on: false, el: null, MIN: 450, CAP: 9000};
+const askReadOn = (age = askAge()) => age != 'teen' && (!!S.voice || gradeCfg().auto != 'tap');
+const askReadLines = items => [ASK_SHEET.intro].concat(items.map(x => x.q));
+function askHush() {
+  if (!ASKR.on) return false;
+  ASKR.on = false;
+  ASKR.gen++;
+  hush();
+  if (ASKR.el) for (const b of ASKR.el.querySelectorAll('.ak-q')) b.classList.remove('ak-now');
+  return true;
+}
+// el: the sheet; items: the menu as shown; btn: the Hear button when the child asked (it shows "no voice here" when nothing can speak)
+function askRead(el, items, btn) {
+  askHush();
+  if (!canSpeak()) { if (btn) noVoice(btn); return false; }
+  const g = ++ASKR.gen, bs = [...el.querySelectorAll('.ak-q')], lines = askReadLines(items);
+  ASKR.on = true;
+  ASKR.el = el;
+  let i = 0;
+  const step = () => {
+    if (g !== ASKR.gen) return;
+    bs.forEach(b => b.classList.remove('ak-now'));
+    if (i >= lines.length || !el.isConnected) { ASKR.on = false; return; }
+    const b = i ? bs.find(x => x.dataset.ask == items[i - 1].id) : null;
+    if (b) { b.classList.add('ak-now'); if (b.scrollIntoView) b.scrollIntoView({block: 'nearest'}); }
+    say(lines[i++], null, null, 1);
+    const t0 = Date.now(), w = () => {
+      if (g !== ASKR.gen) return;
+      const d = Date.now() - t0;
+      if (d < ASKR.MIN || d < ASKR.CAP && speakBusy()) return setTimeout(w, 150);
+      step();
+    };
+    setTimeout(w, 150);
+  };
+  step();
+  return true;
+}
+// a question tapped: the reading stops, the pet says the question (so a mistap is heard), then its answer, shown in the bubble
+function askTap(el, items, b) {
+  askHush();
+  const x = items.find(y => y.id == b.dataset.ask);
+  if (!x) return;
+  for (const c of el.querySelectorAll('.ak-q')) c.setAttribute('aria-pressed', c === b ? 'true' : 'false');
+  const ans = el.querySelector('#ak-a');
+  if (ans) { ans.textContent = x.a; ans.dataset.ask = x.id; }
+  SFX.pop();
+  anim(el.querySelector('#ak-pet'), 'jump');
+  say(x.q); // the tablet's voice, as the pet's other lines on Home (no recording)
+  say(x.a, null, null, 1);
+}
+/* The sheet. from: the Ask button that opened it (the sheet opens only while it is still on screen). */
+async function askOpen(from) {
+  const p = askMap();
+  if (askParts(p).length) await partsLoad(askParts(p)).catch(() => null);
+  if (from && !from.isConnected) return; // the child went elsewhere while a lesson part loaded
+  const items = askItems({p});
+  if (!items.length) return;
+  const pn = esc(petN());
+  const s = UI.sheet(`<div class="ak">
+    <div class="ak-top"><span class="ak-pet ${petAura()}" id="ak-pet" aria-hidden="true">${petHTML()}</span><h2>Ask ${pn}</h2>
+      ${UI.ibtn('close', 'Close', {size: 'sm', id: 'ak-done', cls: 'ak-x'})}</div>
+    <div class="ak-tools">${UI.btn(ASK_SHEET.again, {size: 'sm', icon: 'speak', id: 'ak-hear', cls: 'ak-hear'})}</div>
+    <p class="ak-bub" id="ak-a" role="status" aria-live="polite">Pick a question.</p>
+    <div class="ak-qs">${items.map(x => `<button class="btn soft ak-q" data-ask="${x.id}" aria-pressed="false">${ico(x.icon, 32)}<span>${esc(x.q)}</span></button>`).join('')}</div></div>`,
+  {onClose: askHush});
+  const el = s.el, bg = el.parentNode;
+  // a tap or a key anywhere on the sheet (or its backdrop) stops the reading before the tap does anything else
+  bg.addEventListener('pointerdown', askHush, true);
+  bg.addEventListener('keydown', askHush, true);
+  el.querySelectorAll('.ak-q').forEach(b => b.onclick = () => askTap(el, items, b));
+  el.querySelector('#ak-hear').onclick = e => askRead(el, items, e.currentTarget);
+  el.querySelector('#ak-done').onclick = () => s.close();
+  if (askReadOn()) askRead(el, items);
+  return s;
+}
+/* ---------- ASK-01: the "Ask the pet" questions and answers the owner has reviewed (part hints) ----------
+   BUILT by tools/build.py from docs/drafts/ask/<id>.md ("status: reviewed ..."): never edit by hand. A question that is
+   not reviewed is never here, so it is never on the menu (39r-ask.js). */
+const ASKW = {
+  "earn": {"q":"How do I get more game time?","a":{"little":{"lesson":["Pass a new lesson with me to earn {min}!","Finishing rounds earns time too."],"round":["Finish learning rounds to earn game time!","Perfect rounds earn a bit more."]},"kid":{"lesson":["Pass a new lesson with me and you earn {min}.","Rounds, new stops and bosses earn time too."],"round":["Finish learning rounds to fill your bank.","New stops, perfect scores and bosses add extra."]},"teen":{"lesson":["A new lesson passed with me pays {min}.","Rounds, new stops, bosses and Brain Teasers add more."],"round":["Learning rounds fill the bank.","New stops, perfect scores, bosses and Brain Teasers pay extra."]}}},
+  "feel": {"q":"How are you feeling?","a":{"little":{"hungry":["My tummy is rumbling!","Can we visit Pet Care for a snack?"],"messy":["I feel a bit muddy!","Can we visit Pet Care for a bath?"],"bored":["I want to play!","Can we visit Pet Care and play?"],"happy":["I feel happy, {name}!","I like learning with you."]},"kid":{"hungry":["Honestly? Hungry.","A snack in Pet Care would be great."],"messy":["A little messy, to be honest.","A bath in Pet Care would help."],"bored":["A bit bored.","Want to play with me in Pet Care?"],"happy":["Pretty great, {name}.","Learning with you is fun."]},"teen":{"hungry":["Hungry, honestly.","Pet Care has food, if you have a minute."],"messy":["Could use a bath.","Pet Care, when you get a chance."],"bored":["A bit restless.","A quick game in Pet Care would help."],"happy":["Good. Things are going well.","Thanks for asking, {name}."]}}},
+  "grow": {"q":"When will you grow?","a":{"little":{"egg":["I'm still in my egg!","{stars} and I hatch!"],"grow":["{stars} and I grow bigger!","Stars come from learning."],"big":["I'm all grown up, {name}!","Thanks for taking care of me."]},"kid":{"egg":["I'm still in my egg.","Get {stars} and I hatch. Learning earns stars."],"grow":["I grow again after {stars}.","Every learning round earns some."],"big":["I'm fully grown now.","Thanks for all the stars, {name}."]},"teen":{"egg":["Still in the egg.","{stars} and I hatch."],"grow":["{stars} until my next stage.","Learning rounds earn them."],"big":["Fully grown.","Thanks for sticking with me, {name}."]}}},
+  "how": {"q":"How do I do {stop}?","a":{"little":{"idea":["Here is the big idea: {idea}","Let's learn it together!"]},"kid":{"idea":["Here's the main idea: {idea}","The lesson shows it step by step."]},"teen":{"idea":["The key idea: {idea}","The lesson walks through it if you want it."]}}},
+  "next": {"q":"What should I do next?","a":{"little":{"lesson":["Next is {stop}.","Let's learn it together first!"],"stop":["Let's play {stop} next!","It's right next to me on the map."],"done":["You did every {subject} stop, {name}!","Let's pick another map."]},"kid":{"lesson":["Next up is {stop}, in {world}.","We do its lesson together first, then you practice."],"stop":["Next up is {stop}, in {world}.","It's the stop right next to me on the map."],"done":["Every {subject} stop is done. Nice work, {name}.","Pick another map to keep going."]},"teen":{"lesson":["Next is {stop}, in {world}.","We start with its lesson, then the practice opens."],"stop":["Next is {stop}, in {world}.","It's the stop next to me on the map."],"done":["Every {subject} stop is done.","Another map has more for you."]}}},
+  "stuck": {"q":"What if it is too hard?","a":{"little":{"help":["Tap Help to see a hint.","Mistakes help us learn. Let's go slow!"]},"kid":{"help":["Tap Help for a hint, and take it slow.","You can ask a grown-up, or try an easier stop."]},"teen":{"help":["Tap Help and work through the hint.","Slow down, ask a grown-up, or go back a stop. Mistakes are how you learn."]}}},
+  "time": {"q":"How much game time do I have?","a":{"little":{"ok":["You have {time} of game time!","Tap Games to play."],"empty":["No game time yet.","Let's learn and earn some!"],"learn":["Let's learn for {more} more first.","Then the games open!"],"max":["You played all {max} for today!","More game time tomorrow."],"paused":["A grown-up paused game time.","Let's learn together for now!"]},"kid":{"ok":["You've got {time} of game time.","Spend it now or save it for later."],"empty":["Your game time bank is empty right now.","Finish a learning round and it fills up."],"learn":["Learn for {more} more first.","Then the Game Room opens."],"max":["You've used today's {max} of game time.","It opens again tomorrow."],"paused":["A grown-up has paused game time.","They can turn it back on."]},"teen":{"ok":["You have {time} in the bank.","Your call when to use it."],"empty":["Nothing in the bank yet.","A learning round or a lesson earns some."],"learn":["The rule today: {more} more of learning first.","Then the Game Room opens."],"max":["You've hit today's limit of {max}.","It resets tomorrow."],"paused":["Game time is paused by a grown-up.","Ask them if you want it back on."]}}},
+  "why": {"q":"Why did I get that wrong?","a":{"little":{"tip":["Mistakes help us learn!","Here is a tip: {hint}"],"look":["Mistakes help us learn!","Next time, tap Help. We'll look together."]},"kid":{"tip":["Good question to ask.","Here's a tip for that question: {hint}"],"look":["Good question to ask.","Next time, tap Help and we'll look at the hint."]},"teen":{"tip":["Fair question.","Here's what to check next time: {hint}"],"look":["Fair question.","Next time, tap Help and work through the hint."]}}},
+};
 
-var HINTS_VER='v185'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var HINTS_VER='v186'; // last line: the whole file ran (checked by dataReady() before the app starts)

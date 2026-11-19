@@ -216,6 +216,32 @@ const RL_RIVALS = [
   { id: 'frog', name: 'Fizz', kind: 'Frog', car: 'v' },
 ];
 
+/* ---- G-MOVES (v188): a new move, Drift, and a boss per cup, the champion race ----
+   Drift (opens after RL_DRIFT_RACES races): a button beside the arrows, in Easy and in Pro. Held in a bend, the kart slides round
+   at once (no 0.35 s wait, from a little lower speed than Pro's held turn) and keeps its line in the bend (the bend's push is
+   held off, so a 5-year-old stays on the road); let go after half a second of drifting for a zoom. Pro's held turn still drifts.
+   D or Shift on a keyboard. The move card shows once on the menu (S.rally.mv = 1 once seen).
+   Champion race (opens once the cup was raced to the end): one friendly rival, the cup's champion, races the child one to one on
+   the cup's last track. The champion's pace is a share of the top rival's (RL_CHAMP_PACE), less for each race not won
+   (RL_CHAMP_EASE, up to RL_CHAMP_MAX races): rlChampBase. The usual gentle catch-up keeps it close. Finish first to win: sparkles
+   (more the first time) and a crown on the cup; second costs nothing. S.rally.bs {cupId: {n: races not won, w: wins}}. */
+const RL_DRIFT_RACES = 3;
+const rlDriftOpen = (r = rlPeek()) => rlNum(r.races, 0, 1e7) >= RL_DRIFT_RACES;
+// the champion of each of the five forward cups: a rival (RL_RIVALS) and their face for the boss screen
+const RL_CHAMP = [['fox', 'fox'], ['bunny', 'rabbit'], ['bear', 'bear'], ['penguin', 'penguin'], ['frog', 'frog']];
+const RL_CHAMP_PACE = { easy: 1.04, pro: 1.02 }, RL_CHAMP_EASE = .04, RL_CHAMP_MAX = 8, RL_CHAMP_PAY = [80, 15];
+// review fix (v186): once the races not won reach RL_CHAMP_MAX the champion may not pass the child: within RL_CHAMP_NEAR of the
+// child, or ahead, its pace is at most RL_CHAMP_HOLD of the child's (rlStep), so the child finishes first
+const RL_CHAMP_HOLD = .92, RL_CHAMP_NEAR = 3;
+const rlChampHold = (st, c) => !!(st.champ && st.champ.n >= RL_CHAMP_MAX && c.d > st.P.d - RL_SEG * RL_CHAMP_NEAR);
+const rlChampOpen = (i, r = rlPeek()) => i < RL_CHAMP.length && rlNum(rlCupRec(r, RL_CUPS[i].id).runs, 0, 1e6) >= 1;
+const rlChampRec = (i, r = rlPeek()) => rlObj(rlObj(r.bs)[RL_CUPS[i].id]);
+// the champion's base pace (share of RL_VMAX) for cup i in a mode, after n races not won
+const rlChampBase = (i, mode, n) => {
+  const CU = RL_CU[mode == 'pro' ? 'pro' : 'easy'], tier = RL_CUPS[i].tier;
+  return CU.base[4] * (1 + tier * CU.tier) * RL_CHAMP_PACE[mode == 'pro' ? 'pro' : 'easy'] * (1 - RL_CHAMP_EASE * Math.min(RL_CHAMP_MAX, Math.max(0, n | 0)));
+};
+
 /* ---- the garage: paint, stickers (bought with sparkles), car shapes (opened with stars), upgrades (sparkles + trophies) ---- */
 // a race pays about 40-60 sparkles, so paint and stickers take about 20 races
 const RL_PAINTS = [['r', 'Red', 0], ['b', 'Blue', 40], ['g', 'Green', 50], ['y', 'Yellow', 50], ['o', 'Orange', 60],
@@ -305,6 +331,9 @@ function rlS() {
     if (typeof r[cur] != 'string' || !list.some(x => x[0] === r[cur]) || (r[cur] !== list[0][0] && !o[r[cur]])) r[cur] = list[0][0];
   }
   if (typeof r.tw != 'string' || r.tw.length > 12) delete r.tw;
+  // G-MOVES fields (absent in older saves): mv (1 once the Drift card was seen), bs (champion races: {cupId: {n, w}})
+  if (r.mv !== 1) delete r.mv;
+  r.bs = GH.bossRec(r.bs, k => RL_CUPS.some((c, i) => i < RL_CHAMP.length && c.id === k));
   return r;
 }
 // the hub and the tests read without creating S.rally
@@ -1169,16 +1198,19 @@ function rlNew(tid, o = {}) {
   for (let i = base.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [base[i], base[j]] = [base[j], base[i]]; }
   const wx = RL_WX[o.wx] ? o.wx : rnd() < .4 && pl.wx.length > 1 ? pl.wx[1 + Math.floor(rnd() * (pl.wx.length - 1))] : pl.wx[0];
   const slots = [0, 1, 2, 3, 5];
-  const cars = o.trial ? [] : RL_RIVALS.map((rv, i) => ({ rv, d: row(slots[i]), x: lane(slots[i]), lx: lane(slots[i]) * .9, tx: lane(slots[i]), v: 0,
+  const champ = o.champ ? RL_RIVALS.find(v => v.id === RL_CHAMP[o.champ.i][0]) : null; // G-MOVES: one champion, side by side at the start
+  const cars = o.trial ? [] : champ ? [{ rv: champ, d: row(0), x: lane(0), lx: lane(0) * .9, tx: lane(0), v: 0, base: rlChampBase(o.champ.i, mode, o.champ.n),
+    wob: 0, wobT: rnd() * 3, fin: 0, e: 0, spin: 0, dizzy: 0, miss: {}, fs: 0, hits: 0 }] :
+    RL_RIVALS.map((rv, i) => ({ rv, d: row(slots[i]), x: lane(slots[i]), lx: lane(slots[i]) * .9, tx: lane(slots[i]), v: 0,
     base: base[i], wob: 0, wobT: rnd() * 3, fin: 0, e: (rnd() - .5) * .05, spin: 0, dizzy: 0, miss: {}, fs: 0, hits: 0 }));
   const up = {};
   for (const [k] of RL_UPG) up[k] = rlNum((o.up || {})[k], 0, 3);
   const st = { tid, T, laps: t.laps, mode, help, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd,
     facts: Array.isArray(o.facts) ? o.facts.slice(0, 6) : [], fi: 0, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
-    trial: !!o.trial, fin: RL_START * RL_SEG + t.laps * T.L, taken: new Int16Array(T.sp.length), pkT: new Int16Array(T.pk.length),
+    trial: !!o.trial, champ: champ ? { i: o.champ.i, n: o.champ.n | 0 } : null, drift: !!o.drift, drifts: 0, fin: RL_START * RL_SEG + t.laps * T.L, taken: new Int16Array(T.sp.length), pkT: new Int16Array(T.pk.length),
     kn: new Float32Array(T.ob.length).fill(-9), knL: new Int16Array(T.ob.length), knS: new Int8Array(T.ob.length), padKey: -1, seen: {},
-    P: { d: row(o.trial ? 1 : 4), x: o.trial ? 0 : lane(4), v: 0, s: 0, vx: 0, dh: 0, dsp: 0, drifting: false, boost: 0, bumpT: 0, spin: 0, spinD: 0,
-      dizzy: 0, shield: 0, hits: 0, lap: 1, place: o.trial ? 1 : 6, spk: 0, time: 0, off: false, surf: '', lap0: 0, laps: [] } };
+    P: { d: row(o.trial || champ ? 1 : 4), x: o.trial ? 0 : champ ? lane(1) : lane(4), v: 0, s: 0, vx: 0, dh: 0, dsp: 0, drifting: false, boost: 0, bumpT: 0, spin: 0, spinD: 0,
+      dizzy: 0, shield: 0, hits: 0, lap: 1, place: o.trial ? 1 : champ ? 2 : 6, spk: 0, time: 0, off: false, surf: '', lap0: 0, laps: [] } };
   if (st.trial) {
     st.rec = { cur: '', n: 0, d0: 0, best: null };
     st.gh = rlGhostIn(o.ghost);
@@ -1354,11 +1386,12 @@ function rlStep(st, inp = {}) {
   P.v += Math.max(-(P.off || P.spin > 0 ? 1.2 : .6) * RL_VMAX * dt, Math.min(.45 * RL_VMAX * dt, dv));
   // steering, the drift (Pro: hold a turn into a bend at speed) and the push of a bend
   let turn = 1.7;
-  if (!easy && P.spin <= 0) {
-    const into = Math.abs(steer) > .5 && Math.sign(steer) == Math.sign(cur) && Math.abs(cur) >= 2 && sp > .74;
+  const dbtn = !!inp.drift && st.drift; // G-MOVES: the Drift button (Easy and Pro)
+  if ((!easy || dbtn || P.drifting) && P.spin <= 0) {
+    const into = dbtn ? Math.abs(cur) >= 2 && sp > .6 : !easy && Math.abs(steer) > .5 && Math.sign(steer) == Math.sign(cur) && Math.abs(cur) >= 2 && sp > .74;
     if (into) {
       P.dh += dt;
-      if (P.dh > .35) {
+      if (P.dh > (dbtn ? 0 : .35)) {
         if (!P.drifting) st.ev.push(['drift']);
         P.drifting = true;
         P.dsp += dt;
@@ -1366,6 +1399,7 @@ function rlStep(st, inp = {}) {
     } else {
       if (P.drifting && P.dsp > .5) {
         P.boost = Math.min(1.4, .45 + P.dsp * .45) * (1 + .15 * U.turbo);
+        st.drifts++;
         st.ev.push(['zoom']);
       }
       P.drifting = false;
@@ -1375,7 +1409,7 @@ function rlStep(st, inp = {}) {
     if (P.drifting) turn *= 1.5;
   }
   P.s += (steer - P.s) * Math.min(1, dt * 10); // for the car's lean on screen
-  const want = steer * turn * sp - .35 * cur * sp * sp * (easy ? .3 : 1) * (1 - .08 * U.grip);
+  const want = steer * turn * sp - .35 * cur * sp * sp * (easy ? .3 : 1) * (1 - .08 * U.grip) * (P.drifting && dbtn ? 0 : 1);
   P.vx += (want - P.vx) * Math.min(1, grip * dt * 30);
   const x0 = P.x;
   P.x += P.vx * dt;
@@ -1470,9 +1504,25 @@ function rlStep(st, inp = {}) {
       c.tx = Math.max(-(crw - .25), Math.min(crw - .25, c.tx));
       c.x += Math.max(-.9 * dt, Math.min(.9 * dt, c.tx - c.x));
     }
+    const hold = rlChampHold(st, c);
+    if (hold) {
+      // G-MOVES review fix: the champion after RL_CHAMP_MAX races not won never outpaces the child. Near or ahead of the
+      // child it drives a little under the child's speed and keeps out of the child's lane, so the child always gets by
+      ct = Math.min(ct, P.v * RL_CHAMP_HOLD);
+      if (c.d > P.d - RL_SEG && Math.abs(c.x - P.x) < .5) c.tx = Math.max(-(crw - .25), Math.min(crw - .25, P.x + (P.x > 0 ? -.6 : .6)));
+    }
     c.v += Math.max(-.6 * RL_VMAX * dt, Math.min(.42 * RL_VMAX * dt, ct - c.v));
     const cd0 = c.d;
     c.d += c.v * dt;
+    if (hold) {
+      // ... and never goes by: from behind it stays just behind (the child stopped by a wall or a spin is waited for), and it
+      // never reaches the line before the child
+      if (cd0 <= P.d && c.d > P.d - RL_SEG * .4) {
+        c.d = Math.max(cd0, P.d - RL_SEG * .4);
+        c.v = Math.min(c.v, P.v);
+      }
+      if (P.d < st.fin && c.d > st.fin - RL_SEG * .5) c.d = Math.max(cd0, st.fin - RL_SEG * .5);
+    }
     if (c.spin <= 0) rlHits(st, c, cd0, c.d);
     if (c.dizzy > 0) c.dizzy -= dt;
     if (!c.fin && c.d >= st.fin) c.fin = st.rt;
@@ -2017,14 +2067,15 @@ function rlDrawMe(R, top) {
   }
   if (P.spin > 0 || P.dizzy > 0) rlDizzy(R, x, y - h * 1.05, w);
   if (P.drifting) {
-    const p = new Path2D();
+    // review fix (v186, perf): the dots move every frame, so they go straight into the context's own path (no new Path2D a frame)
+    c.beginPath();
     for (let i = 0; i < 6; i++) {
       const sx = x + (i < 3 ? -1 : 1) * w * .38 + Math.sin(t * 50 + i * 2) * w * .05, sy = y - h * .05 - Math.abs(Math.cos(t * 37 + i)) * h * .25;
-      p.moveTo(sx + w * .025, sy);
-      p.arc(sx, sy, w * .025, 0, Math.PI * 2);
+      c.moveTo(sx + w * .025, sy);
+      c.arc(sx, sy, w * .025, 0, Math.PI * 2);
     }
     c.fillStyle = P.dsp > 1 ? V.col.dr2 : V.col.dr1;
-    c.fill(p);
+    c.fill();
   }
   if (P.boost > 0) {
     const p = new Path2D(), cx = V.W / 2, cy = V.hz + (V.ground - V.hz) * .3;
@@ -2207,6 +2258,7 @@ function rlMenu(place) {
   };
   const how = (mode == 'pro' ? [['bolt', 'Hold Go to go faster. Let go in tight bends!'],
     ['rotate', 'Hold a turn all through a bend to drift. Let go for a zoom!']] : [['arrow-right', 'Tap the big arrows, or the sides of the road, to steer.']])
+    .concat(rlDriftOpen(r) ? [['rotate', 'Hold Drift in a bend to slide round. Let go to zoom!']] : [])
     .concat([['warning', 'Rails, cones, rolling things and animals make you spin. Off the road is slow.'],
       ['star', 'Grab a boost star to zoom, or a bubble to keep you safe from one bump.'], ['play', 'Drive over the orange pads to zoom.'],
       ['trophy', 'A cup is 3 races. Points for every place, a trophy at the end.'], ['timer', 'Time trial: race your ghost, your own best lap.'],
@@ -2224,6 +2276,7 @@ function rlMenu(place) {
     `<span class="rl-cs">${tw.done ? 'Done today. Race it again any time!' : `+${RL_TW_BONUS} sparkles the first time today`}</span></span>` +
     `<span class="rl-go" aria-hidden="true">${ico('play')}</span></button>
   <h2 class="rl-h">Cups</h2><div class="rl-cups">${RL_CUPS.slice(0, RL_M0).map((c, i) => ccard(c, i)).join('')}</div>
+  <h2 class="rl-h">Champion races</h2><div class="rl-cups" id="rlchamps">${RL_CHAMP.map((_, i) => rlChampCard(i, r)).join('')}</div>
   <h2 class="rl-h">Mirror cups</h2><p class="rl-note" id="rlmnote">${mOpen ? 'Every track the other way round: the bends and hills turn the other way.' :
     'Every track the other way round! They open when the Sprout, Wave, Frost and Star Cups each have a trophy.'}</p>
   <div class="rl-cups">${RL_CUPS.slice(RL_M0).map((c, j) => ccard(c, RL_M0 + j)).join('')}</div>
@@ -2264,6 +2317,18 @@ function rlMenu(place) {
     SFX.whoosh();
     rlCupGo(i);
   });
+  $$('[data-champ]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.champ;
+    if (!rlChampOpen(i, r)) {
+      SFX.wrong();
+      fb(`Race the whole ${RL_CUPS[i].name} to meet its champion!`, 'warn long', 2600);
+      return;
+    }
+    SFX.pop(2);
+    rlChampMenu(i);
+  });
+  // G-MOVES: the Drift card, once
+  if (rlDriftOpen(r) && !r.mv) GH.moveNew({ name: 'Drift', icon: 'rotate', line: 'Hold Drift in a bend to slide round. Let go to zoom!', done: () => { r.mv = 1; save(); } });
   $$('[data-pl]').forEach(b => b.onclick = () => {
     const p = rlPl(b.dataset.pl);
     if (!tracksOpen(p)) {
@@ -2301,6 +2366,54 @@ function rlMenu(place) {
     // some tablets ask before they share the tilt
     if (r.tilt && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().catch(() => {});
   };
+}
+// G-MOVES: a finger still on Drift (or an arrow) when the end card opens must not press the card's buttons when it lifts: since the
+// v186 review fix GH.end does that for every game's card (its own guard here, rlGuard, was the same lines and is gone)
+// G-MOVES: a cup's champion race on the menu (the champion's face; a crown once beaten; a lock until the cup was raced to the end)
+function rlChampCard(i, r) {
+  const c = RL_CUPS[i], rv = RL_RIVALS.find(v => v.id === RL_CHAMP[i][0]), ok = rlChampOpen(i, r), rec = rlChampRec(i, r);
+  return `<button class="rl-champ${ok ? '' : ' lock'}${rec.w ? ' won' : ''}" data-champ="${i}" data-ok="${ok ? 1 : 0}">` + // its own class: not a cup
+    `<span class="rl-cpic s-${c.hue}">${GH.faceSVG(RL_CHAMP[i][1], 'helmet', 'y')}${ok ? '' : `<span class="rl-plock">${ico('lock', 22)}</span>`}</span>` +
+    `<span class="rl-ci"><b>${esc(c.name)} champion: ${esc(rv.name)}</b><span>${esc(RL_TRK[c.races[2][0]].name)}, one to one</span>` +
+    `<span class="rl-cs">${!ok ? `Race the whole ${esc(c.name)} first` : rec.w ? 'You beat the champion!' : 'Not beaten yet'}</span></span>` +
+    `<span class="rl-go" aria-hidden="true">${ico(!ok ? 'lock' : rec.w ? 'crown' : 'play')}</span></button>`;
+}
+function rlChampMenu(i) {
+  const c = RL_CUPS[i], rv = RL_RIVALS.find(v => v.id === RL_CHAMP[i][0]), rec = rlChampRec(i, rlS());
+  GH.boss({ id: 'rally', key: `${c.name} champion`, name: rv.name, kind: RL_CHAMP[i][1], hat: 'helmet', hue: 'y', line: 'I am the champion! Race me!',
+    goal: `Finish before ${rv.name} on ${RL_TRK[c.races[2][0]].name}.`, prize: `Win: plus ${RL_CHAMP_PAY[0]} sparkles the first time and a crown.`,
+    won: !!rec.w, tries: rlNum(rec.n, 0, 999), easier: `${rv.name} drives a little slower each time you try.`, go: `Race ${rv.name}!`,
+    start: () => rlRace(c.races[2][0], { champ: i }), back: () => rlMenu() });
+}
+// the end of a champion race: first place wins (sparkles, more the first time, and a crown); second costs nothing and makes the
+// champion a little slower next time; quitting or game time running out counts as a race not won
+function rlChampDone(st, won) {
+  const r = rlS(), id = RL_CUPS[st.champ.i].id, rec = (r.bs[id] = r.bs[id] || { n: 0, w: 0 }), first = won && !rec.w;
+  if (won) rec.w++;
+  else rec.n = Math.min(999, rec.n + 1);
+  st.champRec = 1;
+  return won ? RL_CHAMP_PAY[first ? 0 : 1] : 0;
+}
+function rlChampEnd() {
+  const st = RL.st, P = st.P, r = rlS(), i = st.champ.i, c = RL_CUPS[i], rv = RL_RIVALS.find(v => v.id === RL_CHAMP[i][0]), won = P.place == 1;
+  const first = won && !rlChampRec(i, r).w, bonus = rlChampDone(st, won), pay = P.spk + bonus;
+  r.spk += pay;
+  r.races++;
+  save();
+  rlStop();
+  gtStop();
+  const lines = won ? [['crown', first ? `A crown for the ${esc(c.name)}! Plus ${bonus} sparkles.` : 'You beat the champion again!']] :
+    [['heart', `${esc(rv.name)} won this time. Nothing is lost!`], ['go', `${esc(rv.name)} will drive a little slower next time.`]];
+  if (st.drifts) lines.push(['rotate', `${st.drifts} drift ${st.drifts == 1 ? 'zoom' : 'zooms'}!`]);
+  const time = ptLeft() > 0;
+  const o = GH.end('rally', { win: won, title: won ? `You beat ${rv.name}!` : `${rv.name} won this time`, pic: `<div class="rl-epic">${GH.faceSVG(RL_CHAMP[i][1], 'helmet', 'y')}</div>`,
+    stats: [[rlOrd(P.place), 'place', 'trophy'], [rlTime(Math.round(P.time * 1000)), 'your time', 'timer'], ['+' + pay, 'sparkles', 'sparkle']], lines,
+    btns: time ? NAV.end3({ again: 'rlagain', home: 'rlmenu' }) : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) });
+  if (S.voice) say(won ? `You beat ${rv.name}! Well done, ${S.name}!` : `${rv.name} won this time. Try again!`);
+  const go = f => { o.remove(); f(); };
+  if (o.querySelector('#rlagain')) o.querySelector('#rlagain').onclick = () => go(() => rlRace(c.races[2][0], { champ: i }));
+  if (o.querySelector('#rllearn')) o.querySelector('#rllearn').onclick = () => go(() => learnHub());
+  o.querySelector('#rlmenu').onclick = () => go(() => home());
 }
 // start or go on with a cup: its next race
 function rlCupGo(i) {
@@ -2470,6 +2583,7 @@ function rlMsg(t, ms = 1200, cls = '') {
 // o: {cup (a cup being raced: its race r.cup.i), trial (a time trial against the ghost), twist (today's twist, rlTwist)}
 function rlRace(tid, o = {}) {
   const r = rlS(), t = RL_TRK[tid], mode = rlMode(r), cup = o.cup || null, trial = !!o.trial, twist = !cup && !trial && o.twist ? o.twist : null;
+  const ch = !cup && !trial && !twist && o.champ != null && rlChampOpen(o.champ, r) ? o.champ : null, drift = rlDriftOpen(r); // G-MOVES
   r.place = t.place;
   save();
   const btn = (id, icon, aria, txt) => `<button class="rl-btn" id="${id}" data-k="${id.slice(2)}" aria-label="${aria}">${ico(icon, 48)}` +
@@ -2477,14 +2591,16 @@ function rlRace(tid, o = {}) {
   const seed = ((Date.now() & 0xffffff) ^ (r.races * 7919)) >>> 0 || 1;
   const quiz = rlGatesOn() && !trial; // G-FEEL2: on by default from 1st grade; the child's own due number facts first
   const st = rlNew(tid, { mode, quiz, facts: quiz ? rlGateFacts() : [], grade: S.grade, seed, up: r.upg, trial, ghost: trial ? r.ghost[tid] : null,
-    tier: cup ? cup.tier : null, wx: cup ? cup.races[r.cup.i][1] : twist ? twist.wx : null });
-  const wxn = st.W.name, sub = (cup ? `${cup.name} ${r.cup.i + 1}/3: ` : trial ? 'Time trial: ' : twist ? "Today's twist: " : '') + t.name + (wxn ? ', ' + wxn : '');
+    tier: cup ? cup.tier : null, wx: cup ? cup.races[r.cup.i][1] : twist ? twist.wx : ch != null ? RL_CUPS[ch].races[2][1] : null,
+    champ: ch != null ? { i: ch, n: rlNum(rlChampRec(ch, r).n, 0, 999) } : null, drift });
+  const wxn = st.W.name, sub = (cup ? `${cup.name} ${r.cup.i + 1}/3: ` : trial ? 'Time trial: ' : twist ? "Today's twist: " :
+    ch != null ? `Champion race with ${RL_RIVALS.find(v => v.id === RL_CHAMP[ch][0]).name}: ` : '') + t.name + (wxn ? ', ' + wxn : '');
   view(`${GH.top('rally', { play: true, hud: true, sub, chips: (trial ? `<span class="stat rl-pos" id="rlpos" aria-label="Lap time">${ico('timer', 32)}<b>0:00.0</b></span>` :
     `<span class="stat rl-pos" id="rlpos" aria-label="Place">${ico('trophy', 32)}<b>6th</b></span>`) +
     `<span class="stat rl-lap" id="rllap" aria-label="Lap">${ico('replay', 32)}<b>1/${t.laps}</b></span>${rlSpkChip(0)}` })}
   <div class="rl rl-${mode}" id="rl"><canvas id="rlcv" role="img" aria-label="The race track"></canvas><div class="rl-msg" id="rlmsg" aria-live="polite"></div>
   <div class="rl-q" id="rlq" hidden></div><div class="rl-ctl">${btn('rll', 'arrow-left', 'Steer left')}${btn('rlr', 'arrow-right', 'Steer right')}` +
-    `${mode == 'pro' ? btn('rlgo', 'bolt', 'Go faster', 'Go') : ''}</div></div>`);
+    `${mode == 'pro' ? btn('rlgo', 'bolt', 'Go faster', 'Go') : ''}${drift ? btn('rldr', 'rotate', 'Drift', 'Drift') : ''}</div></div>`);
   const cv = $('#rlcv'), mood = rlMood(seed), R0 = {};
   // GL-02: the 3D look (63b-rally-gl.js) draws the world on a WebGL canvas under #rlcv, which then keeps its alpha; without WebGL,
   // or with the 3D look off, #rlcv draws everything as before. mood: the race's own light and scenery (drawing only, both looks)
@@ -2510,7 +2626,7 @@ function rlRace(tid, o = {}) {
   };
   const show = () => {
     const on = new Set(Object.values(RL.ptr).concat(Object.keys(RL.key).filter(k => RL.key[k])));
-    for (const k of ['l', 'r', 'go']) {
+    for (const k of ['l', 'r', 'go', 'dr']) {
       const b = $('#rl' + k);
       if (b) b.classList.toggle('on', on.has(k));
     }
@@ -2533,7 +2649,7 @@ function rlRace(tid, o = {}) {
   box.addEventListener('pointerup', up);
   box.addEventListener('pointercancel', up);
   box.addEventListener('contextmenu', e => e.preventDefault());
-  const KEYS = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'go', ' ': 'go' };
+  const KEYS = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'go', ' ': 'go', d: 'dr', D: 'dr', Shift: 'dr' };
   RL.kd = e => { if (RL && KEYS[e.key]) { RL.key[KEYS[e.key]] = 1; show(); } };
   RL.ku = e => { if (RL && KEYS[e.key]) { RL.key[KEYS[e.key]] = 0; show(); } };
   addEventListener('keydown', RL.kd);
@@ -2567,7 +2683,7 @@ function rlRace(tid, o = {}) {
     RL.last = ts;
     if (!document.hidden && !RL.paused && !GH.held && !st.done) {
       const on = RL.on || new Set();
-      const inp = { steer: Math.max(-1, Math.min(1, (on.has('r') ? 1 : 0) - (on.has('l') ? 1 : 0) + RL.tilt)), go: on.has('go') };
+      const inp = { steer: Math.max(-1, Math.min(1, (on.has('r') ? 1 : 0) - (on.has('l') ? 1 : 0) + RL.tilt)), go: on.has('go'), drift: on.has('dr') };
       RL.acc += dt * RL_DEV.fast;
       let n = 0;
       while (RL.acc >= RL_DT && n < 10 * RL_DEV.fast && !st.done) {
@@ -2722,6 +2838,8 @@ function rlEvents() {
 function rlQuit() {
   const r = rlS();
   if (RL) r.spk += RL.st.P.spk;
+  // G-MOVES: a race left counts once; a win left before its card (the 1.1 s after the finish) still pays its sparkles
+  if (RL && RL.st.champ && !RL.st.champRec) r.spk += rlChampDone(RL.st, RL.st.done && RL.st.P.place == 1);
   save();
   rlStop();
   gtStop();
@@ -2730,6 +2848,7 @@ function rlQuit() {
 function rlTimeUp() {
   const r = rlS();
   if (RL) r.spk += RL.st.P.spk;
+  if (RL && RL.st.champ && !RL.st.champRec) r.spk += rlChampDone(RL.st, RL.st.done && RL.st.P.place == 1); // G-MOVES (and its pay)
   save();
   rlStop();
   timeUpOverlay();
@@ -2742,6 +2861,7 @@ function rlStandHTML(pts, order, h) {
 }
 // the finish: stars, the best time, sparkles, what opened; a cup's standings and trophy; a time trial's best lap and ghost
 function rlFinish() {
+  if (RL.st.champ) return rlChampEnd(); // G-MOVES
   const st = RL.st, P = st.P, r = rlS(), tid = st.tid, t = RL_TRK[tid], cup = RL.cup, trial = st.trial, twist = RL.twist;
   const openCups = RL_CUPS.map((c, i) => rlCupOpen(i, r)), bodies = RL_BODIES.filter(b => rlBodyOpen(b[0], r)).map(b => b[0]), t2 = rlT2Open(r);
   const ms = Math.round(P.time * 1000), lines = [], order = rlOrder(st);

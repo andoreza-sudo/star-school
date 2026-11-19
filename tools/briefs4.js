@@ -134,6 +134,21 @@ Together: line 1 before building the word for two from tiles, with two pictures 
 Remember: a warm-up on sight words (no slots).
 Check me: the pet picks the word for two (slot {ans}: the pet's word, {word}: the word for one); the child checks it.
 Show: two words for one, four words for two to pick from, no help, inside a small job in the world (slot {word}).`;
+    // TEACH-5S: the Spanish shape (listen, sort, say with me, fix the pet's el or la) and the Discover shape (predict, look, explain)
+    case 'es': return `What this lesson teaches: Spanish words of one group (${D.t2}), each heard with its little word, el or la. Every Spanish noun comes with el or la; learn the word with it. ${D.units && D.units.length > 1 ? 'This lesson mixes the words of every group so far, and the words whose last letter does not follow the rule (la mano, el papá, la moto): the last letter is a clue, not a rule.' : ''}
+Explore: four pictures; the app says each one in Spanish with its el or la; the child sorts them into an el bin and a la bin. Lines: the task, said before they sort (the app says the words itself).
+Name it: the el word and the la word they sorted, with their pictures; lines on them (slots {a}: the el word, {b}: the la word, both said in Spanish) and the idea. Then the pet says a word and the child says it aloud with the pet (the app adds that part itself).
+Together (no slots: never the answer): line 1 before the el and la sort, line 2 before hearing a word and tapping its picture, line 3 before a picture and three ways to say it (the right one, the wrong el or la, another word).
+Remember: a warm-up: hear a word of the group before and tap its picture (no slots).
+Check me: the pet picks the words for a picture (slot {ans}: the pet's words, such as "el vaca"); the child checks it.
+Show: two pictures, four ways to say each, no help, inside a small job in the world (no slots).`;
+    case 'disc': return `What this lesson teaches: K-2 science by predict, look, explain: ${D.t2 == 'Living Things' ? 'living things grow; toys and rocks do not, even ones that move (a car), and a plant is alive though it stays still' : D.t2 == 'Sky & Earth' ? 'sunlight warms things: ice and snow melt into water, ice in the sun melts before ice in the shade, and a rock in the sun gets warm but does not melt' : 'sink or float: size does not decide (a small coin sinks, a big toy boat floats); light for its size floats, heavy for its size sinks'}.
+Explore: predict: four pictures to sort into two groups (${D.t2 == 'Living Things' ? 'will grow / will not grow' : D.t2 == 'Sky & Earth' ? 'melts in the hot sun / stays the same' : 'floats / sinks'}); any guess is fine. Lines: the task, said before they guess.
+Name it: look: what really happens, drawn; lines on it (slots {a}: a thing that ${D.t2 == 'Living Things' ? 'grew' : D.t2 == 'Sky & Earth' ? 'melted' : 'floats'}, {b}: a thing that ${D.t2 == 'Living Things' ? 'did not grow' : D.t2 == 'Sky & Earth' ? 'stayed the same' : 'sinks'}; say "the {a}") and the idea.
+Together (no slots: never the answer; after each item the app says what really happens): line 1 before the sort again (now it must be right), line 2 before a prediction with three pictures, line 3 before picking the reason (explain).
+Remember: a warm-up on the lesson before (no slots).
+Check me: the pet makes a prediction (slot {ans}: the thing it picked); the child checks it.
+Show: two items, a prediction or a reason, no help, inside a small job in the world (no slots).`;
     default: return null;
   }
 }

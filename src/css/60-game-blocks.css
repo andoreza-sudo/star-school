@@ -187,3 +187,14 @@
 .bb-pjn{margin-left:4px;color:var(--es-shade)}
 .bb-pjt{color:var(--ink-2)}
 @media (max-width:420px){.bb-pj{max-width:210px}.bb-pjh b{font-size:var(--fs-2)}}
+/* G-MOVES (v188): Bea's mirror build card under each chapter; her face on the end card */
+.bb-boss{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:72px;margin-top:var(--s-1);
+  padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;
+  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.bb-boss:active{transform:translateY(3px)}
+.bb-boss.lock{opacity:.75}
+.bb-bface{display:block;width:60px;height:60px}
+.bb-bt{display:flex;flex-direction:column;min-width:0}
+.bb-bt small{font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}
+.bb-epic2{display:grid;place-items:center;width:100%;height:100%}
+.bb-epic2 .gh-face{height:90%;width:auto}

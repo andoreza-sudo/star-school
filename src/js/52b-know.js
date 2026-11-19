@@ -197,13 +197,13 @@ const LS_SUBJ = ['math'];
    Practice that no lesson has taught; or none.
    Returns {id, i (the stop's index on the map), kind 'new' | 'again' | 'repair', code (repair), remember: [ids]} or null. */
 function planToday(S0, day, p = 'math') {
-  if (!LS_SUBJ.includes(p) || !NODES[p]) return null;
+  if (!LS_SUBJ.includes(p) || !NODES[p] || !S.maps || !S.maps[p]) return null; // TEACH-5S: a map the save has no state for yet (Discover before its first visit in a test save) has no plan
   // TEACH-4: the subject's own map (math, or reading): a lesson of another subject is never found on it
   const at = id => NODES[p].findIndex(n => nid(n) === id), open = id => { const i = at(id); return i >= 0 && unlocked(p, i); };
   const K = S0.know || {}, ps = id => at(id) >= 0 && passed(p, at(id)), learned = id => (K[id] || {}).s >= 2;
   // TEACH-4: a Pre-K world's lessons (Tiny Town, ABC Beach) are a Pre-K child's only (a Kindergartner starts above them, as the map does)
   const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS[p].worlds[NODES[p][at(x)].wi].g;
-  const band = x => (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0);
+  const band = x => p == 'es' || (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0); // TEACH-5S: the Spanish map is the same for every grade
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
     // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's);

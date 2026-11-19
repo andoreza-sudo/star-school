@@ -99,7 +99,7 @@ let SKIPPED=0;
 const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku UI P3-03','mathdoku UI P3-05','logic UI P3-07',
   'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
   'word search and unscramble P3-15','Block Builder goals G-BB3'];
-const TEST_S={'sky hop G-04b':451,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
+const TEST_S={'sky hop G-04b':451,'game moves and bosses G-MOVES':50,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
   'math review fixes R-01m':18,'robot path P3-13':12,'block builder G-01':8};
 const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
   if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
@@ -1597,7 +1597,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     const D0=20400; // a day number (2025-11-07); every scheduling call below passes its day
     const info={};
     // 1. migration 5 on every fixture: progress unchanged, same number of tricky items on home, no html left, smaller, idempotent
-    if(LATEST!==9||MIGRATIONS.length!==9)bad('P5-02 adds migration 5 (LS-STOP: and migration 6; TEACH-3b: and 7; READ-SHAPES: and 8): LATEST should be 9, MIGRATIONS '+MIGRATIONS.length); // LS-STOP: migration 6 (lesson stops already reached stay open) raised LATEST from 6 to 7; TEACH-3b: migration 7 (the v182 lesson stops) to 8
+    if(LATEST!==10||MIGRATIONS.length!==10)bad('P5-02 adds migration 5 (LS-STOP: and migration 6; TEACH-3b: and 7; READ-SHAPES: and 8; TEACH-5S: and 9): LATEST should be 10, MIGRATIONS '+MIGRATIONS.length); // LS-STOP: migration 6 (lesson stops already reached stay open) raised LATEST from 6 to 7; TEACH-3b: migration 7 (the v182 lesson stops) to 8
     for(const name of ['tricky','midway','maxed','fresh','legacy-single-map','legacy-index-maps']){
       const raw=fx(name),before=JSON.parse(raw),empty=!Object.keys(before).length;
       if(empty){load(null);if(S.rev!==undefined)bad(name+': a new save got S.rev');continue}
@@ -7961,7 +7961,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage,hints')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,petage,hints')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7971,7 +7971,7 @@ run('code split A11b (and data file split A11)',()=>{
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
   // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); //  v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","petage","hints"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-5S: teaches, the Spanish and Discover lessons; v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -8111,7 +8111,8 @@ run('parts split A11c',()=>{
   parts.forEach((t,i)=>{const b=Buffer.byteLength(t);if(b>PART_FAIL)p.push(PART_FILES[i]+' is '+b+' bytes, over the '+PART_FAIL+' limit')});
   // the moved files: in gen / gen2, not in index.html
   // ROOM: the Grown-ups screens (80-grown, 81-backup, 82-report, 88-online) moved to gen too, for room in index.html
-  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','80-grown','81-backup','82-report','88-online'],
+  // MERGE-186 (ROOM 2): placement, Say it! (and its sound check and listening corner) and Fact Sprint moved to gen too
+  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','45-placement','50-say','50-say-cmp','50-say-corner','57-fluency','80-grown','81-backup','82-report','88-online'],
     gen2:['35-gen-math-upper','36-gen-phonics','37-bank','37-comp','39b-steps']};
   for(const [stem,list] of Object.entries(want)){
     const i=PARTS.findIndex(x=>x.stem===stem);
@@ -8142,7 +8143,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','petage','hints','data']; // TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','teaches','petage','hints','data']; // TEACH-5S: teaches; TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8576,11 +8577,11 @@ run('performance P6-02',()=>{
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
-  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','petage','hints']; // v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","petage","hints"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teaches (TEACH-5S), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
+  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','teaches','petage','hints']; // TEACH-5S: teaches is the Spanish and Discover maps'; v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
   const GAME_FILES=LAZY_FILES.filter((f,i)=>!NOT_GAME.includes(LAZY[i])),parts_=on=>LAZY.map(x=>String(!NOT_GAME.includes(x)&&on)).join(); // parts_(true): the games in, bt, teach and teach12 (TEACH-1/2b, the math map's) and petage not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
-  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd, petage and hints');
+  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd, teaches, petage and hints');
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -10751,7 +10752,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
       if(JSON.parse(store[KEY]).maps.disc.sci_life1!==2)bad(w+'Discover stars did not save');
       if(S.v!==LATEST)bad(w+'S.v '+S.v);
     }
-    if(LATEST!==9)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; this chunk still adds none
+    if(LATEST!==10)bad('this chunk adds no migration; LATEST is '+LATEST); // TEACH-5S: migration 9 raised LATEST to 10; LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; this chunk still adds none
     // Home shows the card
     load(null);S.name='Kid';
     const h=hmPaths(),m=h.match(/<button class="hm-path game s-disc" data-p="disc">[\s\S]*?<\/button>/);
@@ -12072,7 +12073,7 @@ run('Discover 3-6, geography and civics P2-37: banks validate, grade and topic t
       if(!S.maps||typeof S.maps.disc!=='object'||Object.keys(S.maps.disc).length)bad(name+': S.maps.disc is not an empty map');
       checked++;
     }
-    if(LATEST!==9)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; this chunk still adds none
+    if(LATEST!==10)bad('this chunk adds no migration; LATEST is '+LATEST); // TEACH-5S: migration 9 raised LATEST to 10; LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; this chunk still adds none
     return {items,questions,pics,levels,checked,per};
   };
   const r=eval(js+K2OLD+';('+body.toString()+')()');
@@ -18105,7 +18106,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,petage,hints,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,petage,hints,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
@@ -19878,6 +19879,332 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
   return{problems:p,note:`${r.n} samples; ${r.rt} review round trips; find the mistake: ${r.rows.join('; ')}; why on: ${w.rows.join(', ')} (${w.n} sentences)`};
 });
 
+// ---- G-MOVES (v188): one new move and one boss per action game (src/js/59-game-hub.js GH.face / GH.bossRec / GH.boss / GH.moveNew,
+// 62-hill.js, 63-game-race.js, 65-game-snack.js, 67-game-skyhop.js, 60-blocks.js and their CSS) ----
+// For each game: the move opens by playing (its rule) and works (in the game's own simulation); the boss opens at the end of a set of
+// levels, its logic is a pure function of the try (the same try plays the same), every try not won makes it easier, bots a young child
+// and a careful child would be win it within its easing (no fail-forever), a win pays the game's own reward once more the first time,
+// a try not won pays nothing and takes nothing; old saves get the new fields as defaults (no migration); the new CSS uses tokens,
+// moves only transform and opacity, no filter; nothing new reads or writes game time (ptCalc, ptEarn, S.pt).
+run('game moves and bosses G-MOVES',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<80&&!r.bad.includes(m))r.bad.push(m)};
+    const keep={g:S.garage,r:S.rally,s:S.snack,h:S.hop,b:S.bb,c:S.coins,pt:JSON.stringify(S.pt),grade:S.grade,voice:S.voice,sound:S.sound};
+    S.voice=false;S.sound=false;
+    // ---- 0. the shared pieces: faces from the object-art roles only; a rival record keeps good entries and drops bad ones
+    for(const k of Object.keys(GH_FACE))for(const h of ['','helmet','chef','hard','goggles']){const f=GH.face(k,h,'r');
+      if(/#[0-9a-f]{3,8}\b|rgb|undefined|NaN/i.test(f)||!/var\(--a-/.test(f))bad('GH.face '+k+' '+h+': raw colour or a broken shape');
+      for(const m of f.matchAll(/var\(--a-([a-z0-9]+)\)/g))if(!/^(?:[bcegmnoprstvy][123]?|k2?|w[23]?)$/.test(m[1]))bad('GH.face '+k+': no role --a-'+m[1])}
+    const rec=GH.bossRec({a:{n:2,w:1},b:{n:'x'},c:5,zz:{n:1}},k=>k!='zz');
+    if(JSON.stringify(rec)!=='{"a":{"n":2,"w":1},"b":{"n":0,"w":0}}')bad('GH.bossRec: '+JSON.stringify(rec));
+    // ---- 1. 4x4 Hill Climb: the Hop and the rival run
+    S.garage={};S.grade=0;
+    const g0=garageS();
+    if(hcHopOpen())bad('Hill: the Hop is open on a new save');
+    if('hop' in g0||JSON.stringify(g0.bs)!=='{}')bad('Hill: new fields not defaults on a new save: '+JSON.stringify([g0.hop,g0.bs]));
+    for(const s of HC_ST[0].slice(0,2))g0.st[s[0]]=3; // 4 stars
+    if(hcHopOpen())bad('Hill: the Hop opens before '+HC_HOP_NEED+' stars');
+    g0.st[HC_ST[0][2][0]]=1;
+    if(!hcHopOpen())bad('Hill: the Hop should open with '+HC_HOP_NEED+' stars');
+    // a hop from flat ground: both wheels up about 4 m in every world (the Moon's gravity too), once in 0.6 s, only with a wheel down
+    const hopH=wi=>{const H=hcNew(wi,0,{as:3,hop:true});for(let i=0;i<240;i++)hcStep(H,1/120);const y0=H.w1.y;H.hopQ=1;let top=0,again=0;
+      for(let i=0;i<150;i++){if(i==10){H.hopQ=1}hcStep(H,1/120);top=Math.max(top,H.w1.y-y0)}return{top,hops:H.hops}};
+    for(const wi of [0,5]){const h=hopH(wi);if(!(h.top>60&&h.top<110)||h.hops!==1)bad('Hill: a hop in '+HCW[wi].id+' rose '+h.top.toFixed(0)+' px with '+h.hops+' hops (60-110 px, one: the second press came within 0.6 s)')}
+    {const H=hcNew(0,0,{as:3});for(let i=0;i<240;i++)hcStep(H,1/120);H.hopQ=1;const y=H.w1.y;for(let i=0;i<30;i++)hcStep(H,1/120);if(H.hops||H.w1.y>y+5)bad('Hill: a hop without the move open')}
+    // the rival run: its road (stages 3 and 5, no lookout, no hidden star), the same every time; the rival's pace and easing
+    for(let w=0;w<HC_BOSS.length;w++){const st=hcBossSt(w),C=hcCourse(st,w),C2=hcCourse(hcBossSt(w),w);
+      if(C.looks.length||C.stars.length||!(C.fin>0)||C!==C2)bad('Hill rival road '+w+': lookouts '+C.looks.length+', stars '+C.stars.length);
+      const T0=hcBossT(w,0),T1=hcBossT(w,1),Tm=hcBossT(w,HC_BOSS_MAX);
+      if(!(T1>T0&&Tm>=T0*1.8&&hcBossT(w,99)===Tm))bad('Hill rival '+w+': easing '+[T0,T1,Tm].map(v=>v.toFixed(1)));
+      const H=hcNew(w,null,{boss:{n:0}});if(Math.abs(hcRivalX(H,.5)-60)>1e-6||Math.abs(hcRivalX(H,T0+.5)-C.fin)>1e-6)bad('Hill rival '+w+': start or flag wrong')}
+    // bots: holding the gas (Most help, the starter truck) wins by the third run in every world; the first run is a real race
+    const gasRun=(w,n,hop)=>{const H=hcNew(w,null,{as:3,boss:{n},hop});let k=0;while(!H.over&&H.t<200){H.gas=true;H.brake=false;if(hop&&++k%180==0)H.hopQ=1;hcStep(H,1/120)}
+      return{won:H.result=='win'&&!H.boss.lost,t:H.t}};
+    const hrow=[];
+    for(let w=0;w<HC_BOSS.length;w++){let n=0;while(n<=HC_BOSS_MAX&&!gasRun(w,n).won)n++;const g=gasRun(w,0);hrow.push(HCW[w].id+' '+n);
+      if(n>2)bad('Hill rival '+w+': holding the gas only wins after '+n+' runs (3rd run at most)');
+      if(!(hcBossT(w,0)+.5<g.t+1.5))bad('Hill rival '+w+': the first run is no race ('+hcBossT(w,0)+' s against '+g.t.toFixed(1)+' s)')}
+    r.notes.push('Hill rival runs won by held gas after '+hrow.join(', ')+' runs not won');
+    // review fix (v186): weak drivers win within the capped number of runs on every world. Once the runs not won reach HC_BOSS_MAX
+    // the rival may not pass the truck (it keeps HC_BOSS_GAP behind the furthest the truck got), and a rival run feeds Auto
+    // driving help (hcAsNote) like a stage drive, so a lost run steps the help up.
+    {const kg=S.garage,kgr=S.grade,wrow=[];
+      // (a) Auto driving help from No help (a 5th grader: hcAsBase 0), Gas held all the way; every run through hcBossDone
+      for(let w=0;w<HC_BOSS.length;w++){S.garage={as:'auto'};S.grade=5;let won=-1,k=0,as=[];
+        for(;k<=HC_BOSS_MAX&&won<0;k++){const H=hcNew(w,null,{as:hcAsLevel(),auto:true,boss:{n:hcBossRec(w).n}});as.push(H.as);
+          while(!H.over&&H.t<400){H.gas=true;H.brake=false;hcStep(H,1/120)}
+          if(hcBossDone(H,H.result=='win'?'win':'quit').won)won=k}
+        wrow.push(HCW[w].id+' '+won+' (help '+as.join('>')+')');
+        if(won<0)bad('Hill rival '+w+': Auto help from No help with Gas held never wins in '+(HC_BOSS_MAX+1)+' runs (help '+as.join('>')+')');
+}
+      // (b) at the cap, fixed No help (the grown-up's choice) driven with Gas pressed and let go (no help can catch a truck that
+      // only ever holds Gas on No help: it cannot finish stages 3 and 5 either); and fixed Most help held: the rival never passes
+      for(const [as,duty] of [[0,.7],[3,1]])for(let w=0;w<HC_BOSS.length;w++){const H=hcNew(w,null,{as,boss:{n:HC_BOSS_MAX}});let i=0,ahead=0;
+        while(!H.over&&H.t<400){i++;H.gas=duty>=1||(i%240)<240*duty;H.brake=false;hcStep(H,1/120);if(H.boss.x>Math.max(60,H.maxX-HC_BOSS_GAP)+1e-6)ahead++}
+        if(!(H.result=='win'&&!H.boss.lost)||ahead)bad('Hill rival '+w+' at the cap, help '+as+' gas '+duty+': '+H.result+' lost '+H.boss.lost+', ahead of the truck '+ahead+' steps');
+        if(as==3&&H.boss.x>=H.C.fin)bad('Hill rival '+w+': at the flag at the cap')}
+      // below the cap the rival keeps its own pace (it can win)
+      {const H=hcNew(0,null,{as:3,boss:{n:0}});H.t=hcBossT(0,0)+.5;if(Math.abs(hcRivalX(H)-H.C.fin)>1e-6)bad('Hill rival: held back below the cap')}
+      // a lost rival run counts for Auto: two in a row step the help up (the drive's own steps are kept too)
+      {S.garage={as:'auto'};S.grade=5;const H=hcNew(0,null,{as:0,auto:true,boss:{n:0}});H.result='win';H.boss.lost=true;H.t=40;hcBossDone(H,'win');
+        const H2=hcNew(0,null,{as:0,auto:true,boss:{n:1}});H2.result='win';H2.boss.lost=true;H2.t=40;hcBossDone(H2,'win');
+        if(garageS().asu!==1)bad('Hill: two lost rival runs should step Auto help up (asu '+garageS().asu+')');
+        S.garage={as:'auto',asf:{s:'hb2',n:1}};if(!garageS().asf)bad('Hill: a rival run\'s struggle count is dropped from the save')}
+      S.garage=kg;S.grade=kgr;r.notes.push('Hill rival runs won by Auto help from No help, Gas held, after '+wrow.join(', ')+' runs not won')}
+    // what it opens, what it pays, a run not won
+    S.garage={};const gb=garageS();
+    if(hcBossOpen(0))bad('Hill: the rival run is open on a new save');
+    gb.st[HC_ST[0][4][0]]=1;if(!hcBossOpen(0)||hcBossOpen(1))bad('Hill: the rival run opens with a star on the world\'s stage 5 (only that world)');
+    {const H=hcNew(0,null,{boss:{n:0}});H.bolts=7;H.boss.lost=true;const b0=gb.bolts,x=hcBossDone(H,'win');
+      if(x.won||gb.bolts!==b0+7||gb.bs.meadow.n!==1||gb.bs.meadow.w!==0)bad('Hill: the rival first: no pay, one run not won '+JSON.stringify([x,gb.bs]));
+      const H2=hcNew(0,null,{boss:{n:1}});H2.bolts=3;const y=hcBossDone(H2,'win');
+      if(!y.won||!y.first||gb.bolts!==b0+7+3+HC_BOSS_PAY[0]||gb.bs.meadow.w!==1)bad('Hill: a first win pays '+HC_BOSS_PAY[0]+' bolts and a crown');
+      const z=hcBossDone(hcNew(0,null,{boss:{n:1}}),'win');if(z.pay!==HC_BOSS_PAY[1]||z.first)bad('Hill: a later win pays '+HC_BOSS_PAY[1]);
+      const q=hcBossDone(hcNew(0,null,{boss:{n:1}}),'quit');if(q.won||gb.bs.meadow.n!==2)bad('Hill: quitting is a run not won')}
+    // old saves: a damaged record is mended; the stars, bolts and stages are not touched
+    S.garage={bolts:50,st:{m1:3},bs:{meadow:{n:'2',w:-1},nowhere:{n:1},desert:7},hop:'yes'};const gm=garageS();
+    if(JSON.stringify(gm.bs)!=='{"meadow":{"n":2,"w":0}}'||'hop' in gm||gm.bolts!==50||gm.st.m1!==3)bad('Hill: an old or damaged save: '+JSON.stringify(gm.bs));
+    // ---- 2. Star Rally: Drift and the champion races
+    const bot=(kind,st,rnd)=>{
+      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX,rw=T.rw[seg];
+      if(kind=='lazy')return{};
+      if(kind=='kid')return{steer:Math.abs(P.x)>.5*rw?-Math.sign(P.x):0};
+      let tx=0;
+      for(let j=1;j<30;j++){const s=(seg+j)%T.n,px=T.padAt[s];if(px!=null){tx=px;break}if(T.pkAt[s]){tx=T.pk[T.pkAt[s][0]].x;break}}
+      const bd=[];
+      for(let j=1;j<16;j++){
+        const s=(seg+j)%T.n;
+        if(T.obAt[s])for(const i of T.obAt[s])bd.push(T.ob[i].x);
+        if(T.mvAt[s])for(const i of T.mvAt[s])bd.push(rlMvX(T.mv[i],st.rt+j*RL_SEG/Math.max(2000,P.v)));
+        if(T.sfAt[s])for(const [a,b] of T.sfAt[s])bd.push(b-a<1.2?(a+b)/2:a<0?Math.min(b,0)-.3:Math.max(a,0)+.3);
+        if(T.dv[s]){const f=T.forks.find(f=>rlMod(s-f[0],T.n)<f[1]-f[0]+1);tx=f?f[2]*.5:(P.x<0?-.55:.55)}
+      }
+      for(const b of bd)if(Math.abs(b-tx)<.4){const c=[-.6,0,.6].map(v=>v*rw).filter(v=>bd.every(q=>Math.abs(q-v)>.38));if(c.length)tx=c.reduce((a,v)=>Math.abs(v-P.x)<Math.abs(a-P.x)?v:a)}
+      let s=Math.max(-1,Math.min(1,(tx-P.x)*2.5+.35*cur*sp*sp*(st.mode=='easy'?.3:1)/(1.7*Math.max(.3,sp))));
+      if(kind=='pro'&&Math.abs(cur)>=3&&sp>.8&&Math.abs(P.x)<.6)s=Math.sign(cur);
+      return{steer:s,go:kind=='pro'?Math.abs(cur)<4.5||P.drifting:false,drift:kind=='drift'&&Math.abs(cur)>=2};
+    };
+    const rrun=(tid,mode,kind,seed,o={})=>{const st=rlNew(tid,Object.assign({mode,seed},o)),rnd=rlRng(seed*31+7);let n=0;
+      while(!st.done&&n<60*170){rlStep(st,bot(kind,st,rnd));st.ev.length=0;n++}return st};
+    S.rally={};
+    if(rlDriftOpen()||rlChampOpen(0))bad('Rally: Drift or a champion race open on a new save');
+    const r0=rlS();if('mv' in r0||JSON.stringify(r0.bs)!=='{}')bad('Rally: new fields not defaults');
+    r0.races=RL_DRIFT_RACES-1;if(rlDriftOpen())bad('Rally: Drift opens before '+RL_DRIFT_RACES+' races');
+    r0.races=RL_DRIFT_RACES;if(!rlDriftOpen())bad('Rally: Drift should open after '+RL_DRIFT_RACES+' races');
+    // the Drift button: Easy can drift, holds its line in a bend and zooms after; without the move it does nothing; Pro's held turn still drifts
+    {const a=rrun('meadow-0','easy','drift',1,{drift:true}),b=rrun('meadow-0','easy','drift',1,{}),c=rrun('meadow-0','easy','good',1,{});
+      if(!(a.drifts>=3)||b.drifts||c.drifts)bad('Rally: Easy drift zooms '+a.drifts+' (with the move), '+b.drifts+' (without)');
+      if(b.P.time!==c.P.time)bad('Rally: the Drift button without the move must change nothing');
+      if(!(a.P.time<c.P.time))bad('Rally: drifting through the bends of Sunny Loop should be quicker ('+a.P.time.toFixed(1)+' / '+c.P.time.toFixed(1)+' s)');
+      const pr=rrun('city-2','pro','pro',1,{});if(!(pr.drifts>0))bad('Rally: Pro\'s held turn should still drift')}
+    // champion races: one rival, side by side; the same race twice is the same; easier each race not won; every bot wins within the easing
+    for(let i=0;i<RL_CHAMP.length;i++){const tid=RL_CUPS[i].races[2][0],st=rlNew(tid,{mode:'easy',seed:3,champ:{i,n:0}});
+      if(st.cars.length!==1||st.cars[0].rv.id!==RL_CHAMP[i][0]||st.P.place!==2)bad('Rally champion '+i+': not one champion beside you');
+      if(!(rlChampBase(i,'easy',1)<rlChampBase(i,'easy',0)&&rlChampBase(i,'easy',RL_CHAMP_MAX)===rlChampBase(i,'easy',99)))bad('Rally champion '+i+': easing');
+      const x1=rrun(tid,'easy','good',5,{champ:{i,n:2}}),x2=rrun(tid,'easy','good',5,{champ:{i,n:2}});
+      if(x1.P.time!==x2.P.time||x1.P.place!==x2.P.place)bad('Rally champion '+i+': the same race is not the same');}
+    const crow=[];
+    for(let i=0;i<RL_CHAMP.length;i++){const tid=RL_CUPS[i].races[2][0];
+      for(const [mode,kind] of [['easy','good'],['easy','kid'],['easy','lazy'],['pro','pro']]){let n=0;
+        while(n<=RL_CHAMP_MAX&&[1,2].some(seed=>rrun(tid,mode,kind,seed,{champ:{i,n}}).P.place!==1))n++;
+        crow.push(i+mode[0]+kind[0]+n);
+        if(n>RL_CHAMP_MAX)bad('Rally champion '+i+': the '+mode+' '+kind+' bot never wins (no fail-forever)');
+        if(kind=='good'&&n>3)bad('Rally champion '+i+': a child who steers well should win within 3 races not won ('+n+')')}}
+    r.notes.push('Rally champion races won by both seeds after (cup, mode, bot, races not won): '+crow.join(' '));
+    // review fix (v186): weak drivers win by the cap (RL_CHAMP_MAX races not won) on every cup, both seeds: a random steerer (a new
+    // arrow, or none, every half second), one arrow held all race, and Pro with Go held and random arrows. At the cap the champion
+    // never outpaces the child (rlChampHold): never ahead after being behind, never at the line first
+    {const wb={rand:(st,m)=>{if(!(m.k++%30))m.s=[-1,0,1][Math.floor(m.r()*3)];return{steer:m.s}},left:()=>({steer:-1}),
+        prand:(st,m)=>{if(!(m.k++%30))m.s=[-1,0,1][Math.floor(m.r()*3)];return{steer:m.s,go:true}}};
+      for(const [mode,kind] of [['easy','rand'],['easy','left'],['pro','prand']])for(let i=0;i<RL_CHAMP.length;i++)for(const seed of [1,2]){
+        const st=rlNew(RL_CUPS[i].races[2][0],{mode,seed,drift:true,champ:{i,n:RL_CHAMP_MAX}}),m={k:0,s:0,r:rlRng(seed*31+7)},c=st.cars[0];let n=0,was=false,passed=0;
+        while(!st.done&&n<60*400){const behind=c.d<=st.P.d;rlStep(st,wb[kind](st,m));st.ev.length=0;n++;if(behind&&c.d>st.P.d&&!st.done)passed++}
+        if(!st.done||st.P.place!==1||passed||c.fin)bad('Rally champion '+i+' at the cap, '+mode+' '+kind+' seed '+seed+': '+(st.done?'place '+st.P.place:'did not finish')+', passed '+passed)}
+      // below the cap the champion races as before
+      {const st=rlNew(RL_CUPS[0].races[2][0],{mode:'easy',seed:1,champ:{i:0,n:RL_CHAMP_MAX-1}});if(rlChampHold(st,st.cars[0]))bad('Rally: the champion held back below the cap')}}
+    // review fix (v186): leaving a won champion race in the moment before its card (rlQuit, rlTimeUp) still pays the sparkles
+    {const keepF={rlStop,rlMenu,gtStop,timeUpOverlay};rlStop=()=>{RL=null};rlMenu=()=>{};gtStop=()=>{};timeUpOverlay=()=>{};
+      try{for(const f of ['rlQuit','rlTimeUp']){S.rally={cups:{sprout:{best:4,runs:1}}};const rr=rlS(),s0=rr.spk,st=rlNew('meadow-1',{champ:{i:0,n:0}});
+          st.done=true;st.P.place=1;st.P.spk=4;RL={st};(f=='rlQuit'?rlQuit:rlTimeUp)();
+          if(rr.spk!==s0+4+RL_CHAMP_PAY[0]||JSON.stringify(rr.bs.sprout)!=='{"n":0,"w":1}')bad('Rally: '+f+' after a won champion race pays '+(rr.spk-s0)+' (want '+(4+RL_CHAMP_PAY[0])+') '+JSON.stringify(rr.bs))}}
+      finally{rlStop=keepF.rlStop;rlMenu=keepF.rlMenu;gtStop=keepF.gtStop;timeUpOverlay=keepF.timeUpOverlay;RL=null}}
+    // what opens, what pays, a race not won, quitting
+    S.rally={cups:{sprout:{best:4,runs:1}}};const r1=rlS();
+    if(!rlChampOpen(0,r1)||rlChampOpen(1,r1))bad('Rally: a champion race opens once its cup was raced to the end');
+    {const st=rlNew('meadow-1',{champ:{i:0,n:0}});const a=rlChampDone(st,false),b=rlChampDone(st,true),c=rlChampDone(st,true);
+      if(a!==0||b!==RL_CHAMP_PAY[0]||c!==RL_CHAMP_PAY[1]||JSON.stringify(r1.bs.sprout)!=='{"n":1,"w":2}')bad('Rally champion pays: '+[a,b,c]+' '+JSON.stringify(r1.bs))}
+    S.rally={bs:{sprout:{n:3},mmaple:{n:1},nope:{w:1}},mv:2,spk:9};const r2=rlS();
+    if(JSON.stringify(r2.bs)!=='{"sprout":{"n":3,"w":0}}'||'mv' in r2||r2.spk!==9)bad('Rally: an old or damaged save: '+JSON.stringify(r2.bs));
+    // ---- 3. Snack Stand: Star serve and the chef's taste test
+    const own={};for(const x of SN_SHOP)own[x[0]]=1;
+    S.snack={};const s0=snS();
+    if(snStarOpen()||snChefOpen('park')||'mv' in s0||JSON.stringify(s0.bs)!=='{}')bad('Snack: the move, the chef or the new fields on a new save');
+    s0.days=SN_STAR_DAYS;if(!snStarOpen())bad('Snack: Star serve should open after '+SN_STAR_DAYS+' days');
+    s0.stars.park=SN_CHEF_STARS-1;if(snChefOpen('park'))bad('Snack: the chef comes before '+SN_CHEF_STARS+' stars');
+    s0.stars.park=SN_CHEF_STARS;if(!snChefOpen('park')||snChefOpen('beach'))bad('Snack: the chef of a place comes with its stars');
+    // a day played with a plan: right plates or wrong first; the Star serve armed when full
+    const play=(o,plan)=>{const st=snNew(Object.assign({mode:'calm',own,seed:7},o));let k=0,i=0;const log=[];
+      while(!st.done&&k<30000){snStep(st,.2);const c=st.at.find(c=>c.state=='wait');
+        if(c&&!st.plate.length){const want=plan(i,st);if(want=='arm')log.push('arm'+snStarArm(st));
+          if(want=='wrong'){snAdd(st,c.order[0]=='cookie'?'apple':'cookie');const x=snServe(st);log.push(x.ok?'?':'no');snUndo(st)}
+          for(const id of c.order)snAdd(st,id);const x=snServe(st);log.push(x.ok?(x.star?'star':'ok'):'?');if(x.ok)i++}k++}
+      return{st,log}};
+    {const a=play({place:'park',star:true},()=>'');if(a.st.star!==SN_STAR_NEED||a.st.starServes)bad('Snack: the meter fills to '+SN_STAR_NEED+' and waits');
+      const b=play({place:'park',star:true},(i,st)=>st.star>=SN_STAR_NEED?'arm':''),c=play({place:'park',star:false},()=>'');
+      if(!(b.st.starServes>=2)||b.st.coins<=c.st.coins||c.st.star!==null)bad('Snack: Star serve pays more when used ('+b.st.coins+' / '+c.st.coins+', '+b.st.starServes+' serves)');
+      const w=play({place:'park',star:true},(i,st)=>st.star==2&&!st.armed?'wrong':'');if(!(w.st.star>=2))bad('Snack: a wrong plate must not empty the meter')}
+    // the chef: five visits, one at a time, longer orders; the same each time; smaller after tests not won; win with 3 right first time
+    for(const pl of SN_PLACES){const a=snNew({mode:'calm',own,seed:snChefSeed(pl.id,0),place:pl.id,kind:'chef',tries:0}),b=snNew({mode:'calm',own,seed:snChefSeed(pl.id,0),place:pl.id,kind:'chef',tries:0});
+      if(a.n!==5||a.list.some(c=>!c.chef||c.name!==snChefName(pl.id))||JSON.stringify(a.list.map(c=>c.order))!==JSON.stringify(b.list.map(c=>c.order)))bad('Snack chef '+pl.id+': five chef visits, the same each time');
+      if(a.list.map(c=>c.order.length).join()!==SN_CHEF_SIZE.join()||a.list.some(c=>c.order.some(x=>!['ice','juice','treat'].includes(SN_ING[x][1]))))bad('Snack chef '+pl.id+': orders '+a.list.map(c=>c.order.join('+')).join(' '));
+      const e=snNew({mode:'calm',own:{},seed:snChefSeed(pl.id,3),place:pl.id,kind:'chef',tries:3});
+      if(e.list.map(c=>c.order.length).join()!==snChefSizes(3).join()||e.list.some(c=>c.order.some(x=>!snAvail({},pl.id,'calm','chef').includes(x))))bad('Snack chef '+pl.id+': a new stand\'s chef orders what it has, smaller after tests')}
+    if(snChefSizes(0).join()!=='2,3,3,4,4'||snChefSizes(2).join()!=='1,2,2,3,3'||snChefSizes(99).join()!=='1,1,2,2,2')bad('Snack chef sizes: '+[0,2,99].map(n=>snChefSizes(n).join()).join(' / '));
+    {const lose=play({place:'park',kind:'chef',tries:0,seed:snChefSeed('park',0)},i=>i<3?'wrong':''),win=play({place:'park',kind:'chef',tries:0,seed:snChefSeed('park',0)},i=>i<2?'wrong':'');
+      if(lose.st.right>=SN_CHEF_WIN||win.st.right<SN_CHEF_WIN||!lose.st.done||!win.st.done)bad('Snack chef: the win needs '+SN_CHEF_WIN+' right the first time ('+lose.st.right+' / '+win.st.right+')');
+      S.snack={};const sr=snS(),c0=sr.coins;
+      const x=snChefDone({place:'park'},false),y=snChefDone({place:'park'},true),z=snChefDone({place:'park'},true);
+      if(x.pay||y.pay!==SN_CHEF_PAY[0]||!y.first||z.pay!==SN_CHEF_PAY[1]||sr.coins!==c0+SN_CHEF_PAY[0]+SN_CHEF_PAY[1]||JSON.stringify(sr.bs.park)!=='{"n":1,"w":2}')bad('Snack chef pays: '+JSON.stringify([x,y,z,sr.bs]))}
+    S.snack={bs:{park:{w:'1'},mars:{n:1}},mv:true,coins:12};const s2=snS();
+    if(JSON.stringify(s2.bs)!=='{"park":{"n":0,"w":1}}'||'mv' in s2||s2.coins!==12)bad('Snack: an old or damaged save: '+JSON.stringify(s2.bs));
+    // ---- 4. Sky Hop: the Dash and the sky races
+    S.hop={};const h0=hopS();
+    if(hopDashOpen()||hopBossOpen(0)||'mv' in h0||JSON.stringify(h0.bs)!=='{}')bad('Sky Hop: the move, a race or the new fields on a new save');
+    for(let i=0;i<HOP_DASH_NEED-1;i++)h0.best[HOP_COURSES[i].id]=30000;
+    if(hopDashOpen())bad('Sky Hop: the Dash opens before '+HOP_DASH_NEED+' courses');
+    h0.best[HOP_COURSES[HOP_DASH_NEED-1].id]=30000;
+    if(!hopDashOpen()||!hopBossOpen(0)||hopBossOpen(1))bad('Sky Hop: the Dash and the first race open with the first world');
+    const dashRun=(dash,press)=>{const st=hopNew(HOP_COURSES[0].id,{mode:'one',dash});for(let i=0;i<80;i++)hopStep(st,{});hopStep(st,{jump:true});for(let i=0;i<10;i++)hopStep(st,{});
+      const x0=st.p.x;hopStep(st,{dash:press});hopStep(st,{dash:press});for(let i=0;i<13;i++)hopStep(st,{});return{dx:st.p.x-x0,n:st.dashes}};
+    {const a=dashRun(true,true),b=dashRun(false,true),c=dashRun(true,false);
+      if(!(a.dx>b.dx+1)||a.n!==1||b.n||Math.abs(b.dx-c.dx)>1e-9)bad('Sky Hop: a dash in the air goes further, once a hop, only with the move: '+[a.dx,b.dx,c.dx].map(v=>v.toFixed(2))+' '+a.n)}
+    for(let w=0;w<HOP_BOSS.length;w++){const c=hopBossCourse(w),perfect=hopGold(c)-3;
+      if(c.w!==w||c.i!==w*6+5)bad('Sky Hop race '+w+': not the world\'s last course');
+      if(!(hopBossT(w,0)<perfect&&hopBossT(w,1)>=perfect&&hopBossT(w,HOP_BOSS_MAX)>=perfect*1.7&&hopBossT(w,99)===hopBossT(w,HOP_BOSS_MAX)))
+        bad('Sky Hop race '+w+': the bird should beat a perfect run first ('+hopBossT(w,0).toFixed(1)+' < '+perfect+'), lose to it after one race, and wait for slower runs later');
+      const st=hopNew(c.id,{mode:'one',boss:{w,n:0}});let n=0;while(!st.boss.lost&&n<60*200){hopStep(st,{});if(st.wait=='offer')hopHelp(st,false);st.ev.length=0;n++}
+      if(Math.abs(st.t-.8-st.boss.T)>.02||Math.abs(hopRivalX(st)-st.C.goal.x)>1e-6)bad('Sky Hop race '+w+': the bird reaches the flag at '+st.t.toFixed(2)+' s')}
+    // review fix (v186): a child who falls a lot (random presses, 5 to 16 falls, the helper balloon taken) wins by the cap
+    // (HOP_BOSS_MAX races not won) on every world: from then on the bird stays HOP_BOSS_GAP behind the furthest the pet got
+    {const frow=[];for(let w=0;w<HOP_BOSS.length;w++)for(const sd of [1,2]){const rn=rlRng(sd*13+w),st=hopNew(hopBossCourse(w).id,{mode:'one',boss:{w,n:HOP_BOSS_MAX}});let hold=0,ahead=0,px=0;
+        while(!st.done&&st.t<600){if(hold>0)hold--;else if(rn()<.03)hold=2+Math.floor(rn()*18);hopStep(st,{jump:hold>0});if(st.wait=='offer')hopHelp(st,true);st.ev.length=0;
+          px=Math.max(px,st.p.x);if(st.boss.x>Math.max(st.C.cps[0].x,px-HOP_BOSS_GAP)+1e-6)ahead++}
+        if(sd==1)frow.push(w+':'+st.falls);
+        if(!st.done||st.boss.lost||ahead)bad('Sky Hop race '+w+' at the cap, a faller (seed '+sd+'): '+(st.done?'finished':'did not finish')+' with '+st.falls+' falls, bird first '+st.boss.lost+', ahead '+ahead);
+        if(sd==1&&st.falls<3)bad('Sky Hop race '+w+': the faller bot fell only '+st.falls+' times')}
+      const st=hopNew(hopBossCourse(0).id,{mode:'one',boss:{w:0,n:HOP_BOSS_MAX-1}});st.t=st.boss.T+.8;if(Math.abs(hopRivalX(st)-st.C.goal.x)>1e-6)bad('Sky Hop: the bird held back below the cap');
+      r.notes.push('Sky Hop races at the cap won by a faller (world: falls) '+frow.join(' '))}
+    {S.hop={};const hr=hopS(),st=hopNew(HOP_COURSES[5].id,{boss:{w:0,n:0}}),b0=hr.bonus;
+      const x=hopBossDone(st,false),y=hopBossDone(st,true),z=hopBossDone(st,true);
+      if(x.pay||y.pay!==HOP_BOSS_PAY[0]||z.pay!==HOP_BOSS_PAY[1]||hr.bonus!==b0+HOP_BOSS_PAY[0]+HOP_BOSS_PAY[1]||JSON.stringify(hr.bs['0'])!=='{"n":1,"w":2}')bad('Sky Hop race pays: '+JSON.stringify([x,y,z,hr.bs]))}
+    S.hop={bs:{'0':{n:4},'12':{n:1},x:{}},mv:0,bonus:3};const h2=hopS();
+    if(JSON.stringify(h2.bs)!=='{"0":{"n":4,"w":0}}'||'mv' in h2||h2.bonus!==3)bad('Sky Hop: an old or damaged save: '+JSON.stringify(h2.bs));
+    // ---- 5. Block Builder: Paint and Bea's mirror builds
+    S.bb=null;const b0=bbS();
+    if(bbPaintOpen()||bbBossOpen(0)||'mv' in b0||JSON.stringify(b0.bs)!=='{}')bad('Block Builder: the move, Bea or the new fields on a new save');
+    for(let i=0;i<BB_PAINT_NEED;i++)bbBP()[BBP[i].id]=1;
+    if(!bbPaintOpen())bad('Block Builder: Paint should open with '+BB_PAINT_NEED+' blueprints built');
+    // a paint tap: the block under the finger becomes the chosen one; Undo puts it back; never TNT or a little picture
+    {const E=bbMake(bbFlat(),null,null);E.size(600,600,1);E.home();E.render({});E.tool='paint';E.sel=8;
+      const f=E.faces.find(q=>!q.ghost&&q.f=='top'&&!q.deco),c=[(Math.min(...f.poly.map(q=>q[0]))+Math.max(...f.poly.map(q=>q[0])))/2,(Math.min(...f.poly.map(q=>q[1]))+Math.max(...f.poly.map(q=>q[1])))/2];
+      const n=bbI(f.i,f.j,f.k),v0=E.w[n],res=E.tap(...c);
+      if(res.kind!=='paint'||E.w[n]!==8||res.v!==v0)bad('Block Builder paint: '+res.kind+' '+E.w[n]);
+      E.sel=BB_TNT;if(E.tap(...c).kind==='paint')bad('Block Builder: paint with TNT');
+      E.sel=8;if(E.tap(...c).kind==='paint')bad('Block Builder: painting the same block again is no change');
+      E.doUndo();if(E.w[n]!==v0)bad('Block Builder: Undo after paint')}
+    const mid=f=>[(Math.min(...f.poly.map(q=>q[0]))+Math.max(...f.poly.map(q=>q[0])))/2,(Math.min(...f.poly.map(q=>q[1]))+Math.max(...f.poly.map(q=>q[1])))/2];
+  function bbBot(bp,W,H,rot){
+    const m=bbMode(bp),goal=bbGoal(bp),E=bbMake(bbStart(bp),goal,m);
+    E.size(W,H,1);E.home();E.rot=rot;E.ang=rot*Math.PI/2;
+    let taps=0,guess=0;
+    while(!E.done()&&taps<400){
+      E.render({});taps++;
+      if(m=='copy'||m=='pat'){
+        const f=E.faces.filter(q=>q.ghost&&q.f=='top').pop();
+        if(!f)return{err:'no see-through top'};
+        const i=bbI(f.i,f.j,f.k);E.sel=goal.get(i);
+        const res=E.tap(...mid(f));
+        if(res.kind!=='place'||res.cells[0]!==i)return{err:'copy tap '+res.kind};
+        continue;
+      }
+      let did=false;
+      const c0=Math.cos(E.ang),s0=Math.sin(E.ang),far=n=>{const [i,j,k]=XYZ(n),dx=i-E.F[0],dy=j-E.F[1];return k*1000+dx*c0-dy*s0+dx*s0+dy*c0};
+      const cand=(m=='count'?[...goal.keys()].filter(n=>!E.w[n]):E.todo()).sort((a,b)=>far(a)-far(b));
+      // a face's middle, then four spots between the middle and its corners (a child taps the part that shows)
+      const spots=f=>{const c=mid(f);return [c].concat(f.poly.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]))};
+      for(const n of cand){
+        const [i,j,k]=XYZ(n);
+        if(m=='count'&&k>Math.min(...cand.map(q=>XYZ(q)[2])))break;
+        const col=[];for(let z=0;z<BH;z++){const q=bbI(i,j,z);if(goal.has(q)&&E.w[q]!=goal.get(q))col.push(q)}
+        if(m!='count'&&col[0]!==n)continue;
+        tapped:for(const f of E.faces.filter(q=>!q.ghost&&q.i==i&&q.j==j&&(m!='count'||(q.f=='top'&&q.k==k-1))))for(const c of spots(f)){
+          const h=E.hit(...c,q=>!q.ghost);
+          if(!h||h.i!==i||h.j!==j)continue;
+          if(m=='count'){const t=E.target(...c);if(!t||bbI(t.i,t.j,t.k)!==n)continue}
+          E.sel=goal.get(n);const res=E.tap(...c);
+          if(res.kind!=='place'||res.cells[0]!==n)return{err:m+' tap on '+[i,j,k]+': '+res.kind};
+          did=true;break tapped;
+        }
+        if(did)break;
+      }
+      if(!did&&m!='count'){ // every column hidden: tap the spot itself (the nearest buildable spot: a guess, never a mistake)
+        const n=cand[0],[i,j,k]=XYZ(n),c=E.proj(i+.5,j+.5,k+1);E.sel=goal.get(n);const res=E.tap(...c);guess++;
+        if(res.kind!=='place')return{err:m+' guess at '+[i,j,k]+': '+res.kind+' (miss '+E.miss+')'};
+        did=true;
+      }
+      if(!did)return{err:'nowhere to tap'};
+    }
+    return{done:E.done(),miss:E.miss,taps,guess};
+  }
+    // Bea's builds: the same on both sides; Bea's side built at the start; the child's side missing; no see-through first, then see-through
+    const XYZ=n=>[n%BW,Math.floor(n/BW)%BD,Math.floor(n/(BW*BD))];
+    for(let k=0;k<BB_BOSS.length;k++){const bp=bbBossBP(k,0),g=bbGoal(bp),xs=[...g.keys()].map(n=>XYZ(n)[0]),mid=(Math.min(...xs)+Math.max(...xs))/2;
+      for(const [n,v] of g){const [x,y,z]=XYZ(n);if(g.get(bbI(2*mid-x,y,z))!==v)bad('Bea build '+k+': not the same on both sides at '+[x,y,z])}
+      const w=bbStart(bp),miss=bbFixMiss(bp);let mine=0;
+      for(const [n,v] of g){const [x]=XYZ(n);if(x>mid){mine++;if(w[n]===v||!miss.has(n))bad('Bea build '+k+': the child\'s side is built at the start')}else if(w[n]!==v)bad('Bea build '+k+': Bea\'s side not built')}
+      if(mine<5||mine>12)bad('Bea build '+k+': '+mine+' blocks for the child (5-12)');
+      if(bbMode(bp)!=='fix'||bbMode(bbBossBP(k,1))!=='copy'||bbChapOf(bp)!==BB_CHS[k])bad('Bea build '+k+': no see-through first, then see-through');
+      if(!(bbBossMiss(1)>bbBossMiss(0)&&bbBossMiss(99)===bbBossMiss(4)))bad('Bea: more mistakes allowed after tries');
+      // a careful child (the G-01b bot) builds it by taps on the 2D look, in both kinds of try, at two sizes and two turns
+      for(const n0 of [0,1])for(const [W,H] of [[380,520],[1024,420]])for(const rot of [0,1]){const b=bbBot(bbBossBP(k,n0),W,H,rot);
+        if(b.err||!b.done||b.miss>bbBossMiss(n0))bad('Bea build '+k+' try '+n0+' '+W+'x'+H+' turn '+rot+': '+JSON.stringify(b))}}
+    {S.bb=null;const bs=bbS(),c0=S.coins;bbBP();const x=bbBossTry(0,false),y=bbBossTry(0,true),z=bbBossTry(0,true);
+      if(x.coins||y.coins!==BB_BOSS_PAY[0]||z.coins!==BB_BOSS_PAY[1]||S.coins!==c0+BB_BOSS_PAY[0]+BB_BOSS_PAY[1]||JSON.stringify(bs.bs.meadow)!=='{"n":1,"w":2}')bad('Bea pays: '+JSON.stringify([x,y,z,bs.bs]))}
+    for(let i=0;i<6;i++)bbBP()[BBP[i].id]=2;
+    if(!bbBossOpen(0)||bbBossOpen(1))bad('Bea opens with the chapter\'s trophy');
+    S.bb={worlds:[],cur:0,bs:{meadow:{n:1},moon:{n:1}},mv:'1'};const b2=bbS();
+    if(JSON.stringify(b2.bs)!=='{"meadow":{"n":1,"w":0}}'||'mv' in b2||b2.worlds.length!==1)bad('Block Builder: an old or damaged save: '+JSON.stringify(b2.bs));
+    // ---- 6. game time is not touched by any of it
+    if(JSON.stringify(S.pt)!==keep.pt)bad('game time (S.pt) changed');
+    S.garage=keep.g;S.rally=keep.r;S.snack=keep.s;S.hop=keep.h;S.bb=keep.b;S.coins=keep.c;S.grade=keep.grade;S.voice=keep.voice;S.sound=keep.sound;
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  for(const m of o.bad)p.push(m);
+  // the source: the new code's own lines (G-MOVES) never touch game time, never sell anything, and every new control has a spoken name
+  const files=['js/59-game-hub.js','js/62-hill.js','js/63-game-race.js','js/65-game-snack.js','js/67-game-skyhop.js','js/60-blocks.js'];
+  const block=(src,a,b)=>{const i=src.indexOf(a),j=src.indexOf(b,i+1);return i<0||j<0?'':src.slice(i,j)};
+  const newCode=[block(rd(files[0]),'G-MOVES (v188): one new move','// G-MOVES: the rivals'),block(rd(files[1]),'G-MOVES (v188): a new move, the Hop','/* ---- G-HC3 (R-03 A1)'),
+    block(rd(files[2]),'G-MOVES (v188): a new move, Drift','/* ---- the garage'),block(rd(files[3]),'G-MOVES (v188): a new move, Star serve','function snDayList'),
+    block(rd(files[4]),'G-MOVES (v188): a new move, the Dash','// the helper balloon'),block(rd(files[5]),'G-MOVES (v188): a new tool, Paint','const bbChOf')];
+  newCode.forEach((c,i)=>{if(!c)p.push(files[i]+': the G-MOVES block is missing');if(/\bpt(?:Calc|Earn|Add|Spend)\b|S\.pt\b|ptLeft\(\)\s*[-+]=/.test(c))p.push(files[i]+': the new code touches game time')});
+  for(const f of files){const s=rd(f);if(/S\.pt\s*=|ptEarn\(|ptCalc\(/.test(s.split('\n').filter(l=>/G-MOVES|Boss|boss|Hop\b|Drift|Star serve|Dash|Paint|paint/.test(l)).join('\n')))p.push(f+': a G-MOVES line touches game time')}
+  // new buttons: a name a screen reader says
+  const src=files.map(rd).join('\n');
+  for(const id of ['hchop','hcboss','rldr','snstar','snchef','hpd','hpboss','bbm-paint','gbgo','gbsay','gmvok'])if(!new RegExp(`id="${id}"[^>]*aria-label=|aria-label=[^>]*id="${id}"|btn\\('${id}'|bbTB\\('${id}'|id: '${id}'|UI\\.(?:btn|ibtn)\\([^)]*id: '${id}'`).test(src))p.push('the control #'+id+' has no spoken name');
+  // the new CSS: tokens only, transform/opacity motion, no filter
+  for(const f of ['css/48-game-hub.css','css/61-hill.css','css/49-game-race.css','css/49-game-snack.css','css/49-game-skyhop.css','css/60-game-blocks.css']){
+    const s=rd(f),i=s.indexOf('G-MOVES (v188)'),c=i<0?'':s.slice(i);
+    if(!c){p.push(f+': no G-MOVES rules');continue}
+    if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsl/.test(c))p.push(f+': a raw colour in the G-MOVES rules');
+    if(/\bfilter\s*:|backdrop-filter/.test(c))p.push(f+': a filter in the G-MOVES rules');
+    for(const m of c.matchAll(/transition:([^;}]+)/g))if(/\b(?:width|height|left|top|right|bottom|background|color|box-shadow|margin|padding)\b/.test(m[1].replace(/var\(--[\w-]+\)/g,'')))p.push(f+': a transition on '+m[1]);
+    for(const m of c.matchAll(/@keyframes|animation\s*:/g))p.push(f+': an animation in the G-MOVES rules (reduced motion)')}
+  // reduced motion: the rival bird does not bob and the Hill rival does not move by itself in calm mode; the shared screens do not animate
+  if(!/calm \? 0 : Math\.sin\(tt \* 4\)/.test(rd('js/67-game-skyhop.js')))p.push('Sky Hop: the rival bird should keep still in calm mode');
+  return{problems:[...new Set(p)].slice(0,60),note:o.notes.join('; ')};
+});
+
 // ---- TEACH-1: "Sparky teaches" (docs/TEACH-PLAN-2.md batch 1; src/js/52-lesson.js, 52b-know.js, 52c-scripts.js in the lazy part teach) ----
 // The lesson is a state machine with no DOM (LS.make, LS.cur, LS.answer, LS.next), so these checks run it in Node: every lesson through
 // all its beats, test-out, Check me (the pet is wrong only in its own announced turn), the measure and the stop record, the plan, and the
@@ -20317,7 +20644,7 @@ run('teach: drafted lessons, their words, the review gate TEACH-2b',()=>{
     if(r2.done.join()!=='zz9'||!/^status: reviewed Test Owner 2026-11-18 \(in chat\)$/m.test(fs.readFileSync(f,'utf8')))p.push('--approve: '+JSON.stringify(r2)+' '+(/^status:.*$/m.exec(fs.readFileSync(f,'utf8'))||[])[0])}
   finally{if(fs.existsSync(f))fs.unlinkSync(f);cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-only'],{stdio:'pipe'})}}
   // 3. the read-through: every unreviewed draft, in map order, each lesson's sheet; short enough for a phone
-  const B4=R('LS_B4'),un=Object.keys(DW).filter(id=>DW[id].status==='unreviewed'&&!B35.includes(id)&&!B4.includes(id)),rt=A.readThrough(un); // TEACH-4: batch 4 has its own read-through (BATCH4-READ.md)
+  const B4=R('LS_B4'),B5=R('typeof LS_B5=="undefined"?[]:LS_B5'),un=Object.keys(DW).filter(id=>DW[id].status==='unreviewed'&&!B35.includes(id)&&!B4.includes(id)&&!B5.includes(id)),rt=A.readThrough(un); // TEACH-4: batch 4 has its own read-through (BATCH4-READ.md); TEACH-5S: and batch 5s (BATCH5S-READ.md)
   for(const id of un)if(!rt.includes('('+id+')'))p.push('the read-through has no '+id);
   if(/\(big3\)|\(frac4\)/.test(rt))p.push('the read-through repeats reviewed lessons');
   if(rt.split('\n').some(l=>l.length>140))p.push('the read-through has lines too long for a phone');
@@ -20678,7 +21005,7 @@ run('teach: batch 3b lessons, their models, their read-through, migration 7 TEAC
   // 4. migration 7 (save v7 -> v8): a save that reached batch 3b stops keeps them open; idempotent; a new save keeps none
   const mg=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id);
     loadSave(null);S.grade=3;const i=at('story5'),j=at('data3'),k=at('ang1');for(let n=0;n<i;n++)setSt('math',n,2);for(let n=at('frac2');n<j;n++)setSt('math',n,2);setSt('math',k+1,2); // story5 and data3: the stop before passed; ang1: a later stop of its world passed
-    S.v=7;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==9)bad.push('v '+S.v); // READ-SHAPES: migration 8 raised LATEST to 9
+    S.v=7;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==10)bad.push('v '+S.v); // READ-SHAPES: migration 8 raised LATEST to 9; TEACH-5S: migration 9 to 10
     for(const id of ['story5','data3','ang1'])if(!S.lsOpen||!S.lsOpen[id])bad.push(id+' reached before v182 is not kept open: '+JSON.stringify(S.lsOpen));
     if(S.lsOpen&&(S.lsOpen.shape5||S.lsOpen.ang2||S.lsOpen.story8))bad.push('a stop not reached was kept open: '+JSON.stringify(S.lsOpen));
     for(const id of ['story5','data3','ang1'])if(lsGate('math',at(id)))bad.push(id+' is locked after the migration');
@@ -20825,7 +21152,7 @@ run('teach: batch 5r reading shapes, their models, the story told, their read-th
   // 4. migration 8 (save v8 -> v9): a save that reached batch 5r stops keeps them open; idempotent; a new save keeps none
   const mg=R(`(()=>{const bad=[],at=id=>NODES.read.findIndex(n=>nid(n)===id);
     loadSave(null);S.grade=1;const i=at('sight2'),j=at('vocab1'),k=at('spell3');for(let n=0;n<i;n++)setSt('read',n,2);for(let n=at('sight3');n<j;n++)setSt('read',n,2);setSt('read',k+1,2); // sight2, vocab1: the stop before passed; spell3: a later stop of its world passed
-    S.v=8;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==9)bad.push('v '+S.v);
+    S.v=8;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==10)bad.push('v '+S.v); // TEACH-5S: migration 9 raised LATEST to 10
     for(const id of ['sight2','vocab1','spell3'])if(!S.lsOpen||!S.lsOpen[id])bad.push(id+' reached before v184 is not kept open: '+JSON.stringify(S.lsOpen));
     if(S.lsOpen&&(S.lsOpen.gram1||S.lsOpen.rhyme2||S.lsOpen.gram3))bad.push('a stop not reached was kept open: '+JSON.stringify(S.lsOpen));
     for(const id of ['sight2','vocab1','spell3'])if(lsGate('read',at(id)))bad.push(id+' is locked after the migration');
@@ -20864,6 +21191,218 @@ run('teach: simulated children on batch 5r lessons, Check me always wrong when f
   for(const id in G.per)if(G.per[id][2]>.15)p.push(id+': the guesser tests out '+f(G.per[id][2])+'%');
   if(r.fresh<r.res)p.push('a resumed Show asked an item already seen in '+(r.res-r.fresh)+' of '+r.res+' resumes');
   return{problems:p,note:Object.entries(o).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')+'; '+r.fresh+' of '+r.res+' resumes fresh'};
+});
+
+// ---- TEACH-5S (v187): lessons for Spanish and Discover (docs/TEACH-PLAN-2.md batch 5, part 1; src/js/52s-bench5s.js, 52t-lessons5s.js,
+// src/css/52s-teach5s.css, the words file 52s-words5.js, in the lazy part teaches). Spanish: listen, sort, say with me, fix the pet's el or la;
+// Discover (Nature Trail's K-2 science): predict, look, explain. Their own registry (LS_B5, batch 5s), so the TEACH-4 checks do not run them;
+// every check that runs every lesson (LS-STOP's, fix179's pet turns) does. ----
+const B5S_IDS='es_animal1 es_food1 es_body1 es_family1 es_house1 es_clothes1 es_school1 es_trans1 es_art1 sci_life1 sci_earth1 sci_phys1'.split(' ');
+run('teach: Spanish and Discover lessons, the part, their shapes, their read-through, migration 9 TEACH-5S',()=>{
+  const p=[],A=require('./author.js'),DW=draftWords(),R=teachApp(),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  // 0. the part: teaches is lazy, right after teachrd; not in index.html; precached; the Spanish and Discover maps load it and add the offer
+  for(const f of ['52s-bench5s.js','52s-words5.js','52t-lessons5s.js','52s-teach5s.css'])if(partOf(f)!=='teaches')p.push(f+' is not in the teaches part');
+  if(LAZY.indexOf('teaches')!==LAZY.indexOf('teachrd')+1)p.push('teaches must be lazy, right after teachrd: '+JSON.stringify(LAZY));
+  const ft='teaches.'+BUILD_VER+'.js';
+  if(!fs.existsSync(path.join(ROOT,ft)))p.push(ft+' not built; run python3 tools/build.py first');
+  else{if([...rd('index.html').matchAll(/<script src="([^"]*)"/g)].some(m=>m[1]===ft))p.push('index.html loads '+ft+' at start');
+    if(!rd('sw.js').includes("'./"+ft+"'"))p.push('sw.js does not precache '+ft);if(Buffer.byteLength(rd(ft))>PART_WARN)p.push(ft+' is over '+PART_WARN)}
+  if(/ls6Spanish|LS6_FLOAT|lsDraft5\(/.test(rd('index.html')))p.push('batch 5s lesson code is in index.html');
+  if(Buffer.byteLength(rd('index.html'))>=1000000)p.push('index.html is 1,000,000 bytes or more');
+  const home=rd('src/js/46-home.js');
+  if(!/if\(p=='es'\|\|p=='disc'\)teachWarm\(p\)/.test(home)||!/partsLoad\(\['teach','teach12','teachrd','teaches'\]\)/.test(home))p.push('the Spanish and Discover maps do not load teaches (teachWarm)');
+  if(!/if\(\(p=='es'\|\|p=='disc'\)&&typeof LS!='undefined'\)setTimeout\(\(\)=>LS\.mapAdd\(\),0\)/.test(home))p.push('the Spanish and Discover maps do not add the lesson offer');
+  if(!/'teaches', typeof TEACHES_VER === 'undefined' \? null : TEACHES_VER/.test(rd('src/js/90-app.js')))p.push('appFiles() does not list teaches');
+  // nothing in these lessons listens or sends: "say it with me" has the child say the word aloud and tap "I said it!"
+  for(const f of ['52s-bench5s.js','52t-lessons5s.js'])if(/getUserMedia|MediaRecorder|SpeechRecognition|webkitSpeech|fetch\(|XMLHttpRequest|sendBeacon|WebSocket/.test(rd('src/js/'+f)))p.push(f+' records, listens or sends');
+  // 1. the lessons: these 12 stops, live, in LS_B5 (not LS_B4) and LS_STOPS, real stops with their names, their shape; drafts that pass,
+  //    unreviewed or reviewed (the owner approved batch 5s on 2026-11-19), their words live exactly when reviewed
+  const g=R(`(()=>{const o={};for(const id of ${JSON.stringify(B5S_IDS)}){const L=LESSONS[id],D=LS_DRAFTED[id],p=L&&L.p,i=p?NODES[p].findIndex(n=>nid(n)===id):-1;
+    o[id]={i,p,live:!!L,b5:LS_B5.includes(id),b4:LS_B4.includes(id),stop:!!(p&&LS_STOPS[p]&&LS_STOPS[p].has(id)),b5s:!!(D&&D.b5s),fam:D&&D.fam,t:L&&L.t,nt:i<0?null:NODES[p][i].t,
+      wn:i<0?null:PATHS[p].worlds[NODES[p][i].wi].n,band:L&&L.band,words:!!(L&&!L.fb),lsw:typeof LSW5!='undefined'&&LSW5[id]?JSON.stringify(LSW5[id]):null}}return o})()`);
+  for(const id of B5S_IDS){const x=g[id],sp=id.startsWith('es_');if(x.i<0){p.push(id+': no such stop');continue}
+    if(!x.live||!x.b5||x.b4||!x.stop||!x.b5s||x.band!=='5'||x.p!==(sp?'es':'disc')||x.fam!==(sp?'es':'disc'))p.push(id+': not a live batch 5s lesson with its lesson stop '+JSON.stringify(x));
+    if(x.t!==x.nt)p.push(id+': not named as its stop');if(!sp&&x.wn!=='Nature Trail')p.push(id+': not a Nature Trail stop');
+    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      // owner approved 2026-11-19: a draft is unreviewed or reviewed (by a named reviewer, with the date); its words are live exactly when
+      // reviewed, and the live words (LSW5) are exactly the reviewed draft's
+      if(d.status!=='unreviewed'&&d.status!=='reviewed')p.push(id+': draft '+d.status);
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date');
+      if(x.words!==(d.status==='reviewed')||!!x.lsw!==(d.status==='reviewed'))p.push(id+': its words live '+x.words+' (LSW5 '+!!x.lsw+') but its draft is '+d.status);
+      if(d.status==='reviewed'&&x.lsw&&x.lsw!==JSON.stringify({idea:d.idea,beats:d.beats,reasons:d.reasons,home:d.home}))p.push(id+': LSW5 is not its reviewed draft\'s words')}}
+  if(R('LS_B5.slice().sort().join()')!==B5S_IDS.slice().sort().join())p.push('the batch 5s lessons are not these 12');
+  // the gate in the app (owner approved 2026-11-19, so the live drafts are reviewed): on a fresh app, the same lesson made again with its
+  // words taken out of LSW5, as an unreviewed draft is, runs on the hand-written fallback words; with them back, on its reviewed words
+  {const R2=teachApp(),gt=R2(`(()=>{const o={};for(const id of ['es_animal1','es_art1','sci_life1','sci_phys1']){const D=LS_DRAFTED[id],w=LSW5[id];if(!w){o[id]='no reviewed words';continue}
+    delete LSW5[id];lsDraft5(id,D);const off=!!(LESSONS[id]&&LESSONS[id].fb);LSW5[id]=w;lsDraft5(id,D);const on=!!(LESSONS[id]&&!LESSONS[id].fb&&LESSONS[id].w===w);o[id]=off&&on?'':'unreviewed fallback '+off+', reviewed words '+on}return o})()`);
+    for(const id in gt)if(gt[id]&&DW[id]&&DW[id].status==='reviewed')p.push(id+' (batch 5s gate): '+gt[id])}
+  for(const m of ['es','disc'])if(R(`[...LS_STOPS.${m}].sort().join()`)!==R(`LS_IDS.filter(id=>LESSONS[id].p=='${m}').sort().join()`))p.push('LS_STOPS.'+m+' is not the live lessons of that map');
+  // 2. who gets them: Spanish at every grade (one map for all), Nature Trail's for Pre-K to 2nd; their parts; lessons off; the planner inside each subject
+  const b=R(`(()=>{const o={},at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id);loadSave(null);for(const p in PATHS)S.maps[p]=S.maps[p]||{};
+    for(const gr of [-1,0,2,3,6]){S.grade=gr;o[gr]={es:lsStopAt('es',at('es','es_animal1')),disc:lsStopAt('disc',at('disc','sci_life1'))}}
+    S.grade=0;o.parts=lsParts('es',at('es','es_food1')).join()+'|'+lsParts('disc',at('disc','sci_phys1')).join();
+    TEACH.off=true;o.off=lsStopAt('es',at('es','es_animal1'))||lsStopAt('disc',at('disc','sci_life1'));TEACH.off=false;
+    o.d=(planToday(S,100,'disc')||{}).id;for(let n=0;n<at('es','es_animal1');n++)setSt('es',n,2);o.e=(planToday(S,100,'es')||{}).id;
+    S.grade=4;o.e4=(planToday(S,100,'es')||{}).id;o.d4=(planToday(S,100,'disc')||{}).id;S.grade=0;
+    o.gate=lsGate('es',at('es','es_animal1'))&&!lsGate('es',at('es','es_greet1'));return o})()`);
+  for(const gr of [-1,0,2,3,6])if(!b[gr].es)p.push('grade '+gr+': no Spanish lesson stop (one Spanish map for every grade)');
+  for(const gr of [-1,0,2])if(!b[gr].disc)p.push('grade '+gr+': no Nature Trail lesson stop');for(const gr of [3,6])if(b[gr].disc)p.push('grade '+gr+': a K-2 Discover lesson stop');
+  if(b.parts!=='teach,teach12,teachrd,teaches|teach,teach12,teachrd,teaches')p.push('lsParts: '+b.parts);if(b.off)p.push('lessons off still has a Spanish or Discover lesson stop');
+  if(b.d!=='sci_life1'||b.e!=='es_animal1'||b.e4!=='es_animal1'||b.d4||!b.gate)p.push('the plan or the gate: '+JSON.stringify(b));
+  // 3. every question, Explore, Name it and warm-up: buttons named, no hole, never a choice of two, the right answer taken, no picture or hint
+  //    that shows the answer, "look" only after an answer (Discover), every line in the pet's tone for its ages (Spanish: all three)
+  const m=R(`(()=>{const bad=[],lines=new Set(),txt=h=>String(h).replace(/<[^>]*>/g,' '),ages={};let looks=0,said=0;
+    const tone=(t,id)=>{if(t==null)return;lines.add(t);for(const a of (LESSONS[id].p=='es'?['little','kid','teen']:['little']))for(const x of lsToneBad(lsPlain(t),a))bad.push(id+' '+a+': '+x+': '+t)};
+    for(const id of LS_B5){const L=LESSONS[id],es=L.p=='es';
+      for(let s=1;s<=25;s++){const r=mulberry32(s);
+        for(const st of [0,1,2,3]){const q=L.q(st,r),h=q.html+(q.kind=='choice'?q.choices.map(c=>c.l).join(''):'')+(q.kind=='sort'?q.items.map(c=>c.l).join('')+q.bins.map(c=>c.l).join(''):'');
+          if([...h.matchAll(/<button[^>]*>/g)].some(x=>!/aria-label="[^"]+"/.test(x[0])))bad.push(id+': a button with no name');if(/undefined|NaN|null/.test(h+q.say+(q.tell||[]).join(' ')))bad.push(id+': a hole in '+q.label);
+          if(q.st!==Math.min(st,2))bad.push(id+' stage '+st+': q.st '+q.st);if(st>0&&q.kind!=='choice')bad.push(id+' stage '+st+': '+q.kind);
+          if(q.kind=='choice'&&q.choices.length<3)bad.push(id+': a choice of two');if(st==3&&q.kind=='choice'&&q.choices.length<3)bad.push(id+': Show of two');
+          if(!lsOk(q,lsRight(q)))bad.push(id+' stage '+st+': its right answer is not taken');for(const c in q.bug){if(!BUGS[c])bad.push(id+': unknown code '+c);for(const v of q.bug[c])if(lsOk(q,String(v)))bad.push(id+' '+c+': predicts a right answer '+v)}
+          // no picture on the question, and no hint, shows or says the answer: the prompt's own text (not the choices) never holds it
+          const sh=q.kind=='choice'&&q.choices.some(c=>c.v=='shade'),ans=q.kind=='choice'&&!sh?(es?q.ans:(q.choices.find(c=>c.v===q.ans).h?ls6N(q.ans):q.ans)):null,pr=txt(q.html),hn=q.hint.s||''; // the sun or the shade: both places are the question itself
+          if(ans&&(pr.includes(ans)||hn.includes(ans)))bad.push(id+': the question or its hint shows the answer '+ans+' ('+q.label+')');
+          if(!es&&q.look==null)bad.push(id+': no "look" line after '+q.label);if(q.look){looks++;if((q.say+' '+(q.tell||[]).join(' ')).includes(q.look))bad.push(id+': the look line is said before the answer');tone(q.look,id)}
+          tone(q.say,id);(q.tell||[]).forEach(t=>tone(t,id));said++}
+        const e=L.exp(r);if(e.q.kind!=='sort'||e.q.look)bad.push(id+': Explore is not a sort with nothing shown after it');if(!es&&e.q.goal!=='any')bad.push(id+': Discover Explore is not a guess (any answer)');
+        if(!lsOk(e.q,lsRight(e.q)))bad.push(id+': Explore: the right sort is not taken');tone(e.q.say,id);tone(e.nudge,id);
+        const re=e.react(lsRight(e.q)),n=L.name(Object.assign({},re.ctx),r);re.lines.concat(n.lines).forEach(t=>tone(t,id));if(/undefined|NaN/.test(n.html+n.lines.join(' ')))bad.push(id+': Name it has a hole');
+        if(es){const w=n.also&&n.also[0];if(!w||w.m!=='say'||w.nx!=='I said it!'||!/«(el|la) [^»]+»/.test(w.lines.join(' ')))bad.push(id+': no "say it with me" after Name it');else w.lines.forEach(t=>tone(t,id))}
+        else if(n.also)bad.push(id+': a Discover lesson with say it with me');
+        if(L.warm){const w=L.warm(r);tone(w.say,id);(w.tell||[]).forEach(t=>tone(t,id));if(w.kind=='choice'&&w.choices.length<3)bad.push(id+': a warm-up of two')}}
+      const F=lsFallback4(LS_DRAFTED[id]);[F.idea,...F.beats.name,...F.beats.check,...Object.values(F.reasons).flat()].forEach(t=>tone(t,id));
+      if(!/\\{name\\}/.test(F.home)||F.home.length>90)bad.push(id+': tonight\\'s question '+F.home);if(!/\\{ans\\}/.test(LS_DRAFTED[id].claim))bad.push(id+': the claim does not say the answer')}
+    for(const a of ['little','kid','teen'])tone(LS6_SAY[a],'es_animal1');
+    for(const c of ['esArt','esEnd','esWord','dBig','dMove','dStill','dSun','dAll']){if(!BUGS[c]||!LSREP.NOTE[c])bad.push(c+': no repair line or grown-ups line');else for(const a of ['little','kid','teen'])if(lsToneBad(BUGS[c].say,a).length)bad.push(c+': repair line for '+a)}
+    // Spanish in a line: «...» is said in Spanish, and in a Spanish lesson el and la said alone too; the caption drops the marks
+    const sr=JSON.stringify(lsRuns('«el perro» is an el word.',true)),sn=JSON.stringify(lsRuns('Is it el or la?',false));
+    if(sr!=='[["el perro",1],["is an",0],["el",1],["word.",0]]'||sn!=='[["Is it el or la?",0]]'||lsPlain('«la vaca».')!=='la vaca.')bad.push('lsRuns '+sr+' '+sn);
+    // review fix (v186): a phrase is never cut across two voices: a title ("A la Escuela") or a quote stays English, an unmarked units
+    // word after el / la is one Spanish piece with it
+    for(const [t,w] of [['A la Escuela','[["A la Escuela",0]]'],['Ask Sam: "la moto" ends in o.','[["Ask Sam: \\\\"la moto\\\\" ends in o.",0]]'],
+      ['Is it la vaca?','[["Is it",0],["la vaca",1]]'],['El or La? Listen for el or la.','[["El",1],["or",0],["La",1],["? Listen for",0],["el",1],["or",0],["la",1]]']]){
+      const g=JSON.stringify(lsRuns(t,true));if(g!==w)bad.push('lsRuns('+t+'): '+g)}
+    // the engine: Name it's extra items, "look" after an answer (never before a retry), "I said it!", Spanish said in its own voice
+    if(!/concat\\(n\\.also \\|\\| \\[\\]\\)/.test(String(LS.beat)))bad.push('Name it does not add say it with me (LS.beat)');
+    if(!/it\\.q\\.look/.test(String(LS.answer))||!/it\\.nx \\|\\| 'Next'/.test(String(LS.show))||!/lsSay\\(t, me && me\\.L\\.p\\)/.test(String(LS.talk)))bad.push('the engine does not say look, I said it! or Spanish');
+    {S.know={};S.grade=0;const st=LS.make('sci_phys1',{seed:3,day:100,learn:1});LS.beat(st,LSB.indexOf('tog'));const it=LS.cur(st),w=it.q.kind=='choice'?it.q.choices.find(c=>c.v!==it.q.ans).v:'x|x|x|x';
+      const r1=LS.answer(st,w);if(r1.act!=='retry'||r1.lines.includes(it.q.look))bad.push('a miss says what happens before the retry: '+JSON.stringify(r1));const r2=LS.answer(st,lsRight(it.q));if(!r2.lines.includes(it.q.look))bad.push('a right answer does not say what happens')}
+    return {bad:[...new Set(bad)].slice(0,40),n:lines.size,looks,said}})()`);
+  p.push(...m.bad);
+  // 4. the read-through: batch 5s only, in map order (Spanish, then Discover), equal to docs/drafts/BATCH5S-READ.md; every other batch leaves these out
+  const rt=A.readThrough([],{batch:'5s'}),un=B5S_IDS.filter(id=>DW[id]&&DW[id].status==='unreviewed');
+  for(const id of un)if(!rt.includes('('+id+')'))p.push('the batch 5s read-through has no '+id);
+  if(rt.split('\n').some(l=>l.length>140))p.push('the batch 5s read-through has lines too long for a phone');
+  if(un.includes('es_animal1')&&un.includes('sci_phys1')&&!(rt.indexOf('(es_animal1)')>=0&&rt.indexOf('(es_animal1)')<rt.indexOf('(es_art1)')&&rt.indexOf('(es_art1)')<rt.indexOf('(sci_life1)')))p.push('the batch 5s read-through is not in map order');
+  const bf=path.join(ROOT,'docs/drafts/BATCH5S-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH5S-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH5S-READ.md is not what node tools/author.js --read <file> --batch 5s gives now');
+  // owner approved 2026-11-19: with nothing waiting the tool says so (BATCH5S-READ.md stays as the record of what was approved, as batches 2, 3, 4, 3b and 5r)
+  if(!un.length&&!/Nothing is waiting/.test(rt))p.push('nothing in batch 5s waits, but the read-through does not say so');
+  for(const bt of [2,3,4,'3b','5r']){const t=A.readThrough([],{batch:bt});for(const id of B5S_IDS)if(t.includes('('+id+')'))p.push('the batch '+bt+' read-through has the batch 5s lesson '+id)}
+  if(A.batchOf('es_animal1')!=='5s'||A.batchOf('sci_phys1')!=='5s'||A.batchOf('sight1')!=='5r')p.push('batchOf: batch 5s');
+  if(!/approve all --batch 5s/.test(un.length||!fs.existsSync(bf)?rt:fs.readFileSync(bf,'utf8')))p.push('the read-through does not say how to approve this batch only');
+  // 5. migration 9 (save v9 -> v10): a save that reached a batch 5s stop keeps it open; idempotent; a new save keeps none
+  const mg=R(`(()=>{const bad=[],at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id);
+    loadSave(null);for(const p in PATHS)S.maps[p]=S.maps[p]||{};S.grade=1;const i=at('es','es_animal1'),d=at('disc','sci_earth1');for(let n=0;n<i;n++)setSt('es',n,2);setSt('disc',d-1,2);
+    S.v=9;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==10)bad.push('v '+S.v);
+    for(const id of ['es_animal1','sci_earth1'])if(!S.lsOpen||!S.lsOpen[id])bad.push(id+' reached before v187 is not kept open: '+JSON.stringify(S.lsOpen));
+    if(S.lsOpen&&(S.lsOpen.es_food1||S.lsOpen.sci_phys1||S.lsOpen.es_art1))bad.push('a stop not reached was kept open: '+JSON.stringify(S.lsOpen));
+    if(lsGate('es',i)||lsGate('disc',d))bad.push('a kept stop is locked after the migration');
+    const keep=JSON.stringify(S.lsOpen);MIGRATIONS[9]();if(JSON.stringify(S.lsOpen)!==keep)bad.push('migration 9 is not idempotent');
+    setSt('disc',d,2);if(!lsGate('disc',d+1))bad.push('the stop after a kept one still waits for its lesson');
+    loadSave(${JSON.stringify(fx('midway'))});migrate();for(const p of['math','read','es','disc'])NODES[p].forEach((n,x)=>{if(passed(p,x)&&lsGate(p,x))bad.push('a passed stop is locked: '+nid(n))});
+    loadSave(null);migrate();if(S.lsOpen)bad.push('a new save has kept stops');
+    return bad})()`);
+  p.push(...mg);
+  const src=fs.readFileSync(path.join(SRC,'js','00-core.js'),'utf8'),f9=((src.match(/TEACH-5S \(v187\)[\s\S]*?new Set\('([^']+)'/)||[])[1]||'').split(' ').sort().join();
+  if(f9!==B5S_IDS.slice().sort().join())p.push('migration 9 does not freeze the lessons of batch 5s (v187): '+f9);
+  return{problems:p,note:B5S_IDS.length+' batch 5s lessons (9 Spanish, every grade; 3 Discover, K-2); '+un.length+' drafts wait for the owner in BATCH5S-READ.md; '+m.n+' lines checked for tone, '+m.said+' questions, '+m.looks+' look lines'};
+});
+run('teach: every Spanish noun of the lessons has the article and gender of the app\'s Spanish data TEACH-5S',()=>{
+  // what a child hears as right is right: every "el ..." / "la ..." a Spanish lesson shows or says as right is a word of the Spanish units with that
+  // article (and ES_GRAM agrees); el is a masculine word, la a feminine one (a feminine word that takes el, el agua, is never used); every "wrong" form the
+  // pet or a choice offers is wrong by the data; the words that break the last-letter rule are exactly the data's; every right form has a recording
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],right=new Set(),wrong=new Set(),U={},G={},FEM_EL=['agua'],art=f=>{const m=/^(el|la) (.+)$/.exec(f);return m?[m[1],m[2]]:null};
+    for(const u of ES_UNITS)for(const it of u.items)if(it[3])(U[it[0]]=U[it[0]]||new Set()).add(it[3]);
+    for(const n of ES_GRAM.nouns)G[n[0]]=n[3];
+    const ok=f=>{const a=art(f);return !!a&&!!U[a[1]]&&U[a[1]].size===1&&U[a[1]].has(a[0])};
+    const isR=(f,w)=>{const a=art(f);if(!a){bad.push(w+': not an el or la phrase: '+f);return}right.add(f);
+      if(!U[a[1]])bad.push(w+': '+f+' is not a word of the Spanish units');else if(!ok(f))bad.push(w+': '+f+', but the units say '+[...U[a[1]]].join('/'));
+      if(G[a[1]]&&G[a[1]]!==a[0])bad.push(w+': '+f+', but ES_GRAM says '+G[a[1]]);if(FEM_EL.includes(a[1]))bad.push(w+': '+f+' is a feminine word that takes el')};
+    const isW=(f,w)=>{const a=art(f);if(!a||!U[a[1]]||ok(f))bad.push(w+': a "wrong" form that is right, or not a word: '+f);wrong.add(f)};
+    const ids=LS_B5.filter(x=>LESSONS[x].p=='es');let n=0;
+    for(const id of ids){const L=LESSONS[id];
+      for(let s=1;s<=60;s++){const r=mulberry32(s);
+        for(const st of [0,1,2,3]){const q=L.q(st,r);n++;
+          if(q.kind=='sort'){for(const c of q.items){isR(c.v,id);if(c.say!==c.v||c.lang!=='es'||art(c.v)[0]!==c.b)bad.push(id+': '+c.v+' is said '+c.say+' and sorted into '+c.b)}continue}
+          isR(q.ans,id);for(const c of q.choices)if(c.v!==q.ans)(ok(c.v)?isR:isW)(c.v,id);
+          // review fix (v186): no picture that fits two answers: el bebé (a baby girl is la bebé) and la cocina (its pan and egg fit el huevo)
+          for(const c of q.choices)if(/^(?:el|la) (?:bebé|cocina)$/.test(c.v))bad.push(id+': '+c.v+' offered (its picture fits another answer)');
+          for(const c of ['esArt','esEnd'])for(const v of q.bug[c]||[]){isW(v,id);if(art(v)[1]!==art(q.ans)[1])bad.push(id+': '+c+' '+v+' is not the answer with the other article')}
+          const br=ls6Breaks([art(q.ans)[1],'','',art(q.ans)[0]]);if(br&&q.bug.esArt||!br&&q.bug.esEnd&&st>0)bad.push(id+': esArt / esEnd on '+q.ans)}
+        const e=L.exp(r);e.q.items.forEach(c=>isR(c.v,id));const c=e.react().ctx;isR(c.a,id);isR(c.b,id);if(art(c.a)[0]!=='el'||art(c.b)[0]!=='la')bad.push(id+': Name it el / la '+JSON.stringify(c));
+        const w=L.warm&&L.warm(r);if(w&&/^(el|la) /.test(w.ans))isR(w.ans,id)}}
+    // the last-letter rule (-o el, -a la) and the words of these units that break it, from the data
+    const used=[...right].map(art),brk=used.filter(([a,w])=>ls6Rule([w])&&ls6Rule([w])!==a).map(x=>x.join(' '));
+    const dataBrk=[...new Set(LS_B5.filter(x=>LESSONS[x].p=='es').flatMap(x=>ls6Nouns(LS_DRAFTED[x].units)).map(([it])=>it).filter(it=>{const e=ls6Bare(it[0]).slice(-1);return e=='o'&&it[3]=='la'||e=='a'&&it[3]=='el'}).map(it=>it[3]+' '+it[0]))];
+    if([...new Set(brk)].sort().join()!==dataBrk.sort().join())bad.push('the words that break the last-letter rule: '+[...new Set(brk)].join()+' (the data: '+dataBrk.join()+')');
+    const rec=[...right].filter(f=>!ES_AUDIO.lines[esKey(f)]),wrec=[...wrong].filter(f=>ES_AUDIO.lines[esKey(f)]);
+    if(rec.length)bad.push('right forms with no Spanish recording: '+rec.join(', '));
+    return{bad:[...new Set(bad)].slice(0,40),n,right:right.size,wrong:wrong.size,brk:[...new Set(brk)].sort(),wrec:wrec.length}})()`);
+  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered (said by the tablet\'s Spanish voice: not recorded); the last-letter rule breaks for '+r.brk.join(', ')};
+});
+run('teach: simulated children on Spanish and Discover lessons, Check me always wrong when forced, fresh items on resume TEACH-5S',()=>{
+  // the TEACH-1 children on the 12 batch 5s lessons (Spanish as a Kindergartner and, for the tone, a 5th grader; Discover as a Kindergartner): the learner
+  // gains on every lesson, the guesser and the partial knower do not, the knower tests out and a guesser seldom; every forced-wrong pet turn is wrong
+  // (Spanish: a wrong el or la); no show-me or Show item is a choice of two; every lesson finishes; a lesson resumed at Show asks fresh items
+  const R=teachApp();
+  const r=R(`(()=>{const K=${TEACH_KIDS},out={},N=60,KIDS=[['guesser',0,0],['partial',.5,0],['learner',.1,.25],['knower',.95,0]],ids=LS_B5,bad=[];let fresh=0,res=0,art=0,petN=0;
+    for(const [nm,p0,g] of KIDS){const t={pre:0,post:0,to:0,n:0,per:{}};
+      for(const id of ids){S.grade=0;let a=0,b=0,to=0;for(let i=0;i<N;i++){S.know={};S.lm=[];if(LESSONS[id].p=='es')S.grade=i%2?5:0;const rr=mulberry32(9000+i*7+id.length),c=K.kid(p0,g,rr);
+        const {st,stuck}=K.run(id,c,i*31+5);if(stuck)bad.push(id+': did not finish ('+nm+')');a+=st.pre.filter(Boolean).length;b+=st.post.filter(Boolean).length;to+=st.to?1:0}
+        t.per[id]=[a/N/2,b/N/2,to/N];t.pre+=a/N/2;t.post+=b/N/2;t.to+=to/N;t.n++}
+      out[nm]={pre:t.pre/t.n,post:t.post/t.n,to:t.to/t.n,per:t.per}}
+    for(const id of ids){S.grade=0;
+      for(let s=1;s<=40;s++){S.know={};const y=LS.make(id,{seed:s,day:100,proof:true});y.chkN=1+(s%2);LS.beat(y,LSB.indexOf('chk'));const f=LS.cur(y);petN++;
+        if(!f||f.m!=='judge'||f.petOk||lsOk(f.q,String(f.pv))||!f.code)bad.push(id+': a forced pet turn is not wrong by a code '+(f&&f.pv));
+        if(LESSONS[id].p=='es'&&f&&['esArt','esEnd'].includes(f.code))art++;if(f&&!/\\{|undefined/.test(f.lines.join(' '))&&!f.lines.some(l=>l.includes(String(lsSayV(f.q,f.pv)))))bad.push(id+': the pet does not say its answer')}
+      for(let s=1;s<=40;s++){const q=LESSONS[id].q(LESSONS[id].test,mulberry32(s));if(q.kind=='choice'&&q.choices.length<3)bad.push(id+': a two-choice show-me or Show item')}
+      for(let s=1;s<=10;s++){S.know={};const y=LS.make(id,{seed:s,day:100,proof:true});LS.beat(y,LSB.indexOf('show'));const seen=y.items.map(x=>x.q.label);LS.keep(y);
+        const z=LS.make(id,LS.resume(S.les,100));res++;if(!seen.includes(LS.cur(z).q.label))fresh++}}
+    S.grade=0;return{out,bad:[...new Set(bad)].slice(0,30),fresh,res,art,petN}})()`);
+  const p=r.bad.slice(),f=x=>Math.round(x*100),gain=x=>x.post-x.pre,o=r.out,L=o.learner,G=o.guesser;
+  for(const id in L.per)if(L.per[id][1]-L.per[id][0]<.3)p.push(id+': the learner gains only '+f(L.per[id][1]-L.per[id][0])+' points');
+  if(!(gain(L)>=.5))p.push('the learner gains '+f(gain(L))+' points');if(Math.abs(gain(G))>.05)p.push('the guesser "gains" '+f(gain(G))+' points');
+  if(Math.abs(gain(o.partial))>.08)p.push('the partial knower "gains" '+f(gain(o.partial))+' points');if(!(o.knower.to>=.8))p.push('the knower tests out '+f(o.knower.to)+'%');
+  for(const id in G.per)if(G.per[id][2]>.15)p.push(id+': the guesser tests out '+f(G.per[id][2])+'%');
+  if(r.art!==9*40)p.push('the Spanish pet\'s forced slip is a wrong el or la in '+r.art+' of '+9*40+' turns');
+  if(r.fresh<r.res)p.push('a resumed Show asked an item already seen in '+(r.res-r.fresh)+' of '+r.res+' resumes');
+  return{problems:p,note:Object.entries(o).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')+'; '+r.fresh+' of '+r.res+' resumes fresh; the Spanish pet\'s forced slip is el or la in '+r.art+' of 360'};
+});
+run('home: the review tile shows whenever anything is due, lessons on or off TEACH-5S',()=>{
+  // Review fix (v186; a design change from TEACH-5S, which hid the tile while every due item was at a stop whose lesson the child had learned):
+  // lesson Remember asks one lesson a day and updates S.know only, never the review queue (S.rev), so those items stayed due, and the "Do today's
+  // review" mission is one of up to six shuffled candidates for two slots, so it was no sure way in. Now the tile shows whenever anything is due:
+  // at a learned lesson's stop too, with lessons on or off; nothing due still shows "All caught up!"; the row keeps its two or three tiles
+  const R=teachApp();
+  const o=R(`(()=>{const o={},item=(sk,lv,l)=>({sk,lv,seed:5,label:l,box:0,due:0,n:1});loadSave(null);for(const p in PATHS)S.maps[p]=S.maps[p]||{};S.grade=1;
+    const tile=()=>{const h=hmToday();
+      return{rev:/<button class="hm-tile" id="rev"/.test(h),ok:/All caught up!/.test(h),tiles:(h.match(/<button class="hm-tile"/g)||[]).length+(/<div class="hm-tile ok"/.test(h)?1:0),
+        flu:/id="flu"/.test(h),cls:(h.match(/class="hm-today( n\\d)?"/)||[])[1]||''}};
+    S.rev=[item('add',1,'3 + 4')];S.know={};o.unlearned=tile();
+    S.know={add1:{s:2,box:0,due:200,d:1,last:1,n:1,lv:[[0,0],[0,0],[0,0]],b:{}}};o.learned=tile();o.gone=typeof revCovered!='undefined';
+    TEACH.off=true;o.off=tile();TEACH.off=false;
+    S.rev.push(item('es_greet',1,'hola'));o.mixed=tile();
+    S.rev=[];o.none=tile();
+    return o})()`);
+  const p=[];
+  for(const k of ['unlearned','learned','off','mixed'])if(!o[k].rev||o[k].ok)p.push(k+': items are due but there is no review tile');
+  if(o.none.rev||!o.none.ok)p.push('nothing due: "All caught up!" is gone');
+  if(o.gone)p.push('revCovered (the rule that hid the tile) is still in the code');
+  for(const k of ['unlearned','learned','off','mixed','none']){const x=o[k],want=x.flu?'':' n2';if(x.tiles!==(x.flu?3:2)||x.cls!==want)p.push(k+': '+x.tiles+' tiles in a row of class "'+x.cls+'"')}
+  if(/\.hm-today\.n1\b/.test(fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8')))p.push('the one-tile row style is left over');
+  return{problems:p,note:'a due item at a learned lesson\'s stop keeps its review tile; lessons off the same; nothing due: All caught up!'};
 });
 
 // ---- TEACH-4: reading for K to 2nd grade, and the Pre-K lessons of Tiny Town and ABC Beach (docs/TEACH-PLAN-2.md batch 4; src/js/52k-words4.js,
@@ -21027,7 +21566,7 @@ run('recorded teacher lines TEACH-4',()=>{
   const ctx=E.loadApp(),lines=EA.collectTeach(ctx),M=vm.runInContext('typeof EN_TEACH=="undefined"?null:EN_TEACH',ctx),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
   if(!M)return{problems:['no EN_TEACH: run node tools/en-audio.js --teach']};
   if(M.dir!==EA.TEACH_DIR||M.voice!==EA.TEACH_VOICE||!EA.VOICES.some(v=>v[0]===M.voice))p.push('EN_TEACH: dir '+M.dir+', voice '+M.voice+' (one of the EN-PRAISE voices)');
-  if(lines.size<60||lines.size>110)p.push(lines.size+' teacher lines (want about 70)');
+  if(lines.size<60||lines.size>200)p.push(lines.size+' teacher lines (want at most 200: the owner raised the cap from 110 on 2026-11-19)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
     if(f!==EA.teachFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
@@ -21131,7 +21670,7 @@ run('lesson stops: the list, the gate, lessons off, the migration LS-STOP',()=>{
   // 6. the migration (save v6 -> v7): a save with passed stops keeps every stop it could play; the frozen list is the lessons of v179
   const m=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id);
     loadSave(${JSON.stringify(fx('midway'))});for(let n=1;n<6;n++)MIGRATIONS[n]();const before=JSON.stringify(S.maps);loadSave(${JSON.stringify(fx('midway'))});migrate();
-    if(S.v!==LATEST||LATEST!==9)bad.push('v '+S.v); // TEACH-3b: migration 7 raised LATEST to 8; READ-SHAPES: migration 8 to 9
+    if(S.v!==LATEST||LATEST!==10)bad.push('v '+S.v); // TEACH-3b: migration 7 raised LATEST to 8; READ-SHAPES: migration 8 to 9; TEACH-5S: migration 9 to 10
     {const B=JSON.parse(before);for(const p in B)for(const k in B[p])if(S.maps[p][k]!==B[p][k])bad.push('the migration changed the map progress: '+p+' '+k)}
     const open0=[];for(const p of['math','read'])NODES[p].forEach((n,k)=>{if(passed(p,k)&&(!unlocked(p,k)||lsGate(p,k)))bad.push('a passed stop is locked: '+nid(n));if(lsGate(p,k))open0.push(nid(n))});
     if(!S.lsOpen||!S.lsOpen.cnt2||!S.lsOpen.sound3)bad.push('the stops the child had reached were not kept open: '+JSON.stringify(S.lsOpen));
@@ -21915,7 +22454,7 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
     loadSave(null);migrate();if(JSON.stringify(S.ints)!=='[]')bad.push('a new save has no S.ints []');
     loadSave(JSON.stringify({name:'Old',v:9,maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='[]')bad.push('an old save gets no S.ints []');
     loadSave(JSON.stringify({name:'Old',v:9,ints:['space'],maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='["space"]')bad.push('a save loses its interests');
-    if(LATEST!==9)bad.push('LATEST is '+LATEST+' (PERS-01 adds no migration)');
+    if(LATEST!==10)bad.push('LATEST is '+LATEST+' (PERS-01 adds no migration)'); // TEACH-5S: migration 9 raised LATEST to 10
     return bad})()`));
   // the app as built (owner approved 2026-11-19): PERSW holds the reviewed interests' words exactly; with no interest picked a story is the
   // default question byte for byte (the same as with nothing reviewed); with a reviewed interest picked, levels 1-6 tell its things
@@ -21952,6 +22491,240 @@ run('story themes: the gate, the words, slots and plurals, the save, the parts P
   if(!/<div id="gw-pers" hidden><\/div>/.test(g)||!/persGrown\(\);/.test(g))p.push('Grown-ups has no Story themes placeholder or does not fill it');
   if(!/PERS_MAX = 3/.test(pk)||!/S\.ints = S\.ints\.filter/.test(pk)||!/save\(\);/.test(pk))p.push('the picker does not keep to 3 or does not save S.ints');
   return{problems:p,note:ids.length+' interests drafted, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
+});
+
+// ---- ASK-01: "Ask the pet" ----
+// a fresh app (every part) with every question draft's words (ASKW) and the button on (ASK_ON): the live words since the owner approved
+// all 8 on 2026-11-19; a draft not yet reviewed is added here as if approved (the ASK-01 gate check tests the words as built)
+const askApp=()=>{const R=hintApp(),A=require('./author.js'),ds=A.askDrafts().filter(x=>x.d);
+  R('Object.assign(ASKW,'+JSON.stringify(Object.fromEntries(ds.map(x=>[x.d.id,{q:x.d.q,a:x.d.a}])))+');ASK_ON='+ds.length+';S.voice=false;');
+  return {R,A,ds}};
+run('ask the pet: the gate, the words, the tone, the parts, nothing saved ASK-01',()=>{
+  const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  // 1. the parts: the menu and its words in the lazy part hints; only the count (ASK_ON), the button and the last mistake in index.html
+  for(const f of ['39r-ask.js','39s-askw.js','39r-ask.css'])if(partOf(f)!=='hints')p.push(f+' is not in the hints part');
+  if(partOf('39t-askon.js'))p.push('39t-askon.js is not in index.html');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size;if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  // 2. the drafts: one per question of ASK_Q, each passes every check; the menu is short (6 to 10)
+  const defs=A.askDefs(),ds=A.askDrafts(),ids=ds.filter(x=>x.d).map(x=>x.d.id);
+  if(defs.length<6||defs.length>10)p.push('ASK_Q has '+defs.length+' questions (about 6 to 10)');
+  for(const q of defs)if(!ids.includes(q.id))p.push(q.id+': no draft in docs/drafts/ask');
+  for(const x of ds){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.id+': '+x.problems.slice(0,3).join('; '))}
+  // the checks catch what they are for (the tone of each age, slots, numbers, themes, telling off)
+  const d0=JSON.parse(JSON.stringify(ds.find(x=>x.d&&x.d.id==='time').d)),bad=(f,re,w)=>{const d=JSON.parse(JSON.stringify(d0));f(d);if(!A.checkAsk(d).some(x=>re.test(x)))p.push('checkAsk misses '+w)};
+  bad(d=>d.a.little.ok=['You have {time} of game time and that is a lot of time to play with today!'],/little: 12 at most/,'a little pet line over 12 words');
+  bad(d=>d.a.kid.ok=['Yay! You have {time} of game time.'],/not how the kid pet talks/,'baby praise from the older kid');
+  bad(d=>d.a.teen.ok=['Awesome, {time} of game time.'],/not how the teen pet talks/,'the little one\'s words from the teen');
+  bad(d=>d.a.little.ok=['You have game time!'],/says \{time\} 0 times/,'an answer without its main slot');
+  bad(d=>d.a.little.ok=['You have {time} and {stop}.'],/is not a slot here/,'a slot the situation does not have');
+  bad(d=>d.a.little.ok=['You have {time}, five more!'],/number word/,'a number word');
+  bad(d=>d.a.little.ok=['You have {time}, 5 more!'],/a number written/,'a digit');
+  bad(d=>d.a.little.ok=['A magic spell gives you {time}.'],/ruled out/,'a banned theme');
+  bad(d=>d.a.little.empty=['That was bad. No time.'],/tells the child off/,'telling the child off');
+  bad(d=>{delete d.a.teen.paused},/a\.teen\.paused: one or two lines/,'a missing situation');
+  bad(d=>d.q='How much game time do I have and when can I play it?',/longer than 9 words/,'a long question');
+  // 3. the gate: 39s-askw.js has the reviewed questions only (all 8 since the owner approved them on 2026-11-19), 39t-askon.js counts them;
+  //    a draft is unreviewed or reviewed, a reviewed one names its reviewer and the date, and its live words are exactly its draft's;
+  //    the words check holds; the gate on a copy
+  const rev=ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.id).sort();
+  const AW=Function(rd('src/js/39s-askw.js')+';return ASKW')(),live=Object.keys(AW).sort(),on=Function(rd('src/js/39t-askon.js')+';return ASK_ON')();
+  if(JSON.stringify(rev)!==JSON.stringify(live))p.push('39s-askw.js has '+JSON.stringify(live)+' but the reviewed questions are '+JSON.stringify(rev));
+  for(const x of ds)if(x.d){if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(x.d.id+': status '+x.d.status); // owner approved 2026-11-19
+    if(x.d.status==='reviewed'){if(!revNamed(x.file))p.push(x.d.id+': reviewed, but its status line names no reviewer and date');
+      if(JSON.stringify(AW[x.d.id])!==JSON.stringify({q:x.d.q,a:x.d.a}))p.push(x.d.id+': 39s-askw.js is not its reviewed draft\'s words')}}
+  if(on!==rev.length)p.push('ASK_ON is '+on+' with '+rev.length+' reviewed');
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'ask-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/ask'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),"/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n");
+  const one={id:'zz',q:'Is it so?',a:{little:{help:['Yes.']}}};
+  const aw=b=>"/* ---------- ASK-01: the \"Ask the pet\" questions and answers the owner has reviewed (part hints) ----------\n   BUILT by tools/build.py from docs/drafts/ask/<id>.md (\"status: reviewed ...\"): never edit by hand. A question that is\n   not reviewed is never here, so it is never on the menu (39r-ask.js). */\nconst ASKW = {\n"+b+"};\n";
+  const ao=n=>"/* ASK-01: BUILT by tools/build.py (never edit): how many \"Ask the pet\" questions are reviewed (ASKW, 39s-askw.js, part hints).\n   0: Home and the map draw no Ask button (a let: tools/smoke.js sets it to try the menu). */\nlet ASK_ON = "+n+";\n";
+  const line='  "zz": '+JSON.stringify({q:one.q,a:one.a})+',\n';
+  const dj='\n```json\n'+JSON.stringify(one)+'\n```\n',chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(st,w,n)=>{fs.writeFileSync(path.join(tmp,'docs/drafts/ask/zz.md'),'# Ask the pet: Is it so? (zz)\n\nstatus: '+st+'\n'+dj);fs.writeFileSync(path.join(tmp,'src/js/39s-askw.js'),aw(w));fs.writeFileSync(path.join(tmp,'src/js/39t-askon.js'),ao(n))};
+  put('unreviewed',line,1);if(chk()!==1)p.push('the words check passes an unreviewed question');
+  put('unreviewed','',1);if(chk()!==1)p.push('the words check passes ASK_ON 1 with nothing reviewed');
+  put('unreviewed','',0);if(chk()!==0)p.push('the words check refuses an empty menu for an unreviewed question');
+  put('reviewed Test Owner 2026-11-19','',0);if(chk()!==1)p.push('the words check passes a reviewed question left out');
+  put('reviewed Test Owner 2026-11-19',line,1);if(chk()!==0)p.push('the words check refuses a reviewed question');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // 4. in the app: nothing reviewed = no button, no menu; reviewed = a 48 px button with a spoken name beside the pet on Home and the map;
+  // the pet's age as the lessons'; asking saves nothing and changes no score, star or game time; no migration
+  // (owner approved 2026-11-19: the app as built has the reviewed questions' words exactly and a menu of them; the gate is then tested
+  // in that same fresh app by setting ASK_ON to 0 and emptying ASKW, as for questions not reviewed)
+  const R=hintApp();
+  p.push(...R(`(()=>{const bad=[],rev=${JSON.stringify(Object.fromEntries(ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>[x.d.id,{q:x.d.q,a:x.d.a}])))};
+    if(ASK_ON!==${rev.length})bad.push('ASK_ON in the app is '+ASK_ON);
+    if(Object.keys(ASKW).sort().join()!==Object.keys(rev).sort().join()||Object.keys(rev).some(k=>JSON.stringify(ASKW[k])!==JSON.stringify(rev[k])))bad.push('ASKW in the app is not the reviewed drafts\\' words');
+    if(${rev.length}&&!askItems({p:'math'}).length)bad.push('no menu with '+${rev.length}+' questions reviewed');
+    const keep=ASK_ON;ASK_ON=0;if(askBtn('ak-hm')!=='')bad.push('a button with nothing reviewed');ASK_ON=3;
+    const b=askBtn('ak-hm');if(!/^<button class="btn icon ak-btn ak-hm" aria-label="Ask .+ a question">/.test(b)||!b.includes('ic-question')&&!b.includes('question'))bad.push('the button: '+b.slice(0,120));ASK_ON=keep;
+    for(const k in ASKW)delete ASKW[k];if(askItems({p:'math'}).length)bad.push('a menu with nothing reviewed');
+    for(let g=-1;g<=6;g++)if(askAge(g)!==lsAge(g))bad.push('askAge('+g+') is '+askAge(g)+', lsAge '+lsAge(g));
+    if(LATEST!==10)bad.push('LATEST is '+LATEST+' (ASK-01 adds no migration)'); // TEACH-5S: migration 9 raised LATEST to 10
+    return bad})()`));
+  const {R:R2}=askApp();
+  // (pt(), ptCfg() and careTick() fill in their own defaults and the care meters' time when read: those are left out)
+  p.push(...R2(`(()=>{const bad=[],sv=save;let calls=0;save=()=>{calls++};const snap=()=>JSON.stringify(Object.assign({},S,{care:0,pt:0,ptCfg:0}));
+    askItems({p:'math'});const before=snap();ASK_LM={q:genQ('add',2,3),v:'1',k:SKEY};
+    try{for(const p of ['math','read','es','disc'])for(let g=-1;g<=6;g++){S.grade=g;askItems({p})}}finally{save=sv}S.grade=2;
+    if(snap()!==before.replace(/"grade":-?\\d+/,'"grade":2'))bad.push('asking changed the save');if(calls)bad.push('asking saved '+calls+' times');ASK_LM=null;return bad})()`));
+  const hm=rd('src/js/46-home.js'),rnd=rd('src/js/50-round.js'),ak=rd('src/js/39r-ask.js'),css=rd('src/css/39r-ask.css');
+  if(!/\$\{askBtn\('ak-hm'\)\}<\/div>/.test(hm)||!/askBtn\('ak-mp'/.test(hm)||(hm.match(/askBind\(\)/g)||[]).length<3)p.push('Home or the map does not draw and bind the Ask button');
+  if(/askBtn|askOpen/.test(rnd))p.push('the round draws an Ask button (Ask is never inside a round)');
+  if(!/ASK_LM=\{q,v,k:SKEY\};/.test(rnd))p.push('check() does not keep the last mistake');
+  if(/save\(|S\.[a-z]+\s*=[^=]/.test(ak))p.push('39r-ask.js writes the save');
+  if(/#[0-9a-f]{3,6}\b|rgba?\(/i.test(css))p.push('39r-ask.css has a colour that is not a token');
+  // 5. the read-through: every question and answer; the same as the tool writes now
+  const rf=path.join(ROOT,'docs/drafts/ASK-READ.md');
+  if(!fs.existsSync(rf))p.push('no docs/drafts/ASK-READ.md');else{const t=fs.readFileSync(rf,'utf8');
+    if(t!==A.askRead())p.push('docs/drafts/ASK-READ.md is not what node tools/author.js --ask-read gives now');
+    for(const x of ds.filter(y=>y.d)){if(!t.includes(x.d.q))p.push('the read-through misses '+x.d.id);for(const a in x.d.a)for(const v in x.d.a[a])for(const l of x.d.a[a][v])if(!t.includes(l))p.push('the read-through misses '+x.d.id+' '+a+' '+v)}}
+  return{problems:p,note:defs.length+' questions drafted, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
+});
+run('ask the pet: every slot from real state across fixtures and grades, no answer gives a Practice answer away, kid-safe ASK-01',()=>{
+  const {R,A}=askApp(),p=[],fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const saves={fresh:null};for(const n of ['midway','maxed','tricky','legacy-single-map','legacy-index-maps'])saves[n]=fx(n);
+  const HL=hintLines();
+  const r=R(`(()=>{const bad=[],seen={},saves=${JSON.stringify(saves)},BANNED=${String(A.BANNED)},HL=${JSON.stringify(HL)};let n=0;
+    const store={};localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const has=(a,x)=>String(a).includes(String(x));
+    // one menu, checked: every answer filled, its slots the real state, kid-safe, the same whether a question is left open or not
+    const check=(tag,p)=>{const its=askItems({p}),keepG=G;G=null;const its0=askItems({p});G=keepG;
+      for(const x of its){n++;seen[x.id+'/'+x.v]=(seen[x.id+'/'+x.v]||0)+1;const w=tag+' '+p+' '+x.id+'/'+x.v+': ';
+        if(/[{}]|undefined|NaN|null|\\[object/.test(x.q+' '+x.a))bad.push(w+'a slot left: '+x.q+' / '+x.a);
+        const i=curNode(p),nd=NODES[p][i],own=t=>t.split(nd.t).join(' ').split(PATHS[p].worlds[nd.wi].n).join(' '); // the app's own stop names ("Spell Big Words") are not the pet's words
+        if(ksBad(x.a,true)||ksBad(x.q,true)||BANNED.test(own(x.a))||BANNED.test(own(x.q)))bad.push(w+'not kid-safe: '+x.a);
+        if(x.id=='next'&&x.v!='done'&&(!has(x.a,nd.t)||(x.v=='lesson')!==lsGate(p,i)))bad.push(w+'not the next stop '+nd.t+': '+x.a);
+        if(x.id=='next'&&x.v=='done'&&(!passed(p,i)||!has(x.a,placeName(p))))bad.push(w+'done but '+nd.t+' is not passed: '+x.a);
+        if(x.id=='how'&&(!lsStopAt(p,i)||!has(x.a,LESSONS[nid(nd)].idea)||!has(x.q,nd.t)))bad.push(w+'not the idea line of '+nid(nd)+': '+x.a);
+        if(x.id=='time'){const t=ptState();if(x.v!==(t.why=='ok'&&t.left<=0?'empty':t.why))bad.push(w+'game time is '+t.why);
+          if(x.v=='ok'&&!has(x.a,askMins(t.left)))bad.push(w+'not the bank '+t.left+' s: '+x.a);if(x.v=='learn'&&!has(x.a,askMins(t.more)))bad.push(w+'not the time to learn: '+x.a);
+          if(x.v=='max'&&!has(x.a,t.max+' minutes'))bad.push(w+'not the limit: '+x.a)}
+        if(x.id=='earn'&&(x.v=='lesson')!==(!TEACH.off&&lsPayCfg().ls1>0)||x.id=='earn'&&x.v=='lesson'&&!has(x.a,lsPayCfg().ls1+' minute'))bad.push(w+'not what a lesson pays: '+x.a);
+        if(x.id=='grow'){const st=stage(),nx=GROW[st+1];if(nx==null?x.v!='big':(x.v!=(st?'grow':'egg')||!new RegExp('\\\\b'+(nx-S.stars)+' more stars?\\\\b').test(x.a)))bad.push(w+'not the stars to grow ('+S.stars+'): '+x.a)}
+        if(x.id=='feel'){const c=careTick(),v=c.food<30?'hungry':c.clean<30?'messy':c.fun<30?'bored':'happy';if(x.v!=v)bad.push(w+'the pet is '+v)}
+        if(x.id=='why'&&!ASK_LM)bad.push(w+'a why with no mistake');
+        if(x.id!='why'){const y=its0.find(z=>z.id==x.id);if(!y||y.a!==x.a)bad.push(w+'changes with the open question')}
+      }
+      if(ASK_LM&&ASK_LM.k===SKEY&&!its.some(x=>x.id=='why'))bad.push(tag+' '+p+': no why after a mistake');
+      const age=askAge(),lo=age=='little'?3:5; // ASK-READ: the little pet offers at most 5 (ASK_LITTLE), the older pets 5 to 10
+      if(its.length<lo||its.length>ASK_MAX[age])bad.push(tag+' '+p+': '+its.length+' questions for the '+age+' pet')};
+    for(const k in saves)for(let g=-1;g<=6;g++){
+      for(const s in store)delete store[s];loadSave(saves[k]);migrate();S.name=S.name||'Mia';S.grade=g;G=null;ASK_LM=null;
+      for(const p of ['math','read','es','disc'])check(k+' grade '+g,p);
+      // the states each answer is about, forced: game time (paused, a rule to learn first, today's limit, empty, a bank), what a lesson
+      // pays (lessons off, a grown-up's 0), the pet's stars (egg, growing, grown) and care (each need), every stop of a map passed
+      const pc=JSON.stringify(S.ptCfg||{}),pp=JSON.stringify(pt()),st=S.stars,cr=JSON.stringify(careTick()),off=S.lsOff;
+      const set=[()=>{S.ptCfg={pause:true}},()=>{S.ptCfg={need:15};pt().open=''},()=>{S.ptCfg={max:20};pt().used=1200;pt().bank=300},()=>{pt().bank=0},()=>{pt().bank=270},
+        ()=>{TEACH.off=true},()=>{S.ptCfg={ls1:0}},()=>{S.stars=0},()=>{S.stars=55},()=>{S.stars=9999},
+        ()=>{S.care={food:5,clean:80,fun:80,t:Date.now(),gift:''}},()=>{S.care={food:80,clean:5,fun:80,t:Date.now(),gift:''}},()=>{S.care={food:80,clean:80,fun:5,t:Date.now(),gift:''}}];
+      for(const f of set){f();check(k+' grade '+g+' forced',g%2?'math':'read');S.ptCfg=JSON.parse(pc);S.pt=JSON.parse(pp);S.stars=st;S.care=JSON.parse(cr);if(off)S.lsOff=off;else delete S.lsOff}
+      if(g==1){const keep=JSON.stringify(S.maps.read);NODES.read.forEach((nd,i)=>S.maps.read[nid(nd)]=3);check(k+' all read passed','read');S.maps.read=JSON.parse(keep)}
+    }
+    // the last mistake: every Practice skill, every level, a few seeds; the child's wrong answer is a known mistake when there is one
+    // (else the answer and one), with and without the HINT-01 lines approved; the question is left open (G.q). The why answer never
+    // holds the answer (as a number, its number word, or a word), and is the approved line, else the question's usual hint, else none
+    loadSave(null);S.name='Mia';migrate();let tips=0,looks=0,approved=0,miss=0;
+    for(const sk of Object.keys(SK))for(let lv=1;lv<=(SK[sk].max||1);lv++)for(let seed=1;seed<=3;seed++){
+      let q;try{q=genQ(sk,lv,seed)}catch(e){continue}if(!q||q.ans==null||Array.isArray(q.ans))continue;
+      let v=null;try{const pr=typeof hmPredict=='function'?hmPredict(q):[];v=pr.length?pr[0].v:null}catch(e){}
+      if(v==null)v=/^\\d+$/.test(String(q.ans))?String(+q.ans+1):'zzz';
+      for(const on of [false,true]){for(const k in HINTW)delete HINTW[k];if(on)Object.assign(HINTW,HL);
+        S.grade=[0,2,4,6][seed%4];G={q};ASK_LM={q,v,k:SKEY};miss++;
+        const x=askItems({p:'math'}).find(y=>y.id=='why');
+        if(!x){bad.push(sk+lv+': no why');continue}
+        if(x.v=='tip')tips++;else looks++;seen['why/'+x.v]=(seen['why/'+x.v]||0)+1;
+        const a=String(q.ans).toLowerCase(),low=x.a.toLowerCase();
+        for(const part of a.split('|').map(z=>z.trim().replace(/^\\+/,'')).filter(z=>z&&!['yes','no'].includes(z))){
+          if(/^\\d+$/.test(part)?new RegExp('(^|[^\\\\d.])'+part+'([^\\\\d]|$)').test(low)||ASK_NUMW[+part]&&new RegExp('\\\\b'+ASK_NUMW[+part]+'\\\\b').test(low):part.length>1&&low.includes(part)&&!/^[\\d.,\\/ ]+$/.test(part)&&new RegExp('(^|[^a-z0-9])'+part.replace(/[.*+?^$()|[\\]\\\\{}]/g,'\\\\$&')+'([^a-z0-9]|$)').test(low))
+            bad.push(sk+lv+' seed '+seed+': the why answer says the answer '+q.ans+': '+x.a)}
+        const m=on&&!TEACH.off&&!twoWay(q)?hmMatch(q,v):null,line=m&&HINTW[m.c]?hmFill(HINTW[m.c],m.s):null;
+        if(x.v=='tip'&&line&&!askLeak(q,line)&&!ksBad(line,true)){approved++;if(!x.a.includes(line))bad.push(sk+lv+': not the approved hint "'+line+'": '+x.a)}
+        else if(x.v=='tip'&&!x.a.includes(askGenHint(q)))bad.push(sk+lv+': not the usual hint: '+x.a);
+        if(ksBad(x.a,true))bad.push(sk+lv+': not kid-safe: '+x.a)}}
+    G=null;ASK_LM=null;for(const k in HINTW)delete HINTW[k];
+    return {bad,n,seen,tips,looks,approved,miss}})()`);
+  p.push(...r.bad.slice(0,25));
+  for(const q of A.askDefs())for(const v in q.v)if(!r.seen[q.id+'/'+v])p.push('never answered: '+q.id+'/'+v);
+  if(r.approved<100)p.push('the approved mistake hint was the why answer only '+r.approved+' times');
+  return{problems:p,note:r.n+' answers over 6 saves x 8 grades x 4 maps and forced states, every situation reached; '+r.miss+' mistakes: '+r.tips+' with a hint ('+r.approved+' approved HINT-01 lines), '+r.looks+' with none, never the answer'};
+});
+run('ask the pet: audio-first for non-readers (the menu read in the order shown, a tap stops it, question before answer, distinct icons, 5 for the little pet) ASK-READ ASK-01',()=>{
+  const {R,A}=askApp(),p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const r=R(`(()=>{const bad=[],log=[],Q=[];let T=1e6,H=0;
+    // a tablet that can speak (canSpeak: speechSynthesis and SpeechSynthesisUtterance on window)
+    if(typeof window=='undefined')globalThis.window=globalThis;globalThis.SpeechSynthesisUtterance=globalThis.SpeechSynthesisUtterance||function(){};
+    const keep={say,hush,speakBusy,setTimeout,now:Date.now,sheet:UI.sheet,pop:SFX.pop,noVoice};
+    say=(t,b,l,q)=>log.push([String(t),q?1:0,lit()]);hush=()=>{H++};speakBusy=()=>false;setTimeout=f=>{Q.push(f)};Date.now=()=>T;SFX.pop=()=>{};
+    // a pretend sheet: the buttons in the order askOpen draws them, with the listeners it binds
+    let el=null,L={},html='';
+    const btn=id=>{const c=new Set();return{dataset:{ask:id},attrs:{},classList:{add:x=>c.add(x),remove:x=>c.delete(x),contains:x=>c.has(x)},setAttribute(k,v){this.attrs[k]=v},onclick:null}};
+    const lit=()=>el?el.bs.filter(b=>b.classList.contains('ak-now')).map(b=>b.dataset.ask).join(','):'';
+    UI.sheet=(h,o)=>{html=h;const bs=[...h.matchAll(/class="btn soft ak-q" data-ask="([a-z]+)"/g)].map(m=>btn(m[1])),hear={onclick:null};
+      el={bs,isConnected:true,parentNode:{addEventListener:(t,f,c)=>{if(c)L[t]=f}},querySelectorAll:s=>s=='.ak-q'?bs:[],
+        querySelector:s=>s=='#ak-hear'?hear:s=='#ak-done'?{}:s=='#ak-a'?(el.ans||(el.ans={dataset:{},textContent:''})):null,hear};
+      return{el,close(){if(o&&o.onClose)o.onClose()}}};
+    const drain=(n=400)=>{while(Q.length&&n--){T+=200;Q.shift()()}};
+    const off=TEACH.off;TEACH.off=true; // no lesson part to load in this pretend app (the little pet has no "how" anyway)
+    try{
+      S.grade=1;S.voice=false;ASK_LM={q:genQ('add',2,3),v:'99',k:SKEY};
+      const items=askItems({p:'math'}),ids=items.map(x=>x.id);
+      if(!askReadOn())bad.push('a 1st grader with the voice setting off does not hear the menu');
+      askOpen(null);
+      const shown=el?el.bs.map(b=>b.dataset.ask):[];
+      if(JSON.stringify(shown)!==JSON.stringify(ids))bad.push('the sheet shows '+shown+' not '+ids);
+      // 1. the reading: "You can ask me:", then every question in the order shown, each button lit while it is said, all queued
+      drain();
+      const want=[ASK_SHEET.intro].concat(items.map(x=>x.q)),said=log.map(x=>x[0]),lits=log.map(x=>x[2]);
+      if(JSON.stringify(said)!==JSON.stringify(want))bad.push('the menu is read as '+JSON.stringify(said)+', not '+JSON.stringify(want));
+      if(JSON.stringify(lits)!==JSON.stringify([''].concat(ids)))bad.push('the light moved '+JSON.stringify(lits)+', not with the reading');
+      if(log.some(x=>!x[1]))bad.push('a line of the reading cut what was being said (not queued)');
+      if(lit()||ASKR.on)bad.push('the reading did not end: '+lit());
+      // 2. a tap anywhere stops it at once: no more lines, no light, the voice hushed
+      log.length=0;el.hear.onclick({currentTarget:el.hear});drain(3);const n0=log.length,h0=H;
+      if(n0<2||!ASKR.on)bad.push('"Hear the questions again" did not start the reading ('+n0+' lines)');
+      if(!L.pointerdown||!L.keydown)bad.push('no tap or key on the sheet stops the reading');else L.pointerdown({});
+      drain();
+      if(log.length!==n0)bad.push('the reading went on after a tap: '+JSON.stringify(log.slice(n0)));
+      if(lit()||ASKR.on||H<=h0)bad.push('a tap left the reading on (lit '+lit()+', hushed '+(H-h0)+')');
+      // 3. a tap on a question (while it reads) stops the reading, then says the question, then the answer (queued behind it)
+      for(const x of items){
+        el.hear.onclick({currentTarget:el.hear});drain(2);log.length=0;
+        const b=el.bs.find(y=>y.dataset.ask==x.id);if(L.pointerdown)L.pointerdown({});b.onclick();drain();
+        const s2=log.map(y=>y[0]);
+        if(JSON.stringify(s2)!==JSON.stringify([x.q,x.a])||log[0][1]||!log[1][1])bad.push(x.id+': a tap says '+JSON.stringify(log)+', not the question then the answer');
+        if(el.ans.textContent!==x.a||b.attrs['aria-pressed']!=='true'||lit())bad.push(x.id+': the answer is not shown, or the light stayed')}
+      // closing the sheet stops it too
+      el.hear.onclick({currentTarget:el.hear});drain(2);askHush.call(null);if(ASKR.on)bad.push('closing did not stop the reading');
+      // 4. the little pet: at most 5, only ASK_LITTLE, on every map and grade, after a mistake or not; the older pets keep the rest
+      const seen={little:new Set(),kid:new Set(),teen:new Set()};TEACH.off=off;
+      for(let g=-1;g<=6;g++)for(const lm of [null,{q:genQ('add',2,3),v:'99',k:SKEY}])for(const mp of ['math','read','es','disc']){S.grade=g;ASK_LM=lm;
+        const its=askItems({p:mp}),age=askAge();its.forEach(x=>seen[age].add(x.id));
+        if(age=='little'&&(its.length>5||its.some(x=>!ASK_LITTLE.includes(x.id))))bad.push('grade '+g+' '+mp+': the little pet offers '+its.map(x=>x.id))}
+      if(seen.little.size!==5||[...seen.kid].length<7)bad.push('menus seen: little '+[...seen.little]+'; kid '+[...seen.kid]);
+      // who hears it on its own: the little and older kid pets when prompts are read aloud; the teen on the button only
+      S.grade=1;S.voice=false;const a1=askReadOn();S.grade=3;const a3=askReadOn();S.voice=true;const a3v=askReadOn();S.grade=5;const a5=askReadOn();
+      if(!a1||a3||!a3v||a5)bad.push('read on its own: grade 1 '+a1+', grade 3 (voice off) '+a3+', grade 3 '+a3v+', grade 5 '+a5);
+      // 5. one icon each, 32 px, matching its meaning
+      const ics=ASK_Q.map(q=>q.icon),M={next:['pin'],time:['clock','ticket'],grow:['egg','star'],feel:['heart'],stuck:['help'],how:['hint'],why:['question']};
+      if(new Set(ics).size!==ics.length)bad.push('two questions share an icon: '+ics);
+      for(const q of ASK_Q){if(!ICONS[q.icon])bad.push(q.id+': no icon '+q.icon);if(M[q.id]&&!M[q.id].includes(q.icon))bad.push(q.id+': icon '+q.icon+' is not '+M[q.id].join(' or '))}
+      if((html.match(/class="btn soft ak-q"[^>]*><svg class="ic" width="32"/g)||[]).length!==items.length)bad.push('a question icon is not 32 px on the left');
+      if(!/id="ak-hear"[^>]*><svg[^>]*><use href="#i-speak"\\/><\\/svg><span>Hear the questions again<\\/span>/.test(html)||!/btn soft sm ak-hear/.test(html))bad.push('no 48 px "Hear the questions again" button with the speaker');
+      if(html.indexOf('ak-hear')>html.indexOf('ak-bub'))bad.push('"Hear the questions again" is not at the top');
+    }catch(e){bad.push(String(e&&e.stack||e).split('\\n').slice(0,3).join(' '))}
+    finally{({say,hush,speakBusy,setTimeout}=keep);Date.now=keep.now;UI.sheet=keep.sheet;SFX.pop=keep.pop;TEACH.off=off;ASK_LM=null;ASKR.on=false}
+    return bad})()`);
+  p.push(...r);
+  // the words: only the intro and the button label are new, both in the read-through for the owner (unreviewed)
+  const W=A.askSheetWords(),t=rd('docs/drafts/ASK-READ.md');
+  if(W.intro!=='You can ask me:'||W.again!=='Hear the questions again')p.push('the sheet words are '+JSON.stringify(W));
+  if(!t.includes('## The sheet\'s own words (unreviewed)')||!t.includes('- intro: '+W.intro)||!t.includes('- again: '+W.again))p.push('the read-through misses the sheet\'s own words');
+  const ak=rd('src/js/39r-ask.js'),css=rd('src/css/39r-ask.css');
+  if(!/\.btn\.ak-q\.ak-now\{/.test(css)||/ak-now[^}]*(animation|transition)/.test(css))p.push('the lit question has no style, or it moves');
+  if(/new Audio|\.play\(|getUserMedia|SpeechRecognition/.test(ak))p.push('39r-ask.js plays a recording or listens');
+  return{problems:p,note:'menu read in shown order with the light, a tap stops it, question then answer; little pet: '+A.askSheetWords().little.join(', ')};
 });
 
 // ---- report ----

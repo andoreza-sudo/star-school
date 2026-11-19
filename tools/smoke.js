@@ -71,6 +71,125 @@ async function actRead(pg, act, reads, ev = 'click', sel = null) {
 
 // NAV-01: an end card's Home goes Home; tests that went on from a puzzle's level list open it again from there
 const HOME_ON = '#navbar .nb-home[aria-current="page"]';
+
+// G-MOVES (v188): real touch on a game page (CDP touch events, like the G-* segments), the 48 px / no sideways scroll look over the
+// given controls, a screenshot into tools/out/games5/, and the frame time of a running game at 6x CPU throttle (best of up to 4
+// passes while the machine is busy). sel: the controls the look measures.
+// review fix (v186): the most JS one frame of a boss race may take at 6x CPU throttle (ms). At 60 Hz a frame has 16.7 ms; the
+// browser's own drawing needs the rest
+const G5_JS_MS = 10;
+async function g5Kit(pg, sel) {
+  const cdp = await pg.context().newCDPSession(pg);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 3 });
+  const box = s => pg.evaluate(s => {
+    const e = document.querySelector(s);
+    if (!e) return null;
+    if (!e.closest('.hc, .rl, .hpg, .sn, .bb-wrap, .ovl')) e.scrollIntoView({ block: 'center' });
+    else if (e.closest('.bb-pal, .sn-ings, .sn-tabs')) e.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const r = e.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+  }, s);
+  const down = (x, y, id = 1) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: Math.round(x), y: Math.round(y), id, radiusX: 8, radiusY: 8, force: 1 }] });
+  const up = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const press = async (x, y, ms) => { await down(x, y); await pg.waitForTimeout(ms || 40); await up(); };
+  const touch = async (s, ms) => {
+    const b = await box(s);
+    if (!b) throw new Error('nothing to touch: ' + s);
+    await pg.waitForTimeout(120);
+    const c = await box(s);
+    await press(c.x, c.y, ms);
+    await pg.waitForTimeout(90);
+    return c;
+  };
+  const look = () => pg.evaluate(sel => {
+    const vw = document.documentElement.clientWidth, out = [];
+    for (const e of document.querySelectorAll(sel)) {
+      const r = e.getBoundingClientRect();
+      if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('[hidden]')) continue;
+      if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+      if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+      if (e.tagName == 'BUTTON' && !(e.getAttribute('aria-label') || e.textContent.trim())) out.push('no spoken name ' + (e.id || e.className));
+    }
+    if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+    for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+    return out;
+  }, sel);
+  const dir = require('path').join(__dirname, 'out', 'games5');
+  require('fs').mkdirSync(dir, { recursive: true });
+  const shots = [];
+  const shot = async n => { await pg.waitForTimeout(250); await pg.screenshot({ path: require('path').join(dir, n + '.png') }).catch(() => {}); shots.push('tools/out/games5/' + n + '.png'); };
+  // frame intervals (rAF) for 3 s at 6x CPU throttle; restart() is called between passes when the run may have ended.
+  // Review fix (v186): the interval alone comes in vsync buckets (16.7, 33.3 ms) and shows no margin, so each pass also measures
+  // the JS time per frame: the page's script time (CDP Performance ScriptDuration, at the throttle) over the window / frames drawn
+  const frames = async (restart) => {
+    const os = require('os'), cores = os.cpus().length;
+    let best = null, tries = 0, load = os.loadavg()[0];
+    await cdp.send('Performance.enable', { timeDomain: 'threadTicks' }).catch(() => cdp.send('Performance.enable'));
+    const metric = async () => { const m = (await cdp.send('Performance.getMetrics')).metrics, v = n => (m.find(q => q.name == n) || { value: 0 }).value; return [v('ScriptDuration'), v('TaskDuration')]; };
+    for (;;) {
+      await pg.evaluate(() => { window.__g5F = []; let last = 0; const f = ts => { if (last) window.__g5F.push(ts - last); last = ts; if (window.__g5F.length < 3000) requestAnimationFrame(f); }; requestAnimationFrame(f); });
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+      await pg.waitForTimeout(2000);
+      await pg.evaluate(() => { window.__g5F.length = 0; });
+      const s0 = await metric();
+      await pg.waitForTimeout(3000);
+      const s1 = await metric();
+      const r = await pg.evaluate(() => { const a = window.__g5F.slice().sort((x, y) => x - y); return { med: a[Math.floor(a.length / 2)] || 999, p90: a[Math.floor(a.length * .9)] || 999, n: a.length }; });
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      r.js = r.n ? +((s1[0] - s0[0]) * 1000 / r.n).toFixed(2) : 999;
+      r.task = r.n ? +((s1[1] - s0[1]) * 1000 / r.n).toFixed(2) : 999; // all main-thread work a frame (JS, style, layout, paint), for the notes
+      tries++;
+      load = os.loadavg()[0];
+      if (!best || r.js < best.js) best = Object.assign(r, { med: Math.min(r.med, best ? best.med : 999) });
+      else best.med = Math.min(best.med, r.med);
+      // a pass over a limit is tried again: up to 4 passes while the machine is busy, 2 when it is not (one slow pass is often a GC)
+      if ((best.med <= 34 && best.js <= G5_JS_MS) || tries >= 4 || (load <= cores && tries >= 2)) break;
+      if (restart) await restart();
+      await pg.waitForTimeout(600);
+    }
+    return Object.assign(best, { tries, load: +load.toFixed(1), cores });
+  };
+  // review fix (v186): a finger still down from the game when an end card opens (Hold to float, Dash, a build tap) must not press the
+  // card's button under it when it lifts (GH.end: a button needs a new press on the card). play(): starts the game (in the page),
+  // open(): opens its end card (in the page). The card is opened twice to find where btn sits (the second time, so a first-time line
+  // does not move it), then the game again with a finger held on that spot, the card opened under the finger, the finger lifted: the
+  // card must still be up. Then a new touch on btn must work. Returns the problems found.
+  const heldEnd = async (name, play, open, btn) => {
+    const out = [], clear = () => pg.evaluate(() => document.querySelectorAll('.ovl').forEach(o => o.remove()));
+    let b = null;
+    for (let k = 0, last = null; k < 5; k++) { // until the button sits where it sat the time before (a first-time line moves it)
+      await clear();
+      await pg.evaluate(play);
+      await pg.waitForTimeout(700);
+      await pg.evaluate(open);
+      await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
+      b = await box('.gh-end ' + btn);
+      if (last && Math.hypot(b.x - last.x, b.y - last.y) <= 2) break;
+      last = b;
+    }
+    await clear();
+    await pg.evaluate(play);
+    await pg.waitForTimeout(700);
+    await down(b.x, b.y);
+    await pg.waitForTimeout(400);
+    await pg.evaluate(open);
+    await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
+    const b2 = await box('.gh-end ' + btn);
+    if (Math.hypot(b2.x - b.x, b2.y - b.y) > 6) out.push(name + ': the card\'s ' + btn + ' moved between two openings; the held finger is not on it');
+    await pg.waitForTimeout(300);
+    await up();
+    await pg.waitForTimeout(600);
+    if (!await pg.evaluate(s => !!document.querySelector('.gh-end ' + s), btn)) out.push(name + ': the finger held from the game pressed ' + btn + ' on the end card when it lifted');
+    else {
+      await touch('.gh-end ' + btn);
+      await pg.waitForTimeout(600);
+      if (await pg.evaluate(s => !!document.querySelector('.gh-end ' + s), btn)) out.push(name + ': a new touch on ' + btn + ' did nothing');
+    }
+    await clear();
+    return out;
+  };
+  return { cdp, box, down, up, press, touch, look, shot, shots, frames, heldEnd };
+}
 async function btLevelsAgain(pg) {
   const run = await pg.evaluate(() => BT.act && [BT.act.run.id, BT.act.run.band]);
   await pg.click('#bthome');
@@ -621,7 +740,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","petage","hints"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","petage","hints"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -1144,7 +1263,7 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 9 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9
+      if (r0.v !== 10 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; TEACH-5S: migration 9 to 10
          r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
@@ -4734,6 +4853,7 @@ async function main() {
         if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/18/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
         await dp.click('.game[data-p="disc"]');
         await dp.waitForSelector('.node[data-n="0"]');
+        await lsLearnSel(dp, '.node[data-n="0"]'); // TEACH-5S: Living Things has a lesson now (LS-STOP's rule: a practice step marks a locked stop's lesson learned first)
         const map = await dp.evaluate(() => {
           const ns = [...document.querySelectorAll('.node')];
           return { n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
@@ -4765,6 +4885,7 @@ async function main() {
         await dp.waitForSelector('#navbar .nb-home[aria-current="page"]');
         await dp.evaluate(() => pathMap(MAPP));
         await dp.waitForSelector('#map');
+        await lsLearnSel(dp, '.node[data-n="1"]'); // TEACH-5S: Sky & Earth, the stop after it, has a lesson now (as above)
         const open2 = await dp.evaluate(() => [...document.querySelectorAll('.node')].map(n => n.classList.contains('lock')).join());
         if (open2.split(',').slice(0, 6).join() !== 'false,false,true,true,true,true') fail(`${tag}: map after the round: locks ${open2}`);
         await k2Old(dp, false);
@@ -8748,7 +8869,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 9 /* LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 10 /* TEACH-5S: 10 (migration 9); LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -10685,7 +10806,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage', 'hints'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'petage', 'hints'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too; TEACH-5S: teaches
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
@@ -10714,7 +10835,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false' || // ten lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage), less petage (Home's, filtered above): nine
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false,false' || // twelve lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; TEACH-5S: teaches; PET-AGE2: petage; hints), less petage and hints (filtered above): ten
             s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
@@ -10732,7 +10853,7 @@ async function main() {
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
-        if (s3.parts !== 'false,true,true,true,true,false,false,false,false' || // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's)
+        if (s3.parts !== 'false,true,true,true,true,false,false,false,false,false' || // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's; TEACH-5S: teaches, the Spanish and Discover maps')
             s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
@@ -11711,6 +11832,569 @@ async function main() {
       else step('GL-02: Star Rally picks the 2D look on WebGL drawn by the CPU (SwiftShader) and, with RGL.soft, draws in 3D (canvas under the 2D layer, frames, ' +
         '5-30 draw calls, context given back on leaving), the child\'s car fully seen at a tunnel mouth, in a tunnel and on a bridge, the 2D look when the menu\'s 3D switch is off ' +
         'and when WebGL is forced off; at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
+    }
+
+    // G-MV-HILL (G-MOVES, src/js/62-hill.js) at 380x780 and 1024x600, real touch, midway save with game time and the first world won:
+    // the Hop's card shows once over the menu (Got it! saves it, not shown again); the world's rival run card -> Bramble's screen
+    // (face, line, goal, prize, Back) -> Race Bramble! -> the drive has the Hop button (48 px, a touch hops once and is never Gas) and the
+    // rival on the progress bar -> Gas held to the flag before Bramble (after two runs not won, so Bramble is slower) -> "You beat
+    // Bramble!" with a crown, the bolts and the record saved -> Home; the menu card shows the win. At 1024x600 the frame time of a rival
+    // run at 6x CPU throttle (median at most 34 ms). 48 px controls, no sideways scroll. Screenshots: tools/out/games5/hill-*.
+    if (seg('G-MV-HILL')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-HILL ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .hc-menu button, .gh-boss button, .gh-end button, .gh-mvb button, #hchop');
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false;
+            S.garage = { st: { m1: 7, m2: 7, m3: 7, m4: 7, m5: 7 }, bs: { meadow: { n: 2, w: 0 } }, bolts: 10 };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#g4x4', { timeout: 15000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#g4x4');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/New move: Hop!/.test(mv) || !/Tap Hop/.test(mv)) bad.push(at + 'move card: ' + mv);
+          for (const o of await K.look()) bad.push(at + 'move card: ' + o);
+          await K.shot('hill-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => [garageS().hop, !!document.querySelector('.gh-mvb')].join()) !== '1,false') bad.push(at + 'Got it! did not close and save the card');
+          await pg.evaluate(() => garage());
+          await pg.waitForTimeout(800);
+          if (await pg.evaluate(() => !!document.querySelector('.gh-mvb'))) bad.push(at + 'the move card showed a second time');
+          await K.touch('.hc-wtabs [data-w="0"]'); // Green Meadow (the menu opens on the next goal's world)
+          await pg.waitForSelector('.hc-wt.on[data-w="0"]', { timeout: 8000 });
+          await K.touch('#hcboss');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Bramble/.test(bs) || !/Reach the flag before Bramble/.test(bs) || !/slower each time/.test(bs) || !/crown/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('hill-boss-' + w);
+          await K.touch('#back');
+          await pg.waitForSelector('.hc-menu #hcboss', { timeout: 8000 });
+          await K.touch('#hcboss');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          await K.touch('#gbgo');
+          await pg.waitForSelector('.hc #hchop', { timeout: 8000 });
+          await pg.waitForTimeout(1500);
+          const d0 = await pg.evaluate(() => ({ boss: !!(HC && HC.boss), hop: HC && HC.hop, rv: !!document.querySelector('#hcrv'), sub: document.querySelector('.gh-top').textContent }));
+          if (!d0.boss || !d0.hop || !d0.rv || !/race Bramble/.test(d0.sub)) bad.push(at + 'rival run: ' + JSON.stringify(d0));
+          for (const o of await K.look()) bad.push(at + 'drive: ' + o);
+          const hb = await K.box('#hchop');
+          await K.down(hb.x, hb.y);
+          await pg.waitForTimeout(120);
+          const hg = await pg.evaluate(() => ({ hops: HC.hops, gas: HC.gas }));
+          await K.up();
+          if (hg.hops !== 1 || hg.gas) bad.push(at + 'a touch on Hop: ' + JSON.stringify(hg));
+          await K.shot('hill-race-' + w);
+          const gb = await K.box('#pg');
+          await K.down(gb.x, gb.y);
+          const t0 = Date.now();
+          let res = '';
+          while (Date.now() - t0 < 90000) { await pg.waitForTimeout(500); res = await pg.evaluate(() => (!HC ? 'gone' : HC.over ? 'over' : 'drive')); if (res !== 'drive') break; }
+          await K.up();
+          await pg.waitForSelector('.gh-end', { timeout: 15000 });
+          await pg.waitForTimeout(600);
+          const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: garageS().bs.meadow, b: garageS().bolts,
+            pay: HC_BOSS_PAY[0] }));
+          if (!/You beat Bramble!/.test(e.t) || !/A crown for Green Meadow/.test(e.txt) || e.rec.w !== 1 || !(e.b >= 10 + e.pay)) bad.push(at + 'the end of the rival run: ' + JSON.stringify(e).slice(0, 300));
+          for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+          await K.shot('hill-won-' + w);
+          notes.push(w + 'x' + h + ': Bramble beaten in ' + Math.round((Date.now() - t0) / 1000) + ' s of held Gas, ' + e.b + ' bolts');
+          await K.touch('.gh-end #hchome');
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => garage());
+          await pg.waitForSelector('.hc-menu #hcboss', { timeout: 8000 });
+          if (!/You won/.test(await pg.evaluate(() => document.querySelector('#hcboss').textContent))) bad.push(at + 'the menu card should show the win');
+          if (w == 1024) {
+            const go = async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hcStart(0, null, null, true); }); await pg.waitForTimeout(700); const b = await K.box('#pg'); await K.down(b.x, b.y); };
+            await go();
+            const f = await K.frames(async () => { await K.up(); await go(); });
+            await K.up();
+            const drawn = await pg.evaluate(() => !!(HC && HC.boss));
+            if (f.med > 34 || !drawn || f.js > G5_JS_MS) bad.push(at + 'frame interval in a rival run at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms, JS ' + G5_JS_MS + ' ms a frame)');
+            notes.push(`6x throttle, rival run: JS ${f.js.toFixed(1)} ms a frame (main thread ${f.task.toFixed(1)} ms), median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            await pg.evaluate(() => { if (HC) hcEnd('quit'); });
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-HILL Hill Climb move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-HILL: Hill Climb by real touch at 380x780 and 1024x600: the Hop card once, Bramble\'s rival run screen, Back, the drive with the Hop ' +
+        'button (one hop, never Gas) and the rival on the bar, Bramble beaten by held Gas, the crown and bolts saved, the menu shows the win; 48 px, no sideways ' +
+        'scroll; ' + notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-RALLY (G-MOVES, src/js/63-game-race.js) at 380x780 and 1024x600, real touch, Easy, three races raced and the Sprout Cup raced
+    // to the end: the Drift card shows once; the Sprout Cup champion card -> Fern's screen -> Race Fern! -> one champion beside the car,
+    // the Drift button (48 px) held through the race (12x faster, a test hook) slides round the bends and zooms -> the end card (first:
+    // "You beat Fern!" and a crown; else "Fern won this time", one more race not won), the record and sparkles saved. At 1024x600 the
+    // frame time of a champion race at 6x CPU throttle (median at most 34 ms). Screenshots: tools/out/games5/rally-*.
+    if (seg('G-MV-RALLY')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-RALLY ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .rl-menu button, .gh-boss button, .gh-end button, .gh-mvb button, .rl-btn');
+        let stage = 'start';
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false;
+            S.rally = { races: 3, spk: 100, mode: 'easy', cups: { sprout: { best: 4, runs: 1 } }, bs: { sprout: { n: 6, w: 0 } } };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#grally', { timeout: 15000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#grally');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Drift/.test(mv) || !/bend/.test(mv)) bad.push(at + 'move card: ' + mv);
+          for (const o of await K.look()) bad.push(at + 'move card: ' + o);
+          await K.shot('rally-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => S.rally.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          const m = await pg.evaluate(() => ({ n: document.querySelectorAll('[data-champ]').length, open: [...document.querySelectorAll('[data-champ][data-ok="1"]')].map(b => b.dataset.champ).join(),
+            cups: document.querySelectorAll('.rl-cup').length }));
+          if (m.n !== 5 || m.open !== '0' || m.cups !== 10) bad.push(at + 'champion cards ' + JSON.stringify(m));
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          stage = 'champion card';
+          await K.touch('[data-champ="0"]');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Fern/.test(bs) || !/champion/.test(bs) || !/slower each time/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('rally-boss-' + w);
+          const spk0 = await pg.evaluate(() => S.rally.spk);
+          stage = 'race';
+          await K.touch('#gbgo');
+          await pg.waitForSelector('#rlcv #rldr, .rl #rldr', { timeout: 8000 });
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
+          const r0 = await pg.evaluate(() => ({ cars: RL.st.cars.length, who: RL.st.cars[0] && RL.st.cars[0].rv.name, sub: document.querySelector('.gh-top').textContent }));
+          if (r0.cars !== 1 || r0.who !== 'Fern' || !/Champion race with Fern/.test(r0.sub)) bad.push(at + 'champion race ' + JSON.stringify(r0));
+          for (const o of await K.look()) bad.push(at + 'race: ' + o);
+          await K.shot('rally-race-' + w);
+          const db = await K.box('#rldr');
+          await K.down(db.x, db.y);
+          await pg.waitForTimeout(200);
+          if (!await pg.evaluate(() => RL.on && RL.on.has('dr') && $('#rldr').classList.contains('on'))) bad.push(at + 'the Drift touch is not held');
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 60000 });
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          stage = 'end card';
+          await K.up();
+          await pg.waitForTimeout(500);
+          const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.rally.bs.sprout, spk: S.rally.spk, races: S.rally.races }));
+          const won = /You beat Fern!/.test(e.t);
+          if (!(won ? e.rec.w === 1 && /crown/.test(e.txt) && e.spk >= spk0 + 80 : /Fern won this time/.test(e.t) && e.rec.n === 7) || e.races !== 4 || !/drift zoom/.test(e.txt))
+            bad.push(at + 'the end of the champion race: ' + JSON.stringify(e).slice(0, 300));
+          for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+          await K.shot('rally-end-' + w);
+          notes.push(w + 'x' + h + ': ' + e.t + ' (' + (e.txt.match(/\d+ drift zooms?/) || ['no drift'])[0] + ')');
+          await K.touch('.gh-end #rlmenu');
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          if (w == 1024) {
+            const go = async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); rlRace('meadow-1', { champ: 0 }); }); await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 }); };
+            await go();
+            const f = await K.frames(go);
+            if (f.med > 34 || f.js > G5_JS_MS) bad.push(at + 'frame interval in a champion race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms, JS ' + G5_JS_MS + ' ms a frame)');
+            notes.push(`6x throttle, champion race: JS ${f.js.toFixed(1)} ms a frame (main thread ${f.task.toFixed(1)} ms), median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            await pg.evaluate(() => { if (RL) rlQuit(); });
+          }
+        } catch (x) {
+          bad.push(at + 'taps (' + stage + '): ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        await pg.evaluate(() => { if (typeof RL_DEV != 'undefined') RL_DEV.fast = 1; }).catch(() => {});
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-RALLY Star Rally move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-RALLY: Star Rally by real touch at 380x780 and 1024x600: the Drift card once, five champion cards (one open), Fern\'s screen, the ' +
+        'champion race one to one with Drift held through the bends, the end card and the record saved; 48 px, no sideways scroll; ' + notes.join('; ') +
+        '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-SNACK (G-MOVES, src/js/65-game-snack.js) at 380x780 and 1024x600, real touch, two days played and 2 stars at Sunny Park: the
+    // Star serve card shows once; the chef's card -> Chef Fern's screen -> the taste test (Calm, five orders, the chef's hat); at 380x780
+    // played to the end by touch: two plates wrong first (try again), then right; three right plates fill the Star meter, its button
+    // (48 px) arms it, the next right plate is a star serve; the end card ("You passed the taste test!", a crown, coins) and the record.
+    // At 1024x600 the test is left from the corner house: one test not won, nothing lost. Screenshots: tools/out/games5/snack-*.
+    if (seg('G-MV-SNACK')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-SNACK ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .sn-menu button, .gh-boss button, .gh-end button, .gh-mvb button, .sn-counter button, .sn-tab, .sn-ing');
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false;
+            S.snack = { days: 2, coins: 50, stars: { park: 2 }, mode: 'calm', place: 'park', tw: today() };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#gsnack', { timeout: 8000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#gsnack');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Star serve/.test(mv)) bad.push(at + 'move card: ' + mv);
+          await K.shot('snack-move-' + w);
+          await K.touch('#gmvok');
+          await pg.evaluate(() => { SN_DEV.fast = 3; }); // the day's clock 3x faster (test hook, as in G-04a)
+          if (await pg.evaluate(() => S.snack.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          await K.touch('#snchef');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Chef Fern/.test(bs) || !/right the first time/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('snack-boss-' + w);
+          await K.touch('#gbgo');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.waitForTimeout(600);
+          const d0 = await pg.evaluate(() => ({ how: SN.st.how, n: SN.st.n, mode: SN.st.mode, star: !!document.querySelector('#snstar'), sub: document.querySelector('.gh-top').textContent }));
+          if (d0.how !== 'chef' || d0.n !== 5 || d0.mode !== 'calm' || !d0.star || !/Chef Fern's taste test/.test(d0.sub)) bad.push(at + 'the taste test ' + JSON.stringify(d0));
+          if (w == 1024) {
+            for (const o of await K.look()) bad.push(at + 'day: ' + o);
+            await K.touch('#gpause');
+            await pg.waitForSelector('#gquit', { timeout: 5000 });
+            await K.touch('#gquit'); // Go Home? -> the tick runs the game's quit: the test counts as not won
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+            const q = await pg.evaluate(() => S.snack.bs.park);
+            if (!q || q.n !== 1 || q.w !== 0) bad.push(at + 'leaving the test: ' + JSON.stringify(q));
+            notes.push('1024x600: left the test, one test not won, nothing lost');
+            // review fix (v186): a finger held from the counter when the end card opens (a day's and the taste test's) presses nothing
+            for (const o of await K.heldEnd('Snack Stand day card', () => { snS().days = 60; snDay(); }, () => snFinish(), '#snagain')) bad.push(at + o);
+            for (const o of await K.heldEnd('Snack Stand taste test card', () => snDay({ chef: true }), () => snFinish(), '#snagain')) bad.push(at + o);
+            notes.push('a finger held from the game presses nothing on the day and taste test cards');
+          } else {
+            let plates = 0, wrong = 0, armed = false, starTxt = '';
+            for (let guard = 0; guard < 12; guard++) {
+              const c = await pg.waitForFunction(() => {
+                if (document.querySelector('.gh-end')) return { end: true };
+                const st = SN && SN.st, c = st && st.at.find(x => x.state == 'wait');
+                if (!c || st.plate.length || !document.querySelector('.sn-cu .sn-bub .sn-oi')) return null;
+                return { order: c.order, hat: !!document.querySelector('.sn-hat.chef'), star: st.star, armed: st.armed };
+              }, null, { timeout: 20000 }).then(x => x.jsonValue());
+              if (c.end) break;
+              if (!c.hat) bad.push(at + 'the chef has no hat');
+              const put = async id => {
+                const s = await pg.evaluate(i => SN_ING[i][1], id);
+                if (await pg.evaluate(s => SN.tab !== s, s)) await K.touch(`.sn-tab[data-st="${s}"]`);
+                await K.touch(`.sn-ing[data-ing="${id}"]`);
+              };
+              if (wrong < 1 && plates >= 4) {
+                // a wrong plate first: the chef asks again, nothing taken away; Undo, then the right plate
+                const odd = await pg.evaluate(o => SN.stations.map(s => s[0]).flatMap(k => snAvail(SN.r.own, SN.pl.id, 'calm', 'chef').filter(i => SN_ING[i][1] == k)).find(i => !o.includes(i)), c.order);
+                await put(odd);
+                await K.touch('#snserve');
+                const r1 = await pg.evaluate(() => ({ served: SN.st.served, star: SN.st.star }));
+                if (r1.served !== plates || r1.star !== c.star) bad.push(at + 'a wrong plate changed ' + JSON.stringify(r1));
+                await K.touch('#snundo');
+                wrong++;
+              }
+              if (c.star >= 3 && !c.armed && !armed) {
+                const sb = await K.box('#snstar');
+                if (Math.min(sb.w, sb.h) < 47.5) bad.push(at + 'Star serve button ' + Math.round(sb.w) + 'x' + Math.round(sb.h));
+                await K.touch('#snstar');
+                armed = await pg.evaluate(() => SN.st.armed && $('#snstar').getAttribute('aria-pressed') === 'true');
+                if (!armed) bad.push(at + 'Star serve did not arm');
+                await K.shot('snack-star-' + w);
+              }
+              for (const id of c.order) await put(id);
+              await K.touch('#snserve');
+              plates++;
+              if (armed && !starTxt) { starTxt = await pg.evaluate(() => $('#snmsg').textContent); if (!/Star serve!/.test(starTxt)) bad.push(at + 'no star serve: ' + starTxt); }
+            }
+            if (!starTxt) bad.push(at + 'no star serve after three right plates');
+            await pg.waitForSelector('.gh-end #snmenu', { timeout: 20000 });
+            await pg.waitForTimeout(600);
+            const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.snack.bs.park, coins: S.snack.coins, days: S.snack.days }));
+            if (!/You passed the taste test!/.test(e.t) || !/A crown for Sunny Park/.test(e.txt) || e.rec.w !== 1 || e.days !== 2 || !(e.coins > 50 + 20)) bad.push(at + 'the end of the test ' + JSON.stringify(e).slice(0, 300));
+            for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+            await K.shot('snack-won-' + w);
+            notes.push(`380x780: five plates by touch (${wrong} wrong first), ${starTxt ? 'a star serve' : 'no star serve'}, ${e.coins} coins`);
+            await K.touch('.gh-end #snmenu');
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        await pg.evaluate(() => { if (typeof SN_DEV != 'undefined') SN_DEV.fast = 1; }).catch(() => {});
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-SNACK Snack Stand move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-SNACK: Snack Stand by real touch at 380x780 and 1024x600: the Star serve card once, Chef Fern\'s screen, the taste test in Calm with ' +
+        'the chef\'s hat, wrong plates asked again, the Star meter armed by its button and a star serve, the test passed (crown, coins, record), the test left ' +
+        'counts as not won; 48 px, no sideways scroll; ' + notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-HOP (G-MOVES, src/js/67-game-skyhop.js) at 380x780 and 1024x600, real touch, one-touch, the first world finished: the Dash card
+    // shows once; the world's sky race card -> Breezy's screen -> Race Breezy! -> the course with the Dash button (48 px): a touch in
+    // the air dashes once; at 380x780 the course is played to the flag by real touches (the G-04b helper looks ahead; 2x faster) before
+    // Breezy (after races not won, Breezy is slow) -> "You beat Breezy!", stars to spend, the record; at 1024x600 the frame time of a
+    // race with the bird on screen at 6x CPU throttle (median at most 34 ms), then Go Home counts a race not won. Shots: games5/hop-*.
+    if (seg('G-MV-HOP')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-HOP ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .hp-menu button, .gh-boss button, .gh-end button, .gh-mvb button, .hp-btn');
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false; save(); home(); });
+          await K.touch('#groom');
+          await pg.waitForSelector('#ghop', { timeout: 15000 });
+          await pg.evaluate(() => { // the first world finished (the games' part is in now)
+            const best = {}; for (const c of HOP_COURSES.slice(0, 6)) best[c.id] = 60000;
+            S.hop = { mode: 'one', best, runs: 6, world: 0, bs: { 0: { n: 8, w: 0 } } };
+            save();
+          });
+          await pg.waitForTimeout(400);
+          await K.touch('#ghop');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Dash/.test(mv) || !/air/.test(mv)) bad.push(at + 'move card: ' + mv);
+          await K.shot('hop-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => S.hop.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          await pg.evaluate(() => hopMenu(0));
+          await pg.waitForSelector('#hpboss', { timeout: 8000 });
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          await K.touch('#hpboss');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Breezy/.test(bs) || !/before Breezy/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('hop-boss-' + w);
+          await K.touch('#gbgo');
+          await pg.waitForSelector('.hpg #hpd', { timeout: 8000 });
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait, null, { timeout: 10000 });
+          const r0 = await pg.evaluate(() => ({ boss: !!HP.st.boss, dash: HP.st.dash, sub: document.querySelector('.gh-top').textContent, gh: !!HP.gh }));
+          if (!r0.boss || !r0.dash || r0.gh || !/Race Breezy/.test(r0.sub)) bad.push(at + 'the race ' + JSON.stringify(r0));
+          for (const o of await K.look()) bad.push(at + 'race: ' + o);
+          // a hop (a touch on the course), then a dash in the air (a touch on Dash): once, and the pet shoots ahead
+          await K.press(w * .45, h * .45, 40);
+          await pg.waitForFunction(() => HP && !HP.st.p.gr, null, { timeout: 3000 });
+          const x0 = await pg.evaluate(() => HP.st.p.x);
+          await K.touch('#hpd', 40);
+          const dx = await pg.evaluate(x => ({ n: HP.st.dashes, dx: HP.st.p.x - x }), x0);
+          if (dx.n !== 1) bad.push(at + 'a touch on Dash in the air: ' + JSON.stringify(dx));
+          await K.shot('hop-race-' + w);
+          if (w == 380) {
+            await pg.evaluate(() => {
+              HOP_DEV.fast = 2;
+              window.__hopAdv = () => {
+                if (!HP || !HP.ready) return 'wait';
+                const st = HP.st;
+                if (st.done) return 'done';
+                if (st.wait == 'offer') return 'offer';
+                const badS = s => s.falls > st.falls || s.wait == 'back' || s.bumps > st.bumps;
+                const run = (hold, n) => {
+                  const s = hopClone(st);
+                  if (!hold) {
+                    for (let i = 0; i < n; i++) { hopStep(s, {}); if (badS(s)) return false; if (s.done) return true; }
+                    return s.p.x > st.p.x + 1 || s.p.on >= 1000 || !!st.wait;
+                  }
+                  let air = !s.p.gr;
+                  for (let i = 0; i < n; i++) {
+                    hopStep(s, { jump: i < hold });
+                    if (badS(s)) return false;
+                    if (s.done) return true;
+                    if (!s.p.gr) air = true;
+                    else if (air && i > hold) { for (let k = 0; k < 24; k++) { hopStep(s, {}); if (badS(s)) return false; } return true; }
+                  }
+                  return true;
+                };
+                if (run(0, 48)) return 'no';
+                if (run(3, 150)) return 'tap';
+                if (run(36, 150)) return 'hold';
+                return 'no';
+              };
+            });
+            const t0 = Date.now();
+            for (;;) {
+              const d = await pg.evaluate(() => window.__hopAdv());
+              if (d == 'done') break;
+              if (d == 'offer') { await pg.waitForSelector('#hpoffer:not([hidden]) #hpyes', { timeout: 3000 }); await K.touch('#hpyes'); }
+              else if (d == 'tap' || d == 'hold') await K.press(w * .45, h * .4, d == 'tap' ? 40 : 300);
+              else await pg.waitForTimeout(10);
+              if (Date.now() - t0 > 120000) { bad.push(at + 'the flag not reached in 120 s'); break; }
+            }
+            await pg.waitForSelector('.gh-end #hpmenu', { timeout: 15000 });
+            await pg.evaluate(() => { HOP_DEV.fast = 1; });
+            await pg.waitForTimeout(600);
+            const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.hop.bs['0'], bonus: S.hop.bonus,
+              ghost: !!(S.hop.ghost || {})[HOP_COURSES[5].id], best: S.hop.best[HOP_COURSES[5].id] }));
+            if (!/You beat Breezy!/.test(e.t) || !/A crown for Cloud Meadow/.test(e.txt) || e.rec.w !== 1 || e.bonus !== 3 || e.ghost || e.best !== 60000) bad.push(at + 'the end of the race ' + JSON.stringify(e).slice(0, 300));
+            for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+            await K.shot('hop-won-' + w);
+            notes.push('380x780: Breezy beaten by real touches in ' + Math.round((Date.now() - t0) / 1000) + ' s');
+            await K.touch('.gh-end #hpmenu');
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          } else {
+            const f = await K.frames(async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hopPlay(HOP_COURSES[5].id, null, true); }); await pg.waitForTimeout(1500); });
+            if (f.med > 34 || f.js > G5_JS_MS) bad.push(at + 'frame interval in a sky race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms, JS ' + G5_JS_MS + ' ms a frame)');
+            notes.push(`6x throttle, sky race: JS ${f.js.toFixed(1)} ms a frame (main thread ${f.task.toFixed(1)} ms), median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            const n0 = await pg.evaluate(() => S.hop.bs['0'].n);
+            await K.touch('#gpause');
+            await pg.waitForSelector('#gquit', { timeout: 5000 });
+            await K.touch('#gquit');
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+            if (await pg.evaluate(() => S.hop.bs['0'].n) !== n0 + 1) bad.push(at + 'leaving a race should count one race not won');
+            // review fix (v186): a finger held from Hold to float when the end card opens (a course's and a sky race's) presses nothing
+            for (const o of await K.heldEnd('Sky Hop course card', () => hopPlay(HOP_COURSES[0].id), () => hopFinish(), '#hpagain')) bad.push(at + o);
+            for (const o of await K.heldEnd('Sky Hop race card', () => hopPlay(HOP_COURSES[5].id, null, true), () => hopBossEnd(), '#hpagain')) bad.push(at + o);
+            notes.push('a finger held from the game presses nothing on the course and race cards');
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        await pg.evaluate(() => { if (typeof HOP_DEV != 'undefined') HOP_DEV.fast = 1; }).catch(() => {});
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-HOP Sky Hop move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-HOP: Sky Hop by real touch at 380x780 and 1024x600: the Dash card once, Breezy\'s screen, the sky race with the Dash button (one dash in ' +
+        'the air), Breezy beaten to the flag by real touches (no ghost or record written), leaving counts a race not won; 48 px, no sideways scroll; ' +
+        notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-BB (G-MOVES, src/js/60-blocks.js) at 380x780 and 1024x600, real touch, the 2D look, Meadow Village's six builds done: the Paint
+    // card shows once; Paint (48 px) in a world turns a grass top into Brick by one touch, Undo puts it back; Bea's card -> Bea's screen
+    // -> Start building -> her side is built, the child's side is see-through (one try not won before) -> built by touches -> "Just the
+    // same! You did it!" with a crown, coins and the record. Screenshots: tools/out/games5/blocks-*.
+    if (seg('G-MV-BB')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-BB ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .bb-menu .bb-boss, .gh-boss button, .gh-end button, .gh-mvb button, .bb-tb');
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.voice = false;
+            S.bb = { worlds: [], cur: 0, gl: 0, bp: { tower: 2, stairs: 2, wall: 2, gate: 2, tree: 2, bridge: 2 }, bs: { meadow: { n: 1, w: 0 } } };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#gbb', { timeout: 8000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#gbb');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Paint/.test(mv)) bad.push(at + 'move card: ' + mv);
+          await K.shot('blocks-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => S.bb.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          // Paint in a world
+          await K.touch('.bb-menu [data-w="0"]');
+          await pg.waitForSelector('#bbc', { timeout: 8000 });
+          await pg.waitForTimeout(900);
+          await K.touch('#bbm-paint');
+          await K.touch('[data-b="8"]');
+          const cell = await pg.evaluate(() => {
+            const r = $('#bbc').getBoundingClientRect(), d = BB.dpr;
+            for (let j = 4; j < 12; j++) for (let i = 4; i < 12; i++) {
+              const k = BB.topZ(i, j) - 1;
+              if (k < 0 || BB.get(i, j, k) != 1) continue;
+              for (const [u, v] of [[.5, .5], [.3, .3], [.7, .7]]) {
+                const p = BB.proj(i + u, j + v, k + 1), hh = BB.hit(p[0], p[1]);
+                if (hh && hh.i == i && hh.j == j && hh.k == k && hh.f == 'top' && p[0] > 0 && p[1] > 0 && p[0] < r.width * d && p[1] < r.height * d) return { i, j, k, xy: [r.left + p[0] / d, r.top + p[1] / d] };
+              }
+            }
+            return null;
+          });
+          if (!cell) bad.push(at + 'no grass top to paint on the screen');
+          else {
+            await K.press(cell.xy[0], cell.xy[1], 40);
+            await pg.waitForTimeout(400);
+            const p1 = await pg.evaluate(c => ({ v: BB.get(c.i, c.j, c.k), tool: BB.tool }), cell);
+            if (p1.v !== 8 || p1.tool !== 'paint') bad.push(at + 'a Paint touch: ' + JSON.stringify(p1));
+            for (const o of await K.look()) bad.push(at + 'world: ' + o);
+            await K.shot('blocks-paint-' + w);
+            await K.touch('#bbundo');
+            if (await pg.evaluate(c => BB.get(c.i, c.j, c.k), cell) !== 1) bad.push(at + 'Undo after Paint');
+          }
+          await pg.evaluate(() => { bbSave(); bbMenu(); });
+          await pg.waitForSelector('[data-boss="0"]', { timeout: 8000 });
+          await K.touch('[data-boss="0"]');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Bea the Beaver/.test(bs) || !/both sides the same/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('blocks-boss-' + w);
+          await K.touch('#gbgo');
+          await pg.waitForSelector('#bbc', { timeout: 8000 });
+          await pg.waitForTimeout(900);
+          const b0 = await pg.evaluate(() => ({ boss: BB.bp && BB.bp.boss, mode: BB.mode, prog: BB.prog(), size: BB.goal.size, task: $('#bbtaskt').textContent }));
+          if (b0.boss !== 0 || b0.mode !== 'copy' || !(b0.prog >= 9) || !/other side/.test(b0.task)) bad.push(at + 'Bea\'s build ' + JSON.stringify(b0));
+          await K.shot('blocks-mirror-' + w);
+          let taps = 0;
+          const trail = [];
+          for (; taps < 30; taps++) {
+            // a see-through block of the layer that a touch picks (on the canvas, not under the task or a button); else turn the view
+            const t = await pg.evaluate(() => {
+              if (!BB || BB.done()) return null;
+              const cv = $('#bbc'), r = cv.getBoundingClientRect(), d = BB.dpr;
+              for (const n of BB.todo()) {
+                const i = n % BW, j = Math.floor(n / BW) % BD, k = Math.floor(n / (BW * BD));
+                for (const [u, v, z] of [[.5, .5, .5], [.5, .5, 1], [.3, .3, 1], [.7, .7, 1], [.3, .7, .9], [.7, .3, .9]]) {
+                  const p = BB.proj(i + u, j + v, k + z), g = BB.hit(p[0], p[1], q => q.ghost), x = r.left + p[0] / d, y = r.top + p[1] / d;
+                  if (g && bbI(g.i, g.j, g.k) == n && document.elementFromPoint(x, y) === cv) return { v: BB.goal.get(n), sel: BB.sel, xy: [x, y] };
+                }
+              }
+              return { turn: 1 };
+            });
+            if (!t) break;
+            if (t.turn) { await K.touch('#bbrr'); await pg.waitForTimeout(700); continue; }
+            if (t.v !== t.sel) await K.touch(`[data-b="${t.v}"]`);
+            await K.press(t.xy[0], t.xy[1], 40);
+            await pg.waitForTimeout(250);
+            trail.push(await pg.evaluate(() => BB ? BB.prog() + '/' + BB.miss : '-'));
+          }
+          await pg.waitForSelector('.gh-end #bbls', { timeout: 10000 }).catch(() => { throw new Error('Bea\'s build not finished: ' + trail.join(' ')); });
+          await pg.waitForTimeout(600);
+          const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.bb.bs.meadow, coins: S.coins }));
+          if (!/Just the same! You did it!/.test(e.t) || !/A crown for Meadow Village/.test(e.txt) || e.rec.w !== 1) bad.push(at + 'the end of Bea\'s build ' + JSON.stringify(e).slice(0, 300));
+          for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+          await K.shot('blocks-won-' + w);
+          notes.push(w + 'x' + h + ': Bea\'s Tower Gate in ' + taps + ' touches');
+          await K.touch('.gh-end #bbls');
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          if (w == 1024) {
+            // review fix (v186): a finger held from a build tap when the end card opens (a blueprint's and Bea's) presses nothing
+            for (const o of await K.heldEnd('Block Builder blueprint card', () => blockBuilder(0), () => bbWin(), '#bbre')) bad.push(at + o);
+            for (const o of await K.heldEnd('Block Builder mirror card', () => blockBuilder('boss0'), () => bbWin(), '#bbre')) bad.push(at + o);
+            notes.push('a finger held from the game presses nothing on the blueprint and mirror cards');
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-BB Block Builder move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-BB: Block Builder by real touch at 380x780 and 1024x600 (2D look): the Paint card once, a grass top painted Brick by one touch and ' +
+        'put back by Undo, Bea\'s screen, her side built and the other side see-through, built by touches, the crown and the record; 48 px, no ' +
+        'sideways scroll; ' + notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
     }
 
     // CHECK-IN (src/js/51b-checkin.js): mastery check-ins and stop badges, at 360x740 and 800x1280 on the midway save. A passed math stop
@@ -13326,6 +14010,123 @@ async function main() {
     }
     // end READ-SHAPES
 
+    // TEACH-5S lessons for Spanish (listen, sort, say with me, fix the pet's el or la) and Discover (predict, look, explain): 52s-bench5s.js,
+    // 52t-lessons5s.js, 52s-teach5s.css in the part teaches. At 380x780 and 600x960 on the midway save: the Spanish map of a Kindergartner has a
+    // lesson stop in front of Animals (Spanish lessons are for every grade), the Discover map one in front of Living Things; Animals (a Kindergartner),
+    // El or La? (a 5th grader: the teen-like pet's lines), Push, Pull & Stuff and Sky & Earth run through every beat by the real controls, the pet's
+    // mistake forced (LS.PET_OK 0). Spanish pieces are said in the Spanish voice (say(..., 'es')); "say it with me" ends Name it with "I said it!",
+    // and nothing asks for the microphone; a Discover answer is followed by what happens ("Look! ..."). Home's review tile shows while anything is due (review
+    // fix v186: also when every due item is at a learned lesson's stop), with lessons on and off. Every screen fits, 48 px named buttons, no hole; screenshots (TEACH5S_SHOTS).
+    if (seg('TEACH-5S')) {
+      const bad = [], notes = [], shots = process.env.TEACH5S_SHOTS || require('path').join(__dirname, 'out', 'teach5s');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const shot = (pg, n) => pg.screenshot({ path: require('path').join(shots, n + '.png') });
+      const wake6 = pg => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+      const act6 = async (pg, wrong) => {
+        await wake6(pg);
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, ans: q.ans, items: q.items && q.items.map(c => [c.v, c.b]), bins: q.bins && q.bins.map(b => b.v), choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'sort') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.schip[data-i="${i}"]`); await pg.click(`.sbt[data-b="${it.bins.indexOf(it.items[i][1])}"]`, { position: { x: 16, y: 12 } }); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const step6 = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await act6(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fit6 = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear, #prompt button')) { const r = b.getBoundingClientRect(); if (r.width && (b.offsetWidth < 47.5 || b.offsetHeight < 47.5)) o.push('small button ' + (b.getAttribute('aria-label') || b.id || b.className));
+          if (r.width && (r.right > vw + 1 || r.left < -1)) o.push('button off screen ' + (b.getAttribute('aria-label') || b.className)); }
+        for (const b of document.querySelectorAll('#lsplay button')) if (!(b.getAttribute('aria-label') || b.textContent.trim())) o.push('a button with no name ' + b.className);
+        if (/undefined|NaN|\{[a-z]+\}|«|»/.test(document.querySelector('#lsplay').textContent)) o.push('a hole or a mark in the words: ' + document.querySelector('#lsbub').textContent);
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-5S ' + w + 'x' + h + ' ';
+        try {
+          // nothing may ask for the microphone or listen; every say() is logged with its language
+          await pg.evaluate(() => { window.__mic = 0; window.__said = []; const o = say;
+            try { if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => { window.__mic++; return Promise.reject(new Error('no')); }; } catch (e) {}
+            window.SpeechRecognition = window.webkitSpeechRecognition = function () { window.__mic++; };
+            window.say = function (t, b, lang, q, slow) { window.__said.push([String(t), lang || '']); return o.apply(this, arguments); }; });
+          // 1. the maps: a lesson stop in front of Animals (Spanish, a Kindergartner) and of Living Things (Discover)
+          for (const [p, id] of [['es', 'es_animal1'], ['disc', 'sci_life1']]) {
+            await pg.evaluate(([p, id]) => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES[p].findIndex(n => nid(n) === id);
+              for (let j = 0; j < NODES[p].length; j++) setSt(p, j, j < i ? 2 : 0); save(); pathMap(p, NODES[p][i].wi); }, [p, id]);
+            await pg.waitForFunction(() => partReady('teaches') && typeof ls6Spanish == 'function', null, { timeout: 15000 });
+            await pg.waitForTimeout(300);
+            const st0 = await pg.evaluate(([p, id]) => { const i = NODES[p].findIndex(n => nid(n) === id), b = document.querySelector(`.lsn[data-ls="${i}"]`);
+              return { stop: lsStopAt(p, i), gate: lsGate(p, i), node: !!b, w: b && b.offsetWidth, css: !!document.querySelector('#css-teaches') }; }, [p, id]);
+            if (!st0.stop || !st0.gate || !st0.node || !(st0.w >= 47.5) || !st0.css) bad.push(at + id + ' has no lesson stop on its map: ' + JSON.stringify(st0));
+            await pg.evaluate(([p, id]) => { const b = document.querySelector(`.lsn[data-ls="${NODES[p].findIndex(n => nid(n) === id)}"]`); if (b) b.scrollIntoView({ block: 'center' }); }, [p, id]);
+            await shot(pg, `teach5s-map-${p}-${w}x${h}`);
+          }
+          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
+          // 2. four lessons through every beat
+          for (const [id, gr] of [['es_animal1', 0], ['es_art1', 5], ['sci_phys1', 0], ['sci_earth1', 1]]) {
+            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; window.__said = []; const p = id.startsWith('es_') ? 'es' : 'disc', i = NODES[p].findIndex(n => nid(n) === id);
+              for (let j = 0; j <= i; j++) setSt(p, j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
+            await pg.waitForSelector('#lsplay', { timeout: 5000 });
+            const path = [], seen = [];
+            let pet = null, fixed = false, sayW = null, look = 0;
+            for (let n = 0; n < 50; n++) {
+              const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m + ':' + (LS.cur(LS.st).q && LS.cur(LS.st).q.kind) + (LS.cur(LS.st).fix ? ':fix' : LS.cur(LS.st).with ? ':with' : '') : null);
+              if (!b) break;
+              await wake6(pg);
+              if (!seen.includes(b)) { seen.push(b); await fit6(pg, at + id + ' ' + b + ': '); await shot(pg, `teach5s-${id}-${String(seen.length).padStart(2, '0')}-${b.replace(/:/g, '-')}-${w}x${h}`); }
+              if (b.startsWith('chk:judge') && !pet) pet = await pg.evaluate(() => { const it = LS.cur(LS.st); return { bub: document.querySelector('#lsbub').textContent, pv: it.pv, petOk: it.petOk, code: it.code, say: lsSayV(it.q, it.pv).replace(/[«»]/g, ''),
+                es: !LS.voice() || window.__said.some(([t, l]) => l == 'es' && t == String(it.pv)), voice: LS.voice() }; }); // an older child with the voice off hears nothing
+              if (/:with$/.test(b)) sayW = await pg.evaluate(() => { const e = document.querySelector('#prompt .ls6-es'); return { btn: document.querySelector('#lsnext').textContent.trim(), ear: !!e && e.offsetWidth >= 47.5, es: !LS.voice() || window.__said.some(([t, l]) => l == 'es' && /^(el|la) /.test(t)) }; });
+              if (/:fix$/.test(b)) fixed = true;
+              path.push(b.split(':').slice(0, 2).join(':'));
+              const isTog = /^tog:ask/.test(b);
+              await step6(pg, b.startsWith('pre:ask') && path.length == 1);
+              if (isTog && id.startsWith('sci_')) look += await pg.evaluate(() => window.__said.some(([t]) => /Look!/.test(t)) ? 1 : 0);
+            }
+            const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+            if (order !== 'pre,rem,exp,name,tog,chk,show' && order !== 'pre,rem,exp,name,tog,chk,show,win' && order !== 'pre,exp,name,tog,chk,show' && order !== 'pre,exp,name,tog,chk,show,win') bad.push(at + id + ' beats ' + order);
+            if (!pet || pet.petOk || !/Check/.test(pet.bub) || !pet.bub.includes(pet.say)) bad.push(at + id + ' the pet\'s turn: ' + JSON.stringify(pet));
+            if (id.startsWith('es_') && (!pet || !pet.es || !['esArt', 'esEnd'].includes(pet.code))) bad.push(at + id + ' the pet\'s el or la slip is not said in Spanish: ' + JSON.stringify(pet));
+            if (id == 'es_art1' && pet && !/Check my work/.test(pet.bub)) bad.push(at + 'a 5th grader does not hear the teen-like pet: ' + pet.bub);
+            if (id.startsWith('es_') && (!sayW || sayW.btn !== 'I said it!' || !sayW.ear || !sayW.es)) bad.push(at + id + ' say it with me: ' + JSON.stringify(sayW));
+            if (id.startsWith('sci_') && !look) bad.push(at + id + ': no "Look!" after a Together answer');
+            if (!fixed) bad.push(at + id + ': no fix after the pet\'s mistake');
+            await pg.waitForSelector('#lsend', { timeout: 10000 });
+            await shot(pg, `teach5s-${id}-end-${w}x${h}`);
+            const end = await pg.evaluate(id => ({ k: S.know[id] && S.know[id].s, idea: document.querySelector('.ls-idea').textContent, tq: S.tq, top: document.querySelector('.ls-top').className }), id);
+            if (!end.k || !end.idea || /\{/.test(end.tq) || !/Ask /.test(end.tq) || !end.top.includes(id.startsWith('es_') ? 's-es' : 's-disc')) bad.push(at + id + ' the end: ' + JSON.stringify(end));
+          }
+          if (await pg.evaluate(() => window.__mic)) bad.push(at + 'a lesson asked for the microphone or speech recognition');
+          // 3. Home's review tile (review fix v186): shown whenever anything is due, also while every due item is at a learned
+          //    lesson's stop (lesson Remember does not clear the review queue), with lessons on and off
+          const rv = await pg.evaluate(() => { LS.PET_OK = .25; LS.st = null; S.grade = 1; S.rev = [{ sk: 'add', lv: 1, seed: 5, label: '3 + 4', box: 0, due: 0, n: 1 }];
+            S.know = { add1: { s: 2, box: 0, due: 999, d: 1, last: 1, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {} } }; save(); home();
+            const a = !!document.querySelector('#revcard'), row = document.querySelector('.hm-today').className; TEACH.off = true; home(); const b = !!document.querySelector('#revcard'); TEACH.off = false; home(); return { a, b, row }; });
+          if (!rv.a || !rv.b) bad.push(at + 'the review tile: ' + JSON.stringify(rv));
+          await pg.evaluate(() => document.querySelector('.hm-today').scrollIntoView({ block: 'center' }));
+          await shot(pg, `teach5s-home-review-${w}x${h}`);
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-5S the Spanish and Discover lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-5S: the Spanish and Discover lessons at ' + notes.join(' and ') + ': lesson stops in front of Animals and Living Things; Animals, El or La? (the teen-like pet), ' +
+        'Push, Pull & Stuff and Sky & Earth through every beat by the real controls (the el / la sort heard in Spanish, say it with me and "I said it!" with no microphone, ' +
+        'the pet\'s forced el or la slip said in Spanish and fixed, predictions followed by "Look!"); the review tile shown while items are due, also at a learned lesson\'s stop; every screen fits ' +
+        'with 48 px named buttons and no hole; no console errors, no network requests');
+    }
+    // end TEACH-5S
+
+
     // LS-STOP lessons are required, paid stops on the map (42b-lstop.js, 46-home.js drawMap, 58-playtime.js lsPay, 52-lesson.js LS.open,
     // the meter and the end card), at 380x780 and 600x960 on the midway save as a Kindergartner with every stop before Make Ten passed.
     // The map has a "Learn with <pet>" stop before Make Ten with its "+5 min" ticket (48 px, on screen, covering no stop); Make Ten's practice
@@ -13986,6 +14787,196 @@ async function main() {
         'problem with the default answer and label, said as shown, with its picture; the right answer scores; no sideways scroll, no console errors, no network requests');
     }
     // end PERS-01
+    if (seg('ASK-01')) {
+      // ASK-01: "Ask the pet". With nothing reviewed there is no Ask button on Home or the map. The owner approved all 8 questions on
+      // 2026-11-19, so the page as built has ASK_ON = the reviewed count and ASKW = exactly the reviewed drafts' words; the gate is then
+      // tested on that page by setting ASK_ON to 0 and emptying ASKW (as for questions not reviewed) and putting them back. The button
+      // beside the pet loads the hints part, opens the menu, and every
+      // question tapped shows its answer and says it; the "why" answer carries the approved hint of the child's real first wrong try
+      // (a sum typed without the carry) and never its answer. Home and the map, at 380x780, 600x960 and 1024x600.
+      const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'ask'), A = require('./author.js');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const W = Object.fromEntries(A.askDrafts().filter(x => x.d).map(x => [x.d.id, { q: x.d.q, a: x.d.a }]));
+      const WR = Object.fromEntries(A.askDrafts().filter(x => x.d && x.d.status === 'reviewed').map(x => [x.d.id, { q: x.d.q, a: x.d.a }])); // owner approved 2026-11-19
+      const LN = Object.fromEntries(A.hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d.line]));
+      // the Ask button and the open sheet on screen: sizes, inside the screen, nothing under the button, no sideways scroll
+      const FIT = () => {
+        const o = [], vw = document.documentElement.clientWidth, vh = innerHeight, box = e => e.getBoundingClientRect();
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        const btn = document.querySelector('.ak-btn'), sheet = document.querySelector('.sheet .ak');
+        if (btn && !sheet) {
+          const r = box(btn);
+          if (r.width < 47.5 || r.height < 47.5) o.push('the Ask button is ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) o.push('the Ask button is outside the screen sideways');
+          if (!btn.getAttribute('aria-label') || !/^Ask .+ a question$/.test(btn.getAttribute('aria-label'))) o.push('the Ask button has no spoken name');
+          for (const e of document.querySelectorAll('.node, .lsn, .nlab, .tobtn, .wtitle, .hm-think')) {
+            const b = box(e);
+            if (b.width && r.left < b.right - 2 && r.right > b.left + 2 && r.top < b.bottom - 2 && r.bottom > b.top + 2) o.push('the Ask button covers ' + e.className);
+          }
+          const pet = document.querySelector('#pet .pet-svg, .mappet .pet-svg');
+          if (pet) { const b = box(pet), cx = (b.left + b.right) / 2, cy = (b.top + b.bottom) / 2; if (cx > r.left && cx < r.right && cy > r.top && cy < r.bottom) o.push('the Ask button covers the pet'); }
+        }
+        if (sheet) {
+          const s = box(document.querySelector('.sheet'));
+          if (s.left < -1 || s.right > vw + 1 || s.top < -1) o.push('the sheet is outside the screen');
+          for (const e of sheet.querySelectorAll('.ak-q, #ak-done')) {
+            const b = box(e);
+            if (b.height < 47.5 || b.width < 47.5) o.push('small ' + (e.dataset.ask || e.id) + ' ' + Math.round(b.width) + 'x' + Math.round(b.height));
+            if (b.left < s.left - 1 || b.right > s.right + 1) o.push('outside the sheet ' + (e.dataset.ask || e.id));
+            if (!e.textContent.trim() && !e.getAttribute('aria-label')) o.push('a button with no spoken name');
+          }
+          const q = document.querySelector('.sheet');
+          if (q.scrollWidth > q.clientWidth + 1) o.push('the sheet scrolls sideways');
+          if (s.bottom > vh + 1) o.push('the sheet runs below the screen (' + Math.round(s.top) + '-' + Math.round(s.bottom) + ' of ' + vh + ', page scrolled ' + document.scrollingElement.scrollTop + ')');
+        }
+        return o;
+      };
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true });
+        const pg = pa.page, at = 'ASK-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h, K = k2Kit(pg, at, bad);
+        try {
+          // the pet's voice is captured (say): each line with the question lit while it was said (ASK-READ)
+          await pg.evaluate(() => { S.grade = 1; S.voice = false; window.__said = []; window.__lit = [];
+            window.say = t => { window.__said.push(String(t)); window.__lit.push([...document.querySelectorAll('.ak-q.ak-now')].map(b => b.dataset.ask).join(',')); }; });
+          // 1. the page as built (owner approved 2026-11-19): ASK_ON is the number of reviewed questions; the hints part is not loaded at start.
+          //    The gate: nothing reviewed (ASK_ON set to 0): no Ask button on Home or on the map
+          const none = await pg.evaluate(async () => {
+            const on = ASK_ON; ASK_ON = 0;
+            home(); const h0 = document.querySelectorAll('.ak-btn').length;
+            pathMap('math'); await new Promise(r => setTimeout(r, 50)); const m0 = document.querySelectorAll('.ak-btn').length;
+            ASK_ON = on;
+            return { on, h0, m0, hints: partReady('hints') };
+          });
+          if (none.on !== Object.keys(WR).length) bad.push(at + 'ASK_ON as built is ' + none.on + ' with ' + Object.keys(WR).length + ' questions reviewed');
+          if (none.h0 || none.m0 || none.hints) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
+          // 2. reviewed (as built, ASK_ON put back): Home draws the button by the pet; the first tap loads the hints part
+          await pg.evaluate(() => { home(); });
+          await pg.waitForSelector('.hm-stage .ak-btn', { timeout: 5000 });
+          await animsDone(pg);
+          (await pg.evaluate(FIT)).forEach(x => bad.push(at + 'Home: ' + x));
+          await pg.click('.ak-btn');
+          await pg.waitForFunction(() => partReady('hints') && typeof askOpen == 'function', null, { timeout: 15000 });
+          // the page's words are exactly the reviewed drafts' (owner approved 2026-11-19); with ASKW emptied (nothing reviewed) the menu is empty;
+          // then the words are put back
+          const aw = await pg.evaluate(() => { const k = JSON.stringify(ASKW); for (const id in ASKW) delete ASKW[id]; const n = askItems({ p: 'math' }).length; Object.assign(ASKW, JSON.parse(k)); return { k, n }; });
+          if (Object.keys(JSON.parse(aw.k)).sort().join() !== Object.keys(WR).sort().join() || Object.entries(JSON.parse(aw.k)).some(([k, v]) => JSON.stringify(v) !== JSON.stringify(WR[k])))
+            bad.push(at + 'ASKW on the page is not the reviewed drafts\' words');
+          if (aw.n) bad.push(at + 'with ASKW emptied (nothing reviewed) the menu has ' + aw.n + ' questions');
+          await pg.evaluate(W => { Object.assign(ASKW, W); }, W);
+          // 3. a real mistake: a Practice sum typed without its carry, with that mistake's hint approved (HINT-01, approved by the owner 2026-11-19)
+          await pg.evaluate(l => { HINTW.nocarry = l; }, LN.nocarry);
+          const MQ = `(()=>{for(let s=1;s<600;s++){const q=genQ('big',6,s);const p=q.kind=='num'&&/^\\d+ \\+ \\d+ = \\?$/.test(q.label)&&hmPredict(q).find(p=>p.c=='nocarry');if(p&&!(q.why&&q.why[p.v]))return q}})()`;
+          await K.round(MQ, '#slot');
+          const mq = await pg.evaluate(() => ({ ans: String(G.q.ans), v: hmPredict(G.q).find(p => p.c == 'nocarry').v, label: G.q.label }));
+          for (const d of String(mq.v)) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await vwait(pg, 300);
+          const lm = await pg.evaluate(() => ASK_LM && { v: ASK_LM.v, label: ASK_LM.q.label, k: ASK_LM.k === SKEY });
+          if (!lm || String(lm.v) !== String(mq.v) || lm.label !== mq.label || !lm.k) bad.push(at + 'the last mistake was not kept: ' + JSON.stringify([lm, mq]));
+          // the child leaves the round with the question still open, and asks at Home
+          const tryAll = async (where) => {
+            await pg.waitForSelector('.ak-btn', { timeout: 5000 });
+            await animsDone(pg);
+            (await pg.evaluate(FIT)).forEach(x => bad.push(at + where + ': ' + x));
+            // the captured say() takes no time: on the map each line is held 1.5 s, as long as a real voice takes, so the tap lands mid-reading
+            await pg.evaluate(w => { window.__said = []; window.__lit = []; ASKR.MIN = w == 'map' ? 1500 : 450; }, where);
+            await pg.click('.ak-btn');
+            await pg.waitForSelector('.sheet .ak .ak-q', { timeout: 15000 });
+            // ASK-READ: a 1st grader (voice setting off) hears the menu as soon as it opens: "You can ask me:", then every question in
+            // the order shown, its button lit while it is said. On Home it is heard to the end; on the map a tap on the bubble stops it.
+            const items = await pg.evaluate(() => askItems({ p: askMap() }).map(x => [x.id, x.q])), ASK_INTRO = await pg.evaluate(() => ASK_SHEET.intro);
+            const wantSaid = [ASK_INTRO].concat(items.map(x => x[1])), wantLit = [''].concat(items.map(x => x[0]));
+            if (where == 'home') {
+              await pg.waitForFunction(() => window.__said.length >= 3, null, { timeout: 5000 });
+              await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-reading-' + sz + '.png') }).catch(() => {});
+              await pg.waitForFunction(() => !ASKR.on, null, { timeout: 15000 });
+              const r = await pg.evaluate(() => ({ said: window.__said.slice(), lit: window.__lit.slice(), now: document.querySelectorAll('.ak-now').length }));
+              if (JSON.stringify(r.said) !== JSON.stringify(wantSaid)) bad.push(at + where + ': the menu is read as ' + JSON.stringify(r.said));
+              if (JSON.stringify(r.lit) !== JSON.stringify(wantLit)) bad.push(at + where + ': the light moved ' + JSON.stringify(r.lit) + ', not ' + JSON.stringify(wantLit));
+              if (r.now) bad.push(at + where + ': a question is still lit after the reading');
+            } else {
+              await pg.waitForFunction(() => window.__said.length >= 3, null, { timeout: 5000 });
+              await pg.click('#ak-a');
+              const n0 = await pg.evaluate(() => window.__said.length);
+              await vwait(pg, 1500);
+              const r = await pg.evaluate(() => ({ said: window.__said.slice(), lit: window.__lit.slice(), on: ASKR.on, now: document.querySelectorAll('.ak-now').length }));
+              if (JSON.stringify(r.said) !== JSON.stringify(wantSaid.slice(0, r.said.length)) || JSON.stringify(r.lit) !== JSON.stringify(wantLit.slice(0, r.lit.length)))
+                bad.push(at + where + ': the reading before the tap: ' + JSON.stringify(r));
+              if (r.said.length !== n0 || r.on || r.now || n0 >= wantSaid.length) bad.push(at + where + ': a tap did not stop the reading at once: ' + JSON.stringify(r) + ' (' + n0 + ' lines when tapped)');
+              // "Hear the questions again" starts it over
+              await pg.evaluate(() => { window.__said = []; window.__lit = []; });
+              await pg.click('#ak-hear');
+              await pg.waitForFunction(() => window.__said.length >= 2, null, { timeout: 5000 });
+              await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-reading-' + sz + '.png') }).catch(() => {});
+              const r2 = await pg.evaluate(() => window.__said.slice(0, 2));
+              if (JSON.stringify(r2) !== JSON.stringify(wantSaid.slice(0, 2))) bad.push(at + where + ': Hear the questions again says ' + JSON.stringify(r2));
+              await pg.click('#ak-a'); // stopped again before the questions are tapped one by one
+              if (await pg.evaluate(() => ASKR.on)) bad.push(at + where + ': a tap did not stop the reading after Hear the questions again');
+            }
+            await pg.waitForSelector('.sheet-bg.on', { timeout: 5000 }); // slid up (UI.sheet adds .on two frames after it is drawn)
+            await animsDone(pg);
+            const want = await pg.evaluate(() => askItems({ p: askMap() }).map(x => [x.id, x.q, x.a]));
+            const ids = await pg.evaluate(() => [...document.querySelectorAll('.ak-q')].map(b => b.dataset.ask));
+            if (JSON.stringify(ids) !== JSON.stringify(want.map(x => x[0]))) bad.push(at + where + ': the menu is ' + ids.join(', ') + ', not ' + want.map(x => x[0]).join(', '));
+            // the little pet (a 1st grader): at most 5 questions (ASK_LITTLE); each with its own icon
+            if (ids.length < 4 || ids.length > 5 || !ids.includes('why') || !ids.includes('next') || !ids.includes('time')) bad.push(at + where + ': the menu: ' + ids.join(', '));
+            const icons = await pg.evaluate(() => [...document.querySelectorAll('.ak-q')].map(b => { const i = b.querySelector('svg.ic'), r = i.getBoundingClientRect(), br = b.getBoundingClientRect();
+              return [i.querySelector('use').getAttribute('href'), Math.round(r.width), Math.round(r.left - br.left), b.firstElementChild === i]; }));
+            if (new Set(icons.map(x => x[0])).size !== icons.length || icons.some(x => x[1] < 32 || !x[3] || x[2] > 24)) bad.push(at + where + ': the icons: ' + JSON.stringify(icons));
+            const hear = await pg.evaluate(() => { const b = document.querySelector('#ak-hear'), r = b.getBoundingClientRect(), q = document.querySelector('.ak-q').getBoundingClientRect();
+              return { h: Math.round(r.height), above: r.bottom <= q.top, t: b.textContent.trim(), ic: !!b.querySelector('use[href="#i-speak"]') }; });
+            if (hear.h < 48 || !hear.above || hear.t !== 'Hear the questions again' || !hear.ic) bad.push(at + where + ': Hear the questions again: ' + JSON.stringify(hear));
+            (await pg.evaluate(FIT)).forEach(x => bad.push(at + where + ' sheet: ' + x));
+            const heard = [];
+            for (const [id, q, a] of want) {
+              await pg.evaluate(() => { window.__said = []; });
+              await pg.click(`.ak-q[data-ask="${id}"]`);
+              const r = await pg.evaluate(id => ({ shown: document.querySelector('#ak-a').textContent, said: window.__said.slice(),
+                pressed: document.querySelector(`.ak-q[data-ask="${id}"]`).getAttribute('aria-pressed'), label: document.querySelector(`.ak-q[data-ask="${id}"]`).textContent.trim() }), id);
+              // ASK-READ: the question first (a mistap is heard), then the answer
+              if (r.shown !== a || JSON.stringify(r.said) !== JSON.stringify([q, a]) || r.pressed !== 'true' || r.label !== q) bad.push(at + where + ' ' + id + ': ' + JSON.stringify([r, q, a]));
+              if (/[{}]|undefined|NaN|null/.test(a)) bad.push(at + where + ' ' + id + ': a slot left: ' + a);
+              heard.push(id);
+              if (id == 'why') {
+                const hint = await pg.evaluate(m => hmFill(HINTW.nocarry, hmMatch(G.q, m.v).s), mq);
+                if (!a.includes(hint)) bad.push(at + where + ' why: no approved hint "' + hint + '" in "' + a + '"');
+                if (new RegExp('(^|[^\\d])' + mq.ans + '([^\\d]|$)').test(a)) bad.push(at + where + ' why: says the answer ' + mq.ans + ': ' + a);
+                await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-why-' + sz + '.png') }).catch(() => {});
+              }
+              if (id == 'next') await pg.screenshot({ path: P_.join(shots, 'ask-' + where + '-next-' + sz + '.png') }).catch(() => {});
+            }
+            // the score, stars and game time did not move while asking
+            await pg.click('#ak-done');
+            await pg.waitForFunction(() => !document.querySelector('.sheet .ak'), null, { timeout: 5000 });
+            return heard;
+          };
+          const before = await pg.evaluate(() => JSON.stringify([S.stars, S.coins, pt().bank, G.score, G.done]));
+          await pg.evaluate(() => home());
+          const hh = await tryAll('home');
+          await pg.evaluate(() => pathMap('math'));
+          await pg.waitForSelector('#map .ak-mp', { timeout: 5000 });
+          await pg.evaluate(() => document.querySelector('.ak-mp').scrollIntoView({ block: 'center' }));
+          const hm = await tryAll('map');
+          const after = await pg.evaluate(() => JSON.stringify([S.stars, S.coins, pt().bank, G.score, G.done]));
+          if (before !== after) bad.push(at + 'asking changed the score, stars or game time: ' + before + ' -> ' + after);
+          // the pet's age: a 5th grader hears the teen-like pet's answer
+          const teen = await pg.evaluate(() => { S.grade = 5; const x = askItems({ p: 'math' }).find(y => y.id == 'stuck'); S.grade = 1; return x && x.a; });
+          if (teen !== W.stuck.a.teen.help.join(' ')) bad.push(at + 'a 5th grader hears ' + teen);
+          notes.push(sz + ' (Home ' + hh.length + ', map ' + hm.length + ' questions)');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of pa.errors) bad.push(at + e);
+        for (const u of pa.network) bad.push(at + 'network request: ' + u);
+        await pa.ctx.close();
+      }
+      if (bad.length) fail('ASK-01 Ask the pet:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('ASK-01: Ask the pet at ' + notes.join(', ') + ': as built ASK_ON is the reviewed count and ASKW the reviewed drafts\' words; with nothing reviewed (ASK_ON 0, ASKW emptied) no Ask button on Home or the map and an empty menu; no hints part at start; ' +
+        'approved, the button beside the pet loads the hints part and opens the menu, every question tapped shows and says its answer ' +
+        '(the menu = askItems), the "why" answer carries the approved hint of a real first wrong try and not its answer; 48 px buttons, on screen, ' +
+        'nothing covered; stars, coins, game time and the round unchanged; a 5th grader hears the teen-like pet. ASK-READ: a 1st grader hears the menu ' +
+        'read on opening in the order shown with each question lit, a tap stops it at once, Hear the questions again restarts it, a tap says the ' +
+        'question then the answer, at most 5 questions with distinct 32 px icons');
+    }
+    // end ASK-01
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

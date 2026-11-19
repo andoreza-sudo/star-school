@@ -278,6 +278,11 @@ const SCREENS = {
   'pers-pick': { run: async p => { await persReady(p); await p.evaluate(() => { window.say = window.__a11y.say; S.ints = ['dinosaurs']; persPick(() => grown()); }); await p.waitForTimeout(400); } },
   'grown-pers': { adult: true, run: async p => { await persReady(p); await p.evaluate(() => { S.ints = ['space', 'music']; grown(); });
     await p.waitForSelector('#pers-open', { timeout: 10000 }); await p.evaluate(() => document.querySelector('#gw-pers').scrollIntoView()); await p.waitForTimeout(300); } },
+  // ASK-01: the Ask the pet sheet from Home and from the map (every question draft as if the owner had approved it; a real last mistake
+  // so the "why" question is on the menu), one question tapped so its answer shows in the bubble
+  'ask-home': { run: async p => { await askReady(p); await p.evaluate(() => home()); await askTap(p); } },
+  'ask-map': { run: async p => { await askReady(p); await p.evaluate(() => pathMap('math')); await p.waitForSelector('.ak-mp', { timeout: 5000 });
+    await p.evaluate(() => document.querySelector('.ak-mp').scrollIntoView({ block: 'center' })); await askTap(p); } },
   'grown-children': {
     adult: true,
     run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),
@@ -376,6 +381,21 @@ const SCREENS = {
   'read5-order': { run: async p => teach4Beat(p, 'sent3', 'tog', 0) },
   'read5-pos': { run: async p => teach4Beat(p, 'gram2', 'exp', 0) },
   'read5-plural': { run: async p => teach4Beat(p, 'gram3', 'tog', 0) },
+  // TEACH-5S: the Spanish shape (the el / la sort, say it with me, a word heard, words to pick, the pet's el or la) and the Discover shape (the guess, the look
+  // picture, a prediction, the sun and the shade, a reason, the pet's prediction)
+  'teach5s-es-sort': { run: async p => teach5Beat(p, 'es_animal1', 'exp', 0) },
+  'teach5s-es-name': { run: async p => teach5Beat(p, 'es_food1', 'name', 0) },
+  'teach5s-es-with': { run: async p => teach5Beat(p, 'es_food1', 'name', 1) },
+  'teach5s-es-hear': { run: async p => teach5Beat(p, 'es_body1', 'tog', 1) },
+  'teach5s-es-pick': { run: async p => teach5Beat(p, 'es_house1', 'tog', 2) },
+  'teach5s-es-pet': { run: async p => teach5Beat(p, 'es_trans1', 'chk', 0) },
+  'teach5s-disc-guess': { run: async p => teach5Beat(p, 'sci_phys1', 'exp', 0) },
+  'teach5s-disc-look': { run: async p => teach5Beat(p, 'sci_phys1', 'name', 0) },
+  'teach5s-disc-look2': { run: async p => teach5Beat(p, 'sci_life1', 'name', 0) },
+  'teach5s-disc-predict': { run: async p => teach5Beat(p, 'sci_life1', 'tog', 1) },
+  'teach5s-disc-sun': { run: async p => teach5Beat(p, 'sci_earth1', 'show', 0, 1) },
+  'teach5s-disc-why': { run: async p => teach5Beat(p, 'sci_earth1', 'tog', 2) },
+  'teach5s-disc-pet': { run: async p => teach5Beat(p, 'sci_life1', 'chk', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   // LS-STOP: the lesson stop on the map (its ticket, Make Ten's practice locked behind it), the start card, the top bar's ticket meter, the
   // end card with its game time
@@ -442,6 +462,22 @@ const SCREENS = {
   // G-04a2: the recipe book and the café journey in the shop (8 days played opens it)
   'snack-book': { run: ev(() => { snSave(); S.snack.book = { cheesy: 2, jamtoast: 1 }; snBook(); }) },
   'snack-cafe': { run: ev(() => { snSave(); S.snack.days = 8; S.snack.coins = 400; S.snack.cafe = { cart: 1 }; snShop('c:lights'); }) },
+  // G-MOVES (v188): the new move's card (once, over a menu), each game's boss screen (GH.boss), the rival run with the Hop button, the
+  // chef's taste test with the Star serve button, the champion race with the Drift button, Bea's mirror build, the sky race's Dash
+  'game-move': { run: ev(() => { gtime(); S.garage = { st: { m1: 7, m2: 7 } }; garage(); }) }, // the Hop's card at the top of the menu
+  'hill-boss': { run: ev(() => { gtime(); S.garage = { st: { m5: 1 } }; hcBossMenu(0); }), main: '#gbgo' },
+  'hill-race': { run: ev(() => { gtime(); S.garage = { st: { m1: 7, m2: 7, m5: 7 } }; hcStart(0, null, null, true); }), main: '.pedal, #hchop', sheet: pauseSheet },
+  'rally-boss': { run: ev(() => { rlSave(); S.rally.cups = { sprout: { best: 1, runs: 1 } }; S.rally.bs = { sprout: { n: 2, w: 1 } }; rlChampMenu(0); }), main: '#gbgo' },
+  'rally-champ': { run: async p => { await p.evaluate(() => { rlSave(); S.rally.races = 5; S.rally.cups = { sprout: { best: 1, runs: 1 } }; rlRace('meadow-1', { champ: 0 }); }); await p.waitForTimeout(4500); },
+    main: '.rl-btn', sheet: pauseSheet },
+  'snack-boss': { run: ev(() => { snSave(); S.snack.stars = { park: 2 }; S.snack.place = 'park'; snChefMenu(); }), main: '#gbgo' },
+  'snack-chef': { run: async p => { await p.evaluate(() => { snSave(); S.snack.days = 2; S.snack.stars = { park: 2 }; S.snack.place = 'park'; S.snack.mode = 'calm'; snDay({ chef: true }); });
+    await p.waitForTimeout(2500); }, main: '.sn-fb, .sn-serve, .sn-undo, .sn-star', sheet: pauseSheet },
+  'game-hop-boss': { run: ev(() => { gtime(); const best = {}; for (const c of HOP_COURSES.slice(0, 6)) best[c.id] = 60000; S.hop = { mode: 'one', best, runs: 6 }; hopBossMenu(0); }), main: '#gbgo' },
+  'game-hop-race': { run: async p => { await p.evaluate(() => { gtime(); const best = {}; for (const c of HOP_COURSES.slice(0, 6)) best[c.id] = 60000; S.hop = { mode: 'one', best, runs: 6 };
+    hopPlay(HOP_COURSES[5].id, null, true); }); await p.waitForTimeout(2500); }, main: '.hp-btn', sheet: pauseSheet },
+  'blocks-boss': { run: ev(() => { gtime(); for (let i = 0; i < 6; i++) bbBP()[BBP[i].id] = 2; bbBossMenu(0); }), main: '#gbgo' },
+  'blocks-mirror': { run: ev(() => { gtime(); for (let i = 0; i < 6; i++) bbBP()[BBP[i].id] = 2; blockBuilder('boss0'); }), main: '.bb-pal button', sheet: pauseSheet },
   'game-timeup': {
     run: async p => { await p.evaluate(() => { gtime(); artPage('m:17'); }); await p.waitForTimeout(600); await p.evaluate(() => timeUpOverlay()); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }),
@@ -451,6 +487,20 @@ const SCREENS = {
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 // P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
 // PERS-01: the hints part (the picker and PERSW) loaded, with the interest drafts' words in PERSW (nothing is reviewed yet)
+// ASK-01: the hints part loaded, the question drafts' words in ASKW (nothing is reviewed yet), the Ask button on (ASK_ON), a last mistake
+async function askReady(p) {
+  await p.evaluate(() => partLoad('hints'));
+  await p.waitForFunction(() => typeof askOpen == 'function', null, { timeout: 30000 });
+  const W = Object.fromEntries(require('./author.js').askDrafts().filter(x => x.d).map(x => [x.d.id, { q: x.d.q, a: x.d.a }]));
+  await p.evaluate(W => { window.say = window.__a11y.say; Object.assign(ASKW, W); ASK_ON = Object.keys(W).length; S.grade = 1;
+    const q = genQ('add', 2, 3); ASK_LM = { q, v: String(+q.ans + 1), k: SKEY }; }, W);
+}
+async function askTap(p) {
+  await p.click('.ak-btn');
+  await p.waitForSelector('.sheet-bg.on .ak-q', { timeout: 15000 });
+  await p.click('.ak-q[data-ask="next"]');
+  await p.waitForTimeout(400);
+}
 async function persReady(p) {
   await p.evaluate(() => partLoad('hints'));
   await p.waitForFunction(() => typeof persPick == 'function', null, { timeout: 30000 });
@@ -489,6 +539,17 @@ async function teach4Beat(p, id, beat, k) {
     const st = LS.make(id, { seed: 3, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat));
     for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
     LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k]);
+  await p.waitForTimeout(1500);
+}
+// TEACH-5S: a beat of a Spanish or Discover lesson (part teaches, after teachrd); seed: a seed that draws the item wanted
+async function teach5Beat(p, id, beat, k, seed) {
+  await p.evaluate(() => partsLoad(['teach', 'teach12', 'teachrd', 'teaches']));
+  await p.waitForFunction(() => typeof LS_B5 != 'undefined', null, { timeout: 30000 });
+  await p.evaluate(([id, beat, k, seed]) => { window.say = window.__a11y.say; teachSave(); S.grade = Math.max(0, LESSONS[id].g); LS.WAKE = 400; LS.PET_OK = 0;
+    const st = LS.make(id, { seed: seed || 3, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat));
+    if (beat == 'name' && !Object.keys(st.ctx).length) { st.exp = st.L.exp(st.r); Object.assign(st.ctx, st.exp.react(lsRight(st.exp.q)).ctx); LS.beat(st, LSB.indexOf('name')); }
+    for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : it.m == 'say' ? 'ok' : lsRight(it.q)); LS.next(st); }
+    LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, seed]);
   await p.waitForTimeout(1500);
 }
 async function gamesReady(p) {

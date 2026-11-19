@@ -403,8 +403,92 @@ const GH = {
       `<div class="rw-acts gh-acts">${o.btns || ''}</div></div>`;
     document.body.appendChild(el);
     if (o.win) RW.burst(el.firstChild, 28); // drawn confetti (hidden in calm mode)
+    // review fix (v186, was Star Rally's rlGuard): a finger still down from the game when the card opens (Gas, Drift, Hold to
+    // float, Dash, a build tap) must not press a button when it lifts. A pointer click works only after a new press on the card;
+    // a key press (click with detail 0) always works
+    if (el.addEventListener) { // (tools/test.js draws cards on a stub document)
+      el.addEventListener('pointerdown', () => { el._armed = 1; }, true);
+      el.addEventListener('click', e => { if (e.detail && !el._armed) { e.stopPropagation(); e.preventDefault(); } }, true);
+    }
     return el;
   },
+
+  /* ---- G-MOVES (v188): one new move and one boss per action game. The games keep their own rules; these are the shared screens.
+     A boss is a friendly rival: the child is never hurt and never loses anything; every try makes the rival a little easier
+     (each game's own rule, pure and tested), the child can try again or go Back at any time, and a win pays in the game's own
+     reward (bolts, sparkles, coins, stars). A new move opens by playing (each game's own rule) and is shown once, at the top of its menu (moveNew). ---- */
+  // a friendly rival's face (100 x 100, object-art roles): kind, see GH_FACE; hat helmet | chef | hard | goggles; hue: the helmet's colour
+  face(kind, hat = '', hue = 'r') {
+    const F = GH_FACE[kind] || GH_FACE.bear, c = F.c, ear = F.ear;
+    let s = ghShad(50, 95, 30, 4);
+    if (ear == 'round') s += ghC(25, 30, 13, c + '2') + ghC(75, 30, 13, c + '2') + ghC(25, 30, 7, F.in) + ghC(75, 30, 7, F.in);
+    else if (ear == 'point') s += ghP('M18 42L22 10L44 30Z', c + '2') + ghP('M82 42L78 10L56 30Z', c + '2') + ghP('M23 34L25 18L36 30Z', F.in) + ghP('M77 34L75 18L64 30Z', F.in);
+    else if (ear == 'long') s += ghE(36, 18, 8, 22, c + '2', 1, -10) + ghE(64, 18, 8, 22, c + '2', 1, 10) + ghE(36, 20, 4, 15, F.in, 1, -10) + ghE(64, 20, 4, 15, F.in, 1, 10);
+    else if (ear == 'tuft') s += ghP('M26 36L30 14L42 30Z', c + '2') + ghP('M74 36L70 14L58 30Z', c + '2');
+    s += ghC(51, 56, 32, c + '2') + ghC(49, 54, 30, c) + ghE(40, 40, 12, 7, 'w', .35, -25);
+    if (kind == 'panda') s += ghE(37, 52, 8, 10, 'k2', 1, 20) + ghE(63, 52, 8, 10, 'k2', 1, -20);
+    s += ghE(50, 68, F.beak ? 9 : 15, F.beak ? 7 : 11, F.mz) + ghC(38, 52, 4.6, 'k') + ghC(62, 52, 4.6, 'k') + ghC(39.4, 50.6, 1.6, 'w') + ghC(63.4, 50.6, 1.6, 'w');
+    s += F.beak ? ghP('M43 64L57 64L50 74Z', 'o') : ghE(50, 63, 5, 3.6, 'k2') + ghL('M43 70Q50 76 57 70', 'k2', 2.4);
+    if (kind == 'beaver') s += ghR(46, 72, 8, 7, 1.5, 'w');
+    s += ghC(30, 64, 4.6, 'p', .45) + ghC(70, 64, 4.6, 'p', .45);
+    if (hat == 'helmet') s += ghP('M19 46Q19 16 50 16Q81 16 81 46Z', hue + '2') + ghP('M21 44Q22 19 50 19Q78 19 79 44Z', hue) + ghR(42, 18, 16, 26, 3, 'w', .85) + ghE(38, 26, 8, 4, 'w', .45, -20);
+    else if (hat == 'chef') s += ghC(36, 18, 11, 'w2') + ghC(50, 12, 13, 'w2') + ghC(64, 18, 11, 'w2') + ghC(35, 17, 10, 'w') + ghC(49, 11, 12, 'w') + ghC(63, 17, 10, 'w') + ghR(30, 20, 40, 14, 3, 'w');
+    else if (hat == 'hard') s += ghP('M22 38Q22 12 50 12Q78 12 78 38Z', 'y2') + ghP('M24 36Q25 15 50 15Q75 15 76 36Z', 'y') + ghR(16, 34, 68, 7, 3, 'y2') + ghR(46, 13, 8, 23, 2, 'y1');
+    else if (hat == 'goggles') s += ghR(22, 28, 56, 7, 3, 'n2') + ghC(38, 31, 9, 'n2') + ghC(62, 31, 9, 'n2') + ghC(38, 31, 6.5, 'c1') + ghC(62, 31, 6.5, 'c1') + ghE(35.5, 28.5, 2.4, 1.6, 'w', .8, -30) + ghE(59.5, 28.5, 2.4, 1.6, 'w', .8, -30);
+    return s;
+  },
+  faceSVG(kind, hat, hue, aria) {
+    return `<svg class="art gh-face" viewBox="0 0 100 100" ${aria ? `role="img" aria-label="${esc(aria)}"` : 'aria-hidden="true"'} focusable="false">${GH.face(kind, hat, hue)}</svg>`;
+  },
+  // a rival record {n: tries, w: wins} kept by id in a game's save: bad or unknown entries go (ok(id) says which ids are real)
+  bossRec(o, ok) {
+    const r = o && typeof o == 'object' && !Array.isArray(o) ? o : {};
+    for (const k of Object.keys(r)) {
+      const v = r[k];
+      if (!ok(k) || !v || typeof v != 'object') { delete r[k]; continue; }
+      r[k] = { n: Math.max(0, Math.min(999, Math.floor(+v.n || 0))), w: Math.max(0, Math.min(999, Math.floor(+v.w || 0))) };
+    }
+    return r;
+  },
+  // the boss's screen. o: {id (the game), key (a short title for the top bar), name, kind, hat, hue, line (the rival says it), goal,
+  // prize, won (the child beat this rival before), tries, easier (the line once the child has tried), go (the start button), start(), back()}
+  boss(o) {
+    const say1 = `${o.name}: ${o.line}`;
+    view(`${GH.top(o.id, { sub: o.key || 'Boss' })}<div class="scroll gh-boss" id="ghboss">
+  <section class="gh-bcard"><div class="gh-bpic">${GH.faceSVG(o.kind, o.hat, o.hue, o.name)}${o.won ? `<span class="gh-bwon">${ico('crown', 28)}</span>` : ''}</div>
+   <div class="gh-bsay"><h1>${esc(o.name)}</h1><p>${esc(o.line)}</p>${UI.ibtn('speak', 'Hear it', { id: 'gbsay' })}</div></section>
+  <ul class="gh-blist"><li>${ico('target', 26)}<span>${esc(o.goal)}</span></li><li>${ico('gift', 26)}<span>${esc(o.prize)}</span></li>
+   <li>${ico('heart', 26)}<span>${esc(o.tries ? o.easier : 'Try as many times as you like.')}</span></li>${o.won ? `<li>${ico('crown', 26)}<span>You beat ${esc(o.name)}!</span></li>` : ''}</ul>
+  ${UI.btn(o.go || "Let's go!", { kind: 'primary', size: 'lg', icon: 'play', id: 'gbgo', wide: true })}</div>`);
+    GH.wire({ back: o.back });
+    $('#gbsay').onclick = () => say(say1);
+    $('#gbgo').onclick = () => {
+      if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+      SFX.whoosh();
+      o.start();
+    };
+    if (S.voice) say(say1);
+  },
+  // a new move, shown once at the top of the game's menu (not a dialog: the menu works as before under it): the move's icon,
+  // "New move: <name>!", one line and "Got it!", which takes it away; o.done runs then (the game saves that it was seen)
+  moveNew(o) {
+    const sc = document.querySelector('#app .scroll');
+    if (!sc || !sc.insertAdjacentHTML || document.querySelector('.gh-mvb')) return null;
+    sc.insertAdjacentHTML('afterbegin', `<section class="gh-mvb" aria-label="New move: ${esc(o.name)}"><span class="gh-mvi">${ico(o.icon, 40)}</span>` +
+      `<div class="gh-mvt"><h2>New move: ${esc(o.name)}!</h2><p>${esc(o.line)}</p></div>${UI.btn('Got it!', { kind: 'primary', icon: 'check', id: 'gmvok' })}</section>`);
+    const el = sc.querySelector('.gh-mvb');
+    if (S.voice) say(`New move! ${o.name}! ${o.line}`);
+    el.querySelector('#gmvok').onclick = () => { SFX.pop(2); el.remove(); if (o.done) o.done(); };
+    return el;
+  },
+};
+// G-MOVES: the rivals' faces: base colour role (its shade is role + '2'), ear shape, inner ear, muzzle; a beak for a bird
+const GH_FACE = {
+  bear: { c: 'n', ear: 'round', in: 'n1', mz: 't' }, fox: { c: 'o', ear: 'point', in: 'w', mz: 'w' },
+  rabbit: { c: 'w', ear: 'long', in: 'p', mz: 'w' }, beaver: { c: 't', ear: 'round', in: 'n', mz: 'm' },
+  bird: { c: 'c', ear: 'tuft', in: 'c', mz: 'w', beak: 1 }, cat: { c: 'e', ear: 'point', in: 'p', mz: 'w' },
+  panda: { c: 'w', ear: 'round', in: 'k2', mz: 'w' }, owl: { c: 't', ear: 'tuft', in: 't', mz: 'm', beak: 1 },
+  frog: { c: 'g', ear: 'none', in: 'g', mz: 'g1' }, penguin: { c: 'b', ear: 'none', in: 'b', mz: 'w', beak: 1 },
 };
 
 // The Game Room's games, in hub order. Each game file keeps its own code; only these entries tell the hub about it.

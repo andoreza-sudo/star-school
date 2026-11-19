@@ -70,7 +70,7 @@ const NB = {
     if (!t || $('#nbopen') || !NB.pages().length) return;
     const b = UI.ibtn('doc', 'My notebook', {size: 'sm', id: 'nbopen', cls: 'nbk-open'}), c = t.querySelector('.chip');
     if (c) c.insertAdjacentHTML('beforebegin', b); else t.insertAdjacentHTML('beforeend', b);
-    const mp = MAPP == 'read' ? 'read' : 'math'; // TEACH-4: back to the map it was opened from
+    const mp = ['read', 'es', 'disc'].includes(MAPP) ? MAPP : 'math'; // TEACH-4: back to the map it was opened from (TEACH-5S: Spanish, Discover)
     $('#nbopen').onclick = () => { SFX.whoosh(); NB.open(() => pathMap(mp)); };
   },
 };
