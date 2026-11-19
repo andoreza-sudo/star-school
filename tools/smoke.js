@@ -616,7 +616,7 @@ async function main() {
         return { src, files: appFiles(), lazy: LAZY_PARTS, btIn: partReady('bt') || typeof MZ != 'undefined', dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
           pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
-          css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
+          css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
@@ -671,7 +671,8 @@ async function main() {
       await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
       const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
-      const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
+      // MERGE-185: the hints part (with PERS-01's picker <style>) loads on its own when a round starts, so like its <script> tag its <style> is left out of these lists
+      const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
       if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
         || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
@@ -1143,7 +1144,7 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 8 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8
+      if (r0.v !== 9 || // LS-STOP: migration 6 raised the save version from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9
          r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
@@ -8747,7 +8748,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 8 /* LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 9 /* LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -10710,7 +10711,7 @@ async function main() {
         await p2.locator('#groom').waitFor({ timeout: 15000 });
         const s2 = await p2.evaluate(() => {
           S.pt = { bank: 900, day: today(), used: 0 }; save(); home();
-          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
         if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false' || // ten lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage), less petage (Home's, filtered above): nine
@@ -10727,7 +10728,7 @@ async function main() {
         await p2.click('#groom');
         await p2.locator('.gh-room .gh-card').first().waitFor({ timeout: 15000 });
         const wait = await p2.evaluate(() => window.__w);
-        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
@@ -10755,7 +10756,7 @@ async function main() {
           S.grade = 2; save(); BT.start('maze', BT.band(), 1);
         });
         await p2.locator('#btstage .mz-cv').waitFor({ timeout: 15000 }).catch(() => {});
-        const s5 = await p2.evaluate(() => ({ wait: window.__w, maze: !!document.querySelector('#btstage .mz-cv'), bt: partReady('bt'), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+        const s5 = await p2.evaluate(() => ({ wait: window.__w, maze: !!document.querySelector('#btstage .mz-cv'), bt: partReady('bt'), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
           cur: S.bt.cur && S.bt.cur.id }));
         if (!s5.wait || s5.wait.line !== 'Getting the puzzles ready...' || !s5.wait.back || !s5.maze || !s5.bt || s5.cur !== 'maze' || !/css-bt$/.test(s5.css)) bad.push('a puzzle offline: ' + JSON.stringify(s5));
         else notes.push('a maze opened offline from the cached ' + 'bt.' + c1.ver + '.js');
@@ -13175,6 +13176,155 @@ async function main() {
         'letter tiles, the pet\'s word read wrong and built right, a sentence matched to a picture), every screen fitting with no hole in the words; no console errors, no network requests');
     }
     // end TEACH-4
+    // READ-SHAPES the K-2 reading stops in their new lesson shapes (52q-bench5r.js, 52r-lessons5r.js, 52q-teach5r.css in the part teachrd; drafts of
+    // batch 5r), at 380x780 and 600x960 on the midway save. The reading map of a Kindergartner who passed First Sounds has a lesson stop in front of
+    // Sight Words. Four lessons through every beat by the real controls, the pet's mistake forced (LS.PET_OK 0): Sight Words (the word cards turned over,
+    // the word that flashes and hides, then shows again), Story Time (the story card with a speaker per sentence, told before the question), Capitals &
+    // End Marks (the sentence fixer) and Count the Claps (the Clap button). Then the first Together item of every other shape, done by its own
+    // controls and taken: the rhyme sorter's lesson, dictation tiles, the pairs match (opposites, synonyms), word tiles in order, the naming and doing
+    // sorter, the add s or es word. Every screen fits, 48 px buttons, no hole in the words; screenshots (READ5_SHOTS, default tools/out/read5).
+    if (seg('READ-SHAPES')) {
+      const bad = [], notes = [], shots = process.env.READ5_SHOTS || require('path').join(__dirname, 'out', 'read5');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const shot = (pg, n) => pg.screenshot({ path: require('path').join(shots, n + '.png') });
+      const wake5 = pg => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+      const act5 = async (pg, wrong) => {
+        await wake5(pg);
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, word: q.word, tiles: q.tiles, m5: q.m || null,
+            items: q.items && q.items.map(c => [c.v, c.b]), opts: q.opts && q.opts.map(c => c.v), bins: q.bins && q.bins.map(b => b.v), order: q.kind == 'order' ? q.ans : null,
+            choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'build') {
+          const used = [], want = wrong ? it.tiles.slice(1).concat(it.tiles[0]).join('').slice(0, it.word.length) : it.word;
+          for (const ch of want) { const i = it.tiles.findIndex((t, j) => t == ch && !used.includes(j)); used.push(i); await pg.click(`.lt[data-i="${i}"]`); }
+        } else if (it.kind == 'sort') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.schip[data-i="${i}"]`); await pg.click(`.sbt[data-b="${it.bins.indexOf(it.items[i][1])}"]`, { position: { x: 16, y: 12 } }); }
+          await pg.click('#mcheck');
+        } else if (it.kind == 'order') {
+          const used = []; for (const v of it.order) { const i = it.items.findIndex((c, j) => c[0] == v && !used.includes(j)); used.push(i); await pg.click(`.ot[data-i="${i}"]`); }
+        } else if (it.kind == 'match') {
+          for (let i = 0; i < it.items.length; i++) { await pg.click(`.mb[data-s="L"][data-i="${i}"]`); await pg.click(`.mb[data-s="R"][data-i="${it.opts.indexOf(it.items[i][0])}"]`); }
+        } else if (it.kind == 'make' && it.model == 'flash') {
+          await pg.click(`.ls5-card[data-d="${wrong ? (it.m5.t + 1) % 4 : it.m5.t}"]`); await pg.click('#mcheck');
+        } else if (it.kind == 'make' && it.model == 'clap') {
+          for (let j = 0; j < it.m5.n + (wrong ? 1 : 0); j++) await pg.click('.ls5-clapb'); await pg.click('#mcheck');
+        } else if (it.kind == 'make' && it.model == 'sfix') {
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          if (!cur[0]) await pg.click('.ls5-fb[data-i="0"]');
+          await pg.click(`.ls5-fb[data-i="1"][data-d="${wrong ? 3 - (it.m5.ask ? 2 : 1) : it.m5.ask ? 2 : 1}"]`); await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const step5 = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await act5(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fit5 = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        // the size by layout (offsetWidth): the prompt card grows in with a short scale animation
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear, #prompt button')) { const r = b.getBoundingClientRect(); if (r.width && (b.offsetWidth < 47.5 || b.offsetHeight < 47.5)) o.push('small button ' + (b.getAttribute('aria-label') || b.id || b.className));
+          if (r.width && (r.right > vw + 1 || r.left < -1)) o.push('button off screen ' + (b.getAttribute('aria-label') || b.className)); }
+        for (const b of document.querySelectorAll('#lsplay button')) if (!(b.getAttribute('aria-label') || b.textContent.trim())) o.push('a button with no name ' + b.className);
+        if (/undefined|NaN|\{[a-z]+\}/.test(document.querySelector('#lsplay').textContent)) o.push('a hole in the words: ' + document.querySelector('#lsbub').textContent);
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'READ-SHAPES ' + w + 'x' + h + ' ';
+        try {
+          // 1. the reading map of a Kindergartner who passed First Sounds: a lesson stop in front of Sight Words, which waits for it
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES.read.findIndex(n => nid(n) === 'sight1');
+            for (let j = 0; j < NODES.read.length; j++) setSt('read', j, j < i ? 2 : 0); save(); pathMap('read', NODES.read[i].wi); });
+          await pg.waitForFunction(() => partReady('teachrd') && typeof ls5Sight == 'function', null, { timeout: 15000 });
+          await pg.waitForTimeout(300);
+          const st0 = await pg.evaluate(() => { const i = NODES.read.findIndex(n => nid(n) === 'sight1'); return { stop: lsStopAt('read', i), gate: lsGate('read', i), node: !!document.querySelector(`.lsn[data-ls="${i}"]`), css: !!document.querySelector('#css-teachrd') }; });
+          if (!st0.stop || !st0.gate || !st0.node || !st0.css) bad.push(at + 'Sight Words has no lesson stop on the reading map: ' + JSON.stringify(st0));
+          await shot(pg, `read5-map-${w}x${h}`);
+          await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; window.__said5 = []; const s0 = window.say; window.say = (t, ...a) => { window.__said5.push(String(t)); return s0(t, ...a); }; });
+          // 2. four lessons through every beat
+          for (const [id, gr] of [['sight1', 0], ['comp1', 1], ['gram1', 1], ['syl2', 1]]) {
+            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; const i = NODES.read.findIndex(n => nid(n) === id); for (let j = 0; j <= i; j++) setSt('read', j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
+            await pg.waitForSelector('#lsplay', { timeout: 5000 });
+            const path = [], seen = [];
+            let pet = null, fixed = false;
+            for (let n = 0; n < 50; n++) {
+              const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m + ':' + (LS.cur(LS.st).q && (LS.cur(LS.st).q.model || LS.cur(LS.st).q.kind)) + (LS.cur(LS.st).fix ? ':fix' : '') : null);
+              if (!b) break;
+              await wake5(pg);
+              if (!seen.includes(b)) { seen.push(b); await fit5(pg, at + id + ' ' + b + ': '); await shot(pg, `read5-${id}-${String(seen.length).padStart(2, '0')}-${b.replace(/:/g, '-')}-${w}x${h}`); }
+              if (b.startsWith('chk:judge') && !pet) pet = await pg.evaluate(() => { const it = LS.cur(LS.st); return { bub: document.querySelector('#lsbub').textContent, pv: it.pv, petOk: it.petOk, say: lsSayV(it.q, it.pv) }; });
+              // fixRev (v184): the pet's turn on a story says the story, then the question, then the pet's claim; the Hear button the same
+              if (id == 'comp1' && b.startsWith('chk:judge')) {
+                const told = await pg.evaluate(() => { const it = LS.cur(LS.st), want = it.q.tell.concat([it.q.say, it.lines[it.lines.length - 1]]).join(' '), n0 = window.__said5.length;
+                  const shown = window.__said5.some(t => t.includes(want)); document.querySelector('#lshear').click();
+                  return { want, shown, again: window.__said5.slice(n0).some(t => t.includes(want)), said: window.__said5.slice(-2) }; });
+                if (!told.shown || !told.again) bad.push(at + 'the pet\'s turn on a story does not tell it: ' + JSON.stringify(told));
+              }
+              if (/:fix$/.test(b)) fixed = true;
+              // the story card: a 48 px speaker for every sentence, and the story told before the question
+              if (id == 'comp1' && /^tog:ask/.test(b) && !notes.includes('story' + w)) {
+                const sc = await pg.evaluate(() => { const q = LS.cur(LS.st).q, bs = [...document.querySelectorAll('#prompt .ls5-say')];
+                  return { n: bs.length, tell: (q.tell || []).length, names: bs.map(x => x.getAttribute('aria-label')), big: bs.every(x => x.offsetHeight >= 47.5) }; });
+                if (sc.n !== 3 || sc.tell !== 3 || !sc.big || sc.names.some(x => !/^Hear: The /.test(x))) bad.push(at + 'the story card: ' + JSON.stringify(sc));
+                await pg.click('#prompt .ls5-say');
+                notes.push('story' + w);
+              }
+              // the flash card hides its word, and shows it again
+              if (id == 'sight1' && /^tog:ask:choice/.test(b) && await pg.evaluate(() => !!document.querySelector('.ls5-flash'))) {
+                // fixRev (v184): the fade starts when the controls wake (data-wake), not when the card is drawn
+                const fw = await pg.evaluate(() => { const c = document.querySelector('.ls5-flash'); return { go: c.classList.contains('go'), wake: c.dataset.wake, waiting: !!document.querySelector('#lsinp.ls-wait') }; });
+                if (!fw.go || fw.wake !== 'go' || fw.waiting) bad.push(at + 'the flash card after the controls woke: ' + JSON.stringify(fw));
+                const gone = await pg.waitForFunction(() => +getComputedStyle(document.querySelector('.ls5-flash')).opacity < .05, null, { timeout: 15000 }).then(() => true).catch(() => false);
+                await shot(pg, `read5-sight1-flash-hidden-${w}x${h}`);
+                await pg.click('.ls5-again');
+                const back = await pg.evaluate(() => +getComputedStyle(document.querySelector('.ls5-flash')).opacity > .5);
+                if (!gone || !back) bad.push(at + 'the flash card: hidden ' + gone + ', shown again ' + back);
+              }
+              path.push(b.split(':').slice(0, 2).join(':'));
+              await step5(pg, b.startsWith('pre:ask') && path.length == 1);
+            }
+            const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+            if (order !== 'pre,rem,exp,name,tog,chk,show' && order !== 'pre,rem,exp,name,tog,chk,show,win') bad.push(at + id + ' beats ' + order);
+            if (!pet || pet.petOk || !/Check me/.test(pet.bub) || !pet.bub.includes(pet.say)) bad.push(at + id + ' the pet\'s turn: ' + JSON.stringify(pet));
+            if (!fixed) bad.push(at + id + ': no fix after the pet\'s mistake');
+            await pg.waitForSelector('#lsend', { timeout: 10000 });
+            await shot(pg, `read5-${id}-end-${w}x${h}`);
+            const end = await pg.evaluate(id => ({ k: S.know[id] && S.know[id].s, idea: document.querySelector('.ls-idea').textContent, tq: S.tq, top: document.querySelector('.ls-top').className }), id);
+            if (!end.k || !end.idea || /\{/.test(end.tq) || !/Ask |Say /.test(end.tq) || !end.top.includes('s-read')) bad.push(at + id + ' the end: ' + JSON.stringify(end));
+          }
+          // 3. every other shape: its Explore model and its first Together item, done by its own controls and taken
+          for (const id of ['rhyme2', 'spell2', 'vocab1', 'sent3', 'gram2', 'gram3', 'vocab2', 'sight4', 'comp2', 'spell3']) {
+            for (const B of ['exp', 'tog']) {
+              await pg.evaluate(([id, B]) => { S.grade = LESSONS[id].g; delete S.les; const st = LS.make(id, { seed: 5, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(B)); LS.st = st; LS.show(); }, [id, B]);
+              await pg.waitForSelector('#lsplay', { timeout: 5000 });
+              await wake5(pg);
+              const k = await pg.evaluate(() => { const q = LS.cur(LS.st).q; return q.model || q.kind; });
+              await fit5(pg, at + id + ' ' + B + ' ' + k + ': ');
+              await shot(pg, `read5-${B}-${id}-${k}-${w}x${h}`);
+              const s0 = await pg.evaluate(() => LS.seq);
+              await act5(pg, false);
+              await pg.waitForFunction(x => LS.seq > x, s0, { timeout: 15000 }).catch(() => bad.push(at + id + ' ' + B + ': the right answer was not taken'));
+              if (B == 'tog' && await pg.evaluate(() => !LS.st.L || LS.st.b !== LSB.indexOf('tog') || !(LS.st.i >= 1))) bad.push(at + id + ': Together did not go on after a right answer');
+            }
+          }
+          await pg.evaluate(() => { LS.PET_OK = .25; LS.st = null; home(); });
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('READ-SHAPES the batch 5r reading lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('READ-SHAPES: the batch 5r reading lessons at ' + notes.filter(x => !/^story/.test(x)).join(' and ') + ': Sight Words has its lesson stop on the reading map; ' +
+        'Sight Words, Story Time, Capitals & End Marks and Count the Claps through every beat by the real controls (word cards, the flash card hidden and shown again, ' +
+        'the story card told aloud with a speaker per sentence, the sentence fixer, the Clap button, the pet\'s forced mistake and its fix); the Explore and first ' +
+        'Together item of ten more lessons (rhyme sorter, dictation tiles, pairs match, word order, naming and doing sorter, plurals) done by their own controls; ' +
+        'every screen fits with 48 px named buttons and no hole in the words; no console errors, no network requests');
+    }
+    // end READ-SHAPES
 
     // LS-STOP lessons are required, paid stops on the map (42b-lstop.js, 46-home.js drawMap, 58-playtime.js lsPay, 52-lesson.js LS.open,
     // the meter and the end card), at 380x780 and 600x960 on the midway save as a Kindergartner with every stop before Make Ten passed.
@@ -13358,6 +13508,112 @@ async function main() {
     }
     // end LS-STOP
 
+    // TEACH-UX: the owner's report from a tablet: a 1st grader's Remember in add3 (Make a ten to add bigger facts) was a bare "9 + 7"
+    // and a pad. Now its ten frame shows before any answer, the top bar says "Step 1 of 6 · Remember" in words without growing, and the
+    // pet says building comes next; a miss adds the hint's words only; Explore is "Step 2 of 6"
+    if (seg('TEACH-UX')) {
+      const bad = [], notes = [], path = require('path'), shots = process.env.TEACHUX_SHOTS || path.join(__dirname, 'out', 'teachux');
+      require('fs').mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, sz = w + 'x' + h, at = 'TEACH-UX ' + sz + ' ';
+        try {
+          await pg.evaluate(() => { window.__said = []; const s0 = window.say; window.say = (t, ...a) => { window.__said.push(String(t)); return s0(t, ...a); };
+            S.grade = 1; S.name = 'Mia'; S.lm = []; delete S.les; const d = STRK.idx(today()), i = NODES.math.findIndex(n => nid(n) === 'add3');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0);
+            S.know = { add2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: d - 1, d: d - 3, last: d - 3 } };
+            save(); lsOpen('math', i); });
+          await pg.waitForSelector('#lslearn', { timeout: 15000 });
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('#lslearn');
+          // 1. before any answer (read in the page the moment the screen shows): the ten frame above the sum, the label, the line
+          const r0 = await pg.waitForFunction(() => {
+            const pl = document.querySelector('#lsplay[data-beat="rem"]');
+            if (!pl) return null;
+            const box = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, l: b.left, r: b.right, w: b.width, h: b.height }; };
+            const st = document.querySelector('#lsstep'), top = document.querySelector('.ls-top'), h0 = top.getBoundingClientRect().height;
+            st.style.display = 'none'; const h1 = top.getBoundingClientRect().height; st.style.display = '';
+            const it = LS.cur(LS.st);
+            const dots = c => document.querySelectorAll('#prompt .ls-model g.' + c + '>circle').length;
+            return { q: it.q.label, kind: it.q.kind, mdl: !!it.mdl, tf: box('#prompt .ls-model svg[aria-label="ten frame"]'), two: [dots('v1'), dots('v2'), it.q.sl.a, it.q.sl.b], eq: box('#prompt .eq'), inp: box('#lsinp'),
+              step: st.textContent, clip: st.scrollWidth > st.clientWidth + 1, sb: box('#lsstep'), top: box('.ls-top'), withLabel: h0, without: h1, typed: LS.u.typed, know: JSON.stringify(S.know.add2),
+              hint: document.querySelector('#hint').innerHTML, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
+              sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]') };
+          }, null, { timeout: 15000 }).then(x => x.jsonValue());
+          if (!/^add2 /.test(r0.q) || r0.kind !== 'num' || !r0.mdl || !r0.tf || r0.tf.h < 60 || r0.tf.t < r0.top.b || r0.tf.b > r0.eq.t + 1 || r0.typed || r0.hint)
+            bad.push(at + 'the ten frame before any answer: ' + JSON.stringify(r0));
+          // the owner's "two colors yes" (v184): the first addend in the first colour, the second in the second
+          if (r0.two[0] !== r0.two[2] || r0.two[1] !== r0.two[3]) bad.push(at + 'the ten frame is not the two addends in two colours: ' + JSON.stringify(r0.two));
+          if (!/^Step 1 of 6 · Remember$/.test(r0.step) || r0.clip || !r0.read || r0.sb.r > r0.vw || r0.sb.l < 0 || r0.sb.b > r0.top.b) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.top]));
+          if (Math.abs(r0.withLabel - r0.without) > .5) bad.push(at + 'the label makes the top bar taller: ' + r0.without + ' -> ' + r0.withLabel);
+          if (r0.sw > r0.vw || r0.tf.r > r0.vw || (w < 1000 && r0.eq.b > r0.inp.t + 1)) bad.push(at + 'does not fit: ' + JSON.stringify(r0));
+          await pg.waitForFunction(() => !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+          const said = await pg.evaluate(() => window.__said.join(' | '));
+          if (!/Quick one first, then we build! Do you remember this\?/.test(said)) bad.push(at + 'the pet does not say building comes next: ' + said);
+          await pg.screenshot({ path: path.join(shots, `teachux-rem-${sz}.png`) });
+          // 2. a miss: the same retry as before, the hint adds its words (the picture is already up); the record is as before
+          const ans = await pg.evaluate(() => LS.cur(LS.st).q.ans);
+          for (const d of String(+ans + 1)) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await pg.waitForFunction(() => document.querySelector('#hint').textContent.trim(), null, { timeout: 8000 });
+          const m1 = await pg.evaluate(() => ({ svg: document.querySelectorAll('#hint svg').length, tf: document.querySelectorAll('#prompt .ls-model svg').length, b: LSB[LS.st.b],
+            tries: LS.cur(LS.st).tries, rec: S.know.add2 && S.know.add2.last }));
+          if (m1.svg || m1.tf !== 1 || m1.b !== 'rem' || m1.tries !== 1) bad.push(at + 'after a miss: ' + JSON.stringify(m1));
+          // 3. right: on to Explore, "Step 2 of 6 · Explore"
+          await pg.waitForFunction(() => !LS.u.lock, null, { timeout: 15000 });
+          for (const d of String(ans)) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await pg.waitForSelector('#lsplay[data-beat="exp"]', { timeout: 15000 });
+          // every beat's label fits whole, with the ticket meter and without it (a lesson that pays nothing shows its name on wide screens)
+          const s2 = await pg.evaluate(() => {
+            const o = [document.querySelector('#lsstep').textContent], p0 = lsPriceTag, st0 = LS.st;
+            for (const pay of [true, false]) { if (!pay) lsPriceTag = () => '';
+              for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
+                const e = document.querySelector('#lsstep'); if (!e.textContent || e.scrollWidth > e.clientWidth + 1) o.push('clipped ' + B + (pay ? '' : ' (no meter)') + ': ' + e.textContent); }
+              lsPriceTag = p0; }
+            LS.st = null; return o; });
+          if (s2[0] !== 'Step 2 of 6 · Explore' || s2.length > 1) bad.push(at + 'the labels: ' + s2.join(' | '));
+          notes.push(sz);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      // fixRev (v184): on 320 and 360 px phones, with the ticket meter, the label leaves out " of 6" and every step's name shows whole
+      for (const [w, h] of [[320, 640], [360, 740]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, sz = w + 'x' + h, at = 'TEACH-UX ' + sz + ' ';
+        try {
+          await pg.evaluate(() => { S.grade = 1; S.name = 'Mia'; S.lm = []; delete S.les; const i = NODES.math.findIndex(n => nid(n) === 'add3');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); lsOpen('math', i); });
+          await pg.waitForSelector('#lslearn', { timeout: 15000 });
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('#lslearn');
+          await pg.waitForSelector('#lsplay', { timeout: 15000 });
+          const s3 = await pg.evaluate(() => {
+            const o = [], vw = document.documentElement.clientWidth; let met = 0;
+            for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
+              const e = document.querySelector('#lsstep'), name = LS.step(B).split(' · ').pop(), vis = e.innerText.trim(), r = e.getBoundingClientRect();
+              if (document.querySelector('.ls-top #lsmeter')) met++;
+              if (e.scrollWidth > e.clientWidth + 1 || !vis.endsWith(name) || / of /.test(vis) || r.right > vw || r.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
+            const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show();
+            return { o, met, tog: document.querySelector('#lsstep').innerText.trim() }; });
+          if (s3.o.length || !s3.met || s3.tog !== 'Step 4 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
+          await pg.screenshot({ path: path.join(shots, `teachux-step-${sz}.png`) });
+          notes.push(sz + ' "' + s3.tog + '"');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-UX the model up front:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-UX: add3 as a 1st grader at ' + notes.join(', ') + ': Remember (add2) shows its ten frame above the sum before any answer; the top bar reads ' +
+        '"Step 1 of 6 · Remember" in words and is no taller for it; the pet says "Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads ' +
+        '"Step 2 of 6 · Explore"; every beat\'s label fits whole, with and without the ticket meter; at 320 and 360 px with the meter every step\'s name shows whole ' +
+        '(no "of 6"); screenshots in tools/out/teachux; no console errors, no network requests');
+    }
+    // end TEACH-UX
+
     // PLAY-01: the Google Play app (?src=play with a mocked Google Play billing, Digital Goods v2): the free sample's 5 stops, a child's
     // tap on a locked stop and world, the grown-ups' unlock behind the question, the purchase and its acknowledgement, Grown-ups by the
     // hold and a reinstall restored, the free Game Room; normal Chrome and the web version lock nothing
@@ -13537,17 +13793,23 @@ async function main() {
     // end PLAY-01
     // HINT-01 (docs/ROADMAP.md 10d): a hint for each common mistake in Practice. In a real round at 380x780 and 600x960: a math question
     // (5747 + 9829 style, answered as if the child forgot to carry; 2-digit sums have their own why sentences, KINDS2-D) and a reading question (a picture word, the wrong first sound) show the
-    // mistake's line above the generic hint, with the question's numbers filled in, once its line is approved (HINTW, simulated here
-    // with the draft's own line); with no approved line the generic hint alone shows, as before. The second try, the score and the
+    // mistake's line above the generic hint, with the question's numbers filled in, once its line is approved (HINTW: the owner approved
+    // all 117 on 2026-11-19, so the page's HINTW must be the reviewed drafts' lines; the gate is then tested by emptying HINTW and
+    // putting one line back); with no approved line the generic hint alone shows, as before. The second try, the score and the
     // round go on as they always did. Screenshots in tools/out/hints/.
     if (seg('HINT-01')) {
       const bad = [], notes = [], shots = require('path').join(__dirname, 'out', 'hints'), A = require('./author.js');
       require('fs').mkdirSync(shots, { recursive: true });
       const LN = Object.fromEntries(A.hintDrafts().filter(x => x.d).map(x => [x.d.code, x.d.line]));
+      const LNR = Object.fromEntries(A.hintDrafts().filter(x => x.d && x.d.status === 'reviewed').map(x => [x.d.code, x.d.line])); // owner approved 2026-11-19
       for (const [w, h] of [[380, 780], [600, 960]]) {
         const ha = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const pg = ha.page, at = 'HINT-01 ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), sz = w + 'x' + h;
         try {
+          // the page as built: HINTW is exactly the reviewed drafts' lines (owner approved 2026-11-19)
+          const hw = await pg.evaluate(() => JSON.stringify(HINTW));
+          if (hw !== JSON.stringify(Object.fromEntries(Object.keys(JSON.parse(hw)).map(k => [k, LNR[k]]))) || Object.keys(JSON.parse(hw)).sort().join() !== Object.keys(LNR).sort().join())
+            bad.push(at + 'HINTW on the page is not the reviewed drafts\' lines');
           await pg.evaluate(() => { S.grade = 2; S.voice = false; for (const k in HINTW) delete HINTW[k]; });
           const HM_ = () => { const e = document.querySelector('#hint .why.hm'); return e ? { code: e.dataset.hm, text: e.textContent.trim() } : null; };
           const fitHint = async tag => {
@@ -13630,6 +13892,100 @@ async function main() {
         'a right answer shows none; on screen, no sideways scroll; no console errors, no network requests; the hints part loads with a round, not at start');
     }
     // end HINT-01
+    if (seg('PERS-01')) {
+      // PERS-01: Grown-ups' Story themes card opens the picker; the grown-up picks Dinosaurs (the drafts' words: the owner approved all 8 on
+      // 2026-11-19, so the page's PERSW must be the reviewed drafts' words; the gate is tested by emptying PERSW, as for an unreviewed
+      // interest, then putting the words back); a story round then asks a themed problem with the same math as the default one, said as shown
+      const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'pers'), A = require('./author.js');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const W = Object.fromEntries(A.persDrafts().filter(x => x.d).map(x => [x.d.id, { name: x.d.name, pic: x.d.pic, things: x.d.things, st: x.d.st }]));
+      const WR = Object.fromEntries(A.persDrafts().filter(x => x.d && x.d.status === 'reviewed').map(x => [x.d.id, W[x.d.id]])); // owner approved 2026-11-19
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = pa.page, at = 'PERS-01 ' + w + 'x' + h + ' ', sz = w + 'x' + h;
+        const FIT = () => {
+          const o = [], vw = document.documentElement.clientWidth;
+          if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+          for (const e of document.querySelectorAll('.pp-c, #pers-done, #pers-open, #back')) {
+            const r = e.getBoundingClientRect();
+            if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.width && (r.left < -1 || r.right > vw + 1)) o.push('outside ' + (e.id || e.dataset.int));
+          }
+          return o;
+        };
+        try {
+          // the page as built: PERSW is exactly the reviewed drafts' words, and with no interest picked a story is the default one byte for byte
+          const live = await pg.evaluate(() => { const ints = S.ints, W = JSON.stringify(PERSW); S.buddy = 'Ben'; S.ints = []; const a = [1, 2, 3, 4, 5, 6].map(lv => genQ('story', lv, 7));
+            for (const k in PERSW) delete PERSW[k]; const b = [1, 2, 3, 4, 5, 6].map(lv => genQ('story', lv, 7)); Object.assign(PERSW, JSON.parse(W)); S.ints = ints;
+            return { W, same: a.every((q, i) => q.html === b[i].html && q.say === b[i].say) }; });
+          if (Object.keys(JSON.parse(live.W)).sort().join() !== Object.keys(WR).sort().join() || Object.entries(JSON.parse(live.W)).some(([k, v]) => JSON.stringify(v) !== JSON.stringify(WR[k])))
+            bad.push(at + 'PERSW on the page is not the reviewed drafts\' words');
+          if (!live.same) bad.push(at + 'with no interest picked, a story is not the default one byte for byte');
+          // nothing reviewed (PERSW emptied, as for an unreviewed interest): Grown-ups has no card, a story is the default one even with an interest picked
+          await pg.evaluate(() => { S.grade = 1; S.voice = false; S.buddy = 'Ben'; S.ints = ['dinosaurs']; for (const k in PERSW) delete PERSW[k]; grown(); });
+          await vwait(pg, 400);
+          const none = await pg.evaluate(() => ({ card: !!document.querySelector('#pers-open'), held: !!document.querySelector('#gw-pers[hidden]'), q: genQ('story', 1, 7).say, on: persOn().length }));
+          if (none.card || !none.held || none.on || /dinosaur/.test(none.q)) bad.push(at + 'with nothing reviewed: ' + JSON.stringify(none));
+          // the words approved (put back): the card shows, its button opens the picker
+          await pg.evaluate(W => { Object.assign(PERSW, W); S.ints = []; grown(); }, W);
+          await pg.waitForSelector('#pers-open', { timeout: 10000 });
+          const c0 = await pg.evaluate(() => document.querySelector('#pers-now').textContent);
+          if (!/Nothing picked/.test(c0)) bad.push(at + 'card: ' + c0);
+          await pg.evaluate(() => document.querySelector('#gw-pers').scrollIntoView());
+          await pg.click('#pers-open');
+          await pg.waitForSelector('.pp-c[data-int="dinosaurs"]', { timeout: 5000 });
+          await animsDone(pg);
+          const chips = await pg.evaluate(() => [...document.querySelectorAll('.pp-c')].map(b => b.dataset.int));
+          if (chips.length !== 8) bad.push(at + 'the picker shows ' + chips.join(', '));
+          (await pg.evaluate(FIT)).forEach(x => bad.push(at + 'picker: ' + x));
+          // pick Dinosaurs by touch: it turns on, is saved, and the sample sentence is about it
+          await pg.click('.pp-c[data-int="dinosaurs"]');
+          const p1 = await pg.evaluate(() => ({ ints: S.ints, pressed: document.querySelector('.pp-c[data-int="dinosaurs"]').getAttribute('aria-pressed'),
+            ex: document.querySelector('#pers-ex').textContent, saved: JSON.parse(localStorage.getItem(SKEY)).ints }));
+          if (JSON.stringify(p1.ints) !== '["dinosaurs"]' || p1.pressed !== 'true' || !/dinosaur/i.test(p1.ex) || JSON.stringify(p1.saved) !== '["dinosaurs"]') bad.push(at + 'pick: ' + JSON.stringify(p1));
+          await pg.screenshot({ path: P_.join(shots, 'pers-pick-' + sz + '.png') }).catch(() => {});
+          // up to 3: a fourth is refused; taking one off works
+          for (const id of ['space', 'music', 'ocean']) await pg.click(`.pp-c[data-int="${id}"]`);
+          const p2 = await pg.evaluate(() => S.ints.slice());
+          if (JSON.stringify(p2) !== '["dinosaurs","space","music"]') bad.push(at + 'up to 3: ' + JSON.stringify(p2));
+          for (const id of ['space', 'music']) await pg.click(`.pp-c[data-int="${id}"]`);
+          await pg.click('#pers-done');
+          await pg.waitForSelector('#pers-now', { timeout: 10000 });
+          const c1 = await pg.evaluate(() => ({ t: document.querySelector('#pers-now').textContent, ints: S.ints }));
+          if (c1.t !== 'Story problems are about Dinosaurs.' || JSON.stringify(c1.ints) !== '["dinosaurs"]') bad.push(at + 'back in Grown-ups: ' + JSON.stringify(c1));
+          await pg.evaluate(() => document.querySelector('#gw-pers').scrollIntoView());
+          await pg.screenshot({ path: P_.join(shots, 'pers-grown-' + sz + '.png') }).catch(() => {});
+          // a story round: the first question is themed, the same math as without the theme, said as shown, its picture drawn
+          await pg.evaluate(() => { const i = NODES.math.findIndex(n => n.sk === 'story' && n.lv === 1); start('math', i); });
+          await pg.waitForSelector('.story', { timeout: 10000 });
+          await animsDone(pg);
+          const q = await pg.evaluate(() => {
+            const q = G.q, ints = S.ints; S.ints = []; const q0 = genQ('story', q.lv, q.seed); S.ints = ints;
+            return { say: q.say, shown: document.querySelector('.story').textContent, ans: q.ans, ans0: q0.ans, label: q.label, label0: q0.label, say0: q0.say,
+              pics: document.querySelectorAll('.st-pic .st-o').length, fit: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+          });
+          if (!/toy dinosaur|dinosaur (sticker|egg|bone|book)/.test(q.say) || q.say === q.say0) bad.push(at + 'not themed: ' + q.say);
+          if (q.ans !== q.ans0 || q.label !== q.label0) bad.push(at + 'the math changed: ' + JSON.stringify(q));
+          if (q.shown.replace(/\s+/g, ' ').trim() !== q.say) bad.push(at + 'said is not shown: ' + JSON.stringify([q.shown, q.say]));
+          if (!q.pics || !q.fit) bad.push(at + 'the story picture or the width: ' + JSON.stringify(q));
+          await pg.screenshot({ path: P_.join(shots, 'pers-story-' + sz + '.png') }).catch(() => {});
+          for (const d of q.ans) await pg.click(`.k[data-k="${d}"]`);
+          await pg.click('.k[data-k="go"]');
+          await vwait(pg, 300);
+          const sc = await pg.evaluate(() => G.score);
+          if (sc !== 1) bad.push(at + 'the right answer did not score: ' + sc);
+          notes.push(sz + ' "' + q.say + '"');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of pa.errors) bad.push(at + e);
+        for (const u of pa.network) bad.push(at + 'network request: ' + u);
+        await pa.ctx.close();
+      }
+      if (bad.length) fail('PERS-01 story themes:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('PERS-01: story themes at ' + notes.join(' and ') + ': the page\'s words are the reviewed drafts\', no interest picked is the default story byte for byte; with nothing reviewed no card and the default story; approved, the Grown-ups card ' +
+        'opens the picker, Dinosaurs picked by touch is saved and shown in a sample, a fourth pick is refused, the card names the pick; a story round asks a themed ' +
+        'problem with the default answer and label, said as shown, with its picture; the right answer scores; no sideways scroll, no console errors, no network requests');
+    }
+    // end PERS-01
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

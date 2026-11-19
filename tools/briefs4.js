@@ -63,6 +63,77 @@ function brief(D) {
     case 'clap': return LS4_PK_BRIEF('words have parts, and we clap once for each part (ba-na-na has three)', ['the child sorts four pictures into one clap and two claps', 'a word clapped out, part by part',
       'none', 'sorting pictures by their claps', 'a picture, then tapping how many claps its word has', 'another picture and its claps', ''],
     'two numbers of claps; the child taps the picture with that many claps, among four');
+    // READ-SHAPES (v184): the K-2 reading lessons in their own shapes (src/js/52q-bench5r.js)
+    case 'sight': return `What this lesson teaches: sight words, words we know by how they look, without sounding them out. Words of this stop's list: the app chooses them.
+Explore: four word cards lie face down; the child turns them over one at a time to find the word the app says (slot {word}: that word). Lines: the task, said before they start.
+Name it: the word they found on a big card, beside a word that starts with the same letter; lines on it (slots {word}: the word, {other}: the look-alike) and the idea: look at every letter.
+Together: line 1 before the word cards with the word shown big (find its twin; slot {word}), line 2 before hearing a word and tapping it among three (slot {word}, said by the app), line 3 before a word that flashes and hides, then tapping the word they saw (no slots: never the word, the answer).
+Remember: a warm-up on an earlier list (no slots).
+Check me: the pet hears a word and taps one (slot {ans}: the word the pet tapped); the child checks it.
+Show: two words to hear and tap among four, no help, inside a small job in the world (no slots).`;
+    case 'rhyme': return `What this lesson teaches: rhymes, words that sound the same at the end (dog, frog).${D.read ? ' The child reads the words from the second Together item on.' : ' The child hears every picture named.'}
+Explore: a rhyme sorter. A picture word (slot {word}) and four pictures; the child puts each picture in "Rhymes" or "No rhyme". Lines: the task, said before they sort (the app names the pictures itself).
+Name it: two rhyming pictures with their words, the rhyming part bold; lines on it (slots {a} {b}: the two words, {letter}: the rhyming part, as letters) and the idea.
+Together: line 1 before a picture and its word with three pictures to pick the rhyme from (slot {word}: the word to rhyme with), line 2 before ${D.read ? 'a picture and three written words' : 'a picture and three pictures'} (slot {word}), line 3 before ${D.read ? 'a written word to read and three written words (no slots)' : 'a word heard and three pictures (no slots)'}.
+Remember: a warm-up on first sounds (no slots).
+Check me: the pet picks a rhyme (slot {ans}: the pet's word, {word}: the word to rhyme with); the child checks it.
+Show: two words to rhyme with, the child picks the rhyme among four, no help, inside a small job in the world (no slots).`;
+    case 'claps': return `What this lesson teaches: counting the parts (syllables) of a word by clapping once for each part.
+Explore: clap-to-count: a picture word (slot {word}); the child taps Clap once for each part, then checks. Lines: the task, said before they clap.
+Name it: the picture with its claps drawn; lines on it (slots {word}: the word, {n}: how many claps) and the idea.
+Together: line 1 before clapping a picture word on the clap model (slot {word}), line 2 before a picture and tapping how many claps (slot {word}), line 3 before a written word, heard, and tapping how many claps (slot {word}).
+Remember: a warm-up: a picture, how many claps (no slots).
+Check me: the pet claps a word (slot {ans}: the pet's claps, said as "3 times"; {word}: the word); the child checks it.
+Show: two written words to clap on the model, no help, inside a small job in the world (slot {word}).`;
+    case 'spell': return `What this lesson teaches: ${D.what}. The child hears a word and builds it from letter tiles (spelling from dictation).
+Explore: the child hears a word (slot {word}), sees its picture, and builds it from letter tiles any way they think. Lines: the task, said before they build.
+Name it: the picture and the word in its boxes, the sound pattern bold; lines on it (slots {word}: the word, {letter}: the pattern, said as letters) and the idea.
+Together: line 1 before building a word they hear, with its picture (slot {word}), line 2 before a word they hear and three written words to pick the right one from (slot {word}), line 3 before building a word they only hear, no picture (slot {word}).
+Remember: a warm-up on first sounds (no slots).
+Check me: the pet writes the word it hears with the tiles (slot {ans}: the word the pet wrote, {word}: the word said); the child checks it.
+Show: two words to hear and build from tiles, no help, inside a small job in the world (slot {word}).`;
+    case 'story': return `What this lesson teaches: listening to a short story and answering who, what and where.${D.two ? ' The stories have three steps: someone goes somewhere, finds a thing, and gives it to someone.' : ' Two animals go somewhere; each has a thing.'}
+Explore: the app tells a short story; the child sorts its pictures into Who, What and Where. Lines: the task, said before they sort (the app tells the story and names the pictures itself).
+Name it: the story's who, what and where as pictures; lines on it (slots {a}: the who, {b}: the what) and the idea.
+Together: line 1 before a story shown as picture panels with a question, line 2 before a story in words with a question and pictures to pick from, line 3 before a story in words with a question and written words to pick from (no slots: never the answer; the app tells the story and asks the question).
+Remember: a warm-up on sight words (no slots).
+Check me: the pet answers a question about the story (slot {ans}: the pet's answer); the child checks it.
+Show: two stories and questions, four pictures to pick from, no help, inside a small job in the world (no slots).`;
+    case 'pairs': return `What this lesson teaches: ${D.syn ? 'synonyms, words that mean almost the same (big and huge)' : 'opposites, words that mean as different as can be (hot and cold)'}.
+Explore: a pairs match: three words and their ${D.syn ? 'same-meaning partners' : 'opposites'}, matched any way the child thinks. Lines: the task, said before they match.
+Name it: one pair, big; lines on it (slots {a} {b}: the two words) and the idea.
+Together: line 1 before a pairs match of three, line 2 before a word heard and shown with three words to pick ${D.syn ? 'the same meaning' : 'its opposite'} from (slot {word}: the word), line 3 before a written word to read and three to pick from (no slots).
+Remember: a warm-up on sight words (no slots).
+Check me: the pet picks ${D.syn ? 'a word that means the same' : 'an opposite'} (slot {ans}: the pet's word, {word}: the word); the child checks it.
+Show: two words, four to pick from, no help, inside a small job in the world (no slots).`;
+    case 'sfix': return `What this lesson teaches: a sentence starts with a capital letter; a telling sentence ends with a period, an asking sentence with a question mark.
+Explore: the sentence fixer: a telling sentence about a drawn picture, no capital and no end mark; the child taps the capital letter button and an end mark. Lines: the task, said before they fix it.
+Name it: a telling and an asking sentence, fixed, the capitals and marks shown; lines on it and the idea (no slots).
+Together: line 1 before the sentence fixer (a telling or an asking sentence), line 2 before a picture and three ways to write its sentence, line 3 before three ways to write a sentence, no picture (no slots).
+Remember: a warm-up on sight words (no slots).
+Check me: the pet picks the way to write a sentence (slot {ans}: the sentence the pet picked); the child checks it.
+Show: two sentences, four ways to write each, no help, inside a small job in the world (no slots).`;
+    case 'order': return `What this lesson teaches: building a sentence with its words in an order that makes sense (the end mark is given).
+Explore: word tiles of a sentence about a drawn picture; the child puts them in order. Lines: the task, said before they build.
+Name it: a sentence built from tiles; lines on it and the idea (no slots).
+Together: line 1 before word tiles with a picture, line 2 before a picture and three ways to write its sentence (one with two words swapped, one with the wrong end mark), line 3 before the same with no picture (no slots).
+Remember: a warm-up on sight words (no slots).
+Check me: the pet picks a sentence (slot {ans}: the sentence the pet picked); the child checks it.
+Show: two sentences to build from word tiles, no picture, no help, inside a small job in the world (no slots).`;
+    case 'pos': return `What this lesson teaches: naming words (nouns: the dog) and doing words (verbs: runs).
+Explore: a sorter: four words into Naming and Doing. Lines: the task, said before they sort.
+Name it: a naming word with its picture and a doing word; lines on it (slots {a}: the naming word, {b}: the doing word) and the idea.
+Together: line 1 before sorting four words, line 2 before a picture and its short sentence (tap the doing word or the naming word), line 3 before a sentence alone (no slots).
+Remember: a warm-up on sight words (no slots).
+Check me: the pet taps a word of a sentence (slot {ans}: the pet's word); the child checks it.
+Show: two sentences, four words to pick from, no help, inside a small job in the world (no slots).`;
+    case 'plural': return `What this lesson teaches: plurals: more than one adds s (cats), and words that end in x, s, sh or ch add es (boxes).
+Explore: a sorter: four pictures into "+ s" and "+ es". Lines: the task, said before they sort (the app names the pictures itself).
+Name it: two words and their plurals; lines on it (slots {a}: a word that adds es, {b}: a word that adds s) and the idea.
+Together: line 1 before building the word for two from tiles, with two pictures (slot {word}: the word for one), line 2 before two pictures and three words to pick from (slot {word}), line 3 before the same with no picture (slot {word}).
+Remember: a warm-up on sight words (no slots).
+Check me: the pet picks the word for two (slot {ans}: the pet's word, {word}: the word for one); the child checks it.
+Show: two words for one, four words for two to pick from, no help, inside a small job in the world (slot {word}).`;
     default: return null;
   }
 }

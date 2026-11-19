@@ -1,5 +1,5 @@
-/* Star School gen v182. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v182 loads this file with <script src="gen.v182.js"> after its own code, before data.v182.js. */
+/* Star School gen v185. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v185 loads this file with <script src="gen.v185.js"> after its own code, before data.v185.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -989,7 +989,7 @@ const storyRow=(n,body)=>`<div class="st-row" style="--n:${Math.max(n,5)}">${bod
 function storyHint(st,th,pic,txt){return{k:'html',st,html:`<div class="st-h">${pic}</div><div>${esc(txt)}</div>`,w:txt}}
 function genStory(lv){
   const me=S.name||'Sam',n2=pick([S.buddy,S.buddy,petN(),...NAMES].filter(n=>n&&n!==me));
-  const th=pick(THINGS),pl=th[0],N=k=>qN(k,th[2],pl);
+  const th=persTh(pick(THINGS)),pl=th[0],N=k=>qN(k,th[2],pl); // PERS-01: a themed thing and its sentences, or the default (30p-pers.js)
   const who=pick([me,n2]),other=who==me?n2:me;
   let r=rnd(),kind;
   for(const [k,p] of STORY_KINDS[lv]){kind=k;if((r-=p)<0)break}
@@ -998,65 +998,105 @@ function genStory(lv){
   if(kind=='join'){
     let a,b;
     if(lv==1){const s=R(3,10);a=R(1,s-1);b=s-a}else if(lv==2){a=R(4,9);b=R(3,9)}else{a=R(6,12);b=R(4,8)}
-    t=pick([`${who} has ${N(a)}. ${other} gives ${who} ${b} more. How many ${pl} does ${who} have now?`,
+    t=stT(th,'join',[`${who} has ${N(a)}. ${other} gives ${who} ${b} more. How many ${pl} does ${who} have now?`,
       `${who} found ${N(a)} in the yard and ${b} more by the door. How many ${pl} in all?`,
-      `${who} got ${N(a)} on Monday and ${N(b)} on Tuesday. How many ${pl} is that?`]);
+      `${who} got ${N(a)} on Monday and ${N(b)} on Tuesday. How many ${pl} is that?`],{who,other,a,b});
     ans=a+b;eq=`${a} + ${b} = ?`;
     pic=`<div class="st-pic"><span class="st-g">${O(a)}</span><b class="st-op">+</b><span class="st-g">${O(b)}</span></div>`;
     hint=storyHint('join',th,storyRow(a+b+1,O(a)+'<b class="st-op">+</b>'+O(b)),`Count them all. Start at ${Math.max(a,b)} and count on ${Math.min(a,b)}.`);
   }else if(kind=='sep'){
     let a,b;
     if(lv==1){a=R(3,10);b=R(1,a-1)}else if(lv==2){a=R(4,10);b=R(1,a-1)}else{a=R(10,18);b=R(2,9)}
-    t=pick([`${who} had ${N(a)}. ${who} gave ${b} to ${other}. How many ${pl} are left?`,
-      `There were ${N(a)} on the table. ${b} fell off. How many are still on the table?`]);
+    t=stT(th,'sep',[`${who} had ${N(a)}. ${who} gave ${b} to ${other}. How many ${pl} are left?`,
+      `There were ${N(a)} on the table. ${b} fell off. How many are still on the table?`],{who,other,a,b});
     ans=a-b;eq=`${a} − ${b} = ?`;
     pic=`<div class="st-pic"><span class="st-g">${O(a-b)}${O(b,' st-x')}</span></div>`;
     hint=storyHint('sep',th,storyRow(a,O(a-b)+O(b,' st-x')),`${b} went away. They are the pale ones. Count the ones that are left.`);
   }else if(kind=='chg'){
     const a=R(3,9),b=R(2,9),c=a+b;
-    t=pick([`${who} has ${N(a)}. ${other} gives ${who} some more. Now ${who} has ${N(c)}. How many ${pl} did ${other} give ${who}?`,
-      `${who} had ${N(a)}. ${who} found some more. Now ${who} has ${N(c)}. How many ${pl} did ${who} find?`]);
+    t=stT(th,'chg',[`${who} has ${N(a)}. ${other} gives ${who} some more. Now ${who} has ${N(c)}. How many ${pl} did ${other} give ${who}?`,
+      `${who} had ${N(a)}. ${who} found some more. Now ${who} has ${N(c)}. How many ${pl} did ${who} find?`],{who,other,a,c});
     ans=b;eq=`${a} + ? = ${c}`;
     hint=storyHint('chg',th,storyRow(c,O(a)+O(b,' st-n')),`Start at ${a}. Count on until you get to ${c}. How many did you count?`);
   }else if(kind=='chgS'){
     const c=R(6,15),b=R(2,c-2),a=c-b;
-    t=`${who} had ${N(c)}. ${who} gave some to ${other}. Now ${who} has ${N(a)}. How many ${pl} did ${who} give away?`;
+    t=stT(th,'chgS',`${who} had ${N(c)}. ${who} gave some to ${other}. Now ${who} has ${N(a)}. How many ${pl} did ${who} give away?`,{who,other,c,a});
     ans=b;eq=`${c} − ? = ${a}`;
     hint=storyHint('chgS',th,storyRow(c,O(a)+O(b,' st-x')),`${c} at the start. ${a} are still here. How many went away?`);
   }else if(kind=='part'){
     const c=R(6,15),a=R(2,c-2);
-    t=`${who} has ${N(c)}. ${a} are big and the rest are small. How many small ${pl} does ${who} have?`;
+    t=stT(th,'part',`${who} has ${N(c)}. ${a} are big and the rest are small. How many small ${pl} does ${who} have?`,{who,other,c,a});
     ans=c-a;eq=`${a} + ? = ${c}`;
     hint=storyHint('part',th,storyRow(c,O(a)+O(c-a,' st-sm')),`${c} in all. ${a} are big. Take them away. How many small ones are left?`);
   }else if(kind=='cmpD'){
     const x=lv==2?R(5,15):R(8,18),y=lv==2?R(2,x-1):R(3,x-2),fewer=coin();
-    t=fewer?`${who} has ${N(x)}. ${other} has ${N(y)}. How many fewer ${pl} does ${other} have than ${who}?`
-      :`${who} has ${N(x)}. ${other} has ${N(y)}. How many more ${pl} does ${who} have than ${other}?`;
+    t=stT(th,fewer?'cmpDf':'cmpDm',fewer?`${who} has ${N(x)}. ${other} has ${N(y)}. How many fewer ${pl} does ${other} have than ${who}?`
+      :`${who} has ${N(x)}. ${other} has ${N(y)}. How many more ${pl} does ${who} have than ${other}?`,{who,other,x,y});
     ans=x-y;eq=`${x} − ${y} = ?`;
     hint=storyHint('cmpD',th,storyRow(x,O(x))+storyRow(x,O(y)+O(x-y,' st-e')),`Top row: ${who}. Bottom row: ${other}. Line them up. How many in the top row have no partner?`);
   }else if(kind=='start'){
     const a=R(3,10),b=R(2,9),c=a+b;
-    t=`${who} had some ${pl}. Then ${other} gave ${who} ${b} more. Now ${who} has ${N(c)}. How many ${pl} did ${who} have at the start?`;
+    t=stT(th,'start',`${who} had some ${pl}. Then ${other} gave ${who} ${b} more. Now ${who} has ${N(c)}. How many ${pl} did ${who} have at the start?`,{who,other,b,c});
     ans=a;eq=`? + ${b} = ${c}`;
     hint=storyHint('start',th,storyRow(c,O(a,' st-x')+O(b)),`Think: what and ${b} make ${c}? Take the ${b} new ones away from ${c}.`);
   }else if(kind=='startS'){
     const a=R(3,9),b=R(2,9),c=a+b;
-    t=`${who} had some ${pl}. ${who} gave ${b} to ${other}. Now ${who} has ${N(a)} left. How many ${pl} did ${who} have at the start?`;
+    t=stT(th,'startS',`${who} had some ${pl}. ${who} gave ${b} to ${other}. Now ${who} has ${N(a)} left. How many ${pl} did ${who} have at the start?`,{who,other,b,a});
     ans=c;eq=`? − ${b} = ${a}`;
     hint=storyHint('startS',th,storyRow(c,O(a)+O(b,' st-x')),`Put them back together: ${a} left and ${b} given away. How many in all?`);
   }else if(kind=='cmpB'){
     const y=R(3,10),d=R(2,8);
-    t=`${other} has ${N(y)}. ${who} has ${d} more than ${other}. How many ${pl} does ${who} have?`;
+    t=stT(th,'cmpB',`${other} has ${N(y)}. ${who} has ${d} more than ${other}. How many ${pl} does ${who} have?`,{who,other,y,d});
     ans=y+d;eq=`${y} + ${d} = ?`;
     hint=storyHint('cmpB',th,storyRow(y+d,O(y))+storyRow(y+d,O(y)+O(d,' st-x')),`Top row: ${other}. Bottom row: ${who}. ${who} has the same, and ${d} more.`);
   }else{ // cmpS
     const x=R(8,18),d=R(2,x-3);
-    t=`${who} has ${N(x)}. ${other} has ${d} fewer than ${who}. How many ${pl} does ${other} have?`;
+    t=stT(th,'cmpS',`${who} has ${N(x)}. ${other} has ${d} fewer than ${who}. How many ${pl} does ${other} have?`,{who,other,x,d});
     ans=x-d;eq=`${x} − ${d} = ?`;
     hint=storyHint('cmpS',th,storyRow(x,O(x))+storyRow(x,O(x-d)+O(d,' st-e')),`Top row: ${who}. Bottom row: ${other}. ${other} has ${d} fewer. Take ${d} away from ${x}.`);
   }
   return{kind:'num',html:`<p class="story">${words(t)}</p>${lv==1?pic:''}<div>${SLOT}</div>`,say:t,auto:true,ans:String(ans),
     hint,label:`story ${kind} ${eq}`}}
+/* ---------- PERS-01: story problems about the child's interests (part gen) ----------
+   A grown-up (or the child) picks up to 3 interests (S.ints, ids; 39p-pers.js draws the picker). The words of each interest are
+   written at authoring time and approved by the owner: docs/drafts/pers/<id>.md, copied by tools/build.py into 39q-persw.js (PERSW,
+   part hints, loaded as a Practice round starts) only when its status says "reviewed". Nothing is made up on the tablet.
+   An interest has things (objects a child can hold, pack and share: [plural, singular, drawing, emoji]) and, for the story kinds of
+   levels 1-3, its own sentences with {slots}. The math never changes: the generator draws exactly as before (the same rnd() calls,
+   numbers, answer, label and hint steps); only its nouns and sentence change. A question with no reviewed interest (none picked,
+   none reviewed, or the hints part not loaded yet) is the default question, word for word. tools/test.js "story themes PERS-01". */
+
+// the child's interests that have reviewed words, in the order picked ([] when none: the default problems)
+function persOn() {
+  if (typeof PERSW == 'undefined' || !S || !Array.isArray(S.ints)) return [];
+  return S.ints.filter(id => PERSW[id] && Array.isArray(PERSW[id].things) && PERSW[id].things.length);
+}
+/* The thing of a story: the generator's own pick(THINGS) entry, or a themed one in THINGS' shape [plural, emoji, singular, drawing].
+   The entry's index chooses the interest and its thing, so no rnd() call is added. A themed entry carries its sentences (st). */
+function persTh(th) {
+  const on = persOn(), i = THINGS.indexOf(th);
+  if (!on.length || i < 0) return th;
+  const P = PERSW[on[i % on.length]], x = P.things[i % P.things.length], t = [x[0], x[3] || '', x[1], x[2] || x[1]];
+  t.st = P.st || {};
+  return t;
+}
+/* The sentence of a story. def: the default sentences (an array: chosen with one rnd() call, as pick() does) or the one default
+   sentence (a string: no call). A themed thing with its own sentences for this kind uses one of them instead, chosen by the same
+   draw (one sentence: by the numbers), with its {slots} filled from v. */
+function stT(th, kind, def, v) {
+  const arr = Array.isArray(def), r = arr ? rnd() : 0, L = th.st && th.st[kind];
+  if (!L || !L.length) return arr ? def[Math.floor(r * def.length)] : def;
+  const n = Object.values(v).reduce((s, x) => s + (typeof x == 'number' ? x : 0), 0);
+  return persFill(L[arr ? Math.floor(r * L.length) : n % L.length], th, v);
+}
+/* Fill a themed sentence: {who} {other} names, {a} a number, {a things} a number with the thing ("1 drum", "3 drums"), {pl} the
+   plural, {an} the singular with "a" or "an". Each sentence starts with a capital letter. */
+function persFill(t, th, v) {
+  const an = w => (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w;
+  const s = String(t).replace(/\{(\w+)( things)?\}/g, (m, k, n) =>
+    n ? qN(v[k], th[2], th[0]) : k == 'pl' ? th[0] : k == 'an' ? an(th[2]) : k in v ? String(v[k]) : m);
+  return s.replace(/(^|[.?!] )([a-z])/g, (m, a, b) => a + b.toUpperCase());
+}
 /* ---------- Pre-K math generators: world Tiny Town (P2-01; CURRICULUM M-PK) ----------
    Skills: pk_count 1-2, pk_num 1-2, pk_more 1, sort 1-2, shape 1, pat 1. Every question is audio-first (CURRICULUM 1.4):
    q.pk = true (the round engine speaks q.say on its own and draws a big replay button), the prompt is a picture, the answers are
@@ -1970,7 +2010,7 @@ function genBayCnt5() {
 // story 4: two-step add/subtract within 100 (get some then lose some, lose then get, compare then total)
 function genBayStory4() {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const th = pick(THINGS)[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  const th = persTh(pick(THINGS))[0], who = pick([me, n2]), other = who == me ? n2 : me;
   let t, ans, label, hint;
   const form = pick(['gl', 'lg', 'more', 'fewer']);
   if (form == 'gl' || form == 'lg') {
@@ -2358,7 +2398,7 @@ function genArr(lv) {
 // One-step times or divide stories within 100: equal groups, arrays, sharing (4 templates each).
 function genStoryMul(lv) {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const th = pick(THINGS)[0], who = pick([me, n2]);
+  const th = persTh(pick(THINGS))[0], who = pick([me, n2]); // PERS-01: a themed thing (30p-pers.js)
   let t, ans, hint, label;
   if (coin()) { // times: a groups of b
     const a = R(2, 9), b = R(2, Math.min(10, Math.floor(100 / a)));
@@ -2871,7 +2911,7 @@ function ffMeas4() {
 // story 6: two steps with all four operations within 1,000
 function ffStory6() {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const T = pick(THINGS), th = T[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  const T = persTh(pick(THINGS)), th = T[0], who = pick([me, n2]), other = who == me ? n2 : me;
   const f = R(1, 5);
   let t, ans, s, label;
   if (f == 1) { // multiply, then add
@@ -3092,6 +3132,10 @@ function hcAsGrown(){const g=S.garage&&typeof S.garage=='object'&&!Array.isArray
 function rlGatesOn(){const r=S.rally&&typeof S.rally=='object'&&!Array.isArray(S.rally)?S.rally:{};
   return r.gates==='on'?true:r.gates==='off'?false:r.quiz===true||+S.grade>=1}
 const CHEER_NAMES={mix:'Mixed',f:'Female',m:'Male',tts:'Tablet voice'}; // EN-PRAISE: the Cheer voices choice (S.cheerV, cheerMode() in 12-speech.js)
+// PERS-01: the Story themes card (persCard, 39p-pers.js in the lazy part hints) replaces the hidden #gw-pers placeholder once that part is
+// in (loading it if a round has not); it stays hidden when no interest is reviewed (PERSW empty).
+function persGrown(){const go=()=>{if(typeof persCard=='function')persCard($('#gw-pers'))};
+  if(typeof persCard=='function')go();else if(typeof partLoad=='function')partLoad('hints').then(go,()=>{})}
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
@@ -3120,6 +3164,7 @@ function grown(){let armed=false;
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
+  <div id="gw-pers" hidden></div>
   ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (lesson stops on the math and reading maps; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
     {sub:'Picks where the maps start. Progress is never removed when you change it, but a new grade can put stops behind a lesson.'})}
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
@@ -3164,6 +3209,7 @@ function grown(){let armed=false;
   $('#bd').oninput=e=>{S.buddy=e.target.value.trim();save()};
   gradePickBind(g=>{setGrade(g)});
   placeGrownBind();
+  persGrown(); // PERS-01: the Story themes card, once the hints part is in
   reportGrownBind();
   BAK.bind();
   PRF.bind();
@@ -4117,4 +4163,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v182'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v185'; // last line: the whole file ran (checked by dataReady() before the app starts)

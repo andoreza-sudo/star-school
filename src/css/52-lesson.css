@@ -5,6 +5,13 @@
 .ls-pip .ic{width:18px;height:18px}
 .ls-pip.on{background:var(--math);color:var(--surface)}
 .ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}
+/* TEACH-UX: the beat label under the dots ("Step 1 of 6 · Remember"); the pair is no taller than the house button, so the bar keeps its
+   height. On a phone the lesson's name gives the label its room (the start card has the name), and the bar's gaps are smaller under 400 px */
+.ls-beats{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0}
+.ls-beats .ls-pips{flex:none;max-width:100%}
+.ls-step{max-width:100%;font-size:var(--fs-2);font-weight:700;line-height:1.1;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.ls-top .ls-tag{display:none}}
+@media (max-width:400px){.top.tbar.ls-top{gap:var(--s-1)}.ls-top .ls-meter{padding:0 var(--s-2) 0 var(--s-1)}.ls-step .ls-of{display:none}}
 .ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}
 .ls-top .ls-tag{flex:none}
 .ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}

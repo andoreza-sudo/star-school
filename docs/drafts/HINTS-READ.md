@@ -1,6 +1,6 @@
 # Hint read-through: a hint for each common mistake in Practice (HINT-01)
 
-117 hints (117 unreviewed), one per mistake.
+117 hints (117 reviewed), one per mistake.
 When a child's wrong answer is the answer that mistake gives, the round shows its hint
 where it shows "Try again" and the generic hint today. The app fills each {slot}
 from the question (its numbers, the child's own answer, a word or letter), so the numbers are always right.
@@ -21,593 +21,593 @@ never in a check-in, and not when Grown-ups has lessons off.
 ### Count Things (pk_count)
 
 - **off1** (level 1): "How many balloons?" Answer given: 4
-  Hint: "Touch each one as you count. Count each one just once."
+  Hint: "Touch each one as you count. Count each one just once." (reviewed)
 - **ten** (level 3): "How many balloons?" Answer given: 9
-  Hint: "A full frame is ten. Count the ten first, then the rest."
+  Hint: "A full frame is ten. Count the ten first, then the rest." (reviewed)
 
 ### Hear a Number (pk_num)
 
 - **look** (level 2): "Tap the number one." Answer given: 7
-  Hint: "7 looks a lot like it. Look closely at its shape."
+  Hint: "7 looks a lot like it. Look closely at its shape." (reviewed)
 - **swap** (level 3): "Tap the number eighteen." Answer given: 81
-  Hint: "Look at 81. Which digit is the tens?"
+  Hint: "Look at 81. Which digit is the tens?" (reviewed)
 - **teen** (level 3): "Tap the number eighteen." Answer given: 80
-  Hint: "Listen again. A teen number is one ten and some ones."
+  Hint: "Listen again. A teen number is one ten and some ones." (reviewed)
 
 ### Sort and Compare (sort)
 
 - **size** (level 2): "Tap the shortest tower." Answer given: 1
-  Hint: "Is the question asking for the big end or the small end?"
+  Hint: "Is the question asking for the big end or the small end?" (reviewed)
 
 ### Patterns (pat)
 
 - **seqdir** (level 3): "46, 37, 28, 19, what comes next?" Answer given: 28
-  Hint: "Do the numbers go up or down? Keep going the same way."
+  Hint: "Do the numbers go up or down? Keep going the same way." (reviewed)
 - **seqone** (level 3): "46, 37, 28, 19, what comes next?" Answer given: 18
-  Hint: "Each jump here is 9, not one. Look at the pattern."
+  Hint: "Each jump here is 9, not one. Look at the pattern." (reviewed)
 
 ### Ten Frames (tenf)
 
 - **off1** (level 1): "How many counters?" Answer given: 7
-  Hint: "Touch each one as you count. Count each one just once."
+  Hint: "Touch each one as you count. Count each one just once." (reviewed)
 - **swap** (level 3): "How many in all?" Answer given: 41
-  Hint: "Look at 41. Which digit is the tens?"
+  Hint: "Look at 41. Which digit is the tens?" (reviewed)
 - **given** (level 2): "How many more to make ten?" Answer given: 8
-  Hint: "8 is in the problem already. Find the missing number."
+  Hint: "8 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 3): "How many in all?" Answer given: 13
-  Hint: "So close. Count again from 10, one step for each of 4."
+  Hint: "So close. Count again from 10, one step for each of 4." (reviewed)
 - **tot** (level 2): "How many more to make ten?" Answer given: 18
-  Hint: "10 is the total. What goes with 8 to make it?"
+  Hint: "10 is the total. What goes with 8 to make it?" (reviewed)
 
 ### Adding (add)
 
 - **swap** (level 2): "10 plus 8 equals what?" Answer given: 81
-  Hint: "Look at 81. Which digit is the tens?"
+  Hint: "Look at 81. Which digit is the tens?" (reviewed)
 - **op** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 1
-  Hint: "Look at the sign. It says add."
+  Hint: "Look at the sign. It says add." (reviewed)
 - **given** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 2
-  Hint: "2 is in the problem already. Find the missing number."
+  Hint: "2 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 4
-  Hint: "So close. Count again from 2, one step for each of 1."
+  Hint: "So close. Count again from 2, one step for each of 1." (reviewed)
 - **pvcat** (level 2): "10 plus 8 equals what?" Answer given: 108
-  Hint: "The parts share places. Each digit takes the place of a zero."
+  Hint: "The parts share places. Each digit takes the place of a zero." (reviewed)
 
 ### Count By (cnt)
 
 - **seqdir** (level 4): "Count on. 14, 15, 16, what, 18" Answer given: 15
-  Hint: "Do the numbers go up or down? Keep going the same way."
+  Hint: "Do the numbers go up or down? Keep going the same way." (reviewed)
 - **seqone** (level 1): "Count by 10s. 40, 50, 60, what, 80" Answer given: 61
-  Hint: "Each jump here is 10, not one. Look at the pattern."
+  Hint: "Each jump here is 10, not one. Look at the pattern." (reviewed)
 
 ### Measuring (meas)
 
 - **off1** (level 2): "How many cubes long is the paper strip?" Answer given: 9
-  Hint: "Touch each one as you count. Count each one just once."
+  Hint: "Touch each one as you count. Count each one just once." (reviewed)
 - **size** (level 1): "Tap the tallest tower." Answer given: 0
-  Hint: "Is the question asking for the big end or the small end?"
+  Hint: "Is the question asking for the big end or the small end?" (reviewed)
 - **ticks** (level 3): "How long is the paper strip? Say how many centimeters." Answer given: 12
-  Hint: "Count the jumps between the marks, not the marks."
+  Hint: "Count the jumps between the marks, not the marks." (reviewed)
 - **rend** (level 3): "How long is the paper strip? Say how many inches." Answer given: 12
-  Hint: "It does not start at zero. Count the spaces from its start."
+  Hint: "It does not start at zero. Count the spaces from its start." (reviewed)
 - **conv** (level 5): "17 minutes is how many seconds?" Answer given: 77
-  Hint: "Smaller units need more of them. Multiply, do not add."
+  Hint: "Smaller units need more of them. Multiply, do not add." (reviewed)
 - **dpt** (level 6): "2 point 5 kilograms is how many grams?" Answer given: 25000
-  Hint: "Count the digits after the points. Where does the point go?"
+  Hint: "Count the digits after the points. Where does the point go?" (reviewed)
 
 ### Missing Number (miss)
 
 - **given** (level 1): "8 plus what equals 9?" Answer given: 8
-  Hint: "8 is in the problem already. Find the missing number."
+  Hint: "8 is in the problem already. Find the missing number." (reviewed)
 - **tot** (level 1): "8 plus what equals 9?" Answer given: 17
-  Hint: "9 is the total. What goes with 8 to make it?"
+  Hint: "9 is the total. What goes with 8 to make it?" (reviewed)
 
 ### Take Away (sub)
 
 - **swap** (level 3): "22 minus 10 equals what?" Answer given: 21
-  Hint: "Look at 21. Which digit is the tens?"
+  Hint: "Look at 21. Which digit is the tens?" (reviewed)
 - **op** (level 1): "9 minus 8 equals what?" Answer given: 17
-  Hint: "Look at the sign. It says take away."
+  Hint: "Look at the sign. It says take away." (reviewed)
 - **given** (level 1): "9 minus 8 equals what?" Answer given: 9
-  Hint: "9 is in the problem already. Find the missing number."
+  Hint: "9 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 1): "9 minus 8 equals what?" Answer given: 0
-  Hint: "So close. Count again from 9, one step for each of 8."
+  Hint: "So close. Count again from 9, one step for each of 8." (reviewed)
 - **col** (level 1): "10 minus 7 equals what?" Answer given: 17
-  Hint: "In the ones, 0 take away 7 needs a trade first."
+  Hint: "In the ones, 0 take away 7 needs a trade first." (reviewed)
 - **keep** (level 1): "10 minus 7 equals what?" Answer given: 13
-  Hint: "You traded from the tens. Now the tens have one less."
+  Hint: "You traded from the tens. Now the tens have one less." (reviewed)
 
 ### Story Problems (story)
 
 - **swap** (level 2): "Sparky has 4 pencils. Mia gives Sparky 8 more. How many pencils does Sparky have now?" Answer given: 21
-  Hint: "Look at 21. Which digit is the tens?"
+  Hint: "Look at 21. Which digit is the tens?" (reviewed)
 - **given** (level 1): "Ben had 3 crayons. Ben gave 1 to Mia. How many crayons are left?" Answer given: 3
-  Hint: "3 is in the problem already. Find the missing number."
+  Hint: "3 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 1): "Mia found 7 ducks in the yard and 1 more by the door. How many ducks in all?" Answer given: 9
-  Hint: "So close. Count again from 7, one step for each of 1."
+  Hint: "So close. Count again from 7, one step for each of 1." (reviewed)
 - **tot** (level 2): "Leo has 7 fish. Mia gives Leo some more. Now Leo has 11 fish. How many fish did Mia give Leo?" Answer given: 18
-  Hint: "11 is the total. What goes with 7 to make it?"
+  Hint: "11 is the total. What goes with 7 to make it?" (reviewed)
 - **col** (level 1): "Leo had 10 cookies. Leo gave 9 to Mia. How many cookies are left?" Answer given: 19
-  Hint: "In the ones, 0 take away 9 needs a trade first."
+  Hint: "In the ones, 0 take away 9 needs a trade first." (reviewed)
 - **keep** (level 1): "Leo had 10 cookies. Leo gave 9 to Mia. How many cookies are left?" Answer given: 11
-  Hint: "You traded from the tens. Now the tens have one less."
+  Hint: "You traded from the tens. Now the tens have one less." (reviewed)
 - **opst** (level 1): "Ben had 3 crayons. Ben gave 1 to Mia. How many crayons are left?" Answer given: 4
-  Hint: "Read it again. Are things joining, or going away?"
+  Hint: "Read it again. Are things joining, or going away?" (reviewed)
 - **pvcat** (level 3): "Mia has 10 balls. Sparky has 8 more than Mia. How many balls does Sparky have?" Answer given: 108
-  Hint: "The parts share places. Each digit takes the place of a zero."
+  Hint: "The parts share places. Each digit takes the place of a zero." (reviewed)
 - **cat** (level 3): "Ava has 12 ducks. Mia gives Ava 8 more. How many ducks does Ava have now?" Answer given: 110
-  Hint: "2 + 8 = 10. Only one digit fits in the ones."
+  Hint: "2 + 8 = 10. Only one digit fits in the ones." (reviewed)
 - **nocarry** (level 3): "Ava has 12 ducks. Mia gives Ava 8 more. How many ducks does Ava have now?" Answer given: 10
-  Hint: "2 + 8 = 10. Carry one to the next place."
+  Hint: "2 + 8 = 10. Carry one to the next place." (reviewed)
 - **mulAdd** (level 5): "7 friends each get 10 ducks. How many ducks do they have all together?" Answer given: 17
-  Hint: "7 × 10 means 7 groups of 10, not 7 + 10."
+  Hint: "7 × 10 means 7 groups of 10, not 7 + 10." (reviewed)
 - **zeros** (level 5): "7 friends each get 10 ducks. How many ducks do they have all together?" Answer given: 700
-  Hint: "Count the zeros in the problem, then in 700."
+  Hint: "Count the zeros in the problem, then in 700." (reviewed)
 - **fact** (level 5): "7 friends each get 10 ducks. How many ducks do they have all together?" Answer given: 63
-  Hint: "Check: is 63 really 7 groups of 10? Count on once more."
+  Hint: "Check: is 63 really 7 groups of 10? Count on once more." (reviewed)
 - **step1** (level 4): "Ben has 15 crayons. Mia has 11 fewer than Ben. How many crayons do they have together?" Answer given: 4
-  Hint: "That is the first step. Now finish the second step."
+  Hint: "That is the first step. Now finish the second step." (reviewed)
 - **dfact** (level 5): "Ben puts 10 crayons into bags, 2 in each bag. How many bags is that?" Answer given: 4
-  Hint: "Multiply back to check. Does 4 × 2 make 10?"
+  Hint: "Multiply back to check. Does 4 × 2 make 10?" (reviewed)
 - **remLeft** (level 7): "64 cookies are shared equally among 7 friends. How many cookies are left over?" Answer given: 9
-  Hint: "That is how many groups. The question asks what is left over."
+  Hint: "That is how many groups. The question asks what is left over." (reviewed)
 - **remUp** (level 7): "Sparky has 8 boxes with 7 pencils in each box. Sparky puts them in bags of 5. How many bags are needed for all of them?" Answer given: 11
-  Hint: "The ones left over need one more too."
+  Hint: "The ones left over need one more too." (reviewed)
 
 ### Big Numbers (big)
 
 - **swap** (level 2): "11 plus 32 equals what?" Answer given: 34
-  Hint: "Look at 34. Which digit is the tens?"
+  Hint: "Look at 34. Which digit is the tens?" (reviewed)
 - **op** (level 1): "700 plus 200 equals what?" Answer given: 500
-  Hint: "Look at the sign. It says add."
+  Hint: "Look at the sign. It says add." (reviewed)
 - **given** (level 1): "20 plus 10 equals what?" Answer given: 20
-  Hint: "20 is in the problem already. Find the missing number."
+  Hint: "20 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 1): "10 plus 10. Make the answer with blocks." Answer given: 19
-  Hint: "So close. Count again from 10, one step for each of 10."
+  Hint: "So close. Count again from 10, one step for each of 10." (reviewed)
 - **cat** (level 3): "13 plus 37 equals what?" Answer given: 410
-  Hint: "3 + 7 = 10. Only one digit fits in the ones."
+  Hint: "3 + 7 = 10. Only one digit fits in the ones." (reviewed)
 - **nocarry** (level 3): "13 plus 37 equals what?" Answer given: 40
-  Hint: "3 + 7 = 10. Carry one to the next place."
+  Hint: "3 + 7 = 10. Carry one to the next place." (reviewed)
 
 ### Compare (cmp)
 
 - **small** (level 1): "Is 16 greater than, less than, or equal to 17?" Answer given: >
-  Hint: "The open side faces the bigger number. Look again."
+  Hint: "The open side faces the bigger number. Look again." (reviewed)
 
 ### Place Value (pv)
 
 - **swap** (level 1): "80 plus 7 equals what?" Answer given: 78
-  Hint: "Look at 78. Which digit is the tens?"
+  Hint: "Look at 78. Which digit is the tens?" (reviewed)
 - **op** (level 1): "80 plus 7 equals what?" Answer given: 73
-  Hint: "Look at the sign. It says add."
+  Hint: "Look at the sign. It says add." (reviewed)
 - **given** (level 1): "20 plus 8 equals what?" Answer given: 20
-  Hint: "20 is in the problem already. Find the missing number."
+  Hint: "20 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 1): "10 plus 7. Make the answer with blocks." Answer given: 16
-  Hint: "So close. Count again from 10, one step for each of 7."
+  Hint: "So close. Count again from 10, one step for each of 7." (reviewed)
 - **pvcat** (level 1): "80 plus 7 equals what?" Answer given: 807
-  Hint: "The parts share places. Each digit takes the place of a zero."
+  Hint: "The parts share places. Each digit takes the place of a zero." (reviewed)
 - **small** (level 4): "Is 753684 greater than, less than, or equal to 867694?" Answer given: >
-  Hint: "The open side faces the bigger number. Look again."
+  Hint: "The open side faces the bigger number. Look again." (reviewed)
 - **tensOnes** (level 1): "How many tens are in 74?" Answer given: 4
-  Hint: "That is the ones digit. Look for the tens digit."
+  Hint: "That is the ones digit. Look for the tens digit." (reviewed)
 - **zeros** (level 6): "99 times 10 to the power 3 equals what?" Answer given: 990000
-  Hint: "Count the zeros in the problem, then in 990000."
+  Hint: "Count the zeros in the problem, then in 990000." (reviewed)
 - **digit** (level 2): "What is the value of the 1 in 143?" Answer given: 1
-  Hint: "The 1 is in the hundreds. What is it worth there?"
+  Hint: "The 1 is in the hundreds. What is it worth there?" (reviewed)
 - **place** (level 2): "What is the value of the 1 in 143?" Answer given: 10
-  Hint: "Count the places again. The 1 is in the hundreds."
+  Hint: "Count the places again. The 1 is in the hundreds." (reviewed)
 - **pvzero** (level 3): "300 plus 6 equals what?" Answer given: 36
-  Hint: "Each place needs a digit. Put a zero in an empty place."
+  Hint: "Each place needs a digit. Put a zero in an empty place." (reviewed)
 - **pway** (level 6): "65.7 times 10 equals what?" Answer given: 6.57
-  Hint: "Multiplying by ten makes a number bigger. Dividing makes it smaller."
+  Hint: "Multiplying by ten makes a number bigger. Dividing makes it smaller." (reviewed)
 - **apow** (level 6): "10 to the power 5 equals what?" Answer given: 50
-  Hint: "The small raised number says how many times to use the base."
+  Hint: "The small raised number says how many times to use the base." (reviewed)
 - **dpt** (level 6): "65.7 times 10 equals what?" Answer given: 6570
-  Hint: "Count the digits after the points. Where does the point go?"
+  Hint: "Count the digits after the points. Where does the point go?" (reviewed)
 
 ### Picture Graphs (data)
 
 - **diff** (level 1): "How many more apples than grapes?" Answer given: 14
-  Hint: "How many more? Find the difference, not the total."
+  Hint: "How many more? Find the difference, not the total." (reviewed)
 - **rmax** (level 5): "Pets at home: 9, 19, 5, 17, 1, 14, 19. What is the range?" Answer given: 19
-  Hint: "The range is the biggest take away the smallest."
+  Hint: "The range is the biggest take away the smallest." (reviewed)
 - **mean** (level 5): "Each dot is one of 5 friends. It shows the number of books read. What is the mean?" Answer given: 20
-  Hint: "That is the total. Now share it equally among the numbers."
+  Hint: "That is the total. Now share it equally among the numbers." (reviewed)
 
 ### Fractions (frac)
 
 - **small** (level 4): "Is 1 fourth less than, equal to, or greater than 2 fourths?" Answer given: >
-  Hint: "The open side faces the bigger number. Look again."
+  Hint: "The open side faces the bigger number. Look again." (reviewed)
 - **ticks** (level 3): "Put the pin on 5 sixths." Answer given: 5/7
-  Hint: "Count the jumps between the marks, not the marks."
+  Hint: "Count the jumps between the marks, not the marks." (reviewed)
 - **unshaded** (level 2): "Which picture shows 5 sixths?" Answer given: 1/6
-  Hint: "The top number counts the shaded parts."
+  Hint: "The top number counts the shaded parts." (reviewed)
 - **flip** (level 2): "The shape has 2 equal parts. What fraction is shaded?" Answer given: 2/1
-  Hint: "The shaded parts go on top. All the parts go below."
+  Hint: "The shaded parts go on top. All the parts go below." (reviewed)
 - **fpart** (level 2): "The shape has 2 equal parts. What fraction is shaded?" Answer given: 1/1
-  Hint: "The bottom number counts all the parts, shaded or not."
+  Hint: "The bottom number counts all the parts, shaded or not." (reviewed)
 - **bigden** (level 4): "Is 5 eighths less than, equal to, or greater than 5 sixths?" Answer given: >
-  Hint: "A bigger bottom number means smaller pieces. Compare the pieces."
+  Hint: "A bigger bottom number means smaller pieces. Compare the pieces." (reviewed)
 - **addEq** (level 5): "1 half equals how many fourths?" Answer given: 3
-  Hint: "Multiply the top and bottom by the same number. Do not add."
+  Hint: "Multiply the top and bottom by the same number. Do not add." (reviewed)
 - **oneSide** (level 7): "Write 25 over 40 in simplest form." Answer given: 5/40
-  Hint: "Divide both the top and bottom by the same number."
+  Hint: "Divide both the top and bottom by the same number." (reviewed)
 - **impAdd** (level 8): "1 and 8 ninths equals how many ninths?" Answer given: 18
-  Hint: "Multiply the whole by the bottom, then add the top."
+  Hint: "Multiply the whole by the bottom, then add the top." (reviewed)
 - **impTop** (level 8): "1 and 8 ninths equals how many ninths?" Answer given: 9
-  Hint: "You multiplied. Now add the top number too."
+  Hint: "You multiplied. Now add the top number too." (reviewed)
 - **mixTop** (level 8): "Write 26 over 5 as a whole number and a fraction." Answer given: 5 26/5
-  Hint: "After taking out the wholes, only the leftover parts stay on top."
+  Hint: "After taking out the wholes, only the leftover parts stay on top." (reviewed)
 - **mixSwap** (level 8): "Write 37 over 10 as a whole number and a fraction." Answer given: 7 3/10
-  Hint: "How many wholes fit? That goes first. The leftover goes on top."
+  Hint: "How many wholes fit? That goes first. The leftover goes on top." (reviewed)
 
 ### Clocks (time)
 
 - **hands** (level 1): "Show 10 o'clock on the clock." Answer given: 12:50
-  Hint: "The short hand shows the hour. The long hand shows minutes."
+  Hint: "The short hand shows the hour. The long hand shows minutes." (reviewed)
 - **hnext** (level 2): "What time does the clock show?" Answer given: 11:30
-  Hint: "The short hand has not reached 11 yet. Look again."
+  Hint: "The short hand has not reached 11 yet. Look again." (reviewed)
 - **minute** (level 4): "Show half past 10 on the clock." Answer given: 10:25
-  Hint: "Count by fives to the last number, then count on."
+  Hint: "Count by fives to the last number, then count on." (reviewed)
 - **el100** (level 6): "The time starts at 7 20 and ends at 8 15. How many minutes passed?" Answer given: 95
-  Hint: "An hour has 60 minutes, not a hundred. Count to the next hour first."
+  Hint: "An hour has 60 minutes, not a hundred. Count to the next hour first." (reviewed)
 
 ### Coins (coins)
 
 - **swap** (level 5): "An apple costs 15 cents. You pay 1 dollar. How many cents do you get back? Put the change in the purse." Answer given: 58
-  Hint: "Look at 58. Which digit is the tens?"
+  Hint: "Look at 58. Which digit is the tens?" (reviewed)
 - **col** (level 5): "A pencil costs 3 dollars and 50 cents. You pay 5 dollars. How many cents do you get back?" Answer given: 250
-  Hint: "In the tens, 0 take away 5 needs a trade first."
+  Hint: "In the tens, 0 take away 5 needs a trade first." (reviewed)
 - **keep** (level 5): "An apple costs 15 cents. You pay 1 dollar. How many cents do you get back? Put the change in the purse." Answer given: 195
-  Hint: "You traded from the tens. Now the tens have one less."
+  Hint: "You traded from the tens. Now the tens have one less." (reviewed)
 - **opst** (level 5): "A pencil costs 3 dollars and 50 cents. You pay 5 dollars. How many cents do you get back?" Answer given: 850
-  Hint: "Read it again. Are things joining, or going away?"
+  Hint: "Read it again. Are things joining, or going away?" (reviewed)
 - **count** (level 1): "How many cents?" Answer given: 3
-  Hint: "You counted 3 coins. Add what each coin is worth."
+  Hint: "You counted 3 coins. Add what each coin is worth." (reviewed)
 - **nickel** (level 1): "How many cents?" Answer given: 21
-  Hint: "A dime is small, but it is worth more than a nickel."
+  Hint: "A dime is small, but it is worth more than a nickel." (reviewed)
 
 ### Equal Groups (mult)
 
 - **mulAdd** (level 1): "4 groups of 10. How many in all?" Answer given: 14
-  Hint: "4 × 10 means 4 groups of 10, not 4 + 10."
+  Hint: "4 × 10 means 4 groups of 10, not 4 + 10." (reviewed)
 - **zeros** (level 1): "4 groups of 10. How many in all?" Answer given: 400
-  Hint: "Count the zeros in the problem, then in 400."
+  Hint: "Count the zeros in the problem, then in 400." (reviewed)
 - **fact** (level 1): "4 groups of 10. How many in all?" Answer given: 36
-  Hint: "Check: is 36 really 4 groups of 10? Count on once more."
+  Hint: "Check: is 36 really 4 groups of 10? Count on once more." (reviewed)
 
 ### Arrays (arr)
 
 - **mulAdd** (level 1): "5 rows of 5. How many in all?" Answer given: 10
-  Hint: "5 × 5 means 5 groups of 5, not 5 + 5."
+  Hint: "5 × 5 means 5 groups of 5, not 5 + 5." (reviewed)
 - **fact** (level 1): "5 rows of 5. How many in all?" Answer given: 20
-  Hint: "Check: is 20 really 5 groups of 5? Count on once more."
+  Hint: "Check: is 20 really 5 groups of 5? Count on once more." (reviewed)
 
 ### Times Facts (mfact)
 
 - **given** (level 4): "4 times what equals 8?" Answer given: 4
-  Hint: "4 is in the problem already. Find the missing number."
+  Hint: "4 is in the problem already. Find the missing number." (reviewed)
 - **mulAdd** (level 1): "10 times 7 equals what?" Answer given: 17
-  Hint: "10 × 7 means 10 groups of 7, not 10 + 7."
+  Hint: "10 × 7 means 10 groups of 7, not 10 + 7." (reviewed)
 - **zeros** (level 1): "10 times 7 equals what?" Answer given: 700
-  Hint: "Count the zeros in the problem, then in 700."
+  Hint: "Count the zeros in the problem, then in 700." (reviewed)
 - **fact** (level 1): "10 times 7 equals what?" Answer given: 60
-  Hint: "Check: is 60 really 10 groups of 7? Count on once more."
+  Hint: "Check: is 60 really 10 groups of 7? Count on once more." (reviewed)
 - **pway** (level 1): "10 times 10 equals what?" Answer given: 1
-  Hint: "Multiplying by ten makes a number bigger. Dividing makes it smaller."
+  Hint: "Multiplying by ten makes a number bigger. Dividing makes it smaller." (reviewed)
 - **dfact** (level 4): "4 times what equals 8?" Answer given: 1
-  Hint: "Multiply back to check. Does 1 × 4 make 8?"
+  Hint: "Multiply back to check. Does 1 × 4 make 8?" (reviewed)
 - **part** (level 5): "11 times 12 equals what?" Answer given: 33
-  Hint: "Multiplying by the tens digit? Write a zero in the ones first."
+  Hint: "Multiplying by the tens digit? Write a zero in the ones first." (reviewed)
 - **mcarry** (level 5): "12 times 8 equals what?" Answer given: 86
-  Hint: "2 × 8 = 16. Add what you carry to the next place."
+  Hint: "2 × 8 = 16. Add what you carry to the next place." (reviewed)
 
 ### Dividing Facts (dfact)
 
 - **given** (level 4): "what divided by 3 equals 3?" Answer given: 3
-  Hint: "3 is in the problem already. Find the missing number."
+  Hint: "3 is in the problem already. Find the missing number." (reviewed)
 - **zeros** (level 1): "90 divided by 10 equals what?" Answer given: 90
-  Hint: "Count the zeros in the problem, then in 90."
+  Hint: "Count the zeros in the problem, then in 90." (reviewed)
 - **pway** (level 1): "90 divided by 10 equals what?" Answer given: 900
-  Hint: "Multiplying by ten makes a number bigger. Dividing makes it smaller."
+  Hint: "Multiplying by ten makes a number bigger. Dividing makes it smaller." (reviewed)
 - **dfact** (level 1): "12 divided by 2 equals what?" Answer given: 5
-  Hint: "Multiply back to check. Does 5 × 2 make 12?"
+  Hint: "Multiply back to check. Does 5 × 2 make 12?" (reviewed)
 - **divMul** (level 1): "12 divided by 2 equals what?" Answer given: 24
-  Hint: "Look at the sign. We share, we do not multiply."
+  Hint: "Look at the sign. We share, we do not multiply." (reviewed)
 
 ### Times Tens (mbig)
 
 - **mulAdd** (level 1): "800 times 8 equals what?" Answer given: 808
-  Hint: "800 × 8 means 800 groups of 8, not 800 + 8."
+  Hint: "800 × 8 means 800 groups of 8, not 800 + 8." (reviewed)
 - **zeros** (level 1): "5 times 100 equals what?" Answer given: 5000
-  Hint: "Count the zeros in the problem, then in 5000."
+  Hint: "Count the zeros in the problem, then in 5000." (reviewed)
 - **fact** (level 1): "10 times 9 equals what?" Answer given: 80
-  Hint: "Check: is 80 really 10 groups of 9? Count on once more."
+  Hint: "Check: is 80 really 10 groups of 9? Count on once more." (reviewed)
 - **part** (level 4): "81 times 84 equals what?" Answer given: 972
-  Hint: "Multiplying by the tens digit? Write a zero in the ones first."
+  Hint: "Multiplying by the tens digit? Write a zero in the ones first." (reviewed)
 - **mcarry** (level 2): "27 times 4 equals what?" Answer given: 88
-  Hint: "7 × 4 = 28. Add what you carry to the next place."
+  Hint: "7 × 4 = 28. Add what you carry to the next place." (reviewed)
 
 ### Rounding (round)
 
 - **trunc** (level 1): "Round 845 to the nearest 10." Answer given: 840
-  Hint: "The next digit is 5. That is enough to round up."
+  Hint: "The next digit is 5. That is enough to round up." (reviewed)
 - **rplace** (level 1): "Round 845 to the nearest 10." Answer given: 800
-  Hint: "We round to the tens here. Find that place first."
+  Hint: "We round to the tens here. Find that place first." (reviewed)
 - **rup** (level 1): "Round 34 to the nearest 10. The dot shows 34. Slide the pin to the rounded number." Answer given: 40
-  Hint: "The next digit is 4. That is not enough to round up."
+  Hint: "The next digit is 4. That is not enough to round up." (reviewed)
 
 ### Perimeter and Area (geo)
 
 - **area** (level 1): "A rectangle is 3 centimeters long and 7 centimeters wide. What is the perimeter?" Answer given: 21
-  Hint: "Perimeter goes all the way around. Add every side."
+  Hint: "Perimeter goes all the way around. Add every side." (reviewed)
 - **half** (level 1): "A rectangle is 3 centimeters long and 7 centimeters wide. What is the perimeter?" Answer given: 10
-  Hint: "Each side length is there twice. Add every side."
+  Hint: "Each side length is there twice. Add every side." (reviewed)
 - **perim** (level 2): "Shade a rectangle 4 squares long and 2 squares wide. Its area is the squares you shade." Answer given: 6
-  Hint: "Area counts the squares inside, not the sides around."
+  Hint: "Area counts the squares inside, not the sides around." (reviewed)
 - **sideP** (level 3): "A rectangle has a perimeter of 26 inches. One side is 7 inches. How long is the other side?" Answer given: 19
-  Hint: "Half the perimeter is one long side and one short side."
+  Hint: "Half the perimeter is one long side and one short side." (reviewed)
 - **layer** (level 4): "The box is made of small cubes, all the same size. Count the cubes in one layer, then count the layers. How many cubes in all?" Answer given: 4
-  Hint: "Count the cubes in one layer, then times the number of layers."
+  Hint: "Count the cubes in one layer, then times the number of layers." (reviewed)
 - **thalf** (level 5): "A triangle has a base of 4 meters and a height of 6 meters. What is its area in square meters?" Answer given: 24
-  Hint: "A triangle is half a rectangle. Halve base times height."
+  Hint: "A triangle is half a rectangle. Halve base times height." (reviewed)
 
 ### Long Division (dbig)
 
 - **dfact** (level 1): "80 divided by 5 equals what?" Answer given: 15
-  Hint: "Multiply back to check. Does 15 × 5 make 80?"
+  Hint: "Multiply back to check. Does 15 × 5 make 80?" (reviewed)
 - **divMul** (level 1): "80 divided by 5 equals what?" Answer given: 400
-  Hint: "Look at the sign. We share, we do not multiply."
+  Hint: "Look at the sign. We share, we do not multiply." (reviewed)
 - **remBig** (level 2): "70 divided by 8. How many whole groups, and what is left over?" Answer given: 7R14
-  Hint: "The leftover must be smaller than 8. Can one more group fit?"
+  Hint: "The leftover must be smaller than 8. Can one more group fit?" (reviewed)
 - **zero0** (level 3): "8124 divided by 4 equals what?" Answer given: 231
-  Hint: "When a place has nothing to share, write a zero there."
+  Hint: "When a place has nothing to share, write a zero there." (reviewed)
 
 ### Factors & Primes (fact)
 
 - **oddPrime** (level 2): "Which number is prime?" Answer given: 35
-  Hint: "35 is odd, but it has other factors. Look again."
+  Hint: "35 is odd, but it has other factors. Look again." (reviewed)
 - **lcmx** (level 3): "What is the least common multiple of 2 and 12?" Answer given: 24
-  Hint: "That is a common multiple. Is there a smaller one?"
+  Hint: "That is a common multiple. Is there a smaller one?" (reviewed)
 
 ### Fraction Math (fop)
 
 - **addBot** (level 1): "1 fourth plus 2 fourths. Write the answer as a fraction." Answer given: 3/8
-  Hint: "Same-size parts: the bottom number stays the same."
+  Hint: "Same-size parts: the bottom number stays the same." (reviewed)
 - **mulBot** (level 2): "8 times 8 ninths. Write the answer as a fraction." Answer given: 64/72
-  Hint: "A whole number times parts: multiply the top only."
+  Hint: "A whole number times parts: multiply the top only." (reviewed)
 - **addUnl** (level 3): "3 fourths plus 7 tenths. Write the answer as a fraction." Answer given: 10/14
-  Hint: "Make the bottom numbers the same first. Then work with the tops."
+  Hint: "Make the bottom numbers the same first. Then work with the tops." (reviewed)
 - **topOnly** (level 5): "1 third times 1 half. The picture shows the rows and the columns. Write the answer as a fraction." Answer given: 1/3
-  Hint: "Multiply the tops, and multiply the bottoms too."
+  Hint: "Multiply the tops, and multiply the bottoms too." (reviewed)
 - **fdivx** (level 6): "1 third divided by 2. The first part of the bar is cut into 2 small pieces. Write the answer as a fraction." Answer given: 2/3
-  Hint: "Dividing? Flip what you divide by, then multiply."
+  Hint: "Dividing? Flip what you divide by, then multiply." (reviewed)
 
 ### Decimals (dec)
 
 - **op** (level 3): "42.11 minus 31 equals what?" Answer given: 73.11
-  Hint: "Look at the sign. It says take away."
+  Hint: "Look at the sign. It says take away." (reviewed)
 - **small** (level 2): "Is 0 point 9 less than, equal to, or greater than 0 point 9 6?" Answer given: >
-  Hint: "The open side faces the bigger number. Look again."
+  Hint: "The open side faces the bigger number. Look again." (reviewed)
 - **divMul** (level 5): "43 divided by 5 equals what?" Answer given: 215
-  Hint: "Look at the sign. We share, we do not multiply."
+  Hint: "Look at the sign. We share, we do not multiply." (reviewed)
 - **dzero** (level 1): "Put the pin on 0 point 8 8." Answer given: 8.8
-  Hint: "The first place after the point is tenths. The next is hundredths."
+  Hint: "The first place after the point is tenths. The next is hundredths." (reviewed)
 - **longer** (level 2): "Is 0 point 3 2 1 less than, equal to, or greater than 0 point 9 2?" Answer given: >
-  Hint: "More digits does not mean bigger. Compare the tenths first."
+  Hint: "More digits does not mean bigger. Compare the tenths first." (reviewed)
 - **point** (level 3): "42.11 minus 31 equals what?" Answer given: 41.8
-  Hint: "Line up the points of 42.11 and 31, not the last digits."
+  Hint: "Line up the points of 42.11 and 31, not the last digits." (reviewed)
 - **dpt** (level 4): "2.4 times 4 equals what?" Answer given: 96
-  Hint: "Count the digits after the points. Where does the point go?"
+  Hint: "Count the digits after the points. Where does the point go?" (reviewed)
 
 ### Angles (ang)
 
 - **a180** (level 2): "Angle A is 25°. Angles A and B together make a right angle (90°). How big is angle B?" Answer given: 155
-  Hint: "A right angle is 90 degrees, not a straight line."
+  Hint: "A right angle is 90 degrees, not a straight line." (reviewed)
 
 ### Order of Operations (ooo)
 
 - **apow** (level 2): "9 times 2 cubed equals what?" Answer given: 54
-  Hint: "The small raised number says how many times to use the base."
+  Hint: "The small raised number says how many times to use the base." (reviewed)
 - **order** (level 1): "5 plus 4 times open parenthesis 12 minus 2 close parenthesis equals what?" Answer given: 90
-  Hint: "Times and divide come before plus and minus."
+  Hint: "Times and divide come before plus and minus." (reviewed)
 - **ocat** (level 3): "p equals 6. What is 8 p plus 9?" Answer given: 95
-  Hint: "A number next to p means times p."
+  Hint: "A number next to p means times p." (reviewed)
 
 ### Coordinates (coord)
 
 - **xyswap** (level 1): "Tap the point 2, 1. Go 2 across, then 1 up." Answer given: 1,2
-  Hint: "Go across first, then up. The first number is across."
+  Hint: "Go across first, then up. The first number is across." (reviewed)
 
 ### Ratios and Rates (ratio)
 
 - **radd** (level 1): "8 pens to 1 pencil. Make an equal ratio. What number goes with 40 pens?" Answer given: 33
-  Hint: "Ratios grow by multiplying, not by adding the same amount."
+  Hint: "Ratios grow by multiplying, not by adding the same amount." (reviewed)
 - **rflip** (level 1): "Look at the dots. What is the ratio of orange to blue dots? Say the first one, then the second one." Answer given: 1:3
-  Hint: "Keep the order the question asks for: the first thing named goes first."
+  Hint: "Keep the order the question asks for: the first thing named goes first." (reviewed)
 
 ### Integers (int)
 
 - **given** (level 2): "The dot is negative 4. Put the pin on its opposite: the same distance from 0, on the other side." Answer given: -4
-  Hint: "-4 is in the problem already. Find the missing number."
+  Hint: "-4 is in the problem already. Find the missing number." (reviewed)
 - **small** (level 1): "Is 3 less than, equal to, or greater than negative 2?" Answer given: <
-  Hint: "The open side faces the bigger number. Look again."
+  Hint: "The open side faces the bigger number. Look again." (reviewed)
 - **ineg** (level 1): "Is 1 less than, equal to, or greater than negative 2?" Answer given: <
-  Hint: "Below zero, the number farther from zero is smaller."
+  Hint: "Below zero, the number farther from zero is smaller." (reviewed)
 - **idist** (level 2): "How many steps apart are negative 8 and 5 on the number line?" Answer given: 3
-  Hint: "One number is below zero. Count to zero, then past it."
+  Hint: "One number is below zero. Count to zero, then past it." (reviewed)
 - **isign** (level 3): "12 minus 13. What is the answer?" Answer given: 1
-  Hint: "The size is right. Check the sign: plus or minus?"
+  Hint: "The size is right. Check the sign: plus or minus?" (reviewed)
 - **dneg** (level 3): "negative 7 minus negative 11. What is the answer?" Answer given: -18
-  Hint: "Taking away a negative is the same as adding."
+  Hint: "Taking away a negative is the same as adding." (reviewed)
 
 ### Equations (alg)
 
 - **aop** (level 1): "Solve the equation. x plus 8 equals 39. What is x?" Answer given: 47
-  Hint: "To find the letter, undo the plus: do the opposite."
+  Hint: "To find the letter, undo the plus: do the opposite." (reviewed)
 
 ## Reading
 
 ### ABC Letters (abc)
 
 - **look** (level 1): "Find the big letter P." Answer given: R
-  Hint: "R looks a lot like it. Look closely at its shape."
+  Hint: "R looks a lot like it. Look closely at its shape." (reviewed)
 - **abc** (level 4): "What letter comes after q?" Answer given: p
-  Hint: "That letter comes before. Which letter comes after?"
+  Hint: "That letter comes before. Which letter comes after?" (reviewed)
 
 ### Syllable Claps (syl)
 
 - **clap** (level 1): "bicycle. How many claps in bicycle?" Answer given: 2
-  Hint: "Clap once for each part you say. Try it slowly."
+  Hint: "Clap once for each part you say. Try it slowly." (reviewed)
 
 ### Letter Sounds (sound)
 
 - **first** (level 1): "fish. What sound does fish start with?" Answer given: h
-  Hint: "Listen to the very first sound again. Say it slowly."
+  Hint: "Listen to the very first sound again. Say it slowly." (reviewed)
 - **mid** (level 3): "box. Which vowel is in the middle of box?" Answer given: a
-  Hint: "Say it slowly. Listen to the middle sound."
+  Hint: "Say it slowly. Listen to the middle sound." (reviewed)
 - **last** (level 2): "leg. What sound does leg end with?" Answer given: l
-  Hint: "Say it slowly. Listen to the very end."
+  Hint: "Say it slowly. Listen to the very end." (reviewed)
 - **shch** (level 4): "cheese. Which letters start cheese?" Answer given: sh
-  Hint: "Listen closely: is it sh, or ch?"
+  Hint: "Listen closely: is it sh, or ch?" (reviewed)
 
 ### Sight Words (sight)
 
 - **wstart** (level 1): "the" Answer given: to
-  Hint: "Read all the way to the end of each word."
+  Hint: "Read all the way to the end of each word." (reviewed)
 
 ### Rhyme Time (rhyme)
 
 - **rfirst** (level 1): "Which one rhymes with spoon: moon, frog or shell?" Answer given: shell
-  Hint: "Shell starts like spoon. Rhymes end the same."
+  Hint: "Shell starts like spoon. Rhymes end the same." (reviewed)
 
 ### Picture Words (pic)
 
 - **first** (level 1): "Which word is this?" Answer given: nap
-  Hint: "Listen to the very first sound again. Say it slowly."
+  Hint: "Listen to the very first sound again. Say it slowly." (reviewed)
 - **mid** (level 1): "Which word is this?" Answer given: pan
-  Hint: "Say it slowly. Listen to the middle sound."
+  Hint: "Say it slowly. Listen to the middle sound." (reviewed)
 - **last** (level 1): "Which word is this?" Answer given: pig
-  Hint: "Say it slowly. Listen to the very end."
+  Hint: "Say it slowly. Listen to the very end." (reviewed)
 - **blend** (level 2): "Which word is this?" Answer given: led
-  Hint: "Say each sound slowly. Did you hear every letter?"
+  Hint: "Say each sound slowly. Did you hear every letter?" (reviewed)
 - **rvow** (level 2): "Which word is this?" Answer given: stir
-  Hint: "Look at the vowel before the r. Which one is it?"
+  Hint: "Look at the vowel before the r. Which one is it?" (reviewed)
 - **shch** (level 2): "Which word is this?" Answer given: chip
-  Hint: "Listen closely: is it sh, or ch?"
+  Hint: "Listen closely: is it sh, or ch?" (reviewed)
 - **dig** (level 2): "Which word is this?" Answer given: sell
-  Hint: "Some letters go together to make one sound. Look again."
+  Hint: "Some letters go together to make one sound. Look again." (reviewed)
 - **silent** (level 3): "Which word is this?" Answer given: fir
-  Hint: "The e at the end changes the vowel sound."
+  Hint: "The e at the end changes the vowel sound." (reviewed)
 - **team** (level 4): "Which word is this?" Answer given: got
-  Hint: "Vowels side by side make one sound. Look at the vowels."
+  Hint: "Vowels side by side make one sound. Look at the vowels." (reviewed)
 
 ### Build a Word (build)
 
 - **first** (level 1): "pin" Answer given: kin
-  Hint: "Listen to the very first sound again. Say it slowly."
+  Hint: "Listen to the very first sound again. Say it slowly." (reviewed)
 - **mid** (level 1): "pin" Answer given: pen
-  Hint: "Say it slowly. Listen to the middle sound."
+  Hint: "Say it slowly. Listen to the middle sound." (reviewed)
 - **last** (level 1): "pin" Answer given: pik
-  Hint: "Say it slowly. Listen to the very end."
+  Hint: "Say it slowly. Listen to the very end." (reviewed)
 - **lswap** (level 1): "pin" Answer given: ipn
-  Hint: "Check the order of the letters in ipn."
+  Hint: "Check the order of the letters in ipn." (reviewed)
 - **blend** (level 1): "ant" Answer given: an
-  Hint: "Say each sound slowly. Did you hear every letter?"
+  Hint: "Say each sound slowly. Did you hear every letter?" (reviewed)
 - **dbl** (level 1): "egg" Answer given: eg
-  Hint: "This word has a double letter. Look again."
+  Hint: "This word has a double letter. Look again." (reviewed)
 - **rvow** (level 2): "star" Answer given: stor
-  Hint: "Look at the vowel before the r. Which one is it?"
+  Hint: "Look at the vowel before the r. Which one is it?" (reviewed)
 - **shch** (level 2): "chick" Answer given: shick
-  Hint: "Listen closely: is it sh, or ch?"
+  Hint: "Listen closely: is it sh, or ch?" (reviewed)
 - **dig** (level 2): "fish" Answer given: fis
-  Hint: "Some letters go together to make one sound. Look again."
+  Hint: "Some letters go together to make one sound. Look again." (reviewed)
 - **silent** (level 3): "rice" Answer given: ric
-  Hint: "The e at the end changes the vowel sound."
+  Hint: "The e at the end changes the vowel sound." (reviewed)
 - **team** (level 4): "pie" Answer given: pi
-  Hint: "Vowels side by side make one sound. Look at the vowels."
+  Hint: "Vowels side by side make one sound. Look at the vowels." (reviewed)
 
 ### Read & Match (sent)
 
 - **wstart** (level 1): "Read it, then tap the picture that matches: sun, sled or star." Answer given: sled
-  Hint: "Read all the way to the end of each word."
+  Hint: "Read all the way to the end of each word." (reviewed)
 
 ### Spelling (spell)
 
 - **first** (level 1): "wet. The dog got wet in the rain. wet." Answer given: bet
-  Hint: "Listen to the very first sound again. Say it slowly."
+  Hint: "Listen to the very first sound again. Say it slowly." (reviewed)
 - **mid** (level 1): "wet. The dog got wet in the rain. wet." Answer given: wat
-  Hint: "Say it slowly. Listen to the middle sound."
+  Hint: "Say it slowly. Listen to the middle sound." (reviewed)
 - **last** (level 1): "wet. The dog got wet in the rain. wet." Answer given: wew
-  Hint: "Say it slowly. Listen to the very end."
+  Hint: "Say it slowly. Listen to the very end." (reviewed)
 - **lswap** (level 1): "wet. The dog got wet in the rain. wet." Answer given: ewt
-  Hint: "Check the order of the letters in ewt."
+  Hint: "Check the order of the letters in ewt." (reviewed)
 - **blend** (level 2): "brush. Brush your teeth twice a day. brush." Answer given: rush
-  Hint: "Say each sound slowly. Did you hear every letter?"
+  Hint: "Say each sound slowly. Did you hear every letter?" (reviewed)
 - **dbl** (level 1): "egg. She cracked the egg into a bowl. egg." Answer given: eg
-  Hint: "This word has a double letter. Look again."
+  Hint: "This word has a double letter. Look again." (reviewed)
 - **rvow** (level 4): "corn. We ate corn at dinner. corn." Answer given: carn
-  Hint: "Look at the vowel before the r. Which one is it?"
+  Hint: "Look at the vowel before the r. Which one is it?" (reviewed)
 - **shch** (level 2): "brush. Brush your teeth twice a day. brush." Answer given: bruch
-  Hint: "Listen closely: is it sh, or ch?"
+  Hint: "Listen closely: is it sh, or ch?" (reviewed)
 - **dig** (level 2): "brush. Brush your teeth twice a day. brush." Answer given: brus
-  Hint: "Some letters go together to make one sound. Look again."
+  Hint: "Some letters go together to make one sound. Look again." (reviewed)
 - **homo** (level 1): "red. My kite is red. red." Answer given: read
-  Hint: "Read sounds right, but it means something else. Look again."
+  Hint: "Read sounds right, but it means something else. Look again." (reviewed)
 - **silent** (level 3): "five. I have five fingers on my hand. five." Answer given: fiv
-  Hint: "The e at the end changes the vowel sound."
+  Hint: "The e at the end changes the vowel sound." (reviewed)
 - **team** (level 3): "cheese. I like cheese on my pizza. cheese." Answer given: chese
-  Hint: "Vowels side by side make one sound. Look at the vowels."
+  Hint: "Vowels side by side make one sound. Look at the vowels." (reviewed)
 - **ed** (level 3): "helped. She helped me carry the bags. helped." Answer given: helpt
-  Hint: "It sounds like t or d, but the ending is spelled ed."
+  Hint: "It sounds like t or d, but the ending is spelled ed." (reviewed)
 
 ### Vocabulary (vocab)
 
 - **homo** (level 6): "We walked on the sand in our blank feet." Answer given: bear
-  Hint: "Bear sounds right, but it means something else. Look again."
+  Hint: "Bear sounds right, but it means something else. Look again." (reviewed)
 
 ### Grammar (gram)
 
 - **homo** (level 5): "Which is the short way to write "you are"?" Answer given: your
-  Hint: "Your sounds right, but it means something else. Look again."
+  Hint: "Your sounds right, but it means something else. Look again." (reviewed)
 - **plS** (level 3): "One knife, two blank." Answer given: knifes
-  Hint: "Knife changes to a new word for more than one."
+  Hint: "Knife changes to a new word for more than one." (reviewed)
 - **pl2** (level 3): "One tooth, two blank." Answer given: teeths
-  Hint: "That word already means more than one. No s is needed."
+  Hint: "That word already means more than one. No s is needed." (reviewed)
 - **ples** (level 3): "One book, two blank." Answer given: bookes
-  Hint: "Only words ending in s, x, sh or ch add es."
+  Hint: "Only words ending in s, x, sh or ch add es." (reviewed)
 - **plone** (level 3): "One book, two blank." Answer given: book
-  Hint: "This word needs to show more than one."
+  Hint: "This word needs to show more than one." (reviewed)
 - **ply** (level 3): "One box, two blank." Answer given: boxies
-  Hint: "Look at the last letter. Ending in y? Change it to ies."
+  Hint: "Look at the last letter. Ending in y? Change it to ies." (reviewed)
 
 ## Spanish
 
 ### House (es_house)
 
 - **tilde** (level 3): "el jardín" Answer given: jardin
-  Hint: "Jardin needs a mark over one letter."
+  Hint: "Jardin needs a mark over one letter." (reviewed)
 
 ### School (es_school)
 
 - **tilde** (level 3): "el lápiz" Answer given: lapiz
-  Hint: "Lapiz needs a mark over one letter."
+  Hint: "Lapiz needs a mark over one letter." (reviewed)
 
 ### El, La, Un, Una (es_art)
 
 - **esgen** (level 2): "More than one rocket! How do you say the rockets?" Answer given: las cohetes
-  Hint: "Check the little word: las does not go with this word."
+  Hint: "Check the little word: las does not go with this word." (reviewed)
 - **esnum** (level 2): "More than one rocket! How do you say the rockets?" Answer given: los cohete
-  Hint: "Los and las mean more than one. Add s or es too."
+  Hint: "Los and las mean more than one. Add s or es too." (reviewed)
 
 ### Ser, Estar, Tener (es_ser)
 
 - **esper** (level 1): "My sister is very nice." Answer given: soy
-  Hint: "Soy goes with yo. Who is the sentence about?"
+  Hint: "Soy goes with yo. Who is the sentence about?" (reviewed)
 
 ### Me Gusta (es_gusta)
 
 - **esno** (level 1): "No me gusta el pan." Answer given: pan+
-  Hint: "Look for the word no. It changes the meaning."
+  Hint: "Look for the word no. It changes the meaning." (reviewed)
 
 ## The lines with their slots
 

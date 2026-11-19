@@ -274,6 +274,10 @@ const SCREENS = {
   },
   // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
   'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
+  // PERS-01: the Story themes picker (every interest draft's words as if the owner had approved them, one picked) and its card in Grown-ups
+  'pers-pick': { run: async p => { await persReady(p); await p.evaluate(() => { window.say = window.__a11y.say; S.ints = ['dinosaurs']; persPick(() => grown()); }); await p.waitForTimeout(400); } },
+  'grown-pers': { adult: true, run: async p => { await persReady(p); await p.evaluate(() => { S.ints = ['space', 'music']; grown(); });
+    await p.waitForSelector('#pers-open', { timeout: 10000 }); await p.evaluate(() => document.querySelector('#gw-pers').scrollIntoView()); await p.waitForTimeout(300); } },
   'grown-children': {
     adult: true,
     run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),
@@ -357,6 +361,21 @@ const SCREENS = {
   'teach4-fix': { run: async p => teach4Beat(p, 'build1', 'chk', 1) },
   'teach4-sent': { run: async p => teach4Beat(p, 'pic1', 'show', 0) },
   'teach4-plates': { run: async p => teach4Beat(p, 'pk_more1', 'show', 0) },
+  // READ-SHAPES: the K-2 reading lesson shapes (teachrd): word cards to turn over, the word that flashes, the rhyme sorter, clap-to-count,
+  // dictation tiles, the story card with a speaker per sentence and the pet's pick on it, the pairs match, the sentence fixer, word tiles in
+  // order, the naming and doing sorter, plurals built from tiles
+  'read5-cards': { run: async p => teach4Beat(p, 'sight1', 'exp', 0) },
+  'read5-flash': { run: async p => teach4Beat(p, 'sight2', 'tog', 2) },
+  'read5-rhyme': { run: async p => teach4Beat(p, 'rhyme1', 'exp', 0) },
+  'read5-claps': { run: async p => teach4Beat(p, 'syl2', 'tog', 0) },
+  'read5-dict': { run: async p => teach4Beat(p, 'spell1', 'tog', 0) },
+  'read5-story': { run: async p => teach4Beat(p, 'comp1', 'tog', 0) },
+  'read5-story-pet': { run: async p => teach4Beat(p, 'comp2', 'chk', 0) },
+  'read5-pairs': { run: async p => teach4Beat(p, 'vocab1', 'tog', 0) },
+  'read5-fix': { run: async p => teach4Beat(p, 'gram1', 'tog', 0) },
+  'read5-order': { run: async p => teach4Beat(p, 'sent3', 'tog', 0) },
+  'read5-pos': { run: async p => teach4Beat(p, 'gram2', 'exp', 0) },
+  'read5-plural': { run: async p => teach4Beat(p, 'gram3', 'tog', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   // LS-STOP: the lesson stop on the map (its ticket, Make Ten's practice locked behind it), the start card, the top bar's ticket meter, the
   // end card with its game time
@@ -367,6 +386,10 @@ const SCREENS = {
   'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();
     const st = LS.make('tenf2', { seed: 4, day: lsDay(), proof: true }); st.caught = true; LS.beat(st, LSB.indexOf('show'));
     for (let k = 0; k < 2; k++) { LS.answer(st, LS.cur(st).q.ans); LS.next(st); } LS.st = st; LS.end(); }); await p.waitForTimeout(2500); } },
+  // TEACH-UX: a 1st grader's Remember in add3 with its model up front (the ten frame above the sum) and the beat label in the top bar
+  'teachux-rem': { run: async p => { await p.evaluate(() => partsLoad(['teach', 'teach12'])); await p.waitForFunction(() => typeof LS_DRAFTED != 'undefined', null, { timeout: 30000 });
+    await p.evaluate(() => { window.say = window.__a11y.say; teachSave(); S.grade = 1; LS.WAKE = 400;
+      LS.st = LS.make('add3', { seed: 3, day: lsDay(), learn: 1, rem: ['add2'] }); LS.show(); }); await p.waitForTimeout(1500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {
@@ -427,6 +450,13 @@ const SCREENS = {
 // Game screens: the games' part files may load only when the Game Room opens (P6-02's lazy parts). Open the Game Room first when
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 // P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
+// PERS-01: the hints part (the picker and PERSW) loaded, with the interest drafts' words in PERSW (nothing is reviewed yet)
+async function persReady(p) {
+  await p.evaluate(() => partLoad('hints'));
+  await p.waitForFunction(() => typeof persPick == 'function', null, { timeout: 30000 });
+  const W = Object.fromEntries(require('./author.js').persDrafts().filter(x => x.d).map(x => [x.d.id, { name: x.d.name, pic: x.d.pic, things: x.d.things, st: x.d.st }]));
+  await p.evaluate(W => Object.assign(PERSW, W), W);
+}
 async function teachReady(p) {
   await p.evaluate(() => partLoad('teach'));
   await p.waitForFunction(() => typeof NB != 'undefined', null, { timeout: 30000 });

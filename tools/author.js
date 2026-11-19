@@ -20,13 +20,24 @@
    node tools/author.js --hints-read <file>
                                            HINT-01: one read-through of every hint, by subject and skill: an example question, the
                                            wrong answer, and the hint as the child sees it (docs/drafts/HINTS-READ.md)
-   node tools/author.js --read <file> [--batch 3|4|3b] [stop ...]
+   node tools/author.js --pers-draft [id ...] [--dry]
+                                           PERS-01: ask the xAI API for an interest theme's words (its name, things and a sentence per
+                                           story kind) and write docs/drafts/pers/<id>.md, "status: unreviewed" (no ids: every interest
+                                           of PERS_IDS with no draft yet)
+   node tools/author.js --pers-fix         PERS-01: redraw every docs/drafts/pers/<id>.md from its JSON after a hand edit (status kept)
+   node tools/author.js --pers-approve <id ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
+                                           PERS-01: the owner's step: mark interests reviewed (only those that pass every check), then
+                                           write src/js/39q-persw.js, so they are offered at the next build
+   node tools/author.js --pers-read <file> PERS-01: one read-through of every interest (docs/drafts/PERS-READ.md)
+   node tools/author.js --read <file> [--batch 3|4|3b|5r] [stop ...]
                                            TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
                                            TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md);
                                            TEACH-4: --batch 4, the reading and Pre-K drafts not yet reviewed (docs/drafts/BATCH4-READ.md);
                                            TEACH-3b: --batch 3b, the lessons of the stops TEACH-3 and TEACH-4 left out (LS_DRAFTED[id].b3b;
-                                           docs/drafts/BATCH3B-READ.md); batches 3 and 4 leave them out
-   node tools/author.js --approve all --batch 3b   TEACH-3b: approve every waiting draft of one batch only (2, 3, 4 or 3b); "all" with no
+                                           docs/drafts/BATCH3B-READ.md); batches 3 and 4 leave them out;
+                                           READ-SHAPES: --batch 5r, the K-2 reading lessons in the new lesson shapes (LS_DRAFTED[id].b5r;
+                                           docs/drafts/BATCH5R-READ.md); batches 3, 3b and 4 leave them out
+   node tools/author.js --approve all --batch 3b   TEACH-3b: approve every waiting draft of one batch only (2, 3, 4, 3b or 5r); "all" with no
                                            --batch approves every batch and lists each lesson it approved under its batch
 
    What a draft is. Only words: the lines each of the six beats says (Remember, Explore, Name it, Together, Check me, Show), the
@@ -155,7 +166,7 @@ function contract(id) {
   if (!id) return null;
   // TEACH-4: a batch 4 lesson's brief is kept out of the app (tools/briefs4.js), made from its family and fields
   const C = app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];return D?{t:D.t,slots:D.slots,bugs:D.bugs,brief:D.brief,band:D.band||'',p:D.p||'math',claim:D.claim||'',
-    fam:D.fam,key:D.key,show:D.show,what:D.what,top:D.top,up:D.up}:null})()`);
+    fam:D.fam,key:D.key,show:D.show,what:D.what,top:D.top,up:D.up,read:D.read,syn:D.syn,two:D.two}:null})()`);
   if (C && !C.brief && C.fam) C.brief = require('./briefs4.js').brief(C);
   return C;
 }
@@ -312,25 +323,39 @@ function approve(ids, o = {}) {
   for (const id of done) (byBatch[batchOf(id)] = byBatch[batchOf(id)] || []).push(id);
   return {done, bad, byBatch};
 }
-// TEACH-3b: the read-through batch of a lesson: '3b' (D.b3b), 4 (LS_B4), 3 (LS_B35) or 2 (the rest)
+// TEACH-3b: the read-through batch of a lesson: '3b' (D.b3b), '5r' (D.b5r, READ-SHAPES), 4 (LS_B4), 3 (LS_B35) or 2 (the rest)
 function batchOf(id) {
-  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];if(D&&D.b3b)return'3b';if(typeof LS_B4!='undefined'&&LS_B4.includes(${JSON.stringify(String(id))}))return'4';return D&&D.band=='35'?'3':'2'})()`);
+  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];if(D&&D.b3b)return'3b';if(D&&D.b5r)return'5r';if(typeof LS_B4!='undefined'&&LS_B4.includes(${JSON.stringify(String(id))}))return'4';return D&&D.band=='35'?'3':'2'})()`);
 }
 // the read-through: every lesson's sheet in map order, short enough to read on a phone
 // TEACH-3: o.batch 3 reads the grade 3-5 drafts (LS_B35) that are not reviewed, under the batch 3 heading
 function readThrough(ids, o = {}) {
   // TEACH-4: the reading map's stops come after the math map's (Tiny Town, then ABC Beach and the reading worlds)
   const R = app(), at = id => R(`(()=>{const i=NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)});return i>=0?i:1e4+NODES.read.findIndex(n=>nid(n)===${JSON.stringify(id)})})()`);
-  const b3b = String(o.batch) == '3b', b3 = !b3b && o.batch == 3, b4 = !b3b && o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
+  const b5r = String(o.batch) == '5r', b3b = String(o.batch) == '3b', b3 = !b3b && !b5r && o.batch == 3, b4 = !b3b && !b5r && o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
   const B3B = R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b)'); // TEACH-3b: its own batch; batches 2, 3 and 4 leave it out
+  const B5R = R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b5r)'); // READ-SHAPES: its own batch too; every other batch leaves it out
   // no stops named: every unreviewed draft of this batch's band (batch 4 the reading and Pre-K lessons, batch 3 the grade 3-5 lessons,
   // batch 2 the rest); none waiting reads as none, never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
-  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b3b ? B3B.includes(x.d.id) : !B3B.includes(x.d.id) && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3))).map(x => x.d.id);
+  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b5r ? B5R.includes(x.d.id) : b3b ? B3B.includes(x.d.id) : !B3B.includes(x.d.id) && !B5R.includes(x.d.id) && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3))).map(x => x.d.id);
   const xs = drafts().filter(x => x.d && ids.includes(x.d.id)).sort((a, b) => at(a.d.id) - at(b.d.id));
-  if (!xs.length) return [`# Batch ${b3b ? '3b' : b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
+  if (!xs.length) return [`# Batch ${b5r ? '5r' : b3b ? '3b' : b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
   // TEACH-3b: what "all" would approve besides this batch, named, so it is never a surprise
-  const others = b3b ? drafts().filter(x => x.d && x.d.status === 'unreviewed' && !B3B.includes(x.d.id)).map(x => x.d.id) : [];
-  const head = b3b ? ['# Batch 3b read-through: the stops batches 3 and 4 left out', '',
+  const others = b3b || b5r ? drafts().filter(x => x.d && x.d.status === 'unreviewed' && !(b5r ? B5R : B3B).includes(x.d.id)).map(x => x.d.id) : [];
+  const head = b5r ? ['# Batch 5r read-through: the K-2 reading stops in new lesson shapes', '',
+    `${xs.length} lessons, in map order (Letter Meadow, Candy Canyon, Ocean Reef, Space Station,`, 'Word Workshop). Each is what the child hears: the six beats, the pet\'s',
+    'reasons when it is caught, and tonight\'s question for you. All of them hear the little one pet.', '',
+    'The app fills in each {slot} from the question on screen: {word} is the word of the question,', '{other} a second word, {a} and {b} the two words or pictures of Name it, {letter}',
+    'a letter pattern, {n} a number of claps, {ans} the pet\'s answer. So words are always right.',
+    'The app also says each question itself (and tells each story) after the Together and Show lines.', '',
+    'Until you approve a lesson, it runs on short hand-written lines', '(its idea, a Name it line, the pet\'s reasons), so it works now.', '',
+    'The new lesson shapes: word cards to turn over and a word that flashes (sight words),', 'a rhyme sorter, clap-to-count, letter tiles for a word the child hears (spelling),',
+    'a short picture story with who, what and where questions, an opposite (or same-meaning)', 'pairs match, a sentence fixer (capital letter and end mark), word tiles in order,',
+    'a naming and doing word sorter, and an add s or add es sorter (plurals).', '',
+    'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
+    '`node tools/author.js --approve all --batch 5r --by <your name>`', '', '(or name the lessons instead of all). Approved lessons use their words at the next build.',
+    others.length ? `Note: --approve all WITHOUT --batch 5r also approves ${others.length} lessons of other batches still waiting.` : 'No lesson of another batch is waiting.', '']
+    : b3b ? ['# Batch 3b read-through: the stops batches 3 and 4 left out', '',
     `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
     'Grades 3 and 4 hear the older kid pet; grade 5 hears the teen-like partner.', 'The last two (Word Workshop, 2nd grade reading) hear the little one.', '',
     'The app fills in each {slot} from the problem on screen, so numbers are always right.',
@@ -548,11 +573,245 @@ function hintRead() {
   return L.join('\n');
 }
 
-module.exports = {hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
+// ---- PERS-01: interest themes for story problems (src/js/30p-pers.js; words: docs/drafts/pers/<id>.md, built into 39q-persw.js) ----
+const PERS = path.join(DRAFTS, 'pers');
+// the starting set (owner: "a small, sensible starting set ... keep it small and good"), with what its things should be
+const PERS_IDS = {animals: 'farm animals as toys (a toy farm set)', sports: 'balls and team things', space: 'rockets, stars and space toys',
+  cooking: 'things a child bakes with a grown-up', vehicles: 'toy cars, trucks and other vehicles', dinosaurs: 'toy dinosaurs and dig finds',
+  music: 'toy instruments', ocean: 'seashells and sea animal toys'};
+/* The story kinds of levels 1-3 (genStory in 30-gen-math.js). need: the number slots a sentence must use (and the only ones it may);
+   one: the ones that can be 1 (a bare one may only be followed by "more" or a past-tense verb: "1 rolled away", never "1 roll");
+   must: words the sentence needs so that the hint shown with it stays true; def: the default sentence; hint: the hint the child sees;
+   ex: example numbers for the read-through, and its answer. */
+const PERS_KINDS = {
+  join: {need: ['a', 'b'], one: ['a', 'b'], must: [], ex: {a: 4, b: 3}, ans: 7,
+    def: '{who} has {a things}. {other} gives {who} {b} more. How many {pl} does {who} have now?', hint: 'Count them all. Start at {a} and count on {b}.'},
+  sep: {need: ['a', 'b'], one: ['b'], must: [], ex: {a: 9, b: 4}, ans: 5,
+    def: '{who} had {a things}. {who} gave {b} to {other}. How many {pl} are left?', hint: '{b} went away. They are the pale ones. Count the ones that are left.'},
+  chg: {need: ['a', 'c'], one: [], must: [/\bsome\b/], ex: {a: 5, c: 8}, ans: 3,
+    def: '{who} has {a things}. {other} gives {who} some more. Now {who} has {c things}. How many {pl} did {other} give {who}?', hint: 'Start at {a}. Count on until you get to {c}. How many did you count?'},
+  chgS: {need: ['c', 'a'], one: [], must: [/\bsome\b/], ex: {c: 11, a: 6}, ans: 5,
+    def: '{who} had {c things}. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?', hint: '{c} at the start. {a} are still here. How many went away?'},
+  part: {need: ['c', 'a'], one: [], must: [/\bbig\b/, /\bsmall\b/], ex: {c: 12, a: 5}, ans: 7,
+    def: '{who} has {c things}. {a} are big and the rest are small. How many small {pl} does {who} have?', hint: '{c} in all. {a} are big. Take them away. How many small ones are left?'},
+  cmpDm: {need: ['x', 'y'], one: [], must: [/\{who\}/, /\{other\}/, /\bmore\b/], ex: {x: 9, y: 4}, ans: 5,
+    def: '{who} has {x things}. {other} has {y things}. How many more {pl} does {who} have than {other}?', hint: 'Top row: {who}. Bottom row: {other}. Line them up. How many in the top row have no partner?'},
+  cmpDf: {need: ['x', 'y'], one: [], must: [/\{who\}/, /\{other\}/, /\bfewer\b/], ex: {x: 9, y: 4}, ans: 5,
+    def: '{who} has {x things}. {other} has {y things}. How many fewer {pl} does {other} have than {who}?', hint: 'Top row: {who}. Bottom row: {other}. Line them up. How many in the top row have no partner?'},
+  start: {need: ['b', 'c'], one: [], must: [/\bmore\b/], ex: {b: 4, c: 10}, ans: 6,
+    def: '{who} had some {pl}. Then {other} gave {who} {b} more. Now {who} has {c things}. How many {pl} did {who} have at the start?', hint: 'Think: what and {b} make {c}? Take the {b} new ones away from {c}.'},
+  startS: {need: ['b', 'a'], one: [], must: [/\bleft\b/], ex: {b: 5, a: 7}, ans: 12,
+    def: '{who} had some {pl}. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} have at the start?', hint: 'Put them back together: {a} left and {b} given away. How many in all?'},
+  cmpB: {need: ['y', 'd'], one: [], must: [/\{who\}/, /\{other\}/, /\bmore than\b/], ex: {y: 6, d: 3}, ans: 9,
+    def: '{other} has {y things}. {who} has {d} more than {other}. How many {pl} does {who} have?', hint: 'Top row: {other}. Bottom row: {who}. {who} has the same, and {d} more.'},
+  cmpS: {need: ['x', 'd'], one: [], must: [/\{who\}/, /\{other\}/, /\bfewer than\b/], ex: {x: 12, d: 4}, ans: 8,
+    def: '{who} has {x things}. {other} has {d} fewer than {who}. How many {pl} does {other} have?', hint: 'Top row: {who}. Bottom row: {other}. {other} has {d} fewer. Take {d} away from {x}.'},
+};
+const PERS_PAST = /^(more|home|away|back|to|with|of|in|on|at|for|from|into|onto|and|\w+ed|fell|flew|ran|rode|swam|went|came|got|left|drove|rolled|hid|dug|sank|slid|blew|broke|fit|hopped|spun|sat|stood|took|hung|rang|sang|bit)\b/;
+// the pictures a thing may use: a drawing (ART) or an emoji from tools/emoji-allow.txt that is not marked risky
+function persPics() {
+  const allow = new Map();
+  for (const line of fs.readFileSync(path.join(__dirname, 'emoji-allow.txt'), 'utf8').split('\n')) {
+    if (!line.trim() || line.startsWith('#')) continue;
+    const [seq, ...cm] = line.split('#');
+    allow.set(seq.trim().replace(/️/g, ''), cm.join('#').trim());
+  }
+  return {art: app()('Object.keys(ART)'), allow};
+}
+// one interest's problems ([] when fine)
+function checkPers(d) {
+  const p = [], R = app(), pics = persPics(), safe = s => !BANNED.test(s) && !R.ctx.ksBad(String(s), true);
+  if (!d || typeof d != 'object') return ['not a draft'];
+  if (!d.id || !/^[a-z]+$/.test(d.id)) p.push('no id (a-z)');
+  if (!d.name || typeof d.name != 'string' || d.name.split(' ').length > 2 || !safe(d.name)) p.push('name: one or two kid-safe words');
+  const pic = (art, emo, w) => {
+    if (art && !pics.art.includes(art)) p.push(`${w}: no drawing "${art}" in ART`);
+    const e = String(emo || '').replace(/️/g, '');
+    if (e && !pics.allow.has(e)) p.push(`${w}: the emoji ${e} is not in tools/emoji-allow.txt`);
+    else if (e && /^risky/.test(pics.allow.get(e))) p.push(`${w}: the emoji ${e} is marked risky (an empty box on old tablets)`);
+    if (!art && !e) p.push(`${w}: no picture (a drawing or an emoji)`);
+  };
+  if (!Array.isArray(d.pic) || d.pic.length != 2) p.push('pic: [drawing, emoji]'); else pic(d.pic[0], d.pic[1], 'pic');
+  const th = Array.isArray(d.things) ? d.things : [];
+  if (th.length < 4 || th.length > 8) p.push('things: 4 to 8');
+  th.forEach((t, i) => {
+    if (!Array.isArray(t) || t.length != 4 || !t[0] || !t[1]) { p.push(`thing ${i + 1}: [plural, singular, drawing, emoji]`); return; }
+    const [pl, sg, art, emo] = t;
+    if (R(`enPlural(${JSON.stringify(sg)})`) !== pl) p.push(`thing ${i + 1}: "${pl}" is not the plural of "${sg}" (enPlural gives "${R(`enPlural(${JSON.stringify(sg)})`)}")`);
+    if (/^(u|h|eu|one)/i.test(sg)) p.push(`thing ${i + 1}: "${sg}" may take "an" or "a" against its first letter`);
+    if (!safe(pl) || !safe(sg) || /\d/.test(pl + sg) || NUMWORDS.test(pl + ' ' + sg)) p.push(`thing ${i + 1}: not allowed: ${pl}`);
+    if (/^[^a-z]|[^a-z ]/.test(pl + sg)) p.push(`thing ${i + 1}: lowercase words only`);
+    pic(art, emo, `thing ${i + 1}`);
+  });
+  if (new Set(th.map(t => t && t[0])).size !== th.length) p.push('things: the same thing twice');
+  for (const k in PERS_KINDS) {
+    const K = PERS_KINDS[k], ls = [].concat((d.st || {})[k] || []);
+    if (!ls.length || ls.length > 3) { p.push(`st.${k}: one to three sentences`); continue; }
+    ls.forEach((t, i) => {
+      const w = `st.${k} ${i + 1}`, s = String(t), bare = s.replace(/\{[^}]*\}/g, 'X'), ok = ['who', 'other', 'pl', 'an', ...K.need];
+      if (!safe(s.replace(/\{[^}]*\}/g, ' '))) p.push(`${w}: a theme the parent ruled out, or a word that is not kid-safe — "${s}"`);
+      if (/\d/.test(bare)) p.push(`${w}: a number written into the words (use a {slot}) — "${s}"`);
+      if (NUMWORDS.test(bare) || /\b(one|ten|zero|hundred)\b/i.test(bare)) p.push(`${w}: a number word (use a {slot}) — "${s}"`);
+      const used = [...s.matchAll(/\{(\w+)( things)?\}/g)];
+      for (const m of used) if (!ok.includes(m[1]) || m[2] && !K.need.includes(m[1])) p.push(`${w}: {${m[1]}${m[2] || ''}} is not a slot of ${k} (it has ${ok.map(x => '{' + x + '}').join(' ')})`);
+      if (/[{}]/.test(s.replace(/\{\w+( things)?\}/g, ''))) p.push(`${w}: a broken {slot}`);
+      for (const n of K.need) if (used.filter(m => m[1] === n).length !== 1) p.push(`${w}: says {${n}} ${used.filter(m => m[1] === n).length} times (once, as the default does) — "${s}"`);
+      if (!used.some(m => m[1] === 'pl' || m[2])) p.push(`${w}: never names the thing ({pl} or {a things}) — "${s}"`);
+      for (const m of s.matchAll(/\{(\w+)\} (\{pl\}|\w+)/g)) {
+        if (m[2] === '{pl}') p.push(`${w}: "{${m[1]}} {pl}" reads "1 balls" when it is 1: write {${m[1]} things} — "${s}"`);
+        else if (K.one.includes(m[1]) && !PERS_PAST.test(m[2])) p.push(`${w}: {${m[1]}} can be 1, so "{${m[1]}} ${m[2]}" must be "more" or a past-tense verb ("1 rolled", never "1 roll") — "${s}"`);
+      }
+      for (const re of K.must) if (!re.test(s)) p.push(`${w}: needs ${String(re).replace(/\\b/g, '').replace(/\\/g, '')} so the hint stays true ("${K.hint}") — "${s}"`);
+      if (!/\?$/.test(s) || (s.match(/\?/g) || []).length !== 1) p.push(`${w}: ends with its one question — "${s}"`);
+      if (s.split(/\s+/).length > 30 || s.length > 150) p.push(`${w}: longer than 30 words or 150 characters`);
+    });
+  }
+  for (const k in d.st || {}) if (!PERS_KINDS[k]) p.push(`st.${k}: not a story kind (${Object.keys(PERS_KINDS).join(', ')})`);
+  return p;
+}
+function persDrafts() {
+  if (!fs.existsSync(PERS)) return [];
+  return fs.readdirSync(PERS).filter(f => /^[a-z]+\.md$/.test(f)).sort().map(f => {
+    const file = path.join(PERS, f);
+    try { const d = parseDraft(fs.readFileSync(file, 'utf8')), problems = checkPers(d); if (d.id + '.md' !== f) problems.push('the id does not match the file name'); return {file, d, problems}; }
+    catch (e) { return {file, d: null, problems: ['cannot read: ' + e.message]}; }
+  });
+}
+// a sentence of kind k with its example numbers and the i-th thing, as the child sees it
+function persSee(d, k, line, i = 0) {
+  const t = d.things[i % d.things.length], th = [t[0], t[3], t[1], t[2]];
+  return app()(`persFill(${JSON.stringify(line)},${JSON.stringify(th)},${JSON.stringify(Object.assign({who: 'Mia', other: 'Ben'}, PERS_KINDS[k].ex))})`);
+}
+// real questions of story levels 4 to 6 (the default sentences, the theme's things), seeded so the read-through is the same each run
+function persBig(d, per = 2) {
+  return app()(`(()=>{const keep=Object.assign({},PERSW),ints=S.ints,nm=S.name,bd=S.buddy;for(const k in PERSW)delete PERSW[k];PERSW[${JSON.stringify(d.id)}]=${JSON.stringify({name: d.name, things: d.things, st: d.st})};
+    S.ints=[${JSON.stringify(d.id)}];S.name='Mia';S.buddy='Ben';const o=[];
+    try{for(const lv of [4,5,6]){const seen=new Set();for(let s=1;s<400&&seen.size<${per};s++){const q=genQ('story',lv,s),k=${JSON.stringify(d.things.map(t => t[0]))}.find(p=>q.say.includes(' '+p));if(!k||seen.has(k))continue;seen.add(k);o.push({lv,say:q.say,ans:q.ans})}}}
+    finally{for(const k in PERSW)delete PERSW[k];Object.assign(PERSW,keep);S.ints=ints;S.name=nm;S.buddy=bd}return o})()`);
+}
+const PERS_NAMES = {join: 'Joining', sep: 'Taking away', chg: 'Some more: how many?', chgS: 'Gave some: how many?', part: 'Big and small',
+  cmpDm: 'Compare: how many more?', cmpDf: 'Compare: how many fewer?', start: 'Got more: how many at the start?',
+  startS: 'Gave some: how many at the start?', cmpB: 'Compare: the one with more', cmpS: 'Compare: the one with fewer'};
+function persSheet(d) {
+  const L = [`Interest: ${d.name} (${d.id})`, `Things: ${d.things.map(t => t[0]).join(', ')}`, '', 'Story problems, grades K to 2 (the hint the child sees after a miss is under each):'];
+  for (const k in PERS_KINDS) [].concat((d.st || {})[k] || []).forEach((t, i) => L.push(`- ${PERS_NAMES[k]}: ${persSeeTxt(d, k, t, i)} (answer ${PERS_KINDS[k].ans})`, `    hint: ${persSee(d, k, PERS_KINDS[k].hint, i)}`));
+  L.push('', 'Bigger story problems, grades 2 and 3 (the usual sentences, with these things):');
+  for (const x of persBig(d)) L.push(`- level ${x.lv}: ${x.say} (answer ${x.ans})`);
+  return L.join('\n');
+}
+const persSeeTxt = (d, k, t, i) => persSee(d, k, t, i + Object.keys(PERS_KINDS).indexOf(k));
+function persFile(d, problems, status = 'unreviewed', made = '') {
+  const clean = Object.assign({}, d);
+  delete clean.status;
+  return `# Interest: ${d.name} (${d.id})\n\nstatus: ${status}\nmade: ${made || new Date().toISOString().slice(0, 10) + ' by tools/author.js --pers-draft (xAI API); read and rewritten by hand'}\n\n`
+    + '<!-- For the owner: read the sentences below as the child sees them, change any wording in the JSON ("st" and "things"),\n'
+    + '     then replace "unreviewed" above with "reviewed <your name> <date>" (or run: node tools/author.js --pers-approve <id> --by <name>).\n'
+    + '     Until then this interest is never offered and story problems stay the default ones: tools/build.py copies reviewed\n'
+    + '     interests only (src/js/39q-persw.js). After editing the JSON, node tools/author.js --pers-fix redraws this page. -->\n\n'
+    + '## As the child sees it\n\n```text\n' + persSheet(d) + '\n```\n\n## Checks\n\n'
+    + (problems.length ? problems.map(x => '- ' + x).join('\n') : '- All checks pass (slots, the hint agrees, plurals, numbers, pictures, themes, kid-safe).') + '\n\n'
+    + '## Words (the draft itself)\n\n```json\n' + JSON.stringify(clean, null, 1) + '\n```\n';
+}
+// redraw every draft page from its JSON (after a hand edit), keeping its status and made lines
+function persFix() {
+  const out = [];
+  for (const x of persDrafts()) {
+    if (!x.d) { out.push(x); continue; }
+    const t = fs.readFileSync(x.file, 'utf8'), st = /^status:\s*(.*)$/m.exec(t)[1], made = (/^made:\s*(.*)$/m.exec(t) || [])[1];
+    fs.writeFileSync(x.file, persFile(x.d, x.problems, st, made));
+    out.push(x);
+  }
+  return out;
+}
+// ask the API for a first draft of these interests (all with no draft yet when none named)
+function persDraft(ids, o = {}) {
+  ids = (ids.length ? ids : Object.keys(PERS_IDS).filter(id => !fs.existsSync(path.join(PERS, id + '.md'))));
+  const pics = persPics(), out = [];
+  const picTxt = 'Drawings (use the name): ' + pics.art.join(', ') + '\nEmoji: ' + [...pics.allow].filter(([e, c]) => !/^risky/.test(c)).map(([e, c]) => e + ' ' + c.split('(')[0].trim()).join('; ');
+  const kinds = Object.entries(PERS_KINDS).map(([k, K]) => `- ${k}: number slots ${K.need.map(x => '{' + x + '}').join(' ')} (each exactly once). The usual sentence: "${K.def}" The hint shown after a miss: "${K.hint}"`).join('\n');
+  for (const id of ids) {
+    const sys = 'You write short story problems for a children\'s math app (Kindergarten to 2nd grade). You write only words; the app fills every '
+      + 'number and name into {slots}. Reply with one JSON object and nothing else.';
+    const user = `A child picked the interest "${id}" (${PERS_IDS[id] || id}). Write that interest's words.
+1. name: the interest's name for a child, one or two words.
+2. pic: [drawing, emoji] for the interest, from the lists below ("" when none).
+3. things: 5 or 6 things of this interest, as [plural, singular, drawing, emoji], lowercase. They must be OBJECTS a child can hold, put in a bag or box, line up, share, give and sell (toys, stickers, shells, baked things), never live animals or people. Each needs a picture from the lists ("" for none; at least one of the two).
+4. st: for each story kind below, ONE new sentence (or two different ones for join and sep) set in the world of this interest: where it happens and what the children do there (at practice, in the kitchen, on the toy farm, at the beach ...). Do NOT copy the usual sentence: write a fresh one. Same math as the usual sentence: the same numbers in the same roles, the same people ({who} and {other}), the same question, so the hint shown after a miss stays true. Use {pl} for the things' plural, {a things} for a number with its thing ("{a things}" reads "1 drum" or "3 drums"), {an} for "a drum"/"an egg". Every sentence must work for EVERY thing in the list.
+Rules: never a digit or a number word; a bare number slot is followed by "more" or a past-tense verb (the number can be 1); short plain words for a 5-year-old; at most 30 words; ends with its one question; kind and safe; no magic, spells, fairies, unicorns, wizards, evolution or "millions of years"; nothing scary.
+The kinds:
+${kinds}
+${picTxt}
+The JSON keys: id ("${id}"), name, pic, things, st {${Object.keys(PERS_KINDS).join(', ')}} (arrays of sentences).`;
+    if (o.dry) { out.push({id, prompt: [sys, user]}); continue; }
+    const m = model(), res = api('POST', API + '/chat/completions', {model: m, messages: [{role: 'system', content: sys}, {role: 'user', content: user}], temperature: 0.7});
+    const txt = String(res.choices[0].message.content || '');
+    const d = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+    d.id = id;
+    d.api = {name: d.name, pic: d.pic, things: d.things, st: d.st};
+    d.notes = '';
+    fs.mkdirSync(PERS, {recursive: true});
+    const probs = checkPers(d), f = path.join(PERS, id + '.md');
+    fs.writeFileSync(f, persFile(d, probs, 'unreviewed', new Date().toISOString().slice(0, 10) + ' by tools/author.js --pers-draft (xAI API, ' + m + ')'));
+    out.push({id, file: f, problems: probs});
+  }
+  return out;
+}
+// the owner's step: mark interests reviewed (only those that pass), then write src/js/39q-persw.js
+function persApprove(ids, o = {}) {
+  const by = String(o.by || 'owner').replace(/\s+/g, ' ').trim(), date = o.date || new Date().toISOString().slice(0, 10), done = [], bad = [];
+  if (!/^\d{4}-\d\d-\d\d$/.test(date)) throw new Error('--date must be YYYY-MM-DD');
+  for (const x of persDrafts()) {
+    if (!x.d || !(ids.includes('all') ? x.d.status === 'unreviewed' : ids.includes(x.d.id))) continue;
+    if (x.problems.length) { bad.push(`${x.d.id}: ${x.problems.length} problems (fix them first: node tools/author.js --check)`); continue; }
+    const t = fs.readFileSync(x.file, 'utf8');
+    fs.writeFileSync(x.file, t.replace(/^status:.*$/m, `status: reviewed ${by} ${date}${o.note ? ' (' + o.note + ')' : ''}`));
+    done.push(x.d.id);
+  }
+  for (const id of ids) if (id !== 'all' && !done.includes(id) && !bad.some(b => b.startsWith(id + ':'))) bad.push(`${id}: no such interest draft`);
+  if (done.length) cp.execFileSync('python3', [path.join(ROOT, 'tools', 'build.py'), '--words-only'], {stdio: 'pipe'});
+  return {done, bad};
+}
+// the read-through: docs/drafts/PERS-READ.md
+function persRead() {
+  const xs = persDrafts().filter(x => x.d), st = xs.reduce((a, x) => (a[x.d.status] = (a[x.d.status] || 0) + 1, a), {});
+  const L = ['# Interest themes read-through: story problems about what the child likes (PERS-01)', '',
+    `${xs.length} interests (${Object.entries(st).map(([k, v]) => v + ' ' + k).join(', ')}). In Grown-ups, "Story themes" lets you`,
+    '(or your child) pick up to 3. Story problems then use that interest\'s things and sentences.', 'The math is the same: the same numbers, the same answer, the same hint and scoring.', '',
+    'Below, for each interest: its things, then each of its sentences as the child sees it', '(with example numbers and names: the app fills in the real ones), with the hint shown', 'after a miss, which must still fit the sentence. Then a few bigger problems (grades 2 and 3),',
+    'which keep their usual sentences and use the interest\'s things.', '',
+    'Until you approve an interest, it is not offered, and story problems stay as they are.', 'To change a word: edit the JSON in docs/drafts/pers/<id>.md. When you are happy, say so, or run:', '',
+    '`node tools/author.js --pers-approve <id ...|all> --by <your name>`', '',
+    'Not themed (yet): story problems from grade 3 up (levels 7 to 9: remainders, money, ratios),', 'reading stories, and the questions of lessons.', ''];
+  for (const x of xs) L.push(`## ${x.d.name} (${x.d.id})${x.d.status === 'reviewed' ? ' (reviewed)' : ''}`, '', '```text', persSheet(x.d).split('\n').slice(1).join('\n'), '```', '');
+  L.push('## The sentences with their slots', '', '{who} and {other} are the child and a friend, a sibling or the pet; {a}, {b}, {c}, {x}, {y}, {d}',
+    'are the numbers; {a things} is a number with its thing ("1 drum", "3 drums"); {pl} is the things.', '');
+  for (const x of xs) {
+    L.push(`### ${x.d.name}`, '');
+    for (const k in PERS_KINDS) for (const t of [].concat((x.d.st || {})[k] || [])) L.push(`- ${k}: ${t}`);
+    L.push('');
+  }
+  return L.join('\n');
+}
+
+module.exports = {persDraft, persDrafts, checkPers, persFix, persApprove, persRead, persSee, PERS_KINDS, PERS_IDS, hintSet, hintExamples, checkHint, checkHints, hintDrafts, hintDraft, hintApprove, hintRead, approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
 
 if (require.main === module) {
   const a = process.argv.slice(2), has = f => a.includes(f), val = f => (a.indexOf(f) >= 0 ? a[a.indexOf(f) + 1] : null);
-  if (has('--hints-draft')) {
+  if (has('--pers-draft')) {
+    const r = persDraft(a.filter(x => !x.startsWith('--')), {dry: has('--dry')});
+    for (const x of r) console.log(x.prompt ? x.prompt.join('\n\n') : `${path.relative(ROOT, x.file)}: status unreviewed, ${x.problems.length ? x.problems.length + ' problems:\n  ' + x.problems.join('\n  ') : 'all checks pass'}`);
+  } else if (has('--pers-fix')) {
+    for (const x of persFix()) console.log((x.problems.length ? 'FAIL  ' : 'ok    ') + path.relative(ROOT, x.file) + (x.problems.length ? '\n  ' + x.problems.join('\n  ') : ''));
+  } else if (has('--pers-approve')) {
+    const ids = a.slice(a.indexOf('--pers-approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note'].includes(all[i - 1]));
+    const r = persApprove(ids, {by: val('--by'), date: val('--date'), note: val('--note')});
+    console.log((r.done.length ? 'reviewed: ' + r.done.join(', ') + '\nwrote src/js/39q-persw.js: these interests are offered at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
+      + (r.bad.length ? '\nnot marked:\n  ' + r.bad.join('\n  ') : ''));
+    process.exitCode = r.bad.length ? 1 : 0;
+  } else if (has('--pers-read')) {
+    fs.writeFileSync(path.resolve(val('--pers-read')), persRead());
+    console.log('wrote ' + val('--pers-read'));
+  } else if (has('--hints-draft')) {
     const ids = a.filter((x, i) => !x.startsWith('--'));
     const r = hintDraft(ids, {dry: has('--dry')});
     for (const x of r) console.log(x.prompt ? x.prompt.join('\n\n') : `${x.code}: ${x.problems.length ? x.problems.length + ' problems: ' + x.problems.join('; ') : 'ok'}  "${x.line}"`);
@@ -573,7 +832,7 @@ if (require.main === module) {
     process.exitCode = r.bad.length ? 1 : 0;
   } else if (has('--read')) {
     const f = val('--read'), ids = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--read' && a[i - 1] !== '--batch');
-    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: val('--batch') == '3b' ? '3b' : +val('--batch') || 2}));
+    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: ['3b', '5r'].includes(val('--batch')) ? val('--batch') : +val('--batch') || 2}));
     console.log('wrote ' + f);
   } else if (has('--draft')) {
     const r = draft(val('--draft'), {grade: val('--grade'), dry: has('--dry')});
@@ -594,6 +853,11 @@ if (require.main === module) {
     for (const x of checkHints()) {
       const rel = path.relative(ROOT, x.file);
       if (x.problems && x.problems.length) { bad++; console.log('FAIL  ' + rel + '\n  ' + x.problems.slice(0, 20).join('\n  ')); }
+      else console.log(`ok    ${rel} (${x.d.status})`);
+    }
+    for (const x of persDrafts()) { // PERS-01: the interest themes
+      const rel = path.relative(ROOT, x.file);
+      if (x.problems.length) { bad++; console.log('FAIL  ' + rel + '\n  ' + x.problems.slice(0, 20).join('\n  ')); }
       else console.log(`ok    ${rel} (${x.d.status})`);
     }
     console.log(bad ? bad + ' with problems' : 'all scripts and drafts pass');

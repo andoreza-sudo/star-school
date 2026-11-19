@@ -1,0 +1,47 @@
+/* READ-SHAPES (v184): the models of the K-2 reading lesson shapes (52q-bench5r.js, part teachrd): word cards, the flash card, claps, the
+   dictation ear, the story card, opposite pairs, the sentence fixer, word tiles. Tokens only; every button 48 px or more. */
+.ls5-cards{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;max-width:100%}
+.ls5-card{display:inline-flex;align-items:center;justify-content:center;min-width:72px;min-height:72px;padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-card);
+  background:var(--read);color:var(--surface);font:inherit;font-size:var(--fs-5);font-weight:700;letter-spacing:.04em;box-shadow:var(--shadow)}
+button.ls5-card{cursor:pointer}
+.ls5-card.up{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 3px var(--read)}
+.ls5-card.ls5-big{font-size:var(--fs-7);min-width:120px;min-height:96px}
+.ls5-card.ls5-no{opacity:.75}
+.ls5-bk .ic{width:30px;height:30px}
+.ls5-pair{display:flex;gap:var(--s-4);justify-content:center;align-items:center;flex-wrap:wrap}
+.ls5-fl{display:flex;gap:var(--s-3);align-items:center;justify-content:center}
+.ls5-flash{display:inline-block;opacity:1}
+.ls5-flash.go{animation:ls5f 2.6s ease-in forwards}
+@keyframes ls5f{0%,70%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ls5-flash.go{animation:none}}
+.mmb.ls5-again,.mmb.ls5-say{min-width:48px;min-height:48px}
+.mmb.ls5-ear{min-width:64px;min-height:64px;background:var(--read-tint);color:var(--read-shade)}
+.ls5-dict{display:flex;justify-content:center;margin:var(--s-1) 0}
+.ls5-claps{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:center;min-height:48px;color:var(--read-shade)}
+.ls5-cl{display:inline-flex}
+.ls5-cl0{display:inline-block;width:48px;height:4px;border-radius:2px;background:var(--line)}
+.ls5-cn{font-size:var(--fs-4);font-weight:700;color:var(--ink);text-align:center}
+.ls5-cbs{display:flex;gap:var(--s-3);justify-content:center}
+.mmb.ls5-clapb{min-width:120px;min-height:64px;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;background:var(--read);color:var(--surface)}
+.ls5-story{display:flex;flex-direction:column;gap:var(--s-1);max-width:30em;margin:0 auto;text-align:left}
+.ls5-sl{display:flex;align-items:center;gap:var(--s-2);background:var(--surface-2);border-radius:var(--r-card);padding:var(--s-1) var(--s-2)}
+.ls5-st{flex:1;font-size:var(--fs-4);font-weight:700;color:var(--ink);line-height:1.3}
+.ls5-sp{display:inline-flex;gap:var(--s-1);font-size:clamp(32px,8vmin,48px)}
+.ls5-pr{display:flex;align-items:center;justify-content:center;gap:var(--s-3);flex-wrap:wrap}
+.ls5-ar{display:inline-flex;align-items:center;font-size:var(--fs-6);font-weight:700;color:var(--read-shade)}
+.ls5-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.4;text-align:center}
+.ls5-c1{display:inline-block;min-width:.7em;border-radius:var(--r-chip);background:var(--surface-2)}
+.ls5-c1.on{background:var(--star-tint);color:var(--read-shade)}
+.ls5-mk{display:inline-block;min-width:.8em;color:var(--ink-2);text-align:center}
+.ls5-mk.on{color:var(--read-shade);background:var(--star-tint);border-radius:var(--r-chip)}
+.ls5-sents2{display:flex;flex-direction:column;gap:var(--s-2)}
+.ls5-fix{display:flex;gap:var(--s-3);justify-content:center}
+.mmb.ls5-fb{min-width:64px;min-height:56px;font-size:var(--fs-5);font-weight:700}
+.choices.ls5-sents{grid-template-columns:1fr}
+.choices.ls5-sents .ch{font-size:var(--fs-4);font-weight:700;justify-content:flex-start;text-align:left}
+.ls5-tiles{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:flex-end;font-size:var(--fs-5);font-weight:700}
+.ls5-tile{background:var(--surface-2);border-radius:var(--r-chip);padding:0 var(--s-2);color:var(--ink)}
+.ls5-tag{font-size:var(--fs-2);font-weight:700;color:var(--read-shade);background:var(--read-tint);border-radius:var(--r-chip);padding:0 var(--s-2)}
+.ls5-two{display:flex;gap:var(--s-2);justify-content:center}
+.lslots.ls5-nb .ls{background:var(--surface-2)}
+@media (max-width:420px){.ls5-card.ls5-big{font-size:var(--fs-6)}.ls5-st{font-size:var(--fs-3)}.ls5-sent{font-size:var(--fs-4)}.ls5-card{min-width:64px;min-height:64px;font-size:var(--fs-4)}}

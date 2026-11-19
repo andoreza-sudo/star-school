@@ -1,5 +1,6 @@
-/* Star School hints v182. BUILT by tools/build.py from 39m-mist.js, 39n-hintw.js: never edit by hand.
-   index.html v182 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v182.js. */
+/* Star School hints v185. BUILT by tools/build.py from 39p-pers.css, 39m-mist.js, 39n-hintw.js, 39p-pers.js, 39q-persw.js: never edit by hand.
+   index.html v185 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v185.js. */
+(function(){var s=document.createElement('style');s.id='css-hints';s.textContent="/* PERS-01: the Story themes picker (39p-pers.js, part hints). Tokens only. */\n.pp-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:620px;margin:0 auto}\n.pp-h{font-family:var(--font-display);font-size:var(--fs-5);margin:0 0 var(--s-1);text-align:center}\n.pp-sub{margin:0 0 var(--s-3);text-align:center;color:var(--ink-2);font-size:var(--fs-3)}\n.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.btn.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:116px;\n  padding:var(--s-2);border-radius:var(--r-btn);background:var(--surface-2);border:3px solid var(--line);font-size:var(--fs-3);color:var(--ink)}\n.btn.pp-c.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 4px 0 var(--brand-shade)}\n.pp-pic{display:flex;align-items:center;justify-content:center;width:56px;height:56px}\n.pp-emo{line-height:1}\n.pp-ok{position:absolute;top:6px;right:6px;color:var(--brand);opacity:0}\n.btn.pp-c.on .pp-ok{opacity:1}\n.pp-ex{margin:var(--s-3) 0 0;padding:var(--s-3);border-radius:var(--r-card);background:var(--paper);font-size:var(--fs-3);line-height:var(--lh-3);min-height:3em}\n.pp-exl{font-weight:700;color:var(--ink-2)}\n.pp-btns{display:flex;justify-content:center;margin-top:var(--s-3)}\n@media (max-width:420px){.pp-card{padding:var(--s-3)}.pp-grid{grid-template-columns:repeat(2,1fr)}.btn.pp-c{min-height:104px}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- HINT-01: a hint for each common mistake, in every Practice question (part hints since v182: loaded when a Practice round starts) ----------
    docs/ROADMAP.md 10d (owner decisions 2026-11-18). For a Practice question the app works out what each known mistake would answer
    (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cat" as "cap", la for el ...). When the child's
@@ -835,6 +836,206 @@ function hmHint(q, v) {
    BUILT by tools/build.py from docs/drafts/hints/<code>.md ("status: reviewed ..."): never edit by hand. A hint that is
    not reviewed is never here, so its mistake shows the generic hint (hmHint in 39m-mist.js). */
 const HINTW = {
+  "a180": "A right angle is {n} degrees, not a straight line.",
+  "abc": "That letter comes before. Which letter comes after?",
+  "addBot": "Same-size parts: the bottom number stays the same.",
+  "addEq": "Multiply the top and bottom by the same number. Do not add.",
+  "addUnl": "Make the bottom numbers the same first. Then work with the tops.",
+  "aop": "To find the letter, undo the {sign}: do the opposite.",
+  "apow": "The small raised number says how many times to use the base.",
+  "area": "Perimeter goes all the way around. Add every side.",
+  "bigden": "A bigger bottom number means smaller pieces. Compare the pieces.",
+  "blend": "Say each sound slowly. Did you hear every letter?",
+  "cat": "{x} + {y} = {n}. Only one digit fits in the {place}.",
+  "clap": "Clap once for each part you say. Try it slowly.",
+  "col": "In the {place}, {x} take away {y} needs a trade first.",
+  "conv": "Smaller units need more of them. Multiply, do not add.",
+  "count": "You counted {n} coins. Add what each coin is worth.",
+  "dbl": "This word has a double letter. Look again.",
+  "dfact": "Multiply back to check. Does {v} × {b} make {a}?",
+  "diff": "How many more? Find the difference, not the total.",
+  "dig": "Some letters go together to make one sound. Look again.",
+  "digit": "The {d} is in the {place}. What is it worth there?",
+  "divMul": "Look at the sign. We share, we do not multiply.",
+  "dneg": "Taking away a negative is the same as adding.",
+  "dpt": "Count the digits after the points. Where does the point go?",
+  "dzero": "The first place after the point is tenths. The next is hundredths.",
+  "ed": "It sounds like t or d, but the ending is spelled ed.",
+  "el100": "An hour has {n} minutes, not a hundred. Count to the next hour first.",
+  "esgen": "Check the little word: {o} does not go with this word.",
+  "esno": "Look for the word no. It changes the meaning.",
+  "esnum": "Los and las mean more than one. Add s or es too.",
+  "esper": "{o} goes with {w}. Who is the sentence about?",
+  "fact": "Check: is {v} really {a} groups of {b}? Count on once more.",
+  "fdivx": "Dividing? Flip what you divide by, then multiply.",
+  "first": "Listen to the very first sound again. Say it slowly.",
+  "flip": "The shaded parts go on top. All the parts go below.",
+  "fpart": "The bottom number counts all the parts, shaded or not.",
+  "given": "{v} is in the problem already. Find the missing number.",
+  "half": "Each side length is there twice. Add every side.",
+  "hands": "The short hand shows the hour. The long hand shows minutes.",
+  "hnext": "The short hand has not reached {n} yet. Look again.",
+  "homo": "{o} sounds right, but it means something else. Look again.",
+  "idist": "One number is below zero. Count to zero, then past it.",
+  "impAdd": "Multiply the whole by the bottom, then add the top.",
+  "impTop": "You multiplied. Now add the top number too.",
+  "ineg": "Below zero, the number farther from zero is smaller.",
+  "isign": "The size is right. Check the sign: plus or minus?",
+  "keep": "You traded from the {place}. Now the {place} have one less.",
+  "last": "Say it slowly. Listen to the very end.",
+  "layer": "Count the cubes in one layer, then times the number of layers.",
+  "lcmx": "That is a common multiple. Is there a smaller one?",
+  "longer": "More digits does not mean bigger. Compare the tenths first.",
+  "look": "{l} looks a lot like it. Look closely at its shape.",
+  "lswap": "Check the order of the letters in {o}.",
+  "mcarry": "{x} × {b} = {n}. Add what you carry to the next place.",
+  "mean": "That is the total. Now share it equally among the numbers.",
+  "mid": "Say it slowly. Listen to the middle sound.",
+  "minute": "Count by fives to the last number, then count on.",
+  "mixSwap": "How many wholes fit? That goes first. The leftover goes on top.",
+  "mixTop": "After taking out the wholes, only the leftover parts stay on top.",
+  "mulAdd": "{a} × {b} means {a} groups of {b}, not {a} + {b}.",
+  "mulBot": "A whole number times parts: multiply the top only.",
+  "nickel": "A dime is small, but it is worth more than a nickel.",
+  "nocarry": "{x} + {y} = {n}. Carry one to the next place.",
+  "ocat": "A number next to {x} means times {x}.",
+  "oddPrime": "{o} is odd, but it has other factors. Look again.",
+  "off1": "Touch each one as you count. Count each one just once.",
+  "on1": "So close. Count again from {a}, one step for each of {b}.",
+  "oneSide": "Divide both the top and bottom by the same number.",
+  "op": "Look at the sign. It says {sign}.",
+  "opst": "Read it again. Are things joining, or going away?",
+  "order": "Times and divide come before plus and minus.",
+  "part": "Multiplying by the tens digit? Write a zero in the ones first.",
+  "perim": "Area counts the squares inside, not the sides around.",
+  "pl2": "That word already means more than one. No s is needed.",
+  "plS": "{w} changes to a new word for more than one.",
+  "place": "Count the places again. The {d} is in the {place}.",
+  "ples": "Only words ending in s, x, sh or ch add es.",
+  "plone": "This word needs to show more than one.",
+  "ply": "Look at the last letter. Ending in y? Change it to ies.",
+  "point": "Line up the points of {a} and {b}, not the last digits.",
+  "pvcat": "The parts share places. Each digit takes the place of a zero.",
+  "pvzero": "Each place needs a digit. Put a zero in an empty place.",
+  "pway": "Multiplying by ten makes a number bigger. Dividing makes it smaller.",
+  "radd": "Ratios grow by multiplying, not by adding the same amount.",
+  "remBig": "The leftover must be smaller than {b}. Can one more group fit?",
+  "remLeft": "That is how many groups. The question asks what is left over.",
+  "remUp": "The ones left over need one more too.",
+  "rend": "It does not start at zero. Count the spaces from its start.",
+  "rfirst": "{o} starts like {w}. Rhymes end the same.",
+  "rflip": "Keep the order the question asks for: the first thing named goes first.",
+  "rmax": "The range is the biggest take away the smallest.",
+  "rplace": "We round to the {place} here. Find that place first.",
+  "rup": "The next digit is {d}. That is not enough to round up.",
+  "rvow": "Look at the vowel before the r. Which one is it?",
+  "seqdir": "Do the numbers go up or down? Keep going the same way.",
+  "seqone": "Each jump here is {n}, not one. Look at the pattern.",
+  "shch": "Listen closely: is it sh, or ch?",
+  "sideP": "Half the perimeter is one long side and one short side.",
+  "silent": "The e at the end changes the vowel sound.",
+  "size": "Is the question asking for the big end or the small end?",
+  "small": "The open side faces the bigger number. Look again.",
+  "step1": "That is the first step. Now finish the second step.",
+  "swap": "Look at {v}. Which digit is the tens?",
+  "team": "Vowels side by side make one sound. Look at the vowels.",
+  "teen": "Listen again. A teen number is one ten and some ones.",
+  "ten": "A full frame is ten. Count the ten first, then the rest.",
+  "tensOnes": "That is the ones digit. Look for the tens digit.",
+  "thalf": "A triangle is half a rectangle. Halve base times height.",
+  "ticks": "Count the jumps between the marks, not the marks.",
+  "tilde": "{v} needs a mark over one letter.",
+  "topOnly": "Multiply the tops, and multiply the bottoms too.",
+  "tot": "{b} is the total. What goes with {a} to make it?",
+  "trunc": "The next digit is {d}. That is enough to round up.",
+  "unshaded": "The top number counts the shaded parts.",
+  "wstart": "Read all the way to the end of each word.",
+  "xyswap": "Go across first, then up. The first number is across.",
+  "zero0": "When a place has nothing to share, write a zero there.",
+  "zeros": "Count the zeros in the problem, then in {v}.",
+};
+/* ---------- PERS-01: the Story themes picker (part hints; the words are PERSW, 39q-persw.js; the engine is 30p-pers.js) ----------
+   Grown-ups shows a "Story themes" card (persCard) once the part is in, and only when the owner has reviewed at least one interest.
+   Its button opens the picker (persPick): big picture buttons, written so a grown-up can hand the tablet to the child; a tap says
+   the name and turns it on or off (up to PERS_MAX; saved at once in S.ints, per child); a sample sentence shows what a story
+   problem will sound like. CSS in src/css/39p-pers.css (part hints). */
+const PERS_MAX = 3;
+// the reviewed interests, in the order of the read-through (sorted ids)
+const persList = () => Object.keys(PERSW).sort();
+const persPic = (id, size) => {
+  const p = PERSW[id].pic || [];
+  return p[0] && ART[p[0]] ? picArt(p[0], size) : `<span class="pp-emo" style="font-size:${size}">${esc(p[1] || '')}</span>`;
+};
+// the names of the child's picks ("Animals and Space"), or ''
+function persNames() {
+  const n = persOn().map(id => PERSW[id].name);
+  return n.length < 2 ? n.join('') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1];
+}
+// a sample: the first pick's first joining sentence, with the child's name, a friend and small numbers (what a story will sound like)
+function persSample() {
+  const id = persOn()[0];
+  if (!id) return '';
+  const P = PERSW[id], t = P.things[0], line = [].concat((P.st || {}).join || [])[0];
+  if (!line) return '';
+  return persFill(line, [t[0], t[3] || '', t[1], t[2] || t[1]], {who: S.name || 'Sam', other: S.buddy || petN(), a: 4, b: 3});
+}
+// Grown-ups: fill the placeholder #gw-pers with the card (nothing when no interest is reviewed)
+function persCard(el) {
+  if (!el || !persList().length) return;
+  const names = persNames();
+  el.outerHTML = GW.card('gw-pers', 'skill-story', 'Story themes',
+    `<p class="gw-p" id="pers-now">${names ? 'Story problems are about ' + esc(names) + '.' : 'Nothing picked: the usual story problems.'}</p>` +
+    UI.btn(names ? 'Change themes' : 'Choose themes', {size: 'sm', icon: 'heart', id: 'pers-open'}),
+    {sub: `Pick up to ${PERS_MAX} things ${esc(S.name || 'your child')} likes. Story problems use them. The math stays the same.`});
+  $('#pers-open').onclick = () => persPick(() => grown());
+}
+// the picker screen; back: where Back and Done go
+function persPick(back) {
+  if (!Array.isArray(S.ints)) S.ints = [];
+  const ids = persList(), on = id => S.ints.includes(id);
+  const chips = ids.map(id => `<button class="btn pp-c${on(id) ? ' on' : ''}" data-int="${id}" aria-pressed="${on(id)}">` +
+    `<span class="pp-pic">${persPic(id, '48px')}</span><b>${esc(PERSW[id].name)}</b>${ico('check-circle', 22, 'pp-ok')}</button>`).join('');
+  view(`<div class="top tbar gx-mtop s-math">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('skill-story', 24)}</span><span>Story themes</span></div></div>
+   <div class="scroll"><div class="pp-card">
+    <h1 class="pp-h">What does ${esc(S.name || 'your child')} like?</h1>
+    <p class="pp-sub">Pick up to ${PERS_MAX}. Story problems will be about them.</p>
+    <div class="pp-grid" role="group" aria-label="Story themes">${chips}</div>
+    <div class="pp-ex" id="pers-ex" aria-live="polite"></div>
+    <div class="pp-btns">${UI.btn('Done', {kind: 'primary', icon: 'check', id: 'pers-done'})}</div>
+   </div></div>`);
+  NAV.bar('');
+  const ex = () => {
+    const s = persSample();
+    $('#pers-ex').innerHTML = s ? `<span class="pp-exl">Like this:</span> <span class="pp-ext">${esc(s)}</span>` : `<span class="pp-ext">Nothing picked: the usual story problems.</span>`;
+  };
+  ex();
+  $$('.pp-c').forEach(b => b.onclick = () => {
+    const id = b.dataset.int;
+    if (on(id)) S.ints = S.ints.filter(x => x !== id);
+    else if (persOn().length >= PERS_MAX) { fb(`Up to ${PERS_MAX}. Tap one to take it off.`, 'warn'); SFX.wrong(); return; }
+    else S.ints = S.ints.filter(x => PERSW[x]).concat(id); // an interest no longer offered is dropped when the list changes
+    save();
+    b.classList.toggle('on', on(id));
+    b.setAttribute('aria-pressed', on(id));
+    SFX.pop(on(id) ? 2 : 1);
+    if (S.voice) say(PERSW[id].name, b);
+    ex();
+  });
+  $('#back').onclick = back;
+  $('#pers-done').onclick = back;
+}
+/* ---------- PERS-01: the interest themes the owner has reviewed (part hints) ----------
+   BUILT by tools/build.py from docs/drafts/pers/<id>.md ("status: reviewed ..."): never edit by hand. An interest that
+   is not reviewed is never here, so it is never offered and its story problems stay the default ones (30p-pers.js). */
+const PERSW = {
+  "animals": {"name":"Animals","pic":["horse","🐴"],"things":[["toy horses","toy horse","horse","🐴"],["toy cows","toy cow","cow","🐄"],["toy pigs","toy pig","pig","🐷"],["toy sheep","toy sheep","sheep","🐑"],["toy ducks","toy duck","duck","🦆"],["toy rabbits","toy rabbit","rabbit","🐰"]],"st":{"join":["{who} has {a things} on the toy farm. {other} brings {b} more. How many {pl} are on the farm now?","{who} puts {a things} in the barn and {b} more by the pond. How many {pl} in all?"],"sep":["{who} had {a things} in the barn. {who} gave {b} to {other}. How many {pl} are left in the barn?","There were {a things} in the toy pen. {b} went out the gate. How many are still in the pen?"],"chg":["{who} has {a things} on the toy farm. {other} brings some more. Now there are {c things}. How many {pl} did {other} bring?"],"chgS":["{who} had {c things} in the barn. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} on the toy farm. {a} are big and the rest are small babies. How many small {pl} does {who} have?"],"cmpDm":["{who} has {x things} in the barn. {other} has {y things} in the field. How many more {pl} does {who} have than {other}?"],"cmpDf":["{who} has {x things} in the barn. {other} has {y things} in the field. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} on the toy farm. Then {other} brought {b} more. Now {who} has {c things}. How many {pl} did {who} have at the start?"],"startS":["{who} had some {pl} in the barn. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} were in the barn at the start?"],"cmpB":["{other} has {y things} on the toy farm. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} on the toy farm. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
+  "cooking": {"name":"Cooking","pic":["cookie","🍪"],"things":[["cookies","cookie","cookie","🍪"],["cupcakes","cupcake","cake","🎂"],["bread rolls","bread roll","bread","🍞"],["mini pizzas","mini pizza","pizza","🍕"],["pies","pie","","🥧"]],"st":{"join":["{who} bakes {a things}. Then {other} bakes {b} more. How many {pl} are on the tray?","{who} made {a things} in the morning and {b} more after lunch. How many {pl} is that?"],"sep":["{who} baked {a things}. {who} gave {b} to {other}. How many {pl} are left?","There were {a things} on the cooling rack. {other} ate {b}. How many are still on the rack?"],"chg":["{who} has {a things} on the tray. {other} bakes some more. Now there are {c things} on the tray. How many {pl} did {other} bake?"],"chgS":["{who} baked {c things}. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} bakes {c things}. {a} are big and the rest are small. How many small {pl} did {who} bake?"],"cmpDm":["{who} baked {x things} and {other} baked {y things}. How many more {pl} did {who} bake than {other}?"],"cmpDf":["{who} baked {x things} and {other} baked {y things}. How many fewer {pl} did {other} bake than {who}?"],"start":["{who} baked some {pl}. Then {other} baked {b} more. Now there are {c things}. How many {pl} did {who} bake first?"],"startS":["{who} baked some {pl}. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} bake?"],"cmpB":["{other} baked {y things}. {who} baked {d} more than {other}. How many {pl} did {who} bake?"],"cmpS":["{who} baked {x things}. {other} baked {d} fewer than {who}. How many {pl} did {other} bake?"]}},
+  "dinosaurs": {"name":"Dinosaurs","pic":["","🦕"],"things":[["toy dinosaurs","toy dinosaur","","🦕"],["dinosaur stickers","dinosaur sticker","","🦖"],["dinosaur eggs","dinosaur egg","egg","🥚"],["dinosaur bones","dinosaur bone","bone","🦴"],["dinosaur books","dinosaur book","book","📗"]],"st":{"join":["{who} digs up {a things} in the sandbox. {other} digs up {b} more. How many {pl} did they find?"],"sep":["{who} had {a things} in the sandbox. {who} gave {b} to {other}. How many {pl} are left?","There were {a things} in the dig pit. {other} took {b} home. How many are still in the pit?"],"chg":["{who} has {a things} in the sandbox. {other} hides some more there. Now there are {c things} in the sandbox. How many {pl} did {other} hide?"],"chgS":["{who} had {c things}. {who} gave some to {other} for the dino show. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things}. {a} are big and the rest are small, like baby dinosaurs. How many small {pl} does {who} have?"],"cmpDm":["{who} has {x things} at the dino dig. {other} has {y things}. How many more {pl} does {who} have than {other}?"],"cmpDf":["{who} has {x things} at the dino dig. {other} has {y things}. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} in the sandbox. Then {other} added {b} more. Now there are {c things}. How many {pl} were in the sandbox at the start?"],"startS":["{who} had some {pl}. {who} gave {b} to {other} for the dino show. Now {who} has {a things} left. How many {pl} did {who} have at the start?"],"cmpB":["{other} has {y things} for the dino show. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} for the dino show. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
+  "music": {"name":"Music","pic":["drum","🥁"],"things":[["toy drums","toy drum","drum","🥁"],["bells","bell","bell","🔔"],["toy guitars","toy guitar","","🎸"],["toy trumpets","toy trumpet","","🎺"],["toy microphones","toy microphone","","🎤"]],"st":{"join":["{who} brings {a things} to music class. {other} brings {b} more. How many {pl} are in the class?","The band has {a things}. {who} gives the band {b} more. How many {pl} does the band have now?"],"sep":["{who} had {a things} for the band. {who} gave {b} to {other}. How many {pl} are left?","There were {a things} on the stage. {b} went back in the box. How many are still on the stage?"],"chg":["{who} has {a things} on the stage. {other} brings some more. Now there are {c things} on the stage. How many {pl} did {other} bring?"],"chgS":["{who} had {c things} in music class. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} for the show. {a} are big and the rest are small. How many small {pl} does {who} have?"],"cmpDm":["In the band, {who} has {x things} and {other} has {y things}. How many more {pl} does {who} have than {other}?"],"cmpDf":["In the band, {who} has {x things} and {other} has {y things}. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} for the show. Then {other} brought {b} more. Now {who} has {c things}. How many {pl} did {who} have at the start?"],"startS":["{who} had some {pl} in music class. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} have at the start?"],"cmpB":["{other} has {y things} in the band. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} in the band. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
+  "ocean": {"name":"Ocean","pic":["shell","🐚"],"things":[["seashells","seashell","shell","🐚"],["toy crabs","toy crab","crab","🦀"],["toy fish","toy fish","fish","🐟"],["toy turtles","toy turtle","turtle","🐢"],["toy whales","toy whale","","🐳"],["toy octopuses","toy octopus","","🐙"]],"st":{"join":["{who} finds {a things} on the beach. {other} finds {b} more. How many {pl} did they find?","{who} has {a things} in a bucket. {other} puts in {b} more. How many {pl} are in the bucket now?"],"sep":["{who} had {a things} at the beach. {who} gave {b} to {other}. How many {pl} are left?","There were {a things} on the sand. A wave took {b}. How many are still on the sand?"],"chg":["{who} has {a things} in a bucket. {other} puts in some more. Now there are {c things} in the bucket. How many {pl} did {other} put in?"],"chgS":["{who} had {c things} at the beach. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} from the beach. {a} are big and the rest are small. How many small {pl} does {who} have?"],"cmpDm":["At the beach, {who} has {x things} and {other} has {y things}. How many more {pl} does {who} have than {other}?"],"cmpDf":["At the beach, {who} has {x things} and {other} has {y things}. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} in a bucket. Then {other} put in {b} more. Now there are {c things}. How many {pl} were in the bucket at the start?"],"startS":["{who} had some {pl} at the beach. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} have at the start?"],"cmpB":["{other} has {y things} from the beach. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} from the beach. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
+  "space": {"name":"Space","pic":["rocket","🚀"],"things":[["toy rockets","toy rocket","rocket","🚀"],["star stickers","star sticker","star","⭐"],["moon stickers","moon sticker","moon","🌙"],["toy robots","toy robot","","🤖"],["toy spaceships","toy spaceship","","🛸"]],"st":{"join":["{who} has {a things} at space camp. {other} gives {who} {b} more. How many {pl} does {who} have now?","{who} lines up {a things} for a trip to the moon. {other} adds {b} more. How many {pl} are lined up?"],"sep":["{who} had {a things} at space camp. {who} gave {b} to {other}. How many {pl} are left?","There were {a things} on the space station table. {b} floated away. How many are still on the table?"],"chg":["{who} has {a things} in the rocket box. {other} adds some more. Now there are {c things} in the box. How many {pl} did {other} add?"],"chgS":["{who} had {c things} on the space station. {who} sent some to {other} on the moon. Now {who} has {a things}. How many {pl} did {who} send?"],"part":["{who} has {c things} at space camp. {a} are big and the rest are small. How many small {pl} does {who} have?"],"cmpDm":["{who} has {x things} on the space station. {other} has {y things} on the moon. How many more {pl} does {who} have than {other}?"],"cmpDf":["{who} has {x things} on the space station. {other} has {y things} on the moon. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} at space camp. Then {other} gave {who} {b} more. Now {who} has {c things}. How many {pl} did {who} have at the start?"],"startS":["{who} had some {pl} on the space station. {who} sent {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} have at the start?"],"cmpB":["{other} has {y things} at space camp. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} at space camp. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
+  "sports": {"name":"Sports","pic":["ball","⚽"],"things":[["soccer balls","soccer ball","ball","⚽"],["basketballs","basketball","","🏀"],["tennis balls","tennis ball","","🎾"],["trophies","trophy","","🏆"],["team flags","team flag","flag","🚩"],["team caps","team cap","cap",""]],"st":{"join":["{who} packs {a things} for practice. {other} packs {b} more. How many {pl} are in the bags?","At the game, {who} lines up {a things} and {other} lines up {b} more. How many {pl} in all?"],"sep":["{who} had {a things} at practice. {who} gave {b} to {other}. How many {pl} does {who} have left?","There were {a things} on the bench. {b} fell off. How many are still on the bench?"],"chg":["{who} has {a things} in the team bag. {other} puts in some more. Now there are {c things}. How many {pl} did {other} put in?"],"chgS":["{who} had {c things} at the game. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} for the team. {a} are big and the rest are small, for the little kids. How many small {pl} are there?"],"cmpDm":["After the game, {who} has {x things} and {other} has {y things}. How many more {pl} does {who} have than {other}?"],"cmpDf":["After the game, {who} has {x things} and {other} has {y things}. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} at practice. Then {other} brought {b} more. Now {who} has {c things}. How many {pl} did {who} have at the start?"],"startS":["{who} had some {pl} in the team bag. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} were in the bag at the start?"],"cmpB":["On the field, {other} has {y things}. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["On the field, {who} has {x things}. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
+  "vehicles": {"name":"Vehicles","pic":["car","🚗"],"things":[["toy cars","toy car","car","🚗"],["toy trucks","toy truck","truck","🚚"],["toy buses","toy bus","bus","🚌"],["toy trains","toy train","train","🚂"],["toy boats","toy boat","boat","⛵"],["toy planes","toy plane","plane","✈"]],"st":{"join":["{who} parks {a things} on the play mat. {other} parks {b} more. How many {pl} are on the mat?","{who} has {a things}. {other} gives {who} {b} more for the race. How many {pl} does {who} have now?"],"sep":["{who} had {a things} on the play mat. {who} gave {b} to {other}. How many {pl} are left on the mat?","There were {a things} on the toy bridge. {b} fell off. How many are still on the bridge?"],"chg":["{who} has {a things} in the toy garage. {other} brings in some more. Now there are {c things} in the garage. How many {pl} did {other} bring in?"],"chgS":["{who} had {c things} in the toy box. {who} gave some to {other}. Now {who} has {a things}. How many {pl} did {who} give away?"],"part":["{who} has {c things} on the play mat. {a} are big and the rest are small. How many small {pl} does {who} have?"],"cmpDm":["{who} has {x things} in the race. {other} has {y things} in the race. How many more {pl} does {who} have than {other}?"],"cmpDf":["{who} has {x things} in the race. {other} has {y things} in the race. How many fewer {pl} does {other} have than {who}?"],"start":["{who} had some {pl} in the toy garage. Then {other} brought {b} more. Now there are {c things}. How many {pl} were in the garage at the start?"],"startS":["{who} had some {pl} on the shelf. {who} gave {b} to {other}. Now {who} has {a things} left. How many {pl} did {who} have at the start?"],"cmpB":["{other} has {y things} at the toy show. {who} has {d} more than {other}. How many {pl} does {who} have?"],"cmpS":["{who} has {x things} at the toy show. {other} has {d} fewer than {who}. How many {pl} does {other} have?"]}},
 };
 
-var HINTS_VER='v182'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var HINTS_VER='v185'; // last line: the whole file ran (checked by dataReady() before the app starts)

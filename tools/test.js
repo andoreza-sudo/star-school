@@ -99,7 +99,7 @@ let SKIPPED=0;
 const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku UI P3-03','mathdoku UI P3-05','logic UI P3-07',
   'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
   'word search and unscramble P3-15','Block Builder goals G-BB3'];
-const TEST_S={'sky hop G-04b':451,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
+const TEST_S={'sky hop G-04b':451,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
   'math review fixes R-01m':18,'robot path P3-13':12,'block builder G-01':8};
 const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
   if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
@@ -1597,7 +1597,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     const D0=20400; // a day number (2025-11-07); every scheduling call below passes its day
     const info={};
     // 1. migration 5 on every fixture: progress unchanged, same number of tricky items on home, no html left, smaller, idempotent
-    if(LATEST!==8||MIGRATIONS.length!==8)bad('P5-02 adds migration 5 (LS-STOP: and migration 6; TEACH-3b: and 7): LATEST should be 8, MIGRATIONS '+MIGRATIONS.length); // LS-STOP: migration 6 (lesson stops already reached stay open) raised LATEST from 6 to 7; TEACH-3b: migration 7 (the v182 lesson stops) to 8
+    if(LATEST!==9||MIGRATIONS.length!==9)bad('P5-02 adds migration 5 (LS-STOP: and migration 6; TEACH-3b: and 7; READ-SHAPES: and 8): LATEST should be 9, MIGRATIONS '+MIGRATIONS.length); // LS-STOP: migration 6 (lesson stops already reached stay open) raised LATEST from 6 to 7; TEACH-3b: migration 7 (the v182 lesson stops) to 8
     for(const name of ['tricky','midway','maxed','fresh','legacy-single-map','legacy-index-maps']){
       const raw=fx(name),before=JSON.parse(raw),empty=!Object.keys(before).length;
       if(empty){load(null);if(S.rev!==undefined)bad(name+': a new save got S.rev');continue}
@@ -10751,7 +10751,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
       if(JSON.parse(store[KEY]).maps.disc.sci_life1!==2)bad(w+'Discover stars did not save');
       if(S.v!==LATEST)bad(w+'S.v '+S.v);
     }
-    if(LATEST!==8)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; this chunk still adds none
+    if(LATEST!==9)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; this chunk still adds none
     // Home shows the card
     load(null);S.name='Kid';
     const h=hmPaths(),m=h.match(/<button class="hm-path game s-disc" data-p="disc">[\s\S]*?<\/button>/);
@@ -12072,7 +12072,7 @@ run('Discover 3-6, geography and civics P2-37: banks validate, grade and topic t
       if(!S.maps||typeof S.maps.disc!=='object'||Object.keys(S.maps.disc).length)bad(name+': S.maps.disc is not an empty map');
       checked++;
     }
-    if(LATEST!==8)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; this chunk still adds none
+    if(LATEST!==9)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; TEACH-3b: migration 7 to 8; READ-SHAPES: migration 8 to 9; this chunk still adds none
     return {items,questions,pics,levels,checked,per};
   };
   const r=eval(js+K2OLD+';('+body.toString()+')()');
@@ -20267,6 +20267,9 @@ run('author: checks, drafts, the review gate TEACH-2',()=>{
 // tools/author.js, tools/build.py). The code of each lesson is written; its words are a draft the owner reads. These checks never rely on
 // an unreviewed draft being live: they turn drafts on in their own Node context only (lsEnable), with the words from docs/drafts. ----
 const draftWords=()=>{const A=require('./author.js'),o={};for(const x of A.drafts())if(x.d)o[x.d.id]={idea:x.d.idea,beats:x.d.beats,reasons:x.d.reasons,home:x.d.home,status:x.d.status,file:path.relative(ROOT,x.file),problems:x.problems};return o};
+// owner approved 2026-11-19 (HINT-01, batch 3b, batch 5r, PERS-01): a reviewed draft's status line names who reviewed it and the date
+// ("status: reviewed owner 2026-11-19"); tools/build.py reads only its first word, so this is checked here
+const REV_LINE=/^status: reviewed (?!\d{4}-\d\d-\d\d\b)\S+.*? \d{4}-\d\d-\d\d\b/m,revNamed=f=>REV_LINE.test(fs.readFileSync(path.resolve(ROOT,f),'utf8'));
 run('teach: drafted lessons, their words, the review gate TEACH-2b',()=>{
   const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process'),DW=draftWords(),R=teachApp(),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   // 0. the part: teach12 (the grade 1-2 lessons) is lazy, after teach, loaded with it by the math map; teach stays under 150 KB
@@ -20618,13 +20621,25 @@ run('teach: batch 3b lessons, their models, their read-through, migration 7 TEAC
   if(Buffer.byteLength(rd('index.html'))>=1000000)p.push('index.html is 1,000,000 bytes or more');
   // 1. the lessons: these 19 stops, live, in LS_B35 and LS_STOPS, map order, real stops of grades 3-5; drafts that pass every check
   const g=R(`(()=>{const o={};for(const id of ${JSON.stringify(B3B_IDS)}){const i=NODES.math.findIndex(n=>nid(n)===id),D=LS_DRAFTED[id];
-    o[id]={i,g:i<0?null:PATHS.math.worlds[NODES.math[i].wi].g,live:!!LESSONS[id],b35:LS_B35.includes(id),stop:LS_STOPS.math.has(id),b3b:!!(D&&D.b3b),test:D&&D.test,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.math[i].t}}return o})()`);
+    o[id]={i,g:i<0?null:PATHS.math.worlds[NODES.math[i].wi].g,live:!!LESSONS[id],b35:LS_B35.includes(id),stop:LS_STOPS.math.has(id),b3b:!!(D&&D.b3b),test:D&&D.test,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.math[i].t,
+      words:!!(LESSONS[id]&&!LESSONS[id].fb),lsw:!!LSW3[id]}}return o})()`);
   for(const id of B3B_IDS){const x=g[id];if(x.i<0){p.push(id+': no such stop');continue}
     if(!x.live||!x.b35||!x.stop||!x.b3b)p.push(id+': not a live batch 3b lesson with a lesson stop '+JSON.stringify(x));if(x.g<3||x.g>5)p.push(id+': grade '+x.g);if(x.t!==x.nt)p.push(id+': not named as its stop');
-    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));if(d.status!=='unreviewed')p.push(id+': draft '+d.status+' (only the owner approves)')}}
+    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      // owner approved 2026-11-19: a draft is unreviewed or reviewed (by a named reviewer, with the date); its words are live exactly when reviewed
+      if(d.status!=='unreviewed'&&d.status!=='reviewed')p.push(id+': draft '+d.status);
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date');
+      if(x.words!==(d.status==='reviewed')||x.lsw!==(d.status==='reviewed'))p.push(id+': its words live '+x.words+' (LSW3 '+x.lsw+') but its draft is '+d.status)}}
   if(R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b).sort().join()')!==B3B_IDS.concat(B3B_RD).sort().join())p.push('the batch 3b lessons are not these 21');
+  // the gate in the app (owner approved 2026-11-19, so the live drafts are reviewed): on a fresh app, the same lesson made again with its
+  // words taken out of LSW3, as an unreviewed draft is, runs on the hand-written fallback words; with them back, on its reviewed words
+  {const R2=teachApp(),gt=R2(`(()=>{const o={};for(const id of ['story5','ang1','story8']){const D=LS_DRAFTED[id],w=LSW3[id];if(!w){o[id]='no reviewed words';continue}
+    delete LSW3[id];lsDraft3(id,D);const off=!!(LESSONS[id]&&LESSONS[id].fb);LSW3[id]=w;lsDraft3(id,D);const on=!!(LESSONS[id]&&!LESSONS[id].fb&&LESSONS[id].w===w);o[id]=off&&on?'':'unreviewed fallback '+off+', reviewed words '+on}return o})()`);
+    for(const id in gt)if(gt[id]&&DW[id]&&DW[id].status==='reviewed')p.push(id+' (batch 3b gate): '+gt[id])}
   {const rd3=R(`${JSON.stringify(B3B_RD)}.map(id=>[!!LESSONS[id],LS_B4.includes(id),LS_STOPS.read.has(id),LESSONS[id]&&LESSONS[id].p])`);if(rd3.some(x=>!x[0]||!x[1]||!x[2]||x[3]!=='read'))p.push('the batch 3b reading lessons: '+JSON.stringify(rd3));
-    for(const id of B3B_RD){const d=DW[id];if(!d)p.push(id+': no draft');else if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '))}}
+    for(const id of B3B_RD){const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date'); // owner approved 2026-11-19
+      const on=R(`(id=>!!(LESSONS[id]&&!LESSONS[id].fb&&LSW4[id]))(${JSON.stringify(id)})`);if(on!==(d.status==='reviewed'))p.push(id+': its words live '+on+' but its draft is '+d.status)}}}
   // 2. the models: steps in range, the value, the right state, the pet's build (of / fits), the goals, drawings with no hole
   const m=R(`(()=>{const bad=[],eq=(a,b,w)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(w+': '+JSON.stringify(a)+' (want '+JSON.stringify(b)+')')};
     const G={model:'graph',m:{names:['A','B','C','D'],vals:[10,20,30,40],sc:10,top:7,ed:[1],target:20}};eq(K2MM.graph.step(G,[7],0,1),null,'graph: above the top');eq(K2MM.graph.val(G,[2]),20,'graph value');
@@ -20655,13 +20670,15 @@ run('teach: batch 3b lessons, their models, their read-through, migration 7 TEAC
   if(rt.split('\n').some(l=>l.length>140))p.push('the batch 3b read-through has lines too long for a phone');
   const at=rt.indexOf('(story5)'),at2=rt.indexOf('(story8)');if(un.includes('story5')&&un.includes('story8')&&!(at>=0&&at<at2))p.push('the batch 3b read-through is not in map order');
   const bf=path.join(ROOT,'docs/drafts/BATCH3B-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH3B-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH3B-READ.md is not what node tools/author.js --read <file> --batch 3b gives now');
+  // owner approved 2026-11-19: with nothing waiting the tool says so (BATCH3B-READ.md stays as the record of what was approved, as batches 2, 3 and 4)
+  if(!un.length&&!/Nothing is waiting/.test(rt))p.push('nothing in batch 3b waits, but the read-through does not say so');
   for(const b of [2,3,4]){const t=A.readThrough([],{batch:b});for(const id of B3B_IDS)if(t.includes('('+id+')'))p.push('the batch '+b+' read-through has the batch 3b lesson '+id)}
   for(const id of ['story5','coord1'])if(A.batchOf(id)!=='3b')p.push(id+' is not in batch 3b (author --approve --batch)');if(A.batchOf('mbig2')!=='3'||A.batchOf('sound1')!=='4')p.push('batchOf of batch 3 and 4');
-  if(!/approve all --batch 3b/.test(rt))p.push('the read-through does not say how to approve this batch only');
+  if(!/approve all --batch 3b/.test(un.length||!fs.existsSync(bf)?rt:fs.readFileSync(bf,'utf8')))p.push('the read-through does not say how to approve this batch only');
   // 4. migration 7 (save v7 -> v8): a save that reached batch 3b stops keeps them open; idempotent; a new save keeps none
   const mg=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id);
     loadSave(null);S.grade=3;const i=at('story5'),j=at('data3'),k=at('ang1');for(let n=0;n<i;n++)setSt('math',n,2);for(let n=at('frac2');n<j;n++)setSt('math',n,2);setSt('math',k+1,2); // story5 and data3: the stop before passed; ang1: a later stop of its world passed
-    S.v=7;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==8)bad.push('v '+S.v);
+    S.v=7;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==9)bad.push('v '+S.v); // READ-SHAPES: migration 8 raised LATEST to 9
     for(const id of ['story5','data3','ang1'])if(!S.lsOpen||!S.lsOpen[id])bad.push(id+' reached before v182 is not kept open: '+JSON.stringify(S.lsOpen));
     if(S.lsOpen&&(S.lsOpen.shape5||S.lsOpen.ang2||S.lsOpen.story8))bad.push('a stop not reached was kept open: '+JSON.stringify(S.lsOpen));
     for(const id of ['story5','data3','ang1'])if(lsGate('math',at(id)))bad.push(id+' is locked after the migration');
@@ -20738,6 +20755,117 @@ run('teach: simulated children on batch 3b lessons, Check me always wrong when f
   return{problems:p,note:Object.entries(o).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')};
 });
 
+// ---- READ-SHAPES (v184): the K-2 reading stops TEACH-4 and TEACH-3b left out, in new lesson shapes (src/js/52q-bench5r.js, 52r-lessons5r.js,
+// src/css/52q-teach5r.css, part teachrd). They are batch 4 lessons (LS_B4), so every TEACH-4 check runs them too; these checks cover what is
+// new: the shapes and their models, the story told aloud, the batch 5r read-through, migration 8 and the simulated children. ----
+const B5R_IDS='sight1 rhyme1 sight2 rhyme2 comp1 syl2 spell1 sight3 comp2 spell2 vocab1 gram1 sight4 spell3 sent3 sight5 gram2 vocab2 gram3'.split(' ');
+const B5R_FAM={sight1:'sight',sight2:'sight',sight3:'sight',sight4:'sight',sight5:'sight',rhyme1:'rhyme',rhyme2:'rhyme',comp1:'story',comp2:'story',syl2:'claps',
+  spell1:'spell',spell2:'spell',spell3:'spell',vocab1:'pairs',vocab2:'pairs',gram1:'sfix',sent3:'order',gram2:'pos',gram3:'plural'};
+run('teach: batch 5r reading shapes, their models, the story told, their read-through, migration 8 READ-SHAPES',()=>{
+  const p=[],A=require('./author.js'),DW=draftWords(),R=teachApp(),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  for(const f of ['52q-bench5r.js','52r-lessons5r.js','52q-teach5r.css'])if(partOf(f)!=='teachrd')p.push(f+' is not in the teachrd part');
+  if(/ls5Sight|K2MM\.sfix|LS5_RHY/.test(rd('index.html')))p.push('batch 5r lesson code is in index.html');
+  if(Buffer.byteLength(rd('index.html'))>=1000000)p.push('index.html is 1,000,000 bytes or more');
+  // 1. the lessons: these 19 stops, live, in LS_B4 and LS_STOPS, real K-2 reading stops with their names, their shape; drafts that pass,
+  //    unreviewed or reviewed (the owner approved batch 5r on 2026-11-19), their words live exactly when reviewed
+  const g=R(`(()=>{const o={};for(const id of ${JSON.stringify(B5R_IDS)}){const i=NODES.read.findIndex(n=>nid(n)===id),D=LS_DRAFTED[id];
+    o[id]={i,g:i<0?null:PATHS.read.worlds[NODES.read[i].wi].g,live:!!LESSONS[id],b4:LS_B4.includes(id),stop:LS_STOPS.read.has(id),b5r:!!(D&&D.b5r),fam:D&&D.fam,t:LESSONS[id]&&LESSONS[id].t,nt:i<0?null:NODES.read[i].t,p:LESSONS[id]&&LESSONS[id].p,
+      words:!!(LESSONS[id]&&!LESSONS[id].fb),lsw:!!LSW4[id]}}return o})()`);
+  for(const id of B5R_IDS){const x=g[id];if(x.i<0){p.push(id+': no such stop');continue}
+    if(!x.live||!x.b4||!x.stop||!x.b5r||x.p!=='read')p.push(id+': not a live batch 5r reading lesson with a lesson stop '+JSON.stringify(x));if(x.g<0||x.g>2)p.push(id+': grade '+x.g);
+    if(x.t!==x.nt)p.push(id+': not named as its stop');if(x.fam!==B5R_FAM[id])p.push(id+': shape '+x.fam+' (want '+B5R_FAM[id]+')');
+    const d=DW[id];if(!d)p.push(id+': no draft');else{if(d.problems.length)p.push(d.file+': '+d.problems.slice(0,2).join('; '));
+      // owner approved 2026-11-19: a draft is unreviewed or reviewed (by a named reviewer, with the date); its words are live exactly when reviewed
+      if(d.status!=='unreviewed'&&d.status!=='reviewed')p.push(id+': draft '+d.status);
+      if(d.status==='reviewed'&&!revNamed(d.file))p.push(id+': reviewed, but its status line names no reviewer and date');
+      if(x.words!==(d.status==='reviewed')||x.lsw!==(d.status==='reviewed'))p.push(id+': its words live '+x.words+' (LSW4 '+x.lsw+') but its draft is '+d.status)}}
+  if(R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b5r).sort().join()')!==B5R_IDS.slice().sort().join())p.push('the batch 5r lessons are not these 19');
+  // the gate in the app (owner approved 2026-11-19, so the live drafts are reviewed): on a fresh app, the same lesson made again with its
+  // words taken out of LSW4, as an unreviewed draft is, runs on the hand-written fallback words; with them back, on its reviewed words
+  {const R2=teachApp(),gt=R2(`(()=>{const o={};for(const id of ['sight1','comp1','gram3']){const D=LS_DRAFTED[id],w=LSW4[id];if(!w){o[id]='no reviewed words';continue}
+    delete LSW4[id];lsDraft4(id,D);const off=!!(LESSONS[id]&&LESSONS[id].fb);LSW4[id]=w;lsDraft4(id,D);const on=!!(LESSONS[id]&&!LESSONS[id].fb&&LESSONS[id].w===w);o[id]=off&&on?'':'unreviewed fallback '+off+', reviewed words '+on}return o})()`);
+    for(const id in gt)if(gt[id]&&DW[id]&&DW[id].status==='reviewed')p.push(id+' (batch 5r gate): '+gt[id])}
+  // not built: Bossy R (no drawn r-vowel partner pictures) and the tracing stops (their own screen)
+  if(R(`['pic5','build5','trace1','trace2','trace3'].filter(id=>LESSONS[id]||LS_STOPS.read.has(id)).join()`))p.push('Bossy R or a tracing stop has a lesson');
+  // 2. the models: steps, values, the right state, the pet's build as a picture, their own first-miss line; every control a named button
+  const m=R(`(()=>{const bad=[],eq=(a,b,w)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(w+': '+JSON.stringify(a)+' (want '+JSON.stringify(b)+')')};
+    const F={model:'flash',m:{ws:['want','went','the','see'],t:0}};eq(K2MM.flash.step(F,[-1],0,2),[2],'flash: turn card 3');eq(K2MM.flash.step(F,[2],0,2),null,'flash: the same card');
+    eq(K2MM.flash.val(F,[1]),1,'flash value');eq(K2MM.flash.ans(F),[0],'flash answer');eq(K2MM.flash.fits(F,'3'),true,'flash fits');eq(K2MM.flash.fits(F,'4'),false,'flash: no card 5');
+    if(/<button/.test(K2MM.flash.draw(F,K2MM.flash.of(F,'1')))||!/went/.test(K2MM.flash.draw(F,K2MM.flash.of(F,'1'))))bad.push('flash: the pet\\'s card is not a picture with its word');
+    if(/want|went/.test(K2MM.flash.draw(F,[-1])))bad.push('flash: a card face down shows its word');if((K2MM.flash.draw(F,[1]).match(/<span class="ls5-w">/g)||[]).length!==1)bad.push('flash: more than one card face up');
+    const C={model:'clap',m:{n:3}};eq(K2MM.clap.step(C,[0],0,-1),null,'clap below 0');eq(K2MM.clap.step(C,[2],0,1),[3],'clap');eq(K2MM.clap.fits(C,'0'),false,'0 claps');
+    if((K2MM.clap.draw(C,[3]).match(/ls5-cl"/g)||[]).length!==3)bad.push('clap: not 3 claps drawn');
+    const X={model:'sfix',m:{w:['can','the','dog','run'],ask:1}};eq(K2MM.sfix.step(X,[0,0],0,1),[1,0],'capital on');eq(K2MM.sfix.step(X,[1,2],0,1),[0,2],'capital off');
+    eq(K2MM.sfix.step(X,[1,2],1,2),null,'the same mark');eq(LSGOAL.sfix(X,[1,2]),true,'Can the dog run?');eq(LSGOAL.sfix(X,[1,1]),false,'Can the dog run.');eq(LSGOAL.sfix(X,'2'),false,'can the dog run?');
+    if(!/>C</.test(K2MM.sfix.draw(X,[1,2]))||!/>\\?</.test(K2MM.sfix.draw(X,[1,2])))bad.push('sfix: the capital and the mark are not drawn');
+    for(const k of ['flash','clap','sfix'])if(!K2MM[k].raw||!K2MM[k].miss)bad.push(k+': not a raw model with its own miss line');
+    // every lesson's questions and Explore: buttons named, no hole; a story question tells its story in short lines; each shape its own "not yet" line
+    const nudge={};
+    for(const id of ${JSON.stringify(B5R_IDS)})for(let s=1;s<=12;s++){const L=LESSONS[id],r=mulberry32(s);
+      for(const st of [0,1,2,3]){const q=L.q(st,r),h=q.html+(q.kind=='make'?K2MM[q.model].ctl(q)+K2MM[q.model].draw(q,K2MM[q.model].s0(q)):'');
+        if([...h.matchAll(/<button[^>]*>/g)].some(b=>!/aria-label="[^"]+"/.test(b[0])))bad.push(id+': a button with no name');if(/undefined|NaN/.test(h))bad.push(id+': a hole in '+q.label);
+        if(LS_DRAFTED[id].fam=='story'&&!(Array.isArray(q.tell)&&q.tell.length>=3&&q.tell.every(t=>!lsToneBad(t,'little').length&&q.html.includes(esc(t)))))bad.push(id+': the story is not told in short lines on screen');
+        if(q.kind=='choice'&&q.choices.length<3)bad.push(id+': a choice of two');if(q.kind=='make'&&!['flash','clap','sfix'].includes(q.model))bad.push(id+': model '+q.model)}
+      const e=L.exp(r);(nudge[LS_DRAFTED[id].fam]=nudge[LS_DRAFTED[id].fam]||new Set()).add(e.nudge.replace(/with \\w+\\./,'with X.'))}
+    const own=Object.values(nudge).map(x=>[...x].join('|'));if(new Set(own).size!==own.length||own.length!==10)bad.push('the shapes do not each have their own "not yet" line: '+JSON.stringify(own));
+    if(!/\\(q\\.tell \\|\\| \\[\\]\\)\\.concat\\(\\[q\\.say\\]\\)/.test(String(LS.told))||!/LS\\.told\\(it\\)/.test(String(LS.show)))bad.push('the lesson does not tell a story before its question (q.tell, LS.told in LS.show)');
+    return bad})()`);
+  p.push(...m);
+  // 3. the read-through: batch 5r only, in map order, equal to docs/drafts/BATCH5R-READ.md; every other batch leaves these lessons out
+  const rt=A.readThrough([],{batch:'5r'}),un=B5R_IDS.filter(id=>DW[id]&&DW[id].status==='unreviewed');
+  for(const id of un)if(!rt.includes('('+id+')'))p.push('the batch 5r read-through has no '+id);
+  if(rt.split('\n').some(l=>l.length>140))p.push('the batch 5r read-through has lines too long for a phone');
+  const at=rt.indexOf('(sight1)'),at2=rt.indexOf('(gram3)');if(un.includes('sight1')&&un.includes('gram3')&&!(at>=0&&at<at2))p.push('the batch 5r read-through is not in map order');
+  const bf=path.join(ROOT,'docs/drafts/BATCH5R-READ.md');if(!fs.existsSync(bf))p.push('no docs/drafts/BATCH5R-READ.md');else if(un.length&&fs.readFileSync(bf,'utf8')!==rt)p.push('docs/drafts/BATCH5R-READ.md is not what node tools/author.js --read <file> --batch 5r gives now');
+  // owner approved 2026-11-19: with nothing waiting the tool says so (BATCH5R-READ.md stays as the record of what was approved, as batches 2, 3 and 4)
+  if(!un.length&&!/Nothing is waiting/.test(rt))p.push('nothing in batch 5r waits, but the read-through does not say so');
+  for(const b of [2,3,4,'3b']){const t=A.readThrough([],{batch:b});for(const id of B5R_IDS)if(t.includes('('+id+')'))p.push('the batch '+b+' read-through has the batch 5r lesson '+id)}
+  if(A.batchOf('sight1')!=='5r'||A.batchOf('gram3')!=='5r'||A.batchOf('sound1')!=='4'||A.batchOf('pic6')!=='3b')p.push('batchOf: batch 5r, 4 and 3b');
+  if(!/approve all --batch 5r/.test(un.length||!fs.existsSync(bf)?rt:fs.readFileSync(bf,'utf8')))p.push('the read-through does not say how to approve this batch only');
+  // 4. migration 8 (save v8 -> v9): a save that reached batch 5r stops keeps them open; idempotent; a new save keeps none
+  const mg=R(`(()=>{const bad=[],at=id=>NODES.read.findIndex(n=>nid(n)===id);
+    loadSave(null);S.grade=1;const i=at('sight2'),j=at('vocab1'),k=at('spell3');for(let n=0;n<i;n++)setSt('read',n,2);for(let n=at('sight3');n<j;n++)setSt('read',n,2);setSt('read',k+1,2); // sight2, vocab1: the stop before passed; spell3: a later stop of its world passed
+    S.v=8;delete S.lsOpen;migrate();if(S.v!==LATEST||LATEST!==9)bad.push('v '+S.v);
+    for(const id of ['sight2','vocab1','spell3'])if(!S.lsOpen||!S.lsOpen[id])bad.push(id+' reached before v184 is not kept open: '+JSON.stringify(S.lsOpen));
+    if(S.lsOpen&&(S.lsOpen.gram1||S.lsOpen.rhyme2||S.lsOpen.gram3))bad.push('a stop not reached was kept open: '+JSON.stringify(S.lsOpen));
+    for(const id of ['sight2','vocab1','spell3'])if(lsGate('read',at(id)))bad.push(id+' is locked after the migration');
+    const keep=JSON.stringify(S.lsOpen);MIGRATIONS[8]();if(JSON.stringify(S.lsOpen)!==keep)bad.push('migration 8 is not idempotent');
+    setSt('read',j,2);if(!lsGate('read',j+1))bad.push('the stop after a kept one still waits for its lesson: '+nid(NODES.read[j+1]));
+    loadSave(${JSON.stringify(fx('midway'))});migrate();for(const p of['math','read'])NODES[p].forEach((n,x)=>{if(passed(p,x)&&lsGate(p,x))bad.push('a passed stop is locked: '+nid(n))});
+    loadSave(null);migrate();if(S.lsOpen)bad.push('a new save has kept stops');
+    return bad})()`);
+  p.push(...mg);
+  const src=fs.readFileSync(path.join(SRC,'js','00-core.js'),'utf8'),f8=((src.match(/READ-SHAPES \(v184\)[\s\S]*?new Set\('([^']+)'/)||[])[1]||'').split(' ').sort().join();
+  if(f8!==B5R_IDS.slice().sort().join())p.push('migration 8 does not freeze the lessons of batch 5r (v184): '+f8);
+  return{problems:p,note:B5R_IDS.length+' batch 5r lessons ('+[0,1,2].map(n=>B5R_IDS.filter(id=>g[id].g===n).length+' '+['K','1st','2nd'][n]).join(', ')+'); '+un.length+' drafts wait for the owner in BATCH5R-READ.md; 10 shapes, 3 new models'};
+});
+run('teach: simulated children on batch 5r lessons, Check me always wrong when forced, fresh items on resume READ-SHAPES',()=>{
+  // the TEACH-1 children on the 19 batch 5r lessons alone (TEACH-4's check runs them among all its lessons), each as a child of its grade: the learner
+  // gains on every lesson, the guesser and the partial knower do not, the knower tests out and a guesser almost never; every forced-wrong pet turn is
+  // wrong; no show-me or Show item is a choice of two; every lesson finishes; a lesson resumed at Show asks fresh items
+  const R=teachApp();
+  const r=R(`(()=>{const K=${TEACH_KIDS},out={},N=60,KIDS=[['guesser',0,0],['partial',.5,0],['learner',.1,.25],['knower',.95,0]],ids=${JSON.stringify(B5R_IDS)},bad=[];let fresh=0,res=0;
+    for(const [nm,p0,g] of KIDS){const t={pre:0,post:0,to:0,n:0,per:{}};
+      for(const id of ids){S.grade=LESSONS[id].g;let a=0,b=0,to=0;for(let i=0;i<N;i++){S.know={};S.lm=[];const rr=mulberry32(9000+i*7+id.length),c=K.kid(p0,g,rr);
+        const {st,stuck}=K.run(id,c,i*31+5);if(stuck)bad.push(id+': did not finish ('+nm+')');a+=st.pre.filter(Boolean).length;b+=st.post.filter(Boolean).length;to+=st.to?1:0}
+        t.per[id]=[a/N/2,b/N/2,to/N];t.pre+=a/N/2;t.post+=b/N/2;t.to+=to/N;t.n++}
+      out[nm]={pre:t.pre/t.n,post:t.post/t.n,to:t.to/t.n,per:t.per}}
+    for(const id of ids){S.grade=LESSONS[id].g;
+      for(let s=1;s<=40;s++){S.know={};const y=LS.make(id,{seed:s,day:100,proof:true});y.chkN=1+(s%2);LS.beat(y,LSB.indexOf('chk'));const f=LS.cur(y);
+        if(!f||f.m!=='judge'||f.petOk||lsOk(f.q,String(f.pv)))bad.push(id+': a forced pet turn is not wrong '+(f&&f.pv))}
+      for(let s=1;s<=40;s++){const q=LESSONS[id].q(LESSONS[id].test,mulberry32(s));if(q.kind=='choice'&&q.choices.length<3)bad.push(id+': a two-choice show-me or Show item')}
+      for(let s=1;s<=10;s++){S.know={};const y=LS.make(id,{seed:s,day:100,proof:true});LS.beat(y,LSB.indexOf('show'));const seen=y.items.map(x=>x.q.label);LS.keep(y);
+        const z=LS.make(id,LS.resume(S.les,100));res++;if(!seen.includes(LS.cur(z).q.label))fresh++}}
+    S.grade=0;return{out,bad:[...new Set(bad)].slice(0,30),fresh,res}})()`);
+  const p=r.bad.slice(),f=x=>Math.round(x*100),gain=x=>x.post-x.pre,o=r.out,L=o.learner,G=o.guesser;
+  for(const id in L.per)if(L.per[id][1]-L.per[id][0]<.3)p.push(id+': the learner gains only '+f(L.per[id][1]-L.per[id][0])+' points');
+  if(!(gain(L)>=.5))p.push('the learner gains '+f(gain(L))+' points');if(Math.abs(gain(G))>.05)p.push('the guesser "gains" '+f(gain(G))+' points');
+  if(Math.abs(gain(o.partial))>.08)p.push('the partial knower "gains" '+f(gain(o.partial))+' points');if(!(o.knower.to>=.8))p.push('the knower tests out '+f(o.knower.to)+'%');
+  for(const id in G.per)if(G.per[id][2]>.15)p.push(id+': the guesser tests out '+f(G.per[id][2])+'%');
+  if(r.fresh<r.res)p.push('a resumed Show asked an item already seen in '+(r.res-r.fresh)+' of '+r.res+' resumes');
+  return{problems:p,note:Object.entries(o).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')+'; '+r.fresh+' of '+r.res+' resumes fresh'};
+});
+
 // ---- TEACH-4: reading for K to 2nd grade, and the Pre-K lessons of Tiny Town and ABC Beach (docs/TEACH-PLAN-2.md batch 4; src/js/52k-words4.js,
 // 52l-bench4.js, 52m-lessons4.js, src/css/52k-teach4.css in the lazy part teachrd). The phonics lesson shape: a sound sort with pictures, the
 // letter named, words built from letter tiles, the pet reading "cat" as "cap" in its announced turn, a decodable sentence matched to a picture.
@@ -20785,7 +20913,7 @@ run('teach: reading and Pre-K lessons, the part, their words, the review gate TE
     for(const w of Object.values(LS4W).flat())ls4Con(w).forEach(x=>o.add(x));return[...o].filter(w=>/^[a-z]+$/i.test(w))})()`);
   for(const w of ws){if(R('BAD.test('+JSON.stringify(w.toLowerCase())+')||ksBad('+JSON.stringify(w)+',true)'))p.push('a word that is not kid-safe: '+w);if(A.BANNED.test(w))p.push('a banned theme: '+w)}
   // 4. the read-through: every batch 4 draft not yet reviewed, in map order, equal to docs/drafts/BATCH4-READ.md
-  const B3B=R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b)'),rt=A.readThrough([],{batch:4}),un=ids.filter(id=>DW[id]&&DW[id].status==='unreviewed'&&!B3B.includes(id)); // TEACH-3b: those have their own read-through (BATCH3B-READ.md)
+  const B3B=R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b||LS_DRAFTED[id].b5r)'),rt=A.readThrough([],{batch:4}),un=ids.filter(id=>DW[id]&&DW[id].status==='unreviewed'&&!B3B.includes(id)); // TEACH-3b: those have their own read-through (BATCH3B-READ.md); READ-SHAPES: and batch 5r (BATCH5R-READ.md)
   for(const id of un)if(!rt.includes('('+id+')'))p.push('the batch 4 read-through has no '+id);
   if(rt.split('\n').some(l=>l.length>140))p.push('the batch 4 read-through has lines too long for a phone');
   if(un.length&&rt.indexOf('(pk_count1)')>rt.indexOf('(abc1)'))p.push('the batch 4 read-through is not in map order (Tiny Town first)');
@@ -21003,7 +21131,7 @@ run('lesson stops: the list, the gate, lessons off, the migration LS-STOP',()=>{
   // 6. the migration (save v6 -> v7): a save with passed stops keeps every stop it could play; the frozen list is the lessons of v179
   const m=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id);
     loadSave(${JSON.stringify(fx('midway'))});for(let n=1;n<6;n++)MIGRATIONS[n]();const before=JSON.stringify(S.maps);loadSave(${JSON.stringify(fx('midway'))});migrate();
-    if(S.v!==LATEST||LATEST!==8)bad.push('v '+S.v); // TEACH-3b: migration 7 raised LATEST to 8
+    if(S.v!==LATEST||LATEST!==9)bad.push('v '+S.v); // TEACH-3b: migration 7 raised LATEST to 8; READ-SHAPES: migration 8 to 9
     {const B=JSON.parse(before);for(const p in B)for(const k in B[p])if(S.maps[p][k]!==B[p][k])bad.push('the migration changed the map progress: '+p+' '+k)}
     const open0=[];for(const p of['math','read'])NODES[p].forEach((n,k)=>{if(passed(p,k)&&(!unlocked(p,k)||lsGate(p,k)))bad.push('a passed stop is locked: '+nid(n));if(lsGate(p,k))open0.push(nid(n))});
     if(!S.lsOpen||!S.lsOpen.cnt2||!S.lsOpen.sound3)bad.push('the stops the child had reached were not kept open: '+JSON.stringify(S.lsOpen));
@@ -21016,7 +21144,8 @@ run('lesson stops: the list, the gate, lessons off, the migration LS-STOP',()=>{
   p.push(...m);
   const src=fs.readFileSync(path.join(SRC,'js','00-core.js'),'utf8'),fl=(src.match(/LS-STOP \(v179\)[\s\S]*?const L='([^']+)'/)||[])[1]||'';
   // TEACH-3b: the lessons of v179 are the live ones without batch 3b (D.b3b, added in v182; migration 7 freezes those, and the two lists are all the live lessons)
-  const live=R(`JSON.stringify([LS_IDS.filter(id=>(LESSONS[id].p||'math')=='math'&&!(LS_DRAFTED[id]||{}).b3b).sort(),LS_IDS.filter(id=>LESSONS[id].p=='read'&&!(LS_DRAFTED[id]||{}).b3b).sort()])`);
+  // READ-SHAPES: and without batch 5r (D.b5r, added in v184; migration 8 freezes those)
+  const live=R(`JSON.stringify([LS_IDS.filter(id=>(LESSONS[id].p||'math')=='math'&&!(LS_DRAFTED[id]||{}).b3b&&!(LS_DRAFTED[id]||{}).b5r).sort(),LS_IDS.filter(id=>LESSONS[id].p=='read'&&!(LS_DRAFTED[id]||{}).b3b&&!(LS_DRAFTED[id]||{}).b5r).sort()])`);
   if(JSON.stringify(fl.split('|').map(x=>x.split(' ').sort()))!==live)p.push('migration 6 does not freeze the lessons of v179');
   const f7=((src.match(/TEACH-3b \(v182\)[\s\S]*?new Set\('([^']+)'/)||[])[1]||'').split(' ').sort().join(),l7=R(`LS_IDS.filter(id=>(LS_DRAFTED[id]||{}).b3b).sort().join()`);
   if(f7!==l7)p.push('migration 7 does not freeze the lessons of batch 3b (v182): '+f7+' vs '+l7);
@@ -21209,6 +21338,175 @@ run('lesson stops: every pet turn, the extra turns, resume, a part that does not
     const gw=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');if(/Nothing is ever locked/.test(gw))p.push('Grown-ups still says nothing is ever locked');
     const t2=R(`JSON.stringify(Object.values(LS_TONE2).map(a=>a.open('Mia')))`);if(/give me/i.test(t2))p.push('the start card line asks for a problem: '+t2);
     return{problems:p,note:'every lesson\'s pet can be wrong, the extra turns are; resume fresh; the part that does not load; '+note}});
+});
+
+// ---- TEACH-UX (v183): a 1st grader's Remember was a bare "9 + 7 = [ ]" (owner, from a real tablet). Pre-K to 2nd grade Remember and
+//      warm-up items show their model from the start, the top bar says the step in words, and the pet says that building comes next ----
+run('teach: the model up front, the beat label, the Remember line TEACH-UX',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const K=${TEACH_KIDS},bad=[],seen={model:new Set(),none:new Set()};
+    const little=LS_IDS.filter(id=>LESSONS[id].band!='35'),gr=id=>Math.max(0,LESSONS[id].g!=null?LESSONS[id].g:1);
+    const svgs=h=>(h.match(/<svg[\\s\\S]*?<\\/svg>/g)||[]),words=h=>h.replace(/<svg[\\s\\S]*?<\\/svg>/g,'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim();
+    // the Remember item of a lesson x (in a host lesson), or the host's own warm-up: {it, st}
+    const remOf=(host,x,seed,o)=>{const st=LS.make(host,Object.assign({seed,day:100,learn:1,rem:x?[x]:[]},o||{}));return{st,it:LSB[st.b]=='rem'?LS.cur(st):null}};
+    // 1. every Pre-K to 2nd grade lesson, as a Remember item (and its warm-up when it has one), 25 seeds each: the item carries its
+    //    model exactly when its hint draws one for a typed answer; the prompt shows the hint's picture (all of it, well formed), never
+    //    its words; and the line opens with the little pet's "then we build"
+    for(const x of little){const host=x=='tenf1'?'add3':'tenf1';S.grade=gr(x);
+      for(let s=1;s<=25;s++){for(const [what,o] of [['remember',remOf(host,x,s)],['warm-up',LESSONS[x].warm?remOf(x,null,s):null]]){
+        if(!o)continue;const it=o.it,at=x+' '+what+' seed '+s+': ';
+        if(!it){bad.push(at+'no item at Remember');continue}
+        const q=it.q,h=q.hint&&q.hint.k=='html'?q.hint.html:'',want=q.kind=='num'&&svgs(h).length>0&&!/<svg/.test(q.html||'')&&q.hint.mdl!==false; // fixRev: add5 opts out
+        if(!!it.mdl!==want)bad.push(at+'model '+!!it.mdl+', want '+want+' ('+q.kind+')');
+        const pr=LS.prompt(it);
+        if(want){seen.model.add(x+' '+what);
+          if(!pr.startsWith('<div class="pkq ls-model">')||!pr.endsWith(q.html))bad.push(at+'the model is not above the question');
+          if((h.match(/<svg/g)||[]).length!==svgs(h).length||!svgs(h).every(v=>pr.includes(v)))bad.push(at+'the hint picture is not all shown');
+          const w=words(h);if(w&&words(pr).includes(w))bad.push(at+'the hint words are shown before a miss: '+w);
+          if(!LS.hint(q,it).includes(w.split(' ')[0])||/<svg/.test(LS.hint(q,it)))bad.push(at+'after a miss the hint does not add its words only')}
+        else{if(pr!==q.html)bad.push(at+'the prompt changed without a model');
+          if(!/<svg/.test(pr)&&!['make','build','line','sort','order'].includes(q.kind)&&!(q.choices||[]).some(c=>/<svg/.test(c.l||'')))seen.none.add(x+' '+what+' '+q.kind)}
+        if(it.lines[0]!==LS_TONE.little.remGo)bad.push(at+'the line does not open with remGo: '+it.lines[0])}}}
+    // the owner's case: add3 as a 1st grader, with the doubles and +9 lesson (add2) to remember: a ten frame over the sum
+    {S.grade=1;let n=0;for(let s=1;s<=20;s++){const {it}=remOf('add3','add2',s);if(it&&it.mdl&&/ten frame/.test(LS.model(it.q)))n++}
+      if(n!==20)bad.push('add3 with add2 to remember: the ten frame shows in '+n+' of 20')}
+    // the owner's "two colors yes" (v184): an add fact's ten frame (the model, the hint after a miss, Together's hint) shows the
+    // first addend in the first colour and the second in the second; take away keeps its faded counters, Add Three one colour
+    {const dots=(h,c)=>{const i=h.indexOf('<g class="'+c+'">');return i<0?0:(h.slice(i,h.indexOf('</g>',i)).match(/<circle/g)||[]).length};
+      for(const id of ['add2','add3','sub2','add5'])for(let s=1;s<=20;s++)for(const st of [0,1,2]){const q=LS_DRAFTED[id].q(st,mulberry32(s*7+st)),h=q.hint.html,at=id+' seed '+s+' step '+st+': ';
+        const [a,b]=[q.sl.a,q.sl.b];
+        if(id=='add2'||id=='add3'){if(dots(h,'v1')!==a||dots(h,'v2')!==b)bad.push(at+'the hint frame is not '+a+' then '+b+' in two colours: '+dots(h,'v1')+'/'+dots(h,'v2'))}
+        else if(/<g class="v2/.test(h))bad.push(at+'the hint frame has a second colour')}}
+    if(seen.model.size<22)bad.push('only '+seen.model.size+' lessons carry a model at Remember: '+[...seen.model].join());
+    // 2. grades 3 to 6 are as before: no model up front; their pet's own "then we build" line
+    for(const g of [3,4,5,6]){S.grade=g;const T=lsTone();
+      for(const x of ['add2','pv1','add3']){const {it}=remOf('tenf1',x,3);if(!it||it.mdl||LS.prompt(it)!==it.q.html)bad.push('grade '+g+' '+x+': a model up front');
+        if(!it||it.lines[0]!==T.remGo||it.lines[1]!==T.rem)bad.push('grade '+g+': the Remember lines '+(it&&it.lines))}}
+    // 3. scoring, the knowledge record and retry/reveal do not change: the same lessons played by the same children, with the model
+    //    and with LS.model switched off, give the same path, the same answers' results, the same record and the same finish
+    {const m0=LS.model;
+      for(const x of little.filter((x,i)=>i%3==0))for(let s=1;s<=6;s++){const host=x=='tenf1'?'add3':'tenf1',out=[];S.grade=1;
+        for(const off of [false,true]){if(off)LS.model=()=>'';S.know={};S.lm=[];S.lr=[];
+          const c=K.kid(.5,.05,mulberry32(s*7)),st=LS.make(host,{seed:s,day:100,learn:1,rem:[x]}),res=[];let n=0;
+          while(!st.done&&n++<80){const it=LS.cur(st),v=c.answer(it),a=LS.answer(st,v);res.push(LSB[st.b]+':'+a.ok+':'+a.act);c.learn(it,a);if(a.act!='retry')LS.next(st)}
+          const f=LS.finish(st);out.push(JSON.stringify([res,st.pre,st.post,S.know,f.pass,f.sc]));LS.model=m0}
+        if(out[0]!==out[1]){bad.push(x+' seed '+s+': the model changes the score or the record');break}}
+      LS.model=m0}
+    // a first try at Remember still feeds the record exactly once (knowRemember), the warm-up never (knowAdd): with the model
+    {S.grade=1;S.know={add2:{s:2,n:1,lv:[[1,1],[1,1],[1,1]],b:{},box:0,due:99,d:97,last:97}};const k0=JSON.stringify(S.know.add2);
+      const st=LS.make('add3',{seed:4,day:100,learn:1,rem:['add2']}),it=LS.cur(st);if(!it.mdl)bad.push('add2 as Remember: no model');
+      const a1=LS.answer(st,String(+it.q.ans+1)),k1=JSON.stringify(S.know.add2),a2=LS.answer(st,it.q.ans),k2=JSON.stringify(S.know.add2);
+      if(a1.act!=='retry'||a2.act!=='next'||!a2.ok||k1===k0||k2!==k1||S.know.add3)bad.push('Remember with the model: retry, record '+JSON.stringify([a1.act,a2.act,k0==k1,k1==k2,!!S.know.add3]));
+      const sw=LS.make('add3',{seed:4,day:100,learn:1}),wt=LS.cur(sw);LS.answer(sw,lsRight(wt.q));if(S.know.add3)bad.push('a warm-up feeds the record')}
+    // 4. the beat label: every beat has one; the six are "Step n of 6 · <the dot's name>"
+    for(const B of LSB){const t=LS.step(B),j=LS_PIPS.findIndex(x=>x[0]==B);if(!t)bad.push('no label for '+B);
+      if(j>=0&&t!=='Step '+(j+1)+' of 6 · '+LS_PIPS[j][2])bad.push('the label of '+B+': '+t)}
+    if(LS.step('rem')!=='Step 1 of 6 · Remember'||LS.step('pre')!=='Show me'||LS.step('win')!=='One more')bad.push('labels: '+LSB.map(LS.step).join(' | '));
+    // 5. the line: one per age, within the age's rules and themes
+    for(const a in LS_TONE){const t=LS_TONE[a].remGo;if(!t||lsToneBad(t,a).length||!/build/i.test(t)||/magic|spell|evol/i.test(t))bad.push(a+'.remGo: '+t+' '+lsToneBad(t,a))}
+    return {bad,model:[...seen.model].length,none:[...seen.none]}})()`);
+  const p=r.bad.slice(),src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
+  // the screen: the label under the dots is text a screen reader reads (the dots are hidden), from LS.step; tokens only
+  if(!/<div class="ls-pips" aria-hidden="true">\$\{pips\}<\/div><span class="ls-step" id="lsstep">\$\{esc\(LS\.step\(B\)\)(\.replace\(\/\( of \\d\+\)\/, '<span class="ls-of">\$1<\/span>'\))?\}<\/span>/.test(src))p.push('the top bar has no beat label under the dots');
+  if(!/const prompt = LS\.prompt\(it\)/.test(src))p.push('the screen does not draw the prompt with LS.prompt');
+  const rule=(css.match(/\.ls-step\{[^}]*\}/)||[''])[0]+(css.match(/\.ls-beats\{[^}]*\}/)||[''])[0];
+  if(!rule||/#[0-9a-f]{3,8}\b|\d+px/i.test(rule))p.push('the label CSS is not tokens only: '+rule);
+  return{problems:p,note:r.model+' lesson items carry a model at Remember; no picture at all: '+(r.none.join(', ')||'none')};
+});
+
+// ---- Review fixes (v184, a Fable review of TEACH-UX and READ-SHAPES): the Remember model drew the answer (13 minus 9 as 4 counters), a
+//      heard-only "road" had the tiles for "rode", the pet's turn on a story never told the story, the flash card faded before the child
+//      could answer, the step label was cut on small phones, Parts of Speech sorted "duck", Plurals offered "stares" and "treees" ----
+run('teach: review fixes, the model never shows the answer, no homophone tiles, the story at the pet\'s turn, flash, step label, words fixRev',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],notes={model:new Set(),kinds:{}};
+    const NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,twenty:20};
+    // the numbers the question says (the operands; "Ten and 3 more" says ten)
+    const ops=q=>{const s=String(q.say||'');return new Set((s.match(/\\d+/g)||[]).map(Number).concat((s.toLowerCase().match(/[a-z]+/g)||[]).filter(w=>w in NW).map(w=>NW[w])))};
+    const svgs=h=>h.match(/<svg[\\s\\S]*?<\\/svg>/g)||[],circ=g=>(g.match(/<circle/g)||[]).length;
+    // base-ten blocks from their path: each block is "M x y h W v H": a flat is wide and tall, a rod tall, a cube small
+    const blocks=d=>{const o=[0,0,0];for(const m of d.matchAll(/h(\\d+(?:\\.\\d+)?)v(\\d+(?:\\.\\d+)?)/g)){const w=+m[1],h=+m[2];o[w>40&&h>40?0:h>40?1:2]++}return o};
+    // every group of one model picture, each read the way a child reads it: [what, value, parts]
+    const groups=m=>{const out=[];
+      for(const v of svgs(m)){
+        if(/aria-label="ten frame"/.test(v)){const g={};for(const x of v.matchAll(/<g class="([^"]+)">([\\s\\S]*?)<\\/g>/g))g[x[1]]=(g[x[1]]||0)+circ(x[2]);
+          const fade=Object.keys(g).filter(k=>/vx/.test(k)).reduce((a,k)=>a+g[k],0),all=Object.values(g).reduce((a,b)=>a+b,0);
+          if(fade)out.push(['frame: all',all],['frame: taken away',fade]);else for(const k in g)out.push(['frame '+k,g[k]]);}
+        else if(/aria-label="base ten blocks"/.test(v)){for(const x of v.matchAll(/<path class="(vb|ls-b2)" d="([^"]*)"/g)){const b=blocks(x[2]);
+          out.push(['blocks '+x[1],b[0]*100+b[1]*10+b[2],b.filter(Boolean).length?[b[0]*100,b[1]*10,b[2]].filter(Boolean):[],b.filter(Boolean)])}}
+        else if(/viz-nl/.test(v))out.push(['line',null,(v.replace(/<text class="vqt"[^>]*>\\?<\\/text>/g,'').match(/<text[^>]*>[^<]*<\\/text>/g)||[]).map(t=>+t.replace(/<[^>]+>/g,'')).filter(x=>!isNaN(x))]);
+        else out.push(['unknown '+(v.match(/aria-label="([^"]*)"/)||[])[1],null])}
+      return out};
+    const remOf=(host,x,seed)=>{const st=LS.make(host,{seed,day:100,learn:1,rem:x?[x]:[]});return LSB[st.b]=='rem'?LS.cur(st):null};
+    // 1. every lesson, as a Remember item and as its own warm-up, for a 1st grader (the little pet), 60 seeds: a model only for the
+    //    Pre-K to 2nd grade lessons, and every group in it is a number the question says (a frame's colour, the counters before some are
+    //    taken away and those taken away, a colour's blocks or their places as the question names them, the line's labels), so no
+    //    picture is the answer unless the answer is a number the question says itself (a count-the-objects item)
+    S.grade=1;
+    for(const x of LS_IDS){for(let s=1;s<=60;s++)for(const it of [remOf(x=='tenf1'?'add3':'tenf1',x,s),LESSONS[x].warm?remOf(x,null,s):null]){
+      if(!it||!it.mdl)continue;const q=it.q,at=x+' seed '+s+' ('+q.say+' = '+q.ans+'): ',m=LS.model(q),O=ops(q),ans=+q.ans;
+      if(LESSONS[x].band=='35'){bad.push(at+'a grade 3-5 lesson carries a model');continue}
+      notes.model.add(x);
+      for(const [what,val,parts,cnt] of groups(m)){notes.kinds[what.split(' ')[0]]=1;
+        if(/^unknown/.test(what)){bad.push(at+'a model picture this check cannot read: '+what);continue}
+        if(what=='line'){if(parts.includes(ans)&&!O.has(ans))bad.push(at+'the number line shows the answer '+ans);continue}
+        const ok=O.has(val)||(parts&&parts.length&&(parts.every(p=>O.has(p))||cnt.every(p=>O.has(p))));
+        if(!ok)bad.push(at+what+' is '+val+(parts?' ('+parts.join('+')+')':'')+', not a number the question says ['+[...O].join(',')+']');
+        if(val===ans&&!O.has(ans)&&!(parts&&parts.length))bad.push(at+what+' is the answer')}}}
+    for(const x of ['sub2','big2','big3','big4','big5','cnt4','miss1','miss2'])if(!notes.model.has(x))bad.push(x+': no model at all (it had one)');
+    if(notes.model.has('add5'))bad.push('add5 carries a model: its hint draws only the sum');
+    // the owner's cases: 13 minus 9 is 13 counters with 9 faded; 32 plus 61 is 32 in blue and 61 in orange
+    {const dots=(h,c)=>[...h.matchAll(new RegExp('<g class="'+c+'">([\\\\s\\\\S]*?)<\\\\/g>','g'))].reduce((a,x)=>a+circ(x[1]),0);
+      for(let s=1;s<=30;s++){const q=LS_DRAFTED.sub2.q(2,mulberry32(s)),m=LS.model(q);
+        if(dots(m,'v1')+dots(m,'v1 vx')!==q.sl.a||dots(m,'v1 vx')!==q.sl.b)bad.push('sub2 '+q.say+': not '+q.sl.a+' counters with '+q.sl.b+' faded');
+        const b=LS_DRAFTED.big2.q(2,mulberry32(s)),g=groups(LS.model(b));
+        if(g.length!==2||g[0][1]!==b.sl.a||g[1][1]!==b.sl.b)bad.push('big2 '+b.say+': the blocks are '+JSON.stringify(g))}}
+    // 2. a heard-only spelling never offers the tiles for a real word that sounds the same (this check's own list, beyond sameSound),
+    //    at any stage, in Explore and in the fix after the pet's turn, over the whole pool and 1500 seeds
+    const HOM={road:['rode'],rose:['rows'],plane:['plain'],sun:['son'],coat:['cote'],nose:['knows'],bee:['be'],tail:['tale'],pear:['pair'],sail:['sale'],
+      meat:['meet'],hare:['hair'],knot:['not'],mail:['male'],deer:['dear'],flower:['flour'],night:['knight'],cent:['sent'],tide:['tied'],pail:['pale']};
+    const can=(t,w)=>{t=t.slice();for(const c of w){const i=t.indexOf(c);if(i<0)return false;t.splice(i,1)}return true};
+    const spell=LS_IDS.filter(id=>LS_DRAFTED[id]&&LS_DRAFTED[id].fam=='spell'),words=new Set();let builds=0;
+    for(const id of spell){const D=LS_DRAFTED[id];
+      for(let s=1;s<=1500;s++){const r=mulberry32(s*31+id.length);
+        for(const q of [0,1,2,3].map(st=>D.q(st,r)).concat([D.exp(r).q])){if(q.kind!='build')continue;builds++;words.add(q.word);
+          const qs=[q].concat(Object.values(knowPredict(q)).flat().filter(v=>!lsOk(q,String(v))).slice(0,2).map(v=>D.fix(q,String(v),r)));
+          for(const t of qs)for(const h of new Set(sameSound(q.word).concat(HOM[q.word]||[])))if(h.length==q.word.length&&can(t.tiles,h))
+            bad.push(id+' '+q.word+' ('+(t===q?'item':'fix')+', '+(/ls4-pic|class="emo"/.test(q.html)?'picture':'heard')+'): the tiles '+t.tiles.join('')+' build '+h)}}}
+    for(const w of ['road','rose','plane','sun','coat'])if(!words.has(w)&&spell.length)notes.kinds['pool without '+w]=1;
+    // 3. the pet's turn on a story question says the story, then the question, then the pet's claim (a child who cannot read judges by ear)
+    let judged=0;
+    for(const id of LS_IDS.filter(id=>LS_DRAFTED[id]&&LS_DRAFTED[id].fam=='story'))for(let s=1;s<=20;s++){
+      const st=LS.make(id,{seed:s,day:100,learn:1});st.S=st.S||S;LS.beat(st,LSB.indexOf('chk'));const it=LS.cur(st);if(!it||it.m!='judge')continue;judged++;
+      const L=LS.told(it),q=it.q,i0=L.indexOf(q.tell[0]),iq=L.indexOf(q.say),ic=L.indexOf(it.lines[it.lines.length-1]);
+      if(!q.tell||!q.tell.every((t,k)=>L[i0+k]===t)||i0<0||iq!==i0+q.tell.length||ic<=iq||!L.includes(it.lines[0]))bad.push(id+' seed '+s+': the pet\\'s turn says '+JSON.stringify(L))}
+    if(judged<20)bad.push('only '+judged+' story pet turns');
+    // and other items are as before: an ask item says its lines, its story and its question; a judge item with no story only its lines
+    {const it={m:'judge',q:{say:'Q'},lines:['a','b']},a={m:'ask',q:{say:'Q',tell:['t1','t2']},lines:['a']};
+      if(JSON.stringify(LS.told(it))!=='["a","b"]'||JSON.stringify(LS.told(a))!=='["a","t1","t2","Q"]')bad.push('LS.told changed other items: '+JSON.stringify([LS.told(it),LS.told(a)]))}
+    // 4. the flash card fades only once the controls wake (data-wake, added by the screen's wake), never from the start
+    {const q=LS_DRAFTED.sight1.q(2,mulberry32(3)),h=q.html+(q.choices||[]).map(c=>c.l).join('');
+      if(/ls5-flash[^"]*\\bgo\\b/.test(h)||!/class="ls5-flash" data-wake="go"/.test(h))bad.push('the flash card: '+(h.match(/<span class="ls5-flash[^>]*>/)||[''])[0]);
+      if(!/\\[data-wake\\]/.test(String(LS.show)))bad.push('the screen\\'s wake does not start what waits for it (data-wake)')}
+    // 5. Parts of Speech: no word that is both a naming and a doing word to a child; Plurals: the wrong ending is a plausible non-word
+    const BOTH=['duck','ducks','fish','fishes','flies','fly','watch','watches','rock','rocks','park','parks','play','plays','kick','kicks','sink','sinks','fall','falls','dress','dresses'];
+    const REAL=['stares','hates','belles','doges','capes','tubes','cubes','cares','pines','bites','mates','notes','hopes','canes','cones','robes','tapes','dates','gates','kites',
+      'bikes','cakes','trees','stars','hats','bells','dogs','foxes','boxes','dishes','buses','tens','hens','pens','beds','cups','bugs','bats','ants','nuts','pots','pins','cans'];
+    {const sorted=new Set(),said=new Set();
+      for(let s=1;s<=400;s++){const r=mulberry32(s*13);for(const st of [0,1,2,3]){const q=LS_DRAFTED.gram2.q(st,r);
+        for(const x of (q.items||[]).map(c=>c.v).concat((q.choices||[]).map(c=>c.v)))sorted.add(x)}}
+      for(const w of sorted)if(BOTH.includes(w))bad.push('Parts of Speech offers "'+w+'", a naming word and a doing word');
+      for(let s=1;s<=600;s++){const r=mulberry32(s*17);for(const st of [0,1,2,3]){const q=LS_DRAFTED.gram3.q(st,r),w=q.sl.word,p=ls5Pl(w);
+        const wrong=(q.choices||[]).map(c=>c.v).filter(v=>v!==q.ans).concat(Object.values(knowPredict(q)).flat().map(String)).filter(v=>v!==w&&!(v.endsWith('s')&&LS5_PLS.concat(LS5_PLES).some(x=>x!==w&&ls5Pl(x)===v)));
+        for(const v of wrong){said.add(v);if(REAL.includes(v)||/(.)\\1\\1/.test(v)||/ees$/.test(v))bad.push('Plurals: one '+w+', two '+p+': the wrong "'+v+'" is a real word or not plausible')}}}
+      notes.kinds['plural wrongs '+said.size]=1}
+    return {bad,model:[...notes.model].length,kinds:Object.keys(notes.kinds),builds}})()`);
+  const p=r.bad.slice();
+  // 5. the step label under 400 px: " of 6" in its own span, which the narrow layout leaves out (smoke TEACH-UX measures 320 and 360 px)
+  const src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
+  if(!/<span class="ls-of">\$1<\/span>/.test(src))p.push('the step label has no " of 6" span');
+  if(!/@media \(max-width:400px\)\{[^\n]*\.ls-step \.ls-of\{display:none\}/.test(css))p.push('the step label keeps " of 6" under 400 px');
+  return{problems:p.slice(0,40),note:r.model+' lessons carry a model, each group a number the question says ('+r.kinds.join(', ')+'); '+r.builds+' spelling builds'};
 });
 
 // ---- PLAY-01: the Google Play app: the free sample, Play mode, the grown-up gate, the purchase (mocked Google Play), saves ----
@@ -21497,8 +21795,12 @@ run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
   const codes=R('Object.keys(HM)'),hd=A.checkHints(),have=hd.filter(x=>x.d).map(x=>x.d.code);
   for(const c of codes)if(!have.includes(c))p.push(c+': no draft in docs/drafts/hints');
   for(const x of hd){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.code+': '+x.problems.slice(0,3).join('; '))}
-  const rev=hd.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.code).sort(),live=R('Object.keys(HINTW).sort()');
+  // owner approved 2026-11-19: HINTW is read from a fresh app (part 3 above empties HINTW in its own app to test the gate); a draft is
+  // unreviewed or reviewed, and a reviewed one names its reviewer and the date; the live lines are exactly the reviewed drafts' lines
+  const rev=hd.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.code).sort(),HW=hintApp()('JSON.stringify(HINTW)'),hwo=JSON.parse(HW),live=Object.keys(hwo).sort();
   if(JSON.stringify(rev)!==JSON.stringify(live))p.push('HINTW has '+JSON.stringify(live)+' but the reviewed drafts are '+JSON.stringify(rev));
+  for(const x of hd)if(x.d){if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(x.d.code+': status '+x.d.status);
+    if(x.d.status==='reviewed'){if(!revNamed(x.file))p.push(x.d.code+': reviewed, but its status line names no reviewer and date');if(hwo[x.d.code]!==x.d.line)p.push(x.d.code+': HINTW has '+JSON.stringify(hwo[x.d.code])+', the reviewed draft '+JSON.stringify(x.d.line))}}
   try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('src/js/39n-hintw.js (or a lesson words file) is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hints-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/hints'),{recursive:true});
   const lw="/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n";
@@ -21518,6 +21820,138 @@ run('hints: the lessons\' codes agree, the round, the words gate HINT-01',()=>{
     for(const c of codes)if(!t.includes('**'+c+'**'))p.push('the read-through has no '+c);
     if(t.split('\n').some(l=>l.length>200))p.push('the read-through has a line over 200 characters')}
   return{problems:p,note:codes.length+' codes, '+have.length+' drafts, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
+});
+
+// ---- PERS-01: story problems about the child's interests ----
+// a fresh app (every part, as the page runs it) with every interest draft's words as if the owner had approved them (PERSW)
+const persApp=()=>{const R=hintApp(),A=require('./author.js'),ds=A.persDrafts().filter(x=>x.d);
+  R('Object.assign(PERSW,'+JSON.stringify(Object.fromEntries(ds.map(x=>[x.d.id,{name:x.d.name,pic:x.d.pic,things:x.d.things,st:x.d.st}])))+');S.buddy="Ben";S.voice=false;');
+  return {R,A,ids:ds.map(x=>x.d.id)}};
+run('story themes: the same math with and without interests, every story level, many seeds PERS-01',()=>{
+  const {R,ids}=persApp(),p=[];
+  // the interest sets: none, each one alone, and three together (the picker's most)
+  const sets=[...ids.map(i=>[i]),ids.slice(0,3),ids.slice(3,6),ids.slice(5,8)];
+  const r=R(`(()=>{const bad=[],sets=${JSON.stringify(sets)},nums=s=>(String(s).match(/\\d+(?:[.,]\\d+)*/g)||[]).sort().join(' ');
+    // everything a question carries except its words: the answer, the kind, the choices, the label (the hint engine and the lessons' records
+    // read it), the pad, the hint's kind and steps (their numbers), and how many rnd() calls it made (the next number drawn)
+    const math=(q,next)=>JSON.stringify({ans:q.ans,kind:q.kind,label:q.label,pad:q.pad,eq:q.eq,max:q.max,auto:q.auto,choices:q.choices,
+      hk:q.hint&&q.hint.k,hst:q.hint&&q.hint.st,hn:nums(q.hint&&(q.hint.w||q.hint.s||JSON.stringify(q.hint.steps||q.hint.lines||''))),
+      prob:typeof hmProb=='function'?hmProb(q):null,pred:typeof hmPredict=='function'?hmPredict(q):null,ls:typeof lsNums=='function'?Object.assign({},lsNums(q),{html:0,say:0,hint:0}):null,next}); // lsNums: the lessons' record reads the numbers onto a copy of q
+    const gen=(lv,seed,ints)=>{S.ints=ints;RNG=mulberry32(seed);try{const q=SK.story.gen(lv);q.sk='story';q.lv=lv;q.seed=seed;return [q,rnd()]}finally{RNG=Math.random}};
+    let n=0,themed=0,lines=new Set();
+    for(let lv=1;lv<=SK.story.max;lv++)for(let seed=1;seed<=(lv<=6?400:60);seed++){
+      const [q0,n0]=gen(lv,seed,[]),m0=math(q0,n0);
+      for(const set of sets){
+        const [q,n1]=gen(lv,seed,set);n++;
+        if(math(q,n1)!==m0){bad.push('story'+lv+' seed '+seed+' '+set.join('+')+': the math changed ('+q0.label+' / '+q.label+')');continue}
+        if(nums(q.say)!==nums(q0.say))bad.push('story'+lv+' seed '+seed+' '+set.join('+')+': other numbers in the words: "'+q.say+'"');
+        if(lv>6){if(q.say!==q0.say||q.html!==q0.html)bad.push('story'+lv+' is themed (only levels 1 to 6 are)');continue} // 7-9 say decimals their own way
+        const shown=(q.html.match(/<p class="story">([\\s\\S]*?)<\\/p>/)||[])[1];
+        if(shown==null||shown.replace(/<[^>]+>/g,'').replace(/&#39;/g,"'").replace(/&amp;/g,'&')!==q.say)bad.push('story'+lv+' seed '+seed+': what is said is not what is shown: "'+q.say+'"');
+        const things=set.flatMap(i=>PERSW[i].things);
+        if(!things.some(t=>q.say.includes(t[0])||q.say.includes(t[1])))bad.push('story'+lv+' seed '+seed+' '+set.join('+')+': none of the interest\\'s things: "'+q.say+'"');
+        else themed++;
+        for(const t of things)if(t[0]!==t[1]&&new RegExp('(^|[^\\\\d])1 '+t[0]+'\\\\b').test(q.say))bad.push('a plural after 1: "'+q.say+'"');
+        if(/\\{|\\}|undefined|NaN/.test(q.say+q.html))bad.push('a slot left: "'+q.say+'"');
+        if(ksBad(q.say,true))bad.push('not kid-safe: "'+q.say+'"');
+        if(lv<=3&&/^story (\\w+)/.test(q.label))lines.add(q.label.split(' ')[1]);
+      }
+    }
+    return {bad,n,themed,kinds:[...lines].sort()}})()`);
+  p.push(...r.bad.slice(0,20));
+  const want=['chg','chgS','cmpB','cmpD','cmpS','join','part','sep','start','startS'];
+  if(JSON.stringify(r.kinds)!==JSON.stringify(want))p.push('story kinds seen themed: '+r.kinds.join(', '));
+  return{problems:p,note:r.n+' questions (story levels 1-9 x '+sets.length+' interest sets), '+r.themed+' themed (levels 1-6), math identical'};
+});
+run('story themes: the gate, the words, slots and plurals, the save, the parts PERS-01',()=>{
+  const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  // 1. the parts: the engine at start (gen, with the generators), the words and the picker in the lazy part hints; index.html under 1,000,000
+  if(partOf('30p-pers.js')!=='gen')p.push('30p-pers.js is not in the gen part');
+  for(const f of ['39p-pers.js','39q-persw.js','39p-pers.css'])if(partOf(f)!=='hints')p.push(f+' is not in the hints part');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size;if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  // 2. the drafts: the eight starting interests, each passes every check (kid-safe, banned themes, slots, plurals, pictures, the hint agrees)
+  const ds=A.persDrafts(),ids=ds.filter(x=>x.d).map(x=>x.d.id);
+  for(const id of Object.keys(A.PERS_IDS))if(!ids.includes(id))p.push(id+': no draft in docs/drafts/pers');
+  for(const x of ds){if(!x.d){p.push(x.file+': '+x.problems.join('; '));continue}if(x.problems.length)p.push(x.d.id+': '+x.problems.slice(0,3).join('; '))}
+  // the checks catch what they are for
+  const d0=JSON.parse(JSON.stringify(ds[0].d)),bad=(f,re,w)=>{const d=JSON.parse(JSON.stringify(d0));f(d);if(!A.checkPers(d).some(x=>re.test(x)))p.push('checkPers misses '+w)};
+  bad(d=>d.st.chg=['{who} has {a things}. {other} gives {who} {b} more. Now {who} has {c things}. How many {pl}?'],/is not a slot of chg/,'the answer as a slot');
+  bad(d=>d.st.join=['{who} has {a} {pl}. {other} gives {b} more. How many {pl}?'],/reads "1 balls"/,'a plural after a number that can be 1');
+  bad(d=>d.st.sep=['{who} had {a things}. {b} roll away. How many {pl} are left?'],/can be 1/,'a present-tense verb after a number that can be 1');
+  bad(d=>d.st.part=['{who} has {c things}. {a} are new. How many old {pl} are there?'],/so the hint stays true/,'a sentence the hint contradicts');
+  bad(d=>d.st.join=['{who} has {a things} and a magic wand. {other} gives {b} more. How many {pl}?'],/ruled out/,'a banned theme');
+  bad(d=>d.st.join=['{who} has five {pl}. {other} gives {b} more. How many {pl}?'],/number word/,'a number word');
+  bad(d=>d.things[0]=['toy foxs','toy fox','',''],/not the plural/,'a wrong plural');
+  bad(d=>d.things[0]=['toy unicorns','toy unicorn','','🦄'],/not allowed|emoji-allow/,'a banned thing');
+  // 3. the gate: 39q-persw.js has the reviewed interests only (all 8 since the owner approved them on 2026-11-19); a reviewed draft names its
+  //    reviewer and the date; the words check holds; the gate on a copy
+  const rev=ds.filter(x=>x.d&&x.d.status==='reviewed').map(x=>x.d.id).sort();
+  for(const x of ds)if(x.d){if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(x.d.id+': status '+x.d.status);if(x.d.status==='reviewed'&&!revNamed(x.file))p.push(x.d.id+': reviewed, but its status line names no reviewer and date')}
+  const live=Object.keys(Function(rd('src/js/39q-persw.js')+';return PERSW')()).sort();
+  if(JSON.stringify(rev)!==JSON.stringify(live))p.push('39q-persw.js has '+JSON.stringify(live)+' but the reviewed interests are '+JSON.stringify(rev));
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the reviewed drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pers-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts/pers'),{recursive:true});
+  const lw="/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n";
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),lw);
+  const one={id:'zz',name:'Zz',pic:['ball',''],things:[['balls','ball','ball','']],st:{}};
+  const pw=b=>"/* ---------- PERS-01: the interest themes the owner has reviewed (part hints) ----------\n   BUILT by tools/build.py from docs/drafts/pers/<id>.md (\"status: reviewed ...\"): never edit by hand. An interest that\n   is not reviewed is never here, so it is never offered and its story problems stay the default ones (30p-pers.js). */\nconst PERSW = {\n"+b+"};\n";
+  const line='  "zz": '+JSON.stringify({name:'Zz',pic:['ball',''],things:[['balls','ball','ball','']],st:{}})+',\n';
+  const dj='\n```json\n'+JSON.stringify(one)+'\n```\n',chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  fs.writeFileSync(path.join(tmp,'docs/drafts/pers/zz.md'),'# Interest: Zz\n\nstatus: unreviewed\n'+dj);
+  fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(line));if(chk()!==1)p.push('the words check passes an unreviewed interest');
+  fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(''));if(chk()!==0)p.push('the words check refuses an empty file for an unreviewed interest');
+  fs.writeFileSync(path.join(tmp,'docs/drafts/pers/zz.md'),'# Interest: Zz\n\nstatus: reviewed Test Owner 2026-11-19\n'+dj);if(chk()!==1)p.push('the words check passes a reviewed interest left out');
+  fs.writeFileSync(path.join(tmp,'src/js/39q-persw.js'),pw(line));if(chk()!==0)p.push('the words check refuses a reviewed interest');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // 4. in the app: nothing reviewed (PERSW emptied, as for an unreviewed interest) = the default question word for word, even with interests picked; every sentence's slots fill
+  // (with the numbers 1 too: "1 toy horse"); "a" and "an"; the save: a new and an old save get S.ints = [], no migration added
+  const R=hintApp();
+  p.push(...R(`(()=>{const bad=[];for(const k in PERSW)delete PERSW[k];S.buddy='Ben';
+    for(let lv=1;lv<=6;lv++)for(let s=1;s<=60;s++){S.ints=[];const a=genQ('story',lv,s);S.ints=['sports','ocean'];const b=genQ('story',lv,s);
+      if(a.html!==b.html||a.say!==b.say)bad.push('with nothing reviewed, interests changed story'+lv+' seed '+s)}
+    if(persOn().length)bad.push('persOn() is not empty with nothing reviewed');
+    if(persFill('{an} and {an}',['eggs','','egg','egg'],{})!=='An egg and an egg'||persFill('{an}.',['balls','','ball','ball'],{})!=='A ball.')bad.push('a/an: '+persFill('{an} and {an}',['eggs','','egg','egg'],{}));
+    if(persFill('{who} has {a things}.',['toy sheep','','toy sheep',''],{who:'Mia',a:1})!=='Mia has 1 toy sheep.'||persFill('{a things} and {b things}.',['drums','','drum',''],{a:1,b:2})!=='1 drum and 2 drums.')bad.push('a number with its thing');
+    loadSave(null);migrate();if(JSON.stringify(S.ints)!=='[]')bad.push('a new save has no S.ints []');
+    loadSave(JSON.stringify({name:'Old',v:9,maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='[]')bad.push('an old save gets no S.ints []');
+    loadSave(JSON.stringify({name:'Old',v:9,ints:['space'],maps:{math:{},read:{},es:{}},mapv:2}));migrate();if(JSON.stringify(S.ints)!=='["space"]')bad.push('a save loses its interests');
+    if(LATEST!==9)bad.push('LATEST is '+LATEST+' (PERS-01 adds no migration)');
+    return bad})()`));
+  // the app as built (owner approved 2026-11-19): PERSW holds the reviewed interests' words exactly; with no interest picked a story is the
+  // default question byte for byte (the same as with nothing reviewed); with a reviewed interest picked, levels 1-6 tell its things
+  const R3=hintApp(),RW=JSON.parse(R3('JSON.stringify(PERSW)'));
+  for(const x of ds.filter(y=>y.d&&y.d.status==='reviewed'))if(JSON.stringify(RW[x.d.id])!==JSON.stringify({name:x.d.name,pic:x.d.pic,things:x.d.things,st:x.d.st}))p.push(x.d.id+': PERSW is not its reviewed draft\'s words');
+  p.push(...R3(`(()=>{const bad=[],rev=${JSON.stringify(rev)},W=JSON.stringify(PERSW);S.buddy='Ben';S.ints=[];const a={};
+    for(let lv=1;lv<=SK.story.max;lv++)for(let s=1;s<=40;s++){const q=genQ('story',lv,s);a[lv+' '+s]=[q.html,q.say]}
+    for(const k in PERSW)delete PERSW[k];
+    for(let lv=1;lv<=SK.story.max;lv++)for(let s=1;s<=40;s++){const q=genQ('story',lv,s),b=a[lv+' '+s];if(b[0]!==q.html||b[1]!==q.say)bad.push('with no interests picked, story'+lv+' seed '+s+' is not the default question byte for byte')}
+    Object.assign(PERSW,JSON.parse(W));
+    if(persOn().length)bad.push('persOn() is not empty with no interests picked');
+    for(const id of rev){S.ints=[id];if(persOn().join()!==id)bad.push(id+': reviewed and picked, but not on');let n=0,th=0;
+      for(let lv=1;lv<=6;lv++)for(let s=1;s<=20;s++){const q=genQ('story',lv,s);n++;if(PERSW[id].things.some(t=>q.say.includes(t[0])||q.say.includes(t[1])))th++}
+      if(th!==n)bad.push(id+': picked, '+(n-th)+' of '+n+' story questions do not tell its things')}
+    S.ints=['not-an-interest'];if(persOn().length)bad.push('an interest with no reviewed words is on');S.ints=[];
+    return bad.slice(0,20)})()`));
+  const {R:R2}=persApp();
+  for(const x of ds.filter(y=>y.d))for(const k in A.PERS_KINDS)[].concat(x.d.st[k]||[]).forEach((t,i)=>{
+    const K=A.PERS_KINDS[k];
+    for(const one of [false,true])for(let j=0;j<x.d.things.length;j++){
+      const v=Object.assign({who:'Mia',other:'Ben'},K.ex);if(one)for(const s of K.one)v[s]=1;
+      const th=x.d.things[j],s=R2(`persFill(${JSON.stringify(t)},${JSON.stringify([th[0],th[3],th[1],th[2]])},${JSON.stringify(v)})`);
+      if(/[{}]/.test(s))p.push(x.d.id+' '+k+': a slot left: '+s);
+      if(th[0]!==th[1]&&new RegExp('\\b1 '+th[0]+'\\b').test(s))p.push(x.d.id+' '+k+': '+s);
+      for(const n of K.need)if(!new RegExp('\\b'+v[n]+'\\b').test(s))p.push(x.d.id+' '+k+': no '+n+' in '+s);
+    }});
+  // 5. the read-through: every interest, every sentence; the same as the tool writes now
+  const rf=path.join(ROOT,'docs/drafts/PERS-READ.md');
+  if(!fs.existsSync(rf))p.push('no docs/drafts/PERS-READ.md');else{const t=fs.readFileSync(rf,'utf8');
+    if(t!==A.persRead())p.push('docs/drafts/PERS-READ.md is not what node tools/author.js --pers-read gives now');
+    for(const x of ds.filter(y=>y.d))for(const k in A.PERS_KINDS)for(const s of [].concat(x.d.st[k]||[]))if(!t.includes(s))p.push('the read-through misses '+x.d.id+' '+k)}
+  // 6. the picker: Grown-ups has the placeholder and draws the card through the part; the picker saves S.ints and keeps to 3
+  const g=rd('src/js/80-grown.js'),pk=rd('src/js/39p-pers.js');
+  if(!/<div id="gw-pers" hidden><\/div>/.test(g)||!/persGrown\(\);/.test(g))p.push('Grown-ups has no Story themes placeholder or does not fill it');
+  if(!/PERS_MAX = 3/.test(pk)||!/S\.ints = S\.ints\.filter/.test(pk)||!/save\(\);/.test(pk))p.push('the picker does not keep to 3 or does not save S.ints');
+  return{problems:p,note:ids.length+' interests drafted, '+rev.length+' reviewed (live), index.html '+ih+' bytes'};
 });
 
 // ---- report ----

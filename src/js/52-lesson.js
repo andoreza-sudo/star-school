@@ -95,9 +95,13 @@ const LS = {
     let it = [];
     if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), T.first]}));
     else if (B == 'rem') {
-      it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
+      // TEACH-UX: the line first says that building comes after this one item (T.remGo)
+      it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.remGo, T.rem]}));
       // TEACH-2b: nothing due, and the script has a warm-up on the idea it builds on: that, with the script's Remember line
-      if (!it.length && L.warm) { const q = L.warm(r); it = [{m: 'ask', help: 1, warm: 1, q, lines: L.w ? lsW(L.w.beats.remember, 0, q.sl) : [T.rem]}]; }
+      if (!it.length && L.warm) { const q = L.warm(r); it = [{m: 'ask', help: 1, warm: 1, q, lines: [T.remGo].concat(L.w ? lsW(L.w.beats.remember, 0, q.sl) : [T.rem])}]; }
+      // TEACH-UX: Pre-K to 2nd grade (the little pet) see the item's model from the start, not only after a miss (LS.model, LS.prompt)
+      // fixRev (v184): only the Pre-K to 2nd grade lessons' pictures (a grade 3-5 hint can draw the worked result: the product's blocks)
+      if (T === LS_TONE.little) for (const x of it) if ((x.rem ? LESSONS[x.rem] : L).band != '35' && LS.model(x.q)) x.mdl = 1;
     }
     else if (B == 'exp') {
       st.exp = L.exp(r);
@@ -118,6 +122,34 @@ const LS = {
     else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: [T.more]}];
     st.items = it;
     return it.length ? st : LS.after(st);
+  },
+  /* TEACH-UX: the model of a Remember or warm-up item for the little ones: the picture its hint draws after a miss (the ten frame,
+     the blocks, the number line, the groups), without the hint's words (they can count the answer out: "Count by 2s: 2, 4, 6, 8").
+     Only for a typed answer whose question has no picture of its own: a build (make, build, line) is its model already, and a
+     choice's picture hint names the answer (the letter, the shape). '' when there is none. */
+  model(q) {
+    // fixRev (v184): a hint whose picture is only the result (Add Three's one-colour sum) says mdl: false
+    if (!q || q.kind != 'num' || !q.hint || q.hint.k != 'html' || q.hint.mdl === false || /<svg/.test(q.html || '')) return '';
+    return (q.hint.html.match(/<svg[\s\S]*?<\/svg>/g) || []).join('');
+  },
+  // the question area of an item (TEACH-UX: with its model above the question when the item carries one, it.mdl)
+  prompt(it) {
+    if (it.m == 'say') return it.html;
+    if (it.m == 'judge') return it.pw || LS.petWork(it.q, it.pv); // TEACH-3: the pet's written steps
+    const m = it.mdl ? LS.model(it.q) : '';
+    return (m ? `<div class="pkq ls-model">${m}</div>` : '') + it.q.html;
+  },
+  // the lines an item says when it shows (the Hear button says them again). READ-SHAPES: a story question tells its story first (q.tell:
+  // short sentences, each also on screen with its own speaker); fixRev (v184): the pet's turn on a story question tells the story and
+  // the question too, before the pet's claim (its last line), so a child who cannot read yet can judge by listening
+  told(it) {
+    const q = it.q || {}, told = (q.tell || []).concat([q.say]), il = it.lines || [];
+    return it.m == 'ask' || it.m == 'open' ? il.concat(told) : it.m == 'judge' && q.tell ? il.slice(0, -1).concat(told, il.slice(-1)) : il;
+  },
+  // TEACH-UX: the beat label under the dots ("Step 1 of 6 · Remember"); the show-me items and the last build are outside the six
+  step(B) {
+    const at = LS_PIPS.findIndex(x => x[0] == B);
+    return at >= 0 ? `Step ${at + 1} of ${LS_PIPS.length} · ${LS_PIPS[at][2]}` : B == 'pre' ? 'Show me' : B == 'win' ? 'One more' : '';
   },
   // the next Together item: stage 0 first, then one up after a right first try, one down after a miss (the picture comes back)
   // When two misconception codes fit the child's wrong answers equally, the item is the probe: a question on which they predict
@@ -392,20 +424,16 @@ const LS = {
     const q = it.q, B = LSB[st.b], T = lsTone(), sp = st.L.p || 'math';
     LS.u = {lock: true, typed: '', built: [], tries: 0};
     const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS_PIPS.map(([k, ic, l], j) => `<span class="ls-pip${j < at || B == 'win' ? ' on' : j == at ? ' now' : ''}" aria-hidden="true">${ico(ic, 18)}</span>`).join('');
-    let prompt = '', input = '';
-    if (it.m == 'say') {
-      prompt = it.html;
-      input = UI.btn('Next', {kind: 'primary', size: 'lg', icon: 'go', id: 'lsnext'});
-    } else if (it.m == 'judge') {
-      prompt = it.pw || LS.petWork(q, it.pv); // TEACH-3: the pet's written steps
+    const prompt = LS.prompt(it);
+    let input = '';
+    if (it.m == 'say') input = UI.btn('Next', {kind: 'primary', size: 'lg', icon: 'go', id: 'lsnext'});
+    else if (it.m == 'judge') {
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
-    } else {
-      prompt = q.html;
-      input = KIND[q.kind].render(q);
-    }
-    const tag = B == 'pre' ? 'Show me' : B == 'win' ? 'One more' : (LS_PIPS[at] || [])[2] || '';
+    } else input = KIND[q.kind].render(q);
     const mt = LS.meter(st, B, at);
-    view(`<div class="top tbar round qtop ls-top s-${sp}${mt ? ' ls-m' : ''}">${NAV.house('quit')}<div class="ls-pips" role="img" aria-label="${esc(tag)}">${pips}</div>
+    // TEACH-UX: the dots are drawn only; the label under them says the step in words (and is what a screen reader reads);
+    // fixRev (v184): " of 6" in its own span, which a phone under 400 px leaves out ("Step 4 · Together"), so the step's name is never cut
+    view(`<div class="top tbar round qtop ls-top s-${sp}${mt ? ' ls-m' : ''}">${NAV.house('quit')}<div class="ls-beats"><div class="ls-pips" aria-hidden="true">${pips}</div><span class="ls-step" id="lsstep">${esc(LS.step(B)).replace(/( of \d+)/, '<span class="ls-of">$1</span>')}</span></div>
      <div class="pl-tag ls-tag">${ico('doc', 24)}<span>${esc(st.L.t)}</span></div>${mt}</div>
     <div class="play qs s-${sp} ls-play" id="lsplay" data-beat="${B}" data-mode="${it.m}"><div class="qarea">
      <div class="ls-pet${it.m == 'judge' ? ' ls-turn' : ''}"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub" id="lsbub" role="status"><span></span></div>
@@ -414,10 +442,12 @@ const LS = {
     <div class="inp ls-wait" id="lsinp">${input}</div></div>`);
     LS.mood(it.m == 'judge' ? 'idle' : 'happy');
     NAV.wire('quit', {leave: () => { LS.st = null; save(); }});
-    const lines = (it.lines || []).concat(it.m == 'ask' || it.m == 'open' ? [q.say] : it.m == 'say' ? [] : []);
+    const lines = LS.told(it);
     $('#lshear').onclick = () => LS.talk(it.m == 'say' ? it.lines : lines.length ? lines : [q.say]);
     UI.hear();
-    const wake = () => { const w = $('#lsinp'); if (w) w.classList.remove('ls-wait'); if (LS.u) { LS.u.lock = false; LS.u.w = Date.now(); } };
+    // fixRev (v184): what must start only once the child can answer (the flash card's fade) carries data-wake, the class to add then
+    const wake = () => { const w = $('#lsinp'); if (w) w.classList.remove('ls-wait'); for (const e of $$('#lsplay [data-wake]')) e.classList.add(e.dataset.wake);
+      if (LS.u) { LS.u.lock = false; LS.u.w = Date.now(); } };
     if (it.m == 'say') $('#lsnext').onclick = () => { if (!LS.u.lock) { LS.tick(); LS.go(LS.answer(st, 'ok')); } };
     else if (it.m == 'judge') { $('#lsyes').onclick = () => LS.judge('1'); $('#lsno').onclick = () => LS.judge('0'); }
     else {
@@ -478,7 +508,7 @@ const LS = {
       if (el) { el.classList.add('wrong'); el.disabled = true; }
       if (it.m == 'open') { u.mmMoved = false; if (q.kind == 'make') KIND.make.draw(q, u); else K.retry(q, u, () => {}); } // TEACH-4: a sort shows which pictures are home
       else {
-        if (h && q.hint) { h.innerHTML = LS.hint(q); h.scrollIntoView({block: 'nearest'}); }
+        if (h && q.hint) { h.innerHTML = LS.hint(q, it); h.scrollIntoView({block: 'nearest'}); }
         K.retry(q, u, () => {});
       }
       LS.talk(res.lines);
@@ -491,11 +521,12 @@ const LS = {
     }
     if (el) el.classList.add('wrong');
     K.reveal(q);
-    if (h && q.hint) h.innerHTML = LS.hint(q);
+    if (h && q.hint) h.innerHTML = LS.hint(q, it);
     fit();
     LS.go(res, K.spoken(q));
   },
-  hint: q => (q.hint.k == 'html' ? q.hint.html : esc(q.hint.s)),
+  // TEACH-UX: when the model is already above the question (it.mdl), the hint after a miss adds only its words, not the picture again
+  hint: (q, it) => (q.hint.k != 'html' ? esc(q.hint.s) : it && it.mdl ? q.hint.html.replace(/<svg[\s\S]*?<\/svg>/g, '') : q.hint.html),
   // LS-STOP: an answer given right after the controls woke counts as rushed
   rushed(st) { if (LS.u && LS.u.w && Date.now() - LS.u.w < LS.RUSH) st.rush++; },
   // say the result, then the next item once the line has been said

@@ -1,5 +1,5 @@
-/* Star School teach12 v182. BUILT by tools/build.py from 52e-words.js, 52f-bench.js, 52g-drafted.js: never edit by hand.
-   index.html v182 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v182.js. */
+/* Star School teach12 v185. BUILT by tools/build.py from 52e-words.js, 52f-bench.js, 52g-drafted.js: never edit by hand.
+   index.html v185 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v185.js. */
 /* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------
    BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft, 52g-drafted.js):
    never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */
@@ -237,7 +237,8 @@ function lsAddStop(id, t, pl, carry, bugs) {
   };
   D.q = (st, r) => {
     const [a, b] = pick(r), c = a + b, sl = {a, b, n: 9, sum: c}, ab = [a, b, '+'], hint = {k: 'html', w: 'Add the ones first. Ten ones make a ten.',
-      html: `<div class="pkhint">${lsBlocks(lsDigits(c, pl))}<div>Add the ones first. Ten ones make a ten.</div></div>`};
+      // fixRev (v184): the two numbers' blocks in two colours, as Together's picture, not the sum's blocks
+      html: `<div class="pkhint">${lsBlocks(lsDigits(a, pl).map((v, i) => v + lsDigits(b, pl)[i]), {b: lsDigits(b, pl)})}<div>Add the ones first. Ten ones make a ten.</div></div>`};
     if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'b10r', m: {places: pl, target: c}, goal: 'regroup', eq: 'value', ans: c, ab, sl, hint,
       s0: carry ? lsDigits(a, pl).map((v, i) => v + lsDigits(b, pl)[i]) : null,
       html: lsEq(`${a} + ${b}`) + lsCap(carry ? 'All the blocks are in. Trade ten ones for a ten.' : 'Make the answer with blocks.'),
@@ -353,7 +354,13 @@ function lsFactStop(id, t, kind, bugs) {
       c = a + b; eq = `${a} + ${b}`; say = `${a} plus ${b}`; ab = [a, b, '+'];
     }
     built = c;
-    const sl = k3 ? {a, b, k: k3} : {a, b}, pic = kind == 'sub' ? VIZ.tenFrame(a, 20, {fade: b}) : VIZ.tenFrame(c, 20, {b: kind == 'add3' ? 0 : b}), hint = lsFrameHint(c, 20, {}, h);
+    const sl = k3 ? {a, b, k: k3} : {a, b}, pic = kind == 'sub' ? VIZ.tenFrame(a, 20, {fade: b}) : VIZ.tenFrame(c, 20, {b: kind == 'add3' ? 0 : b}),
+      // TEACH-UX (owner: "two colors yes"): the add facts' hint (and so the Remember model and Together's hint) draws the two
+      // addends in two colours, a then b, as the picture stage does, so the child sees "make a ten"; Add Three keeps one colour
+      // (three addends, two colours would pair the wrong two)
+      // fixRev (v184): the hint draws the question's numbers, never the answer alone: take away the start with b faded (as its
+      // Practice hint does); Add Three has no picture of its three numbers on one frame, so its result picture is never a model
+      hint = kind == 'sub' ? lsFrameHint(a, 20, {fade: b}, h) : Object.assign(lsFrameHint(c, 20, kind == 'add3' ? {} : {b}, h), kind == 'add3' ? {mdl: false} : {});
     if (st == 0) return lsFrame(D.sk, D.lv, 0, built, 20, {s0, ab, sl, bug, hint, pk: false, html: lsEq(eq) + lsCap(kind == 'sub' ? `Take away ${b}.` : 'Make the answer on the frame.'),
       say: `${say}. ${kind == 'sub' ? `Take away ${b}.` : 'Make the answer on the frame.'}`});
     if (st == 1) return lsDq(D, 1, {kind: 'num', ans: c, ab, sl, bug, hint, html: `<div class="pkq">${pic}</div>` + lsEq(`${eq} = ${SLOT}`), say: `${say} equals what?`});
@@ -367,7 +374,8 @@ function lsFactStop(id, t, kind, bugs) {
 }
 // Missing to 18: a counters in, fill up to s (the missing part is what was put in)
 function lsMiss(D, st, a, b, s, bug, h) {
-  const sl = {a, t: s}, hint = lsFrameHint(s, 20, {b}, h);
+  // fixRev (v184): the hint shows the part already in (the empty cells to count on), not the missing part in its own colour
+  const sl = {a, t: s}, hint = lsFrameHint(a, 20, {}, h);
   if (st == 0) return lsFrame(D.sk, D.lv, 0, b, 20, {fixed: a, sl, bug, hint, pk: false, html: lsEq(`${a} + ${lsQm} = ${s}`) + lsCap(`Put in more to make ${s}.`),
     say: `${a} plus what makes ${s}? Put in more to make ${s}.`});
   if (st == 1) return lsDq(D, 1, {kind: 'num', ans: b, sl, bug, hint, html: `<div class="pkq">${VIZ.tenFrame(a, 20)}</div>` + lsEq(`${a} + ${SLOT} = ${s}`), say: `${a} plus what equals ${s}?`});
@@ -581,4 +589,4 @@ lsDraft('coins4', lsCoinStop('coins4', 'Dollars & Coins', [100, 25, 10, 5, 1], 1
 lsDraft('arr1', lsGrpStop('arr1', 'Rows & Columns', 'arr'));
 lsDraft('coins5', lsChangeStop('coins5', 'Making Change'));
 
-var TEACH12_VER='v182'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH12_VER='v185'; // last line: the whole file ran (checked by dataReady() before the app starts)

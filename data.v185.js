@@ -1,5 +1,5 @@
-/* Star School data banks v182. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v182 loads this file with <script src="data.v182.js"> between the code and the start-up script. */
+/* Star School data banks v185. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v185 loads this file with <script src="data.v185.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -8213,10 +8213,15 @@ function genSpell(lv){
 }
 /* ---------- TEACH-4: the pet's recorded teacher lines (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach) ----------
    The fixed lines of the Pre-K to 2nd grade lessons -> their file, audio/teach/<file>.ogg (xAI text to speech, English, the voice luna,
-   speed 0.95, Opus 16 kbps mono). One voice: the pet is one speaker. Keys are esKey(text). 91 lines. */
+   speed 0.95, Opus 16 kbps mono). One voice: the pet is one speaker. Keys are esKey(text). 104 lines. */
 const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
+"A doing word is something you can do.":"e8bac5d4bb0a",
 "A full frame is ten. Count the ten first.":"4942db0f4b89",
+"A sentence starts with a capital letter.":"ba23de65df4c",
+"After x, s, sh or ch, we add e and s.":"2842fbe62ef0",
+"An opposite is as different as it can be.":"c0ad431fc9d2",
 "And you still know it!":"8f971cdef1d9",
+"Asking ends with a question mark. Telling ends with a period.":"ed38036d4438",
 "Back means smaller numbers. Count down.":"808a7ab39825",
 "Can you fix it?":"278bce0f4b11",
 "Clap each word. One clap or two?":"6995fc11b50e",
@@ -8225,6 +8230,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Do you remember this?":"196eb8f68e13",
 "Each coin has a value. Add the values.":"9f7613da260c",
 "Find my mistake next time to earn game time.":"83454918974c",
+"Find that part of the story. Listen again.":"427dc64d4238",
 "Find the one that does not match the rest.":"b9a27d555453",
 "First, show me what you know.":"8df3f569f1ce",
 "Give me a problem!":"18a995fe5f80",
@@ -8239,6 +8245,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Let's play first.":"db8c12689502",
 "Listen to the very first sound.":"6be7000d4d7f",
 "Look again. I made a mistake!":"ea7ea5ddf724",
+"Look at every letter, not just the first one.":"095015a6677e",
 "Look at the letter in the middle.":"4e9d783bbcfe",
 "Look at the sign. Are we adding or taking away?":"08e9a499fb8e",
 "Look at these two.":"7206a0ec4ca1",
@@ -8247,6 +8254,8 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Look! Let me help.":"0d8da60f2611",
 "Match them up.":"6af63efd6693",
 "Match them up. More has some left over.":"265d8884c78a",
+"More than one? It needs an ending.":"50de882bbbaa",
+"Most words just add s.":"2abd2bfc6166",
 "My turn. Check me!":"0b86cf7ebeae",
 "Now let's do some together.":"1013b9679933",
 "Now tell me why.":"ba7b4e1ec1a1",
@@ -8260,8 +8269,11 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Put the animals together and the food together.":"27b3c37bae49",
 "Put the big ones together and the small ones together.":"b1b045bc6177",
 "Put the letters in ABC order. Sing it with me!":"bbf5a2172fcc",
+"Quick one first, then we build!":"43d7a99d3217",
+"Read it out loud. Does it sound right?":"84e6c41f60a6",
 "Read it. Then tap the picture that matches.":"e4eaa0facb7a",
 "Read the word. Then tap its picture.":"a0d569f71d42",
+"Same means it says almost the same thing.":"c0e31aa1f7b9",
 "Say every letter at the start. Both of them.":"1148b144284f",
 "Say it slowly. Listen to the very end.":"c9c3b7458bc7",
 "Say the pattern out loud. What comes next?":"dfe0c5ef8e11",
@@ -8285,6 +8297,7 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "The short hand tells the hour.":"143c8e704b02",
 "The tens come first. Then the ones.":"0dc52ea6735b",
 "These two letters make one sound together.":"e0c5f04021e4",
+"Think back to the story. Was it there?":"3a1d87108bd2",
 "This one is right.":"fd3b177afcd8",
 "Top take away bottom. Not the small from the big.":"20fec2316531",
 "Two vowels side by side make one sound.":"41c17a1be3d3",
@@ -9668,4 +9681,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v182'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v185'; // last line: the whole file ran (checked by dataReady() before the app starts)
