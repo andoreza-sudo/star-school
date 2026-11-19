@@ -1,5 +1,5 @@
-/* Star School teach12 v183. BUILT by tools/build.py from 52e-words.js, 52f-bench.js, 52g-drafted.js: never edit by hand.
-   index.html v183 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v183.js. */
+/* Star School teach12 v184. BUILT by tools/build.py from 52e-words.js, 52f-bench.js, 52g-drafted.js: never edit by hand.
+   index.html v184 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v184.js. */
 /* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------
    BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft, 52g-drafted.js):
    never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */
@@ -581,4 +581,4 @@ lsDraft('coins4', lsCoinStop('coins4', 'Dollars & Coins', [100, 25, 10, 5, 1], 1
 lsDraft('arr1', lsGrpStop('arr1', 'Rows & Columns', 'arr'));
 lsDraft('coins5', lsChangeStop('coins5', 'Making Change'));
 
-var TEACH12_VER='v183'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH12_VER='v184'; // last line: the whole file ran (checked by dataReady() before the app starts)

@@ -432,7 +432,8 @@ const LS = {
     <div class="inp ls-wait" id="lsinp">${input}</div></div>`);
     LS.mood(it.m == 'judge' ? 'idle' : 'happy');
     NAV.wire('quit', {leave: () => { LS.st = null; save(); }});
-    const lines = (it.lines || []).concat(it.m == 'ask' || it.m == 'open' ? [q.say] : it.m == 'say' ? [] : []);
+    // READ-SHAPES: a story question tells its story first (q.tell: short sentences, each also on screen with its own speaker)
+    const lines = (it.lines || []).concat(it.m == 'ask' || it.m == 'open' ? (q.tell || []).concat([q.say]) : []);
     $('#lshear').onclick = () => LS.talk(it.m == 'say' ? it.lines : lines.length ? lines : [q.say]);
     UI.hear();
     const wake = () => { const w = $('#lsinp'); if (w) w.classList.remove('ls-wait'); if (LS.u) { LS.u.lock = false; LS.u.w = Date.now(); } };

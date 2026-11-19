@@ -143,7 +143,8 @@ rally.<VER>.js    G-RALLY2: Star Rally on its own (src/js/63-game-race.js, src/c
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
 teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons of Tiny Town and ABC Beach, src/js/52k-words4, 52l-bench4,
-                  52m-lessons4 and src/css/52k-teach4.css; LAZY: the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too
+                  52m-lessons4, 52p-lessons4b (TEACH-3b), 52q-bench5r and 52r-lessons5r (READ-SHAPES: the reading lesson shapes) and
+                  src/css/52k-teach4.css, 52q-teach5r.css; LAZY: the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too
                   for a Pre-K child (teachWarm in 46-home.js)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in

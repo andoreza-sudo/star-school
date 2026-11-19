@@ -1,5 +1,5 @@
-/* Star School gen v183. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v183 loads this file with <script src="gen.v183.js"> after its own code, before data.v183.js. */
+/* Star School gen v184. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v184 loads this file with <script src="gen.v184.js"> after its own code, before data.v184.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -4117,4 +4117,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v183'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v184'; // last line: the whole file ran (checked by dataReady() before the app starts)
