@@ -71,6 +71,73 @@ async function actRead(pg, act, reads, ev = 'click', sel = null) {
 
 // NAV-01: an end card's Home goes Home; tests that went on from a puzzle's level list open it again from there
 const HOME_ON = '#navbar .nb-home[aria-current="page"]';
+
+// G-MOVES (v188): real touch on a game page (CDP touch events, like the G-* segments), the 48 px / no sideways scroll look over the
+// given controls, a screenshot into tools/out/games5/, and the frame time of a running game at 6x CPU throttle (best of up to 4
+// passes while the machine is busy). sel: the controls the look measures.
+async function g5Kit(pg, sel) {
+  const cdp = await pg.context().newCDPSession(pg);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 3 });
+  const box = s => pg.evaluate(s => {
+    const e = document.querySelector(s);
+    if (!e) return null;
+    if (!e.closest('.hc, .rl, .hpg, .sn, .bb-wrap, .ovl')) e.scrollIntoView({ block: 'center' });
+    else if (e.closest('.bb-pal, .sn-ings, .sn-tabs')) e.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const r = e.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+  }, s);
+  const down = (x, y, id = 1) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: Math.round(x), y: Math.round(y), id, radiusX: 8, radiusY: 8, force: 1 }] });
+  const up = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const press = async (x, y, ms) => { await down(x, y); await pg.waitForTimeout(ms || 40); await up(); };
+  const touch = async (s, ms) => {
+    const b = await box(s);
+    if (!b) throw new Error('nothing to touch: ' + s);
+    await pg.waitForTimeout(120);
+    const c = await box(s);
+    await press(c.x, c.y, ms);
+    await pg.waitForTimeout(90);
+    return c;
+  };
+  const look = () => pg.evaluate(sel => {
+    const vw = document.documentElement.clientWidth, out = [];
+    for (const e of document.querySelectorAll(sel)) {
+      const r = e.getBoundingClientRect();
+      if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('[hidden]')) continue;
+      if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+      if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+      if (e.tagName == 'BUTTON' && !(e.getAttribute('aria-label') || e.textContent.trim())) out.push('no spoken name ' + (e.id || e.className));
+    }
+    if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+    for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+    return out;
+  }, sel);
+  const dir = require('path').join(__dirname, 'out', 'games5');
+  require('fs').mkdirSync(dir, { recursive: true });
+  const shots = [];
+  const shot = async n => { await pg.waitForTimeout(250); await pg.screenshot({ path: require('path').join(dir, n + '.png') }).catch(() => {}); shots.push('tools/out/games5/' + n + '.png'); };
+  // frame intervals (rAF) for 3 s at 6x CPU throttle; restart() is called between passes when the run may have ended
+  const frames = async (restart) => {
+    const os = require('os'), cores = os.cpus().length;
+    let best = null, tries = 0, load = os.loadavg()[0];
+    for (;;) {
+      await pg.evaluate(() => { window.__g5F = []; let last = 0; const f = ts => { if (last) window.__g5F.push(ts - last); last = ts; if (window.__g5F.length < 3000) requestAnimationFrame(f); }; requestAnimationFrame(f); });
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+      await pg.waitForTimeout(2000);
+      await pg.evaluate(() => { window.__g5F.length = 0; });
+      await pg.waitForTimeout(3000);
+      const r = await pg.evaluate(() => { const a = window.__g5F.slice().sort((x, y) => x - y); return { med: a[Math.floor(a.length / 2)] || 999, p90: a[Math.floor(a.length * .9)] || 999, n: a.length }; });
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      tries++;
+      load = os.loadavg()[0];
+      if (!best || r.med < best.med) best = r;
+      if (best.med <= 34 || tries >= 4 || load <= cores) break;
+      if (restart) await restart();
+      await pg.waitForTimeout(600);
+    }
+    return Object.assign(best, { tries, load: +load.toFixed(1), cores });
+  };
+  return { cdp, box, down, up, press, touch, look, shot, shots, frames };
+}
 async function btLevelsAgain(pg) {
   const run = await pg.evaluate(() => BT.act && [BT.act.run.id, BT.act.run.band]);
   await pg.click('#bthome');
@@ -11711,6 +11778,555 @@ async function main() {
       else step('GL-02: Star Rally picks the 2D look on WebGL drawn by the CPU (SwiftShader) and, with RGL.soft, draws in 3D (canvas under the 2D layer, frames, ' +
         '5-30 draw calls, context given back on leaving), the child\'s car fully seen at a tunnel mouth, in a tunnel and on a bridge, the 2D look when the menu\'s 3D switch is off ' +
         'and when WebGL is forced off; at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
+    }
+
+    // G-MV-HILL (G-MOVES, src/js/62-hill.js) at 380x780 and 1024x600, real touch, midway save with game time and the first world won:
+    // the Hop's card shows once over the menu (Got it! saves it, not shown again); the world's rival run card -> Bramble's screen
+    // (face, line, goal, prize, Back) -> Race Bramble! -> the drive has the Hop button (48 px, a touch hops once and is never Gas) and the
+    // rival on the progress bar -> Gas held to the flag before Bramble (after two runs not won, so Bramble is slower) -> "You beat
+    // Bramble!" with a crown, the bolts and the record saved -> Home; the menu card shows the win. At 1024x600 the frame time of a rival
+    // run at 6x CPU throttle (median at most 34 ms). 48 px controls, no sideways scroll. Screenshots: tools/out/games5/hill-*.
+    if (seg('G-MV-HILL')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-HILL ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .hc-menu button, .gh-boss button, .gh-end button, .gh-mvb button, #hchop');
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false;
+            S.garage = { st: { m1: 7, m2: 7, m3: 7, m4: 7, m5: 7 }, bs: { meadow: { n: 2, w: 0 } }, bolts: 10 };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#g4x4', { timeout: 15000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#g4x4');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/New move: Hop!/.test(mv) || !/Tap Hop/.test(mv)) bad.push(at + 'move card: ' + mv);
+          for (const o of await K.look()) bad.push(at + 'move card: ' + o);
+          await K.shot('hill-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => [garageS().hop, !!document.querySelector('.gh-mvb')].join()) !== '1,false') bad.push(at + 'Got it! did not close and save the card');
+          await pg.evaluate(() => garage());
+          await pg.waitForTimeout(800);
+          if (await pg.evaluate(() => !!document.querySelector('.gh-mvb'))) bad.push(at + 'the move card showed a second time');
+          await K.touch('.hc-wtabs [data-w="0"]'); // Green Meadow (the menu opens on the next goal's world)
+          await pg.waitForSelector('.hc-wt.on[data-w="0"]', { timeout: 8000 });
+          await K.touch('#hcboss');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Bramble/.test(bs) || !/Reach the flag before Bramble/.test(bs) || !/slower each time/.test(bs) || !/crown/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('hill-boss-' + w);
+          await K.touch('#back');
+          await pg.waitForSelector('.hc-menu #hcboss', { timeout: 8000 });
+          await K.touch('#hcboss');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          await K.touch('#gbgo');
+          await pg.waitForSelector('.hc #hchop', { timeout: 8000 });
+          await pg.waitForTimeout(1500);
+          const d0 = await pg.evaluate(() => ({ boss: !!(HC && HC.boss), hop: HC && HC.hop, rv: !!document.querySelector('#hcrv'), sub: document.querySelector('.gh-top').textContent }));
+          if (!d0.boss || !d0.hop || !d0.rv || !/race Bramble/.test(d0.sub)) bad.push(at + 'rival run: ' + JSON.stringify(d0));
+          for (const o of await K.look()) bad.push(at + 'drive: ' + o);
+          const hb = await K.box('#hchop');
+          await K.down(hb.x, hb.y);
+          await pg.waitForTimeout(120);
+          const hg = await pg.evaluate(() => ({ hops: HC.hops, gas: HC.gas }));
+          await K.up();
+          if (hg.hops !== 1 || hg.gas) bad.push(at + 'a touch on Hop: ' + JSON.stringify(hg));
+          await K.shot('hill-race-' + w);
+          const gb = await K.box('#pg');
+          await K.down(gb.x, gb.y);
+          const t0 = Date.now();
+          let res = '';
+          while (Date.now() - t0 < 90000) { await pg.waitForTimeout(500); res = await pg.evaluate(() => (!HC ? 'gone' : HC.over ? 'over' : 'drive')); if (res !== 'drive') break; }
+          await K.up();
+          await pg.waitForSelector('.gh-end', { timeout: 15000 });
+          await pg.waitForTimeout(600);
+          const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: garageS().bs.meadow, b: garageS().bolts,
+            pay: HC_BOSS_PAY[0] }));
+          if (!/You beat Bramble!/.test(e.t) || !/A crown for Green Meadow/.test(e.txt) || e.rec.w !== 1 || !(e.b >= 10 + e.pay)) bad.push(at + 'the end of the rival run: ' + JSON.stringify(e).slice(0, 300));
+          for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+          await K.shot('hill-won-' + w);
+          notes.push(w + 'x' + h + ': Bramble beaten in ' + Math.round((Date.now() - t0) / 1000) + ' s of held Gas, ' + e.b + ' bolts');
+          await K.touch('.gh-end #hchome');
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => garage());
+          await pg.waitForSelector('.hc-menu #hcboss', { timeout: 8000 });
+          if (!/You won/.test(await pg.evaluate(() => document.querySelector('#hcboss').textContent))) bad.push(at + 'the menu card should show the win');
+          if (w == 1024) {
+            const go = async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hcStart(0, null, null, true); }); await pg.waitForTimeout(700); const b = await K.box('#pg'); await K.down(b.x, b.y); };
+            await go();
+            const f = await K.frames(async () => { await K.up(); await go(); });
+            await K.up();
+            const drawn = await pg.evaluate(() => !!(HC && HC.boss));
+            if (f.med > 34 || !drawn) bad.push(at + 'frame interval in a rival run at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms)');
+            notes.push(`6x throttle, rival run: median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            await pg.evaluate(() => { if (HC) hcEnd('quit'); });
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-HILL Hill Climb move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-HILL: Hill Climb by real touch at 380x780 and 1024x600: the Hop card once, Bramble\'s rival run screen, Back, the drive with the Hop ' +
+        'button (one hop, never Gas) and the rival on the bar, Bramble beaten by held Gas, the crown and bolts saved, the menu shows the win; 48 px, no sideways ' +
+        'scroll; ' + notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-RALLY (G-MOVES, src/js/63-game-race.js) at 380x780 and 1024x600, real touch, Easy, three races raced and the Sprout Cup raced
+    // to the end: the Drift card shows once; the Sprout Cup champion card -> Fern's screen -> Race Fern! -> one champion beside the car,
+    // the Drift button (48 px) held through the race (12x faster, a test hook) slides round the bends and zooms -> the end card (first:
+    // "You beat Fern!" and a crown; else "Fern won this time", one more race not won), the record and sparkles saved. At 1024x600 the
+    // frame time of a champion race at 6x CPU throttle (median at most 34 ms). Screenshots: tools/out/games5/rally-*.
+    if (seg('G-MV-RALLY')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-RALLY ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .rl-menu button, .gh-boss button, .gh-end button, .gh-mvb button, .rl-btn');
+        let stage = 'start';
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false;
+            S.rally = { races: 3, spk: 100, mode: 'easy', cups: { sprout: { best: 4, runs: 1 } }, bs: { sprout: { n: 6, w: 0 } } };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#grally', { timeout: 15000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#grally');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Drift/.test(mv) || !/bend/.test(mv)) bad.push(at + 'move card: ' + mv);
+          for (const o of await K.look()) bad.push(at + 'move card: ' + o);
+          await K.shot('rally-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => S.rally.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          const m = await pg.evaluate(() => ({ n: document.querySelectorAll('[data-champ]').length, open: [...document.querySelectorAll('[data-champ][data-ok="1"]')].map(b => b.dataset.champ).join(),
+            cups: document.querySelectorAll('.rl-cup').length }));
+          if (m.n !== 5 || m.open !== '0' || m.cups !== 10) bad.push(at + 'champion cards ' + JSON.stringify(m));
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          stage = 'champion card';
+          await K.touch('[data-champ="0"]');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Fern/.test(bs) || !/champion/.test(bs) || !/slower each time/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('rally-boss-' + w);
+          const spk0 = await pg.evaluate(() => S.rally.spk);
+          stage = 'race';
+          await K.touch('#gbgo');
+          await pg.waitForSelector('#rlcv #rldr, .rl #rldr', { timeout: 8000 });
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
+          const r0 = await pg.evaluate(() => ({ cars: RL.st.cars.length, who: RL.st.cars[0] && RL.st.cars[0].rv.name, sub: document.querySelector('.gh-top').textContent }));
+          if (r0.cars !== 1 || r0.who !== 'Fern' || !/Champion race with Fern/.test(r0.sub)) bad.push(at + 'champion race ' + JSON.stringify(r0));
+          for (const o of await K.look()) bad.push(at + 'race: ' + o);
+          await K.shot('rally-race-' + w);
+          const db = await K.box('#rldr');
+          await K.down(db.x, db.y);
+          await pg.waitForTimeout(200);
+          if (!await pg.evaluate(() => RL.on && RL.on.has('dr') && $('#rldr').classList.contains('on'))) bad.push(at + 'the Drift touch is not held');
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 60000 });
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          stage = 'end card';
+          await K.up();
+          await pg.waitForTimeout(500);
+          const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.rally.bs.sprout, spk: S.rally.spk, races: S.rally.races }));
+          const won = /You beat Fern!/.test(e.t);
+          if (!(won ? e.rec.w === 1 && /crown/.test(e.txt) && e.spk >= spk0 + 80 : /Fern won this time/.test(e.t) && e.rec.n === 7) || e.races !== 4 || !/drift zoom/.test(e.txt))
+            bad.push(at + 'the end of the champion race: ' + JSON.stringify(e).slice(0, 300));
+          for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+          await K.shot('rally-end-' + w);
+          notes.push(w + 'x' + h + ': ' + e.t + ' (' + (e.txt.match(/\d+ drift zooms?/) || ['no drift'])[0] + ')');
+          await K.touch('.gh-end #rlmenu');
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          if (w == 1024) {
+            const go = async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); rlRace('meadow-1', { champ: 0 }); }); await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 }); };
+            await go();
+            const f = await K.frames(go);
+            if (f.med > 34) bad.push(at + 'frame interval in a champion race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms)');
+            notes.push(`6x throttle, champion race: median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            await pg.evaluate(() => { if (RL) rlQuit(); });
+          }
+        } catch (x) {
+          bad.push(at + 'taps (' + stage + '): ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        await pg.evaluate(() => { if (typeof RL_DEV != 'undefined') RL_DEV.fast = 1; }).catch(() => {});
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-RALLY Star Rally move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-RALLY: Star Rally by real touch at 380x780 and 1024x600: the Drift card once, five champion cards (one open), Fern\'s screen, the ' +
+        'champion race one to one with Drift held through the bends, the end card and the record saved; 48 px, no sideways scroll; ' + notes.join('; ') +
+        '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-SNACK (G-MOVES, src/js/65-game-snack.js) at 380x780 and 1024x600, real touch, two days played and 2 stars at Sunny Park: the
+    // Star serve card shows once; the chef's card -> Chef Fern's screen -> the taste test (Calm, five orders, the chef's hat); at 380x780
+    // played to the end by touch: two plates wrong first (try again), then right; three right plates fill the Star meter, its button
+    // (48 px) arms it, the next right plate is a star serve; the end card ("You passed the taste test!", a crown, coins) and the record.
+    // At 1024x600 the test is left from the corner house: one test not won, nothing lost. Screenshots: tools/out/games5/snack-*.
+    if (seg('G-MV-SNACK')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-SNACK ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .sn-menu button, .gh-boss button, .gh-end button, .gh-mvb button, .sn-counter button, .sn-tab, .sn-ing');
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false;
+            S.snack = { days: 2, coins: 50, stars: { park: 2 }, mode: 'calm', place: 'park', tw: today() };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#gsnack', { timeout: 8000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#gsnack');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Star serve/.test(mv)) bad.push(at + 'move card: ' + mv);
+          await K.shot('snack-move-' + w);
+          await K.touch('#gmvok');
+          await pg.evaluate(() => { SN_DEV.fast = 3; }); // the day's clock 3x faster (test hook, as in G-04a)
+          if (await pg.evaluate(() => S.snack.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          await K.touch('#snchef');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Chef Fern/.test(bs) || !/right the first time/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('snack-boss-' + w);
+          await K.touch('#gbgo');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.waitForTimeout(600);
+          const d0 = await pg.evaluate(() => ({ how: SN.st.how, n: SN.st.n, mode: SN.st.mode, star: !!document.querySelector('#snstar'), sub: document.querySelector('.gh-top').textContent }));
+          if (d0.how !== 'chef' || d0.n !== 5 || d0.mode !== 'calm' || !d0.star || !/Chef Fern's taste test/.test(d0.sub)) bad.push(at + 'the taste test ' + JSON.stringify(d0));
+          if (w == 1024) {
+            for (const o of await K.look()) bad.push(at + 'day: ' + o);
+            await K.touch('#gpause');
+            await pg.waitForSelector('#gquit', { timeout: 5000 });
+            await K.touch('#gquit'); // Go Home? -> the tick runs the game's quit: the test counts as not won
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+            const q = await pg.evaluate(() => S.snack.bs.park);
+            if (!q || q.n !== 1 || q.w !== 0) bad.push(at + 'leaving the test: ' + JSON.stringify(q));
+            notes.push('1024x600: left the test, one test not won, nothing lost');
+          } else {
+            let plates = 0, wrong = 0, armed = false, starTxt = '';
+            for (let guard = 0; guard < 12; guard++) {
+              const c = await pg.waitForFunction(() => {
+                if (document.querySelector('.gh-end')) return { end: true };
+                const st = SN && SN.st, c = st && st.at.find(x => x.state == 'wait');
+                if (!c || st.plate.length || !document.querySelector('.sn-cu .sn-bub .sn-oi')) return null;
+                return { order: c.order, hat: !!document.querySelector('.sn-hat.chef'), star: st.star, armed: st.armed };
+              }, null, { timeout: 20000 }).then(x => x.jsonValue());
+              if (c.end) break;
+              if (!c.hat) bad.push(at + 'the chef has no hat');
+              const put = async id => {
+                const s = await pg.evaluate(i => SN_ING[i][1], id);
+                if (await pg.evaluate(s => SN.tab !== s, s)) await K.touch(`.sn-tab[data-st="${s}"]`);
+                await K.touch(`.sn-ing[data-ing="${id}"]`);
+              };
+              if (wrong < 1 && plates >= 4) {
+                // a wrong plate first: the chef asks again, nothing taken away; Undo, then the right plate
+                const odd = await pg.evaluate(o => SN.stations.map(s => s[0]).flatMap(k => snAvail(SN.r.own, SN.pl.id, 'calm', 'chef').filter(i => SN_ING[i][1] == k)).find(i => !o.includes(i)), c.order);
+                await put(odd);
+                await K.touch('#snserve');
+                const r1 = await pg.evaluate(() => ({ served: SN.st.served, star: SN.st.star }));
+                if (r1.served !== plates || r1.star !== c.star) bad.push(at + 'a wrong plate changed ' + JSON.stringify(r1));
+                await K.touch('#snundo');
+                wrong++;
+              }
+              if (c.star >= 3 && !c.armed && !armed) {
+                const sb = await K.box('#snstar');
+                if (Math.min(sb.w, sb.h) < 47.5) bad.push(at + 'Star serve button ' + Math.round(sb.w) + 'x' + Math.round(sb.h));
+                await K.touch('#snstar');
+                armed = await pg.evaluate(() => SN.st.armed && $('#snstar').getAttribute('aria-pressed') === 'true');
+                if (!armed) bad.push(at + 'Star serve did not arm');
+                await K.shot('snack-star-' + w);
+              }
+              for (const id of c.order) await put(id);
+              await K.touch('#snserve');
+              plates++;
+              if (armed && !starTxt) { starTxt = await pg.evaluate(() => $('#snmsg').textContent); if (!/Star serve!/.test(starTxt)) bad.push(at + 'no star serve: ' + starTxt); }
+            }
+            if (!starTxt) bad.push(at + 'no star serve after three right plates');
+            await pg.waitForSelector('.gh-end #snmenu', { timeout: 20000 });
+            await pg.waitForTimeout(600);
+            const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.snack.bs.park, coins: S.snack.coins, days: S.snack.days }));
+            if (!/You passed the taste test!/.test(e.t) || !/A crown for Sunny Park/.test(e.txt) || e.rec.w !== 1 || e.days !== 2 || !(e.coins > 50 + 20)) bad.push(at + 'the end of the test ' + JSON.stringify(e).slice(0, 300));
+            for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+            await K.shot('snack-won-' + w);
+            notes.push(`380x780: five plates by touch (${wrong} wrong first), ${starTxt ? 'a star serve' : 'no star serve'}, ${e.coins} coins`);
+            await K.touch('.gh-end #snmenu');
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        await pg.evaluate(() => { if (typeof SN_DEV != 'undefined') SN_DEV.fast = 1; }).catch(() => {});
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-SNACK Snack Stand move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-SNACK: Snack Stand by real touch at 380x780 and 1024x600: the Star serve card once, Chef Fern\'s screen, the taste test in Calm with ' +
+        'the chef\'s hat, wrong plates asked again, the Star meter armed by its button and a star serve, the test passed (crown, coins, record), the test left ' +
+        'counts as not won; 48 px, no sideways scroll; ' + notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-HOP (G-MOVES, src/js/67-game-skyhop.js) at 380x780 and 1024x600, real touch, one-touch, the first world finished: the Dash card
+    // shows once; the world's sky race card -> Breezy's screen -> Race Breezy! -> the course with the Dash button (48 px): a touch in
+    // the air dashes once; at 380x780 the course is played to the flag by real touches (the G-04b helper looks ahead; 2x faster) before
+    // Breezy (after races not won, Breezy is slow) -> "You beat Breezy!", stars to spend, the record; at 1024x600 the frame time of a
+    // race with the bird on screen at 6x CPU throttle (median at most 34 ms), then Go Home counts a race not won. Shots: games5/hop-*.
+    if (seg('G-MV-HOP')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-HOP ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .hp-menu button, .gh-boss button, .gh-end button, .gh-mvb button, .hp-btn');
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; S.grade = 1; S.voice = false; save(); home(); });
+          await K.touch('#groom');
+          await pg.waitForSelector('#ghop', { timeout: 15000 });
+          await pg.evaluate(() => { // the first world finished (the games' part is in now)
+            const best = {}; for (const c of HOP_COURSES.slice(0, 6)) best[c.id] = 60000;
+            S.hop = { mode: 'one', best, runs: 6, world: 0, bs: { 0: { n: 8, w: 0 } } };
+            save();
+          });
+          await pg.waitForTimeout(400);
+          await K.touch('#ghop');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Dash/.test(mv) || !/air/.test(mv)) bad.push(at + 'move card: ' + mv);
+          await K.shot('hop-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => S.hop.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          await pg.evaluate(() => hopMenu(0));
+          await pg.waitForSelector('#hpboss', { timeout: 8000 });
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          await K.touch('#hpboss');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Breezy/.test(bs) || !/before Breezy/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('hop-boss-' + w);
+          await K.touch('#gbgo');
+          await pg.waitForSelector('.hpg #hpd', { timeout: 8000 });
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait, null, { timeout: 10000 });
+          const r0 = await pg.evaluate(() => ({ boss: !!HP.st.boss, dash: HP.st.dash, sub: document.querySelector('.gh-top').textContent, gh: !!HP.gh }));
+          if (!r0.boss || !r0.dash || r0.gh || !/Race Breezy/.test(r0.sub)) bad.push(at + 'the race ' + JSON.stringify(r0));
+          for (const o of await K.look()) bad.push(at + 'race: ' + o);
+          // a hop (a touch on the course), then a dash in the air (a touch on Dash): once, and the pet shoots ahead
+          await K.press(w * .45, h * .45, 40);
+          await pg.waitForFunction(() => HP && !HP.st.p.gr, null, { timeout: 3000 });
+          const x0 = await pg.evaluate(() => HP.st.p.x);
+          await K.touch('#hpd', 40);
+          const dx = await pg.evaluate(x => ({ n: HP.st.dashes, dx: HP.st.p.x - x }), x0);
+          if (dx.n !== 1) bad.push(at + 'a touch on Dash in the air: ' + JSON.stringify(dx));
+          await K.shot('hop-race-' + w);
+          if (w == 380) {
+            await pg.evaluate(() => {
+              HOP_DEV.fast = 2;
+              window.__hopAdv = () => {
+                if (!HP || !HP.ready) return 'wait';
+                const st = HP.st;
+                if (st.done) return 'done';
+                if (st.wait == 'offer') return 'offer';
+                const badS = s => s.falls > st.falls || s.wait == 'back' || s.bumps > st.bumps;
+                const run = (hold, n) => {
+                  const s = hopClone(st);
+                  if (!hold) {
+                    for (let i = 0; i < n; i++) { hopStep(s, {}); if (badS(s)) return false; if (s.done) return true; }
+                    return s.p.x > st.p.x + 1 || s.p.on >= 1000 || !!st.wait;
+                  }
+                  let air = !s.p.gr;
+                  for (let i = 0; i < n; i++) {
+                    hopStep(s, { jump: i < hold });
+                    if (badS(s)) return false;
+                    if (s.done) return true;
+                    if (!s.p.gr) air = true;
+                    else if (air && i > hold) { for (let k = 0; k < 24; k++) { hopStep(s, {}); if (badS(s)) return false; } return true; }
+                  }
+                  return true;
+                };
+                if (run(0, 48)) return 'no';
+                if (run(3, 150)) return 'tap';
+                if (run(36, 150)) return 'hold';
+                return 'no';
+              };
+            });
+            const t0 = Date.now();
+            for (;;) {
+              const d = await pg.evaluate(() => window.__hopAdv());
+              if (d == 'done') break;
+              if (d == 'offer') { await pg.waitForSelector('#hpoffer:not([hidden]) #hpyes', { timeout: 3000 }); await K.touch('#hpyes'); }
+              else if (d == 'tap' || d == 'hold') await K.press(w * .45, h * .4, d == 'tap' ? 40 : 300);
+              else await pg.waitForTimeout(10);
+              if (Date.now() - t0 > 120000) { bad.push(at + 'the flag not reached in 120 s'); break; }
+            }
+            await pg.waitForSelector('.gh-end #hpmenu', { timeout: 15000 });
+            await pg.evaluate(() => { HOP_DEV.fast = 1; });
+            await pg.waitForTimeout(600);
+            const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.hop.bs['0'], bonus: S.hop.bonus,
+              ghost: !!(S.hop.ghost || {})[HOP_COURSES[5].id], best: S.hop.best[HOP_COURSES[5].id] }));
+            if (!/You beat Breezy!/.test(e.t) || !/A crown for Cloud Meadow/.test(e.txt) || e.rec.w !== 1 || e.bonus !== 3 || e.ghost || e.best !== 60000) bad.push(at + 'the end of the race ' + JSON.stringify(e).slice(0, 300));
+            for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+            await K.shot('hop-won-' + w);
+            notes.push('380x780: Breezy beaten by real touches in ' + Math.round((Date.now() - t0) / 1000) + ' s');
+            await K.touch('.gh-end #hpmenu');
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          } else {
+            const f = await K.frames(async () => { await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hopPlay(HOP_COURSES[5].id, null, true); }); await pg.waitForTimeout(1500); });
+            if (f.med > 34) bad.push(at + 'frame interval in a sky race at 6x throttle: ' + JSON.stringify(f) + ' (limit 34 ms)');
+            notes.push(`6x throttle, sky race: median frame ${f.med.toFixed(1)} ms, 90th ${f.p90.toFixed(1)} ms (${f.tries} pass${f.tries > 1 ? 'es' : ''}, load ${f.load} on ${f.cores})`);
+            const n0 = await pg.evaluate(() => S.hop.bs['0'].n);
+            await K.touch('#gpause');
+            await pg.waitForSelector('#gquit', { timeout: 5000 });
+            await K.touch('#gquit');
+            await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+            if (await pg.evaluate(() => S.hop.bs['0'].n) !== n0 + 1) bad.push(at + 'leaving a race should count one race not won');
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        await pg.evaluate(() => { if (typeof HOP_DEV != 'undefined') HOP_DEV.fast = 1; }).catch(() => {});
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-HOP Sky Hop move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-HOP: Sky Hop by real touch at 380x780 and 1024x600: the Dash card once, Breezy\'s screen, the sky race with the Dash button (one dash in ' +
+        'the air), Breezy beaten to the flag by real touches (no ghost or record written), leaving counts a race not won; 48 px, no sideways scroll; ' +
+        notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
+    }
+
+    // G-MV-BB (G-MOVES, src/js/60-blocks.js) at 380x780 and 1024x600, real touch, the 2D look, Meadow Village's six builds done: the Paint
+    // card shows once; Paint (48 px) in a world turns a grass top into Brick by one touch, Undo puts it back; Bea's card -> Bea's screen
+    // -> Start building -> her side is built, the child's side is see-through (one try not won before) -> built by touches -> "Just the
+    // same! You did it!" with a crown, coins and the record. Screenshots: tools/out/games5/blocks-*.
+    if (seg('G-MV-BB')) {
+      const bad = [], notes = [], shots = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-MV-BB ' + w + 'x' + h + ' ';
+        const K = await g5Kit(pg, '.gh-top button, .bb-menu .bb-boss, .gh-boss button, .gh-end button, .gh-mvb button, .bb-tb');
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1500, day: today(), used: 0 }; S.voice = false;
+            S.bb = { worlds: [], cur: 0, gl: 0, bp: { tower: 2, stairs: 2, wall: 2, gate: 2, tree: 2, bridge: 2 }, bs: { meadow: { n: 1, w: 0 } } };
+            save(); home();
+          });
+          await K.touch('#groom');
+          await pg.waitForSelector('#gbb', { timeout: 8000 });
+          await pg.waitForTimeout(400);
+          await K.touch('#gbb');
+          await pg.waitForSelector('.gh-mvb #gmvok', { timeout: 8000 });
+          const mv = await pg.evaluate(() => document.querySelector('.gh-mvb').textContent);
+          if (!/Paint/.test(mv)) bad.push(at + 'move card: ' + mv);
+          await K.shot('blocks-move-' + w);
+          await K.touch('#gmvok');
+          if (await pg.evaluate(() => S.bb.mv) !== 1) bad.push(at + 'Got it! did not save the card');
+          for (const o of await K.look()) bad.push(at + 'menu: ' + o);
+          // Paint in a world
+          await K.touch('.bb-menu [data-w="0"]');
+          await pg.waitForSelector('#bbc', { timeout: 8000 });
+          await pg.waitForTimeout(900);
+          await K.touch('#bbm-paint');
+          await K.touch('[data-b="8"]');
+          const cell = await pg.evaluate(() => {
+            const r = $('#bbc').getBoundingClientRect(), d = BB.dpr;
+            for (let j = 4; j < 12; j++) for (let i = 4; i < 12; i++) {
+              const k = BB.topZ(i, j) - 1;
+              if (k < 0 || BB.get(i, j, k) != 1) continue;
+              for (const [u, v] of [[.5, .5], [.3, .3], [.7, .7]]) {
+                const p = BB.proj(i + u, j + v, k + 1), hh = BB.hit(p[0], p[1]);
+                if (hh && hh.i == i && hh.j == j && hh.k == k && hh.f == 'top' && p[0] > 0 && p[1] > 0 && p[0] < r.width * d && p[1] < r.height * d) return { i, j, k, xy: [r.left + p[0] / d, r.top + p[1] / d] };
+              }
+            }
+            return null;
+          });
+          if (!cell) bad.push(at + 'no grass top to paint on the screen');
+          else {
+            await K.press(cell.xy[0], cell.xy[1], 40);
+            await pg.waitForTimeout(400);
+            const p1 = await pg.evaluate(c => ({ v: BB.get(c.i, c.j, c.k), tool: BB.tool }), cell);
+            if (p1.v !== 8 || p1.tool !== 'paint') bad.push(at + 'a Paint touch: ' + JSON.stringify(p1));
+            for (const o of await K.look()) bad.push(at + 'world: ' + o);
+            await K.shot('blocks-paint-' + w);
+            await K.touch('#bbundo');
+            if (await pg.evaluate(c => BB.get(c.i, c.j, c.k), cell) !== 1) bad.push(at + 'Undo after Paint');
+          }
+          await pg.evaluate(() => { bbSave(); bbMenu(); });
+          await pg.waitForSelector('[data-boss="0"]', { timeout: 8000 });
+          await K.touch('[data-boss="0"]');
+          await pg.waitForSelector('#ghboss #gbgo', { timeout: 8000 });
+          const bs = await pg.evaluate(() => document.querySelector('#ghboss').textContent);
+          if (!/Bea the Beaver/.test(bs) || !/both sides the same/.test(bs)) bad.push(at + 'boss screen: ' + bs.slice(0, 200));
+          for (const o of await K.look()) bad.push(at + 'boss screen: ' + o);
+          await K.shot('blocks-boss-' + w);
+          await K.touch('#gbgo');
+          await pg.waitForSelector('#bbc', { timeout: 8000 });
+          await pg.waitForTimeout(900);
+          const b0 = await pg.evaluate(() => ({ boss: BB.bp && BB.bp.boss, mode: BB.mode, prog: BB.prog(), size: BB.goal.size, task: $('#bbtaskt').textContent }));
+          if (b0.boss !== 0 || b0.mode !== 'copy' || !(b0.prog >= 9) || !/other side/.test(b0.task)) bad.push(at + 'Bea\'s build ' + JSON.stringify(b0));
+          await K.shot('blocks-mirror-' + w);
+          let taps = 0;
+          const trail = [];
+          for (; taps < 30; taps++) {
+            // a see-through block of the layer that a touch picks (on the canvas, not under the task or a button); else turn the view
+            const t = await pg.evaluate(() => {
+              if (!BB || BB.done()) return null;
+              const cv = $('#bbc'), r = cv.getBoundingClientRect(), d = BB.dpr;
+              for (const n of BB.todo()) {
+                const i = n % BW, j = Math.floor(n / BW) % BD, k = Math.floor(n / (BW * BD));
+                for (const [u, v, z] of [[.5, .5, .5], [.5, .5, 1], [.3, .3, 1], [.7, .7, 1], [.3, .7, .9], [.7, .3, .9]]) {
+                  const p = BB.proj(i + u, j + v, k + z), g = BB.hit(p[0], p[1], q => q.ghost), x = r.left + p[0] / d, y = r.top + p[1] / d;
+                  if (g && bbI(g.i, g.j, g.k) == n && document.elementFromPoint(x, y) === cv) return { v: BB.goal.get(n), sel: BB.sel, xy: [x, y] };
+                }
+              }
+              return { turn: 1 };
+            });
+            if (!t) break;
+            if (t.turn) { await K.touch('#bbrr'); await pg.waitForTimeout(700); continue; }
+            if (t.v !== t.sel) await K.touch(`[data-b="${t.v}"]`);
+            await K.press(t.xy[0], t.xy[1], 40);
+            await pg.waitForTimeout(250);
+            trail.push(await pg.evaluate(() => BB ? BB.prog() + '/' + BB.miss : '-'));
+          }
+          await pg.waitForSelector('.gh-end #bbls', { timeout: 10000 }).catch(() => { throw new Error('Bea\'s build not finished: ' + trail.join(' ')); });
+          await pg.waitForTimeout(600);
+          const e = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, rec: S.bb.bs.meadow, coins: S.coins }));
+          if (!/Just the same! You did it!/.test(e.t) || !/A crown for Meadow Village/.test(e.txt) || e.rec.w !== 1) bad.push(at + 'the end of Bea\'s build ' + JSON.stringify(e).slice(0, 300));
+          for (const o of await K.look()) bad.push(at + 'end card: ' + o);
+          await K.shot('blocks-won-' + w);
+          notes.push(w + 'x' + h + ': Bea\'s Tower Gate in ' + taps + ' touches');
+          await K.touch('.gh-end #bbls');
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n').slice(0, 4).join(' | ').slice(0, 400));
+        }
+        shots.push(...K.shots);
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-MV-BB Block Builder move and boss:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-MV-BB: Block Builder by real touch at 380x780 and 1024x600 (2D look): the Paint card once, a grass top painted Brick by one touch and ' +
+        'put back by Undo, Bea\'s screen, her side built and the other side see-through, built by touches, the crown and the record; 48 px, no ' +
+        'sideways scroll; ' + notes.join('; ') + '; shots ' + shots.length + ' in tools/out/games5');
     }
 
     // CHECK-IN (src/js/51b-checkin.js): mastery check-ins and stop badges, at 360x740 and 800x1280 on the midway save. A passed math stop

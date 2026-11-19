@@ -279,6 +279,11 @@ open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})`; 
 `src/css/NN-game-<name>.css`: since P4-16 the games rule also moves `NN-game-*.css` into `games.<VER>.js` (keep it scoped to the game's
 own classes). Do not change `gameRoom()`; it only loads the games parts and calls `GH.hub()` (`partsThen(LAZY_PARTS, () => GH.hub())`, P6-02).
 
+G-MOVES (v188): a game's new move and its boss use the shared pieces in `59-game-hub.js`: `GH.moveNew({name, icon, line, done})` puts the
+"New move" card at the top of the game's menu once (the game saves that it was seen in `done`); `GH.boss({...})` is the boss's screen (the
+rival's face from `GH.face`, its line, the goal, the prize, Back and the start button); `GH.bossRec` keeps the save's `{id: {n, w}}`
+records (tries not won, wins). Each game keeps its own rules: what opens the move and the boss, how the boss gets easier each try, the pay.
+
 Adding another part file (only if a part passes its budget, or a big new on-demand area comes): one line in `PARTS` (build.py), one line
 in `appFiles()` (90-app.js, same order), and the expected stems in the A11b check and smoke's `// A11` block. sw.js and the shell
 follow from build.py. To load it on demand, add its stem to `LAZY` (build.py) and `LAZY_PARTS` (90-app.js), or pass its stems to

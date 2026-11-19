@@ -195,6 +195,9 @@ function snS() {
   }
   if (r.kind !== 'mix' && !(SN_KINDS.some(x => x.id === r.kind) && snKindOpen(r.kind, r))) r.kind = 'mix';
   r.tw = typeof r.tw == 'string' && r.tw.length < 12 ? r.tw : '';
+  // G-MOVES fields, by id with defaults: mv (1 once the Star serve card was seen), bs (the chef's taste tests: {placeId: {n, w}})
+  if (r.mv !== 1) delete r.mv;
+  r.bs = GH.bossRec(r.bs, k => SN_PLACES.some(p => p.id === k));
   return r;
 }
 // the hub and the tests read without creating S.snack
@@ -415,6 +418,35 @@ function snGroup(rnd, avail, size, how) {
 }
 // a day: 8-10 customers when Calm, 10-12 when Busy; the animals of the place, never the same one twice in a row.
 // G-04a2: o.kind (an SN_KINDS id) shapes the orders; o.special picks the special of the day (else the seed does)
+/* ---- G-MOVES (v188): a new move, Star serve, and a boss per place, the chef's taste test ----
+   Star serve (opens after SN_STAR_DAYS days): every plate right the first time puts a star in the meter (up to SN_STAR_NEED; a
+   wrong plate takes nothing away). With the meter full, the Star serve button lights; tap it and the next right plate pays its
+   coins twice plus SN_STAR_PAY. The move card shows once on the menu (S.snack.mv = 1 once seen).
+   Chef's taste test (opens with SN_CHEF_STARS stars at that place): a friendly chef in a hat visits five times in a row (Calm, one
+   at a time, no clock) with orders of SN_CHEF_SIZE things. A wrong plate is only "try again", as always. Win: SN_CHEF_WIN of the
+   five right the first time. Each test not won makes the orders shorter (one thing less for every two tries, at least 1 or 2):
+   snChefSizes. The orders come from the place and the try (seeded), so a test is the same each time it is played the same way.
+   A win pays coins (more the first time) and a crown on the place. S.snack.bs {placeId: {n: tests not won, w: wins}}. */
+const SN_STAR_DAYS = 2, SN_STAR_NEED = 3, SN_STAR_PAY = 3;
+const snStarOpen = (r = snPeek()) => snNum(r.days, 0, 1e7) >= SN_STAR_DAYS;
+// the chef of each place: [who (a customer animal: its drawing and name), face (GH.face)]
+const SN_CHEF = { park: ['fox', 'fox'], beach: ['frog', 'frog'], snow: ['owl', 'owl'], fair: ['rabbit', 'rabbit'], moon: ['cat', 'cat'],
+  farm: ['bear', 'bear'], castle: ['owl', 'owl'], sea: ['frog', 'frog'] };
+const SN_CHEF_STARS = 2, SN_CHEF_SIZE = [2, 3, 3, 4, 4], SN_CHEF_WIN = 3, SN_CHEF_PAY = [20, 5];
+const snChefName = pid => 'Chef ' + SN_WHO[(SN_CHEF[pid] || SN_CHEF.park)[0]];
+const snChefOpen = (pid, r = snPeek()) => snNum(snObj(r.stars)[pid], 0, 3) >= SN_CHEF_STARS;
+const snChefRec = (pid, r = snPeek()) => snObj(snObj(r.bs)[pid]);
+const snChefSizes = n => SN_CHEF_SIZE.map((k, i) => Math.max(i < 2 ? 1 : 2, k - Math.floor(Math.max(0, n | 0) / 2)));
+const snChefSeed = (pid, n) => (snHash('chef/' + pid + '/' + (n | 0)) % 2147483646) + 1;
+// k things for the chef from the ice cream, drinks and treats (no sandwich parts: a filling needs its bread), from as many of those
+// stations as there are
+function snChefOrder(rnd, plain, k) {
+  const by = {};
+  for (const id of plain) if (['ice', 'juice', 'treat'].includes(SN_ING[id][1])) (by[SN_ING[id][1]] = by[SN_ING[id][1]] || []).push(id);
+  const st = Object.keys(by), o = [];
+  for (let i = 0; i < k; i++) o.push(snPick(rnd, by[st[(i + Math.floor(rnd() * st.length)) % st.length]]));
+  return o;
+}
 function snDayList(o) {
   const rnd = snRng(o.seed), pl = SN_PLACES.find(p => p.id === o.place) || SN_PLACES[0], kind = o.kind || 'plain', how = snHow(kind, pl.id);
   const busy = o.mode == 'busy', avail = snAvail(o.own, pl.id, o.mode, kind);
@@ -422,6 +454,13 @@ function snDayList(o) {
   if (how == 'taste') n = 6;
   if (how == 'rush') n = 14;
   if (how == 'party' || how == 'stars' || how == 'feast') n = busy ? 8 : 6;
+  if (how == 'chef') {
+    const ch = SN_CHEF[pl.id] || SN_CHEF.park, plain0 = avail.filter(x => x != 'icecube');
+    return snChefSizes(o.tries).map((k, i) => {
+      const order = snChefOrder(rnd, plain0, k), price = snPrice(order);
+      return { i, who: ch[0], name: snChefName(pl.id), chef: 1, order, price, paid: snPaid(price), pat: 60 };
+    });
+  }
   const dishes = snDishesFor(avail, pl.id, o.mode, false), recipes = snDishesFor(avail, pl.id, o.mode, true);
   let special = null;
   if (how == 'special') {
@@ -498,6 +537,7 @@ const SN_KGOAL = {
   feast: ['party', 'Get the royal feast right the first time', 1], parade: ['party', 'Get 2 band orders right the first time', 2],
   recipe: ['steps', 'Make 3 recipes, every step in order', 3], cocoa: ['steps', 'Make 3 cocoas with cream, step by step', 3],
   taste: ['taste', 'Let the customers taste 4 different things', 4], rush: ['hearts', 'Serve 8 customers while their heart is still full of love', 8],
+  chef: ['first', 'Get 3 plates right the first time', SN_CHEF_WIN],
 };
 function snGoal(rnd, mode, till, own, how, list) {
   const k = SN_KGOAL[how];
@@ -523,7 +563,7 @@ const snStarsFor = (right, n) => (n && right / n >= .9 ? 3 : n && right / n >= .
 const SN_COOK = [3, 7]; // a pancake is golden from 3 s to 7 s on the grill; later it is toasty (never burnt)
 function snNew(o) {
   const mode = o.mode == 'busy' ? 'busy' : 'calm', seed = (o.seed >>> 0) || 1, place = o.place || 'park', kind = o.kind || 'plain';
-  const how = snHow(kind, place), list = snDayList({ seed, mode, place, own: o.own || {}, kind, special: o.special });
+  const how = snHow(kind, place), list = snDayList({ seed, mode, place, own: o.own || {}, kind, special: o.special, tries: o.tries });
   // today's guest takes the place of the third customer, with a plain order of the food they love
   if (o.guest && SN_WHO[o.guest.who] && list.length > 3) {
     const avail = snAvail(o.own || {}, place, mode, kind).filter(x => !SN_EXTRA.includes(x));
@@ -542,6 +582,7 @@ function snNew(o) {
     plate: [], pq: [], pans: [null, null], served: 0, right: 0, combo: 0, best: 0, coins: 0, hearts: 0, golds: 0, changes: 0,
     goal: { id: g[0], text: g[1], need: g[2], got: 0, done: false }, pay: null, done: false, ev: [],
     special: sp ? sp.dish : '', made: {}, tasted: {}, guest: 0,
+    star: o.star ? 0 : null, armed: false, starServes: 0, // G-MOVES: Star serve (null: not open yet)
   };
 }
 const snKey = a => a.slice().sort().join(',');
@@ -676,7 +717,18 @@ function snServe(st) {
   // G-04a2: the kinds of days pay a little extra for the harder orders, and today's guest +5 (the first time a day: snDay passes
   // the guest only then)
   const extra = (c.special ? 2 : 0) + (c.req && first ? 2 : 0) + (c.group && first ? 5 : 0) + (c.steps && first ? 2 : 0) + (c.guest ? 5 : 0);
-  const pay = c.price + tip + bonus + extra;
+  // G-MOVES: Star serve. Armed, a right plate pays its coins twice plus SN_STAR_PAY and empties the meter; otherwise a plate right the
+  // first time adds a star to the meter. Nothing is taken away for a wrong plate.
+  let star = 0;
+  if (st.star != null) {
+    if (st.armed) {
+      star = c.price + SN_STAR_PAY;
+      st.armed = false;
+      st.star = 0;
+      st.starServes++;
+    } else if (first) st.star = Math.min(SN_STAR_NEED, st.star + 1);
+  }
+  const pay = c.price + tip + bonus + extra + star;
   st.coins += pay;
   st.golds += st.pq.filter(q => q == 'gold').length;
   if (first) snGoalAdd(st, 'first');
@@ -707,7 +759,13 @@ function snServe(st) {
     c.state = 'pay';
     st.pay = { c, price: c.price, paid: c.paid, change: c.paid - c.price, tries: 0 };
   }
-  return { ok: true, c, first, perfect, tip, bonus, extra, pay, pq, dish };
+  return { ok: true, c, first, perfect, tip, bonus, extra, pay, pq, dish, star };
+}
+// G-MOVES: the Star serve button: arms the next right plate when the meter is full; true when it did
+function snStarArm(st) {
+  if (st.star == null || st.armed || st.star < SN_STAR_NEED) return false;
+  st.armed = true;
+  return true;
 }
 // give change: coins is the list of coins the child put in the tray
 function snChange(st, coins) {
@@ -1231,6 +1289,7 @@ function snMenu(place) {
    ${UI.btn(`Open the ${['stand', 'cart', 'café', 'diner'][stage]}`, { kind: 'primary', size: 'lg', icon: 'play', id: 'snopen', wide: true })}
    <div class="sn-hbtns">${UI.btn('Shop', { icon: 'bag', id: 'snshop', wide: true })}${UI.btn(`Recipes ${book}/${SN_DISHES.length}`, { icon: 'sticker-book', id: 'snbook', wide: true })}</div></div></section>
   ${guest}
+  ${snChefCard(pl, r)}
   <h2 class="sn-h">What kind of day? <span class="sn-got">${opened} of ${SN_KINDS.length} open</span></h2>
   <p class="sn-kline">${esc(snKindName(kind, pl.id))}: ${esc(snKindLine(kind, pl.id))}</p>
   <div class="sn-kinds">${mix}${SN_KINDS.map(kcard).join('')}</div>
@@ -1255,6 +1314,17 @@ function snMenu(place) {
   };
   $('#snshop').onclick = () => { SFX.whoosh(); snShop(); };
   $('#snbook').onclick = () => { SFX.whoosh(); snBook(); };
+  $('#snchef').onclick = () => {
+    if (!snChefOpen(pl.id, r)) {
+      SFX.wrong();
+      fb(`Win ${SN_CHEF_STARS} stars at ${pl.name} to meet ${snChefName(pl.id)}!`, 'warn long', 2600);
+      return;
+    }
+    SFX.pop(2);
+    snChefMenu();
+  };
+  // G-MOVES: the Star serve card, once
+  if (snStarOpen(r) && !r.mv) GH.moveNew({ name: 'Star serve', icon: 'star', line: 'Get 3 plates right to fill the star. Then tap Star for double coins!', done: () => { r.mv = 1; save(); } });
   const again = () => {
     const y = $('.scroll').scrollTop;
     snMenu();
@@ -1293,6 +1363,13 @@ function snMenu(place) {
   if ($('#sntill')) $('#sntill').onchange = e => { r.till = e.target.checked; save(); };
 }
 
+// G-MOVES: the chef of the place on the menu: the chef's face, a crown once passed, a lock until the place has SN_CHEF_STARS stars
+function snChefCard(pl, r) {
+  const ok = snChefOpen(pl.id, r), rec = snChefRec(pl.id, r), ch = SN_CHEF[pl.id] || SN_CHEF.park, name = snChefName(pl.id);
+  return `<button class="sn-chef${ok ? '' : ' lock'}" id="snchef" aria-label="${esc(ok ? `${name}'s taste test${rec.w ? ', passed' : ''}` : `${name}'s taste test: locked`)}">` +
+    `<span class="sn-cface">${GH.faceSVG(ch[1], 'chef', 'r')}</span><span class="sn-ctxt"><b>${esc(name)}'s taste test</b><small>${ok ? (rec.w ? 'Passed! Play again any time.' :
+      'Make five snacks for the chef!') : `Win ${SN_CHEF_STARS} stars at ${esc(pl.name)} first.`}</small></span>${ico(!ok ? 'lock' : rec.w ? 'crown' : 'play', 32)}</button>`;
+}
 /* ---- G-04a2: the recipe book. Every named snack, drawn from its own food; one not made yet is a faded card with a lock.
    A recipe shows its steps in order. ---- */
 const snDishPic = d => `<span class="sn-dpic">${d.items.filter(i => i != 'blend').slice(0, 4).map(i => `<span>${snPic(i)}</span>`).join('')}</span>`;
@@ -1532,18 +1609,20 @@ function snGoalChip() {
   e.innerHTML = `${ico(g.done ? 'check' : 'target', 18)}<span>${esc(SN_GSHORT[g.id] || 'Goal')}</span><b>${Math.min(g.got, g.need)}/${g.need}</b>`;
 }
 
-function snDay() {
-  const r = snS(), pl = SN_PLACES.find(p => p.id === r.place), mode = r.mode, till = r.till && snTillOK();
+function snDay(o = {}) {
+  const r = snS(), pl = SN_PLACES.find(p => p.id === r.place), chef = !!o.chef && snChefOpen(pl.id, r), mode = chef ? 'calm' : r.mode;
+  const till = !chef && r.till && snTillOK(), tries = chef ? snNum(snChefRec(pl.id, r).n, 0, 999) : 0; // G-MOVES: the chef's taste test is Calm
   // G-04a2: the kind of day; the special of the day comes from the date (the same all day at a place); today's guest until served
-  const kind = snKindFor(r), day = snToday(), tw = snTwist(day);
+  const kind = chef ? 'chef' : snKindFor(r), day = snToday(), tw = snTwist(day);
   const cands = snDishesFor(snAvail(r.own, pl.id, mode, kind), pl.id, mode, false).filter(d => d.items.length >= 2);
-  const st = snNew({ seed: ((Date.now() & 0xffffff) ^ (r.days * 7919)) >>> 0 || 1, mode, place: pl.id, own: r.own, till, slots: innerWidth >= 560 ? 3 : 2,
-    kind, special: cands.length ? cands[snHash(day + pl.id) % cands.length].id : '', guest: r.tw === tw.key ? null : tw });
+  const st = snNew({ seed: chef ? snChefSeed(pl.id, tries) : ((Date.now() & 0xffffff) ^ (r.days * 7919)) >>> 0 || 1, mode, place: pl.id, own: r.own, till,
+    slots: innerWidth >= 560 ? 3 : 2, kind, special: !chef && cands.length ? cands[snHash(day + pl.id) % cands.length].id : '',
+    guest: chef || r.tw === tw.key ? null : tw, tries, star: snStarOpen(r) });
   const stations = SN_STATIONS.filter(([k]) => snAvail(r.own, pl.id, mode, kind).some(id => SN_ING[id][1] == k));
   const deco = Object.keys(SN_DECO_SPOT).filter(k => r.own[k]), stage = snStage(r);
   const cdeco = stage ? Object.keys(SN_CDECO_SCENE).filter(k => r.cafe[k]) : [];
   const spd = st.special && SN_DISHES.find(d => d.id === st.special);
-  view(`${GH.top('snack', { play: true, sub: pl.name, chips: snCoinChip(r.coins) })}
+  view(`${GH.top('snack', { play: true, sub: chef ? `${snChefName(pl.id)}'s taste test` : pl.name, chips: snCoinChip(r.coins) })}
   <div class="sn sn-${mode} sn-c-${r.ctr} sn-j${stage}" id="sn" data-kind="${st.how}">
    <div class="sn-scene" style="--gh-a:var(--sc-${pl.sky[0]});--gh-b:var(--sc-${pl.sky[1]})">
     <svg class="art sn-back" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">${SN_BACK[pl.id]()}</svg>
@@ -1562,9 +1641,10 @@ function snDay() {
     <div class="sn-line" id="snline"></div>
     <div class="sn-msg" id="snmsg" aria-live="polite"></div>
    </div>
-   <div class="sn-counter">
+   <div class="sn-counter${st.star != null ? ' has-star' : ''}">
     <button class="btn soft sn-undo" id="snundo" aria-label="Undo: take the last one off">${ico('undo')}<span>Undo</span></button>
     <div class="sn-plate" id="snplate"></div>
+    ${st.star != null ? `<button class="btn soft sn-star" id="snstar" aria-label="Star serve" aria-pressed="false">${ico('star')}<span>Star</span><span class="sn-pips" aria-hidden="true">${'<i></i>'.repeat(SN_STAR_NEED)}</span></button>` : ''}
     <button class="btn primary sn-serve" id="snserve">${ico('check')}<span>Serve</span></button>
    </div>
    <div class="sn-ctl" id="snctl">
@@ -1588,8 +1668,19 @@ function snDay() {
   snPlate();
   snGoalChip();
   // the day's first message sits at the top of the scene (over the awning and sign), never over the customers (R-03 N4)
-  snMsg(st.how == 'plain' ? (r.days ? `Today's goal: ${st.goal.text}.` : 'Look at the order, then tap the food!') :
+  snMsg(chef ? `${snChefName(pl.id)}: Make me ${st.n} snacks. Get ${SN_CHEF_WIN} right the first time!` :
+    st.how == 'plain' ? (r.days ? `Today's goal: ${st.goal.text}.` : 'Look at the order, then tap the food!') :
     `${snKindName(kind, pl.id)}! ${snKindLine(kind, pl.id)}`, 3200);
+  if (chef && S.voice) say(`${snChefName(pl.id)}: Make me ${st.n} snacks!`);
+  snStarBtn();
+  if ($('#snstar')) $('#snstar').onclick = () => {
+    const S1 = SN.st;
+    if (snStarArm(S1)) {
+      SFX.chime();
+      snMsg('Star serve! Serve the next plate right for double coins.', 2400, 'good');
+    } else snMsg(S1.armed ? 'Star serve is ready. Serve the next plate!' : `Get ${SN_STAR_NEED - S1.star} more plates right the first time to fill the star.`, 2400);
+    snStarBtn();
+  };
   snMusic(true);
   $('#snundo').onclick = () => {
     const id = snUndo(SN.st);
@@ -1728,7 +1819,7 @@ function snLine() {
     const heart = st.mode == 'busy' ? `<span class="sn-heart${c.pat > 0 ? '' : ' out'}" aria-hidden="true">${ico('heart', 20)}` +
       `<span class="sn-hbar"><i style="transform:scaleX(${(c.pat / c.patMax).toFixed(3)})"></i></span></span>` : '';
     const think = c.state == 'wait' && (st.clock - c.came < 1 || c.think > st.clock) ? '<span class="sn-think" aria-hidden="true"><i></i><i></i><i></i></span>' : '';
-    const hat = c.guest || c.group == 'feast' ? `<span class="sn-hat" aria-hidden="true">${ico('crown', 20)}</span>` : c.group == 'party' ? `<span class="sn-hat party" aria-hidden="true">${ico('party', 20)}</span>` : '';
+    const hat = c.chef ? `<span class="sn-hat chef" aria-hidden="true">${ico('hat', 20)}</span>` : c.guest || c.group == 'feast' ? `<span class="sn-hat" aria-hidden="true">${ico('crown', 20)}</span>` : c.group == 'party' ? `<span class="sn-hat party" aria-hidden="true">${ico('party', 20)}</span>` : '';
     const friends = c.group && c.friends ? c.friends.map((f, k) => `<span class="sn-fr f${k}" aria-hidden="true">${picArt(f, '100%')}</span>`).join('') : '';
     const kindCls = c.special ? ' sp' : c.steps ? ' steps' : c.group ? ' grp' : c.req ? ' req' : c.any ? ' ask' : '';
     const yum = c.any && c.state != 'wait' ? `Mmm, ${SN_ING[c.order[0]][0].toLowerCase()}!` : c.group ? 'Hooray! Thank you!' : SN_YUM[(c.i + st.seed) % SN_YUM.length];
@@ -1905,9 +1996,20 @@ function snDragEnd(e) {
   const id = snGest(SN.gest, { type: e.type == 'pointercancel' ? 'cancel' : 'up', pid: e.pointerId, t: e.timeStamp, plate: !!(r && e.clientY <= r.bottom + 8) });
   if (id) snAddFood(id);
 }
+// G-MOVES: the Star serve button: a pip per star in the meter; full: it lights; armed: pressed
+function snStarBtn() {
+  const b = $('#snstar'), st = SN && SN.st;
+  if (!b || !st || st.star == null) return;
+  b.classList.toggle('full', st.star >= SN_STAR_NEED);
+  b.classList.toggle('on', st.armed);
+  b.setAttribute('aria-pressed', st.armed ? 'true' : 'false');
+  b.setAttribute('aria-label', st.armed ? 'Star serve: ready' : st.star >= SN_STAR_NEED ? 'Star serve: tap to use' : `Star serve: ${st.star} of ${SN_STAR_NEED} stars`);
+  b.querySelectorAll('.sn-pips i').forEach((e, i) => e.classList.toggle('on', i < st.star || st.armed));
+}
 function snDoServe() {
   const st = SN.st, res = snServe(st);
   if (res.empty) return;
+  snStarBtn();
   if (!res.ok) {
     SFX.wrong();
     const i = st.at.indexOf(res.c);
@@ -1956,7 +2058,8 @@ function snDoServe() {
   const cs = $('#sncust b');
   if (cs) cs.textContent = st.served;
   let m = `+${res.pay} coins`;
-  if (res.bonus) m = `Combo ${st.combo}! +${res.pay} coins`;
+  if (res.star) m = `Star serve! +${res.pay} coins`;
+  else if (res.bonus) m = `Combo ${st.combo}! +${res.pay} coins`;
   else if (res.tip) m += ` (tip +${res.tip})`;
   snMsg(news || m, news ? 2400 : 1600, 'good');
   if (st.sel >= st.at.length || st.at[st.sel].state != 'wait') st.sel = Math.max(0, st.at.findIndex(c => c.state == 'wait'));
@@ -1969,7 +2072,7 @@ function snDoServe() {
   }
   // a sparkle over the plate for a perfect plate, a special, a group order or a new recipe
   const pp = $('#snplate');
-  if (pp && (res.perfect || res.c.special || res.c.group || news)) {
+  if (pp && (res.perfect || res.c.special || res.c.group || res.star || news)) {
     const b = pp.getBoundingClientRect();
     burst(b.left + b.width / 2, b.top + b.height * .4, 'star');
   }
@@ -2105,12 +2208,14 @@ function snTick() {
   }
 }
 function snQuit() {
+  if (SN && SN.st.how == 'chef' && !SN.st.chefRec) snChefDone(SN.st, SN.st.done && SN.st.right >= SN_CHEF_WIN); // G-MOVES: a test left counts once
   save();
   snStop();
   gtStop();
   snMenu();
 }
 function snTimeUp() {
+  if (SN && SN.st.how == 'chef' && !SN.st.chefRec) snChefDone(SN.st, SN.st.done && SN.st.right >= SN_CHEF_WIN); // G-MOVES
   save();
   snStop();
   timeUpOverlay();
@@ -2126,6 +2231,7 @@ function snClose() {
 }
 function snFinish() {
   if (!SN) return;
+  if (SN.st.how == 'chef') return snChefEnd(); // G-MOVES
   const st = SN.st, r = snS(), pl = SN.pl, newBook = SN.newBook;
   const before = SN_PLACES.filter(p => snPlaceOpen(p, r)).map(p => p.id), kBefore = SN_KINDS.filter(k => snKindOpen(k.id, r, 'busy')).map(k => k.id);
   const cafeBefore = snCafeOpen(r);
@@ -2171,6 +2277,44 @@ function snFinish() {
   if (o.querySelector('#snlearn')) o.querySelector('#snlearn').onclick = () => go(() => learnHub());
   o.querySelector('#snendshop').onclick = () => go(() => snShop());
   o.querySelector('#snmenu').onclick = () => go(() => home());
+}
+
+// G-MOVES: the chef's taste test. Its record (done once per test): a win adds a crown and pays SN_CHEF_PAY; not won makes the next test easier.
+function snChefDone(st, won) {
+  const r = snS(), rec = (r.bs[st.place] = r.bs[st.place] || { n: 0, w: 0 }), first = won && !rec.w;
+  if (won) rec.w++;
+  else rec.n = Math.min(999, rec.n + 1);
+  st.chefRec = 1;
+  const pay = won ? SN_CHEF_PAY[first ? 0 : 1] : 0;
+  r.coins += pay;
+  save();
+  return { first, pay };
+}
+function snChefMenu() {
+  const r = snS(), pl = SN_PLACES.find(p => p.id === r.place), ch = SN_CHEF[pl.id] || SN_CHEF.park, rec = snChefRec(pl.id, r);
+  GH.boss({ id: 'snack', key: `${pl.name}: taste test`, name: snChefName(pl.id), kind: ch[1], hat: 'chef', line: 'Can you make my five snacks?',
+    goal: `Get ${SN_CHEF_WIN} of ${SN_CHEF_SIZE.length} snacks right the first time.`, prize: `Win: plus ${SN_CHEF_PAY[0]} coins the first time and a crown.`,
+    won: !!rec.w, tries: snNum(rec.n, 0, 999), easier: 'The snacks get a little smaller each time you try.', go: 'Start the taste test',
+    start: () => snDay({ chef: true }), back: () => snMenu() });
+}
+function snChefEnd() {
+  const st = SN.st, pl = SN.pl, ch = SN_CHEF[pl.id] || SN_CHEF.park, name = snChefName(pl.id), won = st.right >= SN_CHEF_WIN;
+  const res = snChefDone(st, won), r = snS();
+  snStop();
+  const lines = won ? [['crown', res.first ? `A crown for ${esc(pl.name)}! Plus ${res.pay} coins.` : `You passed again! Plus ${res.pay} coins.`]] :
+    [['heart', `${st.right} of ${st.n} right the first time. Nothing is lost!`], ['go', `Next time ${esc(name)} asks for smaller snacks.`]];
+  if (st.starServes) lines.push(['star', `${st.starServes} star ${st.starServes == 1 ? 'serve' : 'serves'}!`]);
+  const time = ptLeft() > 0;
+  const o = GH.end('snack', { win: won, title: won ? `You passed the taste test!` : `So close!`, stars: won ? snStarsFor(st.right, st.n) : null,
+    pic: `<div class="sn-epic">${GH.faceSVG(ch[1], 'chef', 'r')}</div>`,
+    stats: [[`${st.right}/${st.n}`, 'right first time', 'check'], ['+' + (st.coins + res.pay), 'coins', 'coin']], lines,
+    btns: NAV.end3({ again: time ? 'snagain' : '', next: time ? '' : 'snlearn', home: 'snmenu' }) });
+  if (S.voice) say(won ? `${name} says: Delicious! You passed!` : `${name} says: So close! Try again!`);
+  const go = f => { o.remove(); f(); };
+  if (o.querySelector('#snagain')) o.querySelector('#snagain').onclick = () => go(() => (ptLeft() > 0 ? snDay({ chef: true }) : snMenu()));
+  if (o.querySelector('#snlearn')) o.querySelector('#snlearn').onclick = () => go(() => learnHub());
+  o.querySelector('#snmenu').onclick = () => go(() => home());
+  return r;
 }
 
 // The Game Room card (59-game-hub.js shows it after the games file's games)

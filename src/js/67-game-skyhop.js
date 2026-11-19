@@ -292,7 +292,8 @@ function hopNew(id, o = {}) {
   const C = hopBuild(id), c0 = C.cps[0], tw = HOP_TWB[o.tw] || HOP_TW[2];
   return {
     C, id, mode: o.mode == 'free' ? 'free' : 'one', t: 0, dj: C.dj, tw: HOP_TWB[o.tw] ? o.tw : '', gm: tw[3], jm: tw[4], sm: tw[5], crum: {},
-    p: { x: c0.x, y: c0.y, vx: 0, vy: 0, gr: true, on: -1, jl: 0, coy: 0, buf: 0, held: false, face: 1, kb: 0, hit: 0 },
+    p: { x: c0.x, y: c0.y, vx: 0, vy: 0, gr: true, on: -1, jl: 0, coy: 0, buf: 0, held: false, face: 1, kb: 0, hit: 0, dl: 0, dsh: 0 },
+    dash: !!o.dash, dashes: 0, boss: o.boss ? { w: o.boss.w, n: o.boss.n | 0, T: hopBossT(o.boss.w, o.boss.n), lost: false } : null, // G-MOVES
     cp: 0, cpF: C.cps.map(() => 0), falls: 0, bumps: 0, got: new Uint8Array(C.spk.length), spk: 0, stars: 0, gates: 0,
     wait: 'start', wt: .8, anim: null, offer: -1, helped: 0, done: false, ev: [],
   };
@@ -304,6 +305,7 @@ function hopClone(st) {
   s.got = st.got.slice();
   s.anim = st.anim && Object.assign({}, st.anim);
   s.crum = Object.assign({}, st.crum);
+  s.boss = st.boss && Object.assign({}, st.boss);
   s.ev = [];
   return s;
 }
@@ -332,11 +334,15 @@ function hopStep(st, inp = {}) {
   if (!inp.jump && p.held && st.mode == 'free' && p.vy > P.LOW * st.jm && !p.spr) p.vy = P.LOW * st.jm; // a short press: a small hop
   p.held = !!inp.jump;
   st.t += dt;
+  if (st.boss && !st.boss.lost && st.t - .8 >= st.boss.T) { // G-MOVES: the bird is at the flag (the race goes on)
+    st.boss.lost = true;
+    st.ev.push(['rival']);
+  }
   // waits: falling (back on the checkpoint in a moment), bounced back by a gate, carried by the helper balloon, ready
   if (st.wait == 'fall') {
     if ((st.wt -= dt) > 0) return;
     const cp = C.cps[st.cp];
-    Object.assign(p, { x: cp.x, y: cp.y, vx: 0, vy: 0, gr: true, on: -1, kb: 0, buf: 0, coy: 0, spr: false });
+    Object.assign(p, { x: cp.x, y: cp.y, vx: 0, vy: 0, gr: true, on: -1, kb: 0, buf: 0, coy: 0, spr: false, dsh: 0 });
     st.ev.push(['back']);
     if (st.cpF[st.cp] >= 3 && st.cp < C.cps.length - 1) {
       st.wait = 'offer';
@@ -391,7 +397,19 @@ function hopStep(st, inp = {}) {
     }
   }
   const want = (one ? (ready && !stay ? P.RUN * st.sm : 0) : (ready ? (inp.dir || 0) * P.FREE * st.sm : 0)) + (ready ? wind : 0);
-  if (p.kb > 0) p.kb -= dt;
+  // G-MOVES: the Dash, in the air, once until the pet lands
+  if (p.gr) p.dl = 1;
+  if (inp.dash && st.dash && !p.gr && p.dl > 0 && ready && p.kb <= 0) {
+    p.dl = 0;
+    p.dsh = HOP_DASH_T;
+    st.dashes++;
+    st.ev.push(['dash']);
+  }
+  if (p.dsh > 0) {
+    p.dsh -= dt;
+    p.vx = HOP_DASH_V * (one ? 1 : p.face);
+    p.vy = Math.max(p.vy, 0);
+  } else if (p.kb > 0) p.kb -= dt;
   else {
     const acc = (one ? (p.gr ? 30 : 14) : (p.gr ? 45 : 26)) * dt;
     p.vx += Math.max(-acc, Math.min(acc, want - p.vx));
@@ -420,7 +438,7 @@ function hopStep(st, inp = {}) {
   p.buf = Math.max(0, p.buf - dt);
   p.coy = Math.max(0, p.coy - dt);
   // gravity, floating (hold), updrafts
-  if (!p.gr) {
+  if (!p.gr && !(p.dsh > 0)) {
     p.vy -= P.G * st.gm * dt;
     if (p.held && p.vy < P.FLOAT) p.vy = P.FLOAT;
     for (const z of C.lifts) if (hopIn(z, p.x) && p.y > z.y0 && p.y < z.y1) p.vy = Math.min(7, p.vy + P.LIFT * dt);
@@ -589,6 +607,71 @@ function hopStep(st, inp = {}) {
     st.wt = .7;
     st.ev.push(['fall']);
   }
+}
+/* ---- G-MOVES (v188): a new move, the Dash, and a boss per world, the sky race ----
+   Dash (opens when HOP_DASH_NEED courses are finished, the first world): a button (D or Shift on a keyboard). In the air, once
+   until the pet lands again, the pet shoots ahead at HOP_DASH_V tiles a second for HOP_DASH_T s without falling, over a wide gap
+   or ahead of a rival. No course needs it. The move card shows once on the menu (S.hop.mv = 1 once seen).
+   Sky race (opens when the world's last course is finished): a friendly bird flies the world's last course at a steady pace and
+   reaches the flag hopBossT(w, n) seconds after the start: a little quicker than a perfect one-touch run (gold - 3 s, the bot's
+   time) on the first race, HOP_BOSS_EASE of that more for each race not won, up to HOP_BOSS_MAX. Reach the flag first to win;
+   the bird first costs nothing. A win: stars to spend (more the first time) and a crown on the world. Twists, ghosts, medals and
+   course records are not touched by a race. S.hop.bs {worldIndex: {n: races not won, w: wins}}. */
+const HOP_DASH_NEED = 6, HOP_DASH_V = 11, HOP_DASH_T = .22;
+const hopDashOpen = (r = hopPeek()) => hopDone(r) >= HOP_DASH_NEED;
+// the rival of each world: [name, face, goggles colour, line]
+const HOP_BOSS = [['Breezy', 'bird', 'y', 'Race me to the flag!'], ['Gusty', 'owl', 'c', 'Whoosh! Catch me!'], ['Twinkle', 'bird', 'v', 'Race me under the stars!'],
+  ['Rainbow', 'bird', 'p', 'Can you beat me over the bridge?'], ['Sunny', 'bird', 'o', 'Race me to the islands!'], ['Whirl', 'owl', 'g', 'Round and round, then race!'],
+  ['Glow', 'bird', 'c', 'Race me in the lights!'], ['Captain Cloud', 'owl', 'r', 'The last race! Ready?']];
+const HOP_BOSS_PACE = .96, HOP_BOSS_EASE = .1, HOP_BOSS_MAX = 8, HOP_BOSS_PAY = [3, 1];
+const hopBossCourse = w => HOP_COURSES[w * 6 + 5];
+const hopBossOpen = (w, r = hopPeek()) => w < HOP_BOSS.length && hopNum(hopObj(r.best)[hopBossCourse(w).id], 0, 36e5) > 0;
+const hopBossRec = (w, r = hopPeek()) => hopObj(hopObj(r.bs)[String(w)]);
+const hopBossT = (w, n) => (hopGold(hopBossCourse(w)) - 3) * (HOP_BOSS_PACE + HOP_BOSS_EASE * Math.min(HOP_BOSS_MAX, Math.max(0, n | 0)));
+// where the bird is at time t: from the start to the flag in T seconds (after the 0.8 s start)
+const hopRivalX = (st, t = st.t) => { const C = st.C, x0 = C.cps[0].x; return x0 + (C.goal.x - x0) * Math.min(1, Math.max(0, t - .8) / st.boss.T); };
+function hopBossMenu(w) {
+  const B = HOP_BOSS[w], c = hopBossCourse(w), rec = hopBossRec(w, hopS());
+  GH.boss({ id: 'hop', key: `${HOP_WORLDS[w].name}: sky race`, name: B[0], kind: B[1], hat: 'goggles', line: B[3], goal: `Reach the flag on ${c.name} before ${B[0]}.`,
+    prize: `Win: ${HOP_BOSS_PAY[0]} stars to spend the first time and a crown.`, won: !!rec.w, tries: hopNum(rec.n, 0, 999),
+    easier: `${B[0]} flies a little slower each time you try.`, go: `Race ${B[0]}!`, start: () => hopPlay(c.id, null, true), back: () => hopMenu(w) });
+}
+// the end of a sky race (won: first at the flag); quitting or game time running out counts as a race not won
+function hopBossDone(st, won) {
+  const r = hopS(), k = String(st.boss.w), rec = (r.bs[k] = r.bs[k] || { n: 0, w: 0 }), first = won && !rec.w;
+  if (won) rec.w++;
+  else rec.n = Math.min(999, rec.n + 1);
+  const pay = won ? HOP_BOSS_PAY[first ? 0 : 1] : 0;
+  r.bonus += pay;
+  st.boss.done = 1;
+  return { first, pay };
+}
+function hopBossEnd() {
+  const st = HP.st, w = st.boss.w, B = HOP_BOSS[w], won = !st.boss.lost, res = hopBossDone(st, won), r = hopS();
+  r.runs++;
+  r.stars[HP.c.id] = (r.stars[HP.c.id] || 0) | st.stars;
+  save();
+  hopStop();
+  const lines = won ? [['crown', res.first ? `A crown for ${esc(HOP_WORLDS[w].name)}! Plus ${res.pay} stars to spend.` : `You won again! Plus ${res.pay} star to spend.`]] :
+    [['heart', `${esc(B[0])} got there first. Nothing is lost!`], ['go', `${esc(B[0])} will fly a little slower next time.`]];
+  if (st.dashes) lines.push(['arrow-right', `${st.dashes} ${st.dashes == 1 ? 'dash' : 'dashes'}!`]);
+  const time = ptLeft() > 0;
+  const o = GH.end('hop', { win: won, title: won ? `You beat ${B[0]}!` : `${B[0]} won this time`, pic: `<div class="hp-epic">${GH.faceSVG(B[1], 'goggles', B[2])}</div>`,
+    stats: [[hopTime(Math.round(st.t * 1000)), 'your time', 'timer'], [hopTime(Math.round((st.boss.T + .8) * 1000)), `${B[0]}'s time`, 'go'], [String(hopWallet(r)), 'stars to spend', 'star']], lines,
+    btns: time ? NAV.end3({ again: 'hpagain', home: 'hpmenu' }) : NAV.end3({ next: 'hplearn', home: 'hpmenu' }) });
+  if (S.voice) say(won ? `You beat ${B[0]}!` : `${B[0]} won this time. Try again!`);
+  const go = f => { o.remove(); f(); };
+  if (o.querySelector('#hpagain')) o.querySelector('#hpagain').onclick = () => go(() => (ptLeft() > 0 ? hopPlay(HP_BOSSC, null, true) : hopMenu()));
+  if (o.querySelector('#hplearn')) o.querySelector('#hplearn').onclick = () => go(() => learnHub());
+  o.querySelector('#hpmenu').onclick = () => go(() => home());
+}
+let HP_BOSSC = ''; // the course of the last sky race (Play again)
+// G-MOVES: the world's sky race on the menu (the bird's face, a crown once beaten, a lock until the world's last course is finished)
+function hopBossCard(w, r) {
+  const B = HOP_BOSS[w], ok = hopBossOpen(w, r), rec = hopBossRec(w, r);
+  return `<button class="hp-boss${ok ? '' : ' lock'}" id="hpboss" aria-label="${esc(ok ? `Sky race: race ${B[0]}${rec.w ? ', you won' : ''}` : `Sky race with ${B[0]}: locked`)}">` +
+    `<span class="hp-bface">${GH.faceSVG(B[1], 'goggles', B[2])}</span><span class="hp-bt"><b>Sky race: ${esc(B[0])}</b><small>${ok ? (rec.w ? 'You won! Race again any time.' :
+      esc(B[3])) : `Finish ${esc(hopBossCourse(w).name)} first.`}</small></span>${ico(!ok ? 'lock' : rec.w ? 'crown' : 'play', 32)}</button>`;
 }
 // the helper balloon: yes carries the pet to the next checkpoint; no plays on (it asks again after 3 more falls)
 function hopHelp(st, yes) {
@@ -996,6 +1079,9 @@ function hopS() {
   if (!r.own[r.wear]) r.wear = 'none';
   const d = hopObj(r.day);
   r.day = typeof d.k == 'string' && HOP_BY[d.c] && HOP_TWB[d.tw] ? { k: d.k, c: d.c, tw: d.tw, done: d.done ? 1 : 0 } : {};
+  // G-MOVES: mv (1 once the Dash card was seen), bs (the sky races: {worldIndex: {n: races not won, w: wins}})
+  if (r.mv !== 1) delete r.mv;
+  r.bs = GH.bossRec(r.bs, k => /^[0-9]$/.test(k) && +k < HOP_BOSS.length);
   return r;
 }
 // today's twist (made once a day from the date and kept, so finishing a course today does not change it)
@@ -1387,6 +1473,13 @@ function hopDraw(R, dt) {
     c.drawImage(V.pet.happy.c, X(g.x) - wid / 2, Y(g.y) + T * .08 - wid * .92, wid, wid);
     c.globalAlpha = 1;
   }
+  // G-MOVES: the rival bird of a sky race, flying a little over the clouds at its place (its face, drawn once into a picture)
+  if (st.boss) {
+    const B = HOP_BOSS[st.boss.w], bx = hopRivalX(st), gy = hopGround(st, bx, 60), s = hopSprite('rival' + st.boss.w, 100, 100, GH.face(B[1], 'goggles', B[2]), 1.6 * T);
+    R.rvy = gy != null ? gy : R.rvy != null ? R.rvy : p.y;
+    const by = R.rvy + 1.6 + (calm ? 0 : Math.sin(tt * 4) * .15);
+    hopImg(c, s, X(bx) - .8 * T, Y(by) - .8 * T, 1.6 * T);
+  }
   // little bits: dust when landing, sparkles when collecting, the trail, the poof of a fall (sprites)
   for (let i = R.fx.length - 1; i >= 0; i--) {
     const q = R.fx[i];
@@ -1516,16 +1609,29 @@ function hopMenu(world) {
     'Free move: the arrows walk left and right. Jump hops; hold it longer to hop higher. Go back for a star you missed!'}</p></div></section>
   ${seasons}
   <h2 class="hp-h">${esc(W.name)}: ${esc(W.adds.toLowerCase())}</h2><div class="hp-crss">${HOP_COURSES.filter(c => c.w == r.world).map(ccard).join('')}</div>
+  ${hopBossCard(r.world, r)}
   <h2 class="hp-h">Costumes for your pet</h2><p class="hp-cash" id="hpcash">${ico('star', 26)}<span><b>${cash}</b> stars to spend. Stars come from the stars you find, gold medals and today's twist.</span></p>
   <div class="hp-wears"><button class="hp-wear${r.wear === 'none' ? ' on' : ''}" data-wear="none" aria-pressed="${r.wear === 'none'}"><span class="hp-wpet">${hopShopPic('none')}</span>` +
     `<span class="hp-wn">No costume</span><span class="hp-wp">${r.wear === 'none' ? 'Wearing' : 'Wear it'}</span></button>${HOP_WEAR.map(wear).join('')}</div>
   <h2 class="hp-h">Sparkle trail</h2><div class="hp-trs">${HOP_TRAILS.map(trail).join('')}</div>
   <ul class="hp-how">${[['flag', 'Hop to the checkered flag.'], ['star', 'Three stars hide on every course. Look up high and down low!'],
     ['replay', 'Fall off? No problem: you start again at the last little flag.'], ['medal', 'Be quick for a gold medal. Race the ghost of your best run!']]
-    .map(([i, t]) => `<li><span class="hp-hi">${ico(i == 'flag' ? 'target' : i, 22)}</span><span>${esc(t)}</span></li>`).join('')}</ul></div>`);
+    .concat(hopDashOpen(r) ? [['arrow-right', 'In the air, tap Dash to shoot ahead.']] : []).map(([i, t]) => `<li><span class="hp-hi">${ico(i == 'flag' ? 'target' : i, 22)}</span><span>${esc(t)}</span></li>`).join('')}</ul></div>`);
   GH.wire({ back: () => gameRoom() });
   $('#hopgo').onclick = () => hopTry(r.cur);
   $('#hptw').onclick = () => hopTry(day.c, day.tw);
+  $('#hpboss').onclick = () => {
+    const w = r.world;
+    if (!hopBossOpen(w, r)) {
+      SFX.wrong();
+      fb(`Finish ${hopBossCourse(w).name} to meet ${HOP_BOSS[w][0]}!`, 'warn long', 2600);
+      return;
+    }
+    SFX.pop(2);
+    hopBossMenu(w);
+  };
+  // G-MOVES: the Dash card, once
+  if (hopDashOpen(r) && !r.mv) GH.moveNew({ name: 'Dash', icon: 'arrow-right', line: 'In the air, tap Dash to shoot ahead!', done: () => { r.mv = 1; save(); } });
   $$('[data-c]').forEach(b => b.onclick = () => {
     const c = HOP_BY[b.dataset.c];
     if (!hopOpen(c, r)) {
@@ -1618,8 +1724,10 @@ function hopMsg(t, ms = 1300, cls = '') {
   clearTimeout(m._t);
   m._t = setTimeout(() => m.classList.remove('on'), ms);
 }
-function hopPlay(id, tw) {
-  const r = hopS(), c = HOP_BY[id], mode = r.mode, W = HOP_WORLDS[c.w], twist = HOP_TWB[tw];
+function hopPlay(id, tw, race) {
+  const r = hopS(), c = HOP_BY[id], mode = r.mode, W = HOP_WORLDS[c.w];
+  const boss = !!race && hopBossCourse(c.w) === c && hopBossOpen(c.w, r), twist = boss ? null : HOP_TWB[tw], dash = hopDashOpen(r); // G-MOVES
+  if (boss) HP_BOSSC = id;
   if (!twist) {
     r.cur = id;
     r.world = c.w;
@@ -1627,17 +1735,19 @@ function hopPlay(id, tw) {
   save();
   const btn = (bid, icon, aria, txt) => `<button class="hp-btn" id="${bid}" data-k="${bid.slice(2)}" aria-label="${aria}">${ico(icon, 44)}` +
     `${txt ? `<span>${txt}</span>` : ''}</button>`;
-  view(`${GH.top('hop', { play: true, hud: true, sub: twist ? twist[1] + ': ' + c.name : c.name, chips: hopStarChip(0) + UI.chip('timer', '0:00', { id: 'hpclk', aria: 'Course time' }) })}
+  view(`${GH.top('hop', { play: true, hud: true, sub: boss ? `Race ${HOP_BOSS[c.w][0]}: ${c.name}` : twist ? twist[1] + ': ' + c.name : c.name, chips: hopStarChip(0) + UI.chip('timer', '0:00', { id: 'hpclk', aria: 'Course time' }) })}
   <div class="hpg hp-${mode} hp-w-${W.id}" id="hp"><canvas id="hpcv"></canvas><div class="hp-msg" id="hpmsg" aria-live="polite"></div>
-  <div class="hp-ctl">${mode == 'free' ? btn('hpl', 'arrow-left', 'Walk left') + btn('hpr', 'arrow-right', 'Walk right') : ''}${btn('hpj', 'arrow-up', 'Hop', mode == 'free' ? 'Jump' : 'Hop')}</div>
+  <div class="hp-ctl">${mode == 'free' ? btn('hpl', 'arrow-left', 'Walk left') + btn('hpr', 'arrow-right', 'Walk right') : ''}${btn('hpj', 'arrow-up', 'Hop', mode == 'free' ? 'Jump' : 'Hop')}${dash ? btn('hpd', 'arrow-right', 'Dash', 'Dash') : ''}</div>
   <div class="hp-offer" id="hpoffer" hidden><div class="hp-ocard" role="dialog" aria-label="The helper balloon">
    <svg class="art hp-obal" viewBox="0 0 80 120" aria-hidden="true" focusable="false">${HOP_ART.balloon()}</svg>
    <p>Need a lift? The balloon can carry you to the next flag.</p>
    <div class="hp-oacts">${UI.btn('Yes, please', { kind: 'primary', size: 'lg', icon: 'balloon', id: 'hpyes' })}${UI.btn('No, thanks', { size: 'lg', icon: 'replay', id: 'hpno' })}</div></div></div></div>`);
-  const st = hopNew(id, { mode, tw: twist && twist[0] }), cv = $('#hpcv');
+  const st = hopNew(id, { mode, tw: twist && twist[0], dash, boss: boss ? { w: c.w, n: hopNum(hopBossRec(c.w, r).n, 0, 999) } : null }), cv = $('#hpcv');
+  cv.setAttribute('role', 'img'); // G-MOVES: the course canvas has a name (P6-01, like Hill Climb's)
+  cv.setAttribute('aria-label', 'The clouds and your pet');
   HP = { st, c, r, cv, ctx: cv.getContext('2d', { alpha: false }), ptr: {}, key: {}, pend: false, acc: 0, last: 0, raf: 0, paused: false,
     ft: [], fi: [], q: 1, fc: 0, qAt: 0, fx: [], shake: 0, sec: -1, said: {},
-    rec: hopRecNew(), gh: twist ? null : hopGhostIn(r.ghost[id]), ghMs: r.best[id] || 0 };
+    rec: hopRecNew(), gh: twist || boss ? null : hopGhostIn(r.ghost[id]), ghMs: r.best[id] || 0, dpend: false };
   hopRec(HP.rec, st);
   hopSize(HP);
   HP.rs = () => { if (HP) hopSize(HP); };
@@ -1650,7 +1760,7 @@ function hopPlay(id, tw) {
   };
   const show = () => {
     const on = new Set(Object.values(HP.ptr).concat(Object.keys(HP.key).filter(k => HP.key[k])));
-    for (const k of ['l', 'r', 'j']) if ($('#hp' + k)) $('#hp' + k).classList.toggle('on', on.has(k));
+    for (const k of ['l', 'r', 'j', 'd']) if ($('#hp' + k)) $('#hp' + k).classList.toggle('on', on.has(k));
     HP.on = on;
   };
   box.addEventListener('pointerdown', e => {
@@ -1660,6 +1770,7 @@ function hopPlay(id, tw) {
     if (!k) return;
     HP.ptr[e.pointerId] = k;
     if (k == 'j') HP.pend = true;
+    if (k == 'd') HP.dpend = true;
     try { box.setPointerCapture(e.pointerId); } catch (x) {}
     show();
   });
@@ -1671,10 +1782,11 @@ function hopPlay(id, tw) {
   box.addEventListener('pointerup', up);
   box.addEventListener('pointercancel', up);
   box.addEventListener('contextmenu', e => e.preventDefault());
-  const KEYS = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'j', ' ': 'j' };
+  const KEYS = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'j', ' ': 'j', d: 'd', D: 'd', Shift: 'd' };
   HP.kd = e => {
-    if (!HP || !KEYS[e.key] || (mode == 'one' && KEYS[e.key] != 'j')) return;
+    if (!HP || !KEYS[e.key] || (mode == 'one' && KEYS[e.key] != 'j' && KEYS[e.key] != 'd') || (KEYS[e.key] == 'd' && !dash)) return;
     if (KEYS[e.key] == 'j' && !HP.key.j) HP.pend = true;
+    if (KEYS[e.key] == 'd' && !HP.key.d) HP.dpend = true;
     HP.key[KEYS[e.key]] = 1;
     show();
   };
@@ -1694,7 +1806,7 @@ function hopPlay(id, tw) {
   const first = !r.runs && !c.i;
   setTimeout(() => {
     if (!HP || HP.st !== st) return;
-    const tip = twist ? twist[1] + '!' : c.w && !HOP_COURSES.slice(0, c.i).some(x => x.w == c.w && r.best[x.id]) ? ['', 'Tap again in the air to hop higher!',
+    const tip = boss ? `${HOP_BOSS[c.w][0]}: ${HOP_BOSS[c.w][3]}` : twist ? twist[1] + '!' : c.w && !HOP_COURSES.slice(0, c.i).some(x => x.w == c.w && r.best[x.id]) ? ['', 'Tap again in the air to hop higher!',
       'Hop onto a kite cloud for a ride!', 'Step on the red switch to open the gate!', 'Clouds with cracks crumble: keep hopping!',
       'Ride a cloud that goes round and round!', 'Grab the key to open the door!', 'All the tricks together. You can do it!'][c.w] : HP.gh ? 'Race your ghost!' : '';
     hopMsg(first || !tip ? (mode == 'one' ? 'Tap to hop!' : 'Arrows to walk, Jump to hop!') : tip, 2400);
@@ -1716,9 +1828,10 @@ function hopPlay(id, tw) {
       let n = 0;
       while (HP.acc >= HOP_DT && n < 8 * HOP_DEV.fast && !st.done && st.wait != 'offer') {
         const on = HP.on || new Set();
-        hopStep(st, { jump: HP.pend || on.has('j'), dir: (on.has('r') ? 1 : 0) - (on.has('l') ? 1 : 0) });
+        hopStep(st, { jump: HP.pend || on.has('j'), dir: (on.has('r') ? 1 : 0) - (on.has('l') ? 1 : 0), dash: HP.dpend });
         hopRec(HP.rec, st);
         HP.pend = false;
+        HP.dpend = false;
         hopEvents();
         HP.acc -= HOP_DT;
         n++;
@@ -1805,8 +1918,11 @@ function hopEvents() {
       hopMsg('You made it!', 1500, 'big');
       SFX.fanfare();
       gtStop();
-      HP.endT = setTimeout(() => { if (HP && HP.st === st) hopFinish(); }, hopCalm() ? 400 : 1300);
-    }
+      HP.endT = setTimeout(() => { if (HP && HP.st === st) (st.boss ? hopBossEnd() : hopFinish()); }, hopCalm() ? 400 : 1300);
+    } else if (k == 'dash') { // G-MOVES
+      hopTone(440, .14, 0, 'triangle', .07, 1200);
+      if (!hopCalm()) hopFx(p.x - .4, p.y + .5, 5, 'w', 2, .1);
+    } else if (k == 'rival') hopMsg(`${HOP_BOSS[st.boss.w][0]} is at the flag! Keep going!`, 2200);
   }
   st.ev.length = 0;
   const s = Math.floor(st.t);
@@ -1836,6 +1952,7 @@ function hopKeepStars() {
   if (HP.st.stars) r.stars[HP.c.id] = (r.stars[HP.c.id] || 0) | HP.st.stars;
 }
 function hopQuit() {
+  if (HP && HP.st.boss && !HP.st.boss.done) hopBossDone(HP.st, HP.st.done && !HP.st.boss.lost); // G-MOVES: a race left counts once
   hopKeepStars();
   save();
   hopStop();
@@ -1843,6 +1960,7 @@ function hopQuit() {
   hopMenu();
 }
 function hopTimeUp() {
+  if (HP && HP.st.boss && !HP.st.boss.done) hopBossDone(HP.st, HP.st.done && !HP.st.boss.lost); // G-MOVES
   hopKeepStars();
   save();
   hopStop();

@@ -485,6 +485,9 @@ function bbS() {
   if (b.worlds.some(w => !w || typeof w.d != 'string')) b.worlds = b.worlds.filter(w => w && typeof w.d == 'string');
   if (!b.worlds.length) b.worlds.push({ name: 'My Island', d: bbEncode(bbGen('island', 7)) });
   if (!(b.cur >= 0 && b.cur < b.worlds.length)) b.cur = 0;
+  // G-MOVES: mv (1 once the Paint card was seen), bs (Bea's mirror builds: {chapterId: {n: tries not won, w: wins}})
+  if (b.mv !== 1) delete b.mv;
+  b.bs = GH.bossRec(b.bs, k => BB_CHS.some((c, i) => i < BB_BOSS.length && c.id === k));
   return b;
 }
 function bbGen(type, seed) {
@@ -656,6 +659,34 @@ const BB_CHS = [
   { id: 'sky', n: 'Sky Islands', g: 'sky', sky: ['peach', 'candy'], set: [33, 34], prize: 35, world: 'sky', ico: 'rocket' },
 ];
 const BB_PER = 6, BB_OPEN_AT = 4;
+/* ---- G-MOVES (v188): a new tool, Paint, and a boss per chapter, Bea's mirror build ----
+   Paint (opens with BB_PAINT_NEED blueprints built): a tool beside Build, Break and Stamp in a free-build world. A tap turns the
+   block under the finger into the chosen block (no breaking; Undo puts it back); it counts as the child's own block for the goals.
+   It does not paint with TNT or onto a little picture (flowers, the pet). The move card shows once on the menu (S.bb.mv = 1 once seen).
+   Bea's mirror build (opens with the chapter's trophy): Bea the beaver builds one side of a build that is the same on both sides;
+   the child builds the other side. The first time there are no see-through blocks (like a Fix-it build: the picture of the
+   whole build helps); after a try not won the other side is see-through. Win: the build done with at most bbBossMiss(n) mistakes
+   (BB_BOSS_MISS, 2 more for each try not won). Coins as for a blueprint (more the first time) and a crown on the chapter.
+   S.bb.bs {chapterId: {n: tries not won, w: wins}}. */
+const BB_PAINT_NEED = 3;
+const bbPaintOpen = () => BBP.filter((b, i) => bbStars(i) > 0).length >= BB_PAINT_NEED;
+const BB_BOSS_MISS = 3, BB_BOSS_PAY = [10, 2];
+// one design a chapter (bbStr: layers |, rows /, letters BB_LM): the same on the left and the right of its middle column
+const BB_BOSS = [
+  { n: "Bea's Tower Gate", s: 'ss...ss|ss...ss|sbbbbbs|s.....s', ox: 3, oy: 6 },
+  { n: "Bea's Beach Hut", s: 'ccccc/c...c/ccccc|t...t/...../t...t|.fff./.fff./.fff.', ox: 4, oy: 5 },
+  { n: "Bea's Ice Castle", s: 'iiiiiii|i.iii.i|i..i..i|n..x..n', ox: 3, oy: 6 },
+  { n: "Bea's Cloud Bridge", s: 'qq.....qq|.qq...qq.|..qyyyq..', ox: 2, oy: 6 },
+];
+const bbBossMiss = n => BB_BOSS_MISS + 2 * Math.min(4, Math.max(0, n | 0));
+const bbBossOpen = k => k >= 0 && k < BB_BOSS.length && bbTrophy(k);
+const bbBossRec = k => { const b = bbS().bs; return (b && b[BB_CHS[k].id]) || { n: 0, w: 0 }; };
+// the build as a blueprint: Bea's side (the left and the middle) is built at the start; the child's side is missing
+function bbBossBP(k, n = bbBossRec(k).n) {
+  const D = BB_BOSS[k], cells = bbStr(D.s, D.ox, D.oy), xs = cells.map(c => c[0]), mid = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const fx = cells.filter(c => c[0] > mid).map(c => c.slice(0, 3).join(',')).join(';');
+  return { id: 'boss' + k, boss: k, n: D.n, g: BB_CHS[k].g, m: n > 0 ? 'copy' : 'fix', fx, tries: n, c: () => cells.map(q => q.slice()) };
+}
 BB_CHS.forEach((c, k) => { c.bps = BBP.slice(k * BB_PER, k * BB_PER + BB_PER).map(b => b.id); });
 const bbChOf = i => Math.floor(i / BB_PER);
 const BB_MODES = { copy: ['Copy', 'blocks'], count: ['Count', 'skill-count'], pat: ['Pattern', 'skill-pattern'], pic: ['Picture', 'image'], fix: ['Fix it', 'hint'] };
@@ -680,16 +711,17 @@ function bbTask(bp) {
   if (m == 'count') return `Build it ${bbDimsSay(bbDims(g))}. Count as you go!`;
   if (m == 'pat') return 'Look at the colours. Which block comes next?';
   if (m == 'pic') return 'Build what the picture shows. There are no see-through blocks!';
+  if (bp.boss != null) return m == 'fix' ? 'Bea built one side. Build the other side the same!' : 'Build the other side the same. The see-through blocks help!';
   if (m == 'fix') return `${bbFixMiss(bp).size} blocks are missing. Find the holes and fix it.`;
   return kinds.length == 1 ? `Copy the see-through blocks with ${kinds[0]}.` : 'Copy the see-through blocks, one layer at a time.';
 }
 // a blueprint's chapter (the build of the day: the chapter of its ground), and the world it starts from: the chapter's ground, with
 // the first blocks of a pattern, or the whole build but its holes for a fix
-const bbChapOf = bp => bp.id == 'day' ? BB_CHS.find(c => c.g == bp.g) : BB_CHS[bbChOf(BBP.indexOf(bp))];
+const bbChapOf = bp => bp.boss != null ? BB_CHS[bp.boss] : bp.id == 'day' ? BB_CHS.find(c => c.g == bp.g) : BB_CHS[bbChOf(BBP.indexOf(bp))];
 function bbStart(bp) {
   const w = bbBase(bbChapOf(bp).g), m = bbMode(bp);
   if (m == 'pat') for (const [a, b, z, v] of bp.c().slice(0, bp.pre)) w[bbI(a + 2, b + 2, z)] = v;
-  if (m == 'fix') { const miss = bbFixMiss(bp); for (const [i, v] of bbGoal(bp)) if (!miss.has(i)) w[i] = v; }
+  if (m == 'fix' || bp.boss != null) { const miss = bbFixMiss(bp); for (const [i, v] of bbGoal(bp)) if (!miss.has(i)) w[i] = v; } // G-MOVES: Bea's side
   return w;
 }
 // blueprint stars by id; made once from the old index array (S.bb.ch), which is kept
@@ -1415,6 +1447,16 @@ function bbMake(w, goal, mode) {
       return { kind: 'notnt' };
     }
     if (T == 'clear') return { kind: 'none', clear: 1 };
+    if (T == 'paint') { // G-MOVES: the block under the finger becomes the chosen block
+      const h = E.hit(px, py, q => !q.ghost);
+      if (!h || h.deco) return { kind: 'none' };
+      const n = bbI(h.i, h.j, h.k), v = E.w[n];
+      if (!bbSolid(v) || v == E.sel || !bbSolid(E.sel) || E.sel == BB_TNT) return { kind: 'none', why: v == E.sel ? 'same' : 'paint' };
+      E.push();
+      E.w[n] = E.sel;
+      E.placed.add(n);
+      return { kind: 'paint', cells: [n], v, at: [h.i, h.j, h.k] };
+    }
     const t = E.target(px, py);
     if (!t) return { kind: 'none', why: 'sky' };
     if (t.high) return { kind: 'high' };
@@ -1513,6 +1555,7 @@ const BBI = {
   line: '<rect x="1.8" y="9" width="6" height="6" rx="1.6"/><rect x="9" y="9" width="6" height="6" rx="1.6"/><rect opacity=".4" x="16.2" y="9" width="6" height="6" rx="1.6"/>',
   wall: '<rect x="2" y="3" width="9" height="5.4" rx="1.4"/><rect x="13" y="3" width="9" height="5.4" rx="1.4"/><rect opacity=".4" x="2" y="9.4" width="4" height="5.4" rx="1.4"/><rect x="7.6" y="9.4" width="9" height="5.4" rx="1.4"/><rect opacity=".4" x="18" y="9.4" width="4" height="5.4" rx="1.4"/><rect x="2" y="15.8" width="9" height="5.4" rx="1.4"/><rect x="13" y="15.8" width="9" height="5.4" rx="1.4"/>',
   floor: '<path opacity=".4" d="M12 4l10 5.4L12 14.8 2 9.4z"/><path d="M2 12.2l10 5.4 10-5.4v2.6l-10 5.4-10-5.4z"/>',
+  paint: '<path d="M14.6 2.4l7 7-7.6 7.6-7-7z"/><path opacity=".4" d="M6.2 11.2l6.6 6.6-2 2c-1.4 1.4-3.4 1.4-4.8 0l-1.8-1.8c-1.4-1.4-1.4-3.4 0-4.8z"/><path d="M4 18.6l1.4 1.4-2.4 2.4H1.6v-1.4z"/>',
 };
 const bbIco = (n, sz = 24, cls = '') => BBI[n]
   ? `<svg class="ic${cls ? ' ' + cls : ''}" width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">${BBI[n]}</svg>`
@@ -1544,7 +1587,8 @@ function bbMini(cv, cells, o = {}) {
 /* ---- the play screen ---- */
 // ci: a blueprint's index in BBP, 'day' (the build of the day, G-01b) or nothing (free build in the current world)
 function blockBuilder(ci) {
-  const bs = bbS(), bp = ci == null ? null : ci == 'day' ? bbDaily(today()) : BBP[ci], world = bp ? null : bs.worlds[bs.cur];
+  const boss = typeof ci == 'string' && /^boss\d$/.test(ci) ? +ci[4] : null; // G-MOVES: Bea's mirror build of a chapter
+  const bs = bbS(), bp = ci == null ? null : ci == 'day' ? bbDaily(today()) : boss != null ? bbBossBP(boss) : BBP[ci], world = bp ? null : bs.worlds[bs.cur];
   const mode = bp ? bbMode(bp) : null, goalMap = bp ? bbGoal(bp) : null;
   const chap = bp ? bbChapOf(bp) : null;
   const E = BB = bbMake(bp ? bbStart(bp) : bbDecode(world.d), goalMap, mode);
@@ -1574,7 +1618,8 @@ function blockBuilder(ci) {
   const task = bp ? `<div class="bb-task" id="bbtask">${mode == 'pic' || mode == 'fix' ? `<button class="bb-tpic" id="bbtpic" aria-label="The picture of the build. Tap to make it bigger" aria-pressed="false"><canvas width="240" height="180" id="bbtpc" aria-hidden="true"></canvas></button>` : ''}` +
     `<p class="bb-tt"><span class="bb-tm">${ico(BB_MODES[mode][1], 22)}${esc(BB_MODES[mode][0])}</span><span id="bbtaskt">${esc(bbTask(bp))}</span></p></div>` : '';
   const seg = `<div class="bb-seg" role="group" aria-label="Tool">${bbTB('bbm-build', 'build', 'Build', { v: 'build', on: true })}` +
-    `${bbTB('bbm-break', 'break', 'Break', { v: 'break', on: false })}${bbTB('bbm-stamp', 'stamp', 'Stamp', { v: 'stamp', on: false })}</div>`;
+    `${bbTB('bbm-break', 'break', 'Break', { v: 'break', on: false })}${bbTB('bbm-stamp', 'stamp', 'Stamp', { v: 'stamp', on: false })}` +
+    `${bbPaintOpen() ? bbTB('bbm-paint', 'paint', 'Paint', { v: 'paint', on: false, aria: 'Paint: change a block' }) : ''}</div>`;
   const hist = bbTB('bbundo', 'undo', 'Undo') + bbTB('bbredo', 'redo', 'Redo');
   const cam = bbTB('bbrl', 'rotate', 'Left', { aria: 'Turn left', cls: 'bb-flip' }) + bbTB('bbrr', 'rotate', 'Right', { aria: 'Turn right' }) +
     bbTB('bbzo', 'farther', 'Farther', { aria: 'Zoom out' }) + bbTB('bbzi', 'closer', 'Closer', { aria: 'Zoom in' });
@@ -1871,6 +1916,11 @@ function blockBuilder(ci) {
       flash(r.cells);
       after();
       if (bp) { if (r.win) setTimeout(bbWin, 450); else layerNote(); } else checkGoals(r.cells, r.tool);
+    } else if (r.kind == 'paint') { // G-MOVES
+      tone(520, .07, 0, 'sine', .08); tone(780, .08, .05, 'sine', .08);
+      flash(r.cells);
+      after();
+      checkGoals(r.cells, 'paint');
     } else if (r.kind == 'break') {
       if (E.mk) for (const n of r.cells) E.mk[n] = 0;
       SFX.hit(); puff(...r.at, r.v); after();
@@ -2267,6 +2317,7 @@ function blockBuilder(ci) {
     wall: 'Wall: hold, then slide to build a wall 3 blocks tall.',
     floor: 'Floor: hold, then slide to fill a floor.',
     clear: 'Clear area: hold, then slide over the blocks to clear.',
+    paint: 'Paint: tap a block to make it the block you chose.',
   };
   const EXTRA = { line: ['line', 'Line'], wall: ['wall', 'Wall'], floor: ['floor', 'Floor'], clear: ['trash', 'Clear'] };
   function setTool(t, quiet) {
@@ -2386,7 +2437,7 @@ function blockBuilder(ci) {
   }
   E.galSave = galSave;
 
-  GH.wire({quit: () => { bbSave(); gtStop(); bbMenu(); }});
+  GH.wire({quit: () => { bbSave(); if (E.bp && E.bp.boss != null && !E.won) bbBossTry(E.bp.boss, E.done() && E.miss <= bbBossMiss(E.bp.tries)); gtStop(); bbMenu(); }}); // G-MOVES: a try not won
   bbSaveHook();
   // the palette pictures, the stamp pictures
   for (const c of $$('[data-bc]')) bbIcon(c.getContext('2d'), +c.dataset.bc, c.width);
@@ -2476,8 +2527,41 @@ function bbHull(pts) {
 }
 // a blueprint (or the build of the day) is built: stars by id, coins, and what it opened (the next build, a new chapter with its
 // blocks and world, a chapter's trophy and prize); the end card shows the child's build
+// G-MOVES: Bea's mirror build: a try's record (won: a crown and coins, more the first time; not won: the next try is easier)
+function bbBossTry(k, won) {
+  const bs = bbS(), id = BB_CHS[k].id, rec = (bs.bs[id] = bs.bs[id] || { n: 0, w: 0 }), first = won && !rec.w;
+  if (won) rec.w++;
+  else rec.n = Math.min(999, rec.n + 1);
+  const coins = won ? BB_BOSS_PAY[first ? 0 : 1] : 0;
+  S.coins += coins;
+  save();
+  return { first, coins };
+}
+function bbBossWin() {
+  const P0 = BB.bp, k = P0.boss, lim = bbBossMiss(P0.tries), won = BB.miss <= lim;
+  BB.won = 1;
+  const res = bbBossTry(k, won);
+  won ? SFX.fanfare() : SFX.chime();
+  if (S.voice) say(won ? 'Bea says: Just the same! You did it!' : 'Bea says: Nice building! Try again, the see-through blocks will help.');
+  const lines = won ? [['crown', res.first ? `A crown for ${esc(BB_CHS[k].n)}! Plus ${res.coins} coins.` : `You did it again! Plus ${res.coins} coins.`]] :
+    [['heart', `${BB.miss} mistakes this time. Nothing is lost!`], ['go', 'Next time the other side is see-through.']];
+  const o = GH.end('blocks', { win: won, title: won ? 'Just the same! You did it!' : 'Nice building!', pic: `<div class="bb-epic2">${GH.faceSVG('beaver', 'hard')}</div>`,
+    stats: [[String(BB.miss), BB.miss == 1 ? 'mistake' : 'mistakes', 'blocks'], [String(lim), 'mistakes allowed', 'target'], ['+' + res.coins, 'coins', 'coin']], lines,
+    btns: NAV.end3({ again: 'bbre', home: 'bbls' }) });
+  const go = f => { o.remove(); f(); };
+  o.querySelector('#bbre').onclick = () => go(() => blockBuilder('boss' + k));
+  o.querySelector('#bbls').onclick = () => go(() => { gtStop(); home(); });
+}
+function bbBossMenu(k) {
+  const rec = bbBossRec(k), D = BB_BOSS[k];
+  GH.boss({ id: 'blocks', key: `${BB_CHS[k].n}: mirror build`, name: 'Bea the Beaver', kind: 'beaver', hat: 'hard', line: `I built one side of ${D.n.replace("Bea's ", 'my ')}. Can you build the other side?`,
+    goal: `Make both sides the same with at most ${bbBossMiss(rec.n)} mistakes.`, prize: `Win: plus ${BB_BOSS_PAY[0]} coins the first time and a crown.`,
+    won: !!rec.w, tries: rec.n, easier: 'The other side is see-through now, and more mistakes are fine.', go: 'Start building',
+    start: () => blockBuilder('boss' + k), back: () => bbMenu() });
+}
 function bbWin() {
   if (!BB || BB.ch == null || !$('#bbc')) return;
+  if (BB.bp && BB.bp.boss != null) return bbBossWin(); // G-MOVES
   const ci = BB.ch, day = ci == 'day', P0 = BB.bp, st = BB.miss <= 1 ? 3 : BB.miss <= 4 ? 2 : 1, bs = bbS();
   const before = BB_CHS.map((c, k) => [bbChOpen(k), bbTrophy(k)]);
   let old;
@@ -2603,6 +2687,14 @@ function bbNextGoal() {
   for (const w of bbS().worlds) { const g = bbGoalNext(w, 1)[0]; if (g) return `In ${w.name}: ${bbGoalLine(w, g)}.`; }
   return 'Build something new and save it to your gallery.';
 }
+// G-MOVES: Bea's mirror build of a chapter on the menu (her face; a crown once won; a lock until the chapter's trophy)
+function bbBossCard(k) {
+  if (k >= BB_BOSS.length) return '';
+  const ok = bbBossOpen(k), rec = bbBossRec(k);
+  return `<button class="bb-boss${ok ? '' : ' lock'}" data-boss="${k}" aria-label="${esc(ok ? `Bea's mirror build: ${BB_BOSS[k].n}${rec.w ? ', done' : ''}` : "Bea's mirror build: locked")}">` +
+    `<span class="bb-bface">${GH.faceSVG('beaver', 'hard')}</span><span class="bb-bt"><b>${esc(BB_BOSS[k].n)}</b><small>${ok ? (rec.w ? 'Done! Build it again any time.' :
+      'Bea builds one side, you build the other!') : `Build all ${BB_PER} for the trophy first.`}</small></span>${ico(!ok ? 'lock' : rec.w ? 'crown' : 'play', 32)}</button>`;
+}
 function bbMenu() {
   const bs = bbS(), stars = BBP.reduce((s, b, i) => s + bbStars(i), 0), tro = BB_CHS.filter((c, k) => bbTrophy(k)).length;
   const day = bbDaily(today()), dst = bbDayStars(), gal = bbGal();
@@ -2619,7 +2711,7 @@ function bbMenu() {
     const sub = !open ? `Build ${BB_OPEN_AT} in ${BB_CHS[k - 1].n} to open it.` : tr ? `Trophy won! Prize: ${BLOCKS[c.prize].n}.` : `Build all ${BB_PER} for the trophy and the ${BLOCKS[c.prize].n}.`;
     return `<div class="bb-chap s-${c.id}${open ? '' : ' lock'}" data-chap="${k}"><h3 class="bb-chh"><span class="bb-chi">${ico(open ? c.ico : 'lock', 24)}</span>` +
       `<span class="bb-cht"><b>${esc(c.n)}</b><span>${esc(sub)}</span></span><span class="bb-chn">${tr ? ico('trophy', 22, 'ic-star') : ''}${n}/${BB_PER}</span></h3>` +
-      `<div class="bb-bpg">${BBP.slice(k * BB_PER, k * BB_PER + BB_PER).map((b, j) => bpCard(b, k * BB_PER + j)).join('')}</div></div>`;
+      `<div class="bb-bpg">${BBP.slice(k * BB_PER, k * BB_PER + BB_PER).map((b, j) => bpCard(b, k * BB_PER + j)).join('')}</div>${bbBossCard(k)}</div>`;
   };
   const wCard = (w, i) => {
     const d = bbDecode(w.d), n = d.filter(v => v).length, gn = bbGoalN(w);
@@ -2635,7 +2727,7 @@ function bbMenu() {
     ['undo', 'Undo takes a step back. Redo puts it back.'], ['boom', 'Boom lights a TNT block. Building on TNT is safe.'],
     ['hint', 'Hold your finger still, then slide: the bubble shows where it goes.'],
     ['skill-count', 'Count builds: build it the size asked, any way round.'], ['image', 'Picture builds: no see-through blocks. Look at the picture.'],
-    ['skill-pattern', 'Pattern builds: the new blocks are white. Which colour comes next?']];
+    ['skill-pattern', 'Pattern builds: the new blocks are white. Which colour comes next?']].concat(bbPaintOpen() ? [['paint', 'Paint: tap a block to make it the block you chose.']] : []);
   view(`${GH.top('blocks')}
   <div class="scroll bb-menu"><p class="bb-goal" id="bbnext"><span class="bb-gi">${ico('target', 24)}</span><span><b>Next goal:</b> ${esc(bbNextGoal())}</span></p>
    <section class="bb-sec"><h2>${ico('map', 28)}<span>Blueprints</span><span class="bb-sc" aria-label="${tro} trophies, ${stars} of ${BBP.length * 3} stars">${ico('trophy', 20, 'ic-star')}${tro}<span class="bb-sep"></span>${ico('star', 20, 'ic-star')}${stars}/${BBP.length * 3}</span></h2>
@@ -2662,6 +2754,14 @@ function bbMenu() {
     SFX.whoosh();
     blockBuilder('day');
   };
+  for (const b of $$('[data-boss]')) b.onclick = () => {
+    const k = +b.dataset.boss;
+    if (!bbBossOpen(k)) { SFX.wrong(); anim(b, 'sad'); fb(`Build all ${BB_PER} in ${BB_CHS[k].n} to meet Bea!`, 'warn'); return; }
+    SFX.pop(2);
+    bbBossMenu(k);
+  };
+  // G-MOVES: the Paint card, once
+  if (bbPaintOpen() && !bs.mv) GH.moveNew({ name: 'Paint', icon: 'palette', line: 'Paint: tap a block to make it the block you chose!', done: () => { bs.mv = 1; save(); } });
   for (const b of $$('[data-w]')) b.onclick = () => {
     if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
     bs.cur = +b.dataset.w;
