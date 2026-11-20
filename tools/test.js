@@ -19038,7 +19038,7 @@ run('release 1.0 P6-05',()=>{
   if(!/\$\{RELEASE\} \(build (__VER__|\$\{BUILD\})\)/.test(rs('js/80-grown.js')))p.push('the Grown-ups app log must show RELEASE and the build (VER)');
   if(!/\$\{aboutCard\(\)\}/.test(rs('js/80-grown.js')))p.push('grown() must show the About card');
   const ab=r.about.replace(/<[^>]*>/g,' ').replace(/&#39;/g,"'");
-  for(const need of ['About Whistlestop','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','Nothing is sent anywhere','only on this device','without internet','Version','Build'])
+  for(const need of ['About Whistlestop','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','nothing about your child is sent anywhere','stay on this device','confirmed with Google Play','without internet','Version','Build'])  // Fable rename review: the About privacy line (was 'Nothing is sent anywhere', 'only on this device')
     if(!ab.includes(need))p.push('About does not say: '+need);
   if(!/id="ab-rel">1\.0\.0</.test(r.about)||!/id="ab-build">__VER__</.test(r.about))p.push('About must show the release and the build');
   if(/#[0-9a-fA-F]{3,8}\b|[\u{1F300}-\u{1FAFF}]/u.test(r.about))p.push('About uses a raw colour or an emoji');
@@ -23405,8 +23405,33 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
   else{const pv=rd('privacy.html');
     if(/<script|\son\w+\s*=|javascript:/i.test(pv))p.push('privacy.html must have no scripts');
     if(/\s(src|href)="(?!mailto:)[^"]*"|url\(|@import/i.test(pv))p.push('privacy.html loads or links something');
-    for(const need of ['No accounts','No advertising','No analytics','stored only','never uploaded','Google Play billing','purchase token','hello@whistlestoplearning.com','Families'])
-      if(!pv.includes(need))p.push('privacy.html does not say '+need)}
+    for(const need of ['No accounts','No advertising','No analytics','stored only','never uploaded','Google Play billing','purchase token','hello@whistlestoplearning.com','Families',
+      // Fable rename review and owner decision 2026-11-20 (app on the subdomain): the app's host, the developer, no parental consent because
+      // nothing personal is collected, e-mail used only to reply, the online voice (12-speech.js pickVoice), and how to delete everything
+      'app.whistlestoplearning.com/api/ack','Who we are','parental consent','only to reply','delete it on request','online voice','usually Google',
+      'name or nickname','Start over','Delete next to a child','Site settings, app.whistlestoplearning.com'])
+      if(!pv.includes(need))p.push('privacy.html does not say '+need);
+    if(/uninstalling the app removes all/i.test(pv))p.push('privacy.html: uninstalling a Chrome-installed app does not always remove its data (Fable rename review)');
+    if(/DEVELOPER_NAME/.test(pv))notes.push('privacy.html names the developer as the DEVELOPER_NAME placeholder: put the exact Play Console developer name in before release');
+    else if(!/made by <b>[^<]{2,}<\/b>/.test(pv))p.push('privacy.html does not name the developer (Who we are)')}
+  // Owner decision 2026-11-20: the app is on app.whistlestoplearning.com; the bare domain is a static information page, site/landing.html,
+  // published by its own Vercel project (Root Directory site), so it has no app files and can never register the service worker.
+  {const sd=path.join(ROOT,'site'),has=f=>fs.existsSync(path.join(sd,f));
+    if(!has('landing.html'))p.push('site/landing.html (the page at whistlestoplearning.com/) is missing');
+    else{const ld=rd('site/landing.html');
+      if(/<script|\son\w+\s*=|javascript:|serviceWorker|rel="manifest"/i.test(ld))p.push('site/landing.html must have no scripts, service worker or manifest');
+      if(/\s(src|href)="(?!mailto:|privacy\.html"|icon-192\.png"|https:\/\/play\.google\.com\/store\/apps\/details\?id=)[^"]*"|url\(|@import/i.test(ld))p.push('site/landing.html loads or links something other than privacy.html, its icon, Google Play and the e-mail');
+      if(/app\.whistlestoplearning|index\.html/i.test(ld.replace(/<!--[\s\S]*?-->/g,'')))p.push('site/landing.html advertises the web app');
+      for(const need of ['Pre-K','6th grade','Math','Reading','Spanish','Discover','offline','No ads, no accounts','Get it on Google Play','href="privacy.html"','mailto:hello@whistlestoplearning.com','name="viewport"'])
+        if(!ld.includes(need))p.push('site/landing.html does not say '+need);
+      const pid=(/details\?id=([\w.]+)/.exec(ld)||[])[1],pkg=(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1];
+      if(pid!==pkg)p.push('site/landing.html: the Google Play link is for '+pid+', PLAY.PKG is '+pkg);
+      if(/PLACEHOLDER/.test(ld))notes.push('site/landing.html: the Google Play link is a marked placeholder until the listing is live')}
+    for(const f of ['privacy.html','icon-192.png'])
+      if(!has(f)||!fs.readFileSync(path.join(sd,f)).equals(fs.readFileSync(path.join(ROOT,f))))p.push('site/'+f+' is not the same as /'+f+' (run python3 tools/build.py)');
+    for(const f of ['index.html','sw.js','manifest.json'])if(has(f))p.push('site/'+f+' must not exist: the information page never serves the app');
+    let sv=null;try{sv=JSON.parse(rd('site/vercel.json'))}catch(e){p.push('site/vercel.json: '+e.message)}
+    if(sv&&!(sv.rewrites||[]).some(r=>r.source==='/'&&r.destination==='/landing.html'))p.push('site/vercel.json does not show landing.html at /')}
   const grown=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
   if(!/<a class="btn soft sm" id="ab-priv" href="privacy\.html"/.test(grown))p.push('About does not link privacy.html');
   if(!sw.includes("'./privacy.html'"))p.push('sw.js does not precache privacy.html (it must open offline from About)');
@@ -23422,10 +23447,25 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
     const pages=['http://x/privacy.html','http://x/.well-known/assetlinks.json'].flatMap(u=>[[u,false,'CACHED',nav(u,false)],[u,true,'PAGE',nav(u,true)]]);
     // the moved notice: only on the old address (andoreza-sudo.github.io), in Grown-ups, saying how to carry progress over
     const E=require('./es-audio.js'),ctx=E.loadApp(null,{}),mv=h=>vm.runInContext('location={hostname:'+JSON.stringify(h)+',protocol:"https:"};gwMoved()',ctx);
-    const old=mv('andoreza-sudo.github.io'),neu=mv('whistlestoplearning.com'),loc=mv('');
-    if(!/We moved to whistlestoplearning\.com/.test(old)||!/Save a backup/.test(old)||!/Load a backup/.test(old)||!/id="gw-moved"/.test(old)||neu||loc)
+    const old=mv('andoreza-sudo.github.io'),neu=mv('whistlestoplearning.com')+mv('app.whistlestoplearning.com'),loc=mv('');
+    // owner decision 2026-11-20: the app is on app.whistlestoplearning.com (was whistlestoplearning.com); set up first (Load a backup is in
+    // Grown-ups, after setup and a new PIN), then remove the old home-screen icon
+    if(!/We moved to app\.whistlestoplearning\.com/.test(old)||!/Save a backup/.test(old)||!/Load a backup/.test(old)||!/id="gw-moved"/.test(old)||neu||loc
+      ||!/finish setting up there first/.test(old)||!/remove the old icon/.test(old)||/[^.]\bwhistlestoplearning\.com/.test(old.replace(/app\.whistlestoplearning\.com/g,'')))
       p.push('the moved notice: '+JSON.stringify({old:old.slice(0,80),neu,loc}));
     if(!/<div class="scroll gw">\$\{gwMoved\(\)\}/.test(grown))p.push('Grown-ups does not show the moved notice at the top');
+    // Fable rename review: a page that is not the app has the same 3-second race as the app page: a network that never answers gives its
+    // own cached copy after NAV_MS; with no cached copy it keeps waiting for the network (and is still never stored as ./index.html)
+    const race=(cached,late)=>{const H={};let resp=null,timer=null,netOk=null;
+      vm.runInNewContext(sw,{self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,
+        setTimeout:(f,ms)=>{timer=[f,ms];return 1},clearTimeout(){timer=null},
+        caches:{match:async()=>cached?'CACHED':undefined,open:async()=>({put:async k=>{puts.push(k)}}),keys:async()=>[]},
+        fetch:()=>new Promise(ok=>{netOk=ok}),Response:{error:()=>'ERROR'}});
+      H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:'http://x/privacy.html'},respondWith:pr=>{resp=pr},waitUntil(){}});
+      let got='PENDING';if(resp)resp.then(r=>{got=r&&r.body||r});
+      return (async()=>{const ms=timer&&timer[1];if(timer)timer[0]();for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));
+        if(late&&netOk)netOk({ok:true,body:'PAGE',clone(){return this}});for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));return ms+':'+got})()};
+    pages.push(['privacy.html, the network silent, cached copy',false,'3000:CACHED',race(true,false)],['privacy.html, the network silent, no cached copy, then late',true,'3000:PAGE',race(false,true)]);
     return (async()=>{for(const [u,on,want,pr] of pages){const r=pr&&await pr;
       if(r!==want)p.push('sw.js: opening '+u+(on?' online':' offline')+' gave '+JSON.stringify(r))}
       for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));

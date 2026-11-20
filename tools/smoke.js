@@ -10705,7 +10705,7 @@ async function main() {
             if (!ab.privOk || !ab.priv.startsWith('file://') || !fs.existsSync(decodeURIComponent(new URL(ab.priv).pathname))) bad.push(t + ': the privacy policy link: ' + ab.priv);
             if (ab.rel !== '1.0.0') bad.push(t + ': About shows the version "' + ab.rel + '"');
             if (ab.bld !== build) bad.push(t + ': About shows the build "' + ab.bld + '", wanted ' + build);
-            for (const need of ['Andika', 'SIL Open Font License', 'Copyright (c) 2004-2022 SIL International', 'Nothing is sent anywhere', 'only on this device'])
+            for (const need of ['Andika', 'SIL Open Font License', 'Copyright (c) 2004-2022 SIL International', 'nothing about your child is sent anywhere', 'stay on this device', 'confirmed with Google Play']) // Fable rename review: the About privacy line (was 'Nothing is sent anywhere', 'only on this device')
               if (!ab.text.includes(need)) bad.push(t + ': About does not say "' + need + '"');
             if (ab.small) bad.push(t + ': About has ' + ab.small + ' targets under 48 px');
             if (!ab.inside) bad.push(t + ': the About card is wider than the screen');
@@ -10720,9 +10720,32 @@ async function main() {
           await pa.ctx.close();
         }
       }
+      // Owner decision 2026-11-20 (app on the subdomain): the information page whistlestoplearning.com/ (site/landing.html, the second
+      // Vercel project) at phone and tablet sizes: no horizontal scroll, no script and no service worker, the privacy policy next to it,
+      // the Play link and the contact e-mail, and no link to the web app.
+      for (const [w, h] of [[360, 740], [1024, 600]]) {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h } }), pg = await ctx.newPage(), errs = [];
+        pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() == 'error') errs.push(m.text()); });
+        try {
+          await pg.goto('file://' + path.join(ROOT, 'site', 'landing.html'));
+          const ld = await pg.evaluate(async () => ({ sw: navigator.serviceWorker && /^http/.test(location.protocol) ? (await navigator.serviceWorker.getRegistrations()).length : 0, // file://: no script means no registration
+            scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth, scripts: document.scripts.length,
+            links: [...document.querySelectorAll('a')].map(a => a.getAttribute('href')), h1: (document.querySelector('h1') || {}).textContent,
+            img: [...document.images].every(i => i.complete && i.naturalWidth > 0) }));
+          const t = 'landing ' + w + 'x' + h;
+          if (ld.scroll > 0) bad.push(t + ': scrolls sideways by ' + ld.scroll + ' px');
+          if (ld.scripts || ld.sw) bad.push(t + ': has a script or a service worker');
+          if (ld.h1 !== 'Whistlestop' || !ld.img) bad.push(t + ': the title or the icon: ' + ld.h1 + ' ' + ld.img);
+          if (!ld.links.includes('privacy.html') || !fs.existsSync(path.join(ROOT, 'site', 'privacy.html'))) bad.push(t + ': the privacy policy link: ' + ld.links.join(' '));
+          if (!ld.links.some(l => /^https:\/\/play\.google\.com\//.test(l)) || !ld.links.includes('mailto:hello@whistlestoplearning.com')) bad.push(t + ': the Play link or the e-mail: ' + ld.links.join(' '));
+          if (ld.links.some(l => /app\.whistlestoplearning|index\.html/.test(l))) bad.push(t + ': links the web app: ' + ld.links.join(' '));
+          if (errs.length) bad.push(t + ': errors ' + errs.join(' | '));
+        } catch (e) { bad.push('landing ' + w + 'x' + h + ' ' + e.message.split('\n')[0]); }
+        await ctx.close();
+      }
       if (bad.length) fail('P6-05 release:\n  ' + bad.slice(0, 40).join('\n  '));
       else step('P6-05 release 1.0 at 380x780 and 1024x600: a fresh install (setup to Home) and an upgrade from the legacy and midway saves (' + notes.join(', ') +
-        ') opened Home with the same stars and name, the title, the footer and Grown-ups > About Whistlestop say Whistlestop 1.0.0 and build ' + build + ', the privacy policy is linked, the Andika licence is listed and opens');
+        ') opened Home with the same stars and name, the title, the footer and Grown-ups > About Whistlestop say Whistlestop 1.0.0 and build ' + build + ', the privacy policy is linked, the Andika licence is listed and opens; the information page (site/landing.html) at 360x740 and 1024x600: no sideways scroll, no script or service worker, privacy, Play and e-mail links, no link to the web app');
     }
 
     // ES-AUDIO recorded Spanish at 380x780 (midway save), on a tablet with NO Spanish voice (English only): play() of the <audio> element is

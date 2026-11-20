@@ -3,35 +3,69 @@
 The app side is built (PLAY-01 v180, renamed v191): a free sample, a one-time unlock bought through Google Play billing, Restore
 purchase, an acknowledgement endpoint (`api/ack.js`), a privacy policy (`privacy.html`) and a Digital Asset Links template
 (`.well-known/assetlinks.json`). The web version stays fully open. The Play app is a Trusted Web Activity (TWA): an Android shell
-that shows https://whistlestoplearning.com/ full screen.
+that shows https://app.whistlestoplearning.com/ full screen.
+
+**Two addresses (owner decision 2026-11-20, "App on a subdomain").** https://whistlestoplearning.com/ (the bare domain, the
+"apex") is a small static information page, `site/landing.html`: what Whistlestop is, a Get it on Google Play link, the privacy
+policy and the contact e-mail. It has no scripts and no service worker, and it does not offer the web app. The app itself is on
+**https://app.whistlestoplearning.com/**, and that is where the Play app starts, where `assetlinks.json` is served and where saves
+live (saves are per address, so the app must only ever run there). `/privacy.html` opens on both addresses.
 
 Fixed values used below:
 
 | What | Value |
 |------|-------|
-| Domain | `whistlestoplearning.com` |
+| Information page | `https://whistlestoplearning.com/` (`site/landing.html`; `www.` redirects to it) |
+| The app | `https://app.whistlestoplearning.com/` |
 | Play title | Whistlestop: Kids Math & Reading |
-| TWA start URL | `https://whistlestoplearning.com/?src=play` |
+| TWA start URL | `https://app.whistlestoplearning.com/?src=play` |
 | Package name | `com.whistlestoplearning.app` (**proposed**: confirm it before the first upload; it can never change after that. If you pick another, change `PLAY.PKG` in `src/js/03-play.js` and `package_name` in `.well-known/assetlinks.json`, then rebuild and redeploy) |
 | In-app product | `unlock_all`, one-time, 9.99 USD |
-| Privacy policy | `https://whistlestoplearning.com/privacy.html` |
+| Privacy policy | `https://whistlestoplearning.com/privacy.html` (the same page is at `https://app.whistlestoplearning.com/privacy.html`) |
+| Developer name in the privacy policy | `DEVELOPER_NAME` placeholder in `privacy.html`: replace it with your developer name exactly as Play Console shows it, then run `python3 tools/build.py` (it copies the page to `site/`) |
 | Contact e-mail | `hello@whistlestoplearning.com` |
 
 ## The checklist, in order
 
 You own whistlestoplearning.com. Do these in order; each step needs the one before it.
 
-### 1. Vercel: import the repo and add the domain
-1. On vercel.com, add a new project and import the GitHub repository. Framework preset: **Other**. No build command, no install
-   command; the output is the repository root (the built files are committed).
+### 1. Vercel: two projects from the same repository, one per address
+Why two projects: the app's `index.html` sits at the root of the repository, and as far as we know Vercel serves a file that exists
+before it applies a `vercel.json` rewrite, so a host-based rewrite of `/` to the information page (`"has": [{"type": "host",
+"value": "whistlestoplearning.com"}]`) would not reliably win over the app's `index.html`; a redirect would show `/landing.html` in
+the address bar. With two projects the bare domain has no app files at all, so it can never register the app's service worker. If you
+prefer one project, test the host rule on a preview deployment first; we have not been able to test Vercel's routing here.
+
+**Project A, the app (`app.whistlestoplearning.com`)**
+1. On vercel.com, add a new project and import the GitHub repository. Name it for example `whistlestop-app`. Framework preset:
+   **Other**. Root Directory: the repository root (leave it empty). No build command, no install command (the built files are
+   committed). Production branch: `main`.
 2. Deploy. Open the `*.vercel.app` address it gives you: the app should start, and `/privacy.html` and
    `/.well-known/assetlinks.json` should open.
-3. In the project's settings, find **Domains** and add `whistlestoplearning.com` (and `www.whistlestoplearning.com`, redirecting
-   to it). Vercel shows the DNS records to create; add them where you bought the domain. Wait until Vercel shows the domain as valid
-   (HTTPS is automatic).
-4. Check: https://whistlestoplearning.com/ opens the app and the bottom of Home says "Whistlestop 1.0.0 (build v191)" or later.
-   https://whistlestoplearning.com/.well-known/assetlinks.json must open as JSON, with no redirect (`vercel.json` already sends it
-   as `application/json`; `.vercelignore` never leaves out `.well-known`, `privacy.html` or `api`).
+3. In the project's settings, find **Domains** and add **`app.whistlestoplearning.com`** only. Vercel shows the DNS record to create
+   for it (normally a **CNAME** named `app` pointing to the target Vercel shows); add it where you bought the domain. Wait until
+   Vercel shows the domain as valid (HTTPS is automatic). Do not add the bare domain or `www` to this project.
+4. Check: https://app.whistlestoplearning.com/ opens the app and the bottom of Home says "Whistlestop 1.0.0 (build v191)" or later.
+   https://app.whistlestoplearning.com/.well-known/assetlinks.json must answer **200** and open as JSON, **with no redirect**
+   (`vercel.json` already sends it as `application/json`; `.vercelignore` never leaves out `.well-known`, `privacy.html` or `api`).
+   https://app.whistlestoplearning.com/privacy.html opens the privacy policy.
+5. The environment variables of step 7 and the `/api/ack` rate limit go on **this** project.
+
+**Project B, the information page (`whistlestoplearning.com`)**
+1. Add a second project from the **same** repository, for example `whistlestop-site`. Framework preset: **Other**. **Root Directory:
+   `site`**. No build command, no install command. Production branch: `main`.
+2. `site/` holds only `landing.html`, a copy of `privacy.html`, the icon and `site/vercel.json` (which shows `landing.html` at `/`).
+   `python3 tools/build.py` refreshes the copies, and test.js checks they match, so edit `privacy.html` at the repository root only.
+3. In this project's **Domains**, add **`whistlestoplearning.com`** and **`www.whistlestoplearning.com`**, and set `www` to
+   **redirect** to `whistlestoplearning.com` (Vercel offers this when you add `www`). Vercel shows the records for the bare domain
+   (normally an **A** record) and for `www` (normally a **CNAME**); add them where you bought the domain.
+4. Check: https://whistlestoplearning.com/ shows the information page (no app, no install prompt); https://www.whistlestoplearning.com/
+   lands on https://whistlestoplearning.com/; https://whistlestoplearning.com/privacy.html opens the policy.
+5. Every push to `main` deploys both projects. Project A also publishes the `site/` folder at `app.whistlestoplearning.com/site/`;
+   that is harmless (static pages, no scripts), so it is not left out with `.vercelignore` (a `.vercelignore` entry could also hide
+   it from Project B).
+
+**Plan terms**: Vercel's Hobby plan is for non-commercial use; a paid Play app likely needs Pro. Check before going live.
 
 ### 2. E-mail forward
 Set up `hello@whistlestoplearning.com` to forward to the inbox you read. Many domain registrars offer free e-mail forwarding;
@@ -44,7 +78,7 @@ and goes in the Play listing as the contact e-mail.
 2. Create the app: name **Whistlestop: Kids Math & Reading**, default language English (United States), **App**, **Free** (the
    unlock is an in-app product), and accept the declarations.
 3. In Play Console, find **App content** (under Policy) and fill in each part:
-   - **Privacy policy**: `https://whistlestoplearning.com/privacy.html`.
+   - **Privacy policy**: `https://whistlestoplearning.com/privacy.html` (replace `DEVELOPER_NAME` in it first, see the table).
    - **Target audience and content**: ages **5 and under, 6-8, 9-12** (Pre-K to 6th grade). This puts the app in the **Families**
      program: accept the Families policy declaration.
    - **Ads**: No, the app contains no ads.
@@ -52,8 +86,9 @@ and goes in the Play listing as the contact e-mail.
      users, no location; it **does** have in-app purchases. Expect "Everyone" / PEGI 3.
    - **Data safety**: declare **Purchase history: collected, not shared, processed ephemerally, required for app functionality**
      (the purchase token goes to `api/ack` to acknowledge the purchase and is not stored). Nothing else is collected: progress,
-     recordings and the PIN stay on the tablet. Data encrypted in transit: yes (HTTPS). Deletion: Grown-ups > Start over, or
-     uninstall. Read the current form's wording before answering.
+     recordings and the PIN stay on the tablet. Data encrypted in transit: yes (HTTPS). Deletion: Grown-ups > Start over or
+     Delete a child; everything by clearing the site's data (see "Data deletion" in the Reference). Read the current form's wording
+     before answering.
    - **App access**: "All or some functionality is restricted", with the reviewer note at the end of this page.
    - **Government apps, financial features, health**: No.
 
@@ -61,7 +96,8 @@ and goes in the Play listing as the contact e-mail.
 Use the start URL and package name from the table above. With **Bubblewrap** (needs Node; it offers to install the JDK and Android
 SDK it needs):
 1. In an empty folder named `twa` (outside the repo, or inside it: `.vercelignore` leaves out `twa`, and `.gitignore` leaves out
-   `*.keystore` and `*.jks`), run `npx @bubblewrap/cli init --manifest https://whistlestoplearning.com/manifest.json`.
+   `*.keystore` and `*.jks`), run `npx @bubblewrap/cli init --manifest https://app.whistlestoplearning.com/manifest.json`.
+   The host Bubblewrap records must be **`app.whistlestoplearning.com`** (not the bare domain): check `"host"` in `twa-manifest.json`.
 2. Answer its questions: application ID (package) `com.whistlestoplearning.app`, app name and launcher name Whistlestop. It
    creates a signing key (the **upload key**): keep the keystore file and its passwords safe and private, outside git.
 3. **Hand-edit `twa-manifest.json`**: Bubblewrap takes the start URL from the web manifest, which is `./` (so `/`). Change
@@ -71,7 +107,7 @@ SDK it needs):
    ads or analytics (Families).
 5. Run `npx @bubblewrap/cli update`, then `npx @bubblewrap/cli build`. Upload the `.aab` it makes in step 5.
 
-With **PWABuilder** instead: package for Android from `https://whistlestoplearning.com`, set the package ID to
+With **PWABuilder** instead: package for Android from `https://app.whistlestoplearning.com`, set the package ID to
 `com.whistlestoplearning.app` and the start URL to `/?src=play`, and make sure Play Billing is enabled in the options. Keep the
 signing key it gives you.
 
@@ -83,7 +119,8 @@ signing key it gives you.
 3. In `.well-known/assetlinks.json`, replace `PLACEHOLDER_SHA256_FROM_PLAY_CONSOLE_APP_SIGNING_REPLACE_BEFORE_RELEASE` with it.
    To also test an APK you install yourself (signed with your upload key), add the upload key's SHA-256 as a second entry in the
    same list. `node tools/test.js --only rename` checks the file and notes while the placeholder is still there.
-4. Commit and let Vercel redeploy; check https://whistlestoplearning.com/.well-known/assetlinks.json shows the fingerprint. When
+4. Commit and let Vercel redeploy; check https://app.whistlestoplearning.com/.well-known/assetlinks.json shows the fingerprint (200,
+   no redirect; it is only needed on `app.`, the address the Play app opens). When
    it is right, the installed app opens full screen with no address bar. If you see an address bar, the fingerprint or package
    name does not match.
 
@@ -105,7 +142,7 @@ stores nothing.
    account**, and create a **JSON key** for it. Keep the file private; never put it in the repo.
 2. In Play Console, find **Users and permissions** and invite the service account's e-mail, with the app permissions **View
    financial data, orders, and cancellation survey responses** and **Manage orders and subscriptions**.
-3. In Vercel, the project's settings, **Environment Variables**:
+3. In Vercel, the **app** project's settings (Project A), **Environment Variables**:
    - `PLAY_SERVICE_ACCOUNT`: the whole contents of the JSON key file, as one value.
    - `PLAY_PACKAGE`: `com.whistlestoplearning.app` (the package name).
    Redeploy. Never add `api` to `.vercelignore` (test.js checks this).
@@ -142,8 +179,10 @@ Then send the release for review.
 
 ## The old address
 The web version used to be at andoreza-sudo.github.io/star-school/. Saves live per web address, so on that address Grown-ups shows
-"We moved to whistlestoplearning.com ..." with how to carry progress over: Save a backup there, then Load a backup on the new
-address. Old backup files (they say "Star School" inside) load in Whistlestop.
+"We moved to app.whistlestoplearning.com ..." with how to carry progress over: Save a backup there; on app.whistlestoplearning.com,
+finish setting up first (Load a backup is in Grown-ups, which a fresh install reaches only after setup and a new PIN), then Grown-ups >
+Load a backup > Yes, replace; then remove the old home-screen icon. Old backup files (they say "Star School" inside) load in
+Whistlestop. The bare domain whistlestoplearning.com never runs the app, so a tablet must use the `app.` address.
 
 ## Reference
 
@@ -158,6 +197,13 @@ open only their own progress.
 **Reviewer note (App content > App access, "All or some functionality is restricted")**: "Settings and the one-time unlock are
 behind a parent PIN. On a fresh install: tap Grown-ups at the top of the home screen, answer the multiplication question, then choose
 any 4-digit PIN (for example 2580) and type it again. Use that PIN afterwards. No account or login is needed."
+
+**Data deletion (privacy policy)**: each child: Grown-ups > Start over, or Delete next to a child. Everything, including the PIN:
+clear the site's data (Chrome asks when uninstalling; or Chrome > Settings > Site settings > app.whistlestoplearning.com).
+
+**Reading aloud (privacy policy)**: the app picks a voice installed on the tablet first (`pickVoice`, `src/js/12-speech.js`). If no
+voice for the language is installed, Chrome may use an online voice: the words being read (app text, and the child's name or nickname
+in greetings such as "Hi, Mia!") then go to that voice's provider, usually Google. The policy says so.
 
 **Play mode**: the app enters Play mode only when opened by the Play app (the start URL's `?src=play`, or the referrer
 `android-app://` + `PLAY.PKG`) and Google Play billing answers. Never on github.io. The web version is never locked.

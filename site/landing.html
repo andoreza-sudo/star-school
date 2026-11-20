@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow">
+<meta name="description" content="Whistlestop: math, reading, Spanish and Discover practice for Pre-K to 6th grade. Works offline. No ads, no accounts.">
+<title>Whistlestop: Kids Math &amp; Reading</title>
+<!-- The information page at https://whistlestoplearning.com/ (owner decision 2026-11-20: the app itself is on
+     app.whistlestoplearning.com). Static on purpose: no scripts, no service worker, nothing loaded from elsewhere.
+     Colours are the app's design tokens (src/css/00-tokens.css), copied inline. Published by the second Vercel project
+     (Root Directory: site); docs/PLAY-SETUP.md step 1. -->
+<style>
+:root{--ink:#1F2440;--ink-2:#3D4263;--paper:#FFF9EF;--surface:#FFFFFF;--line:#E3E5EF;--brand:#3B5BDB;--brand-shade:#2F49B8;--star-tint:#FFF1C7;
+--math:#1F4FB8;--read:#A61E4D;--es:#0F5F3A;--disc:#0A5A62}
+html{background:var(--paper)}
+body{margin:0 auto;max-width:720px;padding:24px 16px 48px;color:var(--ink);background:var(--paper);font:18px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+header img{width:72px;height:72px;border-radius:18px;flex:none}
+h1{font-size:32px;line-height:1.15;margin:0}
+.tag{color:var(--ink-2);margin:4px 0 0}
+h2{font-size:22px;margin:32px 0 8px}
+p,li{margin:0 0 10px}
+ul{padding-left:0;list-style:none}
+.subj{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:16px 0}
+.subj li{margin:0;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--surface);font-weight:700}
+.subj .m{color:var(--math)}.subj .r{color:var(--read)}.subj .e{color:var(--es)}.subj .d{color:var(--disc)}
+.facts li{padding-left:28px;position:relative}
+.facts li::before{content:"\2713";position:absolute;left:4px;color:var(--brand);font-weight:700}
+.play{display:inline-block;margin:8px 0 4px;padding:14px 22px;border-radius:14px;background:var(--brand);color:#FFFFFF;font-weight:700;
+text-decoration:none;box-shadow:0 4px 0 var(--brand-shade);min-height:24px}
+.play:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.soon{display:block;color:var(--ink-2);font-size:16px}
+.box{border:2px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--star-tint)}
+a{color:var(--brand-shade);font-weight:700}
+footer{margin-top:40px;padding-top:16px;border-top:2px solid var(--line);color:var(--ink-2);font-size:16px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<img src="icon-192.png" alt="" width="72" height="72">
+<div>
+<h1>Whistlestop</h1>
+<p class="tag">Kids math &amp; reading, Pre-K to 6th grade</p>
+</div>
+</header>
+
+<p>Whistlestop is a learning app for children from Pre-K to 6th grade. Children practise a little every day, with short lessons
+and hints when they get stuck, and earn game time by learning.</p>
+
+<ul class="subj" aria-label="Subjects">
+<li class="m">Math</li>
+<li class="r">Reading</li>
+<li class="e">Spanish</li>
+<li class="d">Discover</li>
+</ul>
+
+<ul class="facts">
+<li>Works offline once it is installed.</li>
+<li>No ads, no accounts, no tracking.</li>
+<li>Progress stays on the tablet.</li>
+<li>Made for Android tablets.</li>
+</ul>
+
+<h2>Get Whistlestop</h2>
+<!-- PLACEHOLDER: the Google Play listing is not live yet. Check this link (it uses the proposed package name
+     com.whistlestoplearning.app) once the app is published, and remove the "Coming soon" line. -->
+<p><a class="play" href="https://play.google.com/store/apps/details?id=com.whistlestoplearning.app">Get it on Google Play</a>
+<span class="soon">Coming soon.</span></p>
+<p>Free to try. One payment unlocks everything for every child on the tablet.</p>
+
+<h2>Privacy</h2>
+<div class="box">
+<p>Nothing about your child is sent to us. Read the <a href="privacy.html">privacy policy</a>.</p>
+</div>
+
+<footer>
+<p>Questions: <a href="mailto:hello@whistlestoplearning.com">hello@whistlestoplearning.com</a></p>
+</footer>
+</main>
+</body>
+</html>

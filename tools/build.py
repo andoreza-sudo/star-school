@@ -255,6 +255,8 @@ AUDIO = [d + '/' + n for d in ('es', 'en', 'teach') if os.path.isdir(os.path.joi
 AUDIO_BYTES = sum(os.path.getsize(os.path.join(ROOT, 'audio', n)) for n in AUDIO)
 # Service worker. Cache name and precache list carry VER, so one release's index.html, part files and data file are cached and replaced together.
 # Only good (2xx) responses are cached; a script that cannot be fetched offline fails as a script (never gets index.html as its body).
+# A page that is not the app (privacy.html, assetlinks.json) is network first with the same NAV_MS race as the app page (Fable rename
+# review): after 3 s its own cached copy if there is one (else it keeps waiting for the network); it is never stored as ./index.html.
 open(OUT + '/sw.js', 'w').write("""const C='starschool-"""+VER+"""';
 const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./manifest.json','./icon-192.png','./icon-512.png','./privacy.html'];
 const A='starschool-audio';
@@ -270,7 +272,9 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
- if(e.request.mode==='navigate'&&!/\\/(index\\.html)?$/.test(new URL(e.request.url).pathname)){e.respondWith(fetch(e.request).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||Response.error())));return}
+ if(e.request.mode==='navigate'&&!/\\/(index\\.html)?$/.test(new URL(e.request.url).pathname)){const net=fetch(e.request),own=()=>caches.match(e.request,{ignoreSearch:true});e.waitUntil(net.catch(()=>{}));
+  e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},t=setTimeout(()=>own().then(fin),NAV_MS);
+   net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);own().then(r=>fin(r||Response.error()))})}));return}
  if(e.request.mode==='navigate'){let late=0;const net=fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok&&!late){const cp=res.clone();e.waitUntil(caches.open(C).then(c=>c.put('./index.html',cp)))}return res});
   e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
@@ -335,5 +339,11 @@ def app_icon(size):
     return im.resize((size, size), Image.LANCZOS)
 for s in (192, 512):
     app_icon(s).save(OUT + '/icon-%d.png' % s, optimize=True)
+# The information page's project (owner decision 2026-11-20: whistlestoplearning.com is a static info page, site/landing.html; the app is on
+# app.whistlestoplearning.com). Its Vercel project publishes only site/ (Root Directory), so the privacy policy and the icon are copied
+# there from the repo root: one source, the same page on both hosts (test.js "rename" checks they match). docs/PLAY-SETUP.md step 1.
+import shutil
+for f in ('privacy.html', 'icon-192.png'):
+    shutil.copyfile(os.path.join(ROOT, f), os.path.join(ROOT, 'site', f))
 print(os.listdir(OUT), os.path.getsize(OUT + '/index.html'), [os.path.getsize(OUT + '/' + f) for f in FILES])
 print('audio (ES-AUDIO, EN-PRAISE and TEACH-4, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))

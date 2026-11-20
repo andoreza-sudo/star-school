@@ -13,7 +13,9 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\/audio\/e[ns]\/|\/audio\/teach\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\d*)-(\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
- if(e.request.mode==='navigate'&&!/\/(index\.html)?$/.test(new URL(e.request.url).pathname)){e.respondWith(fetch(e.request).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||Response.error())));return}
+ if(e.request.mode==='navigate'&&!/\/(index\.html)?$/.test(new URL(e.request.url).pathname)){const net=fetch(e.request),own=()=>caches.match(e.request,{ignoreSearch:true});e.waitUntil(net.catch(()=>{}));
+  e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},t=setTimeout(()=>own().then(fin),NAV_MS);
+   net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);own().then(r=>fin(r||Response.error()))})}));return}
  if(e.request.mode==='navigate'){let late=0;const net=fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok&&!late){const cp=res.clone();e.waitUntil(caches.open(C).then(c=>c.put('./index.html',cp)))}return res});
   e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');

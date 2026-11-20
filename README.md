@@ -11,7 +11,7 @@ no accounts, no ads, no tracking, and no internet needed after the first load.
 for children from Pre-K through 6th grade. Learning rounds earn stars, coins and game time. The coins dress and feed a pet, and the game time
 opens the Game Room. There are no accounts, no ads and no tracking.
 
-**Install on a tablet (add to home screen).** Open https://whistlestoplearning.com/ in Chrome while the tablet is on wifi.
+**Install on a tablet (add to home screen).** Open https://app.whistlestoplearning.com/ in Chrome while the tablet is on wifi.
 Tap the menu (three dots), then **Install app** (or **Add to Home screen**). Open it once; after that it works with no internet.
 
 **Spanish voices.** Spanish is spoken by recorded voices (a man's voice, and a woman's for the women and girls in the stories and some

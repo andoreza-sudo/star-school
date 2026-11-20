@@ -4003,7 +4003,7 @@ const GW = {
 function aboutCard(){
   return GW.card('gw-about','info','About Whistlestop',
     `<p class="gw-p">Whistlestop is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
-    <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
+    <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress and recordings stay on this device; nothing about your child is sent anywhere. In the Google Play app, the purchase is confirmed with Google Play.</span></p>
     <p class="gw-note" id="ab-gate">${ico('gear',22)}<span>To open Grown-ups, tap Grown-ups on Home and type your PIN. Forgot it? Tap Forgot PIN? on the number pad.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
     <p class="gw-bkrow"><a class="btn soft sm" id="ab-priv" href="privacy.html" target="_blank" rel="noopener">${ico('doc')}<span>Privacy policy</span></a></p>
@@ -4029,8 +4029,9 @@ const CHEER_NAMES={mix:'Mixed',f:'Female',m:'Male',tts:'Tablet voice'}; // EN-PR
 // in (loading it if a round has not); it stays hidden when no interest is reviewed (PERSW empty).
 function persGrown(){const go=()=>{if(typeof persCard=='function')persCard($('#gw-pers'))};
   if(typeof persCard=='function')go();else if(typeof partLoad=='function')partLoad('hints').then(go,()=>{})}
-// RENAME (v191): the old web address shows grown-ups how to take progress to the new one (storage is per address, so a backup carries it)
-const MOVED_LINE='We moved to whistlestoplearning.com, and the app is now called Whistlestop. To keep progress, tap Save a backup (or Save all children) under Backup below, then open whistlestoplearning.com in Chrome, open Grown-ups there and tap Load a backup.';
+// RENAME (v191): the old web address shows how to take progress to the new one, app.whistlestoplearning.com (owner decision 2026-11-20).
+// Storage is per address, so a backup carries it; Load a backup needs setup and a PIN first on a fresh install.
+const MOVED_LINE='We moved to app.whistlestoplearning.com, and the app is now called Whistlestop. To keep progress: 1. Tap Save a backup (or Save all children) under Backup below. 2. Open app.whistlestoplearning.com in Chrome and finish setting up there first (any name and grade: the backup replaces it). 3. Open Grown-ups there, choose a PIN, tap Load a backup, pick the file and tap Yes, replace (each further child: Add as a new child). 4. When the progress is there, remove the old icon (the one that opens this address) from the home screen: press and hold it, then Uninstall or Remove.';
 function gwMoved(h=location.hostname){return h==='andoreza-sudo.github.io'?`<p class="gw-note" id="gw-moved" role="status">${ico('info',22)}<span>${MOVED_LINE}</span></p>`:''}
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
