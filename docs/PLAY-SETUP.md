@@ -202,8 +202,8 @@ any 4-digit PIN (for example 2580) and type it again. Use that PIN afterwards. N
 clear the site's data (Chrome asks when uninstalling; or Chrome > Settings > Site settings > app.whistlestoplearning.com).
 
 **Reading aloud (privacy policy)**: the app picks a voice installed on the tablet first (`pickVoice`, `src/js/12-speech.js`). If no
-voice for the language is installed, Chrome may use an online voice: the words being read (app text, and the child's name or nickname
-in greetings such as "Hi, Mia!") then go to that voice's provider, usually Google. The policy says so.
+voice for the language is installed, Chrome may use an online voice: the words being read (app text) then go to that voice's provider, usually Google.
+A child's name never does: with such a voice `ttsSay` speaks "friend" instead of every child's name (`noNames`). The policy says so.
 
 **Play mode**: the app enters Play mode only when opened by the Play app (the start URL's `?src=play`, or the referrer
 `android-app://` + `PLAY.PKG`) and Google Play billing answers. Never on github.io. The web version is never locked.

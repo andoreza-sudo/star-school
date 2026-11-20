@@ -112,9 +112,15 @@ function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
   if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,es,slow]});else ttsSay(t,btn,es,slow)}
 // the tablet's voice. ESA.tts counts our utterances still to end (a queued recording starts when it is 0); a slow poll stands in
 // for an end event that some engines never fire
+// RENAME-2: an online voice (pickVoice found none on the tablet) never hears a child's name: noNames says "friend" (the screen keeps it)
+function kidNames(){const o=new Set();const add=n=>{n=String(n||'').trim();if(n)o.add(n)};add(typeof S!='undefined'&&S&&S.name);
+  try{if(typeof PRF!='undefined'&&PRF.ids)for(const id of PRF.ids)add(PRF.info(id).name)}catch(e){}return[...o].sort((a,b)=>b.length-a.length)}
+function noNames(t,names=kidNames()){let s=String(t);for(const n of names){const re=new RegExp('(?<![\\p{L}\\p{N}])'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','giu');
+  if(s.trim().replace(re,'').replace(/[\s!?.,]/g,'')===''&&re.test(s))return'';s=s.replace(re,'friend')}return s}
 function ttsSay(t,btn,es,slow,cheer){
-  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
-  const v=pickVoice(es);if(v)u.voice=v;
+  try{const v=pickVoice(es);if(!v||v.localService===false){t=noNames(t);if(!t.trim()){if(btn)btn.classList.remove('talking');esaPump();return}} // RENAME-2: an online voice never hears a child's name
+  const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+  if(v)u.voice=v;
   const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(ESA.tc===u)ESA.tc=null;if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};

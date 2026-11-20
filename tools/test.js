@@ -23409,7 +23409,7 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
       // Fable rename review and owner decision 2026-11-20 (app on the subdomain): the app's host, the developer, no parental consent because
       // nothing personal is collected, e-mail used only to reply, the online voice (12-speech.js pickVoice), and how to delete everything
       'app.whistlestoplearning.com/api/ack','Who we are','parental consent','only to reply','delete it on request','online voice','usually Google',
-      'name or nickname','Start over','Delete next to a child','Site settings, app.whistlestoplearning.com'])
+      'never a child\'s name','Start over','Delete next to a child','Site settings, app.whistlestoplearning.com'])
       if(!pv.includes(need))p.push('privacy.html does not say '+need);
     if(/uninstalling the app removes all/i.test(pv))p.push('privacy.html: uninstalling a Chrome-installed app does not always remove its data (Fable rename review)');
     if(/DEVELOPER_NAME/.test(pv))notes.push('privacy.html names the developer as the DEVELOPER_NAME placeholder: put the exact Play Console developer name in before release');
@@ -23472,6 +23472,29 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
       if(puts.includes('./index.html'))p.push('sw.js: opening a page that is not the app replaced the cached index.html');
       if(fetched!==4)p.push('sw.js: a page that is not the app is not asked from the network first ('+fetched+' fetches)');
       return{problems:p,note:notes.concat(['manifest '+man.name,'PLAY.PKG and assetlinks '+(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1]]).join('; ')}})()}
+});
+
+// RENAME-2 (coordinator, 2026-11-20): a child's name never goes to an online voice. ttsSay (12-speech.js) swaps every child's name for
+// "friend" when pickVoice found no voice stored on the tablet; a local voice keeps it; the screen text never changes.
+run('online voice RENAME-2: a non-local voice never hears a child name, a local voice does, the screen text is unchanged',()=>{
+  const p=[],vm=require('vm'),E=require('./es-audio.js');
+  const go=(voices,line,names)=>{const spoken=[];const ctx=E.loadApp(null,{window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},
+      speechSynthesis:{getVoices:()=>voices,speak:u=>spoken.push(u.text),cancel(){},speaking:false,pending:false}});
+    vm.runInContext("S.name="+JSON.stringify(names[0])+";S.voice=true;ENA.off=true;"+(names[1]?"PRF.ids=['p1','p2'];PRF.cur='p1';PRF.info=id=>({name:id=='p1'?S.name:"+JSON.stringify(names[1])+"});":''),ctx);
+    let shown=null;ctx.fb=t=>{shown=t};
+    vm.runInContext('ttsSay('+JSON.stringify(line)+',null,false)',ctx);return spoken.join('|')};
+  const net=[{lang:'en-US',localService:false,name:'Google US English'}],loc=[{lang:'en-US',localService:true,name:'Tablet'}];
+  const cases=[[net,'Hi Maya!',['Maya'],'Hi friend!'],[[],'Hi Maya!',['Maya'],'Hi friend!'],[loc,'Hi Maya!',['Maya'],'Hi Maya!'],
+    [net,'Well done, maya! You beat Zed!',['Maya','Zed'],'Well done, friend! You beat friend!'],[net,'Maya!',['Maya'],''],
+    [net,'Hello Ava Rose! I can read to you.',['Ava Rose'],'Hello friend! I can read to you.'],[net,'Mayan temples are old.',['Maya'],'Mayan temples are old.']];
+  for(const [v,line,names,want] of cases){const got=go(v,line,names);if(got!==want)p.push((v.length?(v[0].localService?'local':'online'):'no voice')+' "'+line+'" spoke "'+got+'", wanted "'+want+'"')}
+  // the screen text: noNames is used only inside ttsSay (what is spoken), never by fb, toasts or the say() text shown
+  const sp=fs.readFileSync(path.join(SRC,'js','12-speech.js'),'utf8'),uses=[...fs.readdirSync(path.join(SRC,'js'))].filter(n=>/noNames\(/.test(fs.readFileSync(path.join(SRC,'js',n),'utf8')));
+  if(uses.join()!=='12-speech.js'||(sp.replace(/\/\*[\s\S]*?\*\//g,'').match(/noNames\(/g)||[]).length!==2||!/function ttsSay[^\n]*\n\s*try\{const v=pickVoice\(es\);if\(!v\|\|v\.localService===false\)\{t=noNames\(t\)/.test(sp))
+    p.push('noNames must be applied only in ttsSay, to the spoken text, when the voice is not local');
+  {const ctx=E.loadApp(null,{window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>net,speak(){},cancel(){}}});
+    const shown=vm.runInContext("S.name='Maya';const L='Hi Maya!';ttsSay(L,null,false);L",ctx);if(shown!=='Hi Maya!')p.push('the line itself changed: '+shown)}
+  return{problems:p,note:cases.length+' lines'};
 });
 
 Promise.all(PENDING).then(()=>{
