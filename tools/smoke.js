@@ -8981,7 +8981,7 @@ async function main() {
         const toast = await bp.evaluate(() => document.querySelector('.toast') ? document.querySelector('.toast').textContent : '');
         await ba.ctx.setOffline(false);
         const dj = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (!/^starschool-.+\.json$/.test(dl.suggestedFilename()) || dj.data.stars !== s0.stars || dj.data.name !== s0.name || !/offline|Backup saved/i.test(toast))
+        if (!/^whistlestop-.+\.json$/.test(dl.suggestedFilename()) /* owner decision 2026-11-20: rename to Whistlestop (was starschool-) */ || dj.data.stars !== s0.stars || dj.data.name !== s0.name || !/offline|Backup saved/i.test(toast))
           bad.push(tag + ' downloaded backup: ' + dl.suggestedFilename() + ' ' + toast);
         // Start over: two taps (the first only arms it)
         await bp.click('#reset');

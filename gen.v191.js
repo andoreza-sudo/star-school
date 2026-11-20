@@ -4031,7 +4031,7 @@ function persGrown(){const go=()=>{if(typeof persCard=='function')persCard($('#g
   if(typeof persCard=='function')go();else if(typeof partLoad=='function')partLoad('hints').then(go,()=>{})}
 // RENAME (v191): the old web address shows grown-ups how to take progress to the new one (storage is per address, so a backup carries it)
 const MOVED_LINE='We moved to whistlestoplearning.com, and the app is now called Whistlestop. To keep progress, tap Save a backup (or Save all children) under Backup below, then open whistlestoplearning.com in Chrome, open Grown-ups there and tap Load a backup.';
-function gwMoved(){return location.hostname==='andoreza-sudo.github.io'?`<p class="gw-note" id="gw-moved" role="status">${ico('info',22)}<span>${MOVED_LINE}</span></p>`:''}
+function gwMoved(h=location.hostname){return h==='andoreza-sudo.github.io'?`<p class="gw-note" id="gw-moved" role="status">${ico('info',22)}<span>${MOVED_LINE}</span></p>`:''}
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
