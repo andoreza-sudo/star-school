@@ -55,7 +55,14 @@ const PRF = {
     const ids = [...new Set(o.ids.filter(id => PRF.SLOTS.includes(id)))];
     return { ids, cur: PRF.SLOTS.includes(o.cur) ? o.cur : ids[0] };
   },
-  writeIdx(ids, cur) { return PRF.put(PRF.IDX, JSON.stringify({ v: 1, ids, cur })); },
+  // RC-1: the index also keeps each child's picture password (pw: {slot: {s, h, n, t}}, 41c-kidpw.js, part gate); a rewrite keeps
+  // the passwords of the children it lists and drops the rest
+  writeIdx(ids, cur) {
+    const o = PRF.obj(PRF.get(PRF.IDX)), pw = {};
+    if (o && o.pw && typeof o.pw == 'object') for (const id of ids) if (o.pw[id]) pw[id] = o.pw[id];
+    return PRF.put(PRF.IDX, JSON.stringify(Object.keys(pw).length ? { v: 1, ids, cur, pw } : { v: 1, ids, cur }));
+  },
+  pwOn(id) { const o = PRF.obj(PRF.get(PRF.IDX)), x = o && o.pw && o.pw[id]; return !!(x && typeof x.h == 'string'); },
   // At load, before 42-paths.js migrates S: the children that exist (the index order, then any slot it does not list) and the
   // one who played last, whose save is loaded. 00-core.js already loaded child 1, so that is read again only for another child.
   boot() {
@@ -66,6 +73,8 @@ const PRF = {
     const listed = (idx ? idx.ids : []).filter(PRF.has);
     const ids = listed.concat(PRF.SLOTS.filter(id => !listed.includes(id) && PRF.has(id)));
     const cur = idx && ids.includes(idx.cur) ? idx.cur : ids[0] || 'p1';
+    const er = /^(.+)\|seen$/.exec(PRF.get(KEY + '-erased') || ''); // RC-1: an "Undo erase" copy Grown-ups has offered goes now (BAK.keepErased)
+    if (er) { PRF.drop(er[1] + '-undo'); PRF.drop(KEY + '-erased'); }
     if (!ids.length) ids.push(cur);
     PRF.ids = ids;
     PRF.cur = cur;
@@ -199,11 +208,13 @@ const PRF = {
     return PRF.put(PRF.key(id), JSON.stringify(d)) ? '' : PRF.FULL;
   },
   // Delete a child and everything kept for them (never the last one: that is Start over). Resolves to '' or a message.
-  async remove(id) {
+  // RC-1: keep (default): the deleted save is kept for "Undo erase" (BAK.keepErased, 81-backup.js)
+  async remove(id, keep = true) {
     if (!PRF.ids.includes(id) || PRF.ids.length < 2) return 'That child cannot be deleted.';
-    const k = PRF.key(id), ids = PRF.ids.filter(x => x !== id);
+    const k = PRF.key(id), ids = PRF.ids.filter(x => x !== id), raw = id === PRF.cur ? JSON.stringify(S) : PRF.get(k);
     if (id === PRF.cur) SAVE_OFF = true; // nothing may write the deleted save back before the app starts again
     for (const x of ['', '-bak', '-corrupt', '-undo']) PRF.drop(k + x);
+    if (keep && typeof BAK != 'undefined') BAK.keepErased(k, raw); // RC-1: kept for "Undo erase" (a restored save is a child again at the next start)
     PRF.drop(PRF.k('starschool-neon', id));
     PRF.writeIdx(ids, id === PRF.cur ? ids[0] : PRF.cur); // if this fails, the next start drops the missing child by itself
     PRF.ids = ids;
@@ -212,15 +223,22 @@ const PRF = {
   },
   // Start over with more than one child: this child's save becomes a fresh one in the same place (setup runs again).
   async wipe() {
-    if (!PRF.put(SKEY, JSON.stringify(PRF.fresh()))) return PRF.FULL;
+    const kept = typeof BAK != 'undefined' && BAK.keepErased(SKEY, JSON.stringify(S)); // RC-1: for "Undo erase"
+    if (!PRF.put(SKEY, JSON.stringify(PRF.fresh()))) {
+      if (kept) { PRF.drop(SKEY + '-undo'); PRF.drop(BAK.ERASED); }
+      return PRF.FULL;
+    }
     SAVE_OFF = true;
-    PRF.drop(SKEY + '-undo');
+    if (!kept) PRF.drop(SKEY + '-undo');
     await PRF.dropClips(PRF.cur);
     return '';
   },
   // Back from setup when another child exists: a new child who never finished setup is removed again (nothing is lost).
   async cancelNew() {
-    if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur);
+    // RC-2: setup after Erase everything (the erased save waits for "Undo erase"): Back puts the erased save back, never drops it
+    const er = typeof BAK != 'undefined' && BAK.erased();
+    if (er && er.k === PRF.key(PRF.cur) && !S.name && !(S.stars > 0)) BAK.undo();
+    else if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur, false); // RC-1: nothing to undo
     PRF.setWho('');
     reloadSaved();
   },
@@ -244,7 +262,7 @@ const PRF = {
     if (el) el.innerHTML = t ? `<p class="gw-warn">${ico('warning', 22)}<span>${esc(t)}</span></p>` : '';
   },
   // "Who is playing?": one big card per child (their pet on their place, the name, their stars). Tapping it plays as them.
-  pick() {
+  pick(grownUp) { // RC-1: grownUp (Grown-ups' "Who is playing?", behind the PIN): no picture passwords
     const cards = PRF.ids.map(id => {
       const i = PRF.info(id), nm = PRF.label(i);
       return `<button class="pf-kid" data-kid="${id}" aria-label="${esc(nm)}"><span class="pf-stage sc-${esc(i.scene)}">` +
@@ -258,8 +276,9 @@ const PRF = {
     $$('.pf-kid').forEach(b => b.onclick = () => {
       SFX.giggle();
       anim(b.querySelector('.pf-pet'), 'jump');
-      const bad = PRF.go(b.dataset.kid);
-      if (bad) PRF.msg(bad);
+      const id = b.dataset.kid, go = () => { const bad = PRF.go(id); if (bad) PRF.msg(bad); };
+      if (grownUp !== true && PRF.pwOn(id)) return partLoad('gate').then(ok => ok && typeof KPW != 'undefined' ? KPW.ask(id, go) : go()); // RC-1: their picture password
+      go();
     });
   },
   // Home's top bar: hold to change who is playing (a tap only says so), shown only with more than one child
@@ -287,7 +306,8 @@ const PRF = {
       `<div class="pf-list">${rows}</div><div class="gw-bkrow">` +
       UI.btn('Add a child', { kind: 'primary', size: 'sm', icon: 'plus', id: 'pf-add', off: full }) +
       (PRF.many() ? UI.btn('Who is playing?', { size: 'sm', icon: 'users', id: 'pf-who' }) : '') + '</div>' +
-      (full ? `<p class="gw-note">${ico('info', 22)}<span>Up to 4 children can share this tablet.</span></p>` : '') + '<div id="pf-msg" role="status"></div>',
+      (full ? `<p class="gw-note">${ico('info', 22)}<span>Up to 4 children can share this tablet.</span></p>` : '') + '<div id="pf-msg" role="status"></div>' +
+      (PRF.many() ? '<div id="gw-kpw"></div>' : ''),
       { sub: 'Up to 4 children can share this tablet, each with their own progress, pet, stars, coins, stickers and game time. ' +
         'Sound settings are shared by the tablet; game-time rules, grade and calm mode are set for each child.' });
   },
@@ -298,7 +318,8 @@ const PRF = {
       PRF.setWho(r.id);
       reloadSaved(); // starts with the first-run setup for the new child
     };
-    if ($('#pf-who')) $('#pf-who').onclick = PRF.pick;
+    if ($('#pf-who')) $('#pf-who').onclick = () => PRF.pick(true);
+    partLoad('gate').then(ok => { if (ok && typeof KPW != 'undefined' && $('#gw-kpw')) KPW.grownFill(); }); // RC-1: picture passwords
     $$('[data-pren]').forEach(b => b.onclick = () => PRF.renameSheet(b.dataset.pren));
     $$('[data-pdel]').forEach(b => b.onclick = () => PRF.deleteSheet(b.dataset.pdel));
   },
@@ -315,7 +336,7 @@ const PRF = {
         return;
       }
       sh.close();
-      grown();
+      NAV.gwBack();
     };
   },
   // Delete asks twice; the first sheet also offers to save that child's backup first.
@@ -331,22 +352,21 @@ const PRF = {
     sh.el.querySelector('#pf-del1').onclick = () => {
       const acts = sh.el.querySelector('.acts'), wasMe = id === PRF.cur;
       sh.el.querySelector('h2').textContent = 'Really delete ' + PRF.label(PRF.info(id)) + '?';
-      sh.el.querySelector('p').textContent = 'This cannot be undone.';
+      sh.el.querySelector('p').textContent = 'You can undo it in Grown-ups until Star School is opened again.';
       acts.innerHTML = UI.btn('Yes, delete ' + PRF.label(PRF.info(id)), { kind: 'risk', wide: true, icon: 'trash', id: 'pf-del2' }) +
         UI.btn('Keep ' + PRF.label(PRF.info(id)), { kind: 'ghost', wide: true, id: 'pf-keep' });
       sh.el.querySelector('#pf-keep').onclick = sh.close;
-      sh.el.querySelector('#pf-del2').onclick = async () => {
+      sh.el.querySelector('#pf-del2').onclick = () => { sh.close(); NAV.quiz(async () => { // RC-1: the Grown-ups PIN again, right before deleting
         const name = PRF.label(PRF.info(id)), bad = await PRF.remove(id);
-        sh.close();
         if (bad) return PRF.msg(bad);
         if (wasMe) {
           PRF.setWho('');
           reloadSaved(); // the next child starts (the picker, when more than one is left)
           return;
         }
-        grown();
+        NAV.gwBack();
         fb(name + ' was deleted', 'info');
-      };
+      }); };
     };
   },
   // App log: one line with each child's save size

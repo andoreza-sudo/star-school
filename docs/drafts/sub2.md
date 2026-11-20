@@ -17,7 +17,7 @@ Idea: Take away to ten first, then the rest.
 Remember:
   - Do you remember this? Let's make ten.
 Explore:
-  - Use both colours on the double frame. Any way you like!
+  - Use both colors on the double frame. Any way you like!
 Name it:
   - You made {a} and {b}.
   - {a} and {b} make {sum}.
@@ -46,6 +46,7 @@ About 3.3 minutes.
 
 - Name it now ties the two colours to taking away; the Show line had the numbers the wrong way round.
 - The first draft from the API is kept below as it came, for comparison.
+- RC-1 (v188, 2026-11-19): spelling only, after the owner's review: "colours" -> "colors" (US spelling). Status kept.
 
 ## Words (the draft itself)
 
@@ -61,7 +62,7 @@ About 3.3 minutes.
    "Do you remember this? Let's make ten."
   ],
   "explore": [
-   "Use both colours on the double frame. Any way you like!"
+   "Use both colors on the double frame. Any way you like!"
   ],
   "name": [
    "You made {a} and {b}.",

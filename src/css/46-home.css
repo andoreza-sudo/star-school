@@ -208,3 +208,12 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .btn.icon.ak-btn{width:var(--tap);height:var(--tap);min-height:var(--tap);background:var(--surface);color:var(--brand);box-shadow:var(--shadow),0 3px 0 var(--line)}
 .hm-stage .btn.ak-hm{position:absolute;top:var(--s-2);left:var(--s-2);z-index:2}
 .map .btn.ak-mp{position:absolute;margin:calc(var(--tap) / -2) 0 0 calc(var(--tap) / -2);z-index:4}
+/* RC-1: the tablet cannot save (46-home.js hmSaveWarn) */
+.hm .hm-svw{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
+  background:var(--try-tint);color:var(--try-ink);font-weight:700}
+.hm .hm-svw>.ic{flex:none}
+.hm .hm-svw>span{flex:1}
+.hm .hm-svw .btn{flex:none}
+.hm .hm-gift{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
+  background:var(--play-tint);color:var(--ink);font-weight:700}
+.hm .hm-gift>.ic{flex:none;color:var(--play-shade)}

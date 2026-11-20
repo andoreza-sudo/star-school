@@ -90,6 +90,24 @@ const BAK = {
     return {ok: true, data: m, info: {name: m.name || '', grade: m.grade, stars: m.stars || 0, coins: m.coins || 0, date}};
   },
   hasUndo() { return !!BAK.undoKey(); },
+  // RC-1: Erase everything and deleting a child keep the erased save the way a load keeps the one it replaced: under <key>-undo (one
+  // copy on the tablet: the other children's go), marked in ERASED as "<key>|new". Grown-ups offers "Undo erase" (BAK.undo) on its
+  // first visit after that and marks it "<key>|seen"; the next start drops a seen copy (PRF.boot), so it is offered once.
+  ERASED: KEY + '-erased',
+  keepErased(k, raw) {
+    if (raw && PRF.put(k + '-undo', raw) && PRF.put(BAK.ERASED, k + '|new')) {
+      for (const s of PRF.SLOTS) if (PRF.key(s) !== k) PRF.drop(PRF.key(s) + '-undo');
+      return true;
+    }
+    PRF.drop(k + '-undo'); // no room: the erase goes on without a copy (nothing of another child changes)
+    PRF.drop(BAK.ERASED);
+    return false;
+  },
+  // {k, seen, name} of the erased save that can come back, or null
+  erased() {
+    const m = /^(.+)\|(new|seen)$/.exec(PRF.get(BAK.ERASED) || ''), o = m && PRF.obj(PRF.get(m[1] + '-undo'));
+    return o ? {k: m[1], seen: m[2] == 'seen', name: String(o.name || '').slice(0, 40)} : null;
+  },
   // Replaces a child's save (the one playing unless id says another, P5-10) with data from read(). Returns '' or a message;
   // on a message nothing was changed. The replaced save is kept for "Undo last load" (only the last load: other copies go).
   apply(data, id = PRF.cur) {
@@ -104,6 +122,7 @@ const BAK = {
       return 'The tablet storage is full, so nothing was changed.';
     }
     for (const s of PRF.SLOTS) if (s !== id) PRF.drop(PRF.key(s) + '-undo');
+    PRF.drop(BAK.ERASED); // RC-1: the copy is a load's now, not an erase's
     if (me) {
       loadSave(raw);
       migrate();
@@ -117,6 +136,7 @@ const BAK = {
     try { o = JSON.parse(raw); } catch (e) {}
     if (!o || typeof o != 'object' || Array.isArray(o)) return 'There is nothing to undo.';
     try { localStorage.setItem(k, raw); localStorage.removeItem(u); } catch (e) { return 'The tablet storage is full, so nothing was changed.'; }
+    PRF.drop(BAK.ERASED); // RC-1: an erased child comes back (PRF.boot finds its save at the next start)
     if (k === SKEY) {
       loadSave(raw);
       migrate();
@@ -188,7 +208,7 @@ const BAK = {
         reloadSaved(); // nothing saves over the new save before the reload
       }
       else {
-        grown();
+        NAV.gwBack();
         fb(PRF.label(PRF.info(id)) + "'s progress was loaded", 'info');
       }
     });
@@ -197,7 +217,7 @@ const BAK = {
       const res = PRF.add(r.data, false);
       sh.close();
       if (res.msg) return BAK.msg(res.msg);
-      grown();
+      NAV.gwBack();
       fb(PRF.label(PRF.info(res.id)) + ' was added', 'info');
     };
   },
@@ -216,11 +236,16 @@ const BAK = {
     });
   },
   card() {
+    const er = BAK.erased();
+    if (er && !er.seen) PRF.put(BAK.ERASED, er.k + '|seen'); // RC-1: offered on this visit; the next start drops it
     return GW.card('gw-bak', 'download', 'Backup',
+      (er ? `<div class="gw-bkrow">${UI.btn('Undo erase', {kind: 'primary', size: 'sm', icon: 'undo', id: 'bk-unerase'})}</div>` +
+        `<p class="gw-sub" id="bk-ersub">Erased by mistake? This brings back ${esc(er.name || 'the progress')}${er.name ? "'s progress" : ''}. ` +
+        'You can undo it until Star School is opened again.</p>' : '') +
       `<div class="gw-bk"><div class="gw-bkrow">${UI.btn('Save a backup', {kind: 'primary', size: 'sm', icon: 'download', id: 'bk-save'})}${onlineNote()}</div>` +
       (PRF.many() ? `<div class="gw-bkrow">${UI.btn('Save all children', {size: 'sm', icon: 'download', id: 'bk-all'})}${onlineNote()}</div>` : '') +
       `<div class="gw-bkrow">${UI.btn('Load a backup', {size: 'sm', icon: 'upload', id: 'bk-load'})}<input type="file" id="bk-file" accept=".json,application/json" hidden>` +
-      `${BAK.hasUndo() ? UI.btn('Undo last load', {size: 'sm', kind: 'ghost', icon: 'undo', id: 'bk-undo'}) : ''}</div>` +
+      `${BAK.hasUndo() && !er ? UI.btn('Undo last load', {size: 'sm', kind: 'ghost', icon: 'undo', id: 'bk-undo'}) : ''}</div>` +
       `<div id="bk-msg" role="status"></div></div>`,
       {sub: 'A backup is one small file with all progress, the pet, stars and coins. Keep it somewhere safe, or load it on another tablet.'});
   },
@@ -237,8 +262,7 @@ const BAK = {
       try { text = await f.text(); } catch (x) {}
       BAK.review(text);
     };
-    const u = $('#bk-undo');
-    if (u) u.onclick = () => {
+    for (const u of [$('#bk-undo'), $('#bk-unerase')]) if (u) u.onclick = () => {
       const bad = BAK.undo();
       if (bad) return BAK.msg(bad);
       PRF.setWho(PRF.cur);

@@ -156,6 +156,19 @@ async function g5Kit(pg, sel) {
   // card must still be up. Then a new touch on btn must work. Returns the problems found.
   const heldEnd = async (name, play, open, btn) => {
     const out = [], clear = () => pg.evaluate(() => document.querySelectorAll('.ovl').forEach(o => o.remove()));
+    // RC-2: read the button only once the card has settled: no animation running on the card (its pop-in transform moves the button)
+    // and the same rect on two animation frames in a row. Under load the card was read mid pop-in ("moved between two openings").
+    const settled = async sel => {
+      await pg.waitForFunction(s => {
+        const e = document.querySelector(s), c = e && e.closest('.ovl, .gh-end');
+        if (!e || !c) return false;
+        const run = [...(c.getAnimations ? c.getAnimations({ subtree: true }) : [])].some(a => a.playState === 'running' || a.playState === 'pending');
+        const r = e.getBoundingClientRect(), k = [r.x, r.y, r.width, r.height].map(Math.round).join();
+        if (run || window.__g5Set !== s + k) { window.__g5Set = s + k; window.__g5SetN = 0; return false; }
+        return ++window.__g5SetN >= 2; // unchanged on 2 more frames
+      }, sel, { polling: 'raf', timeout: 8000 }).catch(() => {});
+      return box(sel);
+    };
     let b = null;
     for (let k = 0, last = null; k < 5; k++) { // until the button sits where it sat the time before (a first-time line moves it)
       await clear();
@@ -163,19 +176,33 @@ async function g5Kit(pg, sel) {
       await pg.waitForTimeout(700);
       await pg.evaluate(open);
       await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
-      b = await box('.gh-end ' + btn);
+      b = await settled('.gh-end ' + btn);
       if (last && Math.hypot(b.x - last.x, b.y - last.y) <= 2) break;
       last = b;
     }
-    await clear();
-    await pg.evaluate(play);
-    await pg.waitForTimeout(700);
-    await down(b.x, b.y);
-    await pg.waitForTimeout(400);
-    await pg.evaluate(open);
-    await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
-    const b2 = await box('.gh-end ' + btn);
-    if (Math.hypot(b2.x - b.x, b2.y - b.y) > 6) out.push(name + ': the card\'s ' + btn + ' moved between two openings; the held finger is not on it');
+    // the game with a finger held on that spot, the card opened under it. RC-2: a run played with the finger down can end with a
+    // different card (a line more or less) than the runs played without it, so the button can sit elsewhere; then the held finger is
+    // put where the card from a held run placed it and the run is played again (up to 3 tries). The proof is unchanged: the card
+    // opens under a finger already down on the button, and that finger's lift must not press it.
+    let b2 = null, on = false, seen = [];
+    for (let k = 0; k < 3 && !on; k++) {
+      await clear();
+      await pg.evaluate(play);
+      await pg.waitForTimeout(700);
+      await down(b.x, b.y);
+      await pg.waitForTimeout(400);
+      await pg.evaluate(open);
+      await pg.waitForSelector('.gh-end ' + btn, { timeout: 8000 });
+      b2 = await settled('.gh-end ' + btn);
+      on = Math.hypot(b2.x - b.x, b2.y - b.y) <= 6;
+      seen.push([Math.round(b.x), Math.round(b.y), Math.round(b2.x), Math.round(b2.y)]);
+      if (!on) { await up(); b = b2; }
+    }
+    if (!on) {
+      out.push(name + ': the card\'s ' + btn + ' moved between two openings; the held finger is not on it ' + JSON.stringify(seen));
+      await clear();
+      return out;
+    }
     await pg.waitForTimeout(300);
     await up();
     await pg.waitForTimeout(600);
@@ -225,6 +252,23 @@ const lsLearnSel = async (pg, sel) => { await pg.waitForSelector(sel, { timeout:
 
 let failed = 0;
 const step = msg => console.log('- ' + msg);
+// RC-1 (owner decision 2026-11-19: PIN gate): through the Grown-ups gate by its own buttons. No PIN yet: the old question, then choose
+// `pin` and type it again; with a PIN: type it
+const padH = (pg, re) => pg.waitForFunction(r => { const h = document.querySelector('.sheet-bg.on #pnpad h2'); return !!h && new RegExp(r).test(h.textContent); },
+  re.source, { timeout: 10000 });
+async function pinType(pg, pin) { for (const d of pin) await pg.click(`.sheet-bg.on .pn-k[data-k="${d}"]`); }
+async function pinIn(pg, pin = '2580') {
+  await pg.waitForSelector('.sheet-bg.on #gwans, .sheet-bg.on #pnpad', { timeout: 10000 });
+  if (await pg.$('.sheet-bg.on #gwans')) {
+    await pg.fill('.sheet-bg.on #gwans', String(await pg.evaluate(() => NAV.gateSheet.ans)));
+    await pg.click('.sheet-bg.on #gwok');
+    await padH(pg, /^Choose/);
+    await pinType(pg, pin);
+    await padH(pg, /^Type it again/);
+  } else await padH(pg, /PIN/);
+  await pinType(pg, pin);
+}
+
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
 
 // SHARDS: main() is a list of segments, each a top-level `if (seg('ID')) {` block that sets up its own pages. `--shard i/N` runs only
@@ -464,19 +508,16 @@ async function main() {
       await page.click('#fhome');
       await page.waitForSelector('#gear');
 
-      // 3. Game Room and Grown-ups (long press on the gear, like a grown-up would)
+      // 3. Game Room and Grown-ups (owner decision 2026-11-19: PIN gate; was a long press on the gear): the question, then a PIN
       await page.evaluate(() => home());
       await page.click('#groom');
       await page.waitForSelector('#g4x4');
       step('Game Room opened');
       await page.click('#back');
       await page.waitForSelector('#gear');
-      const box = await (await page.$('#gear')).boundingBox();
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      await page.mouse.down();
-      await vwait(page, 3400);
-      await page.mouse.up();
-      await page.waitForSelector('#ula', { timeout: 3000 });
+      await page.click('#gear');
+      await pinIn(page, '2580');
+      await page.waitForSelector('#ula', { timeout: 5000 });
       step('Grown-ups opened');
 
       // 4. old save loads (midway fixture) with its progress intact
@@ -740,7 +781,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -792,9 +833,9 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       // MERGE-185: the hints part (with PERS-01's picker <style>) loads on its own when a round starts, so like its <script> tag its <style> is left out of these lists
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
-        ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
-        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+        ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints' && x !== 'gate').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints|gate)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // RC-1: gate (the PIN pad) is not the Game Room's // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints' && x !== 'gate').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints' && x !== 'gate').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -1011,11 +1052,8 @@ async function main() {
       if (n6 !== 6) fail('Pre-K round length ' + n6); else step('setup: 8 grade buttons, Pre-K saved, round has 6 questions');
       await gp.evaluate(() => home());
       await gp.waitForSelector('#gear');
-      const gb = await (await gp.$('#gear')).boundingBox();
-      await gp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
-      await gp.mouse.down();
-      await vwait(gp, 3400);
-      await gp.mouse.up();
+      await gp.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+      await pinIn(gp);
       await gp.waitForSelector('.gr[data-g="3"]', { timeout: 3000 });
       await gp.click('.gr[data-g="3"]');
       if ((await gp.evaluate(() => S.grade)) !== 3) fail('Grown-ups grade change not saved');
@@ -7129,11 +7167,8 @@ async function main() {
         const saved = await sp.evaluate(() => ({ n: S.name, p: S.pet, pn: S.petName, g: S.grade }));
         if (saved.n !== 'Mia' || saved.p !== 'ocean' || saved.pn !== 'Bubbles' || saved.g !== 2) bad.push(tag + ' setup saved ' + JSON.stringify(saved));
         // ---- Grown-ups: hold the gear ----
-        const gb = await (await sp.$('#gear')).boundingBox();
-        await sp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
-        await sp.mouse.down();
-        await vwait(sp, 3400);
-        await sp.mouse.up();
+        await sp.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+        await pinIn(sp);
         await sp.waitForSelector('.gw-card', { timeout: 3000 });
         await sp.waitForTimeout(400);
         const secs = await sp.evaluate(() => [...document.querySelectorAll('.gw-card')].map(c => (c.id || c.className) + ':' + !!c.querySelector('.gw-h svg.ic')));
@@ -7799,11 +7834,13 @@ async function main() {
           checks++;
           if (lt0.go !== 'again,next,home' || lt0.tall || lt0.ovl || !lt1.gone || lt1.lt !== 'next' || !lt2.there || lt2.lt !== '' || await pg.$('.nv-light'))
             bad.push(at + 'the light end: ' + JSON.stringify({ lt0, lt1, lt2 }));
-          // ---- Grown-ups: a tap asks, a wrong answer keeps it shut, the right one opens it; a 1 s hold does not, a 3 s hold does ----
+          // ---- Grown-ups (owner decision 2026-11-19: PIN gate; was: a tap asks the question, a 3 s hold opens it). A tap asks the old
+          //      question while no PIN is set (a wrong answer keeps it shut), then the grown-up chooses a PIN; a 3 s hold opens nothing;
+          //      later taps ask for the PIN ----
           await pg.evaluate(() => home());
           await pg.waitForSelector('#gear');
           const gl = await pg.evaluate(() => { const g = document.querySelector('#gear'); return { t: g.textContent.trim(), name: g.getAttribute('aria-label'), w: g.offsetWidth, h: g.offsetHeight }; });
-          if (gl.t !== 'Grown-ups' || !/^Grown-ups/.test(gl.name) || gl.h < 48) bad.push(at + 'the Grown-ups button: ' + JSON.stringify(gl));
+          if (gl.t !== 'Grown-ups' || gl.name !== 'Grown-ups' || gl.h < 48) bad.push(at + 'the Grown-ups button: ' + JSON.stringify(gl));
           await pg.click('#gear');
           await pg.waitForSelector('.sheet-bg.on #gwans', { timeout: 5000 });
           if (await pg.$('.gw-card')) bad.push(at + 'a tap opened Grown-ups');
@@ -7811,30 +7848,24 @@ async function main() {
           await pg.fill('#gwans', String(ans + 1));
           await pg.click('#gwok');
           await pg.waitForTimeout(400);
-          if (await pg.$('.gw-card')) bad.push(at + 'a wrong answer opened Grown-ups');
-          await pg.fill('#gwans', String(ans));
-          await pg.click('#gwok');
+          if (await pg.$('.gw-card') || await pg.$('#pnpad')) bad.push(at + 'a wrong answer opened Grown-ups or the PIN');
+          await pg.click('#gwno');
+          await pg.waitForSelector('.sheet-bg', { state: 'detached' });
+          await pg.click('#gear');
+          await pinIn(pg, '2580');
           await pg.waitForSelector('.gw-card', { timeout: 5000 });
           await pg.evaluate(() => home());
           await pg.waitForSelector('#gear');
           const gb = await (await pg.$('#gear')).boundingBox();
           await pg.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
-          // CHK-FAST: the ring 1.2 s into the hold, read in the page then (the press starts the clock), not when Node gets to it; the hold
-          // at the real clock, so the release lands before the 3 s hold opens on a busy CPU too
-          await vspeed(pg, 1);
-          const [ring] = await actRead(pg, () => pg.mouse.down(),
-            [[1200, () => +getComputedStyle(document.querySelector('#gwring')).strokeDashoffset.replace('px', '')]], 'pointerdown');
-          await pg.mouse.up();
-          await vspeed(pg);
-          await pg.waitForTimeout(2500); // the hold's own 3 s timer was set at the real clock: 2.5 s of it, as before
-          if (await pg.$('.gw-card')) bad.push(at + 'a 1 s hold opened Grown-ups');
-          if (!(ring > 40 && ring < 90)) bad.push(at + 'the ring did not fill while held: ' + ring);
-          if (await pg.$('.sheet-bg')) await pg.keyboard.press('Escape'); // the click at the end of a short hold asks the question
-          await pg.waitForTimeout(400);
-          await pg.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
           await pg.mouse.down();
           await vwait(pg, 3400);
+          if (await pg.$('.gw-card') || await pg.$('.sheet-bg')) bad.push(at + 'a 3 s hold did something before its release');
           await pg.mouse.up();
+          await pg.waitForTimeout(400);
+          if (await pg.$('.gw-card')) bad.push(at + 'a 3 s hold opened Grown-ups');
+          if (!await pg.$('.sheet-bg.on #pnpad')) await pg.click('#gear');
+          await pinIn(pg, '2580');
           await pg.waitForSelector('.gw-card', { timeout: 5000 });
           checks += 6;
         } catch (e) { bad.push(at + e.message.split('\n').slice(0, 3).join(' ')); }
@@ -7845,7 +7876,7 @@ async function main() {
       if (bad.length) fail('NAV-01 navigation:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
       else step(`NAV-01: ${checks} checks at 360x740 and 800x1280: the picture bar on 8 hubs (Home first, the current area lit, 48 px, never over the hub) and ` +
         'not in a round, a race, a puzzle or a game; the corner house opens Go Home? (the race and game clocks hold), Keep playing goes on, the tick goes Home; ' +
-        'end cards of a round, a race, a puzzle, Hill Climb and time up show Play again / Next / Home; the light end banner goes on to Next after 2 s unless touched; Grown-ups needs the answer or a 3 s hold');
+        'end cards of a round, a race, a puzzle, Hill Climb and time up show Play again / Next / Home; the light end banner goes on to Next after 2 s unless touched; Grown-ups needs the answer, then a PIN; a 3 s hold opens nothing');
     }
 
     // G-02 / G-02b Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch
@@ -8856,11 +8887,8 @@ async function main() {
           at = 'calm';
           // Calm mode switched on in Grown-ups (hold the gear): saved, html.calm, and no particles on the next pet tap
           if (w === 1024 && !rm) {
-            const gr = await (await pg.$('#gear')).boundingBox();
-            await pg.mouse.move(gr.x + gr.width / 2, gr.y + gr.height / 2);
-            await pg.mouse.down();
-            await vwait(pg, 3400);
-            await pg.mouse.up();
+            await pg.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+            await pinIn(pg);
             await pg.waitForSelector('#calm', { state: 'attached' });
             await pg.click('label.switch:has(#calm)');
             const c = await pg.evaluate(() => ({ s: S.calm, html: document.documentElement.classList.contains('calm') }));
@@ -8924,11 +8952,8 @@ async function main() {
         const chk = async what => { for (const o of await bp.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
         await bp.waitForSelector('.game[data-p="math"]');
         const s0 = await bp.evaluate(() => ({ stars: S.stars, coins: S.coins, name: S.name, pet: S.pet, grade: S.grade, maps: JSON.stringify(S.maps) }));
-        const gb = await (await bp.$('#gear')).boundingBox();
-        await bp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
-        await bp.mouse.down();
-        await vwait(bp, 3400);
-        await bp.mouse.up();
+        await bp.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+        await pinIn(bp);
         await bp.waitForSelector('#gw-bak', { timeout: 3000 });
         await bp.waitForTimeout(400);
         await bp.evaluate(() => document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }));
@@ -8961,12 +8986,15 @@ async function main() {
         // Start over: two taps (the first only arms it)
         await bp.click('#reset');
         await bp.waitForFunction(() => /Tap again/.test(document.querySelector('#reset').textContent));
-        await Promise.all([bp.waitForNavigation({ timeout: 60000 }), bp.click('#reset')]); // the page reloads, empty
+        await bp.click('#reset'); // RC-1: then the Grown-ups PIN (owner decision 2026-11-19: PIN gate), right before erasing
+        await Promise.all([bp.waitForNavigation({ timeout: 60000 }), pinIn(bp)]); // the page reloads, empty
         await bp.waitForSelector('.su-step', { timeout: 60000 }).catch(async e => { // say what is on screen instead, if setup never shows
           const seen = await bp.evaluate(() => ({ url: location.href, app: (document.querySelector('#app') || document.body).textContent.slice(0, 120), name: typeof S != 'undefined' && S.name, keys: Object.keys(localStorage), seeded: sessionStorage.getItem('__seeded'), hold: typeof SAVE_HOLD != 'undefined' && SAVE_HOLD, nav: performance.getEntriesByType('navigation').map(n => n.type) })).catch(x => 'page gone: ' + x.message);
           throw new Error('P5-07 Start over (' + tag + '): setup did not show: ' + JSON.stringify(seen)); });
-        const z = await bp.evaluate(() => ({ stars: S.stars, name: S.name, undo: !!localStorage.getItem(BAK.UNDO) }));
-        if (z.stars !== 0 || z.name !== '' || z.undo) bad.push(tag + ' Start over: ' + JSON.stringify(z));
+        // RC-1: the erased save is kept for "Undo erase" (was: no copy kept); the loads below replace it as they replaced nothing before
+        const z = await bp.evaluate(() => ({ stars: S.stars, name: S.name, undo: !!localStorage.getItem(BAK.UNDO), erased: !!BAK.erased() }));
+        if (z.stars !== 0 || z.name !== '' || !z.undo || !z.erased) bad.push(tag + ' Start over: ' + JSON.stringify(z));
+        const undo0 = await bp.evaluate(() => localStorage.getItem(BAK.UNDO));
         await bp.evaluate(() => { grown(); });
         await bp.waitForSelector('#bk-file', { state: 'attached' });
         // refused files: a message, no sheet, nothing changed
@@ -8974,8 +9002,8 @@ async function main() {
           ['bad.json', '{"app":"Sta', /damaged/], ['empty.json', '', /empty/]]) {
           await bp.setInputFiles('#bk-file', { name: nm, mimeType: 'application/json', buffer: Buffer.from(body) });
           await bp.waitForFunction(r => new RegExp(r).test(document.querySelector('#bk-msg').textContent), re.source);
-          const r = await bp.evaluate(() => ({ sheet: !!document.querySelector('.sheet'), stars: S.stars, raw: localStorage.getItem(KEY), undo: !!localStorage.getItem(BAK.UNDO) }));
-          if (r.sheet || r.stars !== 0 || r.undo) bad.push(tag + ' refused ' + nm + ': ' + JSON.stringify(r));
+          const r = await bp.evaluate(() => ({ sheet: !!document.querySelector('.sheet'), stars: S.stars, raw: localStorage.getItem(KEY), undo: localStorage.getItem(BAK.UNDO) }));
+          if (r.sheet || r.stars !== 0 || r.undo !== undo0) bad.push(tag + ' refused ' + nm + ': ' + JSON.stringify(Object.assign(r, { undo: r.undo !== undo0 })));
         }
         await chk('Backup message');
         // Not now changes nothing
@@ -8987,8 +9015,8 @@ async function main() {
         await chk('summary sheet');
         await bp.click('#bk-no');
         await bp.waitForSelector('.sheet', { state: 'detached' });
-        const nn = await bp.evaluate(() => ({ stars: S.stars, undo: !!localStorage.getItem(BAK.UNDO) }));
-        if (nn.stars !== 0 || nn.undo) bad.push(tag + ' Not now changed something: ' + JSON.stringify(nn));
+        const nn = await bp.evaluate(() => ({ stars: S.stars, undo: localStorage.getItem(BAK.UNDO) }));
+        if (nn.stars !== 0 || nn.undo !== undo0) bad.push(tag + ' Not now changed something: ' + JSON.stringify({ stars: nn.stars, undo: nn.undo !== undo0 }));
         // Yes brings the progress back (the page reloads)
         await bp.setInputFiles('#bk-file', file);
         await bp.waitForSelector('#bk-yes');
@@ -10524,7 +10552,8 @@ async function main() {
           const ava0 = await kid();
           if (await pg.$('#who')) bad.push(tag + ' one child: Home shows the switch button');
           // Grown-ups: the Children card, Add a child
-          await hold('#gear');
+          await pg.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+          await pinIn(pg);
           await pg.waitForSelector('#gw-kids', { timeout: 3000 });
           await pg.evaluate(() => document.querySelector('#gw-kids').scrollIntoView({ block: 'start' }));
           await pg.waitForTimeout(300);
@@ -10577,7 +10606,8 @@ async function main() {
           const ben2 = await kid();
           if (ben2.id !== 'p2' || ben2.stars !== ben1.stars || ben2.coins !== ben1.coins || ben2.pet !== pet2) bad.push(tag + ' Ben after the picker: ' + JSON.stringify(ben2) + ' vs ' + JSON.stringify(ben1));
           // Ben's Grown-ups: delete Ava. Keep first (nothing changes), then Delete, then Yes (the double confirm)
-          await hold('#gear');
+          await pg.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+          await pinIn(pg);
           await pg.waitForSelector('#gw-kids', { timeout: 3000 });
           await pg.evaluate(() => document.querySelector('#gw-kids').scrollIntoView({ block: 'start' }));
           await pg.waitForTimeout(300);
@@ -10601,6 +10631,9 @@ async function main() {
           if (!/Really delete Ava\?/.test(await pg.evaluate(() => document.querySelector('.sheet').textContent))) bad.push(tag + ' the second question is missing');
           if (await pg.evaluate(() => !localStorage.getItem(KEY))) bad.push(tag + ' Ava deleted after one tap');
           await pg.click('#pf-del2');
+          await pg.waitForSelector('.sheet-bg.on #gwans, .sheet-bg.on #pnpad'); // RC-1: the Grown-ups PIN (owner decision 2026-11-19: PIN gate), right before deleting
+          if (await pg.evaluate(() => !localStorage.getItem(KEY))) bad.push(tag + ' Ava deleted before the PIN');
+          await pinIn(pg);
           await pg.waitForFunction(() => PRF.count() === 1 && !document.querySelector('.sheet'));
           const gone = await pg.evaluate(() => ({ ava: localStorage.getItem(KEY), rows: document.querySelectorAll('#gw-kids .pf-row').length, name: S.name, stars: S.stars }));
           if (gone.ava !== null || gone.rows !== 1 || gone.name !== 'Ben' || gone.stars !== ben1.stars) bad.push(tag + ' after deleting Ava: ' + JSON.stringify(gone));
@@ -10654,11 +10687,8 @@ async function main() {
               if (kept !== saved.stars) bad.push(t + ': after the upgrade the stored save has ' + kept + ' stars, wanted ' + saved.stars);
             } else if (home.stars !== 0 || home.name !== 'Fresh') bad.push(t + ': a fresh install has ' + home.stars + ' stars and the name "' + home.name + '"');
             // Grown-ups by the held gear, then the About card
-            const b = await (await pg.$('#gear')).boundingBox();
-            await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-            await pg.mouse.down();
-            await vwait(pg, 3400);
-            await pg.mouse.up();
+            await pg.click('#gear'); // owner decision 2026-11-19: PIN gate (was: hold the gear 3 s)
+            await pinIn(pg);
             await pg.waitForSelector('#gw-about', { timeout: 3000 });
             await pg.evaluate(() => document.querySelector('#gw-about').scrollIntoView({ block: 'start' }));
             await pg.waitForTimeout(300);
@@ -10882,7 +10912,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too; TEACH-5S: teaches; TEACH-6M: teach6
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate'].map(x => x + '.' + c1.ver + '.js'); // RC-1: gate; P6-03: bt is on demand too; TEACH-5S: teaches; TEACH-6M: teach6
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
@@ -10911,7 +10941,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false,false,false' || // TEACH-6M: thirteen with teach6, eleven here; twelve lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; TEACH-5S: teaches; PET-AGE2: petage; hints), less petage and hints (filtered above): ten
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false,false,false,false' || // RC-1: twelve with gate (the PIN pad and picture passwords, not loaded at start); TEACH-6M: thirteen with teach6, eleven here; twelve lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; TEACH-5S: teaches; PET-AGE2: petage; hints), less petage and hints (filtered above): ten
             s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
@@ -10929,7 +10959,7 @@ async function main() {
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
-        if (s3.parts !== 'false,true,true,true,true,false,false,false,false,false,false' || // TEACH-6M: teach6 is the math map's, not the Game Room's; // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's; TEACH-5S: teaches, the Spanish and Discover maps')
+        if (s3.parts !== 'false,true,true,true,true,false,false,false,false,false,false,false' || // RC-1: gate is not the Game Room's; TEACH-6M: teach6 is the math map's, not the Game Room's; // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's; TEACH-5S: teaches, the Spanish and Discover maps')
             s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
@@ -14685,16 +14715,16 @@ async function main() {
           // 2. Unlock everything (grown-ups): the grown-up question first, no price and no Google Play call before it
           await pg.evaluate(wi => mapGo('math', wi), wi);
           await pg.click('.plgu');
+          // owner decision 2026-11-19: PIN gate. No PIN yet on this tablet: the old question first (a wrong answer opens nothing), then
+          // the grown-up chooses a PIN; only then the sheet (was: the question, then the sheet)
           await pg.waitForSelector('#gwans', { timeout: 5000 });
           const q = await pg.evaluate(() => ({ t: document.querySelector('.nv-gate').textContent, log: window.__pl.log.filter(x => x != 'list'), sheet: !!document.querySelector('#plsheet') }));
           if (PRICE.test(q.t) || q.log.length || q.sheet) bad.push(at + 'before the grown-up question: ' + JSON.stringify(q));
           await pg.fill('#gwans', '1');
           await pg.click('#gwok');
           await vwait(pg, 300);
-          if (await pg.$('#plsheet')) bad.push(at + 'a wrong answer opened the unlock sheet');
-          const ans = await pg.evaluate(() => NAV.gateSheet.ans);
-          await pg.fill('#gwans', String(ans));
-          await pg.click('#gwok');
+          if (await pg.$('#plsheet') || await pg.$('#pnpad')) bad.push(at + 'a wrong answer opened the unlock sheet or the PIN');
+          await pinIn(pg, '2580');
           await pg.waitForSelector('#plsheet', { timeout: 5000 });
           await pg.waitForFunction(() => /9\.99/.test(document.querySelector('#plprice').textContent) && !document.querySelector('#plbuy').disabled, null, { timeout: 8000 })
             .catch(() => bad.push(at + 'no price from Google Play'));
@@ -14722,14 +14752,13 @@ async function main() {
           await vwait(pg, 400);
           const op = await pg.evaluate(a => ({ lock: document.querySelector(`.node[data-n="${a}"]`).classList.contains('lock'), gu: !!document.querySelector('.plgu') }), a);
           if (op.lock || op.gu) bad.push(at + 'the map after the unlock: ' + JSON.stringify(op));
-          // 4. Grown-ups by the 3-second hold (no question): the card has no price and no way to pay; "Unlock or restore" asks the
-          //    question; a reinstall (the tablet forgot, Google Play remembers) is restored as the sheet opens, no payment
+          // 4. Grown-ups by the PIN (owner decision 2026-11-19: PIN gate; was: by the 3-second hold): the card has no price and no way to
+          //    pay; "Unlock or restore" asks for the PIN again; a reinstall (the tablet forgot, Google Play remembers) is restored as the
+          //    sheet opens, no payment
           await pg.evaluate(() => { PLAY.setOwn(false); delete PLAY.st.ackd; PLAY.write(); window.__pl.owned = [{ itemId: 'unlock_all', purchaseToken: 'tok1' }]; window.__pl.log = []; home(); });
-          const g = await pg.$('#gear'), gb = await g.boundingBox();
-          await pg.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
-          await pg.mouse.down();
+          await pg.click('#gear');
+          await pinIn(pg, '2580');
           await pg.waitForSelector('#gw-play', { timeout: 10000 });
-          await pg.mouse.up();
           await pg.evaluate(() => document.querySelector('#gw-play').scrollIntoView());
           await vwait(pg, 400);
           const cd = await pg.evaluate(() => ({ t: document.querySelector('#gw-play').textContent, buy: !!document.querySelector('#plbuy,#plrest'), go: !!document.querySelector('#plgo'),
@@ -14738,10 +14767,9 @@ async function main() {
           await fit(pg, at + 'Grown-ups card: ', '#gw-play .btn');
           await pg.screenshot({ path: path.join(shots, `play-grown-${sz}.png`) });
           await pg.click('#plgo');
-          await pg.waitForSelector('#gwans', { timeout: 5000 });
-          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore opened the sheet without the question');
-          await pg.fill('#gwans', String(await pg.evaluate(() => NAV.gateSheet.ans)));
-          await pg.click('#gwok');
+          await pg.waitForSelector('.sheet-bg.on #pnpad', { timeout: 5000 });
+          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore opened the sheet without the PIN');
+          await pinIn(pg, '2580');
           await pg.waitForFunction(() => PLAY.own && document.querySelector('#plmsg') && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
             .catch(() => bad.push(at + 'the reinstall was not restored as the sheet opened'));
           if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + 'restore started a payment');
@@ -15168,6 +15196,703 @@ async function main() {
         'question then the answer, at most 5 questions with distinct 32 px icons');
     }
     // end ASK-01
+
+    // RC1-MAP (v188): a fresh save, every grade from Pre-K to 6th, every subject, at 380x780 and 1024x600, set up by real taps. The map
+    //    opens on the child's own stop (curNode; its lesson stop when the lesson comes first): on screen, ringed and pulsing, and no other
+    //    stop rings or pulses (the planner's pick included); the world chip lit is its world; Ask the pet's next stop and the missions' stop
+    //    are the same stop. (Before: a fresh 1st grader opened on Number Meadow, K, with add2 1300 px below.)
+    if (seg('RC1-MAP')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
+      require('fs').mkdirSync(shots, { recursive: true });
+      let n = 0;
+      for (const [w, h] of [[380, 780], [1024, 600]]) for (const g of [-1, 0, 1, 2, 3, 4, 5, 6]) {
+        const app = await openApp(browser, { fixture: 'fresh', width: w, height: h, lazy: true }), pg = app.page, tag = w + 'x' + h + ' grade ' + g;
+        try {
+          await pg.fill('#nm', 'Sam');
+          await pg.click(`.gr[data-g="${g}"]`);
+          await pg.click('#go');
+          await pg.waitForSelector('.game[data-p]');
+          for (const p of ['math', 'read', 'es', 'disc']) {
+            await pg.evaluate(() => home());
+            await pg.click(`.game[data-p="${p}"]`);
+            await pg.waitForSelector('#map .node');
+            // the lesson parts load in the background (teachWarm), then LS.mapAdd marks the planner's pick: wait for both
+            await pg.waitForFunction(() => typeof LS != 'undefined' || TEACH.off, null, { timeout: 20000 }).catch(() => {});
+            await pg.waitForTimeout(400);
+            const r = await pg.evaluate(async p => {
+              if (typeof LS != 'undefined' && $('#map')) LS.mapAdd();
+              const cn = curNode(p), nd = NODES[p][cn], gate = lsGate(p, cn), want = (gate ? 'ls' : 'n') + cn;
+              const own = document.querySelector(gate ? `.lsn[data-ls="${cn}"]` : `.node[data-n="${cn}"]`);
+              const id = e => e.dataset.ls != null ? 'ls' + e.dataset.ls : e.dataset.n != null ? 'n' + e.dataset.n : 'go';
+              const ms = document.querySelector('#ms').getBoundingClientRect(), b = own && own.getBoundingClientRect();
+              const pulse = [...document.querySelectorAll('#map .node, #map .lsn, #map .ls-go')].filter(e => {
+                const a = getComputedStyle(e, '::after'); return a.content !== 'none' && a.animationName !== 'none'; }).map(id);
+              if (typeof askState != 'function') await partLoad('hints');
+              const a = typeof askState == 'function' ? askState('next', { p }) : null, m = MIS.stop(p);
+              const chip = document.querySelector('.wchip.cur'), on = document.querySelector('.wchip.on');
+              return { id: nid(nd), want, t: nd.t, wi: nd.wi, boss: nd.sk == 'boss', calm: S.calm, inView: !!b && b.top >= ms.top && b.bottom <= ms.bottom,
+                top: b && Math.round(b.top - ms.top), rings: [...document.querySelectorAll('#map .cur')].map(id), pulse,
+                chip: chip ? +chip.dataset.w : null, on: on ? +on.dataset.w : null, ask: a && a.s ? a.s.stop : null, ms: m && m.i, cn };
+            }, p);
+            n++;
+            const t2 = tag + ' ' + p + ' (' + r.id + '): ';
+            if (!r.inView) bad.push(t2 + 'the own stop is not on screen (' + r.top + ' px into the map)');
+            if (r.rings.join() !== r.want) bad.push(t2 + 'rings ' + r.rings.join() + ', want ' + r.want);
+            if (!r.calm && r.pulse.join() !== r.want) bad.push(t2 + 'pulses ' + r.pulse.join() + ', want ' + r.want);
+            if (r.chip !== r.wi || r.on !== r.wi) bad.push(t2 + 'world chip ' + r.chip + ' / lit ' + r.on + ', want ' + r.wi);
+            if (r.ask !== null && r.ask !== r.t) bad.push(t2 + 'Ask the pet says ' + r.ask);
+            if (!r.boss && r.ms !== r.cn) bad.push(t2 + 'missions point at stop ' + r.ms);
+            if (g == 1 && p == 'math' || g == 6 && p == 'math') await pg.screenshot({ path: P_.join(shots, `rc1-map-g${g}-${p}-${w}x${h}.png`) }).catch(() => {});
+          }
+        } catch (e) { bad.push(tag + ' ' + e.message.split('\n')[0]); }
+        network.push(...app.network);
+        for (const e of app.errors) fail('RC1-MAP ' + tag + ': ' + e);
+        await app.ctx.close();
+      }
+      if (bad.length) fail('RC1-MAP the map opens on the own stop:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('RC1-MAP: ' + n + ' maps (grades Pre-K to 6th x 4 subjects x 380x780 and 1024x600, fresh saves set up by taps) open on the own ' +
+        'stop, on screen, the only stop ringed and pulsing; world chip, Ask the pet and missions name the same stop');
+    }
+
+    // RC1-GATE (v188; owner decision 2026-11-19: the Grown-ups PIN). Midway save, real taps, 380x780 and 1024x600: no PIN yet: the old
+    //    question (a wrong answer opens nothing), then choose a PIN (two different entries are refused, then it is typed twice); later the
+    //    PIN pad (48 px keys, dots, never the PIN on screen); a wrong PIN; Change PIN; 5 wrong PINs wait (the right PIN too) with Forgot
+    //    PIN? still there; Forgot PIN? (a wrong answer waits 15 minutes; three right products set a new PIN). At 380x780 also: Erase
+    //    everything behind the PIN (Cancel and a wrong PIN erase nothing), the PIN survives it, Undo erase brings the child back, offered
+    //    once; deleting a child behind the PIN and Undo erase.
+    if (seg('RC1-GATE')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
+      require('fs').mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, at = w + 'x' + h + ' ';
+        const padLook = () => pg.evaluate(pin => {
+          const pad = document.querySelector('.sheet-bg.on #pnpad'), o = [];
+          if (!pad) return ['no pad'];
+          const keys = [...pad.querySelectorAll('.pn-k, .pn-fg')], vh = innerHeight, vw = document.documentElement.clientWidth;
+          for (const k of keys) { const r = k.getBoundingClientRect(); if (r.width < 47.5 || r.height < 47.5) o.push((k.dataset.k || k.id) + ' is ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.top < 0 || r.bottom > vh + 1 || r.left < 0 || r.right > vw + 1) o.push((k.dataset.k || k.id) + ' off screen'); }
+          if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+          if (pad.querySelectorAll('.pn-dots i').length !== 4) o.push('not 4 dots');
+          if ([...pad.querySelectorAll('[data-k]')].map(k => k.getAttribute('aria-label')).join() !== 'one,two,three,four,five,six,seven,eight,nine,zero') o.push('key names');
+          if (pin && document.body.textContent.includes(pin)) o.push('the PIN is on screen');
+          return o;
+        }, '');
+        const padIs = re => pg.waitForFunction(r => { const e = document.querySelector('.sheet-bg.on #pnpad h2'); return !!e && new RegExp(r).test(e.textContent); }, re.source, { timeout: 10000 });
+        const msgIs = re => pg.waitForFunction(r => { const e = document.querySelector('.sheet-bg.on #pnmsg'); return !!e && new RegExp(r).test(e.textContent); }, re.source, { timeout: 10000 });
+        const gear = async () => { await pg.evaluate(() => home()); await pg.click('#gear'); };
+        try {
+          const s0 = await pg.evaluate(() => ({ name: S.name, stars: S.stars }));
+          // 1. no PIN yet: the old question first (a wrong answer opens nothing), then choose the PIN
+          await gear();
+          await pg.waitForSelector('.sheet-bg.on #gwans');
+          const t = await pg.evaluate(() => document.querySelector('.sheet-bg.on .sheet').textContent);
+          if (/hold|second/i.test(t) || !/This part is for grown-ups/.test(t)) bad.push(at + 'the first question: ' + t.slice(0, 120));
+          await pg.fill('#gwans', String(await pg.evaluate(() => NAV.gateSheet.ans + 1)));
+          await pg.click('#gwok');
+          await pg.waitForTimeout(400);
+          if (await pg.$('#pnpad') || await pg.$('.gw-card')) bad.push(at + 'a wrong first answer went on');
+          await pg.fill('#gwans', String(await pg.evaluate(() => NAV.gateSheet.ans)));
+          await pg.click('#gwok');
+          await padIs(/^Choose a Grown-ups PIN/);
+          await pg.waitForTimeout(600); // the sheet has slid in
+          for (const o of await padLook()) bad.push(at + 'the pad: ' + o);
+          await pg.screenshot({ path: P_.join(shots, `rc1-pin-choose-${w}x${h}.png`) }).catch(() => {});
+          await pinType(pg, '1357');
+          await padIs(/^Type it again/);
+          await pinType(pg, '1358');
+          await padIs(/^Choose a Grown-ups PIN/);
+          await msgIs(/didn't match/);
+          await pinType(pg, '2580');
+          await padIs(/^Type it again/);
+          await pinType(pg, '2580');
+          await pg.waitForSelector('.gw-card');
+          const st = await pg.evaluate(() => localStorage.getItem(PIN.KEY));
+          if (!st || st.includes('2580')) bad.push(at + 'the stored PIN: ' + st);
+          const ab = await pg.evaluate(() => (document.querySelector('#ab-gate') || {}).textContent || '');
+          if (!/tap Grown-ups on Home and type your PIN/.test(ab) || !/keeps children out of the settings/.test(await pg.evaluate(() => document.querySelector('#gw-pin').textContent)))
+            bad.push(at + 'About or the PIN card: ' + ab);
+          // 2. with a PIN: the pad, no question; a wrong PIN stays shut; the right one opens Grown-ups
+          await gear();
+          await padIs(/^Grown-ups PIN/);
+          if (await pg.$('.sheet-bg.on #gwans')) bad.push(at + 'the question came with a PIN set');
+          await pg.waitForTimeout(600);
+          await pg.screenshot({ path: P_.join(shots, `rc1-pin-pad-${w}x${h}.png`) }).catch(() => {});
+          await pinType(pg, '1111');
+          await msgIs(/not the PIN/);
+          if (await pg.$('.gw-card')) bad.push(at + 'a wrong PIN opened Grown-ups');
+          await pinType(pg, '2580');
+          await pg.waitForSelector('.gw-card');
+          // 3. Change PIN: the PIN in use first
+          await pg.click('#pn-change');
+          await padIs(/^Your PIN now/);
+          await pinType(pg, '2580');
+          await padIs(/^New PIN/);
+          await pinType(pg, '4680');
+          await padIs(/^Type it again/);
+          await pinType(pg, '4680');
+          await pg.waitForSelector('.gw-card');
+          await pg.waitForTimeout(500);
+          await gear();
+          await padIs(/^Grown-ups PIN/);
+          await pinType(pg, '2580');
+          await msgIs(/not the PIN/);
+          await pinType(pg, '4680');
+          await pg.waitForSelector('.gw-card');
+          // 4. 5 wrong PINs: a wait, the right PIN waits too, Forgot PIN? still on the pad; after the wait the PIN works
+          await gear();
+          await padIs(/^Grown-ups PIN/);
+          for (let i = 0; i < 5; i++) await pinType(pg, '0000');
+          await msgIs(/Too many wrong PINs/);
+          await pinType(pg, '4680');
+          await pg.waitForTimeout(500);
+          if (await pg.$('.gw-card') || !await pg.$('.sheet-bg.on #pnforgot')) bad.push(at + 'the wait let the PIN in, or Forgot PIN? went');
+          const wt = await pg.evaluate(() => Math.round((PIN.get().t - Date.now()) / 60000));
+          if (wt !== 1) bad.push(at + 'the first wait is ' + wt + ' minutes');
+          await pg.evaluate(() => { const x = PIN.get(); x.t = Date.now() - 1; PIN.put(x); }); // the minute has passed
+          await pinType(pg, '4680');
+          await pg.waitForSelector('.gw-card');
+          // 5. Forgot PIN?: a wrong answer waits 15 minutes; three right products set a new PIN and open Grown-ups
+          await gear();
+          await padIs(/^Grown-ups PIN/);
+          await pg.click('.sheet-bg.on #pnforgot');
+          await pg.waitForSelector('.sheet-bg.on #pfa2');
+          await pg.screenshot({ path: P_.join(shots, `rc1-pin-forgot-${w}x${h}.png`) }).catch(() => {});
+          for (let i = 0; i < 3; i++) await pg.fill('#pfa' + i, '1');
+          await pg.click('#pfgo');
+          await pg.waitForFunction(() => /15 minutes/.test(document.querySelector('#pfmsg').textContent) && document.querySelector('#pfgo').disabled);
+          await pg.click('#pfno');
+          await pg.waitForSelector('.sheet-bg', { state: 'detached' });
+          await pg.evaluate(() => { const x = PIN.get(); x.f = Date.now() - 1; PIN.put(x); }); // the 15 minutes have passed
+          await pg.click('#gear');
+          await padIs(/^Grown-ups PIN/);
+          await pg.click('.sheet-bg.on #pnforgot');
+          await pg.waitForSelector('.sheet-bg.on #pfa2');
+          const fa = await pg.evaluate(() => NAV.gateSheet.ans);
+          for (let i = 0; i < 3; i++) await pg.fill('#pfa' + i, String(fa[i]));
+          await pg.click('#pfgo');
+          await padIs(/^Choose a new PIN/);
+          await pinType(pg, '1212');
+          await padIs(/^Type it again/);
+          await pinType(pg, '1212');
+          await pg.waitForSelector('.gw-card');
+          if (await pg.evaluate(() => S.stars) !== s0.stars) bad.push(at + 'Forgot PIN changed the progress');
+          if (w === 380) {
+          // 6. Erase everything behind the PIN: Cancel and a wrong PIN erase nothing; the PIN survives; Undo erase, once
+          await pg.evaluate(() => document.querySelector('#gw-reset').scrollIntoView({ block: 'center' }));
+          await pg.click('#reset');
+          await pg.click('#reset');
+          await padIs(/^Grown-ups PIN/);
+          await pg.click('.sheet-bg.on #pnno');
+          await pg.waitForSelector('.sheet-bg', { state: 'detached' });
+          await pg.click('#reset');
+          await padIs(/^Grown-ups PIN/);
+          await pinType(pg, '9999');
+          await msgIs(/not the PIN/);
+          if (await pg.evaluate(() => !localStorage.getItem(KEY) || S.stars === 0)) bad.push('Cancel or a wrong PIN erased the progress');
+          await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pinType(pg, '1212')]);
+          await pg.waitForSelector('.su-step', { timeout: 60000 });
+          const z = await pg.evaluate(() => ({ stars: S.stars, name: S.name, kept: JSON.parse(localStorage.getItem(KEY + '-undo') || '{}').stars, pin: !!localStorage.getItem(KEY + '-pin') }));
+          if (z.stars !== 0 || z.name !== '' || z.kept !== s0.stars || !z.pin) bad.push('after Erase everything: ' + JSON.stringify(z));
+          await pg.fill('#nm', 'Leo');
+          await pg.click('.gr[data-g="1"]');
+          await pg.click('#go');
+          await pg.waitForSelector('.game[data-p]');
+          await gear();
+          await pinIn(pg, '1212'); // the PIN of before Start over: no question
+          await pg.waitForSelector('#bk-unerase');
+          const un = await pg.evaluate(() => ({ t: document.querySelector('#bk-ersub').textContent, h: document.querySelector('#bk-unerase').offsetHeight,
+            load: !!document.querySelector('#bk-undo') }));
+          if (!un.t.includes(s0.name) || un.h < 48 || un.load) bad.push('the Undo erase offer: ' + JSON.stringify(un));
+          await pg.evaluate(() => document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }));
+          await pg.screenshot({ path: P_.join(shots, 'rc1-undo-erase-380x780.png') }).catch(() => {});
+          await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pg.click('#bk-unerase')]);
+          await pg.waitForFunction(x => typeof S != 'undefined' && S && S.stars === x.stars && S.name === x.name, s0, { timeout: 30000 })
+            .catch(async () => { bad.push('Undo erase did not bring the progress back: ' + JSON.stringify(await pg.evaluate(() => ({ n: S.name, s: S.stars })))); });
+          await pg.waitForSelector('.game[data-p], .pf-kid');
+          await gear();
+          await pinIn(pg, '1212');
+          await pg.waitForSelector('.gw-card');
+          if (await pg.$('#bk-unerase')) bad.push('Undo erase is still offered after it was used');
+          // deleting a child: the PIN after "Yes, delete"; then Undo erase brings the child back
+          await pg.evaluate(() => { PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false); grown(); });
+          await pg.click('[data-pdel="p2"]');
+          await pg.click('#pf-del1');
+          await pg.click('#pf-del2');
+          await padIs(/^Grown-ups PIN/);
+          if (await pg.evaluate(() => !PRF.has('p2'))) bad.push('Ben was deleted before the PIN');
+          await pinType(pg, '1212');
+          await pg.waitForFunction(() => !PRF.has('p2') && !!document.querySelector('#bk-unerase'), null, { timeout: 15000 });
+          if (!/Ben/.test(await pg.evaluate(() => document.querySelector('#bk-ersub').textContent))) bad.push('Undo erase does not name Ben');
+          await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pg.click('#bk-unerase')]);
+          await pg.waitForSelector('#app *');
+          await pg.waitForFunction(() => typeof PRF != 'undefined' && PRF.ids.includes('p2'), null, { timeout: 30000 }).catch(() => bad.push('Ben is not back after Undo erase'));
+          // offered once: delete Ben again, see the offer, start again: the offer and the copy are gone
+          await pg.evaluate(async () => { await PRF.remove('p2'); grown(); });
+          await pg.waitForSelector('#bk-unerase');
+          await pg.reload();
+          await pg.waitForSelector('#app *');
+          await pg.waitForTimeout(500);
+          const gone = await pg.evaluate(() => ({ undo: Object.keys(localStorage).filter(k => /-undo$|-erased$/.test(k)), card: /bk-unerase/.test(BAK.card()) }));
+          if (gone.undo.length || gone.card) bad.push('the copy outlived its one offer: ' + JSON.stringify(gone));
+          }
+        } catch (e) { bad.push(at + e.message.split('\n')[0]); }
+        network.push(...app.network);
+        for (const e of app.errors) fail('RC1-GATE ' + e);
+        await app.ctx.close();
+      }
+      if (bad.length) fail('RC1-GATE the Grown-ups PIN and Undo erase:\n  ' + bad.join('\n  '));
+      else step('RC1-GATE: the Grown-ups PIN at 380x780, 360x740 and 1024x600: the old question then choosing a PIN (a mismatch refused), the pad (48 px, ' +
+        'dots, never the PIN), a wrong PIN, Change PIN, a 1-minute wait after 5 wrong, Forgot PIN? (15-minute wait, then a new PIN); Erase ' +
+        'and Delete behind the PIN, the PIN kept through Start over, Undo erase once');
+    }
+
+    // RC1-SAVE (v188): the tablet's storage is full (every localStorage write throws): a save fails, Home shows one banner for a grown-up,
+    //    said aloud, with a 48 px Hear it button; the next Home has none. The Play app's unlock written while storage is full stays
+    //    unlocked for the session (PLAY.setOwn). 380x780 and 1024x600.
+    if (seg('RC1-SAVE')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
+      require('fs').mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, tag = w + 'x' + h;
+        try {
+          await pg.waitForSelector('#gear');
+          if (await pg.$('#svw')) bad.push(tag + ' a banner while saving works');
+          await pg.evaluate(() => {
+            window.__said = []; const s0 = say; say = (t, ...a) => { __said.push(String(t)); return s0(t, ...a); };
+            window.__set = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new DOMException('full', 'QuotaExceededError'); };
+            S.voice = true; S.stars++; save(); home();
+          });
+          await pg.waitForSelector('#svw');
+          await pg.waitForTimeout(1200);
+          const b = await pg.evaluate(() => { const e = document.querySelector('#svw'), r = e.getBoundingClientRect(), k = document.querySelector('#svwspk').getBoundingClientRect();
+            return { t: e.textContent.trim(), role: e.getAttribute('role'), said: __said, top: Math.round(r.top), bot: Math.round(r.bottom), vh: innerHeight, kw: k.width, kh: k.height,
+              sw: document.documentElement.scrollWidth > document.documentElement.clientWidth, failed: SAVE_FAILED }; });
+          if (b.t !== "Star School can't save right now: ask a grown-up to free some space." || b.role !== 'alert' || !b.failed) bad.push(tag + ' the banner: ' + JSON.stringify(b));
+          if (!b.said.includes(b.t)) bad.push(tag + ' the banner was not said: ' + JSON.stringify(b.said));
+          if (b.kw < 48 || b.kh < 48 || b.top < 0 || b.bot > b.vh || b.sw) bad.push(tag + ' the banner layout: ' + JSON.stringify(b));
+          await pg.screenshot({ path: P_.join(shots, `rc1-save-banner-${tag}.png`) }).catch(() => {});
+          await pg.click('#svwspk');
+          await pg.evaluate(() => home());
+          if (await pg.$('#svw')) bad.push(tag + ' the banner showed twice in one visit');
+          // the Play app's unlock while storage is full: kept for the session, never read back as locked
+          const pl = await pg.evaluate(() => {
+            Storage.prototype.setItem = __set; localStorage.setItem(PLAY.KEY, JSON.stringify({ v: 1, on: 1, own: 0 })); PLAY.read();
+            const before = PLAY.locked() && PLAY.lockedW('math', PATHS.math.worlds.length - 1);
+            Storage.prototype.setItem = function () { throw new DOMException('full', 'QuotaExceededError'); };
+            PLAY.setOwn(true); PLAY.redraw();
+            const after = { locked: PLAY.locked(), w: PLAY.lockedW('math', PATHS.math.worlds.length - 1), stored: JSON.parse(localStorage.getItem(PLAY.KEY)).own };
+            Storage.prototype.setItem = __set; localStorage.removeItem(PLAY.KEY); PLAY.read();
+            return { before, after };
+          });
+          if (!pl.before || pl.after.locked || pl.after.w || pl.after.stored !== 0) bad.push(tag + ' the unlock with storage full: ' + JSON.stringify(pl));
+        } catch (e) { bad.push(tag + ' ' + e.message.split('\n')[0]); }
+        network.push(...app.network);
+        for (const e of app.errors) fail('RC1-SAVE ' + e);
+        await app.ctx.close();
+      }
+      if (bad.length) fail('RC1-SAVE storage full:\n  ' + bad.join('\n  '));
+      else step('RC1-SAVE: storage full: one banner on Home, said aloud, Hear it 48 px, not again on the next Home; the Play unlock kept for the session ' +
+        '(380x780, 1024x600)');
+    }
+
+    // RC1-UPD (v188): served over http://127.0.0.1 so the service worker installs. (a) A slow network (the page itself takes 8 s): a new
+    //    open is answered from the cache after about 3 s (before: the 8 s). (b) A new service worker taking over (a simulated
+    //    controllerchange) in the middle of a Practice round: the round goes on (no reload, a question answered), and the page reloads
+    //    when the child goes Home.
+    if (seg('RC1-UPD')) {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const socks = new Set(), bad = [], notes = [];
+      let slow = 0, slowSeen = 0;
+      const srv = http.createServer((req, res) => {
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        const send = () => { res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' }); fs.createReadStream(f).pipe(res); };
+        if (slow && u === 'index.html') { slowSeen++; setTimeout(send, slow); } else send();
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      const ctx = await browser.newContext({ viewport: { width: 380, height: 780 } }), errs = [];
+      await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+      try {
+        const p1 = await ctx.newPage();
+        p1.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p1.goto(base + 'index.html');
+        await p1.locator('#groom').waitFor({ timeout: 15000 });
+        await p1.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 30000 });
+        await p1.close();
+        // (a) the page takes 8 s from the network: the cached page comes after the 3 s wait
+        slow = 8000;
+        const p2 = await ctx.newPage();
+        p2.on('pageerror', e => errs.push('exception: ' + e.message));
+        const t0 = Date.now();
+        await p2.goto(base + 'index.html', { waitUntil: 'commit', timeout: 20000 });
+        await p2.locator('#groom').waitFor({ timeout: 20000 });
+        const dt = Date.now() - t0;
+        slow = 0;
+        if (dt < 2500 || dt > 7500 || !slowSeen) bad.push('slow network: Home after ' + dt + ' ms (want about 3 s from the cache), network asked ' + slowSeen + ' times');
+        else notes.push('Home after ' + dt + ' ms with an 8 s network');
+        await p2.waitForTimeout(6000); // the late network page finishes (RC-2: it no longer goes into the cache: RC2-SKEW)
+        // (b) an update during a Practice round
+        await p2.evaluate(() => { K2.off = true; S.unlockAll = true; start('math', NODES.math.findIndex(n => [1, 2, 3, 4, 5, 6].every(s => { const q = genQ(n.sk, n.lv, s); return q && !q.after && (q.kind == 'choice' || q.kind == 'num'); }))); });
+        await p2.waitForSelector('#prompt');
+        await p2.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 10000 });
+        await p2.evaluate(() => { window.__mark = 'round'; window.__q0 = G.q; navigator.serviceWorker.dispatchEvent(new Event('controllerchange')); });
+        await p2.waitForTimeout(2500);
+        const r1 = await p2.evaluate(() => ({ mark: window.__mark, round: !!document.querySelector('#prompt'), due: SWU.due }));
+        if (r1.mark !== 'round' || !r1.round || r1.due !== 1) bad.push('the update reloaded the round: ' + JSON.stringify(r1));
+        await answer(p2);
+        await p2.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q0), null, { timeout: 8000 }).catch(() => bad.push('the round did not go on after the update'));
+        const r2 = await p2.evaluate(() => ({ mark: window.__mark, score: G.score }));
+        if (r2.mark !== 'round' || r2.score !== 1) bad.push('after a question: ' + JSON.stringify(r2));
+        await Promise.all([p2.waitForNavigation({ timeout: 15000 }).catch(() => bad.push('Home did not reload into the update')), p2.evaluate(() => home())]);
+        await p2.locator('#groom').waitFor({ timeout: 15000 });
+        if (await p2.evaluate(() => window.__mark === 'round')) bad.push('the old page is still there after Home');
+        else notes.push('a round went on through the update; Home reloaded');
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      for (const e of errs) fail('RC1-UPD ' + e);
+      await ctx.close();
+      await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
+      if (bad.length) fail('RC1-UPD updates and a slow network:\n  ' + bad.join('\n  '));
+      else step('RC1-UPD: ' + notes.join('; '));
+    }
+
+    // RC1-TIME (v188, owner): game time from a grown-up. Midway save, 380x780, real taps: Grown-ups (behind the PIN) +10 min goes into the
+    //    bank (shown as the ticket meter shows it), Home says "A grown-up gave you 10 minutes!" once; -5 min takes away; never below 0;
+    //    the activity log keeps it apart from learning.
+    if (seg('RC1-TIME')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      const bankTxt = () => pg.evaluate(() => document.querySelector('#gw-time .gw-st b').textContent);
+      try {
+        await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); S.voice = true; save();
+          window.__said = []; const s0 = say; say = (t, ...a) => { __said.push(String(t)); return s0(t, ...a); }; });
+        const toGrown = async () => { await pg.evaluate(() => home()); await pg.click('#gear'); await pinIn(pg, '2580'); await pg.waitForSelector('#gw-time');
+          await pg.evaluate(() => document.querySelector('#gw-give').scrollIntoView({ block: 'center' })); };
+        await toGrown();
+        const b0 = await pg.evaluate(() => ({ bank: pt().bank, sec: (ACT.entry(today()) || {}).sec || 0 }));
+        await pg.click('#pt10');
+        await pg.waitForTimeout(300);
+        const t1 = await bankTxt(), b1 = await pg.evaluate(() => ({ bank: pt().bank, gt: ACT.entry(today()).gt, sec: ACT.entry(today()).sec }));
+        if (b1.bank !== b0.bank + 600 || t1 !== await pg.evaluate(b => fmtT(b), b1.bank) || b1.gt !== 600 || b1.sec !== b0.sec) bad.push('+10 min: ' + JSON.stringify({ b0, b1, t1 }));
+        for (const id of ['#pt5', '#pt10', '#pt15', '#ptm5']) { const r = await (await pg.$(id)).boundingBox(); if (r.height < 48 || r.width < 48) bad.push(id + ' is ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+        await pg.screenshot({ path: P_.join(shots, 'rc1-gametime-380x780.png') }).catch(() => {});
+        await pg.evaluate(() => home());
+        await pg.waitForSelector('#hmgift');
+        await pg.waitForTimeout(1500);
+        const hl = await pg.evaluate(() => ({ t: document.querySelector('#hmgift').textContent.trim(), said: __said }));
+        if (hl.t !== 'A grown-up gave you 10 minutes!' || !hl.said.includes(hl.t)) bad.push('the Home line: ' + JSON.stringify(hl));
+        await pg.screenshot({ path: P_.join(shots, 'rc1-gift-home-380x780.png') }).catch(() => {});
+        await pg.evaluate(() => home());
+        if (await pg.$('#hmgift')) bad.push('the Home line came twice');
+        await toGrown();
+        await pg.click('#ptm5');
+        await pg.waitForTimeout(300);
+        const b2 = await pg.evaluate(() => ({ bank: pt().bank, gt: ACT.entry(today()).gt }));
+        if (b2.bank !== b1.bank - 300 || b2.gt !== 300 || await bankTxt() !== await pg.evaluate(b => fmtT(b), b2.bank)) bad.push('-5 min: ' + JSON.stringify(b2));
+        await pg.evaluate(() => { pt().bank = 60; save(); });
+        await pg.click('#ptm5');
+        await pg.waitForTimeout(300);
+        if (await pg.evaluate(() => pt().bank) !== 0 || await bankTxt() !== '0:00') bad.push('below 0: ' + await bankTxt());
+        await pg.evaluate(() => home());
+        if (await pg.$('#hmgift')) bad.push('a Home line after taking away');
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('RC1-TIME ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('RC1-TIME game time from a grown-up:\n  ' + bad.join('\n  '));
+      else step('RC1-TIME: Grown-ups (PIN) +10 min into the bank, shown and logged apart from learning; Home says "A grown-up gave you 10 minutes!" once; ' +
+        '-5 min takes away, never below 0');
+    }
+
+    // RC1-KIDS (v188, owner): picture passwords. Two children (midway's child and Ben), 380x780, 360x740 and 1024x600, real taps: the
+    //    grown-up sets the first child's 3 pictures in Grown-ups (behind the PIN), Ben's are set too; "Who is playing?" (held from Home)
+    //    asks Ben's pictures: a wrong try (the dots shake, never the pictures; "Not quite. Try again!"), then the right 3 open Ben; back on
+    //    the picker the first child's grid, Grown-up help (the PIN) shows the pictures and opens the child.
+    if (seg('RC1-KIDS')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
+      require('fs').mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, at = w + 'x' + h + ' ';
+        const gridLook = () => pg.evaluate(() => {
+          const g = document.querySelector('.sheet-bg.on .kp'), o = [];
+          if (!g) return ['no grid'];
+          const vh = innerHeight, vw = document.documentElement.clientWidth;
+          for (const b of g.querySelectorAll('.btn')) { const r = b.getBoundingClientRect(); const n = b.dataset.pic || b.id;
+            if (r.width < 47.5 || r.height < 47.5) o.push(n + ' is ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.top < 0 || r.bottom > vh + 1 || r.left < 0 || r.right > vw + 1) o.push(n + ' off screen'); }
+          if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+          if ([...g.querySelectorAll('[data-pic]')].length !== 9) o.push('not 9 pictures');
+          if (g.querySelector('.kp-dots svg')) o.push('a picture in the dots');
+          return o;
+        });
+        const holdWho = async () => {
+          await pg.evaluate(() => home());
+          const b = await (await pg.$('#who')).boundingBox();
+          await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+          await pg.mouse.down();
+          await vwait(pg, 1300);
+          await pg.mouse.up();
+          await pg.waitForSelector('.pf-kid');
+        };
+        try {
+          const nm = await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false);
+            KPW.set('p2', ['sun', 'sun', 'cake']); S.voice = true; save(); return S.name; });
+          // the grown-up sets the first child's pictures in Grown-ups
+          await pg.evaluate(() => home());
+          await pg.click('#gear');
+          await pinIn(pg, '2580');
+          await pg.waitForSelector('[data-kpset="p1"]');
+          const card = await pg.evaluate(() => document.querySelector('#gw-kpw').textContent);
+          if (!/Picture passwords/.test(card) || !/Ben: on/.test(card)) bad.push(at + 'the Children card: ' + card);
+          await pg.click('[data-kpset="p1"]');
+          await pg.waitForSelector('.sheet-bg.on [data-pic]');
+          for (const p of ['dog', 'star', 'apple']) await pg.click(`.sheet-bg.on [data-pic="${p}"]`);
+          await pg.click('#kpsave');
+          await pg.waitForFunction(() => PRF.pwOn('p1') && /: on/.test(document.querySelector('#gw-kpw').textContent));
+          // Home's "Who is playing?" (held): Ben's grid; a wrong try; the right 3 open Ben
+          await holdWho();
+          await pg.evaluate(() => { window.__said = []; const s0 = say; say = (t, ...a) => { __said.push(String(t)); return s0(t, ...a); }; });
+          await pg.click('.pf-kid[data-kid="p2"]');
+          await pg.waitForSelector('.sheet-bg.on #kpask');
+          await pg.waitForTimeout(600); // the sheet has slid in
+          for (const o of await gridLook()) bad.push(at + 'the grid: ' + o);
+          await pg.screenshot({ path: P_.join(shots, `rc1-kids-grid-${w}x${h}.png`) }).catch(() => {});
+          for (const p of ['fish', 'fish']) await pg.click(`.sheet-bg.on [data-pic="${p}"]`);
+          const mid = await pg.evaluate(() => ({ dots: document.querySelectorAll('.sheet-bg.on .kp-dots i.on').length, said: __said.slice() }));
+          if (mid.dots !== 2 || !mid.said.includes('fish')) bad.push(at + 'two taps: ' + JSON.stringify(mid));
+          await pg.click('.sheet-bg.on [data-pic="fish"]');
+          await pg.waitForFunction(() => /Not quite\. Try again!/.test(document.querySelector('.sheet-bg.on #kpmsg').textContent));
+          const wr = await pg.evaluate(() => ({ shake: document.querySelector('.sheet-bg.on .kp-dots').classList.contains('kp-no'), said: __said.includes('Not quite. Try again!'),
+            on: document.querySelectorAll('.sheet-bg.on .kp-dots i.on').length, name: S.name }));
+          if (!wr.shake || !wr.said || wr.on || wr.name !== nm) bad.push(at + 'a wrong try: ' + JSON.stringify(wr));
+          await Promise.all([pg.waitForNavigation({ timeout: 30000 }), (async () => { for (const p of ['sun', 'sun', 'cake']) await pg.click(`.sheet-bg.on [data-pic="${p}"]`); })()]);
+          await pg.waitForSelector('#app *');
+          await pg.waitForFunction(() => typeof S != 'undefined' && S.name === 'Ben', null, { timeout: 15000 }).catch(() => bad.push(at + 'the right pictures did not open Ben'));
+          // back to the first child: their grid; Grown-up help (the PIN) shows the pictures and opens them
+          await pg.waitForSelector('#who');
+          await holdWho();
+          await pg.click('.pf-kid[data-kid="p1"]');
+          await pg.waitForSelector('.sheet-bg.on #kpask');
+          await pg.click('.sheet-bg.on #kphelp');
+          await pinIn(pg, '2580');
+          await pg.waitForSelector('.sheet-bg.on #kpsee');
+          await pg.click('.sheet-bg.on #kpsee');
+          const shown = await pg.evaluate(() => document.querySelector('.sheet-bg.on #kpshow').textContent);
+          if (!/1\. dog.*2\. star.*3\. apple/.test(shown)) bad.push(at + 'Grown-up help shows: ' + shown);
+          await Promise.all([pg.waitForNavigation({ timeout: 30000 }), pg.click('.sheet-bg.on #kpopen')]);
+          await pg.waitForFunction(x => typeof S != 'undefined' && S.name === x, nm, { timeout: 15000 }).catch(() => bad.push(at + 'Grown-up help did not open ' + nm));
+          const kept = await pg.evaluate(() => ({ p1: PRF.pwOn('p1'), p2: PRF.pwOn('p2'), inSave: /"pw"|kpw/.test(localStorage.getItem(KEY)), bak: /"pw"/.test(BAK.makeAll()) }));
+          if (!kept.p1 || !kept.p2 || kept.inSave || kept.bak) bad.push(at + 'where the passwords are kept: ' + JSON.stringify(kept));
+        } catch (e) { bad.push(at + e.message.split('\n')[0]); }
+        network.push(...app.network);
+        for (const e of app.errors) fail('RC1-KIDS ' + at + e);
+        await app.ctx.close();
+      }
+      if (bad.length) fail('RC1-KIDS picture passwords:\n  ' + bad.join('\n  '));
+      else step('RC1-KIDS: two children with picture passwords at 380x780, 360x740 and 1024x600: set in Grown-ups behind the PIN, the picker asks them ' +
+        '(48 px pictures said on tap, dots only), a wrong try shakes and says so, the right 3 open the child, Grown-up help shows the pictures and opens the child');
+    }
+
+    // RC2-SKEW (v189, RC-2 item 1): the 3-second race in sw.js must never cache a late network page. http + service worker, midway save:
+    //    this release installed; then "the next release" is put up (index.html and sw.js with the next version, its part files missing,
+    //    so its service worker cannot install) and the page takes 8 s from the network: the cached page comes at 3 s, the late network
+    //    page arrives, and the cache must still hold this release's page (was: the new index.html with the old parts); then offline, the
+    //    next start is Home (was: "Star School needs to finish updating").
+    if (seg('RC2-SKEW')) {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const CUR = /BUILD='(v\d+)'/.exec(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'))[1], NEW = 'v' + (+CUR.slice(1) + 1);
+      const socks = new Set(), bad = [], notes = [];
+      let next = 0, slow = 0, slowSeen = 0, down = 0;
+      const srv = http.createServer((req, res) => {
+        if (down) return req.socket.destroy(); // offline: no answer at all (the service worker's fetch fails)
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
+        const nu = next ? u.replace('.' + NEW + '.js', '.' + CUR + '.js') : u, f = path.join(ROOT, nu);
+        if ((next && nu !== u) || !f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        const send = () => {
+          res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+          // the next release: its version in index.html and sw.js (quotes and dots around it only: never inside the base64 fonts)
+          if (next && (u === 'index.html' || u === 'sw.js')) return res.end(fs.readFileSync(f, 'utf8').replace(new RegExp(`(['".])${CUR}(?=['".])`, 'g'), '$1' + NEW));
+          fs.createReadStream(f).pipe(res);
+        };
+        if (slow && u === 'index.html') { slowSeen++; setTimeout(send, slow); } else send();
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      const ctx = await browser.newContext({ viewport: { width: 380, height: 780 } }), errs = [];
+      await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+      const cached = pg => pg.evaluate(async () => { const o = {};
+        for (const k of await caches.keys()) { if (k == 'starschool-audio') continue; const r = await (await caches.open(k)).match('./index.html');
+          o[k] = r ? (/BUILD='(v\d+)'/.exec(await r.text()) || [])[1] : null; }
+        return o; });
+      try {
+        const p1 = await ctx.newPage();
+        p1.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p1.goto(base + 'index.html');
+        await p1.locator('#groom').waitFor({ timeout: 15000 });
+        await p1.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 60000 });
+        // the next release goes up, and the network is slow: the cached page at 3 s
+        next = 1;
+        slow = 8000;
+        await p1.reload({ waitUntil: 'commit', timeout: 20000 });
+        await p1.locator('#groom').waitFor({ timeout: 20000 });
+        const b1 = await p1.evaluate(() => BUILD);
+        if (b1 !== CUR || !slowSeen) bad.push('slow network: the page is ' + b1 + ' (want the cached ' + CUR + '), network asked ' + slowSeen + ' times');
+        await p1.waitForTimeout(8000); // the late network page arrives
+        slow = 0;
+        const c1 = await cached(p1);
+        if (c1['starschool-' + CUR] !== CUR) bad.push('the late network page went into the ' + CUR + ' cache: ' + JSON.stringify(c1));
+        else notes.push('the late ' + NEW + ' page was not cached (' + JSON.stringify(c1) + ')');
+        // offline (the server gives no answer: setOffline does not reach the service worker's own fetches): the next start is this release, whole
+        down = 1;
+        await p1.reload({ timeout: 20000 }).catch(e => bad.push('offline reload: ' + e.message.split('\n')[0]));
+        await p1.waitForSelector('#groom, #datamiss', { timeout: 20000 });
+        const r2 = await p1.evaluate(() => ({ build: BUILD, miss: !!document.querySelector('#datamiss') }));
+        if (r2.miss || r2.build !== CUR) bad.push('offline start after the late page: ' + JSON.stringify(r2) + ' (version skew: "needs to finish updating")');
+        else notes.push('offline, the next start is Home (' + CUR + ')');
+        down = 0;
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      for (const e of errs) fail('RC2-SKEW ' + e);
+      await ctx.close();
+      await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
+      if (bad.length) fail('RC2-SKEW a late network page and the cache:\n  ' + bad.join('\n  '));
+      else step('RC2-SKEW: ' + notes.join('; '));
+    }
+
+    // RC2-UNDO (v189, RC-2 item 2): two children; Erase everything (behind the PIN) opens setup for the erased child; Back on setup puts
+    //    the erased save back (BAK.undo; was: PRF.remove dropped the child and its "Undo erase" copy). 380x780, real taps.
+    if (seg('RC2-UNDO')) {
+      const bad = [];
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      try {
+        await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false); save(); });
+        const s0 = await pg.evaluate(() => ({ name: S.name, stars: S.stars, id: PRF.cur }));
+        await pg.evaluate(() => home());
+        await pg.click('#gear');
+        await pinIn(pg, '2580');
+        await pg.waitForSelector('#reset');
+        await pg.evaluate(() => document.querySelector('#gw-reset').scrollIntoView({ block: 'center' }));
+        await pg.click('#reset');
+        await pg.click('#reset');
+        await pg.waitForSelector('.sheet-bg.on #pnpad');
+        await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pinType(pg, '2580')]);
+        await pg.waitForSelector('.su-step', { timeout: 60000 });
+        const z = await pg.evaluate(() => ({ stars: S.stars, name: S.name, er: BAK.erased() && BAK.erased().k, back: !!document.querySelector('#suback') }));
+        if (z.stars !== 0 || z.name !== '' || !z.er || !z.back) bad.push('after Erase everything: ' + JSON.stringify(z));
+        await Promise.all([pg.waitForNavigation({ timeout: 60000 }), pg.click('#suback')]);
+        await pg.waitForSelector('.pf-kid, .game[data-p]', { timeout: 30000 });
+        const b = await pg.evaluate(id => { const o = PRF.obj(PRF.get(PRF.key(id))) || {};
+          return { ids: PRF.ids.join(), name: o.name, stars: o.stars, left: Object.keys(localStorage).filter(k => /-undo$|-erased$/.test(k)) }; }, s0.id);
+        if (!b.ids.includes(s0.id) || b.name !== s0.name || b.stars !== s0.stars) bad.push('Back on setup after Erase everything lost the erased save: ' + JSON.stringify(b));
+        else if (await pg.$('.pf-kid')) {
+          await pg.click(`.pf-kid[data-kid="${s0.id}"]`); // (the child who is already loaded opens without a reload)
+          await pg.waitForSelector('.game[data-p]', { timeout: 30000 });
+          await pg.waitForFunction(x => typeof S != 'undefined' && S.name === x.name && S.stars === x.stars, s0, { timeout: 15000 })
+            .catch(() => bad.push('the child came back in the list but did not open with the progress'));
+        }
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('RC2-UNDO ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('RC2-UNDO Back on setup after Erase everything:\n  ' + bad.join('\n  '));
+      else step('RC2-UNDO: with two children, Back on setup after Erase everything puts the erased progress back (the child opens with it)');
+    }
+
+    // RC2-GATE (v189, RC-2 items 4-6 and the owner notes): 380x780, midway save, real taps. A PIN wait stored 2 years ahead (a clock
+    //    change) has expired; Find my level from Grown-ups goes Home, never back into Grown-ups; Story themes' Done goes back to
+    //    Grown-ups while the grown-up session is valid, Home once it ran out; a child screen ends the session; Empty bank goes through
+    //    ptGift (logged); the learn-first hint on the gift row; a Forgot PIN reset is named at the next entry by the PIN; an update
+    //    never reloads Grown-ups.
+    if (seg('RC2-GATE')) {
+      const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc2');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      const toGrown = async () => { await pg.evaluate(() => home()); await pg.click('#gear'); await pinIn(pg, '2580'); await pg.waitForSelector('#gw-time'); };
+      try {
+        await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); });
+        // 4. a wait set with the clock 2 years ahead: expired, the right PIN opens Grown-ups, Forgot PIN? asks its questions
+        await pg.evaluate(() => { const o = PIN.get(); o.t = o.f = Date.now() + 2 * 365 * 864e5; PIN.put(o); home(); });
+        await pg.click('#gear');
+        await pg.waitForSelector('.sheet-bg.on #pnpad');
+        const ln = await pg.evaluate(() => document.querySelector('.sheet-bg.on #pnpad').textContent);
+        if (/Too many/.test(ln)) bad.push('a wait stored 2 years ahead still locks the pad');
+        await pinType(pg, '2580');
+        await pg.waitForSelector('#gw-time', { timeout: 10000 }).catch(() => bad.push('the right PIN did not open Grown-ups after a clock change'));
+        await pg.evaluate(() => { const o = PIN.get(); o.f = Date.now() + 2 * 365 * 864e5; PIN.put(o); home(); });
+        await pg.click('#gear');
+        await pg.click('.sheet-bg.on #pnforgot');
+        await pg.waitForSelector('.sheet-bg.on #pfa0', { timeout: 10000 }).catch(() => bad.push('Forgot PIN? still waits after a clock change'));
+        // the Forgot PIN reset: a new PIN, then the next entry by the PIN names it
+        const ans = await pg.evaluate(() => NAV.gateSheet.ans);
+        for (let i = 0; i < 3; i++) await pg.fill('.sheet-bg.on #pfa' + i, String(ans[i]));
+        await pg.click('.sheet-bg.on #pfgo');
+        await padH(pg, /^Choose a new PIN/);
+        await pinType(pg, '2580');
+        await padH(pg, /^Type it again/);
+        await pinType(pg, '2580');
+        await pg.waitForSelector('#gw-time');
+        if (await pg.$('#pnreset')) bad.push('the reset note shows to whoever just reset the PIN');
+        await toGrown();
+        const note = await pg.evaluate(() => (document.querySelector('#pnreset') || {}).textContent || '');
+        if (!/^Your PIN was reset with Forgot PIN on .+\.$/.test(note)) bad.push('the next entry: no reset note (' + note + ')');
+        await pg.screenshot({ path: P_.join(shots, 'rc2-pin-reset-note-380x780.png') }).catch(() => {});
+        await toGrown();
+        if (await pg.$('#pnreset')) bad.push('the reset note shows again on the entry after');
+        // 5. Find my level from Grown-ups: Back goes Home
+        await pg.evaluate(() => { S.grade = 1; save(); grown(); });
+        await pg.click('.pl-grown [data-place]');
+        await pg.waitForSelector('#plback');
+        await pg.click('#plback');
+        await pg.waitForSelector('#hs, .gw', { timeout: 10000 });
+        if (await pg.$('.gw')) bad.push('Find my level\'s Back from Grown-ups opened Grown-ups without the PIN');
+        // Story themes: Done back to Grown-ups within the session; Home once it ran out; a child screen ends it
+        await toGrown();
+        await pg.waitForSelector('#pers-open', { timeout: 15000 });
+        await pg.click('#pers-open');
+        await pg.waitForSelector('#pers-done');
+        await pg.click('#pers-done');
+        await pg.waitForSelector('.gw, #hs');
+        if (!(await pg.$('.gw'))) bad.push('Story themes\' Done within the session did not go back to Grown-ups');
+        await pg.waitForSelector('#pers-open', { timeout: 15000 });
+        await pg.click('#pers-open');
+        await pg.waitForSelector('#pers-done');
+        await pg.evaluate(() => { NAV.gwT = Date.now() - NAV.GW_MS - 1000; });
+        await pg.click('#pers-done');
+        await pg.waitForSelector('.gw, #hs');
+        if (await pg.$('.gw')) bad.push('Story themes\' Done after the session ran out opened Grown-ups without the PIN');
+        await toGrown();
+        const ses = await pg.evaluate(() => { const a = NAV.gwOk(); pathMap('math'); const b = NAV.gwOk(); return { a, b }; });
+        if (!ses.a || ses.b) bad.push('the grown-up session: ' + JSON.stringify(ses) + ' (want valid in Grown-ups, ended by a map)');
+        // the report card's Back
+        await toGrown();
+        await pg.click('#rp-open');
+        await pg.waitForSelector('#back');
+        await pg.click('#back');
+        await pg.waitForSelector('#gw-time', { timeout: 10000 }).catch(() => bad.push('the report card\'s Back did not go back to Grown-ups'));
+        // 6. Empty bank through ptGift; the learn-first hint; SWU never reloads Grown-ups
+        await pg.evaluate(() => { pt().bank = 600; pt().gift = 0; ptCfg().need = 10; pt().open = ''; save(); grown(); });
+        const h = await pg.evaluate(() => document.querySelector('#ptgifth').textContent);
+        if (!/unlock after today's learning/.test(h)) bad.push('no learn-first hint on the gift row: ' + h);
+        await pg.evaluate(() => document.querySelector('#gw-give').scrollIntoView({ block: 'center' }));
+        await pg.screenshot({ path: P_.join(shots, 'rc2-gift-learn-first-380x780.png') }).catch(() => {});
+        await pg.click('#pt10');
+        await pg.click('#pt0');
+        await pg.waitForSelector('#gw-time');
+        const e = await pg.evaluate(() => ({ bank: pt().bank, gift: pt().gift | 0, gt: (ACT.entry(today()) || {}).gt, hub: SWU.hub() }));
+        if (e.bank !== 0 || e.gift !== 0 || e.gt !== -600 || e.hub) bad.push('Empty bank and the update hub: ' + JSON.stringify(e) + ' (want bank 0, gift 0, logged -600 s, Grown-ups no hub)');
+        await pg.evaluate(() => { ptCfg().need = 0; save(); });
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('RC2-GATE ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('RC2-GATE lockouts, the grown-up session, Empty bank, the owner notes:\n  ' + bad.join('\n  '));
+      else step('RC2-GATE: a PIN wait from a clock change has expired; Find my level goes Home; Story themes back to Grown-ups only in the ' +
+        'grown-up session; a child screen ends it; Empty bank logged through ptGift; the learn-first hint; the Forgot PIN note once; Grown-ups is no update hub');
+    }
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

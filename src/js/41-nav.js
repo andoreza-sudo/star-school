@@ -9,9 +9,8 @@
    - Back is an arrow (ico 'back', aria-label "Back") and goes one step back; Home is the house (aria-label "Home") and goes all
      the way Home. Nothing else uses the house.
    - Every end card ends with the same three choices, NAV.end3(): Play again, Next (hidden when there is no next), Home.
-   - Grown-ups on Home is a labelled button held for 3 seconds (a ring fills), or a times-table question for a tap (NAV.gate). */
+   - Grown-ups on Home is a labelled button; a tap asks for the Grown-ups PIN (NAV.quiz, 41b-pin.js; RC-1). */
 const NAV = {
-  HOLD_MS: 3000,
   mapFrom: 'home', // where a map's Back arrow goes: 'home' or 'learn' (the screen the child came from)
   held: false, // the Go Home? sheet is open
   // the bar's buttons: [id, icon, label, open]
@@ -126,39 +125,39 @@ const NAV = {
     return el;
   },
 
-  // ---- Grown-ups gate (Home): hold the button 3 seconds (the ring fills), or a tap opens a times-table question ----
+  // ---- Grown-ups gate (Home): a tap asks for the Grown-ups PIN (41b-pin.js; RC-1, owner decision 2026-11-19: the 3-second hold is gone) ----
   gateHTML() {
-    return `<button class="btn soft sm nv-gw" id="gear" aria-label="Grown-ups: hold for 3 seconds"><span class="nv-ring" aria-hidden="true">` +
-      `<svg class="nv-rs" viewBox="0 0 36 36" aria-hidden="true" focusable="false"><circle class="nv-rt" cx="18" cy="18" r="15.5"/><circle class="nv-rf" id="gwring" cx="18" cy="18" r="15.5" pathLength="100"/></svg>` +
-      `${ico('gear', 22)}</span><span>${UI.t('Grown-ups')}</span></button>`;
+    return `<button class="btn soft sm nv-gw" id="gear" aria-label="Grown-ups">${ico('gear', 22)}<span>${UI.t('Grown-ups')}</span></button>`;
   },
   gateBind() {
     const g = $('#gear');
     if (!g) return;
-    let t = 0, iv = 0, n = 0, done = false;
-    const ring = v => { const r = $('#gwring'); if (r) r.style.strokeDashoffset = String(Math.round(100 - 100 * v)); };
-    const stop = () => { clearTimeout(t); clearInterval(iv); t = iv = 0; g.classList.remove('hold'); if (!done) ring(0); };
     g.oncontextmenu = e => e.preventDefault();
-    g.onpointerdown = e => {
-      if (e.button > 0) return;
-      stop();
-      done = false;
-      n = 0;
-      g.classList.add('hold');
-      iv = setInterval(() => ring(Math.min(1, ++n * 100 / NAV.HOLD_MS)), 100);
-      t = setTimeout(() => { done = true; stop(); ring(1); SFX.chime(); grown(); }, NAV.HOLD_MS);
-    };
-    g.onpointerup = g.onpointerleave = g.onpointercancel = () => { if (t) stop(); };
-    g.onclick = () => {
-      if (done) return;
-      NAV.quiz();
-    };
+    g.onclick = () => NAV.quiz();
   },
-  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in. then: what a right answer opens
-  // (default Grown-ups; PLAY-01: the Unlock Star School sheet, which is only ever reached through this question)
+  // the way into Grown-ups and everything it guards: then (default Grown-ups; PLAY-01: the Unlock Star School sheet; Erase; Delete)
+  // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
+  // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
-    const a = R(6, 9), b = R(6, 9), go2 = typeof then == 'function' ? then : grown;
-    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>${then ? 'This part is for grown-ups. Answer to go on:' : 'Hold the Grown-ups button for 3 seconds, or answer:'}</p>` +
+    const go0 = typeof then == 'function' ? then : grown, go = () => { NAV.gwT = Date.now(); go0(); }; // RC-2: the grown-up session starts
+    if (typeof PIN != 'undefined') return PIN.gate(go);
+    return partLoad('gate').then(ok => {
+      if (ok && typeof PIN != 'undefined') return PIN.gate(go);
+      logErr('the gate part did not load: the old question was asked');
+      return NAV.askQ(go);
+    });
+  },
+  // RC-2: the grown-up session: from the gate (NAV.quiz) until any child screen opens (view() ends it unless the screen set gwK first:
+  // Grown-ups, the report card, Story themes). Back from a grown-up screen goes to Grown-ups only while it is valid, else Home; away
+  // from the Grown-ups screens (Story themes, which a grown-up may hand to the child) it lasts GW_MS from the last Grown-ups screen.
+  gwT: 0, gwK: 0, GW_MS: 180000,
+  gwOk() { return NAV.gwT > 0 && (!!document.querySelector('#app .gw') || Date.now() - NAV.gwT < NAV.GW_MS); },
+  gwBack() { return NAV.gwOk() ? grown() : home(); },
+  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in; then: what a right answer opens.
+  // RC-1: only the first way in on a tablet with no Grown-ups PIN yet (PIN.gate), which then asks the grown-up to choose one
+  askQ(then) {
+    const a = R(6, 9), b = R(6, 9), go2 = then;
+    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>This part is for grown-ups. Answer to go on:</p>` +
       `<label class="nv-q"><span>${a} × ${b} =</span><input id="gwans" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="${a} times ${b}"></label>` +
       `<p class="nv-msg" id="gwmsg" role="status"></p><div class="acts">${UI.btn('Open', { kind: 'primary', size: 'lg', wide: true, icon: 'check', id: 'gwok' })}` +
       `${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'gwno' })}</div></div>`);

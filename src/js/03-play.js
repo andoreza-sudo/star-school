@@ -43,7 +43,14 @@ const PLAY = {
     PLAY.own = PLAY.on && PLAY.st.own === 1;
   },
   write() {
-    try { localStorage.setItem(PLAY.KEY, JSON.stringify(PLAY.st)); } catch (e) {}
+    try { localStorage.setItem(PLAY.KEY, JSON.stringify(PLAY.st)); return true; } catch (e) { return false; }
+  },
+  // RC-1: after a change to PLAY.st: read it back from storage, or, when it could not be written (storage full), keep what is in memory
+  // for this session (a family that just paid is never locked again by a failed write)
+  keep() {
+    if (PLAY.write()) return PLAY.read();
+    PLAY.on = PLAY.st.on === 1;
+    PLAY.own = PLAY.on && PLAY.st.own === 1;
   },
   // At load: keep Play mode once it was set; set it when the Play app opened this page and Google Play billing answers (see the header).
   // Returns a promise of PLAY.on (tests await it).
@@ -61,8 +68,7 @@ const PLAY = {
         PLAY.read();
         PLAY.st.on = 1;
         PLAY.st.own = PLAY.st.own === 1 ? 1 : 0;
-        PLAY.write();
-        PLAY.read();
+        PLAY.keep();
         if (typeof PLAY.redraw == 'function') PLAY.redraw();
         if (typeof PLAY.verify == 'function') PLAY.verify().catch(() => {});
         return true;
@@ -74,8 +80,7 @@ const PLAY = {
     PLAY.st.own = v ? 1 : 0;
     PLAY.st.at = Date.now();
     delete PLAY.st.miss;
-    PLAY.write();
-    PLAY.read();
+    PLAY.keep();
   },
   locked() { return PLAY.on && !PLAY.own && !PLAY.mig; },
   // the free world of path p: the start world of the child's grade

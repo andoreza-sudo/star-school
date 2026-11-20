@@ -31,12 +31,13 @@ function persCard(el) {
     `<p class="gw-p" id="pers-now">${names ? 'Story problems are about ' + esc(names) + '.' : 'Nothing picked: the usual story problems.'}</p>` +
     UI.btn(names ? 'Change themes' : 'Choose themes', {size: 'sm', icon: 'heart', id: 'pers-open'}),
     {sub: `Pick up to ${PERS_MAX} things ${esc(S.name || 'your child')} likes. Story problems use them. The math stays the same.`});
-  $('#pers-open').onclick = () => persPick(() => grown());
+  $('#pers-open').onclick = () => persPick(() => NAV.gwBack()); // RC-2: Grown-ups only while the grown-up session is valid
 }
 // the picker screen; back: where Back and Done go
 function persPick(back) {
   if (!Array.isArray(S.ints)) S.ints = [];
   const ids = persList(), on = id => S.ints.includes(id);
+  NAV.gwK = 1; // RC-2: the grown-up's own screen: the session goes on (its time does not: NAV.GW_MS)
   const chips = ids.map(id => `<button class="btn pp-c${on(id) ? ' on' : ''}" data-int="${id}" aria-pressed="${on(id)}">` +
     `<span class="pp-pic">${persPic(id, '48px')}</span><b>${esc(PERSW[id].name)}</b>${ico('check-circle', 22, 'pp-ok')}</button>`).join('');
   view(`<div class="top tbar gx-mtop s-math">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('skill-story', 24)}</span><span>Story themes</span></div></div>

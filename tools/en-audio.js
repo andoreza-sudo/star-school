@@ -76,13 +76,13 @@ const TEACH_GROUPS = [
   ['the little pet\'s lesson stop card (LS_TONE2.little.open, after the name)', ['Want to learn this with me?'], 1],
   ['the lesson end card (52-lesson.js)', ['You learned it!', 'You already knew it!', 'Great learning today!'], 1],
   ['the pet\'s reasons and repairs, Pre-K to 2nd grade (BUGS)', R => R("[...new Set(LS_IDS.filter(id=>LESSONS[id].band!='35').flatMap(id=>LESSONS[id].bugs))].map(c=>BUGS[c].say)")],
-  ['the batch 4 lessons\' fixed instructions (52m-lessons4.js)', ['Which one is different?', 'Which one is a different colour?', 'Put the animals together and the food together.',
+  ['the batch 4 lessons\' fixed instructions (52m-lessons4.js)', ['Which one is different?', 'Which one is a different color?', 'Put the animals together and the food together.',
     'Tap a picture, then tap its group.', 'Put in more counters than the dots.', 'Put the big ones together and the small ones together.', 'Tap a picture, then tap Big or Small.',
     'Tap a picture to hear it. Then tap its letter.', 'Tap a picture to hear it. Then tap where it goes.', 'Put each little letter with its big partner.', 'Tap its little partner.', 'Tap its big partner.',
     'Tap a little letter, then its big partner.', 'Clap each word. One clap or two?', 'Which letter is missing?', 'Put the letters in ABC order. Sing it with me!',
     'Sing the ABC song. Which letter comes first?', 'Which letter goes in the box?', 'Read the word. Then tap its picture.', 'Read it. Then tap the picture that matches.',
     'How many dots? Tap the number.', 'Put in as many counters as you like!', 'What comes next?', 'Put in some blue and some orange. Any way you like!', 'Tap a shape, then tap its group.',
-    'Use both colours.', 'Match them up.', 'Tap a picture to hear it. Clap it. Then tap its bin.'], 1],
+    'Use both colors.', 'Match them up.', 'Tap a picture to hear it. Clap it. Then tap its bin.'], 1],
 ];
 // collectTeach(ctx?) -> Map key -> {text, from: [where], lit}; lines the encouragement records are left out
 function collectTeach(ctx) {

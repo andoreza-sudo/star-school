@@ -7,7 +7,16 @@ document.addEventListener('pointerup',()=>{const d=document.documentElement;
   if(!document.fullscreenElement&&d.requestFullscreen&&!matchMedia('(display-mode: fullscreen)').matches)d.requestFullscreen({navigationUI:'hide'}).catch(()=>{})},true);
 document.addEventListener('contextmenu',e=>e.preventDefault());
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
-if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=1;if(!document.querySelector('#hcv,#bbc,#stsvg,#ncv'))location.reload()})}
+/* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
+   Learn, the Brain Teasers hub, the Game Room; RC-2: not Grown-ups; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
+   is set, and view() (40-view.js) tries again after every new screen, UI.sheet (14-ui.js) when a sheet closes. */
+const SWU={due:0,
+  hub:()=>![...document.querySelectorAll('.sheet-bg,.ovl')].some(b=>!b._closing)&&!!document.querySelector('#hs,#map,.lh,.bt-hub,.gh-room'), // RC-2: not Grown-ups (a voice recording there is never lost)
+  go(){if(!SWU.due)SWU.due=1;SWU.try()},
+  try(){if(SWU.due!==1||!SWU.hub())return;SWU.due=2;save();location.reload()}};
+if('serviceWorker' in navigator&&navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',SWU.go);
+// RC-1: ask the browser to keep this site's storage (the saves) when the tablet runs low on space; a refusal changes nothing
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
 /* ---------- A11, A11b, A11c: data banks and on-demand code live in more files ----------
    tools/build.py writes the question generators (gen, gen2; gen also carries the Grown-ups screens, ROOM), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
@@ -35,6 +44,7 @@ function appFiles() {
     ['teach6', typeof TEACH6_VER === 'undefined' ? null : TEACH6_VER],
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
     ['hints', typeof HINTS_VER === 'undefined' ? null : HINTS_VER],
+    ['gate', typeof GATE_VER === 'undefined' ? null : GATE_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
@@ -62,7 +72,7 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints']; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate']; // RC-1: gate, the Grown-ups PIN and the picture passwords; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {

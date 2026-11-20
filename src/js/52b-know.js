@@ -204,13 +204,16 @@ function planToday(S0, day, p = 'math') {
   // TEACH-4: a Pre-K world's lessons (Tiny Town, ABC Beach) are a Pre-K child's only (a Kindergartner starts above them, as the map does)
   const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS[p].worlds[NODES[p][at(x)].wi].g;
   const band = x => p == 'es' || (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0); // TEACH-5S: the Spanish map is the same for every grade
+  // RC-2: a lesson in a world the map passes over (worldBelow: an untouched world below the start world, or behind the child's furthest
+  // progress) is not offered: a fresh 1st grader starts at their grade like the map's ring (was: the lowest open lesson of the band, K)
+  const sw = startWorld(p), lp = lastWorld(p), skip = x => worldBelow(p, NODES[p][at(x)].wi, sw, lp);
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
     // TEACH-3: a child in 3rd grade or up is offered the grade 3-6 lessons only, their own grade's first (TEACH-6M: 6th grade its own, v188);
     // a child below 3rd grade the Pre-K to 2nd grade lessons only (the app loads teach35 for 3rd grade up, teachWarm; this keeps the
     // plan the same when the part is in from an earlier grade setting, and a little one is never handed word-tile reasons to read)
     const mine = x => (g0 >= 3 && wg(x) != g0 ? 1 : 0);
-    const cand = LS_IDS.filter(x => at(x) >= 0 && band(x)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
+    const cand = LS_IDS.filter(x => at(x) >= 0 && band(x)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x) && !skip(x));
     const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
     let nx = cand[0] || null;
     const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1];
@@ -218,7 +221,7 @@ function planToday(S0, day, p = 'math') {
     if (nx) {
       const pre = lsPreOf(nx).filter(y => LESSONS[y] && open(y));
       const rep = pre.concat(last && LESSONS[last[0]] && open(last[0]) ? [last[0]] : []).find(y => (K[y] || {}).s >= 1 && knowHeld(y, S0, day));
-      const k = K[nx] || {}, back = (PRE[nx] || []).find(y => LESSONS[y] && open(y) && band(y) && !learned(y) && (!ps(y) || k.n >= 2 && k.s < 2));
+      const k = K[nx] || {}, back = (PRE[nx] || []).find(y => LESSONS[y] && open(y) && band(y) && !skip(y) && !learned(y) && (!ps(y) || k.n >= 2 && k.s < 2));
       if (rep) { id = rep; kind = 'repair'; code = knowHeld(rep, S0, day); }
       else if (back) { id = back; kind = 'again'; }
       else id = nx;

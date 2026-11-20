@@ -139,7 +139,7 @@ function placeGrownBind(){
     SFX.whoosh();placeIntro(b.dataset.place,'grown');
   });
 }
-const placeBack=from=>from=='grown'?grown():home();
+const placeBack=()=>home(); // RC-2: a child is handed the quiz: Back goes Home, never into Grown-ups (was: Grown-ups when started there)
 function placeIntro(p,from){
   PL=null;
   if(G)G.dead=true; // a finished or left round must not fire its next-question timer into this screen

@@ -32,7 +32,7 @@ const ALLOWED = [
 // 8x clock, then the round moves on) does not: it reads at the right moment instead, in the page (arm(), armShow(), a wait that
 // returns what it saw: tools/smoke.js, CHK-FAST), so it holds on a busy CPU (KINDS2, P6-01, TEACH-1 were TIMED for that before).
 const TIMED = ['P1-05', 'P3-08', 'G-02', 'G-RALLY2', 'G-HC2', 'G-HC3', 'P4-17', 'G-BB2', 'ES-AUDIO', 'G-04b', 'S-SPK2',
-  'GL-01', 'GL-02', 'G-MV-HILL', 'G-MV-RALLY', 'G-MV-HOP'];
+  'GL-01', 'GL-02', 'G-MV-HILL', 'G-MV-RALLY', 'G-MV-HOP', 'RC1-UPD']; // RC1-UPD (v188): a slow network's 3 s wait, real time
 
 // seconds per segment, measured (tools/smoke.js with SMOKE_SEG_TIMES) on the 4-CPU box with the shards of tools/check.sh running
 const WEIGHTS = {

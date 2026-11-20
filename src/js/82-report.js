@@ -165,8 +165,9 @@ const REP = {
   },
   weeks(m) {
     const c = m.cur, p = m.prev;
+    const gift = c.gt ? `<p class="rp-p" id="rp-gift">Game time from a grown-up this week: ${c.gt > 0 ? '+' : '−'}${REP.fmtMin(Math.abs(c.gt))} min (not learning time).</p>` : ''; // RC-1
     if (!c.q && !c.sec && !p.q && !p.sec)
-      return `<div class="rp-empty">No learning time recorded yet. Once ${esc(m.name || 'your child')} plays a round, minutes, rounds and accuracy appear here.</div>`;
+      return gift + `<div class="rp-empty">No learning time recorded yet. Once ${esc(m.name || 'your child')} plays a round, minutes, rounds and accuracy appear here.</div>`;
     const cm = Math.round(c.sec / 60), pm = Math.round(p.sec / 60), d = cm - pm;
     const cmp = !p.sec ? 'Nothing was recorded in the week before.'
       : !c.sec ? 'Nothing recorded this week yet; last week was ' + pm + ' min.'
@@ -178,7 +179,7 @@ const REP = {
     const tip = acc === null ? '' : acc >= .85 ? 'Most answers are right on the first try. A good time to try "Find my level" or a higher grade.'
       : acc < .6 ? 'Many questions needed a second try this week. Sitting beside them for a round or two can help; see Needs practice below.'
       : 'A steady week. Short, regular rounds help more than long ones.';
-    return row('This week', c) + row('Last week', p) + `<p class="rp-p"><b>${cmp}</b>${tip ? ' ' + tip : ''}</p>`
+    return row('This week', c) + row('Last week', p) + `<p class="rp-p"><b>${cmp}</b>${tip ? ' ' + tip : ''}</p>` + gift
       + `<h3 class="rp-h3">Minutes per day</h3>${REP.chart(m)}`
       + (m.by.length ? `<h3 class="rp-h3">This week by subject</h3>${m.by.map(b => `<div class="rp-sub"><span class="rp-sn">${esc(b.label)}</span>`
         + `<span class="rp-sbar"><i style="width:${Math.max(4, Math.round(b.sec / m.cur.sec * 100))}%"></i></span><span class="rp-sm">${REP.fmtMin(b.sec)} min</span></div>`).join('')}` : '');
@@ -290,12 +291,13 @@ const REP = {
 function report() {
   let m;
   try {m = REP.data()} catch (e) {m = null}
+  NAV.gwK = 1; // RC-2: a grown-up screen: the grown-up session goes on
   view(`<div class="top tbar adult gw-top rp-noprint">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}`
     + `<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('chart', 24)}</span><span>Report card</span></div>`
     + `${UI.btn('Print', {size: 'sm', icon: 'doc', id: 'rp-print'})}</div>`
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
-  $('#back').onclick = () => grown();
+  $('#back').onclick = () => NAV.gwBack();
   // TEACH-2: the lessons' card comes with the teach part: load it when the save has lessons, then draw again
   if (m && m.ls) LSREP.bind(m, () => report());
   else if (S.know && Object.keys(S.know).length && !partReady('teach')) partLoad('teach').then(ok => {if (ok && $('.rp-scroll')) report()});

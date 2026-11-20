@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v187'
+VER = 'v189'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -180,6 +180,7 @@ PARTS = [
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
     ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw)\.js|(39p-pers|39r-ask)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
+    ('gate', r'(41b-pin|41c-kidpw)\.js|(41b-pin|41c-kidpw)\.css'),  # RC-1 (v188): the Grown-ups PIN pad and the children's picture passwords, loaded when asked for (NAV.quiz, the picker)
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
@@ -191,7 +192,8 @@ PARTS = [
 # TEACH-5S: teaches (the Spanish and Discover lessons), loaded with teach, teach12 and teachrd by the Spanish and Discover maps.
 # v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
 # TEACH-6M: teach6 (the grade 6 math lessons), loaded after teach35 by the math map for a 5th grader up and by a grade 6 lesson stop (lsParts).
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints')
+# RC-1: gate (the Grown-ups PIN pad, the picture passwords), loaded by NAV.quiz, Grown-ups and the "Who is playing?" picker when asked for.
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):
@@ -257,6 +259,8 @@ const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./man
 const A='starschool-audio';
 const AF=["""+','.join("'./audio/%s'" % n for n in AUDIO)+"""];
 const aName=u=>new URL(u,self.location).pathname.split('/').pop();
+const NAV_MS=3000; // RC-1: a page open waits this long for the network, then the cached page (RC-2: once the cached page is served, a late
+// network page is NOT cached: it would pair a new index.html with the old cache's parts, "needs to finish updating" offline)
 self.addEventListener('install',e=>{e.waitUntil(Promise.all([caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))),
  caches.open(A).then(c=>c.keys().then(ks=>{const have=new Set(ks.map(r=>aName(r.url)));return c.addAll(AF.filter(u=>!have.has(aName(u))))}))]));self.skipWaiting()});
 self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName));e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.delete(k))))
@@ -265,7 +269,11 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
- if(e.request.mode==='navigate'){e.respondWith(fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put('./index.html',cp))}return res}).catch(()=>caches.match('./index.html')));return}
+ if(e.request.mode==='navigate'){let late=0;const net=fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok&&!late){const cp=res.clone();e.waitUntil(caches.open(C).then(c=>c.put('./index.html',cp)))}return res});
+  e.waitUntil(net.catch(()=>{}));
+  e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
+   const t=setTimeout(()=>old().then(r=>{if(r)late=1;fin(r)}),NAV_MS);
+   net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);old().then(r=>fin(r||Response.error()))})}));return}
  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
 """)
 

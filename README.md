@@ -30,7 +30,15 @@ starts the next time the app is opened (close it fully once and open it again). 
 Voice recordings you make stay on the device too. Your child's Spanish "Say it!" recordings never leave the tablet: the tablet checks them
 itself (by its own on-device listening, or by comparing with the recorded Spanish), keeps the last few for the Listening corner in Grown-ups,
 and deletes them automatically (after 1 day unless you choose 1 week or not to keep them). Clearing the browser's site data erases progress, so use **Save a backup** in Grown-ups
-now and then. Grown-ups is the labelled button at the top of the home screen: hold it for 3 seconds (a ring fills), or tap it and answer a times-table question.
+now and then. Grown-ups is the labelled button at the top of the home screen. Tap it and type your 4-digit **Grown-ups PIN**; the PIN keeps
+children out of the settings. The first time, answer the times-table question, then choose a PIN and type it again (**Change PIN** is in
+Grown-ups). Forgot it? Tap **Forgot PIN?** on the number pad and answer three multiplications to choose a new one (a wrong answer waits 15
+minutes; progress is kept). Five wrong PINs in a row make the pad wait a minute, then longer.
+**Erase everything** and deleting a child ask for the PIN again first. If you erase by mistake, Grown-ups offers **Undo erase** (under Backup)
+until the app is opened again.
+With more than one child, each child can have a **picture password** (3 pictures in order), set in Grown-ups under Children, so brothers and
+sisters cannot play as each other. **Game time**: in Grown-ups you can give 5, 10 or 15 minutes, or take 5 away; it goes straight into the
+bank, does not count as learning, and the daily limit still applies.
 
 **Licences.** Lettering is Andika by SIL International, under the SIL Open Font License 1.1 ([LICENSES/OFL-Andika.txt](LICENSES/OFL-Andika.txt);
 also in Grown-ups, About Star School). Everything else was made for Star School.

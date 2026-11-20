@@ -2588,8 +2588,11 @@ run('profiles P5-10: every fixture round-trips byte for byte in the profile stor
   // 4. delete: everything kept for that child goes, nothing of the others; never the last one; deleting the one playing
   pfClear();store[KEY]=FX.midway;pfStart();save();PRF.add(null,false);PRF.add(null,false);
   store[K('p2')+'-bak']='x';store[K('p2')+'-undo']='{}';store['starschool-neon-p2']='[]';store['starschool-neon']='[1]';store[K('p2')+'-corrupt']='y';
-  const keep1=store[KEY],keep3=store[K('p3')];
+  const keep1=store[KEY],keep3=store[K('p3')],keep2=store[K('p2')];
   PRF.remove('p2');
+  // RC-1: the deleted child's save is kept for "Undo erase" (BAK.keepErased): <key>-undo and the mark; nothing else of child 2
+  if(store[K('p2')+'-undo']!==keep2||store[KEY+'-erased']!==K('p2')+'|new')bad.push('delete child 2: no copy for Undo erase');
+  delete store[K('p2')+'-undo'];delete store[KEY+'-erased'];
   if(Object.keys(store).some(k=>/-p2/.test(k))||store[KEY]!==keep1||store[K('p3')]!==keep3||store['starschool-neon']!=='[1]'||PRF.ids.join()!=='p1,p3')bad.push('delete child 2: '+Object.keys(store).join());
   pfStart();if(PRF.ids.join()!=='p1,p3')bad.push('after delete the next start lists '+PRF.ids.join());
   PRF.go('p3');pfStart();
@@ -7961,7 +7964,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7971,7 +7974,7 @@ run('code split A11b (and data file split A11)',()=>{
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
   // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-5S: teaches, the Spanish and Discover lessons; v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-5S: teaches, the Spanish and Discover lessons; v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -8143,7 +8146,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','data']; // TEACH-5S: teaches; TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','gate','data']; // RC-1: gate; TEACH-5S: teaches; TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8577,8 +8580,8 @@ run('performance P6-02',()=>{
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teaches (TEACH-5S), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
-  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints']; // TEACH-5S: teaches is the Spanish and Discover maps'; v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teaches (TEACH-5S), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
+  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','gate']; // RC-1: gate is the PIN pad's and the picker's // TEACH-5S: teaches is the Spanish and Discover maps'; v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
   const GAME_FILES=LAZY_FILES.filter((f,i)=>!NOT_GAME.includes(LAZY[i])),parts_=on=>LAZY.map(x=>String(!NOT_GAME.includes(x)&&on)).join(); // parts_(true): the games in, bt, teach and teach12 (TEACH-1/2b, the math map's) and petage not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
   if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd, teaches, teach6, petage and hints');
@@ -18205,7 +18208,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
@@ -19332,15 +19335,16 @@ run('navigation: one way Home NAV-01',()=>{
     const h=R("NAV.house('quit')");
     if(!/aria-label="Home"/.test(h)||!/nv-house/.test(h))p.push('the corner house: '+h);
     const g=R("NAV.gateHTML()");
-    if(!/>Grown-ups</.test(g.replace(/<span class="nw">|<\/span>/g,''))||!/aria-label="Grown-ups: hold for 3 seconds"/.test(g))p.push('the Grown-ups button is not labelled: '+g.slice(0,160));
-    if(R('NAV.HOLD_MS')!==3000)p.push('the Grown-ups hold is not 3 seconds');
-    // a tap never opens Grown-ups: the click handler opens the question, only the 3-second timer calls grown()
+    // owner decision 2026-11-19: PIN gate (RC-1). Was: the label "Grown-ups: hold for 3 seconds", NAV.HOLD_MS 3000, a tap asks the question
+    // and only a 3-second hold opens Grown-ups. Now a tap asks for the Grown-ups PIN (NAV.quiz -> PIN.gate) and there is no hold
+    if(!/>Grown-ups</.test(g.replace(/<span class="nw">|<\/span>/g,''))||!/aria-label="Grown-ups"/.test(g))p.push('the Grown-ups button is not labelled: '+g.slice(0,160));
+    if(R('typeof NAV.HOLD_MS')!=='undefined')p.push('the Grown-ups hold is still there');
     const gb=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('gateBind()'),SRCJ['41-nav.js'].indexOf('  quiz(then) {'));
-    if(!/setTimeout\(\(\) => \{ done = true; stop\(\); ring\(1\); SFX\.chime\(\); grown\(\); \}, NAV\.HOLD_MS\)/.test(gb)||!/g\.onclick = \(\) => \{\s*if \(done\) return;\s*NAV\.quiz\(\);/.test(gb))
-      p.push('the Grown-ups gate: a tap must ask the question, only a 3-second hold opens Grown-ups');
-    // the question: from 6 x 6 to 9 x 9, a wrong answer does not open Grown-ups
-    const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  quiz(then) {'));
-    if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); go2\(\)/.test(qz)||!/go2 = typeof then == 'function' \? then : grown/.test(qz))p.push('the grown-ups question'); // PLAY-01: a right answer opens go2, Grown-ups unless the caller (the unlock sheet) names another
+    if(/grown\(\)|setTimeout|onpointerdown/.test(gb)||!/g\.onclick = \(\) => NAV\.quiz\(\);/.test(gb))p.push('the Grown-ups gate: a tap must ask for the PIN, nothing else opens Grown-ups');
+    if(!/if \(typeof PIN != 'undefined'\) return PIN\.gate\(go\);\s*return partLoad\('gate'\)\.then\(ok => \{\s*if \(ok && typeof PIN != 'undefined'\) return PIN\.gate\(go\);/.test(SRCJ['41-nav.js']))p.push('NAV.quiz does not go through the PIN');
+    // the question (now only the first entry before a PIN is set): from 6 x 6 to 9 x 9, a wrong answer does not open Grown-ups
+    const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  askQ(then) {'));
+    if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); go2\(\)/.test(qz))p.push('the grown-ups question'); // PLAY-01: a right answer opens go2
   }catch(e){p.push('the helpers could not run: '+String(e.message||e).split('\n')[0])}
   // the light end: GH.end({light: true}) is NAV.light, a banner (not an .ovl card) with the same three choices, Next by itself after 2 s
   const lt=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  light(o = {}) {'),SRCJ['41-nav.js'].indexOf('  // ---- Grown-ups gate'));
@@ -20600,6 +20604,9 @@ run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
     // 4. a year of daily lessons for a Kindergartner and a 1st grader who learn: never a learned stop as new, Remember one item at most,
     //    never today's, every due stop comes back within 30 days of its day, every lesson of the grade reached
     for(const gr of [0,1]){loadSave(null);S.grade=gr;S.name='Mia';let fail=0,maxLate=0;const did=new Set(),rem={};
+      // RC-2 (design change): the lessons of a world the map passes over (worldBelow at the fresh save: a 1st grader's K worlds) are not
+      // offered, so they are not wanted (was: every lesson of the band, the K ones first)
+      const below=new Set(LS_IDS.filter(x=>at(x)>=0&&worldBelow('math',NODES.math[at(x)].wi,startWorld('math'),lastWorld('math'))));
       for(let d=100;d<465;d++){NODES.math.forEach((n,i)=>{if(!LESSONS[nid(n)]&&!passed('math',i)&&unlocked('math',i))setSt('math',i,2)}); // the rest of the map, played in Practice
         pl=planToday(S,d);if(!pl)continue;if(pl.kind==='new'&&((S.know||{})[pl.id]||{}).s>=2){fail++;bad.push('day '+d+': learned '+pl.id+' as new')}
         if(pl.remember.length>1||pl.remember.includes(pl.id))bad.push('day '+d+': remember '+pl.remember);
@@ -20607,7 +20614,7 @@ run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
         const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
         if(f.pass)setSt('math',pl.i,2);if(fail>3)break}
       const due=LS_IDS.filter(x=>S.know[x]&&S.know[x].s>=2&&S.know[x].due<465-30);
-      const want=LS_IDS.filter(x=>at(x)>=0&&g(x)<=gr&&(g(x)>=0||gr<0)); // TEACH-4: the math map's lessons (reading has its own year); a Pre-K world's lessons are a Pre-K child's
+      const want=LS_IDS.filter(x=>at(x)>=0&&g(x)<=gr&&(g(x)>=0||gr<0)&&!below.has(x)); // TEACH-4: the math map's lessons (reading has its own year); a Pre-K world's lessons are a Pre-K child's
       for(const x of want)if(!did.has(x))bad.push('grade '+gr+': never reached '+x);
       if(due.length)bad.push('grade '+gr+': due and never remembered: '+due.join());
       rows.push('grade '+gr+': '+did.size+' lessons reached, latest Remember '+maxLate+' days after due')}
@@ -21777,13 +21784,15 @@ run('teach: the reading and Pre-K planner, the stop record, the notebook TEACH-4
     // 2. a year of daily lessons on each map for a Pre-K, a K, a 1st and a 2nd grader who learn: never a learned stop as new, Remember one item
     //    at most and never today's, every lesson of the child's band reached
     for(const [p,gr] of [['read',-1],['math',-1],['read',0],['read',1],['read',2]]){loadSave(null);S.grade=gr;S.name='Mia';const did=new Set();let fail=0;
+      // RC-2 (design change): not the lessons of a world the map passes over at the fresh save (a 1st or 2nd grader's K reading worlds)
+      const below=new Set(LS_IDS.filter(x=>at(p,x)>=0&&worldBelow(p,NODES[p][at(p,x)].wi,startWorld(p),lastWorld(p))));
       for(let d=100;d<400;d++){NODES[p].forEach((n,i)=>{if(!LESSONS[nid(n)]&&!passed(p,i)&&unlocked(p,i))setSt(p,i,2)});
         pl=planToday(S,d,p);if(!pl)continue;if(pl.kind==='new'&&((S.know||{})[pl.id]||{}).s>=2){fail++;bad.push(p+' '+gr+' day '+d+': learned '+pl.id+' as new')}
         if(pl.remember.length>1||pl.remember.includes(pl.id))bad.push(p+' '+gr+' day '+d+': remember '+pl.remember);
         if((LESSONS[pl.id].p||'math')!==p)bad.push(p+' '+gr+': a lesson of another subject '+pl.id);
         const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
         if(f.pass)setSt(p,pl.i,2);if(fail>3)break}
-      const want=LS_B4.filter(x=>LESSONS[x].p===p&&at(p,x)>=0&&g(p,x)<=Math.max(gr,0)&&(g(p,x)>=0||gr<0)&&(gr<0?g(p,x)<0:true));
+      const want=LS_B4.filter(x=>LESSONS[x].p===p&&at(p,x)>=0&&g(p,x)<=Math.max(gr,0)&&(g(p,x)>=0||gr<0)&&(gr<0?g(p,x)<0:true)&&!below.has(x));
       for(const x of want)if(!did.has(x))bad.push(p+' grade '+gr+': never reached '+x);
       rows.push(p+' '+gr+': '+did.size)}
     // 3. the stop record of a reading lesson is the reading map's: its stars, the next stop, the end card's map
@@ -21900,7 +21909,8 @@ run('lesson stops: the list, the gate, lessons off, the migration LS-STOP',()=>{
     if(JSON.stringify(lsParts('math',at('math','mfact1')))!=='["teach","teach12","teach35"]'||JSON.stringify(lsParts('read',at('read','sound1')))!=='["teach","teach12","teachrd"]'
       ||JSON.stringify(lsParts('math',at('math','pk_count1')))!=='["teach","teach12","teachrd"]'||JSON.stringify(lsParts('math',i))!=='["teach","teach12"]')bad.push('the parts a lesson stop loads');
     // 5. the map's lesson stop: its button, its ticket, its label; locked before the path reaches it
-    S.grade=0;const h=lsNodeHTML('math',i,100,200,380);
+    S.grade=0;const h=lsNodeHTML('math',i,100,200,380,i); // RC-1: drawMap passes curNode, the child's own stop (cur only there)
+    if(/ cur"/.test(lsNodeHTML('math',i,100,200,380,i-1))||/ cur"/.test(lsNodeHTML('math',i,100,200,380)))bad.push('RC-1: a lesson stop that is not the own stop of the child has the ring');
     if(!/class="btn lsn s-math cur"/.test(h)||!/aria-label="Learn Make Ten with [^"]*, earns 5 minutes of game time"/.test(h)||!/lsn-tk[^>]*><svg[\\s\\S]*<span>\\+5 min<\\/span>/.test(h)||!/Learn with /.test(h))bad.push('the lesson stop: '+h.slice(0,300));
     const h2=lsNodeHTML('math',i+3,100,200,380);if(!/btn lsn s-math lock/.test(h2)||/lsn-tk/.test(h2))bad.push('a lesson stop the path has not reached: '+h2.slice(0,200));
     S.grade=4;if(!/Challenge/.test(lsNodeHTML('math',at('math','mbig1'),100,200,380)))bad.push('grade 3-6: the lesson stop is not a challenge');S.grade=0;
@@ -22967,7 +22977,382 @@ run('ask the pet: audio-first for non-readers (the menu read in the order shown,
   return{problems:p,note:'menu read in shown order with the light, a tap stops it, question then answer; little pet: '+A.askSheetWords().little.join(', ')};
 });
 
+// ---- RC-1 (v188): the final release review's fixes ----
+run('map: a fresh save opens on and rings the child\'s own stop, the world chip, Ask the pet and the missions agree, every grade and subject RC-1',()=>{
+  const {R}=askApp(),p=[];
+  const src=rd2=>fs.readFileSync(path.join(SRC,'js',rd2),'utf8');
+  if(!/lsNodeHTML\(p,i,x,yy,W,allDone\?-1:cur\)/.test(src('46-home.js')))p.push('drawMap does not pass the own stop (curNode) to lsNodeHTML');
+  if(!/const c=\$\('\.node\.cur'\)\|\|\$\('\.lsn\.cur'\)/.test(src('46-home.js')))p.push('pathMap no longer scrolls to the ringed stop');
+  if(!/\.btn\.lsn\.ls-go:not\(\.cur\)::after\{content:none/.test(fs.readFileSync(path.join(SRC,'css','46b-lstop.css'),'utf8')))p.push('the planner\'s pick pulses on a lesson stop that is not the own stop');
+  const r=R(`(()=>{const bad=[];let n=0,ls=0;
+    for(const g of GRADES)for(const p of Object.keys(PATHS)){loadSave(null);S.name='Sam';S.grade=g;migrate();for(const q in PATHS)S.maps[q]=S.maps[q]||{};
+      const cn=curNode(p),nd=NODES[p][cn],wi=nd.wi,w=p+' grade '+g+' ('+nid(nd)+'): ';n++;
+      if(wi!==startWorld(p))bad.push(w+'the map opens on world '+wi+', the start world is '+startWorld(p));
+      const rings=NODES[p].map((x,i)=>i).filter(i=>lsStopAt(p,i)&&/ cur"/.test(lsNodeHTML(p,i,0,0,380,cn)));
+      const want=lsStopAt(p,cn)&&lsGate(p,cn)?[cn]:[];if(want.length)ls++;
+      if(rings.join()!==want.join())bad.push(w+'the ring is on lesson stops ['+rings+'], want ['+want+']');
+      MAPW[p]=-1;const ch=(worldStrip(p).match(/wchip[^"]* cur" data-w="(\\d+)"/)||[])[1];if(+ch!==wi)bad.push(w+'the world chip is '+ch+', want '+wi);
+      const a=askState('next',{p});if(!a||a.s.stop!==nd.t||(a.v=='lesson')!==lsGate(p,cn))bad.push(w+'Ask the pet: '+JSON.stringify(a));
+      const ms=MIS.stop(p);if(nd.sk!='boss'&&(!ms||ms.i!==cn))bad.push(w+'missions: '+JSON.stringify(ms))}
+    return{bad,n,ls}})()`);
+  p.push(...r.bad);
+  return{problems:p,note:r.n+' grade and subject pairs ('+r.ls+' open on a lesson stop)'};
+});
+run('grown-ups: the question never shows the hold, erase and delete ask for the PIN again, Undo erase offered once RC-1',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};let reloads=0;
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,location:{protocol:'file:',reload(){reloads++}}}),R=x=>vm.runInContext(x,ctx);
+  ctx.__rl=()=>reloads;ctx.__st=store;
+  return R(`(async()=>{const bad=[];RELOAD_WAIT=0;let html='';const sheet0=UI.sheet;
+    // 1. owner decision 2026-11-19: PIN gate. The first-time question (NAV.askQ) has no word of the old hold; About says how to get in
+    UI.sheet=h=>{html=h;return{el:{querySelector:()=>({})},close(){}}};
+    NAV.askQ(()=>{});UI.sheet=sheet0;
+    if(/hold|second/i.test(html)||!/For grown-ups/.test(html))bad.push('the grown-up question: '+html.slice(0,200));
+    if(!/tap Grown-ups on Home and type your PIN/.test(aboutCard()))bad.push('About Star School does not say how to open Grown-ups');
+    // 2. Erase everything and Delete ask the question again, right before
+    if(!/NAV\\.quiz\\(eraseAll\\)/.test(String(grown)))bad.push('Erase everything does not ask the grown-up question again');
+    if(!/NAV\\.quiz\\(async \\(\\) => \\{[^}]*PRF\\.remove\\(id\\)/.test(String(PRF.deleteSheet)))bad.push('Delete does not ask the grown-up question again');
+    // 3. erase one child: the save goes, a copy is kept; the next Grown-ups offers Undo erase (not Undo last load); it brings it back
+    const start=()=>{SKEY=KEY;SAVE_OFF=false;SAVE_HOLD=false;loadSave(localStorage.getItem(KEY));PRF.boot();migrate()};
+    for(const k in __st)delete __st[k];start();S.name='Mia';S.stars=42;save();const r0=__rl();
+    await eraseAll();
+    const u=JSON.parse(__st[KEY+'-undo']||'null');
+    if(KEY in __st||!u||u.stars!==42||__st[BAK.ERASED]!==KEY+'|new'||__rl()===r0)bad.push('erase: '+Object.keys(__st).join());
+    start();if(S.name!==''||S.stars)bad.push('after the erase the app did not start fresh');S.name='Leo';save();
+    const c1=BAK.card();
+    if(!/id="bk-unerase"/.test(c1)||!/Mia's progress/.test(c1)||/id="bk-undo"/.test(c1)||__st[BAK.ERASED]!==KEY+'|seen')bad.push('Grown-ups after an erase: '+c1.slice(0,200));
+    if(!/id="bk-unerase"/.test(BAK.card()))bad.push('Undo erase went before the app started again');
+    if(BAK.undo()!==''||JSON.parse(__st[KEY]).stars!==42||S.stars!==42||BAK.erased()||BAK.hasUndo()||BAK.ERASED in __st)bad.push('Undo erase did not bring Mia back');
+    // 4. offered once: the start after the offer drops the copy; a start before the offer keeps it
+    await eraseAll();start();if(!BAK.erased())bad.push('the copy went before Grown-ups offered it');
+    S.name='Leo';save();BAK.card();start();
+    if(BAK.erased()||(KEY+'-undo') in __st||/bk-unerase/.test(BAK.card()))bad.push('the copy outlived its one offer: '+Object.keys(__st).join());
+    // 5. delete a child: kept the same way, and Undo erase makes them a child again at the next start
+    for(const k in __st)delete __st[k];start();S.name='Ava';save();
+    const ad=PRF.add(Object.assign(PRF.fresh(),{name:'Ben',stars:7}),false);await PRF.remove(ad.id);
+    const e=BAK.erased();if(PRF.has(ad.id)||!e||e.name!=='Ben'||e.k!==PRF.key(ad.id))bad.push('delete: '+JSON.stringify(e));
+    if(!/Ben's progress/.test(BAK.card()))bad.push('Grown-ups after a delete');
+    if(BAK.undo()!=='')bad.push('Undo erase of a deleted child');start();
+    if(!PRF.ids.includes(ad.id)||PRF.info(ad.id).name!=='Ben'||PRF.info(ad.id).stars!==7)bad.push('Ben is not back: '+PRF.ids.join());
+    // 6. a backup load replaces the erase copy and its mark
+    await PRF.remove(ad.id);if(BAK.apply(BAK.read(BAK.make()).data)!==''||BAK.ERASED in __st||BAK.erased())bad.push('a load left the erase mark');
+    return{problems:bad,note:'gate words, About, erase, delete, Undo erase once'}})()`);
+});
+run('update: a new service worker reloads the page only on a hub screen, never in a round, lesson, puzzle or game RC-1',()=>{
+  const E=require('./es-audio.js'),vm=require('vm');let reloads=0;
+  const ctx=E.loadApp(null,{location:{protocol:'file:',reload(){reloads++}}}),R=x=>vm.runInContext(x,ctx);ctx.__rl=()=>reloads;
+  const p=[],app=fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8');
+  if(/#hcv,#bbc/.test(app)||!/addEventListener\('controllerchange',SWU\.go\)/.test(app))p.push('90-app.js: controllerchange does not go through SWU.go');
+  p.push(...R(`(()=>{const bad=[];let on=null,sheets=[];
+    document.querySelector=s=>on&&s.split(',').includes(on)?{}:null;document.querySelectorAll=()=>sheets;
+    // the hub screens are PLAY.redraw's (the screens it may draw again) and the Game Room
+    for(const m of String(PLAY.redraw).matchAll(/\\$\\('([^']+)'\\)/g))if(m[1]!=='.sheet-bg'&&m[1]!=='.gw'&&!String(SWU.hub).includes(m[1]))bad.push('PLAY.redraw draws '+m[1]+' again, SWU.hub does not count it'); // RC-2: Grown-ups is no hub (a voice recording there is never lost)
+    if(!/SWU\\.due===1\\)setTimeout\\(SWU\\.try/.test(String(view)))bad.push('view() does not try a waiting update');
+    const r0=__rl();SWU.due=0;
+    for(const s of ['#prompt','.ls','#btstage','#hcv','.gh-play','#snack','.gw'])if((on=s,SWU.go(),__rl())!==r0)bad.push('reloaded on '+s); // RC-2 (design change): .gw moved here from the hub list
+    if(SWU.due!==1)bad.push('the update was not kept for later');
+    on='#hs';sheets=[{_closing:false}];SWU.try();if(__rl()!==r0)bad.push('reloaded under an open sheet');
+    sheets=[{_closing:true}];SWU.try();if(__rl()!==r0+1||SWU.due!==2)bad.push('Home after the round did not reload');
+    on='#map';SWU.try();SWU.go();if(__rl()!==r0+1)bad.push('reloaded twice');
+    for(const s of ['#map','.lh','.bt-hub','.gh-room']){SWU.due=1;on=s;sheets=[];const r=__rl();SWU.try();if(__rl()!==r+1)bad.push(s+' is not a hub screen')}
+    SWU.due=0;return bad})()`));
+  return{problems:p};
+});
+run('storage: persist asked once at start, a failed save shows one spoken banner on Home, the unlock kept for the session when it cannot be written RC-1',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};let persist=0,full=false;
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{if(full)throw new Error('QuotaExceededError');store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,navigator:{storage:{persist(){persist++;return Promise.resolve(true)}}}}),R=x=>vm.runInContext(x,ctx);
+  ctx.__full=v=>{full=v};ctx.__st=store;
+  const p=[];if(persist!==1)p.push('navigator.storage.persist() was called '+persist+' times at start');
+  const E2=E.loadApp(null,{navigator:{storage:{persist(){return Promise.reject(new Error('no'))}}}});if(!E2)p.push('a refused persist() stopped the start');
+  const home=fs.readFileSync(path.join(SRC,'js','46-home.js'),'utf8');
+  if(!/id="hs">\$\{hmSaveWarn\(\)\}/.test(home)||!/say\(SAVE_LINE\)/.test(home))p.push('Home does not show or say the banner');
+  p.push(...R(`(()=>{const bad=[];
+    loadSave(null);S.name='Mia';save();if(SAVE_FAILED||hmSaveWarn())bad.push('a banner with storage working');
+    __full(true);S.stars=3;save();__full(false);
+    if(!SAVE_FAILED)bad.push('a failed save is not noticed');
+    const b=hmSaveWarn();
+    if(!b.includes("Star School can't save right now: ask a grown-up to free some space.")||!/role="alert"/.test(b)||!/id="svwspk"/.test(b)||!/Hear it/.test(b))bad.push('the banner: '+b);
+    if(hmSaveWarn())bad.push('the banner shows twice in one visit');
+    // PLAY.setOwn: the unlock stays for the session when it cannot be written; read back when it can
+    __st[PLAY.KEY]=JSON.stringify({v:1,on:1,own:0});PLAY.read();if(!PLAY.locked())bad.push('Play mode not locked before the unlock');
+    __full(true);PLAY.setOwn(true);__full(false);
+    if(!PLAY.own||PLAY.locked()||JSON.parse(__st[PLAY.KEY]).own!==0)bad.push('a failed write locked the unlock again: '+JSON.stringify({own:PLAY.own,st:__st[PLAY.KEY]}));
+    PLAY.setOwn(true);if(!PLAY.own||JSON.parse(__st[PLAY.KEY]).own!==1)bad.push('the unlock was not written once storage works');
+    PLAY.setOwn(false);if(PLAY.own||!PLAY.locked())bad.push('setOwn(false)');
+    delete __st[PLAY.KEY];PLAY.read();return bad})()`));
+  return{problems:p,note:'persist once; banner once; unlock kept in memory'};
+});
+run('service worker: a page open waits 3 s for the network, then the cached page RC-1',()=>{
+  const vm=require('vm'),src=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8'),p=[];
+  if(!/const NAV_MS=3000;/.test(src))p.push('sw.js has no 3 s navigation timeout');
+  const mk=(net,cached)=>{const H={},T=[];let puts=0;
+    const sb={self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,
+      caches:{match:async u=>u==='./index.html'?cached:undefined,open:async()=>({put:async()=>{puts++}}),keys:async()=>[]},
+      fetch:()=>net,setTimeout:(f,ms)=>{T.push({f,ms});return T.length},clearTimeout:i=>{if(T[i-1])T[i-1].off=1},Response:{error:()=>'ERROR'}};
+    vm.runInNewContext(src,sb);let resp=null;const w=[];
+    H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:'http://x/'},respondWith:pr=>{pr.then(r=>{resp=r})},waitUntil:pr=>w.push(pr)});
+    return{T,get resp(){return resp},get puts(){return puts}}};
+  const tick=()=>new Promise(r=>setImmediate(r));
+  const page={ok:true,clone(){return this}};
+  return (async()=>{
+    // a slow network: nothing before 3 s, the cached page at 3 s; RC-2 (design change, was: the late network copy goes into the cache):
+    // the late network page is NOT cached, since the cache's parts are the old release's (version skew: offline, the next start would
+    // pair the new index.html with the old parts and show "needs to finish updating")
+    let done;const slow=new Promise(r=>{done=r}),a=mk(slow,'CACHED');await tick();
+    if(a.resp||a.T.length!==1||a.T[0].ms!==3000)p.push('slow network: '+JSON.stringify({resp:a.resp,T:a.T.map(t=>t.ms)}));
+    a.T[0].f();await tick();await tick();if(a.resp!=='CACHED')p.push('after 3 s the cached page was not served: '+a.resp);
+    done(page);await tick();await tick();if(a.puts!==0)p.push('the late network page went into the old cache after the cached page was served (version skew) RC-2');
+    // the timer fires but the network page comes before the cache answers: the network page is served and cached
+    {let dn,dc;const e=mk(new Promise(r=>{dn=r}),new Promise(r=>{dc=r}));await tick();e.T[0].f();dn(page);
+      await tick();await tick();dc('CACHED');await tick();await tick();if(e.resp!==page||e.puts!==1)p.push('network first after the timer: '+JSON.stringify({resp:e.resp,puts:e.puts}))}
+    // a fast network: its page, the timer cleared
+    const b=mk(Promise.resolve(page),'CACHED');await tick();await tick();if(b.resp!==page||!b.T[0].off||b.puts!==1)p.push('fast network: '+JSON.stringify({resp:b.resp,off:b.T[0]&&b.T[0].off}));
+    // offline: the cached page at once
+    const c=mk(Promise.reject(new Error('offline')),'CACHED');await tick();await tick();await tick();if(c.resp!=='CACHED')p.push('offline: '+c.resp);
+    // slow and nothing cached yet: waits for the network
+    let done2;const d=mk(new Promise(r=>{done2=r}),undefined);await tick();d.T[0].f();await tick();await tick();if(d.resp)p.push('no cache: answered before the network');
+    done2(page);await tick();await tick();if(d.resp!==page)p.push('no cache: the network page did not come');
+    return{problems:p,note:'slow (late page not cached), fast, offline, first visit'}})();
+});
+
+run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under the old question, change, forgot, Start over keeps it, no backup carries it, every way in RC-1',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,location:{protocol:'file:',reload(){}}}),R=x=>vm.runInContext(x,ctx);ctx.__st=store;
+  const p=[],src=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8'),all=fs.readdirSync(path.join(SRC,'js')).map(f=>[f,src(f)]);
+  // every way into Grown-ups and what it guards goes through NAV.quiz -> PIN.gate; the old question only for the first entry
+  if(!/g\.onclick = \(\) => NAV\.quiz\(\);/.test(src('41-nav.js')))p.push('the Grown-ups button does not ask for the PIN');
+  if(!/NAV\.quiz\(\(\) => PLAY\.sheet\(back\)\)/.test(src('89-play.js')))p.push('the Unlock sheet is not behind the PIN');
+  if(!/NAV\.quiz\(eraseAll\)/.test(src('80-grown.js'))||!/NAV\.quiz\(async \(\) =>/.test(src('01-profiles.js')))p.push('Erase or Delete is not behind the PIN');
+  for(const [f,t] of all){const c=t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/.*$/gm,'');
+    const nq=(c.match(/NAV\.askQ\(/g)||[]).length; // 41-nav.js: only NAV.quiz's fallback when the gate part cannot load
+    if(f!=='41b-pin.js'&&nq&&!(f==='41-nav.js'&&nq===1&&/logErr\('the gate part did not load: the old question was asked'\);\s*return NAV\.askQ\(go\);/.test(c)))p.push(f+' asks the old question without the PIN');
+    if(/PLAY\.sheet\(/.test(c)&&f!=='89-play.js')p.push(f+' opens the Unlock sheet')}
+  const r=R(`(()=>{const bad=[];let now=1.8e12;const D0=Date.now;Date.now=()=>now;const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,wrong:SFX.wrong};
+    try{
+    PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toGrown=0;grown=()=>{toGrown++};
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    // 1. the hash: salted, slow, never the PIN itself; per tablet in PIN.KEY
+    for(const k in __st)delete __st[k];
+    if(PIN.has())bad.push('a PIN on an empty tablet');
+    PIN.set('2580');const o=JSON.parse(__st[PIN.KEY]);
+    if(!/^[0-9a-f]{16}$/.test(o.h)||!/^[0-9a-f]{16}$/.test(o.s)||__st[PIN.KEY].includes('2580')||PIN.hash('2580',o.s)!==o.h||PIN.hash('2580','00')===o.h||PIN.hash('2581',o.s)===o.h)bad.push('the hash: '+__st[PIN.KEY]);
+    PIN.set('2580');if(JSON.parse(__st[PIN.KEY]).s===o.s)bad.push('the salt is not new for a new PIN');
+    if(PIN.check('2580')!=='ok'||PIN.check('1111')!=='wrong'||PIN.check('2580')!=='ok')bad.push('check right, wrong, right');
+    // 2. lockout: 5 wrong in a row wait 1, then 5, 15, 30, 60, 60 minutes; never for good; a right PIN starts again
+    const waits=[];for(let k=0;k<6;k++){for(let i=0;i<4;i++)if(PIN.check('0000')!=='wrong')bad.push('lockout too early, round '+k);
+      if(PIN.check('0000')!=='locked')bad.push('5 wrong did not lock, round '+k);const t=PIN.get().t;waits.push((t-now)/60000);
+      if(PIN.check('2580')!=='locked')bad.push('the right PIN let in during a wait');now=t-1000;if(PIN.check('2580')!=='locked')bad.push('let in a second early');now=t}
+    if(waits.join()!=='1,5,15,30,60,60')bad.push('the waits: '+waits.join());
+    if(PIN.check('2580')!=='ok'||PIN.get().k||PIN.get().n)bad.push('a right PIN after the wait');
+    for(let i=0;i<5;i++)PIN.check('0000');if((PIN.get().t-now)/60000!==1)bad.push('after a right PIN the waits start again at 1 minute');now=PIN.get().t;
+    if(!/Try again in 1 minute/.test((now-=30000,PIN.lockLine()))||!/Forgot PIN\?/.test(PIN.lockLine()))bad.push('the lock line: '+PIN.lockLine());now+=30000;
+    // 3. the first time: no PIN: the old question first, then choose the PIN and type it again; a mismatch asks again
+    for(const k in __st)delete __st[k];let asked=null,cb=0;NAV.askQ=t=>{asked=t};
+    NAV.quiz(()=>cb++);if(!asked||pads.length)bad.push('no PIN yet: the old question did not come first');
+    pads.length=0;asked();last().done('1357',pd());last().done('1358',pd());
+    if(PIN.has()||cb||pads.length!==3||!/match/.test(last().line))bad.push('a PIN typed differently twice was saved');
+    last().done('1357',pd());last().done('1357',pd());
+    if(!PIN.has()||cb!==1||PIN.check('1357')!=='ok')bad.push('the first PIN was not saved or did not go on');
+    // 4. with a PIN: no question; the pad; a wrong PIN stays, the right one goes on
+    asked=null;pads.length=0;NAV.quiz(()=>cb++);
+    if(asked||pads.length!==1||!pads[0].forgot)bad.push('with a PIN: the question came, or no pad with Forgot PIN?');
+    const w=pd();pads[0].done('9999',w);if(cb!==1||w.closed||!/not the PIN/.test(w.m))bad.push('a wrong PIN: '+w.m);
+    pads[0].done('1357',w);if(cb!==2||!w.closed)bad.push('the right PIN did not go on');
+    // 5. Change PIN needs the PIN in use
+    pads.length=0;PIN.change();pads[0].done('0000',pd());if(pads.length!==1)bad.push('Change PIN went on with a wrong PIN');
+    pads[0].done('1357',pd());last().done('2468',pd());last().done('2468',pd());
+    if(PIN.check('2468')!=='ok'||PIN.check('1357')!=='wrong'||toGrown!==1)bad.push('Change PIN');
+    // 6. Forgot PIN?: three 2-digit x 2-digit products, all right; a miss waits 15 minutes; passing sets a new PIN and goes on
+    const els={};UI.sheet=h=>{const s={h,close(){s.closed=1},el:{querySelector:q=>els[q]||(els[q]={value:'',textContent:'',disabled:false})}};return s};
+    let s=PIN.forgot(()=>cb++);const ans=s.ans;
+    if(ans.length!==3||ans.some(x=>x<144)||!/Forgot PIN\\?/.test(s.h)||!/(\\d\\d) × (\\d\\d) =/.test(s.h))bad.push('the Forgot PIN sheet: '+s.h.slice(0,200));
+    s.el.querySelector('#pfa0').value=String(ans[0]);s.el.querySelector('#pfa1').value=String(ans[1]);s.el.querySelector('#pfa2').value=String(ans[2]+1);els['#pfgo'].onclick();
+    if(!els['#pfgo'].disabled||!/15 minutes/.test(els['#pfmsg'].textContent)||(PIN.get().f-now)/60000!==15)bad.push('a wrong Forgot answer: no 15-minute wait');
+    s=PIN.forgot(()=>cb++);if(!/Not yet/.test(s.h))bad.push('Forgot PIN during the wait');now+=15*60000+1;
+    for(const k in els)delete els[k];s=PIN.forgot(()=>cb++);s.ans.forEach((a,i)=>{s.el.querySelector('#pfa'+i).value=' '+a+' '});const c0=cb;pads.length=0;els['#pfgo'].onclick();
+    last().done('8642',pd());last().done('8642',pd());
+    if(cb!==c0+1||PIN.check('8642')!=='ok'||PIN.get().f)bad.push('Forgot PIN did not set a new PIN and go on');
+    // 7. Start over keeps the PIN; no backup carries it
+    loadSave(null);S.name='Mia';S.stars=3;save();const pin0=__st[PIN.KEY];
+    return eraseAll().then(()=>{
+      if(__st[PIN.KEY]!==pin0)bad.push('Start over changed the PIN');
+      const h=JSON.parse(pin0).h,b1=BAK.make(),b2=BAK.makeAll();if(b1.includes(h)||b2.includes(h)||/-pin/.test(b1+b2))bad.push('a backup carries the PIN');
+      return bad})}
+    finally{PIN.pad=keep.pad;NAV.askQ=keep.askQ;UI.sheet=keep.sheet;fb=keep.fb;grown=keep.grown;SFX.wrong=keep.wrong;Date.now=D0}})()`);
+  return Promise.resolve(r).then(b=>({problems:p.concat(b),note:'hash, waits 1-5-15-30-60, first time, change, forgot, Start over, backups'}));
+});
+run('game time from a grown-up: the bank, never below 0, the log and the report card, the Home line, behind the PIN, the save RC-1',()=>{
+  const {R}=askApp(),p=[],fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const g=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  if(!/data-give="\$\{m\}"/.test(g)||!/data-give="-5"/.test(g)||!/ptGift\(\+b\.dataset\.give\*60\)/.test(g))p.push('the Give and Take away buttons');
+  p.push(...R(`(()=>{const bad=[],keepSay=say;say=()=>{};try{
+    loadSave(null);S.name='Mia';migrate();const b0=pt().bank;
+    if(ptGift(600)!==600||pt().bank!==b0+600||pt().gift!==600)bad.push('+10 min: '+pt().bank);
+    const e=ACT.entry(today());if(!e||e.gt!==600||e.sec||e.rounds||e.q)bad.push('the log: '+JSON.stringify(e));
+    if(ptGift(-300)!==-300||pt().bank!==b0+300||ACT.entry(today()).gt!==300||pt().gift!==300)bad.push('-5 min');
+    pt().bank=120;if(ptGift(-300)!==-120||pt().bank!==0||ACT.entry(today()).gt!==180)bad.push('below 0: '+pt().bank);
+    if(ptGift(-300)!==0||pt().bank!==0||ACT.entry(today()).gt!==180)bad.push('taking from an empty bank');
+    if(ACT.sum(today(),7).gt!==180||ACT.sum(today(),7).sec)bad.push('the week: '+JSON.stringify(ACT.sum(today(),7)));
+    const wk=REP.weeks(REP.data());if(!/Game time from a grown-up this week: \\+3 min \\(not learning time\\)/.test(wk))bad.push('the report card: '+wk.slice(-300));
+    // learning first is not met by a gift
+    S.ptCfg={need:5};pt().met=null;if(!ptGate().locked)bad.push('a gift counted as learning');S.ptCfg={};
+    // the daily max still caps playing: a gift does not raise it
+    S.ptCfg={max:15};pt().bank=0;ptGift(1800);pt().used=900;if(ptLeft()!==0)bad.push('a gift went past the daily max');S.ptCfg={};
+    // the Home line once
+    pt().gift=600;const h1=hmGift(),h2=hmGift();
+    if(!h1.includes('A grown-up gave you 10 minutes!')||!/role="status"/.test(h1)||h2)bad.push('the Home line: '+h1+' / '+h2);
+    pt().gift=60;if(!hmGift().includes('gave you 1 minute!'))bad.push('one minute');
+    // the save: an old save keeps its log as it was (no gt on a day with no gift), and every fixture reads
+    for(const raw of ${JSON.stringify(['midway','maxed','tricky','legacy-single-map'].map(fx))}){loadSave(raw);migrate();const l0=JSON.stringify(S.log||[]);ACT.get();
+      if(JSON.stringify(S.log)!==l0&&l0!=='[]')bad.push('ACT.get changed an old log');if((S.log||[]).some(x=>'gt' in x))bad.push('gt on a day with no gift')}
+    }finally{say=keepSay}return bad})()`));
+  return{problems:p,note:'bank, floor, log, report card, Home line, learn first and the max unchanged'};
+});
+
+run('picture passwords: the hash, right and wrong, the wait, Grown-up help behind the PIN, Start over and backups, one child, old saves RC-1',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,location:{protocol:'file:',reload(){}}}),R=x=>vm.runInContext(x,ctx);ctx.__st=store;
+  const p=[],src=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  if(partOf('41c-kidpw.js')!=='gate'||partOf('41b-pin.js')!=='gate'||partOf('41c-kidpw.css')!=='gate')p.push('the PIN and picture passwords are not in the part gate');
+  if(!/grownUp !== true && PRF\.pwOn\(id\)\) return partLoad\('gate'\)/.test(src('01-profiles.js')))p.push('the picker does not ask the password (or asks it from Grown-ups)');
+  if(!/\$\('#pf-who'\)\.onclick = \(\) => PRF\.pick\(true\)/.test(src('01-profiles.js')))p.push('Grown-ups\' Who is playing? asks passwords');
+  if(!/#kphelp'\)\.onclick = \(\) => \{ s\.close\(\); NAV\.quiz\(\(\) => KPW\.help\(id, go\)\); \}/.test(src('41c-kidpw.js')))p.push('Grown-up help is not behind the PIN');
+  const r=R(`(()=>{const bad=[];let now=1.8e12;const D0=Date.now;Date.now=()=>now;try{
+    const start=()=>{SKEY=KEY;SAVE_OFF=false;SAVE_HOLD=false;loadSave(localStorage.getItem(KEY));PRF.boot();migrate()};
+    for(const k in __st)delete __st[k];start();S.name='Ava';save();
+    // one child: no index, no picker, no password, no card
+    if(PRF.many()||PRF.needPick()||PRF.IDX in __st||/gw-kpw/.test(PRF.card()))bad.push('one child has a picker or passwords');
+    const ad=PRF.add(Object.assign(PRF.fresh(),{name:'Ben'}),false);start();
+    // an old index (no pw) and a new child: off
+    if(PRF.pwOn('p1')||PRF.pwOn(ad.id)||KPW.of('p1'))bad.push('a password is on by default');
+    if(!/gw-kpw/.test(PRF.card()))bad.push('no picture password place in the Children card');
+    // the hash: salted, in the index entry, never the pictures
+    KPW.set('p1',['dog','star','apple']);const ix=JSON.parse(__st[PRF.IDX]),x=ix.pw&&ix.pw.p1;
+    if(!x||!/^[0-9a-f]{16}$/.test(x.h)||!/^[0-9a-f]{16}$/.test(x.s)||/dog|star|apple/.test(__st[PRF.IDX])||!PRF.pwOn('p1')||PRF.pwOn(ad.id))bad.push('the stored password: '+__st[PRF.IDX]);
+    if(/"pw"|dog/.test(__st[KEY]))bad.push('the password is in the save');
+    // right and wrong; the order matters
+    if(KPW.check('p1',['dog','apple','star'])!=='wrong'||KPW.check('p1',['dog','star','apple'])!=='ok'||KPW.of('p1').n)bad.push('right and wrong');
+    // 5 wrong tries: 1 minute, the right ones wait too; after it they open
+    for(let i=0;i<4;i++)if(KPW.check('p1',['cake','cake','cake'])!=='wrong')bad.push('locked too early');
+    if(KPW.check('p1',['cake','cake','cake'])!=='locked'||KPW.check('p1',['dog','star','apple'])!=='locked')bad.push('5 wrong tries did not wait');
+    if(KPW.of('p1').t-now!==60000)bad.push('the wait is not 1 minute');
+    now+=59000;if(KPW.check('p1',['dog','star','apple'])!=='locked')bad.push('opened before the minute');
+    now+=1001;if(KPW.check('p1',['dog','star','apple'])!=='ok')bad.push('not open after the minute');
+    // Grown-up help can show the order (behind the PIN) and turn it off
+    if((KPW.find('p1')||[]).join()!=='dog,star,apple')bad.push('the order: '+KPW.find('p1'));
+    // the index keeps the passwords when rewritten; deleting a child drops theirs
+    KPW.set(ad.id,['sun','sun','cake']);PRF.writeIdx(PRF.ids,PRF.cur);if(!PRF.pwOn('p1')||!PRF.pwOn(ad.id))bad.push('writeIdx dropped a password');
+    // Start over of one child keeps every password; backups carry none
+    return PRF.wipe().then(()=>{start();
+      if(!PRF.pwOn('p1')||!PRF.pwOn(ad.id))bad.push('Start over dropped a password');
+      if(/"pw"|"h":/.test(BAK.make()+BAK.makeAll()+BAK.make(ad.id)))bad.push('a backup carries a password');
+      return PRF.remove(ad.id)}).then(()=>{
+      if(PRF.pwOn(ad.id)||/"p2"/.test(JSON.stringify(JSON.parse(__st[PRF.IDX]).pw||{})))bad.push('a deleted child keeps a password');
+      KPW.off('p1');if(PRF.pwOn('p1')||'pw' in JSON.parse(__st[PRF.IDX]))bad.push('turn off');
+      return bad})}finally{Date.now=D0}})()`);
+  return Promise.resolve(r).then(b=>({problems:p.concat(b),note:'hash, order, 1-minute wait, help, Start over, backups, delete, one child, off by default'}));
+});
+
 // ---- report ----
+// RC-2 (v189): Fable's confirming review of RC-1. Each part below failed on v188 (mutation-checked by putting v188's code back).
+run('lockouts after a clock change, Back on setup keeps Undo erase, every way into Grown-ups through the gate, Empty bank through ptGift RC-2',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};let reloads=0;
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,location:{protocol:'file:',reload(){reloads++}}}),R=x=>vm.runInContext(x,ctx);ctx.__st=store;ctx.clearInterval=()=>{};
+  const p=[],src=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8'),strip=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/.*$/gm,'');
+  // 5. every caller of grown() is the gate (NAV.quiz's default, Change PIN behind PIN.enter), the Grown-ups screen itself (its own
+  //    handlers redraw it), or NAV.gwBack (Grown-ups only while the grown-up session is valid, else Home)
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){let c=strip(src(f));
+    if(f==='80-grown.js'){const a=c.indexOf('function grown(){'),b=c.indexOf('\nfunction ',a+1);c=c.slice(0,a)+c.slice(b<0?c.length:b)}
+    c=c.replace(/^\s*grown\(\w*\)\s*\{/gm,''); // a method named grown (PLAY.grown) is not the screen
+    const calls=[...c.matchAll(/(^|[^.\w$])grown\(/g)].length,refs=[...c.matchAll(/[?:=,(]\s*grown\s*[,;)}]/g)].length;
+    const ok={'41-nav.js':[1,1],'41b-pin.js':[1,0]}[f]||[0,0];
+    if(calls!==ok[0]||refs!==ok[1])p.push(f+': '+calls+' call(s) of grown() and '+refs+' reference(s) outside the gate (want '+ok+')')}
+  if(!/gwBack\(\) \{ return NAV\.gwOk\(\) \? grown\(\) : home\(\); \}/.test(src('41-nav.js')))p.push('NAV.gwBack is not "Grown-ups while the session is valid, else Home"');
+  if(!/const go0 = typeof then == 'function' \? then : grown, go = \(\) => \{ NAV\.gwT = Date\.now\(\); go0\(\); \};/.test(src('41-nav.js')))p.push('NAV.quiz does not start the grown-up session');
+  if(!/change\(\) \{ PIN\.enter\(\(\) => PIN\.choose\(\(\) => grown\(\)/.test(src('41b-pin.js')))p.push('Change PIN reaches Grown-ups without PIN.enter');
+  if(!/const placeBack=\(\)=>home\(\);/.test(src('45-placement.js')))p.push('Find my level\'s Back does not go Home');
+  if(!/persPick\(\(\) => NAV\.gwBack\(\)\)/.test(src('39p-pers.js')))p.push('Story themes does not return through NAV.gwBack');
+  if(!/\$\('#pt0'\)\.onclick=\(\)=>\{ptGift\(-pt\(\)\.bank\);grown\(\)\}/.test(src('80-grown.js')))p.push('Empty bank does not go through ptGift');
+  if(/\.gw[,']/.test(String(/hub:\(\)=>[^\n]*/.exec(src('90-app.js'))||'')))p.push('Grown-ups is an update hub (a voice recording there would be lost)');
+  const r=R(`(async()=>{const bad=[];RELOAD_WAIT=0;let now=1.8e12;const D0=Date.now;Date.now=()=>now;
+    const keep={home,grown,qs:document.querySelector,pad:PIN.pad,sheet:UI.sheet};let to='';
+    try{
+    const start=()=>{SKEY=KEY;SAVE_OFF=false;SAVE_HOLD=false;loadSave(localStorage.getItem(KEY));PRF.boot();migrate()};
+    for(const k in __st)delete __st[k];start();S.name='Mia';S.stars=42;save();
+    // 4. a wait stored longer than its longest length has expired: PIN 60 min, Forgot PIN 15 min, a picture password 1 minute
+    PIN.set('1234');const put=x=>{const o=PIN.get();Object.assign(o,x);PIN.put(o)};
+    put({t:now+2*365*864e5});if(PIN.check('1234')!=='ok')bad.push('a PIN wait 2 years ahead still locks');
+    put({t:now+61*60000});if(PIN.check('1234')!=='ok')bad.push('a PIN wait of 61 minutes still locks');
+    put({t:now+59*60000});if(PIN.check('1234')!=='locked')bad.push('a 59-minute PIN wait does not lock');
+    put({t:0});for(let i=0;i<5;i++)PIN.check('0000');if(PIN.check('1234')!=='locked')bad.push('5 wrong PINs no longer lock');
+    put({t:now+2*365*864e5,n:0});if(PIN.check('0000')!=='wrong'||PIN.check('1234')!=='ok')bad.push('a wrong PIN after a stale wait: not counted as a wrong PIN');
+    let html='';UI.sheet=h=>{html=h;return{el:{querySelector:()=>({})},close(){}}};
+    put({f:now+2*365*864e5});PIN.forgot(()=>{});if(!/pfa0/.test(html))bad.push('Forgot PIN? waits 2 years after a clock change');
+    put({f:now+16*60000});PIN.forgot(()=>{});if(!/pfa0/.test(html))bad.push('Forgot PIN? waits 16 minutes');
+    put({f:now+10*60000});PIN.forgot(()=>{});if(!/Not yet/.test(html))bad.push('a 10-minute Forgot PIN wait does not hold');
+    put({f:0});UI.sheet=keep.sheet;
+    const ad=PRF.add(Object.assign(PRF.fresh(),{name:'Ben'}),false);start();
+    KPW.set('p1',['dog','star','apple']);const kx=x=>{const o=KPW.of('p1');Object.assign(o,x);KPW.write('p1',o)};
+    kx({t:now+2*365*864e5});if(KPW.check('p1',['dog','star','apple'])!=='ok')bad.push('a picture password wait 2 years ahead still locks');
+    kx({t:now+90000});if(KPW.check('p1',['dog','star','apple'])!=='ok')bad.push('a picture password wait of 90 s still locks');
+    kx({t:now+30000});if(KPW.check('p1',['dog','star','apple'])!=='locked')bad.push('a 30 s picture password wait does not lock');
+    KPW.off('p1');
+    // the Forgot PIN reset is named at the next entry by the PIN (not to whoever just did it), once
+    PIN.noteR=0;PIN.stamp(0);const r0=PIN.get().r;if(r0!==now||PIN.noteR)bad.push('a reset is not marked: '+JSON.stringify(PIN.get()));
+    now+=864e5;if(PIN.check('1234')!=='ok'||PIN.noteR!==r0||PIN.get().r)bad.push('the next entry by the PIN does not name the reset');
+    if(!/Your PIN was reset with Forgot PIN on /.test(String(grown))||!/PIN\\.stamp\\(r0\\)/.test(String(PIN.forgot)))bad.push('the reset note is not drawn or not stamped');
+    PIN.noteR=0;PIN.stamp(r0);if(PIN.noteR!==r0)bad.push('a second reset hides the first one');PIN.noteR=0;
+    // 2. two children: Erase everything, then Back on the setup screen: the erased save comes back (was: PRF.remove dropped it)
+    S.name='Mia';S.stars=42;save();await eraseAll();start();
+    if(S.name!==''||!BAK.erased()||BAK.erased().k!==KEY)bad.push('after Erase everything: '+JSON.stringify(BAK.erased()));
+    await PRF.cancelNew();start();
+    const back=JSON.parse(__st[KEY]||'null');
+    if(!back||back.name!=='Mia'||back.stars!==42||!PRF.ids.includes('p1')||BAK.erased())bad.push('Back on setup after Erase everything: '+JSON.stringify({back:back&&[back.name,back.stars],ids:PRF.ids}));
+    // a new child who never finished setup still goes away again (RC-1, P5-10)
+    const nw=PRF.add(PRF.fresh(),false);SKEY=PRF.key(nw.id);PRF.cur=nw.id;loadSave(__st[SKEY]);await PRF.cancelNew();
+    if(PRF.ids.includes(nw.id))bad.push('a new child cancelled at setup is still there');
+    // 5. the grown-up session: the gate starts it, a grown-up screen keeps it, any other screen ends it; Back goes Home without it
+    home=()=>{to='home'};grown=()=>{to='grown'};
+    NAV.gwT=0;NAV.gwBack();if(to!=='home')bad.push('no session: Back went to '+to);
+    PIN.pad=o=>{o.done('1234',{close(){},msg(){}});return{}};NAV.quiz(()=>{});if(NAV.gwT!==now)bad.push('the gate does not start the session');
+    document.querySelector=s=>s==='#app .gw'?{}:null;to='';NAV.gwBack();if(to!=='grown')bad.push('on Grown-ups, Back went to '+to);
+    // view()'s first lines end the session unless the screen set gwK (the fake page here has no #app to draw into)
+    if(!String(view).includes("if(typeof NAV!='undefined'){if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0}"))bad.push('view() does not end the grown-up session');
+    const vw=()=>{if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0};
+    document.querySelector=keep.qs;NAV.gwK=1;vw();if(!NAV.gwT)bad.push('a grown-up screen ended the session');
+    document.querySelector=()=>null;now+=NAV.GW_MS-1000;to='';NAV.gwBack();if(to!=='grown')bad.push('Story themes in time: Back went to '+to);
+    now+=2000;to='';NAV.gwBack();if(to!=='home')bad.push('Story themes after the session ran out: Back went to '+to);
+    document.querySelector=keep.qs;NAV.gwT=now;vw();to='';NAV.gwBack();if(NAV.gwT||to!=='home')bad.push('a child screen did not end the session');
+    placeBack('grown');if(to!=='home')bad.push('Find my level from Grown-ups went back to '+to);
+    // 6. Empty bank: the log and Home's line follow (ptGift)
+    home=keep.home;grown=keep.grown;document.querySelector=keep.qs;
+    pt().bank=0;pt().gift=0;ptGift(600);pt().bank+=300;const d=ptGift(-pt().bank);
+    const e=ACT.entry(today())||{};if(d!==-900||pt().bank||pt().gift||e.gt!==-300)bad.push('Empty bank: '+JSON.stringify({d,bank:pt().bank,gift:pt().gift,gt:e.gt}));
+    // the learn-first hint on the gift row
+    if(!/gt\\.locked\\?' Learn first is on: given minutes unlock after today\\\\'s learning\\.':''/.test(String(grown)))bad.push('no learn-first hint on the gift row');
+    }finally{Date.now=D0;home=keep.home;grown=keep.grown;document.querySelector=keep.qs;PIN.pad=keep.pad;UI.sheet=keep.sheet}
+    return bad})()`);
+  return r.then(b=>({problems:p.concat(b),note:'PIN, Forgot PIN and picture password waits; the reset note; Back on setup; the grown-up session; Empty bank'}));
+});
+
+// RC-2 item 3: the lesson planner's pick and the map agree for a fresh save of every grade and subject, web and Play-locked
+run('planner: a fresh save is offered a lesson where the map opens (the ringed stop or the child\'s own world), every grade and subject, web and Play-locked RC-2',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],rows=[];let n=0;
+    for(const lock of [false,true])for(const g of GRADES)for(const p of LS_SUBJ){loadSave(null);S.name='Sam';S.grade=g;migrate();for(const q in PATHS)S.maps[q]=S.maps[q]||{};
+      PLAY.on=lock;PLAY.own=false;
+      const pl=planToday(S,100,p);if(!pl)continue;n++;
+      const cn=curNode(p),wi=i=>NODES[p][i].wi,w=(lock?'Play ':'web ')+p+' grade '+g+': ';
+      if(pl.i!==cn&&wi(pl.i)!==wi(cn))bad.push(w+'the planner offers '+pl.id+' (world '+wi(pl.i)+'), the map rings '+nid(NODES[p][cn])+' (world '+wi(cn)+')');
+      if(!lock&&(g===1||g===2))rows.push(p+' '+g+': '+pl.id)}
+    PLAY.on=false;return{bad,n,rows}})()`);
+  return{problems:r.bad,note:r.n+' plans checked ('+r.rows.join(', ')+')'};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){
