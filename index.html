@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Star School</title>
+<title>Whistlestop</title>
 <style>
 /* Design tokens (DESIGN_SYSTEM.md section 2). The only file that may contain raw hex colours. */
 :root{
@@ -2880,7 +2880,8 @@ html.calm .pc-fx{display:none}
 .gw-bks dt{color:var(--ink-3)}
 .gw-bks dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 
-/* ---- P6-05 About Star School (Grown-ups) ---- */
+/* ---- P6-05 About Whistlestop (Grown-ups) ---- */
+#ab-priv{text-decoration:none}
 .ab-ver{margin:var(--s-2) 0;font-size:var(--fs-2)}
 .ab-lic-line{margin:var(--s-1) 0}
 .ab-det>summary{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);cursor:pointer;list-style:none;font-weight:700;color:var(--ink)}
@@ -3008,7 +3009,7 @@ html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:non
 
 /* the question's streak and star chips keep their width from 9 to 10, so the track beside them does not jump */
 .qtop .stat b{display:inline-block;min-width:2ch;text-align:center}
-/* PLAY-01: the free sample's locked content and the Unlock Star School card (src/js/89-play.js). Tokens only; 48 px targets. */
+/* PLAY-01: the free sample's locked content and the Unlock Whistlestop card (src/js/89-play.js). Tokens only; 48 px targets. */
 .pl-kid{text-align:center}
 .pl-kid p{margin:0 0 var(--s-4);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink)}
 .pl-lk{display:inline-grid;place-items:center;width:72px;height:72px;margin:var(--s-2) 0;border-radius:50%;background:var(--surface-2);color:var(--ink-3);
@@ -3044,7 +3045,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v190'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v190 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v191'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v191 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3272,7 +3273,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v190'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v191'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3456,7 +3457,7 @@ const PRF = {
   // Returns {id} or {msg}; with a message nothing was changed.
   add(data, playNow) {
     if (PRF.ids.length >= PRF.MAX) return { msg: 'There are already 4 children on this tablet. Delete one to make room.' };
-    if (PLAY.locked()) return { msg: PLAY.LINE.add }; // PLAY-01: more children come with the unlock (Grown-ups, Unlock Star School)
+    if (PLAY.locked()) return { msg: PLAY.LINE.add }; // PLAY-01: more children come with the unlock (Grown-ups, Unlock Whistlestop)
     save();
     if (SAVE_FAILED || !PRF.has(PRF.cur)) return { msg: PRF.FULL };
     const id = PRF.SLOTS.find(s => !PRF.ids.includes(s)), k = PRF.key(id);
@@ -3638,7 +3639,7 @@ const PRF = {
     sh.el.querySelector('#pf-del1').onclick = () => {
       const acts = sh.el.querySelector('.acts'), wasMe = id === PRF.cur;
       sh.el.querySelector('h2').textContent = 'Really delete ' + PRF.label(PRF.info(id)) + '?';
-      sh.el.querySelector('p').textContent = 'You can undo it in Grown-ups until Star School is opened again.';
+      sh.el.querySelector('p').textContent = 'You can undo it in Grown-ups until Whistlestop is opened again.';
       acts.innerHTML = UI.btn('Yes, delete ' + PRF.label(PRF.info(id)), { kind: 'risk', wide: true, icon: 'trash', id: 'pf-del2' }) +
         UI.btn('Keep ' + PRF.label(PRF.info(id)), { kind: 'ghost', wide: true, id: 'pf-keep' });
       sh.el.querySelector('#pf-keep').onclick = sh.close;
@@ -3664,7 +3665,7 @@ const PRF = {
 };
 PRF.boot();
 /* ---------- PLAY-01: the Google Play app: a free sample and a one-time unlock (core; the screens and the purchase are 89-play.js) ----------
-   Star School on Google Play is a free download with one in-app product (PLAY.SKU) that unlocks everything for every child on the
+   Whistlestop on Google Play is a free download with one in-app product (PLAY.SKU) that unlocks everything for every child on the
    tablet. The web version (github.io, or any page not opened by the Play app) is never locked: PLAY.on stays false there.
 
    Play mode (PLAY.on) is set once and kept on this tablet (localStorage PLAY.KEY) when the page is opened by the Play app, a Trusted
@@ -3689,7 +3690,7 @@ PRF.boot();
    depends on the mode. */
 const PLAY = {
   SKU: 'unlock_all', // the in-app product id in Play Console (a one-time, non-consumable product)
-  PKG: '', // the Android package name of the Play app, once the owner has one (docs/PLAY-SETUP.md); '' = only ?src=play is used
+  PKG: 'com.whistlestoplearning.app', // the Play app's package name: PROPOSED (v191), the owner confirms it before the first upload (docs/PLAY-SETUP.md)
   BILLING: 'https://play.google.com/billing',
   ACK_URL: 'api/ack', // the owner's acknowledgement endpoint on the Play app's own site (api/ack.js, Vercel; docs/PLAY-SETUP.md)
   LAUNCH: 'Launch price until January 31, 2027.', // a line under the price; the owner may change it (no amount here: the price comes from Play)
@@ -3857,7 +3858,7 @@ function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
-function noVoice(btn){fb('No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
+function noVoice(btn){fb('No voice here. Open Whistlestop in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
 // P2-30: is there a Spanish voice? 'yes', 'no', or 'wait' (the list is still empty: some browsers fill it late, then fire voiceschanged).
 // An empty list after 3 s is 'no' (nothing can speak). esVoiceMode is pure so tests can feed it voice lists.
 function esVoiceMode(vs,spk,ms){if(!spk)return'no';if(vs.some(v=>/^(es|spa)/i.test(v.lang)))return'yes';return vs.length||ms>3000?'no':'wait'}
@@ -4352,7 +4353,7 @@ UI.heading = (root, name) => {
     return;
   }
   const words = t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
-  root.insertAdjacentHTML('afterbegin', `<h1 class="a11y-h">${esc(words || name || 'Star School')}</h1>`);
+  root.insertAdjacentHTML('afterbegin', `<h1 class="a11y-h">${esc(words || name || 'Whistlestop')}</h1>`);
 };
 /* ---------- icons (P4-02, P4-03; DESIGN_SYSTEM.md section 5) ----------
    ico(name, size = 24, cls = '') returns an inline <svg class="ic"> that points at the sprite symbol #i-<name>.
@@ -7177,7 +7178,7 @@ const NAV = {
     g.oncontextmenu = e => e.preventDefault();
     g.onclick = () => NAV.quiz();
   },
-  // the way into Grown-ups and everything it guards: then (default Grown-ups; PLAY-01: the Unlock Star School sheet; Erase; Delete)
+  // the way into Grown-ups and everything it guards: then (default Grown-ups; PLAY-01: the Unlock Whistlestop sheet; Erase; Delete)
   // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
   // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
@@ -7858,10 +7859,10 @@ const CLIPKINDS=[
  ['done','Round done','Played when a round ends.',['What a great round!','You worked so hard!','You\'re a superstar!','Wow, look at all those stars!','I love learning with you!','Let\'s do another one!'],'trophy']];
 const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 function micHelp(kind){const o=document.createElement('div');o.className='ovl';o.style.padding='20px';
-  const body=kind=='frame'?`<p>Recording is turned off in this preview window. Open <b>Star School on the tablet</b> (the installed app or Chrome) and record there.</p>`
+  const body=kind=='frame'?`<p>Recording is turned off in this preview window. Open <b>Whistlestop on the tablet</b> (the installed app or Chrome) and record there.</p>`
    :kind=='none'?`<p>No microphone was found on this device.</p>`
-   :`<p>The microphone is blocked for Star School. To allow it:</p><ol style="text-align:left;max-width:520px;font-size:18px;line-height:1.5">
-     <li><b>Installed app:</b> press and hold the Star School icon → <b>App info</b> → <b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>.</li>
+   :`<p>The microphone is blocked for Whistlestop. To allow it:</p><ol style="text-align:left;max-width:520px;font-size:18px;line-height:1.5">
+     <li><b>Installed app:</b> press and hold the Whistlestop icon → <b>App info</b> → <b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>.</li>
      <li><b>In Chrome:</b> tap the icon left of the web address → <b>Permissions</b> (or Site settings) → <b>Microphone</b> → <b>Allow</b>.</li>
      <li>Come back here and tap ${ico('record','1.2em','ic-rec')} again.</li></ol>`;
   o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:600px;text-align:center"><h2 style="margin:0 0 8px">${ico('mic','1em','ic-brand')} Microphone</h2>${body}<button class="btn big" id="mok">OK</button></div>`;
@@ -7888,7 +7889,7 @@ function setup() {
   let pet = S.pet, grade = gradeOf();
   const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
     `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
-  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Star School</span></h1>` +
+  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Whistlestop</span></h1>` +
     `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}` +
     `${PRF.many() ? UI.ibtn('back', 'Back', { id: 'suback', size: 'sm' }) : ''}</header>` +
     `<div class="su-grid">` +
@@ -8179,7 +8180,7 @@ function hmActs() {
 
 // RC-1: a save failed (SAVE_FAILED, 00-core.js: the tablet's storage is full). One banner on Home, once a visit, said aloud for
 // children who cannot read yet, so a grown-up hears of it before progress is lost
-const SAVE_LINE="Star School can't save right now: ask a grown-up to free some space.";let SAVE_WARNED=false;
+const SAVE_LINE="Whistlestop can't save right now: ask a grown-up to free some space.";let SAVE_WARNED=false;
 function hmSaveWarn(){if(!SAVE_FAILED||SAVE_WARNED)return'';SAVE_WARNED=true;
   return`<div class="hm-svw" id="svw" role="alert">${ico('warning',26)}<span>${SAVE_LINE}</span>${UI.ibtn('speak','Hear it',{id:'svwspk',size:'sm'})}</div>`}
 // RC-1 (owner): game time a grown-up gave (ptGift, 58-playtime.js), said once on the next Home
@@ -8189,13 +8190,13 @@ function hmGift(){const p=S.pt;if(!p||!(p.gift>=30))return'';const t=hmGiftLine(
 function home(first){
   if(!S.name)return setup();
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
-  view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Star School</span></div><div class="sp"></div>${inst}
+  view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Whistlestop</span></div><div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${PRF.homeBtn()}${NAV.gateHTML()}</div>
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v190)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v191)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11187,7 +11188,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v190'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v191'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11806,14 +11807,14 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v190');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v191');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v190')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v190)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v191')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v191)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
-  view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
+  view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 /* ---------- P6-02: part files loaded on demand ----------
@@ -11833,15 +11834,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v190';
+  return !!f && f[1] === 'v191';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v190') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v191') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v190.js';
+    s.src = stem + '.v191.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11866,9 +11867,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v190.js"></script>
-<script src="gen2.v190.js"></script>
-<script src="data.v190.js"></script>
+<script src="gen.v191.js"></script>
+<script src="gen2.v191.js"></script>
+<script src="data.v191.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

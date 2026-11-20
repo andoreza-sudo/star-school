@@ -258,7 +258,7 @@ const SCREENS = {
   },
   grown: { adult: true, run: ev(() => grown()) },
   // PLAY-01: the Play app's free sample: a locked world on the map with the grown-ups' button, and the child's line when a locked stop
-  // is tapped (sheet); the Unlock Star School sheet (behind the grown-up question) and its card in Grown-ups, with the price from Google Play
+  // is tapped (sheet); the Unlock Whistlestop sheet (behind the grown-up question) and its card in Grown-ups, with the price from Google Play
   'play-map': {
     run: ev(() => { playMock(); S.grade = 0; pathMap('math', PATHS.math.worlds.findIndex(w => w.id == 'm_meadow')); document.querySelector('.plgu').scrollIntoView({ block: 'center' }); }),
     sheet: async p => { await p.evaluate(() => PLAY.kid('world', 'math')); await p.waitForTimeout(500); return { close: 'escape' }; },

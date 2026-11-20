@@ -1,4 +1,4 @@
-/* PLAY-01: the free sample's locked content and the Unlock Star School card (src/js/89-play.js). Tokens only; 48 px targets. */
+/* PLAY-01: the free sample's locked content and the Unlock Whistlestop card (src/js/89-play.js). Tokens only; 48 px targets. */
 .pl-kid{text-align:center}
 .pl-kid p{margin:0 0 var(--s-4);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink)}
 .pl-lk{display:inline-grid;place-items:center;width:72px;height:72px;margin:var(--s-2) 0;border-radius:50%;background:var(--surface-2);color:var(--ink-3);

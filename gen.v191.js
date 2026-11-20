@@ -1,5 +1,5 @@
-/* Star School gen v190. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v190 loads this file with <script src="gen.v190.js"> after its own code, before data.v190.js. */
+/* Whistlestop gen v191. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v191 loads this file with <script src="gen.v191.js"> after its own code, before data.v191.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3687,8 +3687,8 @@ function spkCheck(){SPK.state='check';const a=$('#spkact');const cd=$('.spk-card
   spkHeard();spkT(spkHeard,1200)}
 // a grown-up note: how to allow the microphone (or that none was found); goes on by itself
 function spkGU(kind){SPK.state='gu';SPK.note=1;if(kind=='denied')SPK.deny=1;else SPK.mic='no';const a=$('#spkact');if(!a)return;const cd=$('.spk-card');if(cd)cd.classList.add('gu');
-  const steps=kind=='denied'?`<p>The microphone is blocked for Star School. To allow it:</p><ol><li><b>Installed app:</b> press and hold the Star School icon, then App info, Permissions, Microphone, Allow.</li>
-    <li><b>In Chrome:</b> tap the icon left of the web address, then Permissions (or Site settings), Microphone, Allow.</li></ol><p>Speaking practice tries again the next time Star School opens. Recordings are never kept.</p>`
+  const steps=kind=='denied'?`<p>The microphone is blocked for Whistlestop. To allow it:</p><ol><li><b>Installed app:</b> press and hold the Whistlestop icon, then App info, Permissions, Microphone, Allow.</li>
+    <li><b>In Chrome:</b> tap the icon left of the web address, then Permissions (or Site settings), Microphone, Allow.</li></ol><p>Speaking practice tries again the next time Whistlestop opens. Recordings are never kept.</p>`
     :`<p>No microphone was found on this device, so speaking practice is skipped. You can turn it off in Grown-ups.</p>`;
   a.innerHTML=`<div class="spk-gu" role="note"><h2 class="spk-guh">${ico('mic',24)}<span>For a grown-up</span></h2>${steps}</div>${UI.btn('Go on',{kind:'primary',icon:'arrow-right',id:'spkgo'})}`;
   $('#spkgo').onclick=()=>spkEnd(false);
@@ -3996,20 +3996,21 @@ const GW = {
       ` class="${v == cur ? 'on' : ''}">${name(v)}</button>`).join('')}</div>`;
   },
 };
-/* P6-05: About Star School (Grown-ups): what the app is, privacy, the release and build, and the licences of what it bundles.
+/* P6-05: About Whistlestop (Grown-ups): what the app is, privacy, the release and build, and the licences of what it bundles.
    Only Andika is third-party (embedded by tools/build.py; the text is OFL_TEXT in src/data/d-licences.js = LICENSES/OFL-Andika.txt).
-   The art, icons, sounds and games are made for Star School; speech is the tablet's own voice and recordings made with xAI
+   The art, icons, sounds and games are made for Whistlestop; speech is the tablet's own voice and recordings made with xAI
    text-to-speech (audio/, ES-AUDIO, EN-PRAISE, TEACH-4; the About card says so); no libraries are bundled. */
 function aboutCard(){
-  return GW.card('gw-about','info','About Star School',
-    `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
+  return GW.card('gw-about','info','About Whistlestop',
+    `<p class="gw-p">Whistlestop is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-gate">${ico('gear',22)}<span>To open Grown-ups, tap Grown-ups on Home and type your PIN. Forgot it? Tap Forgot PIN? on the number pad.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
+    <p class="gw-bkrow"><a class="btn soft sm" id="ab-priv" href="privacy.html" target="_blank" rel="noopener">${ico('doc')}<span>Privacy policy</span></a></p>
     <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">${BUILD}</span></div><div><b>Edition</b> <span id="ab-ed">${PLAY.edition()}</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
-    <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
+    <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Whistlestop. No other fonts, libraries or outside files are used.</p>
     <p class="gw-sub ab-lic-line" id="ab-tts">The recorded voices were made with AI text-to-speech (xAI).</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
 }
@@ -4109,7 +4110,7 @@ function grown(){let armed=false;
   reportGrownBind();
   BAK.bind();
   PRF.bind();
-  if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Star School: Unlock or restore asks the grown-up question first (89-play.js)
+  if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Whistlestop: Unlock or restore asks the grown-up question first (89-play.js)
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
@@ -4172,7 +4173,9 @@ async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navi
    replaces, or adds it as a new child; a file of all children lists them and loads one at a time. The copy kept for "Undo last load"
    is the replaced child's: <their key>-undo (child 1: KEY-undo as before); only the last load is kept. */
 const BAK = {
-  APP: 'Star School',
+  APP: 'Whistlestop',
+  // v191: files from before the rename say Star School in "app"; both load
+  APPS: ['Whistlestop', 'Star School'],
   // the copy kept for "Undo last load": the replaced child's <key>-undo (only one is kept); without one, the playing child's name for it
   get UNDO() { return BAK.undoKey() || SKEY + '-undo'; },
   undoKey() { return PRF.SLOTS.map(id => PRF.key(id) + '-undo').find(k => PRF.get(k) !== null) || ''; },
@@ -4193,7 +4196,7 @@ const BAK = {
     const nm = String((name === undefined ? S.name : name) || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
     const d = new Date();
     const p = n => String(n).padStart(2, '0');
-    return `starschool-${nm}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
+    return `whistlestop-${nm}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
   },
   // Returns a short problem (or '') for the types a save must have.
   types(d) {
@@ -4212,10 +4215,10 @@ const BAK = {
   read(text) {
     const no = msg => ({ok: false, msg});
     if (typeof text != 'string' || !text.trim()) return no('That file is empty.');
-    if (text.length > BAK.MAX) return no('That file is too big to be a Star School backup.');
+    if (text.length > BAK.MAX) return no('That file is too big to be a Whistlestop backup.');
     let f;
     try { f = JSON.parse(text); } catch (e) { return no('That file is damaged, so it cannot be read.'); }
-    if (!f || typeof f != 'object' || f.app !== BAK.APP) return no("That isn't a Star School backup.");
+    if (!f || typeof f != 'object' || !BAK.APPS.includes(f.app)) return no("That isn't a Whistlestop backup.");
     if (Array.isArray(f.kids)) { // P5-10: every child; each one is checked like a one-child file
       if (!f.kids.length || f.kids.length > PRF.MAX) return no('That backup is damaged: the children are missing.');
       const kids = [];
@@ -4234,7 +4237,7 @@ const BAK = {
     if (!d || typeof d != 'object' || Array.isArray(d)) return no('That backup is damaged: the progress is missing.');
     if (!Number.isInteger(save) || save < 1) return no('That backup is damaged: it has no save version.');
     if (save > LATEST || (Number.isInteger(d.v) && d.v > LATEST))
-      return no('That backup was made by a newer Star School. Update the app on this tablet first, then try again.');
+      return no('That backup was made by a newer Whistlestop. Update the app on this tablet first, then try again.');
     const bad = BAK.types(d);
     if (bad) return no('That backup is damaged (' + bad + ').');
     // migrate a copy: the migrations work on the global S, so swap it in and always put it back
@@ -4316,7 +4319,7 @@ const BAK = {
     try { file = new File([text], name, {type: 'application/json'}); } catch (e) { file = null; }
     needOnline(async () => {
       if (file && navigator.canShare && navigator.canShare({files: [file]})) {
-        try { await navigator.share({files: [file], title: 'Star School backup'}); fb('Backup shared'); return; }
+        try { await navigator.share({files: [file], title: 'Whistlestop backup'}); fb('Backup shared'); return; }
         catch (e) { if (e && e.name == 'AbortError') return; }
       }
       const a = document.createElement('a');
@@ -4404,7 +4407,7 @@ const BAK = {
     return GW.card('gw-bak', 'download', 'Backup',
       (er ? `<div class="gw-bkrow">${UI.btn('Undo erase', {kind: 'primary', size: 'sm', icon: 'undo', id: 'bk-unerase'})}</div>` +
         `<p class="gw-sub" id="bk-ersub">Erased by mistake? This brings back ${esc(er.name || 'the progress')}${er.name ? "'s progress" : ''}. ` +
-        'You can undo it until Star School is opened again.</p>' : '') +
+        'You can undo it until Whistlestop is opened again.</p>' : '') +
       `<div class="gw-bk"><div class="gw-bkrow">${UI.btn('Save a backup', {kind: 'primary', size: 'sm', icon: 'download', id: 'bk-save'})}${onlineNote()}</div>` +
       (PRF.many() ? `<div class="gw-bkrow">${UI.btn('Save all children', {size: 'sm', icon: 'download', id: 'bk-all'})}${onlineNote()}</div>` : '') +
       `<div class="gw-bkrow">${UI.btn('Load a backup', {size: 'sm', icon: 'upload', id: 'bk-load'})}<input type="file" id="bk-file" accept=".json,application/json" hidden>` +
@@ -4710,7 +4713,7 @@ const REP = {
     // P4-12: each section is a Grown-ups card with an icon header (styles in 48-setup-grown-care.css)
     const sec = (id, icon, h, body) => `<section class="gw-card rp-card" id="${id}"><h2 class="rp-h2 gw-h"><span class="gw-hi">${ico(icon, 24)}</span>`
       + `<span>${h}</span></h2>${body}</section>`;
-    return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Star School</div></div>`
+    return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Whistlestop</div></div>`
       + sec('rp-weeks', 'calendar', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
       + sec('rp-level', 'map', 'Where ' + nm + ' is working', REP.level(m))
       + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m) + (typeof CHK != 'undefined' ? `<div id="rp-badges"><h3 class="rp-h3">${ico('medal', 22)} Badges and mastery by stop</h3>${REP.badges(m)}</div>` : ''))
@@ -4761,7 +4764,7 @@ function reportGrownBind() {
   $('#rp-open').onclick = () => report();
 }
 /* ---------- sharing needs a connection (the rest of the app works offline) ---------- */
-/* Star School is an offline app. Anything that sends something off the tablet (share, send, email, print, upload)
+/* Whistlestop is an offline app. Anything that sends something off the tablet (share, send, email, print, upload)
    needs a connection, so every such button:
    - shows onlineNote() next to it, so a grown-up knows to get online first;
    - runs its action through needOnline(action, {block}): offline, it shows a friendly message first.
@@ -4793,9 +4796,9 @@ function needOnline(action, o = {}) {
 }
 /* ---------- PLAY-01: the Play app's screens and its one purchase (the core, the free sample and Play mode are in 03-play.js) ----------
    Children never see a price or a way to pay. What a child sees on locked content is one calm line and an OK button (PLAY.kid):
-   "This world opens when a grown-up unlocks Star School." No timer, no repeat, no "ask your parent". Next to locked content there
+   "This world opens when a grown-up unlocks Whistlestop." No timer, no repeat, no "ask your parent". Next to locked content there
    is one quiet button for grown-ups (PLAY.bandHTML on a locked world of the map, PLAY.rowHTML in Brain Teasers). It asks the grown-up
-   PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Star School sheet ask
+   PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Whistlestop sheet ask
    Google Play for the price and offer to buy or restore. Grown-ups has a card that says what the unlock includes, with no price and
    no buttons but "Unlock or restore", which asks for the PIN again first.
 
@@ -4813,20 +4816,20 @@ function needOnline(action, o = {}) {
    PaymentRequest.show() at once, inside the tap (show() needs the tap's user activation). Every outcome is a word for PLAY.MSG. */
 Object.assign(PLAY, {
   LINE: {
-    world: 'This world opens when a grown-up unlocks Star School.',
-    stop: 'This stop opens when a grown-up unlocks Star School.',
-    puzzle: 'These puzzles open when a grown-up unlocks Star School. The Puzzle of the Day is open every day.',
-    kid: 'This child can play once a grown-up unlocks Star School.',
-    add: 'More children can play once Star School is unlocked (see Unlock Star School in Grown-ups).',
+    world: 'This world opens when a grown-up unlocks Whistlestop.',
+    stop: 'This stop opens when a grown-up unlocks Whistlestop.',
+    puzzle: 'These puzzles open when a grown-up unlocks Whistlestop. The Puzzle of the Day is open every day.',
+    kid: 'This child can play once a grown-up unlocks Whistlestop.',
+    add: 'More children can play once Whistlestop is unlocked (see Unlock Whistlestop in Grown-ups).',
   },
   MSG: {
-    ok: 'Star School is unlocked for every child on this tablet. Thank you!',
+    ok: 'Whistlestop is unlocked for every child on this tablet. Thank you!',
     owned: 'This Google account already has the unlock, so everything is open again. Thank you!',
     cancel: 'No payment was made.',
-    pending: 'Google Play is still finishing the payment. Star School opens by itself once it is paid; you can also tap Restore purchase later.',
+    pending: 'Google Play is still finishing the payment. Whistlestop opens by itself once it is paid; you can also tap Restore purchase later.',
     offline: 'The tablet is offline. Connect to the internet to buy or restore. Everything that is open keeps working offline.',
     none: 'No purchase was found for the Google account on this tablet.',
-    unavailable: 'Google Play billing is not available right now. Buying works in Star School installed from Google Play, with the Play Store app up to date.',
+    unavailable: 'Google Play billing is not available right now. Buying works in Whistlestop installed from Google Play, with the Play Store app up to date.',
     error: 'Google Play could not finish. Please try again later. If you were charged, tap Restore purchase.',
     wait: 'Still asking Google Play. Try again in a moment.',
   },
@@ -5003,7 +5006,7 @@ Object.assign(PLAY, {
   rowHTML() {
     return `<div class="pl-row"><button class="btn plgu">${ico('gear', 20)}<span>Grown-ups: unlock everything</span></button></div>`;
   },
-  // the grown-up question first, then the Unlock Star School sheet; back redraws the screen under it after an unlock
+  // the grown-up question first, then the Unlock Whistlestop sheet; back redraws the screen under it after an unlock
   grown(back) {
     SFX.click();
     return NAV.quiz(() => PLAY.sheet(back));
@@ -5023,7 +5026,7 @@ Object.assign(PLAY, {
   },
   // Grown-ups: what the unlock is, no price and no way to pay here; "Unlock or restore" asks the grown-up question first
   card() {
-    return GW.card('gw-play', 'star', 'Unlock Star School',
+    return GW.card('gw-play', 'star', 'Unlock Whistlestop',
       (PLAY.own ? `<p class="pl-price">Unlocked. Thank you!</p>` : '') + PLAY.incHTML() +
       (PLAY.own ? '' : `<div class="gw-bkrow pl-btns">${UI.btn('Unlock or restore', { kind: 'primary', icon: 'star', id: 'plgo' })}</div>`),
       { sub: PLAY.own ? 'Everything is open for every child on this tablet.' : 'A one-time purchase through Google Play opens everything for the whole family.' });
@@ -5038,7 +5041,7 @@ Object.assign(PLAY, {
       `<p class="pl-msg" id="plmsg" role="status"></p><div class="gw-bkrow pl-btns">` +
       (PLAY.own ? '' : UI.btn('Unlock', { kind: 'primary', icon: 'star', id: 'plbuy', off: true })) +
       UI.btn('Restore purchase', { icon: 'replay', id: 'plrest' }) + '</div>';
-    const s = UI.sheet(`<div class="pl-sh" id="plsheet"><h2>Unlock Star School</h2>${body}` +
+    const s = UI.sheet(`<div class="pl-sh" id="plsheet"><h2>Unlock Whistlestop</h2>${body}` +
       `<div class="acts">${UI.btn('Not now', { kind: 'ghost', wide: true, id: 'plno' })}</div></div>`, { onClose: () => { if (PLAY.own && back) back(); } });
     s.el.querySelector('#plno').onclick = s.close;
     PLAY.bind(s.el);
@@ -5091,4 +5094,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v190'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v191'; // last line: the whole file ran (checked by dataReady() before the app starts)

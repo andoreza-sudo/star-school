@@ -1,8 +1,9 @@
 {
- "name": "Star School",
- "short_name": "Star School",
+ "name": "Whistlestop",
+ "short_name": "Whistlestop",
  "start_url": "./",
  "scope": "./",
+ "description": "Offline math, reading, Spanish and discovery practice for Pre-K to 6th grade, with game time earned by learning.",
  "display": "fullscreen",
  "display_override": [
   "fullscreen",

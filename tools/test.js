@@ -1,4 +1,4 @@
-// Star School test suite. Run: node tools/test.js   (exit 0 = all checks pass, exit 1 = at least one failed)
+// Whistlestop (formerly Star School) test suite. Run: node tools/test.js   (exit 0 = all checks pass, exit 1 = at least one failed)
 // Each check is named and returns a list of problems. Known real content problems are listed in KNOWN below (each one is
 // also recorded in docs/PROGRESS.md "Ideas and issues"); a problem that matches a KNOWN entry is reported as "known", not as a failure.
 const fs=require('fs');
@@ -2425,7 +2425,7 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   for(const name of NAMES){
     load(fx(name));
     const before=JSON.parse(JSON.stringify(S)),text=BAK.make(),head=JSON.parse(text);
-    if(head.app!=='Star School'||typeof head.ver!='string'||!head.ver||head.save!==LATEST||isNaN(new Date(head.date))||head.name!==(before.name||''))bad.push(name+': header '+JSON.stringify(Object.assign({},head,{data:0})));
+    if(head.app!=='Whistlestop'||typeof head.ver!='string'||!head.ver||head.save!==LATEST||isNaN(new Date(head.date))||head.name!==(before.name||''))bad.push(name+': header '+JSON.stringify(Object.assign({},head,{data:0})));
     const res=BAK.read(text);
     if(!res.ok){bad.push(name+': own export refused: '+res.msg);continue}
     if(!same(res.data,before))bad.push(name+': read() changed the save');
@@ -2446,6 +2446,15 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   load(fx('midway'));
   const om=BAK.read(oldFile(1));
   if(!om.ok||om.data.v!==LATEST||om.data.stars!==old.stars||om.data.maps.math.add1!==2||om.info.name!=='Mia')bad.push('old backup: '+JSON.stringify(om.ok?om.info:om));
+  // RENAME (v191, owner decision 2026-11-20): files are written as Whistlestop; a file made before the rename says "Star School" in its
+  // header (one child and all children) and still loads exactly like the new one; any other name is refused (wrongApp below)
+  {load(fx('midway'));const now=JSON.parse(BAK.make()),was=JSON.stringify(Object.assign({},now,{app:'Star School'}));
+    const a=BAK.read(JSON.stringify(now)),b=BAK.read(was);
+    if(now.app!=='Whistlestop'||!a.ok||!b.ok||!same(a.data,b.data))bad.push('a backup with the old header Star School: '+JSON.stringify(b.ok?b.info:b));
+    const all=JSON.parse(BAK.makeAll());all.app='Star School';const c=BAK.read(JSON.stringify(all));
+    if(!c.ok||!c.all)bad.push('an all-children backup with the old header Star School: '+JSON.stringify(c));
+    if(!/^whistlestop-mia-\\d{4}-\\d\\d-\\d\\d\\.json$/.test(BAK.fileName('Mia')))bad.push('backup file name: '+BAK.fileName('Mia'));
+    if(BAK.read(JSON.stringify(Object.assign({},now,{app:'star school'}))).ok)bad.push('a header that is neither name loads');}
   // 3. refused with nothing changed
   load(fx('midway'));
   const snap=JSON.stringify(S),keys=JSON.stringify(store);
@@ -2489,7 +2498,7 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   if(!/needOnline\(async \(\) => \{[\s\S]{0,200}navigator\.share\(/.test(bk)||!/\}, \{block: false\}\);/.test(bk))p.push('backup share is not inside needOnline(..., {block:false})');
   if(/XMLHttpRequest|fetch\(|sendBeacon|https?:\/\//.test(bk.replace(/\/\*[\s\S]*?\*\//,'')))p.push('81-backup.js must not make requests');
   if(!/BAK\.card\(\)/.test(gr)||!/BAK\.bind\(\)/.test(gr))p.push('Grown-ups does not show the Backup card');
-  return{problems:[...p,...r.bad],note:r.n+' fixtures round-tripped, '+'19 bad files refused'};
+  return{problems:[...p,...r.bad],note:r.n+' fixtures round-tripped, '+'19 bad files refused, old header Star School loads'};
 });
 
 // ---- P5-10 children: up to 4 children on one tablet, each save under its own key (src/js/01-profiles.js) ----
@@ -19029,11 +19038,11 @@ run('release 1.0 P6-05',()=>{
   if(!/\$\{RELEASE\} \(build (__VER__|\$\{BUILD\})\)/.test(rs('js/80-grown.js')))p.push('the Grown-ups app log must show RELEASE and the build (VER)');
   if(!/\$\{aboutCard\(\)\}/.test(rs('js/80-grown.js')))p.push('grown() must show the About card');
   const ab=r.about.replace(/<[^>]*>/g,' ').replace(/&#39;/g,"'");
-  for(const need of ['About Star School','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','Nothing is sent anywhere','only on this device','without internet','Version','Build'])
+  for(const need of ['About Whistlestop','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','Nothing is sent anywhere','only on this device','without internet','Version','Build'])
     if(!ab.includes(need))p.push('About does not say: '+need);
   if(!/id="ab-rel">1\.0\.0</.test(r.about)||!/id="ab-build">__VER__</.test(r.about))p.push('About must show the release and the build');
   if(/#[0-9a-fA-F]{3,8}\b|[\u{1F300}-\u{1FAFF}]/u.test(r.about))p.push('About uses a raw colour or an emoji');
-  const css=rs('css/48-setup-grown-care.css'),ci=css.indexOf('P6-05 About Star School');
+  const css=rs('css/48-setup-grown-care.css'),ci=css.indexOf('P6-05 About Whistlestop');
   if(ci<0||/#[0-9a-fA-F]{3,8}\b/.test(css.slice(ci)))p.push('About CSS must use tokens only (no raw colours)');
   // the licence files
   const ofl=path.join(ROOT,'LICENSES','OFL-Andika.txt');
@@ -23008,7 +23017,7 @@ run('grown-ups: the question never shows the hold, erase and delete ask for the 
     UI.sheet=h=>{html=h;return{el:{querySelector:()=>({})},close(){}}};
     NAV.askQ(()=>{});UI.sheet=sheet0;
     if(/hold|second/i.test(html)||!/For grown-ups/.test(html))bad.push('the grown-up question: '+html.slice(0,200));
-    if(!/tap Grown-ups on Home and type your PIN/.test(aboutCard()))bad.push('About Star School does not say how to open Grown-ups');
+    if(!/tap Grown-ups on Home and type your PIN/.test(aboutCard()))bad.push('About Whistlestop does not say how to open Grown-ups');
     // 2. Erase everything and Delete ask the question again, right before
     if(!/NAV\\.quiz\\(eraseAll\\)/.test(String(grown)))bad.push('Erase everything does not ask the grown-up question again');
     if(!/NAV\\.quiz\\(async \\(\\) => \\{[^}]*PRF\\.remove\\(id\\)/.test(String(PRF.deleteSheet)))bad.push('Delete does not ask the grown-up question again');
@@ -23072,7 +23081,7 @@ run('storage: persist asked once at start, a failed save shows one spoken banner
     __full(true);S.stars=3;save();__full(false);
     if(!SAVE_FAILED)bad.push('a failed save is not noticed');
     const b=hmSaveWarn();
-    if(!b.includes("Star School can't save right now: ask a grown-up to free some space.")||!/role="alert"/.test(b)||!/id="svwspk"/.test(b)||!/Hear it/.test(b))bad.push('the banner: '+b);
+    if(!b.includes("Whistlestop can't save right now: ask a grown-up to free some space.")||!/role="alert"/.test(b)||!/id="svwspk"/.test(b)||!/Hear it/.test(b))bad.push('the banner: '+b);
     if(hmSaveWarn())bad.push('the banner shows twice in one visit');
     // PLAY.setOwn: the unlock stays for the session when it cannot be written; read back when it can
     __st[PLAY.KEY]=JSON.stringify({v:1,on:1,own:0});PLAY.read();if(!PLAY.locked())bad.push('Play mode not locked before the unlock');
@@ -23351,6 +23360,64 @@ run('planner: a fresh save is offered a lesson where the map opens (the ringed s
       if(!lock&&(g===1||g===2))rows.push(p+' '+g+': '+pl.id)}
     PLAY.on=false;return{bad,n,rows}})()`);
   return{problems:r.bad,note:r.n+' plans checked ('+r.rows.join(', ')+')'};
+});
+
+// RENAME (v191, owner decision 2026-11-20): the app is Whistlestop. Nothing a person sees says Star School; the internal names (storage
+// keys starschool-v2..., the IndexedDB names, the backup format's fields, the starschool service worker caches) stay, so no save is lost.
+// The Play packaging files: /.well-known/assetlinks.json (a template until the owner fills in the signing fingerprint) and privacy.html.
+run('rename RENAME: no user-facing Star School in src, manifest and title say Whistlestop, assetlinks.json template, privacy.html static and reachable',()=>{
+  const p=[],notes=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const code=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/<!--[\s\S]*?-->/g,'').replace(/(^|[^:'"\\])\/\/.*$/gm,'$1');
+  const files=[['shell.html',path.join(SRC,'shell.html')],...['js','css','data'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,path.join(SRC,d,n)]))];
+  for(const [n,f] of files){
+    code(fs.readFileSync(f,'utf8')).split('\n').forEach((l,i)=>{
+      if(!/star[\s_]+school/i.test(l)&&!/StarSchool/.test(l))return; // starschool (lower case, one word) is an internal key
+      // the one allowed place: the backup header names a file made before the rename may carry (81-backup.js BAK.APPS)
+      if(n==='js/81-backup.js'&&/^\s*APPS: \['Whistlestop', 'Star School'\],$/.test(l))return;
+      p.push(n+':'+(i+1)+' still says Star School: '+l.trim().slice(0,100))});
+  }
+  // the internal names are kept (saves, clips, backups, caches)
+  const core=fs.readFileSync(path.join(SRC,'js','00-core.js'),'utf8'),clips=fs.readFileSync(path.join(SRC,'js','44-clips.js'),'utf8'),sw=rd('sw.js');
+  if(!/const KEY='starschool-v2';/.test(core))p.push('the save key starschool-v2 changed: every save would be lost');
+  if(!/indexedDB\.open\('starschool',1\)/.test(clips))p.push('the voice clips database starschool changed');
+  if(!/const C='starschool-v\d+';/.test(sw)||!/const A='starschool-audio';/.test(sw))p.push('the service worker cache names changed');
+  // manifest and title
+  const man=JSON.parse(rd('manifest.json')),html=rd('index.html');
+  if(man.name!=='Whistlestop'||man.short_name!=='Whistlestop'||!/Whistlestop|Pre-K/.test(man.description||'')||/star school/i.test(JSON.stringify(man)))p.push('manifest: '+JSON.stringify({name:man.name,short_name:man.short_name,description:man.description}));
+  if(!html.includes('<title>Whistlestop</title>'))p.push('index.html title is not Whistlestop');
+  // assetlinks.json: valid JSON, the package of PLAY.PKG, a fingerprint or the clearly marked placeholder
+  const al=path.join(ROOT,'.well-known','assetlinks.json');
+  if(!fs.existsSync(al))p.push('.well-known/assetlinks.json is missing');
+  else{let a=null;try{a=JSON.parse(fs.readFileSync(al,'utf8'))}catch(e){p.push('.well-known/assetlinks.json is not valid JSON: '+e.message)}
+    const pkg=(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8').match(/PKG: '([^']*)'/)||[])[1];
+    const t=Array.isArray(a)&&a[0]&&a[0].target;
+    if(a&&(!t||!(a[0].relation||[]).includes('delegate_permission/common.handle_all_urls')||t.namespace!=='android_app'||t.package_name!==pkg||!Array.isArray(t.sha256_cert_fingerprints)||!t.sha256_cert_fingerprints.length))
+      p.push('assetlinks.json: handle_all_urls for android_app '+pkg+' (PLAY.PKG) with a fingerprint list: '+JSON.stringify(a).slice(0,200));
+    else if(a){for(const fp of t.sha256_cert_fingerprints){
+      if(/PLACEHOLDER/.test(fp))notes.push('assetlinks.json fingerprint is still the PLACEHOLDER: fill it in from Play Console, App signing, before release');
+      else if(!/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(fp))p.push('assetlinks.json: '+fp+' is neither a SHA-256 fingerprint (AA:BB:...) nor the marked placeholder')}}}
+  const vj=JSON.parse(rd('vercel.json')),rule=(vj.headers||[]).find(h=>h.source==='/.well-known/assetlinks.json');
+  if(!rule||!rule.headers.some(h=>h.key==='Content-Type'&&h.value==='application/json'))p.push('vercel.json does not serve assetlinks.json as application/json');
+  const vi=rd('.vercelignore').split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#'));
+  if(vi.some(l=>/^\/?(\.well-known|privacy|\*)/.test(l)))p.push('.vercelignore leaves out .well-known or privacy.html: '+vi.join(' '));
+  // privacy.html: static (no script, no handlers, nothing loaded from elsewhere), truthful key lines, linked from About, precached
+  if(!fs.existsSync(path.join(ROOT,'privacy.html')))p.push('privacy.html is missing');
+  else{const pv=rd('privacy.html');
+    if(/<script|\son\w+\s*=|javascript:/i.test(pv))p.push('privacy.html must have no scripts');
+    if(/\s(src|href)="(?!mailto:)[^"]*"|url\(|@import/i.test(pv))p.push('privacy.html loads or links something');
+    for(const need of ['No accounts','No advertising','No analytics','stored only','never uploaded','Google Play billing','purchase token','hello@whistlestoplearning.com','Families'])
+      if(!pv.includes(need))p.push('privacy.html does not say '+need)}
+  const grown=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  if(!/<a class="btn soft sm" id="ab-priv" href="privacy\.html"/.test(grown))p.push('About does not link privacy.html');
+  if(!sw.includes("'./privacy.html'"))p.push('sw.js does not precache privacy.html (it must open offline from About)');
+  // a page that is not the app (privacy.html) never replaces the cached app page: network first, then its own cached copy
+  {const vm=require('vm'),H={};let puts=[],fetched=0;
+    vm.runInNewContext(sw,{self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,setTimeout,clearTimeout,
+      caches:{match:async()=>'CACHED',open:async()=>({put:async u=>{puts.push(u)}}),keys:async()=>[]},fetch:async()=>{fetched++;throw new Error('offline')},Response:{error:()=>'ERROR'}});
+    let resp=null;H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:'http://x/privacy.html'},respondWith:pr=>{resp=pr},waitUntil(){}});
+    return (async()=>{const r=resp&&await resp;
+      if(r!=='CACHED'||fetched!==1||puts.length)p.push('sw.js: opening privacy.html offline: '+JSON.stringify({r,fetched,puts}));
+      return{problems:p,note:notes.concat(['manifest '+man.name,'PLAY.PKG and assetlinks '+(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1]]).join('; ')}})()}
 });
 
 Promise.all(PENDING).then(()=>{

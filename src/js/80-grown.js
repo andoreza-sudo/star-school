@@ -29,20 +29,21 @@ const GW = {
       ` class="${v == cur ? 'on' : ''}">${name(v)}</button>`).join('')}</div>`;
   },
 };
-/* P6-05: About Star School (Grown-ups): what the app is, privacy, the release and build, and the licences of what it bundles.
+/* P6-05: About Whistlestop (Grown-ups): what the app is, privacy, the release and build, and the licences of what it bundles.
    Only Andika is third-party (embedded by tools/build.py; the text is OFL_TEXT in src/data/d-licences.js = LICENSES/OFL-Andika.txt).
-   The art, icons, sounds and games are made for Star School; speech is the tablet's own voice and recordings made with xAI
+   The art, icons, sounds and games are made for Whistlestop; speech is the tablet's own voice and recordings made with xAI
    text-to-speech (audio/, ES-AUDIO, EN-PRAISE, TEACH-4; the About card says so); no libraries are bundled. */
 function aboutCard(){
-  return GW.card('gw-about','info','About Star School',
-    `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
+  return GW.card('gw-about','info','About Whistlestop',
+    `<p class="gw-p">Whistlestop is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-gate">${ico('gear',22)}<span>To open Grown-ups, tap Grown-ups on Home and type your PIN. Forgot it? Tap Forgot PIN? on the number pad.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
+    <p class="gw-bkrow"><a class="btn soft sm" id="ab-priv" href="privacy.html" target="_blank" rel="noopener">${ico('doc')}<span>Privacy policy</span></a></p>
     <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">${BUILD}</span></div><div><b>Edition</b> <span id="ab-ed">${PLAY.edition()}</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
-    <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
+    <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Whistlestop. No other fonts, libraries or outside files are used.</p>
     <p class="gw-sub ab-lic-line" id="ab-tts">The recorded voices were made with AI text-to-speech (xAI).</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
 }
@@ -142,7 +143,7 @@ function grown(){let armed=false;
   reportGrownBind();
   BAK.bind();
   PRF.bind();
-  if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Star School: Unlock or restore asks the grown-up question first (89-play.js)
+  if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Whistlestop: Unlock or restore asks the grown-up question first (89-play.js)
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});

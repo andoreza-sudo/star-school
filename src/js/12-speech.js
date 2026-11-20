@@ -1,6 +1,6 @@
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
-function noVoice(btn){fb('No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
+function noVoice(btn){fb('No voice here. Open Whistlestop in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
 // P2-30: is there a Spanish voice? 'yes', 'no', or 'wait' (the list is still empty: some browsers fill it late, then fire voiceschanged).
 // An empty list after 3 s is 'no' (nothing can speak). esVoiceMode is pure so tests can feed it voice lists.
 function esVoiceMode(vs,spk,ms){if(!spk)return'no';if(vs.some(v=>/^(es|spa)/i.test(v.lang)))return'yes';return vs.length||ms>3000?'no':'wait'}

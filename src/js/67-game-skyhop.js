@@ -1,5 +1,5 @@
 /* ---------- Sky Hop: bounce your pet through short obstacle courses in the clouds (G-04b, G-04b2; CSS src/css/49-game-skyhop.css) ----------
-   An original Star School game (docs/GAMES_RESEARCH.md, "Game B"). Both files go into games2.<VER>.js (tools/build.py PARTS) and
+   An original Whistlestop game (docs/GAMES_RESEARCH.md, "Game B"). Both files go into games2.<VER>.js (tools/build.py PARTS) and
    load after games.<VER>.js, so GH.reg, the gh* drawing helpers and Star Rally's colour helpers (rlCol, rlRes, rlRidge) are there.
 
    How it plays

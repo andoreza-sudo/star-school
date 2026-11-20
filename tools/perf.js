@@ -246,7 +246,7 @@ async function main() {
       rows.push(['heap growth over ' + ROUNDS + ' rounds', (g / 1048576).toFixed(2) + ' MB', '', '< 5 MB', g < BUDGET.heap ? 'ok' : 'OVER', mem.after.nodes + ' DOM nodes, ' + mem.after.listeners + ' listeners after']);
     }
     const W = [0, 1, 2, 3, 4].map(i => Math.max(...rows.map(r => r[i].length), ['metric', 'best', 'median', 'budget', ''][i].length));
-    console.log('Star School performance at ' + THROTTLE + 'x CPU throttle, 1024x600, midway save, best and median of ' + RUNS + ' runs');
+    console.log('Whistlestop performance at ' + THROTTLE + 'x CPU throttle, 1024x600, midway save, best and median of ' + RUNS + ' runs');
     console.log(['metric', 'best', 'median', 'budget', ''].map((h, i) => h.padEnd(W[i])).join('  '));
     for (const r of rows) console.log(r.slice(0, 5).map((c, i) => c.padEnd(W[i])).join('  ') + '  ' + r[5]);
     const sz = f => fs.statSync(path.join(DIR, f)).size, total = runs.length ? runs[0].bytes.reduce((a, f) => a + sz(f), sz('index.html')) : 0;

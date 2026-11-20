@@ -25,10 +25,10 @@ const CLIPKINDS=[
  ['done','Round done','Played when a round ends.',['What a great round!','You worked so hard!','You\'re a superstar!','Wow, look at all those stars!','I love learning with you!','Let\'s do another one!'],'trophy']];
 const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 function micHelp(kind){const o=document.createElement('div');o.className='ovl';o.style.padding='20px';
-  const body=kind=='frame'?`<p>Recording is turned off in this preview window. Open <b>Star School on the tablet</b> (the installed app or Chrome) and record there.</p>`
+  const body=kind=='frame'?`<p>Recording is turned off in this preview window. Open <b>Whistlestop on the tablet</b> (the installed app or Chrome) and record there.</p>`
    :kind=='none'?`<p>No microphone was found on this device.</p>`
-   :`<p>The microphone is blocked for Star School. To allow it:</p><ol style="text-align:left;max-width:520px;font-size:18px;line-height:1.5">
-     <li><b>Installed app:</b> press and hold the Star School icon → <b>App info</b> → <b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>.</li>
+   :`<p>The microphone is blocked for Whistlestop. To allow it:</p><ol style="text-align:left;max-width:520px;font-size:18px;line-height:1.5">
+     <li><b>Installed app:</b> press and hold the Whistlestop icon → <b>App info</b> → <b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>.</li>
      <li><b>In Chrome:</b> tap the icon left of the web address → <b>Permissions</b> (or Site settings) → <b>Microphone</b> → <b>Allow</b>.</li>
      <li>Come back here and tap ${ico('record','1.2em','ic-rec')} again.</li></ol>`;
   o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:600px;text-align:center"><h2 style="margin:0 0 8px">${ico('mic','1em','ic-brand')} Microphone</h2>${body}<button class="btn big" id="mok">OK</button></div>`;

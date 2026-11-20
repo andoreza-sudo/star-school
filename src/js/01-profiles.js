@@ -170,7 +170,7 @@ const PRF = {
   // Returns {id} or {msg}; with a message nothing was changed.
   add(data, playNow) {
     if (PRF.ids.length >= PRF.MAX) return { msg: 'There are already 4 children on this tablet. Delete one to make room.' };
-    if (PLAY.locked()) return { msg: PLAY.LINE.add }; // PLAY-01: more children come with the unlock (Grown-ups, Unlock Star School)
+    if (PLAY.locked()) return { msg: PLAY.LINE.add }; // PLAY-01: more children come with the unlock (Grown-ups, Unlock Whistlestop)
     save();
     if (SAVE_FAILED || !PRF.has(PRF.cur)) return { msg: PRF.FULL };
     const id = PRF.SLOTS.find(s => !PRF.ids.includes(s)), k = PRF.key(id);
@@ -352,7 +352,7 @@ const PRF = {
     sh.el.querySelector('#pf-del1').onclick = () => {
       const acts = sh.el.querySelector('.acts'), wasMe = id === PRF.cur;
       sh.el.querySelector('h2').textContent = 'Really delete ' + PRF.label(PRF.info(id)) + '?';
-      sh.el.querySelector('p').textContent = 'You can undo it in Grown-ups until Star School is opened again.';
+      sh.el.querySelector('p').textContent = 'You can undo it in Grown-ups until Whistlestop is opened again.';
       acts.innerHTML = UI.btn('Yes, delete ' + PRF.label(PRF.info(id)), { kind: 'risk', wide: true, icon: 'trash', id: 'pf-del2' }) +
         UI.btn('Keep ' + PRF.label(PRF.info(id)), { kind: 'ghost', wide: true, id: 'pf-keep' });
       sh.el.querySelector('#pf-keep').onclick = sh.close;

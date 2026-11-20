@@ -1,5 +1,5 @@
-/* Star School petage v190. BUILT by tools/build.py from 17b-pet-age.js: never edit by hand.
-   index.html v190 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v190.js. */
+/* Whistlestop petage v191. BUILT by tools/build.py from 17b-pet-age.js: never edit by hand.
+   index.html v191 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v191.js. */
 /* ---------- pet age: the pet grows up with the grade (17-pets-svg.js petAge, petSVG) ----------
    PET_AGED[kind] = [older kid (age 1, grades 3-4), grown-up (age 2, grades 5-6)]: a body plan of its own per age, drawn on the same rig
    (named groups, faces, anchors, --pc-* roles, no filters), in the grown stage's coordinates; the star stage only scales it about the
@@ -273,4 +273,4 @@ const PET_AGED = {};
 
 for (const k in PET_AGED) for (const D of PET_AGED[k]) if (D) D.face = D.face || paFace(D.mouth);
 
-var PETAGE_VER='v190'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var PETAGE_VER='v191'; // last line: the whole file ran (checked by dataReady() before the app starts)

@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v190'
+VER = 'v191'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -218,14 +218,14 @@ open(OUT + '/index.html', 'w').write(src)
 for stem, _ in PARTS:
     names = [n for sub in ('css', 'js') for n in sorted(os.listdir(os.path.join(S_DIR, sub))) if part_of(n) == stem]
     css = cat('css', '.css', stem)
-    part = ('/* Star School ' + stem + ' ' + VER + '. BUILT by tools/build.py from ' + ', '.join(names) + ': never edit by hand.\n'
+    part = ('/* Whistlestop ' + stem + ' ' + VER + '. BUILT by tools/build.py from ' + ', '.join(names) + ': never edit by hand.\n'
             + ('   index.html ' + VER + ' loads this file on demand (partsThen in src/js/90-app.js, P6-02), after ' + DATA + '. */\n' if stem in LAZY else
                '   index.html ' + VER + ' loads this file with <script src="' + stem + '.' + VER + '.js"> after its own code, before ' + DATA + '. */\n')
             + ("(function(){var s=document.createElement('style');s.id='css-" + stem + "';s.textContent=" + json.dumps(css, ensure_ascii=False)
                + ";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)\n" if css else '')
             + cat('js', '.js', stem) + "\nvar " + stem.upper() + "_VER='" + VER + "'; // last line: the whole file ran (checked by dataReady() before the app starts)\n")
     open(OUT + '/%s.%s.js' % (stem, VER), 'w', encoding='utf-8', newline='').write(part)
-data = ('/* Star School data banks ' + VER + '. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.\n'
+data = ('/* Whistlestop data banks ' + VER + '. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.\n'
         '   index.html ' + VER + ' loads this file with <script src="' + DATA + '"> between the code and the start-up script. */\n'
         + cat('data', '.js') + "\nvar DATA_VER='" + VER + "'; // last line: the whole file ran (checked by dataReady() before the app starts)\n")
 open(OUT + '/' + DATA, 'w', encoding='utf-8', newline='').write(data)
@@ -234,7 +234,8 @@ for n in os.listdir(OUT):
     if re.fullmatch(r'[a-z0-9]+\.v\d+\.js', n) and n not in FILES:
         os.remove(os.path.join(OUT, n))
 
-json.dump({"name": "Star School", "short_name": "Star School", "start_url": "./", "scope": "./",
+json.dump({"name": "Whistlestop", "short_name": "Whistlestop", "start_url": "./", "scope": "./",
+           "description": "Offline math, reading, Spanish and discovery practice for Pre-K to 6th grade, with game time earned by learning.",
            "display": "fullscreen", "display_override": ["fullscreen", "standalone"], "id": "./", "orientation": "any", "background_color": "#fff9ef", "theme_color": "#fff9ef",
            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                      {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
@@ -255,7 +256,7 @@ AUDIO_BYTES = sum(os.path.getsize(os.path.join(ROOT, 'audio', n)) for n in AUDIO
 # Service worker. Cache name and precache list carry VER, so one release's index.html, part files and data file are cached and replaced together.
 # Only good (2xx) responses are cached; a script that cannot be fetched offline fails as a script (never gets index.html as its body).
 open(OUT + '/sw.js', 'w').write("""const C='starschool-"""+VER+"""';
-const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./manifest.json','./icon-192.png','./icon-512.png'];
+const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./manifest.json','./icon-192.png','./icon-512.png','./privacy.html'];
 const A='starschool-audio';
 const AF=["""+','.join("'./audio/%s'" % n for n in AUDIO)+"""];
 const aName=u=>new URL(u,self.location).pathname.split('/').pop();
@@ -269,6 +270,7 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
+ if(e.request.mode==='navigate'&&!/\\/(index\\.html)?$/.test(new URL(e.request.url).pathname)){e.respondWith(fetch(e.request).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||Response.error())));return}
  if(e.request.mode==='navigate'){let late=0;const net=fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok&&!late){const cp=res.clone();e.waitUntil(caches.open(C).then(c=>c.put('./index.html',cp)))}return res});
   e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');

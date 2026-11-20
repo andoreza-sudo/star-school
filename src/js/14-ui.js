@@ -340,5 +340,5 @@ UI.heading = (root, name) => {
     return;
   }
   const words = t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
-  root.insertAdjacentHTML('afterbegin', `<h1 class="a11y-h">${esc(words || name || 'Star School')}</h1>`);
+  root.insertAdjacentHTML('afterbegin', `<h1 class="a11y-h">${esc(words || name || 'Whistlestop')}</h1>`);
 };

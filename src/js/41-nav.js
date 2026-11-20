@@ -135,7 +135,7 @@ const NAV = {
     g.oncontextmenu = e => e.preventDefault();
     g.onclick = () => NAV.quiz();
   },
-  // the way into Grown-ups and everything it guards: then (default Grown-ups; PLAY-01: the Unlock Star School sheet; Erase; Delete)
+  // the way into Grown-ups and everything it guards: then (default Grown-ups; PLAY-01: the Unlock Whistlestop sheet; Erase; Delete)
   // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
   // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
