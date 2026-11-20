@@ -1,6 +1,6 @@
 # Draft: Solve with × and ÷ (alg2)
 
-status: unreviewed
+status: reviewed owner 2026-11-20
 made: 2026-11-19 by tools/author.js --draft (xAI API)
 edited: 2026-11-19 by Claude after reading every line (words only; see "After reading")
 
