@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** the owner's read of .claude/RC2-READ.md and .claude/RC1-READ.md (RC-2's and RC-1's new lines) and a tablet pass on the Grown-ups PIN; the owner's read-throughs of ASK-01, G-MOVES and TEACH-5S and the 8 TEACH-5S recordings (MERGE-186); P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v189 (RC-2: the fixes from Fable's confirming review of RC-1)
+**Current version:** v190 (batch 6m approved)
 
 ## Chunk status
 
