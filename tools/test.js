@@ -23411,12 +23411,26 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
   if(!/<a class="btn soft sm" id="ab-priv" href="privacy\.html"/.test(grown))p.push('About does not link privacy.html');
   if(!sw.includes("'./privacy.html'"))p.push('sw.js does not precache privacy.html (it must open offline from About)');
   // a page that is not the app (privacy.html) never replaces the cached app page: network first, then its own cached copy
-  {const vm=require('vm'),H={};let puts=[],fetched=0;
-    vm.runInNewContext(sw,{self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,setTimeout,clearTimeout,
-      caches:{match:async()=>'CACHED',open:async()=>({put:async u=>{puts.push(u)}}),keys:async()=>[]},fetch:async()=>{fetched++;throw new Error('offline')},Response:{error:()=>'ERROR'}});
-    let resp=null;H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:'http://x/privacy.html'},respondWith:pr=>{resp=pr},waitUntil(){}});
-    return (async()=>{const r=resp&&await resp;
-      if(r!=='CACHED'||fetched!==1||puts.length)p.push('sw.js: opening privacy.html offline: '+JSON.stringify({r,fetched,puts}));
+  {const vm=require('vm');let puts=[],fetched=0;
+    const nav=(u,online)=>{const H={};let resp=null,w=[];
+      vm.runInNewContext(sw,{self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,setTimeout:()=>0,clearTimeout(){},
+        caches:{match:async()=>'CACHED',open:async()=>({put:async k=>{puts.push(k)}}),keys:async()=>[]},
+        fetch:async()=>{fetched++;if(online)return{ok:true,body:'PAGE',clone(){return this}};throw new Error('offline')},Response:{error:()=>'ERROR'}});
+      H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:u},respondWith:pr=>{resp=pr},waitUntil:pr=>w.push(pr)});
+      return resp&&resp.then(r=>Promise.all(w).then(()=>r&&r.body||r))};
+    // offline: its own cached copy; online: the network page, and the cached app page (./index.html) is never replaced by it
+    const pages=['http://x/privacy.html','http://x/.well-known/assetlinks.json'].flatMap(u=>[[u,false,'CACHED',nav(u,false)],[u,true,'PAGE',nav(u,true)]]);
+    // the moved notice: only on the old address (andoreza-sudo.github.io), in Grown-ups, saying how to carry progress over
+    const E=require('./es-audio.js'),ctx=E.loadApp(null,{}),mv=h=>vm.runInContext('location={hostname:'+JSON.stringify(h)+',protocol:"https:"};gwMoved()',ctx);
+    const old=mv('andoreza-sudo.github.io'),neu=mv('whistlestoplearning.com'),loc=mv('');
+    if(!/We moved to whistlestoplearning\.com/.test(old)||!/Save a backup/.test(old)||!/Load a backup/.test(old)||!/id="gw-moved"/.test(old)||neu||loc)
+      p.push('the moved notice: '+JSON.stringify({old:old.slice(0,80),neu,loc}));
+    if(!/<div class="scroll gw">\$\{gwMoved\(\)\}/.test(grown))p.push('Grown-ups does not show the moved notice at the top');
+    return (async()=>{for(const [u,on,want,pr] of pages){const r=pr&&await pr;
+      if(r!==want)p.push('sw.js: opening '+u+(on?' online':' offline')+' gave '+JSON.stringify(r))}
+      for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));
+      if(puts.includes('./index.html'))p.push('sw.js: opening a page that is not the app replaced the cached index.html');
+      if(fetched!==4)p.push('sw.js: a page that is not the app is not asked from the network first ('+fetched+' fetches)');
       return{problems:p,note:notes.concat(['manifest '+man.name,'PLAY.PKG and assetlinks '+(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1]]).join('; ')}})()}
 });
 

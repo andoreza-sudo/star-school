@@ -62,6 +62,9 @@ const CHEER_NAMES={mix:'Mixed',f:'Female',m:'Male',tts:'Tablet voice'}; // EN-PR
 // in (loading it if a round has not); it stays hidden when no interest is reviewed (PERSW empty).
 function persGrown(){const go=()=>{if(typeof persCard=='function')persCard($('#gw-pers'))};
   if(typeof persCard=='function')go();else if(typeof partLoad=='function')partLoad('hints').then(go,()=>{})}
+// RENAME (v191): the old web address shows grown-ups how to take progress to the new one (storage is per address, so a backup carries it)
+const MOVED_LINE='We moved to whistlestoplearning.com, and the app is now called Whistlestop. To keep progress, tap Save a backup (or Save all children) under Backup below, then open whistlestoplearning.com in Chrome, open Grown-ups there and tap Load a backup.';
+function gwMoved(){return location.hostname==='andoreza-sudo.github.io'?`<p class="gw-note" id="gw-moved" role="status">${ico('info',22)}<span>${MOVED_LINE}</span></p>`:''}
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
@@ -81,7 +84,7 @@ function grown(){let armed=false;
   const nstk=STK.filter(s=>stkN(s)).length,pr=typeof PIN!='undefined'&&PIN.noteR;
   NAV.gwK=1;NAV.gwT=Date.now(); // RC-2: a grown-up screen: the session goes on
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
-  <div class="scroll gw">${pr?`<p class="gw-note" id="pnreset">${ico('lock',22)}<span>Your PIN was reset with Forgot PIN on ${esc(new Date(pr).toLocaleDateString())}.</span></p>`:''}<div class="gw-cols">
+  <div class="scroll gw">${gwMoved()}${pr?`<p class="gw-note" id="pnreset">${ico('lock',22)}<span>Your PIN was reset with Forgot PIN on ${esc(new Date(pr).toLocaleDateString())}.</span></p>`:''}<div class="gw-cols">
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>

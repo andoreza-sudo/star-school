@@ -1,4 +1,7 @@
-# Contributing to Star School
+# Contributing to Whistlestop
+
+(The app was called Star School until v190; owner decision 2026-11-20. The repository, the storage keys `starschool-v2...`, the
+IndexedDB names, the backup fields and the `starschool-` service worker caches keep the old name on purpose, so no save is lost.)
 
 How anyone (Andy, another person, another account, or an AI model) picks up one chunk of the roadmap and ships it.
 
@@ -228,7 +231,7 @@ How it fits together:
 - Every file name carries `VER`, so an index.html can only ever ask for its own release's files, and no HTTP cache can hand it an older
   file under the same name. `tools/build.py` deletes every other `name.vNN.js` at the repo root.
 - `src/boot.js` starts the app only if `dataReady()` (src/js/90-app.js): every stamp in `appFiles()` (`GEN_VER`, `GEN2_VER`, `BT_VER`,
-  `DATA_VER`; P6-02: not the LAZY `GAMES_VER`, `GAMES2_VER`, which `partReady()` checks when they load) exists, so the whole file ran, and equals the page's `VER`. Otherwise `dataMissing()` shows "Star School needs to finish
+  `DATA_VER`; P6-02: not the LAZY `GAMES_VER`, `GAMES2_VER`, which `partReady()` checks when they load) exists, so the whole file ran, and equals the page's `VER`. Otherwise `dataMissing()` shows "Whistlestop needs to finish
   updating. Connect to the internet, then tap Try again." and logs one line in the App log, such as `bt file missing (app v105)` or
   `games file v104 does not match (app v105)`. Nothing else in the save changes.
 - Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1; the check `parts split A11c` wants it under 1.0 MB), each part file warn 400 KB / fail 800 KB,
@@ -375,6 +378,9 @@ returns the snapshot it saw, and, only for a bot act that must land inside an ap
 Smoke runs on a virtual clock (fixed day 2026-06-15 10:00, timers and `Date` run at `SMOKE_SPEED` times real time, default 8, see `tools/lib/browser.js`). Run `SMOKE_SPEED=1 node tools/smoke.js` for the real clock.
 
 Rules:
+- Hand-written files at the root (not build output): `privacy.html` (the privacy policy, static, no scripts; linked from Grown-ups >
+  About and precached by sw.js), `.well-known/assetlinks.json` (Digital Asset Links for the Play app), `vercel.json`, `.vercelignore`,
+  `api/ack.js`. See docs/PLAY-SETUP.md.
 - Never edit `index.html`, `bt.<VER>.js`, `games.<VER>.js`, `data.<VER>.js`, `sw.js` or `manifest.json` by hand. They are build output. Edit `src/` or `tools/build.py`, then build.
 - Never open `index.html` in an editor or print it: it contains two base64 fonts. Do not print the other built files either (140 to 235 KB each).
 - Built files are committed, because GitHub Pages serves the repo root of `main`. That includes `bt.<VER>.js`, `games.<VER>.js` and
@@ -441,7 +447,7 @@ Staying cheap (see ROADMAP.md section 10 for the full list):
 ### 8.1 Start a chunk (Sonnet or Opus)
 
 ```
-You are working on Star School, an offline kids' learning app (PWA) in this repo.
+You are working on Whistlestop (formerly Star School), an offline kids' learning app (PWA) in this repo.
 Your job is exactly one chunk of the roadmap: <CHUNK ID, e.g. P0-01>.
 
 Read, in this order, and nothing else up front:
@@ -475,7 +481,7 @@ When done, reply with a short report:
 ### 8.2 Continue an unfinished chunk
 
 ```
-Continue Star School chunk <CHUNK ID> from the handoff note.
+Continue Whistlestop chunk <CHUNK ID> from the handoff note.
 Read docs/CONTRIBUTING.md, then the handoff note for <CHUNK ID> at the top of docs/PROGRESS.md,
 then the chunk block in docs/ROADMAP.md (grep -n "<CHUNK ID>" docs/ROADMAP.md).
 Check out branch wip/<CHUNK ID>. Do only what the note lists as remaining.
@@ -485,7 +491,7 @@ Same rules and same final report as a normal chunk (CONTRIBUTING section 8.1).
 ### 8.3 Hand one hard item to Opus
 
 ```
-Star School chunk <CHUNK ID> is stuck on one acceptance item: "<paste the item>".
+Whistlestop chunk <CHUNK ID> is stuck on one acceptance item: "<paste the item>".
 Read docs/CONTRIBUTING.md, the chunk block in docs/ROADMAP.md, and the handoff note in docs/PROGRESS.md.
 Branch: wip/<CHUNK ID>. Fix only that item, with the smallest change that makes it pass.
 Explain the cause in two or three sentences in the PROGRESS.md entry. Then finish the release steps.
@@ -494,7 +500,7 @@ Explain the cause in two or three sentences in the PROGRESS.md entry. Then finis
 ### 8.4 Fix something Andy noticed on the tablet
 
 ```
-Star School, version <vNN>. On the tablet I see this problem: <describe what you tapped and what happened>.
+Whistlestop, version <vNN>. On the tablet I see this problem: <describe what you tapped and what happened>.
 Read docs/CONTRIBUTING.md. Find the cause with grep (do not read whole files), fix only that,
 add a test or smoke step that would have caught it, then do the release steps in section 5.
 Report: cause, fix, new version.

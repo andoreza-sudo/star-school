@@ -1,2 +1,6 @@
 tools/node_modules
 tools/out
+
+# Android signing keys (Bubblewrap / PWABuilder): never commit them
+*.keystore
+*.jks

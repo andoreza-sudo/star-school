@@ -1,15 +1,17 @@
-# Star School
+# Whistlestop
+
+(Called Star School until v190; renamed by the owner on 2026-11-20. Saves, backups and storage keys are unchanged.)
 
 Offline math, reading and Spanish practice for kids, with earned game time. A single-page PWA made for cheap 7-inch Android tablets:
 no accounts, no ads, no tracking, and no internet needed after the first load.
 
 ## For parents
 
-**What it is.** Star School is practice in math, reading and Spanish, plus a Discover path (science and social studies) and Brain Teasers (puzzles),
+**What it is.** Whistlestop is practice in math, reading and Spanish, plus a Discover path (science and social studies) and Brain Teasers (puzzles),
 for children from Pre-K through 6th grade. Learning rounds earn stars, coins and game time. The coins dress and feed a pet, and the game time
 opens the Game Room. There are no accounts, no ads and no tracking.
 
-**Install on a tablet (add to home screen).** Open https://andoreza-sudo.github.io/star-school/ in Chrome while the tablet is on wifi.
+**Install on a tablet (add to home screen).** Open https://whistlestoplearning.com/ in Chrome while the tablet is on wifi.
 Tap the menu (three dots), then **Install app** (or **Add to Home screen**). Open it once; after that it works with no internet.
 
 **Spanish voices.** Spanish is spoken by recorded voices (a man's voice, and a woman's for the women and girls in the stories and some
@@ -24,9 +26,12 @@ recordings come with the app and work offline.
 
 **How updates arrive.** Whenever the tablet is on wifi and the app is opened, it checks for a new version and keeps it ready; the new version
 starts the next time the app is opened (close it fully once and open it again). The version is at the bottom of the home screen
-("Star School 1.0.0", then the build number) and in Grown-ups, under **About Star School**. Progress is kept when the app updates.
+("Whistlestop 1.0.0", then the build number) and in Grown-ups, under **About Whistlestop**. Progress is kept when the app updates.
 
-**Privacy.** The app works offline and keeps progress only on the device it runs on, in the browser's own storage. Nothing is sent anywhere.
+**Privacy.** The app works offline and keeps progress only on the device it runs on, in the browser's own storage. Nothing about your child is sent anywhere
+(the Google Play app sends only the purchase token, to acknowledge the one-time unlock). The full privacy policy is
+https://whistlestoplearning.com/privacy.html (also in Grown-ups, About Whistlestop).
+The app moved from andoreza-sudo.github.io/star-school/: there, Grown-ups shows how to bring progress over with a backup.
 Voice recordings you make stay on the device too. Your child's Spanish "Say it!" recordings never leave the tablet: the tablet checks them
 itself (by its own on-device listening, or by comparing with the recorded Spanish), keeps the last few for the Listening corner in Grown-ups,
 and deletes them automatically (after 1 day unless you choose 1 week or not to keep them). Clearing the browser's site data erases progress, so use **Save a backup** in Grown-ups
@@ -41,7 +46,7 @@ sisters cannot play as each other. **Game time**: in Grown-ups you can give 5, 1
 bank, does not count as learning, and the daily limit still applies.
 
 **Licences.** Lettering is Andika by SIL International, under the SIL Open Font License 1.1 ([LICENSES/OFL-Andika.txt](LICENSES/OFL-Andika.txt);
-also in Grown-ups, About Star School). Everything else was made for Star School.
+also in Grown-ups, About Whistlestop). Everything else was made for Whistlestop.
 
 ## Release notes: 1.0.0
 
@@ -57,7 +62,7 @@ also in Grown-ups, About Star School). Everything else was made for Star School.
 - **Grown-ups.** Up to four children on one tablet, each with their own progress; grade and level; game-time rules (minutes per round, daily
   maximum, learn first, pause); your own recorded voice lines; a skills table and a printable report card (tap "Practise this next" on a stop that needs
   practice to make it tomorrow's first mission); Star Rally boost gates (a quick number fact to zoom, on from 1st grade); Save a backup, Load a backup and
-  Undo; Calm mode (less movement, no confetti) and sound switches; Start over; About Star School with the version, build and licences.
+  Undo; Calm mode (less movement, no confetti) and sound switches; Start over; About Whistlestop with the version, build and licences.
 - **Made to be gentle.** Works offline on cheap 7-inch tablets; large 48 px touch targets, readable type, visible focus, nothing relies on colour
   or sound alone; wrong answers are gentle and come back later for another try.
 

@@ -50,9 +50,9 @@ a{color:var(--brand);font-weight:700}
 <ul>
 <li><b>Getting the app and its updates.</b> The app downloads its own files (the app itself, updates and recorded voices) from whistlestoplearning.com. Nothing about a child is sent with these requests.</li>
 <li><b>Google Play billing</b> (the Google Play app only). The one-time "unlock everything" purchase is handled by Google Play. We never see payment details or the Google account. Google's own privacy policy applies to the purchase.</li>
-<li><b>Purchase acknowledgement</b> (the Google Play app only). After a purchase, the app sends the purchase token (and the product name, unlock_all) to our own server at whistlestoplearning.com, which asks Google Play to confirm the purchase. Nothing else is sent, and the token is not stored.</li>
+<li><b>Purchase acknowledgement</b> (the Google Play app only). After a purchase, the app sends the purchase token (and the product name, unlock_all) to our own server at whistlestoplearning.com/api/ack, which asks Google Play to confirm the purchase. Nothing else is sent, and we do not store the token.</li>
 </ul>
-<p>Our website host (Vercel) handles these requests and, like any web host, may keep short-lived technical logs (such as IP addresses) to run and protect the service. We do not use them to identify anyone.</p>
+<p>Our website is hosted by Vercel. Like any web host, Vercel keeps request logs (the IP address and the browser's user agent of each request) for a short time to run and protect the service. We do not use them to identify anyone, and we add nothing about a child to them.</p>
 
 <h2>Things a grown-up may choose to do online</h2>
 <p>Some Grown-ups features are optional and need the internet: sharing or saving a backup file, sharing or printing a report card, and the one-time download of Spanish listening for the tablet's own speech recognition. The app shows a note next to these buttons. A backup or report card goes only where the grown-up sends it, using the tablet's own share or print screen; it never comes to us. The Spanish listening download comes from the tablet's own speech service and sends no recordings.</p>
