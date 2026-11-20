@@ -25,7 +25,7 @@ Read this first, then the top of docs/PROGRESS.md ("Current version", "Next up",
 | # | Step | Who | Done when |
 |---|---|---|---|
 | 1 | Release v190. It is NOT on `main` yet (`git log origin/main` shows f23a64d = v189). Rerun `bash tools/check.sh` on the session branch, then PR and merge (section 4) | Claude | live `sw.js` shows v190 |
-| 2 | Finish v191 rename (branch `rename`, worktree /home/user/wt-rename; commit and push it as `wip/rename` first), Fable review of the rename diff (also verify that non-index navigations such as privacy.html and assetlinks never overwrite the cached index.html), full check, release | Claude | live site says Whistlestop; old saves and old backup files still load |
+| 2 | Finish v191 rename (branch `rename`, worktree /home/user/wt-rename; commit it often), Fable review of the rename diff (also verify that non-index navigations such as privacy.html and assetlinks never overwrite the cached index.html), full check, release | Claude | live site says Whistlestop; old saves and old backup files still load |
 | 3 | Owner reads `.claude/RENAME-READ.md` (new lines; recorded lines that say the old name) and says which to re-record | Owner | approval in chat; then `node tools/en-audio.js --teach` (ONLY with the owner's go-ahead) |
 | 4 | Vercel: import the repo as a new project (production builds from `main` only). Make **whistlestoplearning.com** (no www) the primary domain and redirect www to it; Vercel handles HTTPS. `https://whistlestoplearning.com/.well-known/assetlinks.json` must return 200 with no redirect. Saves are per origin, so www must never serve the app. Check Vercel's plan terms: Hobby is non-commercial, so a paid app likely needs Pro | Owner (Claude can check URLs) | `/`, `/sw.js`, `/privacy.html`, `/.well-known/assetlinks.json` all 200 on the apex domain |
 | 4b | Move each family tablet: on the old github.io site, Grown-ups > Backup; on whistlestoplearning.com, Grown-ups > Restore. Keep github.io live with a "we moved" notice in Grown-ups. Do not make the repo private (that unpublishes Pages) until every tablet has moved, or the old app shows a 404 online and its Backup button is unreachable | Owner (Claude adds the notice) | every tablet runs on the new domain with its progress |
@@ -63,8 +63,8 @@ The launch plan with budget and marketing is the Claude Docs artifact "Star Scho
 - A command blocked by a permission or safety check is reported, not re-sent another way.
 - Push releases only to the session's own `claude/…` branch (this session: `claude/beautiful-rubin-1urk3d`); release by PR to
   `main`, merged with the full 40-character head SHA.
-- Commit and push work in progress at least hourly (`wip/<name>` branches). Nothing that exists only in /home/user/wt-* survives
-  the session.
+- Commit work in progress at least hourly. Nothing that exists only in /home/user/wt-* survives the session, so get finished
+  work onto the session branch and pushed promptly. Pushing any other branch (for example `wip/<name>`) needs the owner's OK.
 - Models: Fable for reviews and advice (the owner wants a Fable review before each release); Opus for hard work; Sonnet for
   routine work.
 
