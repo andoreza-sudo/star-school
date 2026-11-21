@@ -6,7 +6,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** the owner's Play checklist in docs/PLAY-SETUP.md (two Vercel projects first: the app on app.whistlestoplearning.com, the information page on whistlestoplearning.com; the developer name for privacy.html's DEVELOPER_NAME; the OK for the new About privacy line; confirm the package name com.whistlestoplearning.app before the first upload; the app signing SHA-256 into .well-known/assetlinks.json) and the read of .claude/RENAME-READ.md; then the owner's read of .claude/RC2-READ.md and .claude/RC1-READ.md (RC-2's and RC-1's new lines) and a tablet pass on the Grown-ups PIN; the owner's read-throughs of ASK-01, G-MOVES and TEACH-5S and the 8 TEACH-5S recordings (MERGE-186); P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v191 (RENAME: Whistlestop)
+**Current version:** v192 (privacy policy names the developer, Andrew Corp)
 
 ## Chunk status
 
