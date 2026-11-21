@@ -177,8 +177,8 @@ function spkCheck(){SPK.state='check';const a=$('#spkact');const cd=$('.spk-card
   spkHeard();spkT(spkHeard,1200)}
 // a grown-up note: how to allow the microphone (or that none was found); goes on by itself
 function spkGU(kind){SPK.state='gu';SPK.note=1;if(kind=='denied')SPK.deny=1;else SPK.mic='no';const a=$('#spkact');if(!a)return;const cd=$('.spk-card');if(cd)cd.classList.add('gu');
-  const steps=kind=='denied'?`<p>The microphone is blocked for Star School. To allow it:</p><ol><li><b>Installed app:</b> press and hold the Star School icon, then App info, Permissions, Microphone, Allow.</li>
-    <li><b>In Chrome:</b> tap the icon left of the web address, then Permissions (or Site settings), Microphone, Allow.</li></ol><p>Speaking practice tries again the next time Star School opens. Recordings are never kept.</p>`
+  const steps=kind=='denied'?`<p>The microphone is blocked for Whistlestop. To allow it:</p><ol><li><b>Installed app:</b> press and hold the Whistlestop icon, then App info, Permissions, Microphone, Allow.</li>
+    <li><b>In Chrome:</b> tap the icon left of the web address, then Permissions (or Site settings), Microphone, Allow.</li></ol><p>Speaking practice tries again the next time Whistlestop opens. Recordings are never kept.</p>`
     :`<p>No microphone was found on this device, so speaking practice is skipped. You can turn it off in Grown-ups.</p>`;
   a.innerHTML=`<div class="spk-gu" role="note"><h2 class="spk-guh">${ico('mic',24)}<span>For a grown-up</span></h2>${steps}</div>${UI.btn('Go on',{kind:'primary',icon:'arrow-right',id:'spkgo'})}`;
   $('#spkgo').onclick=()=>spkEnd(false);

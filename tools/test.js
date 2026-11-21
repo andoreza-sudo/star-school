@@ -1,4 +1,4 @@
-// Star School test suite. Run: node tools/test.js   (exit 0 = all checks pass, exit 1 = at least one failed)
+// Whistlestop (formerly Star School) test suite. Run: node tools/test.js   (exit 0 = all checks pass, exit 1 = at least one failed)
 // Each check is named and returns a list of problems. Known real content problems are listed in KNOWN below (each one is
 // also recorded in docs/PROGRESS.md "Ideas and issues"); a problem that matches a KNOWN entry is reported as "known", not as a failure.
 const fs=require('fs');
@@ -2425,7 +2425,7 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   for(const name of NAMES){
     load(fx(name));
     const before=JSON.parse(JSON.stringify(S)),text=BAK.make(),head=JSON.parse(text);
-    if(head.app!=='Star School'||typeof head.ver!='string'||!head.ver||head.save!==LATEST||isNaN(new Date(head.date))||head.name!==(before.name||''))bad.push(name+': header '+JSON.stringify(Object.assign({},head,{data:0})));
+    if(head.app!=='Whistlestop'||typeof head.ver!='string'||!head.ver||head.save!==LATEST||isNaN(new Date(head.date))||head.name!==(before.name||''))bad.push(name+': header '+JSON.stringify(Object.assign({},head,{data:0})));
     const res=BAK.read(text);
     if(!res.ok){bad.push(name+': own export refused: '+res.msg);continue}
     if(!same(res.data,before))bad.push(name+': read() changed the save');
@@ -2446,6 +2446,15 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   load(fx('midway'));
   const om=BAK.read(oldFile(1));
   if(!om.ok||om.data.v!==LATEST||om.data.stars!==old.stars||om.data.maps.math.add1!==2||om.info.name!=='Mia')bad.push('old backup: '+JSON.stringify(om.ok?om.info:om));
+  // RENAME (v191, owner decision 2026-11-20): files are written as Whistlestop; a file made before the rename says "Star School" in its
+  // header (one child and all children) and still loads exactly like the new one; any other name is refused (wrongApp below)
+  {load(fx('midway'));const now=JSON.parse(BAK.make()),was=JSON.stringify(Object.assign({},now,{app:'Star School'}));
+    const a=BAK.read(JSON.stringify(now)),b=BAK.read(was);
+    if(now.app!=='Whistlestop'||!a.ok||!b.ok||!same(a.data,b.data))bad.push('a backup with the old header Star School: '+JSON.stringify(b.ok?b.info:b));
+    const all=JSON.parse(BAK.makeAll());all.app='Star School';const c=BAK.read(JSON.stringify(all));
+    if(!c.ok||!c.all)bad.push('an all-children backup with the old header Star School: '+JSON.stringify(c));
+    if(!/^whistlestop-mia-\\d{4}-\\d\\d-\\d\\d\\.json$/.test(BAK.fileName('Mia')))bad.push('backup file name: '+BAK.fileName('Mia'));
+    if(BAK.read(JSON.stringify(Object.assign({},now,{app:'star school'}))).ok)bad.push('a header that is neither name loads');}
   // 3. refused with nothing changed
   load(fx('midway'));
   const snap=JSON.stringify(S),keys=JSON.stringify(store);
@@ -2489,7 +2498,7 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   if(!/needOnline\(async \(\) => \{[\s\S]{0,200}navigator\.share\(/.test(bk)||!/\}, \{block: false\}\);/.test(bk))p.push('backup share is not inside needOnline(..., {block:false})');
   if(/XMLHttpRequest|fetch\(|sendBeacon|https?:\/\//.test(bk.replace(/\/\*[\s\S]*?\*\//,'')))p.push('81-backup.js must not make requests');
   if(!/BAK\.card\(\)/.test(gr)||!/BAK\.bind\(\)/.test(gr))p.push('Grown-ups does not show the Backup card');
-  return{problems:[...p,...r.bad],note:r.n+' fixtures round-tripped, '+'19 bad files refused'};
+  return{problems:[...p,...r.bad],note:r.n+' fixtures round-tripped, '+'19 bad files refused, old header Star School loads'};
 });
 
 // ---- P5-10 children: up to 4 children on one tablet, each save under its own key (src/js/01-profiles.js) ----
@@ -19029,11 +19038,11 @@ run('release 1.0 P6-05',()=>{
   if(!/\$\{RELEASE\} \(build (__VER__|\$\{BUILD\})\)/.test(rs('js/80-grown.js')))p.push('the Grown-ups app log must show RELEASE and the build (VER)');
   if(!/\$\{aboutCard\(\)\}/.test(rs('js/80-grown.js')))p.push('grown() must show the About card');
   const ab=r.about.replace(/<[^>]*>/g,' ').replace(/&#39;/g,"'");
-  for(const need of ['About Star School','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','Nothing is sent anywhere','only on this device','without internet','Version','Build'])
+  for(const need of ['About Whistlestop','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','nothing about your child is sent anywhere','stay on this device','confirmed with Google Play','without internet','Version','Build'])  // Fable rename review: the About privacy line (was 'Nothing is sent anywhere', 'only on this device')
     if(!ab.includes(need))p.push('About does not say: '+need);
   if(!/id="ab-rel">1\.0\.0</.test(r.about)||!/id="ab-build">__VER__</.test(r.about))p.push('About must show the release and the build');
   if(/#[0-9a-fA-F]{3,8}\b|[\u{1F300}-\u{1FAFF}]/u.test(r.about))p.push('About uses a raw colour or an emoji');
-  const css=rs('css/48-setup-grown-care.css'),ci=css.indexOf('P6-05 About Star School');
+  const css=rs('css/48-setup-grown-care.css'),ci=css.indexOf('P6-05 About Whistlestop');
   if(ci<0||/#[0-9a-fA-F]{3,8}\b/.test(css.slice(ci)))p.push('About CSS must use tokens only (no raw colours)');
   // the licence files
   const ofl=path.join(ROOT,'LICENSES','OFL-Andika.txt');
@@ -23008,7 +23017,7 @@ run('grown-ups: the question never shows the hold, erase and delete ask for the 
     UI.sheet=h=>{html=h;return{el:{querySelector:()=>({})},close(){}}};
     NAV.askQ(()=>{});UI.sheet=sheet0;
     if(/hold|second/i.test(html)||!/For grown-ups/.test(html))bad.push('the grown-up question: '+html.slice(0,200));
-    if(!/tap Grown-ups on Home and type your PIN/.test(aboutCard()))bad.push('About Star School does not say how to open Grown-ups');
+    if(!/tap Grown-ups on Home and type your PIN/.test(aboutCard()))bad.push('About Whistlestop does not say how to open Grown-ups');
     // 2. Erase everything and Delete ask the question again, right before
     if(!/NAV\\.quiz\\(eraseAll\\)/.test(String(grown)))bad.push('Erase everything does not ask the grown-up question again');
     if(!/NAV\\.quiz\\(async \\(\\) => \\{[^}]*PRF\\.remove\\(id\\)/.test(String(PRF.deleteSheet)))bad.push('Delete does not ask the grown-up question again');
@@ -23072,7 +23081,7 @@ run('storage: persist asked once at start, a failed save shows one spoken banner
     __full(true);S.stars=3;save();__full(false);
     if(!SAVE_FAILED)bad.push('a failed save is not noticed');
     const b=hmSaveWarn();
-    if(!b.includes("Star School can't save right now: ask a grown-up to free some space.")||!/role="alert"/.test(b)||!/id="svwspk"/.test(b)||!/Hear it/.test(b))bad.push('the banner: '+b);
+    if(!b.includes("Whistlestop can't save right now: ask a grown-up to free some space.")||!/role="alert"/.test(b)||!/id="svwspk"/.test(b)||!/Hear it/.test(b))bad.push('the banner: '+b);
     if(hmSaveWarn())bad.push('the banner shows twice in one visit');
     // PLAY.setOwn: the unlock stays for the session when it cannot be written; read back when it can
     __st[PLAY.KEY]=JSON.stringify({v:1,on:1,own:0});PLAY.read();if(!PLAY.locked())bad.push('Play mode not locked before the unlock');
@@ -23351,6 +23360,141 @@ run('planner: a fresh save is offered a lesson where the map opens (the ringed s
       if(!lock&&(g===1||g===2))rows.push(p+' '+g+': '+pl.id)}
     PLAY.on=false;return{bad,n,rows}})()`);
   return{problems:r.bad,note:r.n+' plans checked ('+r.rows.join(', ')+')'};
+});
+
+// RENAME (v191, owner decision 2026-11-20): the app is Whistlestop. Nothing a person sees says Star School; the internal names (storage
+// keys starschool-v2..., the IndexedDB names, the backup format's fields, the starschool service worker caches) stay, so no save is lost.
+// The Play packaging files: /.well-known/assetlinks.json (a template until the owner fills in the signing fingerprint) and privacy.html.
+run('rename RENAME: no user-facing Star School in src, manifest and title say Whistlestop, assetlinks.json template, privacy.html static and reachable',()=>{
+  const p=[],notes=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const code=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/<!--[\s\S]*?-->/g,'').replace(/(^|[^:'"\\])\/\/.*$/gm,'$1');
+  const files=[['shell.html',path.join(SRC,'shell.html')],...['js','css','data'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,path.join(SRC,d,n)]))];
+  for(const [n,f] of files){
+    code(fs.readFileSync(f,'utf8')).split('\n').forEach((l,i)=>{
+      if(!/star[\s_]+school/i.test(l)&&!/StarSchool/.test(l))return; // starschool (lower case, one word) is an internal key
+      // the one allowed place: the backup header names a file made before the rename may carry (81-backup.js BAK.APPS)
+      if(n==='js/81-backup.js'&&/^\s*APPS: \['Whistlestop', 'Star School'\],$/.test(l))return;
+      p.push(n+':'+(i+1)+' still says Star School: '+l.trim().slice(0,100))});
+  }
+  // the internal names are kept (saves, clips, backups, caches)
+  const core=fs.readFileSync(path.join(SRC,'js','00-core.js'),'utf8'),clips=fs.readFileSync(path.join(SRC,'js','44-clips.js'),'utf8'),sw=rd('sw.js');
+  if(!/const KEY='starschool-v2';/.test(core))p.push('the save key starschool-v2 changed: every save would be lost');
+  if(!/indexedDB\.open\('starschool',1\)/.test(clips))p.push('the voice clips database starschool changed');
+  if(!/const C='starschool-v\d+';/.test(sw)||!/const A='starschool-audio';/.test(sw))p.push('the service worker cache names changed');
+  // manifest and title
+  const man=JSON.parse(rd('manifest.json')),html=rd('index.html');
+  if(man.name!=='Whistlestop'||man.short_name!=='Whistlestop'||!/Whistlestop|Pre-K/.test(man.description||'')||/star school/i.test(JSON.stringify(man)))p.push('manifest: '+JSON.stringify({name:man.name,short_name:man.short_name,description:man.description}));
+  if(!html.includes('<title>Whistlestop</title>'))p.push('index.html title is not Whistlestop');
+  // assetlinks.json: valid JSON, the package of PLAY.PKG, a fingerprint or the clearly marked placeholder
+  const al=path.join(ROOT,'.well-known','assetlinks.json');
+  if(!fs.existsSync(al))p.push('.well-known/assetlinks.json is missing');
+  else{let a=null;try{a=JSON.parse(fs.readFileSync(al,'utf8'))}catch(e){p.push('.well-known/assetlinks.json is not valid JSON: '+e.message)}
+    const pkg=(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8').match(/PKG: '([^']*)'/)||[])[1];
+    const t=Array.isArray(a)&&a[0]&&a[0].target;
+    if(a&&(!t||!(a[0].relation||[]).includes('delegate_permission/common.handle_all_urls')||t.namespace!=='android_app'||t.package_name!==pkg||!Array.isArray(t.sha256_cert_fingerprints)||!t.sha256_cert_fingerprints.length))
+      p.push('assetlinks.json: handle_all_urls for android_app '+pkg+' (PLAY.PKG) with a fingerprint list: '+JSON.stringify(a).slice(0,200));
+    else if(a){for(const fp of t.sha256_cert_fingerprints){
+      if(/PLACEHOLDER/.test(fp))notes.push('assetlinks.json fingerprint is still the PLACEHOLDER: fill it in from Play Console, App signing, before release');
+      else if(!/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(fp))p.push('assetlinks.json: '+fp+' is neither a SHA-256 fingerprint (AA:BB:...) nor the marked placeholder')}}}
+  const vj=JSON.parse(rd('vercel.json')),rule=(vj.headers||[]).find(h=>h.source==='/.well-known/assetlinks.json');
+  if(!rule||!rule.headers.some(h=>h.key==='Content-Type'&&h.value==='application/json'))p.push('vercel.json does not serve assetlinks.json as application/json');
+  const vi=rd('.vercelignore').split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#'));
+  if(vi.some(l=>/^\/?(\.well-known|privacy|\*)/.test(l)))p.push('.vercelignore leaves out .well-known or privacy.html: '+vi.join(' '));
+  // privacy.html: static (no script, no handlers, nothing loaded from elsewhere), truthful key lines, linked from About, precached
+  if(!fs.existsSync(path.join(ROOT,'privacy.html')))p.push('privacy.html is missing');
+  else{const pv=rd('privacy.html');
+    if(/<script|\son\w+\s*=|javascript:/i.test(pv))p.push('privacy.html must have no scripts');
+    if(/\s(src|href)="(?!mailto:)[^"]*"|url\(|@import/i.test(pv))p.push('privacy.html loads or links something');
+    for(const need of ['No accounts','No advertising','No analytics','stored only','never uploaded','Google Play billing','purchase token','hello@whistlestoplearning.com','Families',
+      // Fable rename review and owner decision 2026-11-20 (app on the subdomain): the app's host, the developer, no parental consent because
+      // nothing personal is collected, e-mail used only to reply, the online voice (12-speech.js pickVoice), and how to delete everything
+      'app.whistlestoplearning.com/api/ack','Who we are','parental consent','only to reply','delete it on request','online voice','usually Google',
+      'never a child\'s name','Start over','Delete next to a child','Site settings, app.whistlestoplearning.com'])
+      if(!pv.includes(need))p.push('privacy.html does not say '+need);
+    if(/uninstalling the app removes all/i.test(pv))p.push('privacy.html: uninstalling a Chrome-installed app does not always remove its data (Fable rename review)');
+    if(/DEVELOPER_NAME/.test(pv))notes.push('privacy.html names the developer as the DEVELOPER_NAME placeholder: put the exact Play Console developer name in before release');
+    else if(!/made by <b>[^<]{2,}<\/b>/.test(pv))p.push('privacy.html does not name the developer (Who we are)')}
+  // Owner decision 2026-11-20: the app is on app.whistlestoplearning.com; the bare domain is a static information page, site/landing.html,
+  // published by its own Vercel project (Root Directory site), so it has no app files and can never register the service worker.
+  {const sd=path.join(ROOT,'site'),has=f=>fs.existsSync(path.join(sd,f));
+    if(!has('landing.html'))p.push('site/landing.html (the page at whistlestoplearning.com/) is missing');
+    else{const ld=rd('site/landing.html');
+      if(/<script|\son\w+\s*=|javascript:|serviceWorker|rel="manifest"/i.test(ld))p.push('site/landing.html must have no scripts, service worker or manifest');
+      if(/\s(src|href)="(?!mailto:|privacy\.html"|icon-192\.png"|https:\/\/play\.google\.com\/store\/apps\/details\?id=)[^"]*"|url\(|@import/i.test(ld))p.push('site/landing.html loads or links something other than privacy.html, its icon, Google Play and the e-mail');
+      if(/app\.whistlestoplearning|index\.html/i.test(ld.replace(/<!--[\s\S]*?-->/g,'')))p.push('site/landing.html advertises the web app');
+      for(const need of ['Pre-K','6th grade','Math','Reading','Spanish','Discover','offline','No ads, no accounts','Get it on Google Play','href="privacy.html"','mailto:hello@whistlestoplearning.com','name="viewport"'])
+        if(!ld.includes(need))p.push('site/landing.html does not say '+need);
+      const pid=(/details\?id=([\w.]+)/.exec(ld)||[])[1],pkg=(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1];
+      if(pid!==pkg)p.push('site/landing.html: the Google Play link is for '+pid+', PLAY.PKG is '+pkg);
+      if(/PLACEHOLDER/.test(ld))notes.push('site/landing.html: the Google Play link is a marked placeholder until the listing is live')}
+    for(const f of ['privacy.html','icon-192.png'])
+      if(!has(f)||!fs.readFileSync(path.join(sd,f)).equals(fs.readFileSync(path.join(ROOT,f))))p.push('site/'+f+' is not the same as /'+f+' (run python3 tools/build.py)');
+    for(const f of ['index.html','sw.js','manifest.json'])if(has(f))p.push('site/'+f+' must not exist: the information page never serves the app');
+    let sv=null;try{sv=JSON.parse(rd('site/vercel.json'))}catch(e){p.push('site/vercel.json: '+e.message)}
+    if(sv&&!(sv.rewrites||[]).some(r=>r.source==='/'&&r.destination==='/landing.html'))p.push('site/vercel.json does not show landing.html at /')}
+  const grown=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  if(!/<a class="btn soft sm" id="ab-priv" href="privacy\.html"/.test(grown))p.push('About does not link privacy.html');
+  if(!sw.includes("'./privacy.html'"))p.push('sw.js does not precache privacy.html (it must open offline from About)');
+  // a page that is not the app (privacy.html) never replaces the cached app page: network first, then its own cached copy
+  {const vm=require('vm');let puts=[],fetched=0;
+    const nav=(u,online)=>{const H={};let resp=null,w=[];
+      vm.runInNewContext(sw,{self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,setTimeout:()=>0,clearTimeout(){},
+        caches:{match:async()=>'CACHED',open:async()=>({put:async k=>{puts.push(k)}}),keys:async()=>[]},
+        fetch:async()=>{fetched++;if(online)return{ok:true,body:'PAGE',clone(){return this}};throw new Error('offline')},Response:{error:()=>'ERROR'}});
+      H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:u},respondWith:pr=>{resp=pr},waitUntil:pr=>w.push(pr)});
+      return resp&&resp.then(r=>Promise.all(w).then(()=>r&&r.body||r))};
+    // offline: its own cached copy; online: the network page, and the cached app page (./index.html) is never replaced by it
+    const pages=['http://x/privacy.html','http://x/.well-known/assetlinks.json'].flatMap(u=>[[u,false,'CACHED',nav(u,false)],[u,true,'PAGE',nav(u,true)]]);
+    // the moved notice: only on the old address (andoreza-sudo.github.io), in Grown-ups, saying how to carry progress over
+    const E=require('./es-audio.js'),ctx=E.loadApp(null,{}),mv=h=>vm.runInContext('location={hostname:'+JSON.stringify(h)+',protocol:"https:"};gwMoved()',ctx);
+    const old=mv('andoreza-sudo.github.io'),neu=mv('whistlestoplearning.com')+mv('app.whistlestoplearning.com'),loc=mv('');
+    // owner decision 2026-11-20: the app is on app.whistlestoplearning.com (was whistlestoplearning.com); set up first (Load a backup is in
+    // Grown-ups, after setup and a new PIN), then remove the old home-screen icon
+    if(!/We moved to app\.whistlestoplearning\.com/.test(old)||!/Save a backup/.test(old)||!/Load a backup/.test(old)||!/id="gw-moved"/.test(old)||neu||loc
+      ||!/finish setting up there first/.test(old)||!/remove the old icon/.test(old)||/[^.]\bwhistlestoplearning\.com/.test(old.replace(/app\.whistlestoplearning\.com/g,'')))
+      p.push('the moved notice: '+JSON.stringify({old:old.slice(0,80),neu,loc}));
+    if(!/<div class="scroll gw">\$\{gwMoved\(\)\}/.test(grown))p.push('Grown-ups does not show the moved notice at the top');
+    // Fable rename review: a page that is not the app has the same 3-second race as the app page: a network that never answers gives its
+    // own cached copy after NAV_MS; with no cached copy it keeps waiting for the network (and is still never stored as ./index.html)
+    const race=(cached,late)=>{const H={};let resp=null,timer=null,netOk=null;
+      vm.runInNewContext(sw,{self:{addEventListener:(t,f)=>{H[t]=f},location:'http://x/',clients:{claim(){}}},URL,Promise,
+        setTimeout:(f,ms)=>{timer=[f,ms];return 1},clearTimeout(){timer=null},
+        caches:{match:async()=>cached?'CACHED':undefined,open:async()=>({put:async k=>{puts.push(k)}}),keys:async()=>[]},
+        fetch:()=>new Promise(ok=>{netOk=ok}),Response:{error:()=>'ERROR'}});
+      H.fetch({request:{method:'GET',mode:'navigate',headers:{get:()=>null},url:'http://x/privacy.html'},respondWith:pr=>{resp=pr},waitUntil(){}});
+      let got='PENDING';if(resp)resp.then(r=>{got=r&&r.body||r});
+      return (async()=>{const ms=timer&&timer[1];if(timer)timer[0]();for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));
+        if(late&&netOk)netOk({ok:true,body:'PAGE',clone(){return this}});for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));return ms+':'+got})()};
+    pages.push(['privacy.html, the network silent, cached copy',false,'3000:CACHED',race(true,false)],['privacy.html, the network silent, no cached copy, then late',true,'3000:PAGE',race(false,true)]);
+    return (async()=>{for(const [u,on,want,pr] of pages){const r=pr&&await pr;
+      if(r!==want)p.push('sw.js: opening '+u+(on?' online':' offline')+' gave '+JSON.stringify(r))}
+      for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));
+      if(puts.includes('./index.html'))p.push('sw.js: opening a page that is not the app replaced the cached index.html');
+      if(fetched!==4)p.push('sw.js: a page that is not the app is not asked from the network first ('+fetched+' fetches)');
+      return{problems:p,note:notes.concat(['manifest '+man.name,'PLAY.PKG and assetlinks '+(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1]]).join('; ')}})()}
+});
+
+// RENAME-2 (coordinator, 2026-11-20): a child's name never goes to an online voice. ttsSay (12-speech.js) swaps every child's name for
+// "friend" when pickVoice found no voice stored on the tablet; a local voice keeps it; the screen text never changes.
+run('online voice RENAME-2: a non-local voice never hears a child name, a local voice does, the screen text is unchanged',()=>{
+  const p=[],vm=require('vm'),E=require('./es-audio.js');
+  const go=(voices,line,names)=>{const spoken=[];const ctx=E.loadApp(null,{window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},
+      speechSynthesis:{getVoices:()=>voices,speak:u=>spoken.push(u.text),cancel(){},speaking:false,pending:false}});
+    vm.runInContext("S.name="+JSON.stringify(names[0])+";S.voice=true;ENA.off=true;"+(names[1]?"PRF.ids=['p1','p2'];PRF.cur='p1';PRF.info=id=>({name:id=='p1'?S.name:"+JSON.stringify(names[1])+"});":''),ctx);
+    let shown=null;ctx.fb=t=>{shown=t};
+    vm.runInContext('ttsSay('+JSON.stringify(line)+',null,false)',ctx);return spoken.join('|')};
+  const net=[{lang:'en-US',localService:false,name:'Google US English'}],loc=[{lang:'en-US',localService:true,name:'Tablet'}];
+  const cases=[[net,'Hi Maya!',['Maya'],'Hi friend!'],[[],'Hi Maya!',['Maya'],'Hi friend!'],[loc,'Hi Maya!',['Maya'],'Hi Maya!'],
+    [net,'Well done, maya! You beat Zed!',['Maya','Zed'],'Well done, friend! You beat friend!'],[net,'Maya!',['Maya'],''],
+    [net,'Hello Ava Rose! I can read to you.',['Ava Rose'],'Hello friend! I can read to you.'],[net,'Mayan temples are old.',['Maya'],'Mayan temples are old.']];
+  for(const [v,line,names,want] of cases){const got=go(v,line,names);if(got!==want)p.push((v.length?(v[0].localService?'local':'online'):'no voice')+' "'+line+'" spoke "'+got+'", wanted "'+want+'"')}
+  // the screen text: noNames is used only inside ttsSay (what is spoken), never by fb, toasts or the say() text shown
+  const sp=fs.readFileSync(path.join(SRC,'js','12-speech.js'),'utf8'),uses=[...fs.readdirSync(path.join(SRC,'js'))].filter(n=>/noNames\(/.test(fs.readFileSync(path.join(SRC,'js',n),'utf8')));
+  if(uses.join()!=='12-speech.js'||(sp.replace(/\/\*[\s\S]*?\*\//g,'').match(/noNames\(/g)||[]).length!==2||!/function ttsSay[^\n]*\n\s*try\{const v=pickVoice\(es\);if\(!v\|\|v\.localService===false\)\{t=noNames\(t\)/.test(sp))
+    p.push('noNames must be applied only in ttsSay, to the spoken text, when the voice is not local');
+  {const ctx=E.loadApp(null,{window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>net,speak(){},cancel(){}}});
+    const shown=vm.runInContext("S.name='Maya';const L='Hi Maya!';ttsSay(L,null,false);L",ctx);if(shown!=='Hi Maya!')p.push('the line itself changed: '+shown)}
+  return{problems:p,note:cases.length+' lines'};
 });
 
 Promise.all(PENDING).then(()=>{

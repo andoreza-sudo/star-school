@@ -468,7 +468,7 @@ async function main() {
       await page.click('#go');
       await page.waitForSelector('.game[data-p]');
       step('setup done, home shown');
-      const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Star School (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
+      const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Whistlestop (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
       if (!ver) fail('version label missing at the bottom of home'); else step('version label ' + ver);
 
       // 2. one full round on each path
@@ -8970,7 +8970,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 11 /* TEACH-6M: 11 (migration 10); TEACH-5S: 10 (migration 9); LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^whistlestop-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Whistlestop' /* owner decision 2026-11-20: rename to Whistlestop (was starschool-, Star School) */ || sh.h.save !== 11 /* TEACH-6M: 11 (migration 10); TEACH-5S: 10 (migration 9); LS-STOP: save version 7 (migration 6); TEACH-3b: 8 (migration 7); READ-SHAPES: 9 (migration 8) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -8981,7 +8981,7 @@ async function main() {
         const toast = await bp.evaluate(() => document.querySelector('.toast') ? document.querySelector('.toast').textContent : '');
         await ba.ctx.setOffline(false);
         const dj = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (!/^starschool-.+\.json$/.test(dl.suggestedFilename()) || dj.data.stars !== s0.stars || dj.data.name !== s0.name || !/offline|Backup saved/i.test(toast))
+        if (!/^whistlestop-.+\.json$/.test(dl.suggestedFilename()) /* owner decision 2026-11-20: rename to Whistlestop (was starschool-) */ || dj.data.stars !== s0.stars || dj.data.name !== s0.name || !/offline|Backup saved/i.test(toast))
           bad.push(tag + ' downloaded backup: ' + dl.suggestedFilename() + ' ' + toast);
         // Start over: two taps (the first only arms it)
         await bp.click('#reset');
@@ -8998,7 +8998,7 @@ async function main() {
         await bp.evaluate(() => { grown(); });
         await bp.waitForSelector('#bk-file', { state: 'attached' });
         // refused files: a message, no sheet, nothing changed
-        for (const [nm, body, re] of [['new.json', '{"app":"Star School","save":999,"data":{}}', /newer/], ['other.json', '{"hello":1}', /isn't a Star School backup/],
+        for (const [nm, body, re] of [['new.json', '{"app":"Star School","save":999,"data":{}}', /newer/], ['other.json', '{"hello":1}', /isn't a Whistlestop backup/],
           ['bad.json', '{"app":"Sta', /damaged/], ['empty.json', '', /empty/]]) {
           await bp.setInputFiles('#bk-file', { name: nm, mimeType: 'application/json', buffer: Buffer.from(body) });
           await bp.waitForFunction(r => new RegExp(r).test(document.querySelector('#bk-msg').textContent), re.source);
@@ -10654,9 +10654,9 @@ async function main() {
     }
 
     // P6-05 release 1.0: a fresh install and an upgrade, with the ROADMAP 7.2 checks that a script can make. (a) Empty storage goes through
-    //    setup to Home (the footer says "Star School 1.0.0 (build vNNN)", the build being tools/build.py's VER); (b) the oldest fixture save
+    //    setup to Home (the footer says "Whistlestop 1.0.0 (build vNNN)", the build being tools/build.py's VER); (b) the oldest fixture save
     //    (legacy-single-map), the other legacy one and the midway save open Home with the same stars and name they were saved with, the
-    //    saved stars still in storage after the first save, and Grown-ups > About Star School shows 1.0.0, the build, the privacy lines and
+    //    saved stars still in storage after the first save, and Grown-ups > About Whistlestop shows 1.0.0, the build, the privacy lines and
     //    the Andika licence (its full text opens). Real taps: the gear is held to open Grown-ups. 380x780 and 1024x600; no network.
     if (seg('P6-05')) {
       const fs = require('fs'), path = require('path'), { ROOT, loadFixture } = require('./lib/browser');
@@ -10677,7 +10677,7 @@ async function main() {
             }
             await pg.waitForSelector('.game[data-p]', { timeout: 10000 });
             const home = await pg.evaluate(() => ({ stars: S.stars, name: S.name, chip: (document.querySelector('#starc') || {}).textContent || '', ver: (document.querySelector('.hm-ver') || {}).textContent || '' }));
-            const want = 'Star School 1.0.0 (build ' + build + ')';
+            const want = 'Whistlestop 1.0.0 (build ' + build + ')'; // owner decision 2026-11-20: rename to Whistlestop
             if (home.ver.trim() !== want) bad.push(t + ': the Home footer says "' + home.ver.trim() + '", wanted "' + want + '"');
             if (saved) {
               if (home.stars !== saved.stars) bad.push(t + ': Home has ' + home.stars + ' stars, the save had ' + saved.stars);
@@ -10695,11 +10695,17 @@ async function main() {
             const ab = await pg.evaluate(() => {
               const c = document.querySelector('#gw-about'), r = c.getBoundingClientRect(), vw = document.documentElement.clientWidth;
               const small = [...c.querySelectorAll('summary, button, a')].filter(e => Math.min(e.offsetWidth, e.offsetHeight) < 48).length;
-              return { text: c.textContent, rel: (c.querySelector('#ab-rel') || {}).textContent, bld: (c.querySelector('#ab-build') || {}).textContent, small, inside: r.left >= -1 && r.right <= vw + 1 };
+              const pv = c.querySelector('#ab-priv');
+              return { text: c.textContent, rel: (c.querySelector('#ab-rel') || {}).textContent, bld: (c.querySelector('#ab-build') || {}).textContent, small, inside: r.left >= -1 && r.right <= vw + 1,
+                title: document.title, priv: pv ? pv.href : '', privOk: !!pv && pv.getAttribute('href') === 'privacy.html' && pv.target === '_blank' && /noopener/.test(pv.rel) };
             });
+            // RENAME (v191): the title and the About card say Whistlestop, never Star School; About links the privacy policy, a file next to index.html
+            if (ab.title !== 'Whistlestop') bad.push(t + ': the page title is "' + ab.title + '"');
+            if (!/About Whistlestop/.test(ab.text) || /Star School/i.test(ab.text)) bad.push(t + ': the About card does not say Whistlestop (or still says Star School)');
+            if (!ab.privOk || !ab.priv.startsWith('file://') || !fs.existsSync(decodeURIComponent(new URL(ab.priv).pathname))) bad.push(t + ': the privacy policy link: ' + ab.priv);
             if (ab.rel !== '1.0.0') bad.push(t + ': About shows the version "' + ab.rel + '"');
             if (ab.bld !== build) bad.push(t + ': About shows the build "' + ab.bld + '", wanted ' + build);
-            for (const need of ['Andika', 'SIL Open Font License', 'Copyright (c) 2004-2022 SIL International', 'Nothing is sent anywhere', 'only on this device'])
+            for (const need of ['Andika', 'SIL Open Font License', 'Copyright (c) 2004-2022 SIL International', 'nothing about your child is sent anywhere', 'stay on this device', 'confirmed with Google Play']) // Fable rename review: the About privacy line (was 'Nothing is sent anywhere', 'only on this device')
               if (!ab.text.includes(need)) bad.push(t + ': About does not say "' + need + '"');
             if (ab.small) bad.push(t + ': About has ' + ab.small + ' targets under 48 px');
             if (!ab.inside) bad.push(t + ': the About card is wider than the screen');
@@ -10714,9 +10720,32 @@ async function main() {
           await pa.ctx.close();
         }
       }
+      // Owner decision 2026-11-20 (app on the subdomain): the information page whistlestoplearning.com/ (site/landing.html, the second
+      // Vercel project) at phone and tablet sizes: no horizontal scroll, no script and no service worker, the privacy policy next to it,
+      // the Play link and the contact e-mail, and no link to the web app.
+      for (const [w, h] of [[360, 740], [1024, 600]]) {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h } }), pg = await ctx.newPage(), errs = [];
+        pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() == 'error') errs.push(m.text()); });
+        try {
+          await pg.goto('file://' + path.join(ROOT, 'site', 'landing.html'));
+          const ld = await pg.evaluate(async () => ({ sw: navigator.serviceWorker && /^http/.test(location.protocol) ? (await navigator.serviceWorker.getRegistrations()).length : 0, // file://: no script means no registration
+            scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth, scripts: document.scripts.length,
+            links: [...document.querySelectorAll('a')].map(a => a.getAttribute('href')), h1: (document.querySelector('h1') || {}).textContent,
+            img: [...document.images].every(i => i.complete && i.naturalWidth > 0) }));
+          const t = 'landing ' + w + 'x' + h;
+          if (ld.scroll > 0) bad.push(t + ': scrolls sideways by ' + ld.scroll + ' px');
+          if (ld.scripts || ld.sw) bad.push(t + ': has a script or a service worker');
+          if (ld.h1 !== 'Whistlestop' || !ld.img) bad.push(t + ': the title or the icon: ' + ld.h1 + ' ' + ld.img);
+          if (!ld.links.includes('privacy.html') || !fs.existsSync(path.join(ROOT, 'site', 'privacy.html'))) bad.push(t + ': the privacy policy link: ' + ld.links.join(' '));
+          if (!ld.links.some(l => /^https:\/\/play\.google\.com\//.test(l)) || !ld.links.includes('mailto:hello@whistlestoplearning.com')) bad.push(t + ': the Play link or the e-mail: ' + ld.links.join(' '));
+          if (ld.links.some(l => /app\.whistlestoplearning|index\.html/.test(l))) bad.push(t + ': links the web app: ' + ld.links.join(' '));
+          if (errs.length) bad.push(t + ': errors ' + errs.join(' | '));
+        } catch (e) { bad.push('landing ' + w + 'x' + h + ' ' + e.message.split('\n')[0]); }
+        await ctx.close();
+      }
       if (bad.length) fail('P6-05 release:\n  ' + bad.slice(0, 40).join('\n  '));
       else step('P6-05 release 1.0 at 380x780 and 1024x600: a fresh install (setup to Home) and an upgrade from the legacy and midway saves (' + notes.join(', ') +
-        ') opened Home with the same stars and name, the footer and Grown-ups > About Star School say 1.0.0 and build ' + build + ', the Andika licence is listed and opens');
+        ') opened Home with the same stars and name, the title, the footer and Grown-ups > About Whistlestop say Whistlestop 1.0.0 and build ' + build + ', the privacy policy is linked, the Andika licence is listed and opens; the information page (site/landing.html) at 360x740 and 1024x600: no sideways scroll, no script or service worker, privacy, Play and e-mail links, no link to the web app');
     }
 
     // ES-AUDIO recorded Spanish at 380x780 (midway save), on a tablet with NO Spanish voice (English only): play() of the <audio> element is
@@ -14692,7 +14721,7 @@ async function main() {
           const sg = await pg.evaluate(() => { const wi = PATHS.math.worlds.findIndex(x => x.id == 'm_shape'), a = WR.math[wi][0]; for (let j = a; j < a + 5; j++) setSt('math', j, 2); save(); pathMap('math', wi);
             return { a, open: [0, 1, 2, 3, 4].every(k => unlocked('math', a + k)), six: unlocked('math', a + 5) }; });
           if (!sg.open || sg.six) bad.push(at + 'the free sample in Shape Garden: ' + JSON.stringify(sg));
-          await kidSaw(pg, at + 'a 6th stop: ', `.node[data-n="${sg.a + 5}"]`, /This stop opens when a grown-up unlocks Star School\./);
+          await kidSaw(pg, at + 'a 6th stop: ', `.node[data-n="${sg.a + 5}"]`, /This stop opens when a grown-up unlocks Whistlestop\./); // owner decision 2026-11-20: rename to Whistlestop
           await pg.click('#plok');
           await pg.waitForFunction(() => !document.querySelector('#plkid'), null, { timeout: 5000 });
           const wi = await pg.evaluate(() => PATHS.math.worlds.findIndex(x => x.id == 'm_meadow'));
@@ -14705,7 +14734,7 @@ async function main() {
           await fit(pg, at + 'map: ', '.plgu');
           await pg.evaluate(() => document.querySelector('.plgu').scrollIntoView({ block: 'center' }));
           await pg.screenshot({ path: path.join(shots, `play-map-${sz}.png`) });
-          await kidSaw(pg, at + 'a locked world: ', `.node[data-n="${a}"]`, /This world opens when a grown-up unlocks Star School\./);
+          await kidSaw(pg, at + 'a locked world: ', `.node[data-n="${a}"]`, /This world opens when a grown-up unlocks Whistlestop\./); // owner decision 2026-11-20: rename to Whistlestop
           await fit(pg, at + 'kid sheet: ', '#plkid .btn');
           await pg.screenshot({ path: path.join(shots, `play-kid-${sz}.png`) });
           await pg.click('#plok');
@@ -15467,7 +15496,7 @@ async function main() {
           const b = await pg.evaluate(() => { const e = document.querySelector('#svw'), r = e.getBoundingClientRect(), k = document.querySelector('#svwspk').getBoundingClientRect();
             return { t: e.textContent.trim(), role: e.getAttribute('role'), said: __said, top: Math.round(r.top), bot: Math.round(r.bottom), vh: innerHeight, kw: k.width, kh: k.height,
               sw: document.documentElement.scrollWidth > document.documentElement.clientWidth, failed: SAVE_FAILED }; });
-          if (b.t !== "Star School can't save right now: ask a grown-up to free some space." || b.role !== 'alert' || !b.failed) bad.push(tag + ' the banner: ' + JSON.stringify(b));
+          if (b.t !== "Whistlestop can't save right now: ask a grown-up to free some space." || b.role !== 'alert' || !b.failed) bad.push(tag + ' the banner: ' + JSON.stringify(b));
           if (!b.said.includes(b.t)) bad.push(tag + ' the banner was not said: ' + JSON.stringify(b.said));
           if (b.kw < 48 || b.kh < 48 || b.top < 0 || b.bot > b.vh || b.sw) bad.push(tag + ' the banner layout: ' + JSON.stringify(b));
           await pg.screenshot({ path: P_.join(shots, `rc1-save-banner-${tag}.png`) }).catch(() => {});

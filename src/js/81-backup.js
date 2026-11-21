@@ -9,7 +9,9 @@
    replaces, or adds it as a new child; a file of all children lists them and loads one at a time. The copy kept for "Undo last load"
    is the replaced child's: <their key>-undo (child 1: KEY-undo as before); only the last load is kept. */
 const BAK = {
-  APP: 'Star School',
+  APP: 'Whistlestop',
+  // v191: files from before the rename say Star School in "app"; both load
+  APPS: ['Whistlestop', 'Star School'],
   // the copy kept for "Undo last load": the replaced child's <key>-undo (only one is kept); without one, the playing child's name for it
   get UNDO() { return BAK.undoKey() || SKEY + '-undo'; },
   undoKey() { return PRF.SLOTS.map(id => PRF.key(id) + '-undo').find(k => PRF.get(k) !== null) || ''; },
@@ -30,7 +32,7 @@ const BAK = {
     const nm = String((name === undefined ? S.name : name) || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
     const d = new Date();
     const p = n => String(n).padStart(2, '0');
-    return `starschool-${nm}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
+    return `whistlestop-${nm}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
   },
   // Returns a short problem (or '') for the types a save must have.
   types(d) {
@@ -49,10 +51,10 @@ const BAK = {
   read(text) {
     const no = msg => ({ok: false, msg});
     if (typeof text != 'string' || !text.trim()) return no('That file is empty.');
-    if (text.length > BAK.MAX) return no('That file is too big to be a Star School backup.');
+    if (text.length > BAK.MAX) return no('That file is too big to be a Whistlestop backup.');
     let f;
     try { f = JSON.parse(text); } catch (e) { return no('That file is damaged, so it cannot be read.'); }
-    if (!f || typeof f != 'object' || f.app !== BAK.APP) return no("That isn't a Star School backup.");
+    if (!f || typeof f != 'object' || !BAK.APPS.includes(f.app)) return no("That isn't a Whistlestop backup.");
     if (Array.isArray(f.kids)) { // P5-10: every child; each one is checked like a one-child file
       if (!f.kids.length || f.kids.length > PRF.MAX) return no('That backup is damaged: the children are missing.');
       const kids = [];
@@ -71,7 +73,7 @@ const BAK = {
     if (!d || typeof d != 'object' || Array.isArray(d)) return no('That backup is damaged: the progress is missing.');
     if (!Number.isInteger(save) || save < 1) return no('That backup is damaged: it has no save version.');
     if (save > LATEST || (Number.isInteger(d.v) && d.v > LATEST))
-      return no('That backup was made by a newer Star School. Update the app on this tablet first, then try again.');
+      return no('That backup was made by a newer Whistlestop. Update the app on this tablet first, then try again.');
     const bad = BAK.types(d);
     if (bad) return no('That backup is damaged (' + bad + ').');
     // migrate a copy: the migrations work on the global S, so swap it in and always put it back
@@ -153,7 +155,7 @@ const BAK = {
     try { file = new File([text], name, {type: 'application/json'}); } catch (e) { file = null; }
     needOnline(async () => {
       if (file && navigator.canShare && navigator.canShare({files: [file]})) {
-        try { await navigator.share({files: [file], title: 'Star School backup'}); fb('Backup shared'); return; }
+        try { await navigator.share({files: [file], title: 'Whistlestop backup'}); fb('Backup shared'); return; }
         catch (e) { if (e && e.name == 'AbortError') return; }
       }
       const a = document.createElement('a');
@@ -241,7 +243,7 @@ const BAK = {
     return GW.card('gw-bak', 'download', 'Backup',
       (er ? `<div class="gw-bkrow">${UI.btn('Undo erase', {kind: 'primary', size: 'sm', icon: 'undo', id: 'bk-unerase'})}</div>` +
         `<p class="gw-sub" id="bk-ersub">Erased by mistake? This brings back ${esc(er.name || 'the progress')}${er.name ? "'s progress" : ''}. ` +
-        'You can undo it until Star School is opened again.</p>' : '') +
+        'You can undo it until Whistlestop is opened again.</p>' : '') +
       `<div class="gw-bk"><div class="gw-bkrow">${UI.btn('Save a backup', {kind: 'primary', size: 'sm', icon: 'download', id: 'bk-save'})}${onlineNote()}</div>` +
       (PRF.many() ? `<div class="gw-bkrow">${UI.btn('Save all children', {size: 'sm', icon: 'download', id: 'bk-all'})}${onlineNote()}</div>` : '') +
       `<div class="gw-bkrow">${UI.btn('Load a backup', {size: 'sm', icon: 'upload', id: 'bk-load'})}<input type="file" id="bk-file" accept=".json,application/json" hidden>` +

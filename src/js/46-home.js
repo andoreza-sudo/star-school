@@ -19,7 +19,7 @@ function setup() {
   let pet = S.pet, grade = gradeOf();
   const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
     `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
-  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Star School</span></h1>` +
+  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Whistlestop</span></h1>` +
     `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}` +
     `${PRF.many() ? UI.ibtn('back', 'Back', { id: 'suback', size: 'sm' }) : ''}</header>` +
     `<div class="su-grid">` +
@@ -310,7 +310,7 @@ function hmActs() {
 
 // RC-1: a save failed (SAVE_FAILED, 00-core.js: the tablet's storage is full). One banner on Home, once a visit, said aloud for
 // children who cannot read yet, so a grown-up hears of it before progress is lost
-const SAVE_LINE="Star School can't save right now: ask a grown-up to free some space.";let SAVE_WARNED=false;
+const SAVE_LINE="Whistlestop can't save right now: ask a grown-up to free some space.";let SAVE_WARNED=false;
 function hmSaveWarn(){if(!SAVE_FAILED||SAVE_WARNED)return'';SAVE_WARNED=true;
   return`<div class="hm-svw" id="svw" role="alert">${ico('warning',26)}<span>${SAVE_LINE}</span>${UI.ibtn('speak','Hear it',{id:'svwspk',size:'sm'})}</div>`}
 // RC-1 (owner): game time a grown-up gave (ptGift, 58-playtime.js), said once on the next Home
@@ -320,13 +320,13 @@ function hmGift(){const p=S.pt;if(!p||!(p.gift>=30))return'';const t=hmGiftLine(
 function home(first){
   if(!S.name)return setup();
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
-  view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Star School</span></div><div class="sp"></div>${inst}
+  view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Whistlestop</span></div><div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${PRF.homeBtn()}${NAV.gateHTML()}</div>
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build __VER__)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build __VER__)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};

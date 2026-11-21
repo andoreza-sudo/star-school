@@ -1,5 +1,5 @@
 /* ---------- Snack Stand: run a little snack stand for one busy day (G-04a; CSS src/css/49-game-snack.css) ----------
-   An original Star School game (docs/GAMES_RESEARCH.md, "Game A"). Both files go into games2.<VER>.js (tools/build.py PARTS: the
+   An original Whistlestop game (docs/GAMES_RESEARCH.md, "Game A"). Both files go into games2.<VER>.js (tools/build.py PARTS: the
    newer Game Room games load after games.<VER>.js, which holds the hub, GH.reg and the gh* drawing helpers this file uses).
 
    How it plays

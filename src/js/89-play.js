@@ -1,8 +1,8 @@
 /* ---------- PLAY-01: the Play app's screens and its one purchase (the core, the free sample and Play mode are in 03-play.js) ----------
    Children never see a price or a way to pay. What a child sees on locked content is one calm line and an OK button (PLAY.kid):
-   "This world opens when a grown-up unlocks Star School." No timer, no repeat, no "ask your parent". Next to locked content there
+   "This world opens when a grown-up unlocks Whistlestop." No timer, no repeat, no "ask your parent". Next to locked content there
    is one quiet button for grown-ups (PLAY.bandHTML on a locked world of the map, PLAY.rowHTML in Brain Teasers). It asks the grown-up
-   PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Star School sheet ask
+   PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Whistlestop sheet ask
    Google Play for the price and offer to buy or restore. Grown-ups has a card that says what the unlock includes, with no price and
    no buttons but "Unlock or restore", which asks for the PIN again first.
 
@@ -20,20 +20,20 @@
    PaymentRequest.show() at once, inside the tap (show() needs the tap's user activation). Every outcome is a word for PLAY.MSG. */
 Object.assign(PLAY, {
   LINE: {
-    world: 'This world opens when a grown-up unlocks Star School.',
-    stop: 'This stop opens when a grown-up unlocks Star School.',
-    puzzle: 'These puzzles open when a grown-up unlocks Star School. The Puzzle of the Day is open every day.',
-    kid: 'This child can play once a grown-up unlocks Star School.',
-    add: 'More children can play once Star School is unlocked (see Unlock Star School in Grown-ups).',
+    world: 'This world opens when a grown-up unlocks Whistlestop.',
+    stop: 'This stop opens when a grown-up unlocks Whistlestop.',
+    puzzle: 'These puzzles open when a grown-up unlocks Whistlestop. The Puzzle of the Day is open every day.',
+    kid: 'This child can play once a grown-up unlocks Whistlestop.',
+    add: 'More children can play once Whistlestop is unlocked (see Unlock Whistlestop in Grown-ups).',
   },
   MSG: {
-    ok: 'Star School is unlocked for every child on this tablet. Thank you!',
+    ok: 'Whistlestop is unlocked for every child on this tablet. Thank you!',
     owned: 'This Google account already has the unlock, so everything is open again. Thank you!',
     cancel: 'No payment was made.',
-    pending: 'Google Play is still finishing the payment. Star School opens by itself once it is paid; you can also tap Restore purchase later.',
+    pending: 'Google Play is still finishing the payment. Whistlestop opens by itself once it is paid; you can also tap Restore purchase later.',
     offline: 'The tablet is offline. Connect to the internet to buy or restore. Everything that is open keeps working offline.',
     none: 'No purchase was found for the Google account on this tablet.',
-    unavailable: 'Google Play billing is not available right now. Buying works in Star School installed from Google Play, with the Play Store app up to date.',
+    unavailable: 'Google Play billing is not available right now. Buying works in Whistlestop installed from Google Play, with the Play Store app up to date.',
     error: 'Google Play could not finish. Please try again later. If you were charged, tap Restore purchase.',
     wait: 'Still asking Google Play. Try again in a moment.',
   },
@@ -210,7 +210,7 @@ Object.assign(PLAY, {
   rowHTML() {
     return `<div class="pl-row"><button class="btn plgu">${ico('gear', 20)}<span>Grown-ups: unlock everything</span></button></div>`;
   },
-  // the grown-up question first, then the Unlock Star School sheet; back redraws the screen under it after an unlock
+  // the grown-up question first, then the Unlock Whistlestop sheet; back redraws the screen under it after an unlock
   grown(back) {
     SFX.click();
     return NAV.quiz(() => PLAY.sheet(back));
@@ -230,7 +230,7 @@ Object.assign(PLAY, {
   },
   // Grown-ups: what the unlock is, no price and no way to pay here; "Unlock or restore" asks the grown-up question first
   card() {
-    return GW.card('gw-play', 'star', 'Unlock Star School',
+    return GW.card('gw-play', 'star', 'Unlock Whistlestop',
       (PLAY.own ? `<p class="pl-price">Unlocked. Thank you!</p>` : '') + PLAY.incHTML() +
       (PLAY.own ? '' : `<div class="gw-bkrow pl-btns">${UI.btn('Unlock or restore', { kind: 'primary', icon: 'star', id: 'plgo' })}</div>`),
       { sub: PLAY.own ? 'Everything is open for every child on this tablet.' : 'A one-time purchase through Google Play opens everything for the whole family.' });
@@ -245,7 +245,7 @@ Object.assign(PLAY, {
       `<p class="pl-msg" id="plmsg" role="status"></p><div class="gw-bkrow pl-btns">` +
       (PLAY.own ? '' : UI.btn('Unlock', { kind: 'primary', icon: 'star', id: 'plbuy', off: true })) +
       UI.btn('Restore purchase', { icon: 'replay', id: 'plrest' }) + '</div>';
-    const s = UI.sheet(`<div class="pl-sh" id="plsheet"><h2>Unlock Star School</h2>${body}` +
+    const s = UI.sheet(`<div class="pl-sh" id="plsheet"><h2>Unlock Whistlestop</h2>${body}` +
       `<div class="acts">${UI.btn('Not now', { kind: 'ghost', wide: true, id: 'plno' })}</div></div>`, { onClose: () => { if (PLAY.own && back) back(); } });
     s.el.querySelector('#plno').onclick = s.close;
     PLAY.bind(s.el);

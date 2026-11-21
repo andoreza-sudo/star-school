@@ -275,7 +275,7 @@ const REP = {
     // P4-12: each section is a Grown-ups card with an icon header (styles in 48-setup-grown-care.css)
     const sec = (id, icon, h, body) => `<section class="gw-card rp-card" id="${id}"><h2 class="rp-h2 gw-h"><span class="gw-hi">${ico(icon, 24)}</span>`
       + `<span>${h}</span></h2>${body}</section>`;
-    return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Star School</div></div>`
+    return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Whistlestop</div></div>`
       + sec('rp-weeks', 'calendar', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
       + sec('rp-level', 'map', 'Where ' + nm + ' is working', REP.level(m))
       + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m) + (typeof CHK != 'undefined' ? `<div id="rp-badges"><h3 class="rp-h3">${ico('medal', 22)} Badges and mastery by stop</h3>${REP.badges(m)}</div>` : ''))

@@ -1,4 +1,4 @@
-# Star School Curriculum: Scope and Sequence, PreK to 6
+# Whistlestop Curriculum: Scope and Sequence, PreK to 6
 
 What the app teaches, in what order, and exactly what each skill level must generate.
 Loosely aligned to Common Core (CCSS) Math and ELA, and ACTFL Novice levels for Spanish. "Loosely" means: same topics in the

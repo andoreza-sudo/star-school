@@ -1,4 +1,4 @@
-# Star School Roadmap: PreK to 6th Grade
+# Whistlestop Roadmap: PreK to 6th Grade
 
 Master plan for turning Star School into a polished, professional, fully offline learning app.
 Written so that any person or AI model can pick up one small chunk and ship it without other context.

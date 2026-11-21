@@ -1,7 +1,10 @@
-# Vercel serves only the built app: index.html, sw.js, manifest.json, the *.v<N>.js parts, icons, audio/, LICENSES/ and .well-known/.
+# Vercel serves only the built app: index.html, sw.js, manifest.json, the *.v<N>.js parts, icons, audio/, LICENSES/, privacy.html,
+# .well-known/ (assetlinks.json) and api/ (the acknowledgement function).
 # The sources, tools, docs and lesson drafts stay in the (private) repository and are never published.
 src
 tools
 docs
 README.md
 .claude
+# the Bubblewrap project (twa-manifest.json, the Android build), if kept in the repo (docs/PLAY-SETUP.md)
+twa

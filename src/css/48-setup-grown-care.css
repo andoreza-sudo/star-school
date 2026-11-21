@@ -165,7 +165,8 @@ html.calm .pc-fx{display:none}
 .gw-bks dt{color:var(--ink-3)}
 .gw-bks dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 
-/* ---- P6-05 About Star School (Grown-ups) ---- */
+/* ---- P6-05 About Whistlestop (Grown-ups) ---- */
+#ab-priv{text-decoration:none}
 .ab-ver{margin:var(--s-2) 0;font-size:var(--fs-2)}
 .ab-lic-line{margin:var(--s-1) 0}
 .ab-det>summary{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);cursor:pointer;list-style:none;font-weight:700;color:var(--ink)}

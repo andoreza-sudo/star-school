@@ -1,4 +1,4 @@
-# Star School Design System
+# Whistlestop Design System
 
 The spec for the visual redesign (Phase 4 in ROADMAP.md). Goal: the app should look like one team drew every screen on the same day:
 calm, bright, tactile, and clearly made for children, without looking like a pile of emoji.

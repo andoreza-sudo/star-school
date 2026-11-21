@@ -1,5 +1,5 @@
 /* ---------- Star Rally: the racing game (G-02, G-02b, G-RALLY2; CSS src/css/49-game-race.css; both go into rally.<VER>.js) ----------
-   An original Star School game. Races against five friendly animal drivers, seen from behind the car on a pseudo-3D road
+   An original Whistlestop game. Races against five friendly animal drivers, seen from behind the car on a pseudo-3D road
    (the road is drawn in strips, cheap on a canvas). A race lasts about 60-90 seconds, then the shared end card.
 
    How it plays

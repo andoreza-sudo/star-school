@@ -1,5 +1,5 @@
 /* ---------- PLAY-01: the Google Play app: a free sample and a one-time unlock (core; the screens and the purchase are 89-play.js) ----------
-   Star School on Google Play is a free download with one in-app product (PLAY.SKU) that unlocks everything for every child on the
+   Whistlestop on Google Play is a free download with one in-app product (PLAY.SKU) that unlocks everything for every child on the
    tablet. The web version (github.io, or any page not opened by the Play app) is never locked: PLAY.on stays false there.
 
    Play mode (PLAY.on) is set once and kept on this tablet (localStorage PLAY.KEY) when the page is opened by the Play app, a Trusted
@@ -24,7 +24,7 @@
    depends on the mode. */
 const PLAY = {
   SKU: 'unlock_all', // the in-app product id in Play Console (a one-time, non-consumable product)
-  PKG: '', // the Android package name of the Play app, once the owner has one (docs/PLAY-SETUP.md); '' = only ?src=play is used
+  PKG: 'com.whistlestoplearning.app', // the Play app's package name: PROPOSED (v191), the owner confirms it before the first upload (docs/PLAY-SETUP.md)
   BILLING: 'https://play.google.com/billing',
   ACK_URL: 'api/ack', // the owner's acknowledgement endpoint on the Play app's own site (api/ack.js, Vercel; docs/PLAY-SETUP.md)
   LAUNCH: 'Launch price until January 31, 2027.', // a line under the price; the owner may change it (no amount here: the price comes from Play)

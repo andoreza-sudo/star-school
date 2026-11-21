@@ -1,5 +1,5 @@
 /* ---------- sharing needs a connection (the rest of the app works offline) ---------- */
-/* Star School is an offline app. Anything that sends something off the tablet (share, send, email, print, upload)
+/* Whistlestop is an offline app. Anything that sends something off the tablet (share, send, email, print, upload)
    needs a connection, so every such button:
    - shows onlineNote() next to it, so a grown-up knows to get online first;
    - runs its action through needOnline(action, {block}): offline, it shows a friendly message first.

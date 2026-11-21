@@ -1021,7 +1021,7 @@ async function compSheet(p) {
         UI.pathcard({ p: 'disc', title: 'Discover', done: 0, total: 30, next: 'Plants and animals' }) +
         UI.pathcard({ p: 'bt', title: 'Brain Teasers', done: 12, total: 40, next: 'Pattern puzzles' }) +
         UI.pathcard({ p: 'play', title: 'Game Room', done: 3, total: 10 }) + '</div>'),
-      sec('Top bars', `<div class="top tbar cs-bar"><div class="ttl">Star School</div>${UI.chip('star', 85)}${UI.chip('coin', 64)}${I('gear', 'Grown-ups', { size: 'sm' })}</div>` +
+      sec('Top bars', `<div class="top tbar cs-bar"><div class="ttl">Whistlestop</div>${UI.chip('star', 85)}${UI.chip('coin', 64)}${I('gear', 'Grown-ups', { size: 'sm' })}</div>` +
         `<div class="top tbar round cs-bar">${I('close', 'Stop', { size: 'sm' })}${UI.dots(10, 4, ['', 'try'])}${UI.chip('star', 3)}</div>` +
         `<div class="top tbar adult cs-bar">${I('back', 'Back', { size: 'sm' })}<div class="ttl">Grown-ups</div></div>`),
       sec('Stat chips', row(UI.chip('star', 85) + UI.chip('coin', 64) + UI.chip('ticket', '7:00') + UI.chip('flame', 4, { tap: true, aria: 'Streak' }) +
@@ -2229,7 +2229,7 @@ Object.assign(SCREENS, {
     await p.waitForSelector('#bk-yes');
   }),
   'backup-refused': bakShot(async p => {
-    await p.setInputFiles('#bk-file', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"Star School","save":999,"data":{}}') });
+    await p.setInputFiles('#bk-file', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"Whistlestop","save":999,"data":{}}') });
     await p.waitForSelector('#bk-msg .gw-warn');
   }),
 });
