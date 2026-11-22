@@ -119,7 +119,7 @@ sizes() {
   files=$(grep -o '<script src="[^"]*"' index.html | sed 's/<script src="//; s/"$//')
   lazy=$(grep -o "'\./[a-z0-9]*\.v[0-9]*\.js'" sw.js | tr -d "'" | sed 's#^\./##' | grep -v -x -F "$files" || true)
   total=$(wc -c < index.html)
-  for f in index.html $files $lazy sw.js manifest.json icon-192.png icon-512.png; do
+  for f in index.html $files $lazy sw.js manifest.json icon-192.png icon-512.png icon-maskable-192.png icon-maskable-512.png favicon-32.png; do
     [ -f "$f" ] && printf '%10d  %s\n' "$(wc -c < "$f")" "$f"
   done
   for f in $files; do total=$(( total + $(wc -c < "$f") )); done

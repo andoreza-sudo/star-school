@@ -1,8 +1,8 @@
 import base64, json, os, re, sys
-from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
+# (BRAND, v193: the icons are copied from docs/brand/icons/, drawn by tools/brand-icons.js; the build no longer needs Pillow)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v192'
+VER = 'v193'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -234,13 +234,24 @@ for n in os.listdir(OUT):
     if re.fullmatch(r'[a-z0-9]+\.v\d+\.js', n) and n not in FILES:
         os.remove(os.path.join(OUT, n))
 
+# App icons (BRAND, v193; owner approved the D2 logo 2026-11-22; DESIGN_SYSTEM.md "Logo"). The PNGs are drawn from the logo SVGs
+# (docs/brand/whistlestop-icon.svg, docs/brand/icon-small.svg) by `node tools/brand-icons.js` with Chrome, once, and committed in
+# docs/brand/icons/: this build has no SVG renderer, and Chrome's pixels can change between versions, so the build only copies them (the same
+# bytes on every machine). Re-run tools/brand-icons.js only when a logo SVG changes. "any": icon-192/512 (the rounded tile);
+# "maskable": icon-maskable-192/512 (full bleed, the engine inside the safe circle); favicon-32.png (the small version).
+import shutil
+ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'favicon-32.png']
+for f in ICONS:
+    shutil.copyfile(os.path.join(ROOT, 'docs', 'brand', 'icons', f), os.path.join(OUT, f))
 json.dump({"name": "Whistlestop", "short_name": "Whistlestop", "start_url": "./", "scope": "./",
            "description": "Offline math, reading, Spanish and discovery practice for Pre-K to 6th grade, with game time earned by learning.",
-           "display": "fullscreen", "display_override": ["fullscreen", "standalone"], "id": "./", "orientation": "any", "background_color": "#fff9ef", "theme_color": "#fff9ef",
+           # BRAND (v193): the splash screen is background_color with the icon on it, so both are the logo's dusk navy (--ink, the top of
+           # its sky); theme_color (the status bar, or Chrome's bar in a tab) matches, as does the theme-color meta in src/shell.html
+           "display": "fullscreen", "display_override": ["fullscreen", "standalone"], "id": "./", "orientation": "any", "background_color": "#1F2440", "theme_color": "#1F2440",
            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                      {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-                     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
-                     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
+                     {"src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+                     {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
           open(OUT + '/manifest.json', 'w'), indent=1)
 
 # ES-AUDIO: the recorded Spanish, audio/es/*.ogg (tools/es-audio.js; src/data/d-es-audio.js names them). Not loaded at start: say()
@@ -258,7 +269,7 @@ AUDIO_BYTES = sum(os.path.getsize(os.path.join(ROOT, 'audio', n)) for n in AUDIO
 # A page that is not the app (privacy.html, assetlinks.json) is network first with the same NAV_MS race as the app page (Fable rename
 # review): after 3 s its own cached copy if there is one (else it keeps waiting for the network); it is never stored as ./index.html.
 open(OUT + '/sw.js', 'w').write("""const C='starschool-"""+VER+"""';
-const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./manifest.json','./icon-192.png','./icon-512.png','./privacy.html'];
+const F=['./','./index.html',"""+''.join("'./%s'," % f for f in FILES)+"""'./manifest.json',"""+''.join("'./%s'," % f for f in ICONS)+"""'./privacy.html'];
 const A='starschool-audio';
 const AF=["""+','.join("'./audio/%s'" % n for n in AUDIO)+"""];
 const aName=u=>new URL(u,self.location).pathname.split('/').pop();
@@ -283,66 +294,9 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
 """)
 
-# App icons (P4-12, DESIGN_SYSTEM 9 row 10): the app's logo mark, a star with a face on --brand, in the illustration style (light
-# from the top left: a light rim on the upper-left edges, a shade rim on the lower-right ones, a ledge under it). Drawn 4x and scaled
-# down, so the edges are smooth. Full bleed and opaque, so one file works as "any" and as "maskable": everything drawn sits inside
-# the safe circle (radius 40% of the side, centred); outside it there is only the blue and its gloss (test.js checks this).
-# Colours are the tokens' hex values (src/css/00-tokens.css).
-import math
-from PIL import ImageChops
-def star_mask(S, cx, cy, R, r, w):
-    m = Image.new('L', (S, S), 0)
-    d = ImageDraw.Draw(m)
-    pts = [(cx + (R if i % 2 == 0 else r) * math.sin(i * math.pi / 5), cy - (R if i % 2 == 0 else r) * math.cos(i * math.pi / 5)) for i in range(10)]
-    d.polygon(pts, fill=255)
-    d.line(pts + pts[:2], fill=255, width=int(w), joint='curve')  # a thick outline with round joins rounds the points
-    return m
-def app_icon(size):
-    S = size * 4
-    u = S / 100.0
-    im = Image.new('RGB', (S, S), '#3B5BDB')  # --brand
-    d = ImageDraw.Draw(im)
-    base = (0x3B, 0x5B, 0xDB)
-    for y in range(int(S * 0.62)):  # gloss: white fading out over the top 62% (like the in-app mark)
-        a = 0.2 * (1 - y / (S * 0.62))
-        d.line([(0, y), (S, y)], fill=tuple(int(v + (255 - v) * a) for v in base))
-    for y in range(int(S * 0.84), S):  # a deeper band at the bottom, toward --brand-shade
-        a = 0.75 * (y - S * 0.84) / (S * 0.16)
-        d.line([(0, y), (S, y)], fill=tuple(int(v + (w - v) * a) for v, w in zip(base, (0x2F, 0x49, 0xB8))))
-    def sparkle(x, y, r, col):  # four-point sparkle
-        k = .26
-        d.polygon([(x, y - r), (x + r * k, y - r * k), (x + r, y), (x + r * k, y + r * k), (x, y + r), (x - r * k, y + r * k),
-                   (x - r, y), (x - r * k, y - r * k)], fill=col)
-    sparkle(71 * u, 30 * u, 6.5 * u, '#FFF1C7')
-    sparkle(22 * u, 69 * u, 4.6 * u, '#FFFFFF')
-    d.ellipse([78.2 * u, 63.2 * u, 81.8 * u, 66.8 * u], fill='#FFF1C7')
-    d.ellipse([23 * u, 31 * u, 26 * u, 34 * u], fill='#FFFFFF')
-    cx, cy, R, r, W = 50 * u, 53 * u, 27.5 * u, 14.8 * u, 7.5 * u
-    star = star_mask(S, cx, cy, R, r, W)
-    im.paste('#2F49B8', (0, int(4.2 * u)), star)                     # ledge on the background (--brand-shade)
-    im.paste('#FFC93C', (0, 0), star)                                 # --star
-    t = int(2.6 * u)
-    im.paste('#F5A800', (0, 0), ImageChops.subtract(star, ImageChops.offset(star, -t, -t)))   # shade rim, lower right (--star-shade)
-    im.paste('#FFF3A3', (0, 0), ImageChops.subtract(star, ImageChops.offset(star, t, t)))     # light rim, upper left (--ill-yellow-1)
-    d = ImageDraw.Draw(im)
-    d.ellipse([cx - 4.6 * u, cy - 21 * u, cx - 1.6 * u, cy - 16.4 * u], fill='#FFFFFF')         # glint on the top point
-    d.ellipse([cx - 19.5 * u, cy - 9.6 * u, cx - 15.5 * u, cy - 6.8 * u], fill='#FFFFFF')        # and on the left arm
-    for ex in (-6.8, 6.8):  # big eyes with two glints (--ill-ink)
-        x, y = cx + ex * u, cy + 1.2 * u
-        d.ellipse([x - 3.4 * u, y - 4.6 * u, x + 3.4 * u, y + 4.6 * u], fill='#1F2440')
-        d.ellipse([x - 2.3 * u, y - 3.5 * u, x + 0.5 * u, y - 0.7 * u], fill='#FFFFFF')
-        d.ellipse([x + 0.8 * u, y + 1.2 * u, x + 2.0 * u, y + 2.4 * u], fill='#FFFFFF')
-    for ex in (-12.6, 12.6):  # round cheeks (--ill-pink)
-        x, y = cx + ex * u, cy + 7 * u
-        d.ellipse([x - 3.3 * u, y - 2.1 * u, x + 3.3 * u, y + 2.1 * u], fill='#FF97B8')
-    d.arc([cx - 4.2 * u, cy + 3.4 * u, cx + 4.2 * u, cy + 10.4 * u], 22, 158, fill='#1F2440', width=int(1.8 * u))  # small smile
-    return im.resize((size, size), Image.LANCZOS)
-for s in (192, 512):
-    app_icon(s).save(OUT + '/icon-%d.png' % s, optimize=True)
 # The information page's project (owner decision 2026-11-20: whistlestoplearning.com is a static info page, site/landing.html; the app is on
 # app.whistlestoplearning.com). Its Vercel project publishes only site/ (Root Directory), so the privacy policy and the icon are copied
 # there from the repo root: one source, the same page on both hosts (test.js "rename" checks they match). docs/PLAY-SETUP.md step 1.
-import shutil
 for f in ('privacy.html', 'icon-192.png'):
     shutil.copyfile(os.path.join(ROOT, f), os.path.join(ROOT, 'site', f))
 print(os.listdir(OUT), os.path.getsize(OUT + '/index.html'), [os.path.getsize(OUT + '/' + f) for f in FILES])

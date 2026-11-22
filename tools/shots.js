@@ -1277,8 +1277,9 @@ Object.assign(SCREENS, {
     const im = (src, sz, r, extra = '') => `<div style="display:grid;justify-items:center;gap:8px"><div style="position:relative;width:${sz}px;height:${sz}px;border-radius:${r};overflow:hidden;box-shadow:0 6px 16px rgba(31,36,64,.18)">` +
       `<img src="${src}" width="${sz}" height="${sz}" style="display:block">${extra}</div><small>${src} ${sz}px ${r == '50%' ? 'maskable circle' : r == '0' ? 'square' : 'rounded'}</small></div>`;
     const zone = '<div style="position:absolute;inset:10%;border-radius:50%;box-shadow:0 0 0 2px #fff8,inset 0 0 0 2px #fff8"></div>';
-    view(`<div class="scroll" style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:center;padding:24px">${im('icon-512.png', 256, '0', zone)}` +
-      `${im('icon-512.png', 192, '22%')}${im('icon-512.png', 192, '50%')}${im('icon-192.png', 96, '22%')}${im('icon-192.png', 48, '50%')}${im('icon-192.png', 32, '6px')}</div>`);
+    // BRAND (v193): "any" is icon-N.png (the rounded tile), "maskable" icon-maskable-N.png (full bleed), the favicon favicon-32.png
+    view(`<div class="scroll" style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:center;padding:24px">${im('icon-maskable-512.png', 256, '0', zone)}` +
+      `${im('icon-maskable-512.png', 192, '22%')}${im('icon-maskable-512.png', 192, '50%')}${im('icon-512.png', 192, '0')}${im('icon-192.png', 96, '0')}${im('icon-maskable-192.png', 48, '50%')}${im('favicon-32.png', 32, '0')}</div>`);
   }); await p.waitForTimeout(200); } },
 });
 

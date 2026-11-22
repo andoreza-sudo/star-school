@@ -14253,57 +14253,69 @@ run('setup, grown-ups, pet care, icon P4-12',()=>{
   for(const k in PC_FX)if(!/^<(path|circle)/.test(PC_FX[k])||/#[0-9a-f]{3,6}\\b/i.test(PC_FX[k]))bad.push('care piece '+k);
   bad;`);
   p.push(...out);
-  // 5. app icon: PNGs at 192 and 512, opaque, full-bleed brand blue, everything drawn inside the maskable safe circle (radius 40%)
+  // 5. app icons. BRAND (v193; owner approved the D2 logo 2026-11-22): the PNGs are drawn from docs/brand/*.svg by tools/brand-icons.js
+  //    and committed in docs/brand/icons/; build.py copies them. "any" (icon-N.png): the rounded tile, its corners transparent, the crimson
+  //    engine in the middle; "maskable" (icon-maskable-N.png): full bleed and opaque, the dusk navy at the top, no part of the engine
+  //    outside the safe circle (radius 40%); favicon-32.png; the Play listing icon in docs/brand/store (512, 32-bit, every pixel opaque).
+  //    (Was: one opaque full-bleed --brand blue PNG per size with a star face, used as both any and maskable.)
   const zlib=require('zlib');
-  const png=f=>{const b=fs.readFileSync(path.join(ROOT,f));if(b.readUInt32BE(0)!==0x89504e47)return null;
-    let o=8,w=0,h=0,ct=0,bd=0;const idat=[];
+  const png=f=>{const b=fs.readFileSync(path.isAbsolute(f)?f:path.join(ROOT,f));if(b.readUInt32BE(0)!==0x89504e47)return null;
+    let o=8,w=0,h=0,ct=0,bd=0,il=0;const idat=[];
     while(o<b.length){const n=b.readUInt32BE(o),t=b.toString('ascii',o+4,o+8),d=b.subarray(o+8,o+8+n);
-      if(t=='IHDR'){w=d.readUInt32BE(0);h=d.readUInt32BE(4);bd=d[8];ct=d[9]}if(t=='IDAT')idat.push(d);o+=12+n}
-    const bpp=ct==6?4:ct==2?3:0;if(!bpp||bd!==8)return{w,h,ct,bd};
+      if(t=='IHDR'){w=d.readUInt32BE(0);h=d.readUInt32BE(4);bd=d[8];ct=d[9];il=d[12]}if(t=='IDAT')idat.push(d);o+=12+n}
+    const bpp=ct==6?4:ct==2?3:0;if(!bpp||bd!==8||il)return{w,h,ct,bd};
     const raw=zlib.inflateSync(Buffer.concat(idat)),px=Buffer.alloc(w*h*bpp),st=w*bpp;
     for(let y=0;y<h;y++){const f=raw[y*(st+1)],src=raw.subarray(y*(st+1)+1,(y+1)*(st+1));
       for(let x=0;x<st;x++){const a=x>=bpp?px[y*st+x-bpp]:0,up=y?px[(y-1)*st+x]:0,c=x>=bpp&&y?px[(y-1)*st+x-bpp]:0;
         const pa=Math.abs(up-c),pb=Math.abs(a-c),pc=Math.abs(a+up-2*c);
         px[y*st+x]=(src[x]+(f==0?0:f==1?a:f==2?up:f==3?(a+up)>>1:pa<=pb&&pa<=pc?a:pb<=pc?up:c))&255}}
     return{w,h,ct,bd,bpp,at:(x,y)=>{const i=(y*w+x)*bpp;return[px[i],px[i+1],px[i+2],bpp==4?px[i+3]:255]}}};
+  const crimson=([r,g,b,a])=>a>200&&r>150&&g<70&&b<70;
   const icons={};
-  for(const s of [192,512]){const f='icon-'+s+'.png';if(!fs.existsSync(path.join(ROOT,f))){p.push(f+' missing');continue}
-    const im=png(f);icons[s]=im;
-    if(!im||im.w!==s||im.h!==s)p.push(f+': size '+(im&&im.w)+'x'+(im&&im.h));
-    if(!im||!im.at){p.push(f+': not an 8-bit RGB(A) PNG');continue}
-    let outside=0,clear=0,yellow=0,ink=0;const c=s/2,R=s*.4;
-    for(let y=0;y<s;y++)for(let x=0;x<s;x++){const [r,g,b,a]=im.at(x,y);
-      if(a<255)clear++;
-      const blue=b>r+40&&b>g+20,d=Math.hypot(x+.5-c,y+.5-c);
-      if(d>R&&!blue)outside++;
-      if(d<s*.3&&r>230&&g>170&&b<120)yellow++;
-      if(d<s*.2&&r<60&&g<60&&b<90)ink++}
-    if(clear)p.push(f+': '+clear+' pixels not opaque');
-    if(outside)p.push(f+': '+outside+' drawn pixels outside the maskable safe circle');
-    if(yellow<s*s*.06)p.push(f+': the star mark is missing from the middle ('+yellow+' star pixels)');
-    if(ink<s*s*.004)p.push(f+': the star has no face ('+ink+' eye pixels)');
-    const brand=(tok.match(/--brand:#([0-9A-Fa-f]{6})/)||[])[1]||'000000',bg=im.at(Math.round(s*.02),Math.round(s*.72));
-    if(bg.slice(0,3).some((v,i)=>Math.abs(v-parseInt(brand.slice(i*2,i*2+2),16))>3))p.push(f+': background '+bg.slice(0,3)+' is not --brand #'+brand);
-    for(const [x,y] of [[0,0],[s-1,0],[0,s-1],[s-1,s-1]]){const [r,g,b]=im.at(x,y);if(!(b>r+40&&b>g+20))p.push(f+': corner '+x+','+y+' is not the brand background')}
+  const ICONS=[['icon-192.png',192,'any'],['icon-512.png',512,'any'],['icon-maskable-192.png',192,'maskable'],['icon-maskable-512.png',512,'maskable'],['favicon-32.png',32,'favicon']];
+  for(const [f,s,kind] of ICONS){
+    if(!fs.existsSync(path.join(ROOT,f))){p.push(f+' missing');continue}
+    if(!fs.existsSync(path.join(ROOT,'docs','brand','icons',f))||!fs.readFileSync(path.join(ROOT,'docs','brand','icons',f)).equals(fs.readFileSync(path.join(ROOT,f))))p.push(f+' is not docs/brand/icons/'+f+' (run python3 tools/build.py)');
+    const im=png(f);icons[f]=im;
+    if(!im||im.w!==s||im.h!==s){p.push(f+': size '+(im&&im.w)+'x'+(im&&im.h)+', want '+s);continue}
+    if(!im.at){p.push(f+': not an 8-bit RGB(A) PNG');continue}
+    let clear=0,red=0,redOut=0;const c=s/2;
+    for(let y=0;y<s;y++)for(let x=0;x<s;x++){const px=im.at(x,y),d=Math.hypot(x+.5-c,y+.5-c);
+      if(px[3]<255)clear++;if(crimson(px)){if(d<s*.3)red++;if(d>s*.4)redOut++}}
+    if(red<s*s*.03)p.push(f+': the crimson engine is missing from the middle ('+red+' pixels)');
+    const corner=im.at(0,0),mid=im.at(c,c);
+    if(mid[3]!==255)p.push(f+': the middle is not opaque');
+    if(kind=='maskable'){
+      if(clear)p.push(f+': '+clear+' pixels not opaque (a maskable icon is full bleed)');
+      if(redOut)p.push(f+': '+redOut+' engine pixels outside the maskable safe circle (radius 40%)');
+      const [r,g,b]=im.at(Math.round(s/2),1);if(!(b>r+25&&r<70&&g<70))p.push(f+': the top of the sky is not the dusk navy: '+[r,g,b]);
+    }else if(corner[3]!==0)p.push(f+': corner is not transparent ('+corner+'): "any" is the rounded tile');
   }
-  // 6. manifest and favicon
+  {const st=path.join(ROOT,'docs','brand','store');
+    const si=fs.existsSync(path.join(st,'icon-512.png'))&&png(path.join(st,'icon-512.png'));
+    if(!si||si.w!==512||si.h!==512||si.ct!==6||!si.at)p.push('docs/brand/store/icon-512.png: the Play icon must be a 512x512 32-bit (RGBA) PNG');
+    else{let clear=0;for(let y=0;y<512;y++)for(let x=0;x<512;x++)if(si.at(x,y)[3]!==255)clear++;if(clear)p.push('docs/brand/store/icon-512.png: '+clear+' pixels not opaque (Play: no transparency)')}
+    const fg=fs.existsSync(path.join(st,'feature-1024x500.png'))&&png(path.join(st,'feature-1024x500.png'));
+    if(!fg||fg.w!==1024||fg.h!==500||fg.ct!==2)p.push('docs/brand/store/feature-1024x500.png: the Play feature graphic must be a 1024x500 PNG with no alpha')}
+  // 6. manifest and favicon. BRAND: theme_color and background_color are the logo's dusk navy, --ink (was --paper): the splash is
+  //    background_color with the icon on it
   let man=null;try{man=JSON.parse(fs.readFileSync(path.join(ROOT,'manifest.json'),'utf8'))}catch(e){p.push('manifest.json is not valid JSON')}
   if(man){
     for(const k of ['name','short_name','start_url','display','background_color','theme_color','icons'])if(!man[k])p.push('manifest: no '+k);
-    const paper=(tok.match(/--paper:(#[0-9A-Fa-f]{6})/)||[])[1]||'';
-    if(String(man.theme_color).toLowerCase()!==paper.toLowerCase())p.push('manifest theme_color '+man.theme_color+' is not --paper '+paper);
-    if(!/^#[0-9a-f]{6}$/i.test(man.background_color))p.push('manifest background_color '+man.background_color);
-    const ic=man.icons||[],pur=new Set(ic.flatMap(i=>String(i.purpose||'any').split(/\s+/)));
-    if(!pur.has('any')||!pur.has('maskable'))p.push('manifest icons need purpose any and maskable: '+[...pur]);
-    for(const i of ic){const m=/^icon-(\d+)\.png$/.exec(i.src);if(!m||i.sizes!==m[1]+'x'+m[1]||i.type!=='image/png'||!icons[m[1]])p.push('manifest icon '+JSON.stringify(i))}
-    if(!ic.some(i=>i.sizes=='192x192')||!ic.some(i=>i.sizes=='512x512'))p.push('manifest needs 192 and 512 icons');
+    const ink=(tok.match(/--ink:(#[0-9A-Fa-f]{6})/)||[])[1]||'';
+    if(String(man.theme_color).toLowerCase()!==ink.toLowerCase())p.push('manifest theme_color '+man.theme_color+' is not --ink '+ink);
+    if(String(man.background_color).toLowerCase()!==ink.toLowerCase())p.push('manifest background_color '+man.background_color+' is not --ink '+ink);
+    const ic=man.icons||[],got=ic.map(i=>i.src+' '+i.sizes+' '+i.type+' '+i.purpose).sort().join('; ');
+    const want=ICONS.filter(x=>x[2]!='favicon').map(([f,s,k])=>f+' '+s+'x'+s+' image/png '+k).sort().join('; ');
+    if(got!==want)p.push('manifest icons: '+got+'; want '+want);
     const shell=rd('shell.html');
     if(!shell.includes('<meta name="theme-color" content="'+man.theme_color+'">'))p.push('shell theme-color differs from the manifest');
-    if(!/<link rel="icon" href="icon-192\.png">/.test(shell))p.push('favicon link missing');
+    if(!shell.includes('<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">'))p.push('favicon link (favicon-32.png) missing');
+    if(!shell.includes('<link rel="apple-touch-icon" href="icon-maskable-192.png">'))p.push('apple-touch-icon is not the opaque icon-maskable-192.png');
   }
   const sw=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
-  if(!sw.includes("'./icon-192.png'")||!sw.includes("'./icon-512.png'"))p.push('sw.js does not precache the icons');
-  return{problems:p,note:fns.length+' functions, icons 192 and 512 checked pixel by pixel'};
+  for(const [f] of ICONS)if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
+  return{problems:p,note:fns.length+' functions, '+ICONS.length+' icons and the Play icon checked pixel by pixel'};
 });
 
 // ---- P4-14: object art set B (DESIGN_SYSTEM 6.5; drawings in src/data/d-art-b.js) ----
@@ -23472,6 +23484,42 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
       if(puts.includes('./index.html'))p.push('sw.js: opening a page that is not the app replaced the cached index.html');
       if(fetched!==4)p.push('sw.js: a page that is not the app is not asked from the network first ('+fetched+' fetches)');
       return{problems:p,note:notes.concat(['manifest '+man.name,'PLAY.PKG and assetlinks '+(/PKG: '([^']*)'/.exec(fs.readFileSync(path.join(SRC,'js','03-play.js'),'utf8'))||[])[1]]).join('; ')}})()}
+});
+
+// BRAND (v193; owner approved the D2 logo 2026-11-22; DESIGN_SYSTEM "Logo"): UI.logo() in 14-ui.js is the in-app logo: the small icon
+// (docs/brand/icon-small.svg, minified, tokens only, its sky the tile's CSS background) and the wordmark, "Whistle" in --ink and "stop"
+// in --brand with a star for the dot on the i. Home's top bar, setup, About and the Try again screen use it; the old star tile is gone.
+run('logo BRAND: UI.logo on Home, setup, About and the Try again screen; one accessible name; no star tile; small; landing static with the logo',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),tok=rd('css/00-tokens.css');
+  const [lg,mk,LOGO]=(()=>eval(js+`[UI.logo('hm-logo'),UI.logo('',false),UI.LOGO]`))(); // its own scope: js declares home(), grown() ...
+  // the markup: one role=img named Whistlestop, everything inside aria-hidden, the two colours, the star dot, no ids, tokens only
+  if(!/^<span class="wl hm-logo" role="img" aria-label="Whistlestop"><svg class="wl-mk" viewBox="0 0 32 32" aria-hidden="true"><g stroke="var\(--ill-ink\)" stroke-width="\.9">/.test(lg))p.push('UI.logo: '+lg.slice(0,120));
+  if(!/<span class="wl-w" aria-hidden="true">Wh<span class="wl-i">ı<svg viewBox="0 0 14 13\.4"><path d="[^"]+"\/><\/svg><\/span>stle<b>stop<\/b><\/span><\/span>$/.test(lg))p.push('UI.logo wordmark: '+lg.slice(-200));
+  if(/wl-w/.test(mk)||!mk.endsWith('</svg></span>'))p.push('UI.logo(cls, false) still draws the word');
+  if(/\bid=|#[0-9a-fA-F]{3,8}\b|gradient|filter|url\(|<text/i.test(LOGO))p.push('UI.LOGO: no ids, raw hex, gradients, filters or text');
+  for(const m of LOGO.matchAll(/var\(--([a-z0-9-]+)\)/g))if(!new RegExp('--'+m[1]+':#').test(tok))p.push('UI.LOGO: unknown colour token --'+m[1]);
+  if(Buffer.byteLength(lg)>1700)p.push('UI.logo is '+Buffer.byteLength(lg)+' bytes: keep it under 1.7 KB (start-up budget)');
+  const css=rd('css/10-components.css').replace(/\/\*[\s\S]*?\*\//g,'');
+  if(!/\.wl-w b\{color:var\(--brand\)\}/.test(css)||!/\.wl\{[^}]*color:var\(--ink\)/.test(css)||!/\.wl\{[^}]*font-family:var\(--font-display\)/.test(css))p.push('10-components.css: the wordmark is not --ink / --brand in the display font');
+  if(!/\.wl-mk\{[^}]*background:linear-gradient\(var\(--ill-blue-3\),var\(--ill-orange-1\) 35%,var\(--ill-tan-1\)\)/.test(css))p.push('10-components.css: the icon tile lost its dusk sky');
+  if(!/@media \(max-width:480px\)\{\.hm-logo \.wl-w\{display:none\}\}/.test(rd('css/11-nav.css')))p.push('11-nav.css: Home no longer hides the word under 480 px');
+  // where it is used
+  const hjs=rd('js/46-home.js'),gjs=rd('js/80-grown.js'),ajs=rd('js/90-app.js');
+  if(!/<div class="top tbar hm-top">\$\{UI\.logo\('hm-logo'\)\}<div class="sp"><\/div>/.test(hjs))p.push('Home top bar does not start with UI.logo(\'hm-logo\')');
+  if(!/<h1 class="gx-logo su-logo">\$\{UI\.logo\(\)\}<\/h1>/.test(hjs))p.push('setup header is not <h1> with UI.logo()');
+  if(!/function aboutCard\(\)\{\n  return GW\.card\('gw-about','info','About Whistlestop',\n    `<div class="wl-top ab-logo">\$\{UI\.logo\(\)\}<\/div>/.test(gjs))p.push('About does not show the logo first');
+  if(!/<div class="scroll" id="datamiss"><div class="wl-top">\$\{UI\.logo\(\)\}<\/div>\$\{UI\.empty\('download', 'Whistlestop needs to finish updating/.test(ajs))p.push('the Try again screen does not show the logo');
+  // no star-tile leftovers
+  const all=['js','css'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,rd(d+'/'+n)]));
+  for(const [n,t] of all)if(/hm-mark|su-mark|\.hm-logo>span/.test(t))p.push(n+': the old star tile (hm-mark, su-mark) is still there');
+  if(/ico\('star', (30|36)\)/.test(hjs))p.push('46-home.js: the star tile icon is still drawn');
+  if(!/<h1 class="pf-t">\$\{UI\.LOGO\}<span>Who is playing\?<\/span><\/h1>/.test(rd('js/01-profiles.js').replace(/` \+\n\s*`/g,'')))p.push('the "Who is playing?" picker does not show the logo\'s icon');
+  // the information page: static, the icon and the outlined wordmark at the top, named Whistlestop
+  const ld=fs.readFileSync(path.join(ROOT,'site','landing.html'),'utf8');
+  if(/<script|\son\w+\s*=|javascript:|url\(|@import/i.test(ld))p.push('site/landing.html is not static');
+  if(!/<header>\n<img src="icon-192\.png" alt="" width="88" height="88">\n<div>\n<h1><svg class="word" viewBox="[^"]+" width="\d+" height="\d+" role="img" aria-label="Whistlestop">/.test(ld))p.push('site/landing.html does not start with the icon and the wordmark');
+  if(!ld.includes('fill="#1F2440"')||!ld.includes('fill="#3B5BDB"')||!ld.includes('fill="#FFC93C"'))p.push('site/landing.html: the wordmark is not --ink / --brand with the star');
+  return{problems:p,note:'UI.logo '+Buffer.byteLength(lg)+' bytes'};
 });
 
 // RENAME-2 (coordinator, 2026-11-20): a child's name never goes to an online voice. ttsSay (12-speech.js) swaps every child's name for

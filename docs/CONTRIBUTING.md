@@ -27,7 +27,8 @@ Only one chunk should be in progress on `main` at a time. If two people work at 
 
 | Need | Why | Check |
 |------|-----|-------|
-| Python 3 + Pillow (`pip install pillow`) | `tools/build.py` (Pillow draws the app icons) | `python3 -c "import PIL"` |
+| Python 3 | `tools/build.py` (BRAND, v193: it copies the committed icons from `docs/brand/icons/`, no Pillow needed) | `python3 --version` |
+| Pillow (`pip install pillow`), only to redraw the icons | `node tools/brand-icons.js` draws `docs/brand/icons/*.png` and `docs/brand/store/icon-512.png` from `docs/brand/*.svg` with Chrome, then Pillow optimizes them; run it only when a logo SVG changes (DESIGN_SYSTEM 6.6) | `python3 -c "import PIL"` |
 | Node 18 or newer | tests and harness | `node -v` |
 | Google Chrome or Chromium | screenshots and smoke test | `/usr/bin/google-chrome --version`, or set `CHROME=/path/to/chrome` |
 | `cd tools && npm install` (after chunk P0-01 exists) | installs `playwright-core` only; no browser download | `tools/node_modules` exists |
@@ -327,6 +328,7 @@ node tools/smoke.js              # bot plays through the app in headless Chrome;
 node tools/perf.js               # timings at 6x CPU throttle and memory over 30 rounds; exit 1 only if start is over 2.5 s   (P6-02)
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
 node tools/a11y.js [screen...]   # accessibility scan, DESIGN_SYSTEM 10 (P6-01); must print zero failures
+node tools/brand-icons.js        # BRAND: redraw the app icons (docs/brand/icons/) and the Play icon from docs/brand/*.svg; only when a logo SVG changes
 bash tools/check.sh              # all of the above plus a11y and the size report; see "The full check" below             (after P0-01)
 node tools/puzzles/build-banks.js [sudoku|mathdoku|logic|robot] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
 node tools/puzzles/build-banks.js --check    # regenerate in memory, compare with the committed bank files byte for byte

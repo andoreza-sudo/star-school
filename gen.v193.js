@@ -1,5 +1,5 @@
-/* Whistlestop gen v192. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v192 loads this file with <script src="gen.v192.js"> after its own code, before data.v192.js. */
+/* Whistlestop gen v193. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v193 loads this file with <script src="gen.v193.js"> after its own code, before data.v193.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -4002,7 +4002,7 @@ const GW = {
    text-to-speech (audio/, ES-AUDIO, EN-PRAISE, TEACH-4; the About card says so); no libraries are bundled. */
 function aboutCard(){
   return GW.card('gw-about','info','About Whistlestop',
-    `<p class="gw-p">Whistlestop is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
+    `<div class="wl-top ab-logo">${UI.logo()}</div><p class="gw-p">Whistlestop is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress and recordings stay on this device; nothing about your child is sent anywhere. In the Google Play app, the purchase is confirmed with Google Play.</span></p>
     <p class="gw-note" id="ab-gate">${ico('gear',22)}<span>To open Grown-ups, tap Grown-ups on Home and type your PIN. Forgot it? Tap Forgot PIN? on the number pad.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
@@ -5098,4 +5098,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v192'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v193'; // last line: the whole file ran (checked by dataReady() before the app starts)

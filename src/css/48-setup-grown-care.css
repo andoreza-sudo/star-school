@@ -22,7 +22,7 @@
 .su-top{display:grid;grid-template-columns:var(--tap) minmax(0,1fr) var(--tap);grid-template-areas:". logo spk" ". hi .";align-items:center;
   gap:var(--s-1) var(--s-2);width:min(640px,100%)}
 .su .su-logo{grid-area:logo;margin:0;font-size:var(--fs-6);line-height:1.1}
-.su-mark{width:56px;height:56px;border-radius:18px;box-shadow:inset 0 -4px 0 var(--brand-shade),0 4px 0 var(--ledge-soft)}
+.su-logo .wl-mk{width:56px;height:56px} /* BRAND (v193): UI.logo() */
 .su-top>.btn{grid-area:spk}
 .su-hello{grid-area:hi;margin:0;font-size:var(--fs-3);color:var(--ink-2);line-height:1.35}
 .su-grid{display:grid;gap:var(--s-4);width:min(640px,100%)}
@@ -40,14 +40,14 @@
 .su-pets{margin-bottom:var(--s-4)}
 .su .grades{margin-top:0}
 .su-grid>#go{justify-self:center;min-width:min(320px,100%);margin-top:var(--s-1)}
-@media (max-width:480px){.su .su-logo{font-size:var(--fs-5)}.su-mark{width:48px;height:48px;border-radius:16px}.su-hello span{display:block}}
+@media (max-width:480px){.su .su-logo{font-size:var(--fs-5)}.su-logo .wl-mk{width:48px;height:48px}.su-hello span{display:block}}
 @media (min-width:900px) and (orientation:landscape){
   .su-top,.su-grid{width:min(1080px,100%)}
   .su-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);grid-template-areas:"n p" "g p" "g go";align-items:start}
   .su-step[data-step="1"]{grid-area:n}.su-step[data-step="2"]{grid-area:p}.su-step[data-step="3"]{grid-area:g}
   .su-grid>#go{grid-area:go;justify-self:stretch;align-self:end;margin:0}
 }
-@media (max-height:620px){.center.su{gap:var(--s-3);padding-top:var(--s-3)}.su .su-logo{font-size:var(--fs-5)}.su-mark{width:48px;height:48px}
+@media (max-height:620px){.center.su{gap:var(--s-3);padding-top:var(--s-3)}.su .su-logo{font-size:var(--fs-5)}.su-logo .wl-mk{width:48px;height:48px}
   .su-step{padding:var(--s-3) var(--s-4) var(--s-4)}.su .gx-pet .gx-pp{width:70px;height:70px;font-size:44px}}
 
 /* ---- Grown-ups: a calm page of cards; two columns on a wide screen ---- */
@@ -166,6 +166,7 @@ html.calm .pc-fx{display:none}
 .gw-bks dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 
 /* ---- P6-05 About Whistlestop (Grown-ups) ---- */
+.wl-top.ab-logo{justify-content:flex-start;margin:0 0 var(--s-3);font-size:var(--fs-5)}.ab-logo .wl-mk{width:48px;height:48px} /* BRAND (v193) */
 #ab-priv{text-decoration:none}
 .ab-ver{margin:var(--s-2) 0;font-size:var(--fs-2)}
 .ab-lic-line{margin:var(--s-1) 0}

@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#fff9ef">
+<meta name="theme-color" content="#1F2440">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icon-maskable-192.png">
 <title>Whistlestop</title>
 <style>
 /* Design tokens (DESIGN_SYSTEM.md section 2). The only file that may contain raw hex colours. */
@@ -413,6 +414,18 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .mapnode .rate{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%)}
 .mapnode .tag{position:absolute;top:-14px;right:-22px}
 
+/* ---- BRAND (v193): the logo, UI.logo() (DESIGN_SYSTEM "Logo"): the small icon on its dusk sky, then the wordmark ---- */
+.wl{display:inline-flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-weight:700;line-height:1.1;
+  white-space:nowrap;color:var(--ink)}
+.wl-mk{flex:none;width:1.8em;height:1.8em;border-radius:22%;background:linear-gradient(var(--ill-blue-3),var(--ill-orange-1) 35%,var(--ill-tan-1));
+  box-shadow:0 3px 0 var(--ledge-soft)}
+.wl-w b{color:var(--brand)}
+.wl-i{position:relative}
+.wl-i svg{position:absolute;left:50%;bottom:.82em;width:.27em;margin-left:-.135em;overflow:visible;fill:var(--star);stroke:var(--star);
+  stroke-width:1.6;stroke-linejoin:round}
+.wl-top{display:flex;justify-content:center;margin:var(--s-5) 0 0;font-size:var(--fs-6)} /* the logo on its own line (the Try again screen, About) */
+.wl-top .wl-mk{width:56px;height:56px}
+
 /* ---- motion (calm mode and reduced motion cut these to 0.01 ms in 20-base.css) ---- */
 @keyframes k-pop{40%{transform:scale(1.08)}}
 @keyframes k-shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
@@ -461,7 +474,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 /* ---- Grown-ups on Home: a labelled button (a tap asks for the PIN, RC-1) ---- */
 .btn.soft.nv-gw>.ic{width:22px;height:22px;color:var(--ink-2)}
 .btn.soft.nv-gw{padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);gap:var(--s-2);font-size:var(--fs-2);white-space:nowrap}
-@media (max-width:480px){.hm-logo>span:last-child{display:none}}
+@media (max-width:480px){.hm-logo .wl-w{display:none}} /* BRAND: the icon alone where the bar is tight (the name stays its label) */
 .nv-gate{text-align:center}
 .nv-q{display:flex;align-items:center;justify-content:center;gap:var(--s-3);margin:0 0 var(--s-2);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700}
 .nv-q input{width:4.2ch;min-height:64px;padding:0 var(--s-2);border:3px solid var(--line);border-radius:var(--r-btn);font:inherit;text-align:center;
@@ -2187,6 +2200,7 @@ html.calm .rw-burst{display:none}
 .pf-top{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:var(--s-3);width:min(760px,100%)}
 .pf-t{display:flex;align-items:center;gap:var(--s-3);min-width:0;margin:0;font-family:var(--font-display);font-size:var(--fs-6);
   font-weight:700;line-height:1.15}
+.pf-t .wl-mk{width:48px;height:48px} /* BRAND (v193): the logo's icon, decorative (UI.LOGO) */
 .pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);width:min(760px,100%)}
 .pf-kid{display:flex;flex-direction:column;align-items:stretch;gap:var(--s-2);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-3) var(--s-4);
   border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;text-align:center;cursor:pointer;
@@ -2229,8 +2243,7 @@ html.calm .rw-burst{display:none}
 .hm-top{gap:var(--s-2)}
 .hm-logo{display:flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;
   line-height:1.1;white-space:nowrap}
-.hm-mark{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:14px;color:var(--star);
-  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--brand);box-shadow:inset 0 -3px 0 var(--brand-shade)}
+.hm-logo .wl-mk{width:44px;height:44px} /* BRAND (v193): the logo, UI.logo() (10-components.css) */
 .hm-top .btn.icon .ic{color:var(--ink-2)}
 
 /* ---- page: one column; two columns on a wide landscape screen ---- */
@@ -2390,7 +2403,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 @media (max-width:480px){
   .scroll.hm{padding:var(--s-1) var(--s-3) var(--s-5)}
   .hm-logo{font-size:var(--fs-4)}
-  .hm-mark{width:40px;height:40px;border-radius:12px}
+  .hm-logo .wl-mk{width:40px;height:40px}
   .hm-today,.hm-acts{gap:var(--s-2)}
   .hm-tile{min-height:116px;font-size:var(--fs-2)}
   .hm-ti{width:56px;height:56px}
@@ -2737,7 +2750,7 @@ html.calm .tr-arr.go,html.calm .tr-sdi.pulse,html.calm .tr-sdi.hop,html.calm .tr
 .su-top{display:grid;grid-template-columns:var(--tap) minmax(0,1fr) var(--tap);grid-template-areas:". logo spk" ". hi .";align-items:center;
   gap:var(--s-1) var(--s-2);width:min(640px,100%)}
 .su .su-logo{grid-area:logo;margin:0;font-size:var(--fs-6);line-height:1.1}
-.su-mark{width:56px;height:56px;border-radius:18px;box-shadow:inset 0 -4px 0 var(--brand-shade),0 4px 0 var(--ledge-soft)}
+.su-logo .wl-mk{width:56px;height:56px} /* BRAND (v193): UI.logo() */
 .su-top>.btn{grid-area:spk}
 .su-hello{grid-area:hi;margin:0;font-size:var(--fs-3);color:var(--ink-2);line-height:1.35}
 .su-grid{display:grid;gap:var(--s-4);width:min(640px,100%)}
@@ -2755,14 +2768,14 @@ html.calm .tr-arr.go,html.calm .tr-sdi.pulse,html.calm .tr-sdi.hop,html.calm .tr
 .su-pets{margin-bottom:var(--s-4)}
 .su .grades{margin-top:0}
 .su-grid>#go{justify-self:center;min-width:min(320px,100%);margin-top:var(--s-1)}
-@media (max-width:480px){.su .su-logo{font-size:var(--fs-5)}.su-mark{width:48px;height:48px;border-radius:16px}.su-hello span{display:block}}
+@media (max-width:480px){.su .su-logo{font-size:var(--fs-5)}.su-logo .wl-mk{width:48px;height:48px}.su-hello span{display:block}}
 @media (min-width:900px) and (orientation:landscape){
   .su-top,.su-grid{width:min(1080px,100%)}
   .su-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);grid-template-areas:"n p" "g p" "g go";align-items:start}
   .su-step[data-step="1"]{grid-area:n}.su-step[data-step="2"]{grid-area:p}.su-step[data-step="3"]{grid-area:g}
   .su-grid>#go{grid-area:go;justify-self:stretch;align-self:end;margin:0}
 }
-@media (max-height:620px){.center.su{gap:var(--s-3);padding-top:var(--s-3)}.su .su-logo{font-size:var(--fs-5)}.su-mark{width:48px;height:48px}
+@media (max-height:620px){.center.su{gap:var(--s-3);padding-top:var(--s-3)}.su .su-logo{font-size:var(--fs-5)}.su-logo .wl-mk{width:48px;height:48px}
   .su-step{padding:var(--s-3) var(--s-4) var(--s-4)}.su .gx-pet .gx-pp{width:70px;height:70px;font-size:44px}}
 
 /* ---- Grown-ups: a calm page of cards; two columns on a wide screen ---- */
@@ -2881,6 +2894,7 @@ html.calm .pc-fx{display:none}
 .gw-bks dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 
 /* ---- P6-05 About Whistlestop (Grown-ups) ---- */
+.wl-top.ab-logo{justify-content:flex-start;margin:0 0 var(--s-3);font-size:var(--fs-5)}.ab-logo .wl-mk{width:48px;height:48px} /* BRAND (v193) */
 #ab-priv{text-decoration:none}
 .ab-ver{margin:var(--s-2) 0;font-size:var(--fs-2)}
 .ab-lic-line{margin:var(--s-1) 0}
@@ -3045,7 +3059,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v192'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v192 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v193'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v193 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3273,7 +3287,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v192'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v193'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3556,7 +3570,7 @@ const PRF = {
         `${hmScene(i.scene)}<span class="pf-pet">${PRF.pet(i)}</span></span><span class="pf-nm">${esc(nm)}</span>` +
         `<span class="pf-st" aria-hidden="true">${ico('star', 24)}<b>${i.stars}</b></span></button>`;
     }).join('');
-    view(`<div class="scroll pf-who" id="pfwho"><header class="pf-top"><h1 class="pf-t"><span class="hm-mark">${ico('star', 30)}</span>` +
+    view(`<div class="scroll pf-who" id="pfwho"><header class="pf-top"><h1 class="pf-t">${UI.LOGO}` +
       `<span>Who is playing?</span></h1>${UI.ibtn('speak', 'Hear it', { id: 'pfspk' })}</header>` +
       `<div class="pf-grid n${PRF.count()}">${cards}</div><div id="pf-msg" role="status"></div></div>`);
     $('#pfspk').onclick = e => say('Who is playing? Tap your picture.', e.currentTarget);
@@ -4142,6 +4156,28 @@ const UI = {
   empty(icon, line, actionHtml = '') {
     return `<div class="blank"><span class="bi">${ico(icon)}</span><p>${UI.t(line)}</p>${actionHtml}</div>`;
   },
+
+  // BRAND (v193; DESIGN_SYSTEM "Logo"): the logo, the small icon (docs/brand/icon-small.svg without its sky, which is the tile's CSS
+  // background) and the wordmark, "Whistle" in --ink, "stop" in --brand, a star for the dot on the i (a dotless i, U+0131,
+  // with the star drawn over it). One accessible name, Whistlestop;
+  // the drawing and the letters are aria-hidden. cls: where it sits (hm-logo, su-logo ...); word: false draws the icon only.
+  logo(cls = '', word = true) {
+    return `<span class="wl ${cls}" role="img" aria-label="Whistlestop">${UI.LOGO}` + (word ? '<span class="wl-w" aria-hidden="true">Wh' +
+      '<span class="wl-i">ı<svg viewBox="0 0 14 13.4"><path d="M7 0l2 4.7 5 .4-3.8 3.4 1.1 4.9L7 10.8l-4.4 2.6 1.2-4.9L0 5.1l5-.4z"/></svg></span>' +
+      'stle<b>stop</b></span>' : '') + '</span>';
+  },
+  LOGO: '<svg class="wl-mk" viewBox="0 0 32 32" aria-hidden="true"><g stroke="var(--ill-ink)" stroke-width=".9">' +
+    '<path fill="var(--ill-ink-2)" stroke="none" d="M13.2 3.6h5.6v5h-5.6z"/><rect x="12" y="2.2" width="8" height="2.6" rx="1" fill="var(--ill-yellow-2)" stroke-width=".7"/>' +
+    '<rect x="3.6" y="8.2" width="24.8" height="15" rx="2" fill="var(--ill-red-2)"/><g stroke="none">' +
+    '<path fill="var(--ill-red-3)" d="M24.4 9H28v13.8h-3.6z"/><rect x="5.4" y="10" width="3.4" height="3" rx=".8" fill="var(--ill-yellow)"/>' +
+    '<rect x="23.2" y="10" width="3.4" height="3" rx=".8" fill="var(--ill-yellow-2)"/><circle cx="16" cy="15.6" r="7.2" fill="var(--ill-ink)"/>' +
+    '<circle cx="16" cy="16" r="5.6" fill="var(--ill-ink-2)"/><circle cx="16" cy="16.4" r="2.6" fill="var(--ill-yellow)"/>' +
+    '<path fill="var(--ill-red-2)" d="M16 14.7l.5 1.2 1.3.1-1 .9.3 1.2-1.1-.6-1.1.6.3-1.2-1-.9 1.3-.1z"/>' +
+    '<circle cx="16" cy="9.2" r="2.7" fill="var(--ill-yellow-2)"/><circle cx="16" cy="9.2" r="1.9" fill="var(--ill-yellow-1)"/></g>' +
+    '<rect x="3.2" y="22.6" width="25.6" height="3.4" rx="1" fill="var(--ill-red-2)"/>' +
+    '<g fill="var(--ill-yellow)" stroke-width=".7"><circle cx="4.6" cy="24.3" r="1.7"/><circle cx="27.4" cy="24.3" r="1.7"/></g>' +
+    '<path fill="var(--ill-grey)" stroke-linejoin="round" d="M7.5 26h17l-3.3 4.3H10.8z"/>' +
+    '<path fill="none" stroke-width="1" d="M13 26.2l.8 4M16 26.2v4M19 26.2l-.8 4"/></g></svg>',
 
   // Switch. Read it with $('#id').checked.
   sw(label, on, id) {
@@ -7895,7 +7931,7 @@ function setup() {
   let pet = S.pet, grade = gradeOf();
   const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
     `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
-  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Whistlestop</span></h1>` +
+  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo">${UI.logo()}</h1>` +
     `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}` +
     `${PRF.many() ? UI.ibtn('back', 'Back', { id: 'suback', size: 'sm' }) : ''}</header>` +
     `<div class="su-grid">` +
@@ -8196,13 +8232,13 @@ function hmGift(){const p=S.pt;if(!p||!(p.gift>=30))return'';const t=hmGiftLine(
 function home(first){
   if(!S.name)return setup();
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
-  view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Whistlestop</span></div><div class="sp"></div>${inst}
+  view(`<div class="top tbar hm-top">${UI.logo('hm-logo')}<div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${PRF.homeBtn()}${NAV.gateHTML()}</div>
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v192)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v193)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11194,7 +11230,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v192'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v193'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11813,14 +11849,14 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v192');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v193');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v192')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v192)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v193')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v193)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
-  view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
+  view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo()}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 /* ---------- P6-02: part files loaded on demand ----------
@@ -11840,15 +11876,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v192';
+  return !!f && f[1] === 'v193';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v192') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v193') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v192.js';
+    s.src = stem + '.v193.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11873,9 +11909,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v192.js"></script>
-<script src="gen2.v192.js"></script>
-<script src="data.v192.js"></script>
+<script src="gen.v193.js"></script>
+<script src="gen2.v193.js"></script>
+<script src="data.v193.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

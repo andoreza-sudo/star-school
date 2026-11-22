@@ -37,8 +37,9 @@ for (const s of ['math', 'read', 'es', 'disc', 'bt', 'play', 'brand', 'star']) {
 rules.push(['surface', 'play-shade', 4.5, 'white text on play button fill']);
 rules.push(['try-ink', 'try', 3, 'wrong badge and try toast icon'], ['ink-3', 'surface', 3, 'switch track off'], ['brand', 'paper', 3, 'focus ring']);
 let fail = 0;
-// Home (P4-08): placement card text, the logo star, the stickers and Fact Sprint badge icons, the review count
-rules.push(['ink', 'brand-tint', 4.5, 'home placement card text'], ['star', 'brand', 3, 'home logo star'], ['try-ink', 'star', 3, 'home stickers icon'],
+// Home (P4-08): placement card text, the stickers and Fact Sprint badge icons, the review count. BRAND (v193): the star-on-brand logo
+// tile is gone (owner approved the D2 logo 2026-11-22); the wordmark is --ink and --brand on paper or surface ("text on" rules above)
+rules.push(['ink', 'brand-tint', 4.5, 'home placement card text'], ['try-ink', 'star', 3, 'home stickers icon'],
   ['ink', 'star', 3, 'home bolt badge'], ['surface', 'read', 4.5, 'home review count']);
 // map scenes (P4-09): every scene sky and ground behind the map stops is quiet: ink 7:1, and the path colours 3:1 (the stop rings,
 // WCAG 1.4.11); the night skies (space headers) hold only the white title pill and the moon

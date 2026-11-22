@@ -356,6 +356,33 @@ the file is the source of truth. Any authoring approach is fine as long as the o
 
 `picFor(word)` returns object art when it exists, else the emoji, so replacement is gradual and nothing breaks. The emoji allowlist test still applies to whatever remains.
 
+### 6.6 Logo (BRAND, v193; owner approved the refined D2 logo 2026-11-22)
+
+A crimson and brass steam engine, head-on, at dusk; the wordmark "Whistle" in `--ink` and "stop" in `--brand`, Andika 700, with a
+`--star` star for the dot on the i.
+
+| File | What it is |
+|------|-----------|
+| `docs/brand/whistlestop-icon.svg` | The source. `g#mark-ws`: the full-bleed 100x100 mark (dusk sky, hills, rails, the engine inside the circle of radius 33); `g#tile`: the mark zoomed 1.4x in a rounded square (rx 22); `g#word`: the wordmark, outlined |
+| `docs/brand/icon-small.svg` | The engine in a few big shapes on a 32 grid, for 16 to 48 px |
+| `docs/brand/icons/*.png` | Drawn by `node tools/brand-icons.js` (Chrome), committed, copied to the root by `tools/build.py`: `icon-192/512.png` (`any`, the tile, transparent corners), `icon-maskable-192/512.png` (`maskable`, full bleed, opaque), `favicon-32.png` (the small one). Run it again only when an SVG changes |
+| `docs/brand/store/` | Play listing: `icon-512.png` (512x512, 32-bit, full bleed, every pixel opaque) and `feature-1024x500.png` (the feature graphic, no alpha) |
+| `UI.logo(cls, word)`, `UI.LOGO` (`src/js/14-ui.js`) | In the app: the small icon as inline SVG (tokens only, about 1.3 KB; its sky is the tile's CSS gradient, `.wl-mk` in `10-components.css`) and the wordmark as text in the display font, the i drawn as a dotless i with an SVG star. One `role="img"` named "Whistlestop"; the drawing and the letters are `aria-hidden` |
+
+Where it is used: Home's top bar (the icon alone under 480 px, the word hidden as before), the setup header (the `h1`), the top of
+About Whistlestop, the Try again screen ("needs to finish updating"), the "Who is playing?" picker (the icon only, decorative), the
+favicon, the installed icon and splash, and the information page `site/landing.html` (the icon and the outlined wordmark on a light
+dusk band).
+
+Colours: crimson `--ill-red-2` / `--ill-red-3`, brass and lamp `--ill-yellow`, `--ill-yellow-1`, `--ill-yellow-2`, metal `--ill-ink`,
+`--ill-ink-2`, `--ill-grey`; the sky `--ill-blue-3` to `--ill-orange-1` to `--ill-tan-1` (the full mark starts from `--ink` at the
+top); the wordmark `--ink` and `--brand`, the dot `--star`. `manifest.json` `theme_color` and `background_color` are `--ink` (the
+dusk navy), so the splash screen is the icon on the top of its own sky.
+
+Exception: the logo has a thin `--ink` outline on its main shapes (cab, chimney cap, buffer beam, buffers, pilot), which the
+illustration rule in 6.1 ("no black outlines") does not allow elsewhere. It keeps the engine readable at 32 px and on the launcher's
+own background. Nothing else gets outlines because of it.
+
 ## 7. Map and world scenes (chunk P4-09, Opus)
 
 - **Scene generator**: `scene(recipe)` returns one static SVG used as the world backdrop and as the small world chip.
@@ -488,7 +515,7 @@ Order matters: tokens, then icons, then components, then screens from most seen 
 | 8c | Snack Stand (G-04a) | G-04a | Built new on the P4-16 chrome (`GH.reg` card: the stand with a striped awning, a cat ordering an ice cream; shared top bar with Pause, coins and time; pause sheet; end card with the child's stand and a Closed sign). HTML and inline SVG, no canvas: the place behind the stand (park, beach, snowy hill, fair, moon; 400 x 200, `--sc-*` sky), an awning redrawn with as many stripes as the width needs (the scallops keep their shape), a sign that flips to Closed, customers (the app's ART animals) with order bubbles of 48-84 px food pictures that tick as the food goes on the plate, a patience heart bar in Busy, the counter (labelled Undo, the plate drawn as the snack builds up, Serve, all 64 px+), station tabs and food buttons (64 px+, picture and name), a grill with two pans, a till with drawn coins. Food pictures reuse ART (bread, cheese, egg, cookie, cake, milk, pizza, apple, grapes) and add tomato, lettuce, four ice creams on cones, four juices, hot cocoa, a star cookie, pancakes, in the 6.5 style; decorations (flower pot, little tree, balloons, menu board, bunting, lantern, bell, tip jar, helper bird) the same. CSS `src/css/49-game-snack.css` (tokens only; counters in wood, mint tiles or candy stripes from `--ill-*`) |
 | 8d | Sky Hop (G-04b) | G-04b | Built new on the P4-16 chrome (`GH.reg` card: a little green critter mid-hop from a flower spring between two clouds, a star, a checkered flag; shared top bar over the canvas (`.gh-hud`: Pause, stars found, course clock, time); pause sheet; the helper balloon's question as a card over the course; end card with stars, time, sparkles and the medal). A side view on a canvas: the child's own pet (the rig with its hat and toy, its colours read from CSS, drawn once into three pictures: happy, cheer, oops) squashes when it lands and stretches when it hops. Everything else is SVG in the 6.5 object-art style made once into canvases: puffy cloud floors in the world's colours (white, icy blue, lilac at night, pink in the rainbow world) whose shaded underside reaches down to a lower neighbour, wood and rainbow bridges, flower springs, friendly puffs with faces, kite clouds with their kite, stars and sparkles, checkpoint flags (pale, then green), the checkered goal flag, a red switch that turns green, candy-striped gates, the smiling helper balloon; far hills or peaks or a rainbow and a near bank of clouds per world, moving slower than the course; the sky a gradient of two `--sc-*` tokens with the sun or the moon. Wind is drawn as moving streaks, updrafts as rising dots. Calm mode: no shake, fewer bits, softer sounds. Menu and controls in `src/css/49-game-skyhop.css` (tokens only; 96-124 px Hop / walk buttons with a ledge) |
 | 9 | Brain Teasers, Fact Sprint, streak calendar, report card | built new | Built with tokens and components from the start (they come after P4-01 and P4-02) |
-| 10 | App icon, splash, manifest colours | P4-12 | New star mark on `--brand`, maskable-safe padding, `theme_color` = `--paper`. Shipped (P4-12): a shaded star with a face (light rim top left, shade rim and ledge bottom right, two sparkles) on `--brand` with a soft gloss, drawn by `tools/build.py` at 4x and scaled to 192 and 512; full bleed and opaque, everything inside the 40% safe circle, so both files are listed as `any` and `maskable`; `theme_color` and `background_color` are `--paper` |
+| 10 | App icon, splash, manifest colours | P4-12 | New star mark on `--brand`, maskable-safe padding, `theme_color` = `--paper`. Shipped (P4-12): a shaded star with a face (light rim top left, shade rim and ledge bottom right, two sparkles) on `--brand` with a soft gloss, drawn by `tools/build.py` at 4x and scaled to 192 and 512; full bleed and opaque, everything inside the 40% safe circle, so both files are listed as `any` and `maskable`; `theme_color` and `background_color` are `--paper`. **Replaced by BRAND (v193)**: the D2 engine logo, section 6.6; `any` and `maskable` are separate files; `theme_color` and `background_color` are `--ink` |
 
 For each screen chunk: take "before" screenshots first, restyle, take "after" screenshots at 600x960, 1024x600 and 380x780, list both sets in PROGRESS.md.
 

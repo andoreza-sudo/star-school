@@ -171,7 +171,8 @@ Play Console says so on its dashboard if it applies.
 In Play Console, find the **main store listing**:
 - App name: Whistlestop: Kids Math & Reading. Short and full description: say "Free to try, one-time unlock"; no ads, no accounts,
   works offline.
-- Icon 512 x 512 (`icon-512.png`), a feature graphic (1024 x 500), phone and tablet screenshots from `node tools/shots.js` (and
+- Icon 512 x 512 (`docs/brand/store/icon-512.png`: 32-bit, full bleed, no transparency; not the app's own `icon-512.png`, whose corners
+  are transparent), the feature graphic (`docs/brand/store/feature-1024x500.png`), phone and tablet screenshots from `node tools/shots.js` (and
   `tools/out/play/` from the smoke step PLAY-01 for the unlock screens).
 - Category: Education. Contact e-mail: `hello@whistlestoplearning.com`. Privacy policy: `https://whistlestoplearning.com/privacy.html`.
 

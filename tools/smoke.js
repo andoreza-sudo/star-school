@@ -846,7 +846,7 @@ async function main() {
       const fs = require('fs'), os = require('os'), path = require('path');
       const { ROOT } = require('./lib/browser');
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-a11-'));
-      for (const f of ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', ...files]) fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f));
+      for (const f of ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'favicon-32.png', ...files]) fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f));
       const url = 'file://' + path.join(tmp, 'index.html');
       const NOFILE = /ERR_FILE_NOT_FOUND|Failed to load resource/;
       const guard = async (label, allowed, log) => {
@@ -10720,6 +10720,38 @@ async function main() {
           await pa.ctx.close();
         }
       }
+      // BRAND (v193; owner approved the D2 logo 2026-11-22): Home's top bar and setup show the logo (UI.logo: the small icon and the
+      // wordmark, named Whistlestop); under 480 px Home shows the icon alone; nothing in the bar or the page runs off the side.
+      // Screenshots: tools/out/brand/app-home-<w>.png, app-setup-<w>.png.
+      for (const [w, h] of [[360, 740], [1024, 600]]) {
+        for (const fx of ['midway', 'fresh']) {
+          const pa = await openApp(browser, { fixture: fx, width: w, height: h, lazy: true }), pg = pa.page, t = 'logo ' + w + 'x' + h + ' ' + fx;
+          try {
+            const lg = await pg.evaluate(() => {
+              const l = document.querySelector(document.querySelector('.hm-top') ? '.hm-top .wl.hm-logo' : '.su-top h1 .wl'), vw = document.documentElement.clientWidth;
+              if (!l) return null;
+              const mk = l.querySelector('.wl-mk').getBoundingClientRect(), wd = l.querySelector('.wl-w'), bar = l.parentElement;
+              const out = [...bar.querySelectorAll('*')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.left < -1 || r.right > vw + 1); }).length;
+              return { role: l.getAttribute('role'), name: l.getAttribute('aria-label'), hid: [...l.children].every(c => c.getAttribute('aria-hidden') === 'true'),
+                mk: Math.round(mk.width), word: getComputedStyle(wd).display !== 'none' ? wd.textContent : '', stop: getComputedStyle(wd.querySelector('b')).color,
+                star: !!document.querySelector('.hm-mark, .su-mark'), out, wide: document.documentElement.scrollWidth - vw, h1: (document.querySelector('h1') || {}).textContent };
+            });
+            if (!lg) throw new Error('no logo');
+            if (lg.role !== 'img' || lg.name !== 'Whistlestop' || !lg.hid) bad.push(t + ': the logo is not one image named Whistlestop with its parts hidden: ' + JSON.stringify(lg));
+            if (lg.mk < 40) bad.push(t + ': the icon is ' + lg.mk + ' px');
+            const wantWord = fx === 'fresh' || w > 480;
+            if (wantWord !== (lg.word === 'Wh\u0131stlestop')) bad.push(t + ': the word "' + lg.word + '" (wanted it ' + (wantWord ? 'shown' : 'hidden') + ')');
+            if (lg.word && lg.stop !== 'rgb(59, 91, 219)') bad.push(t + ': "stop" is ' + lg.stop + ', not --brand');
+            if (lg.star) bad.push(t + ': the old star tile is still drawn');
+            if (lg.out || lg.wide > 0) bad.push(t + ': ' + lg.out + ' parts of the bar run off the side, the page scrolls sideways by ' + lg.wide + ' px');
+            fs.mkdirSync(path.join(ROOT, 'tools', 'out', 'brand'), { recursive: true });
+            await pg.screenshot({ path: path.join(ROOT, 'tools', 'out', 'brand', 'app-' + (fx === 'fresh' ? 'setup' : 'home') + '-' + w + '.png') });
+          } catch (e) { bad.push(t + ' ' + e.message.split('\n')[0]); }
+          network.push(...pa.network);
+          for (const e of pa.errors) fail(e);
+          await pa.ctx.close();
+        }
+      }
       // Owner decision 2026-11-20 (app on the subdomain): the information page whistlestoplearning.com/ (site/landing.html, the second
       // Vercel project) at phone and tablet sizes: no horizontal scroll, no script and no service worker, the privacy policy next to it,
       // the Play link and the contact e-mail, and no link to the web app.
@@ -10730,12 +10762,12 @@ async function main() {
           await pg.goto('file://' + path.join(ROOT, 'site', 'landing.html'));
           const ld = await pg.evaluate(async () => ({ sw: navigator.serviceWorker && /^http/.test(location.protocol) ? (await navigator.serviceWorker.getRegistrations()).length : 0, // file://: no script means no registration
             scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth, scripts: document.scripts.length,
-            links: [...document.querySelectorAll('a')].map(a => a.getAttribute('href')), h1: (document.querySelector('h1') || {}).textContent,
+            links: [...document.querySelectorAll('a')].map(a => a.getAttribute('href')), h1: (document.querySelector('h1 svg[role="img"]') || { getAttribute: () => '' }).getAttribute('aria-label'),
             img: [...document.images].every(i => i.complete && i.naturalWidth > 0) }));
           const t = 'landing ' + w + 'x' + h;
           if (ld.scroll > 0) bad.push(t + ': scrolls sideways by ' + ld.scroll + ' px');
           if (ld.scripts || ld.sw) bad.push(t + ': has a script or a service worker');
-          if (ld.h1 !== 'Whistlestop' || !ld.img) bad.push(t + ': the title or the icon: ' + ld.h1 + ' ' + ld.img);
+          if (ld.h1 !== 'Whistlestop' || !ld.img) bad.push(t + ': the title or the icon: ' + ld.h1 + ' ' + ld.img); // BRAND: the h1 is the wordmark, an svg named Whistlestop
           if (!ld.links.includes('privacy.html') || !fs.existsSync(path.join(ROOT, 'site', 'privacy.html'))) bad.push(t + ': the privacy policy link: ' + ld.links.join(' '));
           if (!ld.links.some(l => /^https:\/\/play\.google\.com\//.test(l)) || !ld.links.includes('mailto:hello@whistlestoplearning.com')) bad.push(t + ': the Play link or the e-mail: ' + ld.links.join(' '));
           if (ld.links.some(l => /app\.whistlestoplearning|index\.html/.test(l))) bad.push(t + ': links the web app: ' + ld.links.join(' '));
@@ -10744,7 +10776,8 @@ async function main() {
         await ctx.close();
       }
       if (bad.length) fail('P6-05 release:\n  ' + bad.slice(0, 40).join('\n  '));
-      else step('P6-05 release 1.0 at 380x780 and 1024x600: a fresh install (setup to Home) and an upgrade from the legacy and midway saves (' + notes.join(', ') +
+      else step('BRAND: Home and setup at 360x740 and 1024x600 show the logo (one image named Whistlestop; the icon alone on Home under 480 px), nothing runs off the side (tools/out/brand/app-*.png); ' +
+        'P6-05 release 1.0 at 380x780 and 1024x600: a fresh install (setup to Home) and an upgrade from the legacy and midway saves (' + notes.join(', ') +
         ') opened Home with the same stars and name, the title, the footer and Grown-ups > About Whistlestop say Whistlestop 1.0.0 and build ' + build + ', the privacy policy is linked, the Andika licence is listed and opens; the information page (site/landing.html) at 360x740 and 1024x600: no sideways scroll, no script or service worker, privacy, Play and e-mail links, no link to the web app');
     }
 
