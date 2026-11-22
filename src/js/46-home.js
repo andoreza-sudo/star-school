@@ -19,7 +19,7 @@ function setup() {
   let pet = S.pet, grade = gradeOf();
   const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
     `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
-  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Whistlestop</span></h1>` +
+  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo">${UI.logo()}</h1>` +
     `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}` +
     `${PRF.many() ? UI.ibtn('back', 'Back', { id: 'suback', size: 'sm' }) : ''}</header>` +
     `<div class="su-grid">` +
@@ -320,7 +320,7 @@ function hmGift(){const p=S.pt;if(!p||!(p.gift>=30))return'';const t=hmGiftLine(
 function home(first){
   if(!S.name)return setup();
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
-  view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Whistlestop</span></div><div class="sp"></div>${inst}
+  view(`<div class="top tbar hm-top">${UI.logo('hm-logo')}<div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${PRF.homeBtn()}${NAV.gateHTML()}</div>
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">

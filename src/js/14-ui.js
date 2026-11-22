@@ -124,6 +124,28 @@ const UI = {
     return `<div class="blank"><span class="bi">${ico(icon)}</span><p>${UI.t(line)}</p>${actionHtml}</div>`;
   },
 
+  // BRAND (v193; DESIGN_SYSTEM "Logo"): the logo, the small icon (docs/brand/icon-small.svg without its sky, which is the tile's CSS
+  // background) and the wordmark, "Whistle" in --ink, "stop" in --brand, a star for the dot on the i (a dotless i, U+0131,
+  // with the star drawn over it). One accessible name, Whistlestop;
+  // the drawing and the letters are aria-hidden. cls: where it sits (hm-logo, su-logo ...); word: false draws the icon only.
+  logo(cls = '', word = true) {
+    return `<span class="wl ${cls}" role="img" aria-label="Whistlestop">${UI.LOGO}` + (word ? '<span class="wl-w" aria-hidden="true">Wh' +
+      '<span class="wl-i">ı<svg viewBox="0 0 14 13.4"><path d="M7 0l2 4.7 5 .4-3.8 3.4 1.1 4.9L7 10.8l-4.4 2.6 1.2-4.9L0 5.1l5-.4z"/></svg></span>' +
+      'stle<b>stop</b></span>' : '') + '</span>';
+  },
+  LOGO: '<svg class="wl-mk" viewBox="0 0 32 32" aria-hidden="true"><g stroke="var(--ill-ink)" stroke-width=".9">' +
+    '<path fill="var(--ill-ink-2)" stroke="none" d="M13.2 3.6h5.6v5h-5.6z"/><rect x="12" y="2.2" width="8" height="2.6" rx="1" fill="var(--ill-yellow-2)" stroke-width=".7"/>' +
+    '<rect x="3.6" y="8.2" width="24.8" height="15" rx="2" fill="var(--ill-red-2)"/><g stroke="none">' +
+    '<path fill="var(--ill-red-3)" d="M24.4 9H28v13.8h-3.6z"/><rect x="5.4" y="10" width="3.4" height="3" rx=".8" fill="var(--ill-yellow)"/>' +
+    '<rect x="23.2" y="10" width="3.4" height="3" rx=".8" fill="var(--ill-yellow-2)"/><circle cx="16" cy="15.6" r="7.2" fill="var(--ill-ink)"/>' +
+    '<circle cx="16" cy="16" r="5.6" fill="var(--ill-ink-2)"/><circle cx="16" cy="16.4" r="2.6" fill="var(--ill-yellow)"/>' +
+    '<path fill="var(--ill-red-2)" d="M16 14.7l.5 1.2 1.3.1-1 .9.3 1.2-1.1-.6-1.1.6.3-1.2-1-.9 1.3-.1z"/>' +
+    '<circle cx="16" cy="9.2" r="2.7" fill="var(--ill-yellow-2)"/><circle cx="16" cy="9.2" r="1.9" fill="var(--ill-yellow-1)"/></g>' +
+    '<rect x="3.2" y="22.6" width="25.6" height="3.4" rx="1" fill="var(--ill-red-2)"/>' +
+    '<g fill="var(--ill-yellow)" stroke-width=".7"><circle cx="4.6" cy="24.3" r="1.7"/><circle cx="27.4" cy="24.3" r="1.7"/></g>' +
+    '<path fill="var(--ill-grey)" stroke-linejoin="round" d="M7.5 26h17l-3.3 4.3H10.8z"/>' +
+    '<path fill="none" stroke-width="1" d="M13 26.2l.8 4M16 26.2v4M19 26.2l-.8 4"/></g></svg>',
+
   // Switch. Read it with $('#id').checked.
   sw(label, on, id) {
     return `<label class="switch"><input type="checkbox" role="switch"${UI._id(id)}${on ? ' checked' : ''}>` +

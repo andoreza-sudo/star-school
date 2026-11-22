@@ -260,6 +260,8 @@ const SCREENS = {
   // RENAME (v191): About Whistlestop with its Privacy policy button; the moved notice as the old address shows it (at the top of Grown-ups)
   'grown-about': { adult: true, run: ev(() => { grown(); document.querySelector('#gw-about').scrollIntoView({ block: 'start' }); }) },
   'grown-moved': { adult: true, run: ev(() => { grown(); document.querySelector('.scroll.gw').insertAdjacentHTML('afterbegin', gwMoved('andoreza-sudo.github.io')); }) },
+  // BRAND (v193): the Try again screen ("needs to finish updating") now starts with the logo
+  'data-missing': { run: ev(() => dataMissing()) },
   // PLAY-01: the Play app's free sample: a locked world on the map with the grown-ups' button, and the child's line when a locked stop
   // is tapped (sheet); the Unlock Whistlestop sheet (behind the grown-up question) and its card in Grown-ups, with the price from Google Play
   'play-map': {

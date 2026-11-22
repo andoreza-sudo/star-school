@@ -269,7 +269,7 @@ const PRF = {
         `${hmScene(i.scene)}<span class="pf-pet">${PRF.pet(i)}</span></span><span class="pf-nm">${esc(nm)}</span>` +
         `<span class="pf-st" aria-hidden="true">${ico('star', 24)}<b>${i.stars}</b></span></button>`;
     }).join('');
-    view(`<div class="scroll pf-who" id="pfwho"><header class="pf-top"><h1 class="pf-t"><span class="hm-mark">${ico('star', 30)}</span>` +
+    view(`<div class="scroll pf-who" id="pfwho"><header class="pf-top"><h1 class="pf-t">${UI.LOGO}` +
       `<span>Who is playing?</span></h1>${UI.ibtn('speak', 'Hear it', { id: 'pfspk' })}</header>` +
       `<div class="pf-grid n${PRF.count()}">${cards}</div><div id="pf-msg" role="status"></div></div>`);
     $('#pfspk').onclick = e => say('Who is playing? Tap your picture.', e.currentTarget);
