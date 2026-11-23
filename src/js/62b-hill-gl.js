@@ -368,7 +368,9 @@ function hgFrame(H, W, Hh, dpr, sh) {
     if (K.wz) wheelsAt(-K.wz);
     // the body: slices of its art through its depth, back (darker) to front, in the car's frame
     const body = hcBody(R2, H), cr = hgCrop(body), btex = GLX.tex(R, 'body', body), W0 = body.width, H0 = body.height;
-    const bw = (cr[2] - cr[0]) / sc, bh = (cr[3] - cr[1]) / sc, bxc = ((cr[0] + cr[2]) / 2 - body.ox) / sc, byc = (body.oy - (cr[1] + cr[3]) / 2) / sc + H.bob;
+    // GFX-1: the landing squash (H.sq, 62-hill.js): a little wider and flatter for a moment, its foot kept on the axles
+    const q = H.sq || 0, bw0 = (cr[2] - cr[0]) / sc, bh0 = (cr[3] - cr[1]) / sc, bw = bw0 * (1 + .08 * q), bh = bh0 * (1 - .15 * q);
+    const bxc = ((cr[0] + cr[2]) / 2 - body.ox) / sc, byc = (body.oy - (cr[1] + cr[3]) / 2) / sc + H.bob - (bh0 - bh) / 2;
     gl.enable(gl.BLEND); gl.depthMask(false);
     const NS = H.veh == 'bike' ? 3 : 7, tn = O.tn;
     for (let i = 0; i < NS; i++) { const u = i / (NS - 1), z = -K.body + 2 * K.body * u; tn[0] = tn[1] = tn[2] = i == NS - 1 ? 1 : .5 + .25 * u; GLX.bq(B, bxc, byc, z, bw, bh, 0, cr[0] / W0, cr[1] / H0, cr[2] / W0, cr[3] / H0, tn); }

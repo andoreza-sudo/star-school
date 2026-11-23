@@ -51,7 +51,7 @@ function hcA(role,a){const c=hcC(role);if(!/^#[0-9a-f]{6}$/i.test(c))return c;co
    per world: g gravity (px/s^2), soft (the world's soft ground), pit (what a gap holds), sky (two --sc-* tokens), top/top2 (road),
    dirt/dirt2, far/far2/mid (background layers), prop (roadside things), water (the fill of gaps, fords, under bridges) */
 const HCW=[
-  {id:'meadow',n:'Green Meadow',g:620,soft:'mud',pit:'water',sky:['sc-sky','sc-sky-1'],top:'g',top2:'g2',dirt:'n',dirt2:'n2',far:'e2',far2:'e3',mid:'g1',water:'c',prop:'tree',snowcap:1},
+  {id:'meadow',n:'Green Meadow',g:620,soft:'mud',pit:'water',sky:['sc-sky','sc-sky-1'],top:'g',top2:'g2',dirt:'n',dirt2:'n2',far:'c2',far2:'b1',mid:'g1',water:'c',prop:'tree',snowcap:1},
   {id:'desert',n:'Sunny Desert',g:620,soft:'sand',pit:'water',sky:['sc-dusk','sc-sun'],top:'y',top2:'y2',dirt:'o2',dirt2:'o3',far:'o2',far2:'o3',mid:'t',water:'c',prop:'cactus'},
   {id:'jungle',n:'Jungle River',g:620,soft:'mud',pit:'water',sky:['sc-mint','sc-green'],top:'g2',top2:'g3',dirt:'n2',dirt2:'n3',far:'g3',far2:'g2',mid:'g2',water:'c2',prop:'palm'},
   {id:'snow',n:'Snowy Peaks',g:620,soft:'ice',pit:'water',sky:['sc-blue','sc-sky-1'],top:'w',top2:'w2',dirt:'e2',dirt2:'e3',far:'e2',far2:'e3',mid:'w2',water:'b1',prop:'pine',snowcap:1},
@@ -406,7 +406,7 @@ const hcAng=H=>Math.atan2(H.w2.y-H.w1.y,H.w2.x-H.w1.x);
 const hcAV=H=>{let d=hcAng(H)-Math.atan2(H.w2.py-H.w1.py,H.w2.px-H.w1.px);if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;return d};
 const hcWrap=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
 function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,ui=H.ui;
-  H.t+=dt;H.bobV+=(-H.bob*260-H.bobV*(14+H.susp*4))*dt;H.bob+=H.bobV*dt;
+  H.t+=dt;if(H.sq)H.sq=Math.max(0,H.sq-dt/.14);H.bobV+=(-H.bob*260-H.bobV*(14+H.susp*4))*dt;H.bob+=H.bobV*dt;
   if(H.boss){H.boss.x=hcRivalX(H);if(!H.boss.lost&&H.boss.x>=C.fin){H.boss.lost=true;if(ui){hcMsg(`${HC_BOSS[H.wi][0]} is at the flag! Keep going!`,2200)}}} // G-MOVES
   if(H.crashT>0){H.crashT-=dt;hcParts(H,dt);if(H.crashT<=0)hcRespawn(H);return}
   if(H.hopT>0)H.hopT-=dt;if(H.hopQ){H.hopQ=0;hcHop(H,dt)} // G-MOVES: the Hop
@@ -436,7 +436,7 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,u
       for(const px of C.pads)if(p.x>=px&&p.x<=px+60&&H.boostT<=0){H.boostT=.9;if(ui){hcPop('Zoom!');HSND.trick(1)}}
       p.px=p.x-tx*vt;p.py=p.y-ty*vt;p.rot+=vt/R*(gas&&H.acc>trac?1.6:1)}
     else p.rot+=(p.x-p.px)/R*.99}
-  if(landV>200){H.bobV+=Math.min(landV,900)*.06/(1+H.susp*.15);if(landV>380&&ui)HSND.land(landV)}
+  if(landV>200){H.bobV+=Math.min(landV,900)*.06/(1+H.susp*.15);if(ui&&!H.calm)H.sq=Math.min(1,landV/700);if(landV>380&&ui)HSND.land(landV)}
   if(H.crates&&landV>H.drop+A.soft&&H.safeT<=0)hcCrate(H);
   let tq=0;const ang=hcAng(H),cx=(H.w1.x+H.w2.x)/2,cy=(H.w1.y+H.w2.y)/2,slopeB=hcSlopeL(C,cx,20);
   if(ground==0){tq=((gas?4.6:0)-(brk?4.6:0))*A.air;H.air+=dt}
@@ -478,16 +478,19 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,u
     if(C.endless)H.bolts+=5;if(ui){HSND.cp(H.cpi);hcMsg(C.endless?`${Math.round((H.cp-60)/20)} m! Plus 5 bolts`:'Checkpoint! A flip starts again here.',1600)}}
   for(let k=0;k<C.fuel.length;k++){const fx=C.fuel[k];if(Math.abs(fx-cx)<60&&!H.took.has('f'+k)){H.took.add('f'+k);H.fuel=100;if(ui){HSND.fuel();hcPop('Full tank!')}}}
   if(A.ball)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(Math.abs(bx-cx)<70&&!H.took.has('a'+k)&&H.crashT<=0){H.took.add('a'+k);H.ballT=2.6;if(ui){HSND.balloon();hcPop('Balloons! Float over!')}}}
-  for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(!H.took.has('s'+k)&&Math.abs(s.x-cx)<50&&Math.abs(s.y-cy)<45){H.took.add('s'+k);H.gotStar=true;H.bolts+=10;if(ui){HSND.star();hcPop('You found the star!')}}}
+  for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(!H.took.has('s'+k)&&Math.abs(s.x-cx)<50&&Math.abs(s.y-cy)<45){H.took.add('s'+k);H.gotStar=true;H.bolts+=10;if(ui){HSND.star();hcPop('You found the star!');hcJuice(H,s.x,s.y,8)}}}
   // the lookout: stopped on it (both wheels down, hardly moving) for 0.4 s
   if(!H.stopped&&C.looks.length){const z=C.looks.find(q=>cx>=q.x0&&cx<=q.x1);if(z&&ground==2&&Math.hypot(H.w1.x-H.w1.px,H.w1.y-H.w1.py)/dt<15){H.stopT+=dt;if(H.stopT>=.4){H.stopped=true;H.bolts+=5;if(ui){HSND.star();hcPop('What a view! Plus 5')}}}else H.stopT=0}
   while(H.ci<C.coins.length&&C.coins[H.ci].x<cx-90)H.ci++;
-  for(let j=H.ci;j<C.coins.length&&C.coins[j].x<cx+90;j++){const o=C.coins[j];if(H.took.has(j))continue;if(Math.abs(o.x-cx)<46&&Math.abs(o.y-cy)<62){H.took.add(j);H.bolts+=C.endless?1+Math.floor(o.x/10000):1;if(ui){HSND.coin(H);H.pops.push({x:o.x,y:o.y,l:.7})}}}
+  for(let j=H.ci;j<C.coins.length&&C.coins[j].x<cx+90;j++){const o=C.coins[j];if(H.took.has(j))continue;if(Math.abs(o.x-cx)<46&&Math.abs(o.y-cy)<62){H.took.add(j);H.bolts+=C.endless?1+Math.floor(o.x/10000):1;if(ui){HSND.coin(H);H.pops.push({x:o.x,y:o.y,l:.7});hcJuice(H,o.x,o.y,2)}}}
   const sp=Math.hypot(H.w1.x-H.w1.px,H.w1.y-H.w1.py)/dt;H.speed=sp;
   if(H.fuel<=0){if(sp<25&&ground)H.stuckT+=dt;else H.stuckT=0;if(H.stuckT>1.4){if(C.endless){H.over=true;H.result='fuel';return}H.why='fuel';H.crashes++;H.crashT=.9;if(ui){hcMsg('Out of gas! Back to the checkpoint with a full tank.',2200);if(S.voice)say('Out of gas! Here is a full tank.')}return}}
   if(ui)hcFx(H,gas,ang,cx,cy,sp,wet);
   hcParts(H,dt)}
-function hcParts(H,dt){const g=HCW[H.wi].g;for(const d of H.parts){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy-=g*dt*d.g;d.l-=dt}H.parts=H.parts.filter(d=>d.l>0);if(H.parts.length>160)H.parts.splice(0,H.parts.length-160);
+// GFX-1: a pick-up's little burst of stars and its flight to the bolts chip (JFX.fly, 59b-fx.js; neither in calm mode)
+function hcJuice(H,wx,wy,n){if(H.calm)return;for(let i=0;i<n;i++){const a=i/n*6.28+H.t;H.parts.push({x:wx,y:wy,vx:Math.cos(a)*140,vy:Math.sin(a)*140+120,g:.5,l:.55,s:4,c:i%2?'y':'y1'})}
+  const cv=document.getElementById('hcv');if(!cv||!H.scr||typeof JFX=='undefined')return;const b=cv.getBoundingClientRect(),k=b.width/cv.width;JFX.fly(b.left+H.scr[0](wx)*k,b.top+H.scr[1](wy)*k,'#hcb','nut')}
+function hcParts(H,dt){const g=HCW[H.wi].g;for(const d of H.parts){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy-=g*dt*d.g;d.l-=dt}H.parts=H.parts.filter(d=>d.l>0);const pc=H.pcap||30;if(H.parts.length>pc)H.parts.splice(0,H.parts.length-pc);
   for(const p of H.pops){p.l-=dt;p.y+=60*dt}H.pops=H.pops.filter(p=>p.l>0)}
 // dust, smoke, splashes and the engine note (only on screen)
 function hcFx(H,gas,ang,cx,cy,sp,wet){const C=H.C,Wd=HCW[H.wi],soft=hcSoftAt(C,H.w1.x);
@@ -946,6 +949,11 @@ function hcChunk(R,H,k){let ch=R.chunks.get(k);if(ch)return ch;const C=H.C,Wd=HC
   for(const p of C.pits)if(Wd.pit!='crater')pool(p.x0+4,p.x1-4,p.y-p.d*.5,p.y-p.d);
   for(const b of C.bridges)pool(b.x0+20,b.x1-20,b.y-60,b.y-95);
   x.lineJoin='round';const road=(w,col,dy)=>{x.lineWidth=w;x.strokeStyle=col;x.beginPath();let pen=false;for(const[px,py,w0]of pts){if(C.fl[hcIx(C,w0)]&5){pen=false;continue}pen?x.lineTo(px,py+dy):x.moveTo(px,py+dy);pen=true}x.stroke()};
+  // GFX-1: stones and pebbles in the earth (lit from the top left), then a dark lip just under the road so the top reads as a ledge
+  {const st=hcC(Wd.space?'e1':'e2'),hi=hcA('w',.35),sh=hcA('k',.18);for(let w0=Math.ceil((x0-40)/37)*37;w0<x1+40;w0+=37){const hs=Math.abs(Math.sin(w0*.0731)*43758.5453)%1;if(hs<.35)continue;
+    const gy=hcH(C,w0),d=30+hs*hs*170,r=(4+hs*9)*sc,px=X(w0+hs*20),py=Y(gy-d);if(py>c.height+r)continue;
+    x.fillStyle=sh;x.beginPath();x.ellipse(px+r*.2,py+r*.25,r*1.15,r*.8,0,0,7);x.fill();x.fillStyle=st;x.beginPath();x.ellipse(px,py,r*1.1,r*.75,0,0,7);x.fill();x.fillStyle=hi;x.beginPath();x.ellipse(px-r*.35,py-r*.3,r*.4,r*.22,-.3,0,7);x.fill()}}
+  road(DY+7*sc,hcA('k',.28),4*sc);
   road(DY,hcC(Wd.top),0);road(5*sc,hcA('w',.45),-hd+2*sc);road(3*sc,hcC(Wd.top2),hd);
   for(const s of C.soft){if(s.x1<x0-30||s.x0>x1+30)continue;const so=SOFT[s.k];x.strokeStyle=hcC(so.c);x.lineWidth=DY*.9;x.beginPath();let pen=false;for(let w0=Math.max(s.x0,x0-30);w0<=Math.min(s.x1,x1+30);w0+=6){if(C.fl[hcIx(C,w0)]&1){pen=false;continue}const py=Y(hcH(C,w0));pen?x.lineTo(X(w0),py):x.moveTo(X(w0),py);pen=true}x.stroke();
     x.fillStyle=hcC(so.c2);for(let w0=s.x0+20;w0<s.x1;w0+=45)if(w0>x0-20&&w0<x1+20){x.beginPath();x.arc(X(w0),Y(hcH(C,w0))-4*sc,3.4*sc,0,7);x.fill()}
@@ -956,7 +964,8 @@ function hcChunk(R,H,k){let ch=R.chunks.get(k);if(ch)return ch;const C=H.C,Wd=HC
     x.lineWidth=2*sc;x.beginPath();x.moveTo(X(b.x0),Y(b.y)-42*sc);x.quadraticCurveTo(X((b.x0+b.x1)/2),Y(b.y)-30*sc,X(b.x1),Y(b.y)-42*sc);x.stroke()}
   for(const r of C.rocks){if(r.x1<x0-40||r.x0>x1+40)continue;const bx=X((r.x0+r.x1)/2),by=Y(r.y),rw=(r.x1-r.x0)/2*sc,rh=r.h*sc;x.fillStyle=hcC(Wd.space?'e':'e2');x.beginPath();x.ellipse(bx,by,rw*1.05,rh+3*sc,0,Math.PI,0);x.fill();
     x.fillStyle=hcC(Wd.space?'e1':'e');x.beginPath();x.ellipse(bx-rw*.25,by-rh*.45,rw*.45,rh*.4,0,0,7);x.fill();if(Wd.id=='snow'){x.fillStyle=hcC('w');x.beginPath();x.ellipse(bx,by-rh*.85,rw*.6,rh*.25,0,Math.PI,0);x.fill()}}
-  if(Wd.id=='meadow'||Wd.id=='jungle'){x.fillStyle=hcC(Wd.top2);for(let w0=Math.ceil((x0-10)/22)*22;w0<x1+10;w0+=22){if(C.fl[hcIx(C,w0)]||C.sk[hcIx(C,w0)])continue;const px=X(w0),py=Y(hcH(C,w0))-hd+2*sc;x.beginPath();x.moveTo(px-3*sc,py);x.lineTo(px+((w0/22)%2?2:-2)*sc,py-9*sc);x.lineTo(px+3*sc,py);x.fill()}}
+  if(Wd.id=='meadow'||Wd.id=='jungle'){x.fillStyle=hcC(Wd.top2);for(let w0=Math.ceil((x0-10)/22)*22;w0<x1+10;w0+=22){if(C.fl[hcIx(C,w0)]||C.sk[hcIx(C,w0)])continue;const px=X(w0),py=Y(hcH(C,w0))-hd+2*sc,t=(8+(Math.abs(Math.sin(w0*.37))*9))*sc;
+    x.beginPath();x.moveTo(px-4*sc,py);x.lineTo(px+((w0/22)%2?2:-2)*sc,py-t);x.lineTo(px+1*sc,py);x.lineTo(px+5*sc,py-t*.65);x.lineTo(px+5*sc,py);x.fill()}}
   if(Wd.prop)for(let i=Math.floor((x0-120)/230);i<(x1+120)/230;i++){if((i*13)%5<2)continue;const w0=i*230+((i*57)%90);if(w0<200||C.fl[hcIx(C,w0)]||C.fl[hcIx(C,w0+60)]||C.fl[hcIx(C,w0-60)])continue;hcProp(x,Wd.prop,X(w0),Y(hcH(C,w0))-hd+2*sc,sc*1.15,i+3)}
   ch={c,top,bot};R.chunks.set(k,ch);
   for(const kk of R.chunks.keys())if(kk<k-6||kk>k+6)R.chunks.delete(kk);
@@ -965,7 +974,8 @@ function hcChunk(R,H,k){let ch=R.chunks.get(k);if(ch)return ch;const C=H.C,Wd=HC
 function hcDot(R,col){const k='d'+col;if(R.spr[k])return R.spr[k];const c=hcCan(32,32),x=c.getContext('2d');x.fillStyle=hcC(col);x.beginPath();x.arc(16,16,15,0,7);x.fill();return R.spr[k]=c}
 function hcSpr(R,k,w,h,draw){if(R.spr[k])return R.spr[k];const c=hcCan(w,h);draw(c.getContext('2d'),c.width,c.height);return R.spr[k]=c}
 function hcBody(R,H){const P=hcPetSpr(),k='body'+H.veh+H.paint+(H.top||'')+(P&&P.c?1:0);if(R.spr[k])return R.spr[k];const V=VEH[H.veh]||VEH.jeep,sc=R.sc,w=(V.L+160)*sc,h=170*sc;
-  const c=hcCan(w,h);drawVehicle(c.getContext('2d'),H.veh,c.width/2,h*.6,0,sc,H.paint,null,null,0,{top:H.top});c.ox=c.width/2;c.oy=h*.6;return R.spr[k]=c}
+  const c=hcCan(w,h);drawVehicle(c.getContext('2d'),H.veh,c.width/2,h*.6,0,sc,H.paint,null,null,0,{top:H.top});c.ox=c.width/2;c.oy=h*.6;
+  return R.spr[k]=typeof JFX!='undefined'?JFX.ink(c,Math.max(1.5,2.4*sc),{mix:.68}):c}
 // the sun (or the moon, or the Earth seen from the Moon) and the clouds, just after the sky
 function hcSun(x,R,wx,Wd){const H=HC,W=R.W,Hh=R.Hh,sc=R.sc,T=H.calm?0:H.t;
   if(Wd.space){const ex=W*.8,ey=Hh*.17,er=34*sc;x.fillStyle=hcC('b');x.beginPath();x.arc(ex,ey,er,0,7);x.fill();x.fillStyle=hcC('g');x.beginPath();x.ellipse(ex-er*.3,ey-er*.2,er*.35,er*.5,.4,0,7);x.ellipse(ex+er*.4,ey+er*.3,er*.3,er*.25,0,0,7);x.fill();return}
@@ -978,7 +988,9 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   if(H.camX==null){H.camX=cx;H.camY=cy}
   H.camX+=(cx+W*.1/sc-H.camX)*.09;H.camY+=(cy+30-H.camY)*.07;if(H.shake>0)H.shake-=1/60;
   const sh=H.shake>0&&!H.calm?Math.round((Math.random()-.5)*14*H.shake*dpr):0;
-  const SX=wxp=>(wxp-H.camX)*sc+W*.38+sh,SY=wy=>Hh*R.base-(wy-H.camY)*sc+sh,WX=sx=>(sx-W*.38)/sc+H.camX;
+  const SX=wxp=>(wxp-H.camX)*sc+W*.38+sh,SY=wy=>Hh*R.base-(wy-H.camY)*sc+sh,WX=sx=>(sx-W*.38)/sc+H.camX;H.scr=[SX,SY];
+  {const now=performance.now(),fdt=H.lastF?(now-H.lastF)/1000:0;H.lastF=now;if(typeof JFX!='undefined'){H.fxp=H.fxp||JFX.pool(30);H.fxp.frame(fdt);H.pcap=H.fxp.cap}
+   const gas=!!H.gas;if(gas&&!H.gas0&&(H.speed||0)<80&&!H.calm)H.ant=.16;H.gas0=gas;H.ant=Math.max(0,(H.ant||0)-fdt)}
   // GL-01: the 3D look draws the sky, ranges, ground and car on its own canvas; this one is cleared and carries the rest
   const gl=!!(H.gl&&!H.gl.off&&hcGlFrame(H,W,Hh,dpr,sh)),left=WX(0)-80,right=WX(W)+80;
   if(typeof FPS!='undefined')FPS.tag=gl?'3D':'2D'; // GL-01: the speed box says which look is drawing
@@ -1022,7 +1034,7 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   else if(H.crashT<=0||Math.floor(H.crashT*8)%2){const dist=Math.max(0,(cy-hcH(C,cx))*sc);x.globalAlpha=Math.max(.05,.25-dist/600);x.drawImage(hcDot(R,'k'),SX(cx)-64*sc,SY(hcH(C,cx))-5*sc,128*sc,14*sc);x.globalAlpha=1;
     const lift=H.R+6,bx=SX(cx)-Math.sin(ang)*lift*sc,by=SY(cy)-Math.cos(ang)*lift*sc;
     if(H.ballT>0)hcBalloons(x,bx,by-90*sc,sc,bx,by-40*sc);
-    const body=hcBody(R,H);x.save();x.translate(bx,by);x.rotate(-ang);x.translate(0,-H.bob*sc);x.drawImage(body,-body.ox,-body.oy);
+    const body=hcBody(R,H);x.save();x.translate(bx,by);x.rotate(-ang);x.translate(0,-H.bob*sc);{const q=H.sq||0;if(q)x.scale(1+.08*q,1-.15*q);if(H.ant>0)x.rotate(-.05*Math.sin(H.ant/.16*Math.PI))}x.drawImage(body,-body.ox,-body.oy);
     if(H.crates){x.scale(sc,sc);const cp={jeep:[-44,-18],buggy:[-30,-12],monster:[-50,-30],bike:[-26,-20],tractor:[14,-26],bus:[-30,-50]}[H.veh]||[-40,-18];
       for(let i=0;i<H.crates;i++){const ox=cp[0]+(i==2?9:i*18),oy=cp[1]-(i==2?17:0)-17;x.fillStyle=hcC('n');x.strokeStyle=hcC('n3');x.lineWidth=2;x.fillRect(ox,oy,17,17);x.strokeRect(ox,oy,17,17);x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+17,oy+17);x.moveTo(ox+17,oy);x.lineTo(ox,oy+17);x.stroke()}}
     x.restore();

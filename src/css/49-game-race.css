@@ -140,22 +140,23 @@
   color:var(--surface);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700;white-space:nowrap;pointer-events:none;box-shadow:0 4px 0 var(--bt-shade)}
 .rl-q[hidden]{display:none}
 .rl-ctl{position:absolute;left:0;right:0;bottom:0;pointer-events:none}
-.rl-btn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:clamp(96px,15vw,132px);height:clamp(96px,15vw,132px);padding:0;border:0;border-radius:32px;background:var(--surface);color:var(--math-shade);
-  font:inherit;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;pointer-events:auto;touch-action:none;opacity:.92;
-  box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--math-shade);transition:transform var(--t-fast) var(--ease)}
-.rl-btn .ic{width:56px;height:56px}
-.rl-btn.on{transform:translateY(5px) scale(.96);opacity:1}
-#rll{left:14px}#rlr{right:14px}
-.rl-pro #rlr{left:calc(28px + clamp(96px,15vw,132px));right:auto}
-.rl-pro #rlgo{right:14px;background:var(--play-shade);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}
-.rl-pro #rlgo .ic{width:44px;height:44px}
-@media (max-width:420px){.rl-pro .rl-btn{width:96px;height:96px}.rl-pro #rlr{left:118px}}
+.rl-btn{position:absolute;bottom:calc(8px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:96px;height:96px;padding:0;border:0;border-radius:50%;background:none;color:var(--math-shade);
+  font:inherit;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;pointer-events:auto;touch-action:none;
+  transition:transform var(--t-fast) var(--ease)}
+/* GFX-1 lighter controls: the touch area stays 96 px, the drawn disc is smaller and see-through, symbol only (the name is its label) */
+.rl-btn::before{content:'';position:absolute;inset:12px;border-radius:50%;background:var(--surface);opacity:.62;box-shadow:inset 0 0 0 3px var(--wash),0 4px 0 var(--math-shade)}
+.rl-btn .ic{position:relative;width:44px;height:44px}
+.rl-btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rl-btn.on{transform:translateY(4px) scale(.96)}.rl-btn.on::before{opacity:.9}
+#rll{left:8px}#rlr{right:8px}
+.rl-pro #rlr{left:100px;right:auto}
+.rl-pro #rlgo{right:8px;color:var(--surface)}.rl-pro #rlgo::before{background:var(--play-shade);box-shadow:inset 0 0 0 3px var(--wash),0 4px 0 var(--play-deep)}
+.rl-pro #rlgo .ic{width:40px;height:40px}
 /* G-MOVES (v188): the Drift button above the right-hand button (Easy: steer right; Pro: Go); the champion's face on its card and end card */
-#rldr{right:14px;bottom:calc(28px + clamp(96px,15vw,132px) + env(safe-area-inset-bottom,0px));width:clamp(76px,11vw,100px);height:clamp(76px,11vw,100px);
-  border-radius:50%;background:var(--play-shade);color:var(--surface);font-size:var(--fs-2);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}
-#rldr .ic{width:40px;height:40px}
-@media (max-width:420px){.rl-pro #rldr{bottom:calc(124px + env(safe-area-inset-bottom,0px))}}
+#rldr{right:8px;bottom:calc(104px + env(safe-area-inset-bottom,0px));width:80px;height:80px;color:var(--surface);font-size:var(--fs-2)}
+#rldr::before{inset:8px;background:var(--play-shade);box-shadow:inset 0 0 0 3px var(--wash),0 4px 0 var(--play-deep)}
+#rldr .ic{width:34px;height:34px}
 .rl-champ{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:96px;padding:var(--s-3);border:0;
   border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;
   box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
