@@ -1181,7 +1181,8 @@ function hopSprite(key, vw, vh, inner, pxw, fade, ink) {
 // ground shadow is left out: the course draws a soft shadow on the cloud under the pet that shrinks as it hops (G-04b2)
 function hopPetSprite(mood, px) {
   const w = S.wear || {}, key = ['pet', S.pet, stage(S.stars), mood, w.hat || '', w.toy || ''].join('-');
-  if (HOP_SPR[key + '@' + px]) return HOP_SPR[key + '@' + px];
+  const ink = HOP_INK.hero(px), memo = key + '@' + px + '~' + ink.join(); // the same key hopSprite keeps it under
+  if (HOP_SPR[memo]) return HOP_SPR[memo];
   let inner = '';
   try {
     const host = document.createElement('div');
@@ -1201,7 +1202,7 @@ function hopPetSprite(mood, px) {
     inner = svg.innerHTML;
     host.remove();
   } catch (e) {}
-  return hopSprite(key, 200, 200, inner, px, null, HOP_INK.hero(px));
+  return hopSprite(key, 200, 200, inner, px, null, ink);
 }
 // GFX-1 outlines: the hero strongest (about 2.5 px on a tablet), what the child lands on or picks up thinner and cooler
 const HOP_INK = {

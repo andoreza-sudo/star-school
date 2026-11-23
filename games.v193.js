@@ -1371,7 +1371,7 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,u
   if(ui)hcFx(H,gas,ang,cx,cy,sp,wet);
   hcParts(H,dt)}
 // GFX-1: a pick-up's little burst of stars and its flight to the bolts chip (JFX.fly, 59b-fx.js; neither in calm mode)
-function hcJuice(H,wx,wy,n){if(H.calm)return;for(let i=0;i<n;i++){const a=i/n*6.28+H.t;H.parts.push({x:wx,y:wy,vx:Math.cos(a)*140,vy:Math.sin(a)*140+120,g:.5,l:.55,s:4,c:'y',star:1})}
+function hcJuice(H,wx,wy,n){if(H.calm)return;for(let i=0;i<n;i++){const a=i/n*6.28+H.t;H.parts.push({x:wx,y:wy,vx:Math.cos(a)*140,vy:Math.sin(a)*140+120,g:.5,l:.55,s:4,c:i%2?'y':'y1'})}
   const cv=document.getElementById('hcv');if(!cv||!H.scr||typeof JFX=='undefined')return;const b=cv.getBoundingClientRect(),k=b.width/cv.width;JFX.fly(b.left+H.scr[0](wx)*k,b.top+H.scr[1](wy)*k,'#hcb','nut')}
 function hcParts(H,dt){const g=HCW[H.wi].g;for(const d of H.parts){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy-=g*dt*d.g;d.l-=dt}H.parts=H.parts.filter(d=>d.l>0);const pc=H.pcap||30;if(H.parts.length>pc)H.parts.splice(0,H.parts.length-pc);
   for(const p of H.pops){p.l-=dt;p.y+=60*dt}H.pops=H.pops.filter(p=>p.l>0)}
