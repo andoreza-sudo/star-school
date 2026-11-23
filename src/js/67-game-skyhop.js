@@ -1543,6 +1543,12 @@ function hopDraw(R, dt) {
     if (p.face < 0) c.scale(-1, 1);
     if (V.cos && V.cos.c) c.drawImage(V.cos.c, -wid / 2, -wid * str * .92, wid, wid * str);
     if (s.c) c.drawImage(s.c, -wid / 2, -wid * str * .92, wid, wid * str);
+    // GFX-1: a short white hit flash when a puff bumps the pet (the tint is made once per picture, JFX.tint)
+    if (s.c && p.kb > 0 && !calm && typeof JFX != 'undefined') {
+      c.globalAlpha = Math.min(.55, p.kb * 2);
+      c.drawImage(JFX.tint(s.c), -wid / 2, -wid * str * .92, wid, wid * str);
+      c.globalAlpha = 1;
+    }
     c.restore();
   }
   // the helper balloon: offered next to the pet, or carrying it

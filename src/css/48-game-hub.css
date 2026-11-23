@@ -163,9 +163,9 @@
 
 /* GFX-1: the juice kit (59b-fx.js): a star, coin or bolt flying to its counter chip, and the chip's bump when it lands */
 .jfx-fly{position:fixed;left:0;top:0;z-index:60;width:28px;height:28px;pointer-events:none;color:var(--star-shade);--ic2:var(--star-tint);
-  transition:transform 560ms var(--ease),opacity 560ms var(--ease);will-change:transform}
+  transition:transform var(--t-xl) var(--ease),opacity var(--t-xl) var(--ease);will-change:transform}
 .jfx-fly .ic{width:28px;height:28px}
-.jfx-bump{animation:jfx-bump 360ms var(--spring)}
+.jfx-bump{animation:jfx-bump var(--t-slow) var(--spring)}
 @keyframes jfx-bump{40%{transform:scale(1.18)}}
 html.calm .jfx-fly{display:none}
 @media (prefers-reduced-motion:reduce){.jfx-fly{display:none}.jfx-bump{animation:none}}

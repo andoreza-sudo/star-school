@@ -381,7 +381,21 @@ dusk navy), so the splash screen is the icon on the top of its own sky.
 
 Exception: the logo has a thin `--ink` outline on its main shapes (cab, chimney cap, buffer beam, buffers, pilot), which the
 illustration rule in 6.1 ("no black outlines") does not allow elsewhere. It keeps the engine readable at 32 px and on the launcher's
-own background. Nothing else gets outlines because of it.
+own background. Nothing else gets outlines because of it (but see 6.7 for game sprites).
+
+### 6.7 Game art (GFX-1, owner-approved scope 2026-11-23, from Fable's review section 4)
+
+Inside a running game (canvas), three steps of strength: far things pale and faded toward the sky, middle things normal, and the
+hero and everything the child lands on or picks up strongest and outlined. The outline is a second exception to 6.1: a thin edge
+(about 2 to 3 px on a tablet, thinner for pick-ups) in a dark shade of the sprite's own colours (its pixels pulled about 70 % toward
+`--ill-ink`, cooler `--ill-blue-3` for clouds), never plain black. It is baked into the sprite once by `JFX.ink` (`src/js/59b-fx.js`,
+the lazy `games` part), so a frame still only stamps pictures; soft contact shadows in a sprite get no outline.
+
+The juice kit `JFX` (same file): pooled particles (at most 30 alive, half that while frames take over 20 ms), a gentle shake, a
+star, coin, bolt or sparkle flying to its counter chip (DOM, transform only), a hit-flash tint. Calm mode and reduced motion switch
+off the shake and the flights. On-screen game controls are round, about 60 % see-through and symbol only (the name stays the
+button's label); a button's touch area stays at least 96 px (Hill Climb's pedals are drawn only: their touch is the screen's half).
+Snack Stand customers have bodies: the animal's head over an outfit (six cuts, colours from the day's seed), paws on the counter.
 
 ## 7. Map and world scenes (chunk P4-09, Opus)
 

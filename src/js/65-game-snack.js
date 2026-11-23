@@ -2058,6 +2058,13 @@ function snStarBtn() {
   b.setAttribute('aria-label', st.armed ? 'Star serve: ready' : st.star >= SN_STAR_NEED ? 'Star serve: tap to use' : `Star serve: ${st.star} of ${SN_STAR_NEED} stars`);
   b.querySelectorAll('.sn-pips i').forEach((e, i) => e.classList.toggle('on', i < st.star || st.armed));
 }
+// GFX-1: coins fly from the customer to the coins chip (JFX.fly in 59b-fx.js; only the chip's bump in calm mode)
+function snCoinFly(i, n) {
+  const an = $(`.sn-cu[data-ci="${i}"] .sn-an`) || $('#snplate');
+  if (!an || typeof JFX == 'undefined') return;
+  const b = an.getBoundingClientRect();
+  for (let k = 0; k < n; k++) setTimeout(() => { if (SN) JFX.fly(b.left + b.width * (.3 + k * .15), b.top + b.height * .4, '#sncoin', 'coin'); }, 120 + k * 110);
+}
 function snDoServe() {
   const st = SN.st, res = snServe(st);
   if (res.empty) return;
@@ -2083,6 +2090,7 @@ function snDoServe() {
   }
   SFX.right(st.combo);
   setTimeout(() => SFX.coin(1), 260);
+  snCoinFly(st.at.indexOf(res.c), Math.min(4, Math.max(1, Math.round(res.pay / 3))));
   if (SN.r.own.bell) snTone(1568, .5, .05, 'sine', .05);
   snChirp(res.c.who);
   SN.r.coins += res.pay;

@@ -36,10 +36,18 @@ const JFX = (() => {
     const key = px + '|' + (o.tone || '') + '|' + (o.mix || '');
     let m = INK.get(src);
     if (m && m[key]) return m[key];
+    // the shape to outline: only the solid parts (a soft contact shadow or a faint glow in the sprite gets no outline)
+    let solid = src;
+    try {
+      const d = src.getContext('2d').getImageData(0, 0, src.width, src.height), a = d.data;
+      for (let i = 3; i < a.length; i += 4) a[i] = a[i] >= 140 ? 255 : 0;
+      solid = can(src.width, src.height);
+      solid.getContext('2d').putImageData(d, 0, 0);
+    } catch (e) {}
     const c = can(src.width, src.height), x = c.getContext('2d');
     for (let i = 0; i < 12; i++) {
       const a = i / 12 * Math.PI * 2;
-      x.drawImage(src, Math.cos(a) * px, Math.sin(a) * px);
+      x.drawImage(solid, Math.cos(a) * px, Math.sin(a) * px);
     }
     x.globalCompositeOperation = 'source-atop';
     x.globalAlpha = o.mix || .7;
@@ -127,8 +135,9 @@ const JFX = (() => {
   // a star or coin flying to its counter (a chip in the top bar); the chip bumps when it lands. Calm: only the bump
   let flying = 0;
   function fly(x, y, to, kind = 'star') {
-    const t = typeof to == 'string' ? document.querySelector(to) : to;
+    let t = typeof to == 'string' ? document.querySelector(to) : to;
     if (!t || !t.getBoundingClientRect) return;
+    t = (t.closest && t.closest('.stat')) || t; // a number inside a chip: the whole chip bumps
     const bump = () => {
       t.classList.remove('jfx-bump');
       void t.offsetWidth;
@@ -140,7 +149,7 @@ const JFX = (() => {
     const b = t.getBoundingClientRect(), e = document.createElement('span');
     e.className = 'jfx-fly jfx-' + kind;
     e.setAttribute('aria-hidden', 'true');
-    e.innerHTML = ico(kind == 'coin' ? 'coin' : kind == 'nut' ? 'nut' : 'star', 28);
+    e.innerHTML = ico({ coin: 'coin', nut: 'nut', sparkle: 'sparkle' }[kind] || 'star', 28);
     e.style.transform = `translate(${Math.round(x - 14)}px,${Math.round(y - 14)}px) scale(1.25)`;
     document.body.appendChild(e);
     flying++;
@@ -155,7 +164,7 @@ const JFX = (() => {
       e.style.opacity = '.6';
     }));
     e.addEventListener('transitionend', done);
-    setTimeout(done, 900);
+    setTimeout(done, 900); // --t-xl is 600 ms
   }
   return { calm, css, can, ink, tint, pool, shaker, fly };
 })();
