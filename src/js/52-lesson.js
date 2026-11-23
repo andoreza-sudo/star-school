@@ -445,11 +445,12 @@ const LS = {
     };
     setTimeout(go, 200);
   },
+  calm: () => document.documentElement.classList.contains('calm') || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches),
   // the pet's face (LESSON-STAGE: and its reaction, the pet's own jump or wobble, anim in 12-speech.js; none in calm mode)
   mood(m, act) {
     const a = $('#lsart');
     if (a) a.innerHTML = petRigHTML(Math.max(S.stars, GROW[1]), m);
-    if (a && act) anim(a, act);
+    if (a && act && !LS.calm()) anim(a, act);
   },
   show() {
     const st = LS.st, it = st && LS.cur(st);
@@ -622,7 +623,7 @@ const LS = {
   // LS-STOP: the moment the minutes are earned: the ticket lands in the bank chip, which counts up (at once in calm mode or with
   // reduced motion), with a sound
   land(rec) {
-    const k = $('#lstk'), b = $('#lsbank'), calm = document.documentElement.classList.contains('calm') || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const k = $('#lstk'), b = $('#lsbank'), calm = LS.calm();
     setTimeout(() => {
       if (!$('#lsend')) return;
       if (k) { k.classList.add('land'); setTimeout(() => k.remove(), calm ? 0 : 700); }

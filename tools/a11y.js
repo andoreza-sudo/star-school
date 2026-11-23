@@ -201,6 +201,10 @@ const SCREENS = {
   home: { run: ev(() => home(true)) },
   map: { run: ev(() => pathMap('math')) },
   'math-question': qScreen(() => { window.say = window.__a11y.say; start('math', 0); }),
+  // LESSON-STAGE: a boss round on its stage (the hints part puts the boss and the pet on the world's scene in the prompt card)
+  'boss-round': { run: async p => { await p.evaluate(async () => { window.say = window.__a11y.say; await partsLoad(['hints']); const a = NODES.math.findIndex(n => nid(n) === 'add3'), i = NODES.math.findIndex((n, j) => j > a && n.sk == 'boss');
+    G = newG({ path: 'math', node: i, sk: 'boss', boss: { e: RW.boss('Robo-Bonk', 'idle') || 'x', name: 'Robo-Bonk' }, hp: 7, pool: [genQ('add', 3)] }); next(); });
+    await p.waitForSelector('.bstage .bossE'); await p.waitForTimeout(400); } },
   'read-question': qScreen(() => start('read', NODES.read.findIndex(n => n.sk == 'pic'))),
   'es-question': qScreen(() => start('es', 0)),
   // KINDS2: sort (a Kindergarten picture sort with three bins of Discover, and an even / odd sort) and mark, fresh and after a miss
