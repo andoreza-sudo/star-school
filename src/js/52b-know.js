@@ -278,7 +278,14 @@ if (typeof K2MM != 'undefined') K2MM.frame2 = {
   val: (q, s) => s[0] + s[1],
   ans: q => [Math.max(1, +q.ans - 1), 1],
   step: (q, s, i, d) => (s[i] + d < 0 || s[0] + s[1] + d > q.m.total ? null : s.map((x, j) => (j == i ? x + d : x))),
-  draw: (q, s) => VIZ.tenFrame(s[0] + s[1], q.m.total, {b: s[1]}),
+  draw: (q, s) => VIZ.tenFrame(s[0] + s[1], q.m.total, {b: s[1], cells: 1}),
+  // LESSON-STAGE (owner, 2026-11-23): tap the frame itself (KIND.make): an empty square puts in a blue one, a blue one turns orange, an
+  // orange one comes out (the counters fill in turn, blue first); the stepper rows stay for the keyboard
+  tap: (q, s, t) => {
+    const c = +t.dataset.c, n = s[0] + s[1];
+    if (!(c >= 0)) return null;
+    return c >= n ? (n < q.m.total ? [s[0] + 1, s[1]] : null) : c < s[0] ? [s[0] - 1, s[1] + 1] : [s[0], s[1] - 1];
+  },
   ctl: () => `<div class="mmc mmcol">${[['blue', 'ls-d1'], ['orange', 'ls-d2']].map(([c, k], i) => `<div class="mms"><span class="mml"><i class="ls-dot ${k}" aria-hidden="true"></i></span>`
     + `${mmBtn(i, -1, 'minus', 'Take away a ' + c + ' one')}<output class="mmn" data-o="${i}">0</output>${mmBtn(i, 1, 'plus', 'Put in a ' + c + ' one')}</div>`).join('')}</div>`,
 };

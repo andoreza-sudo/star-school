@@ -4493,7 +4493,8 @@ KIND.make = {
     const act = t => {
       if (st.lock || !t) return;
       let s = null;
-      if (t.dataset.d != null) s = M.step(q, st.mm, +t.dataset.i, +t.dataset.d);
+      if (M.tap && t.closest('.mmv')) s = M.tap(q, st.mm, t); // LESSON-STAGE: a model that takes taps on its drawing (frame2, bars2)
+      else if (t.dataset.d != null) s = M.step(q, st.mm, +t.dataset.i, +t.dataset.d);
       else if (t.dataset.p != null) s = M.step(q, st.mm, +t.dataset.p, -1);
       else if (t.dataset.v != null) s = M.step(q, st.mm, +t.dataset.v);
       else if (t.dataset.c != null) { // a ten-frame cell: an empty one adds a counter, a filled one (not a fixed one) takes one away
@@ -4525,7 +4526,7 @@ KIND.make = {
     if (!v) return;
     const a = document.activeElement, at = a && v.contains(a) && a.dataset.p != null;
     v.innerHTML = K2MM[q.model].draw(q, s);
-    if (q.model == 'frame' || q.model == 'parts') {
+    if (q.model == 'frame' || q.model == 'parts' || K2MM[q.model].tap) {
       const g = v.querySelector('svg');
       if (g) g.setAttribute('aria-hidden', 'true');
       v.querySelectorAll('[data-v]').forEach(e => { e.removeAttribute('role'); e.removeAttribute('aria-label'); });

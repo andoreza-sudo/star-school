@@ -9872,6 +9872,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   if(G.retry){fb("Let's try this one again!",'again');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
+  if(G.boss&&typeof bossStage=='function')bossStage(); // LESSON-STAGE: the boss on a stage (39u-stage.js, part hints)
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);

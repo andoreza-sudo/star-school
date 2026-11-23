@@ -232,7 +232,8 @@ const ls3Say = v => (/\//.test(v) ? ls3FrSay(String(v)) : /R/.test(v) ? String(v
 // two fraction bars (fraction comparison, equal fractions): state [shaded on top, shaded below]; m.d [top parts, bottom parts],
 // m.lock [true, false]: a bar the child does not change (it shows the given fraction); m.lab: write each bar's fraction beside it
 function ls3Bars(s, d, o = {}) {
-  const row = (n, dd, i) => `<div class="ls-bar">${o.lab ? `<span class="ls-barl">${ls3Fr(n, dd)}</span>` : ''}${VIZ.fracBar(n, dd, {w: 240}).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
+  // LESSON-STAGE: o.tap, each part a target (data-v) on a bar that says which it is (data-b), for K2MM.bars2.tap
+  const row = (n, dd, i) => `<div class="ls-bar"${o.tap ? ` data-b="${i}"` : ''}>${o.lab ? `<span class="ls-barl">${ls3Fr(n, dd)}</span>` : ''}${VIZ.fracBar(n, dd, {w: 240, tap: o.tap}).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
   return `<div class="ls-bars" role="img" aria-label="two fraction bars">${row(s[0], d[0], 0)}${row(s[1], d[1], 1)}</div>`;
 }
 // a place-value chart: the digits of a number under their places (o.pl: the places, biggest first, as powers of ten; o.mark: the place
@@ -259,7 +260,16 @@ if (typeof K2MM != 'undefined') {
     val: (q, s) => `${s[0]}/${q.m.d[0]} ${s[1]}/${q.m.d[1]}`,
     ans: q => q.m.ans.slice(),
     step: (q, s, i, d) => { if ((q.m.lock || [])[i]) return null; const o = s.slice(); o[i] += d; return o[i] < 0 || o[i] > q.m.d[i] ? null : o; },
-    draw: (q, s) => ls3Bars(s, q.m.d, {lab: q.m.lab}),
+    draw: (q, s) => ls3Bars(s, q.m.d, {lab: q.m.lab, tap: 1}),
+    // LESSON-STAGE (owner, 2026-11-23): tap a bar's part to shade the bar up to it (the last shaded part again: one less); a locked bar
+    // does not change; the stepper rows stay for the keyboard
+    tap: (q, s, t) => {
+      const b = t.closest('[data-b]'), i = b ? +b.dataset.b : -1, j = +t.dataset.v;
+      if (i < 0 || !(j >= 0) || (q.m.lock || [])[i]) return null;
+      const o = s.slice();
+      o[i] = o[i] == j + 1 ? j : j + 1;
+      return o;
+    },
     ctl: q => `<div class="mmc mmcol">${['Top bar', 'Bottom bar'].map((l, i) => ((q.m.lock || [])[i] ? '' : mmRow(l, i, true))).join('')}</div>`,
     of: (q, v) => (Array.isArray(v) ? v : String(v).split(' ').map(x => +x.split('/')[0])),
     fits: () => true,

@@ -356,21 +356,50 @@ const LS = {
     if (!L) return;
     if (S.les && S.les.n === id) return LS.start(id);
     LS.st = null;
-    const p = L.p || 'math', up = gradeOf() > 2, tag = lsPriceTag(id), T2 = lsTone2(), title = up ? 'Challenge: ' + L.t : `Learn ${L.t} with ${petN()}`;
-    view(`<div class="top tbar s-${p} ls-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico(up ? 'bolt' : 'doc', 30)}<span>${esc(L.t)}</span></div></div>
-    <div class="scroll ls-end" id="lsopen"><div class="ls-endc">
-     <div class="ls-art ls-big" id="lsart" aria-hidden="true"></div>
-     <h1>${esc(title)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}
-     ${tag ? `<p class="ls-price${tag == 'done today' ? ' dn' : ''}" id="lsprice">${ico(tag == 'done today' ? 'check' : 'ticket', 26)}<span>${tag == 'done today' ? 'Game time for this one: done today' : `Pass it to earn ${tag} of game time`}</span></p>` : ''}
+    const p = L.p || 'math', up = gradeOf() > 2, T2 = lsTone2(), title = up ? 'Challenge: ' + L.t : `Learn ${L.t} with ${petN()}`;
+    // LESSON-STAGE (owner, 2026-11-23): no price on the start card (game time shows only at the end); the stop's world behind it, the
+    // pet standing on it, and the job the lesson helps with (its approved Show line's first sentence) with the job's map picture
+    const job = LS.job(L), said = T2.open(lsName()) + (job ? ' ' + job : '');
+    view(`${LS.scene(id)}<div class="top tbar s-${p} ls-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico(up ? 'bolt' : 'doc', 30)}<span>${esc(L.t)}</span></div></div>
+    <div class="scroll ls-end" id="lsopen"><div class="ls-art ls-big" id="lsart" aria-hidden="true"></div><div class="ls-endc">
+     <div class="ls-h"><h1>${esc(title)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}</div>
+     ${job ? `<p class="ls-job" id="lsjob">${LS.jobPic(id, 'ls-jp')}<span>${esc(job)}</span></p>` : ''}
      <div class="ls-acts">${UI.btn(up ? 'Start the challenge' : "Let's learn", {kind: 'primary', size: 'lg', icon: up ? 'bolt' : 'play', id: 'lslearn'})}${UI.btn('I already know this!', {kind: 'soft', size: 'lg', icon: 'star', id: 'lsknow'})}</div>
     </div></div>`);
     LS.mood('happy');
     $('#back').onclick = () => { SFX.whoosh(); pathMap(p); };
     $('#lslearn').onclick = () => { SFX.whoosh(); LS.start(id, {learn: 1}); };
     $('#lsknow').onclick = () => { SFX.whoosh(); LS.start(id, {know: 1}); };
-    $('#lshear2').onclick = () => say(T2.open(lsName()));
+    $('#lshear2').onclick = () => say(said);
     UI.hear();
-    if (LS.voice()) say(T2.open(lsName()));
+    if (LS.voice()) say(said);
+  },
+  /* LESSON-STAGE: the lesson's place: its stop's world on the map (the world band's scene, SCN.band in 43-scenes.js, drawn for the
+     screen with nothing to keep clear, its horizon at about 40% of a wide screen and 30% of a tall one, the sky above it in its own top
+     colour); '' when there is none (a lesson with no stop, no scene data). Decoration only: aria-hidden, no taps, no motion. */
+  world(id) {
+    const L = LESSONS[id], p = L && (L.p || 'math'), n = p && NODES[p] && NODES[p].find(x => nid(x) === id);
+    return n && PATHS[p].worlds[n.wi] || null;
+  },
+  scene(id) {
+    const w = LS.world(id), T = w && typeof SCN != 'undefined' && SCN.theme(w);
+    if (!T) return '';
+    const W = Math.max(320, innerWidth | 0), H = Math.max(400, innerHeight | 0), y0 = Math.max(0, Math.round(H * (W > H ? .42 : .3)) - 76);
+    return `<div class="ls-scn" aria-hidden="true" style="background:var(--sc-${T.sky[0]})">${SCN.band(w, W, y0, H - y0, {stops: [], trail: [], pet: null})}</div>`;
+  },
+  // the world's job prop (the map's G-PROPS drawing: shells, planks, fuel ...) as its own small picture; '' when the world has none
+  jobPic(id, cls) {
+    const w = LS.world(id), T = w && typeof SCN != 'undefined' && SCN.theme(w), P = T && T.job && SCN.prop(T.job);
+    if (!P) return '';
+    const sw = q => (q.sw ? ` stroke-width="${q.sw}"${q.da ? ` stroke-dasharray="${q.da.join(' ')}"` : ''}` : '');
+    return `<svg class="${cls}" viewBox="${-P.hw - 2} ${-P.hh - 2} ${2 * P.hw + 4} ${P.hh + 6}" aria-hidden="true" focusable="false">`
+      + P.sh.map(q => `<path d="${SCN.xf(q.segs, 1, 0, 0)}" ${q.st}${sw(q)}/>`).join('') + '</svg>';
+  },
+  // the job: the first sentence of the script's first Show line when it is a whole sentence with no number to fill ("The reef shop
+  // counts shells."); '' for a lesson with no such line (never a new sentence)
+  job(L) {
+    const t = L && L.w && L.w.beats && (L.w.beats.show || [])[0], s = t && (String(t).match(/^[^.!?]*[.!]/) || [])[0];
+    return s && !/[{}]/.test(s) ? s.trim() : '';
   },
   /* LS-STOP: lesson time counts as learning (the activity log, so "learn first" sees it). fix179: only active time, as a round counts
      it (ACT.qEnd): a screen's time counts when the child answers or goes on (tick, from submit, judge and Next), from when the screen
@@ -387,12 +416,15 @@ const LS = {
     if (sec >= 1 && st) try { ACT.add(today(), {sec, area: st.L.p || 'math'}); } catch (e) {}
     if (LS.t0) LS.screen(now);
   },
-  // LS-STOP: the ticket meter in the top bar: what this lesson pays now, filled as the beats are done
-  meter(st, B, at) {
-    const tag = lsPriceTag(st.id);
-    if (!tag) return '';
-    const n = B == 'tog' ? LS.TOG : st.items.length || 1, f = B == 'pre' ? 0 : B == 'win' ? 5 / 6 : Math.min(1, (Math.max(0, at) + st.i / n) / 6), dn = tag == 'done today';
-    return `<div class="ls-meter${dn ? ' dn' : ''}" id="lsmeter" role="img" style="--f:${f.toFixed(3)}" aria-label="${dn ? 'Game time for this lesson: done today' : `Pass to earn ${tag.slice(1).replace('min', 'minutes')} of game time, ${Math.round(f * 100)} percent done`}">${ico(dn ? 'check' : 'ticket', 22)}<span>${tag}</span></div>`;
+  /* LESSON-STAGE (owner, 2026-11-23): the six beats as a little train's stops (no ticket meter: game time shows only at the end). A
+     stop passed holds the world's job prop, so the job fills up as the lesson goes; the train waits at the stop of now. The words
+     ("Step 4 of 6 · Together") stay for screen readers only (.ls-step). */
+  track(st, B, at) {
+    const job = LS.jobPic(st.id, 'ls-jp'), tr = typeof ART != 'undefined' && ART.train ? picArt('train', 26, 'ls-tr') : '';
+    return LS_PIPS.map((x, j) => {
+      const on = j < at || B == 'win', now = j == at;
+      return `<span class="ls-pip${on ? ' on' : now ? ' now' : ''}" aria-hidden="true">${on ? job : now ? tr : ''}</span>`;
+    }).join('');
   },
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
@@ -413,9 +445,11 @@ const LS = {
     };
     setTimeout(go, 200);
   },
-  mood(m) {
+  // the pet's face (LESSON-STAGE: and its reaction, the pet's own jump or wobble, anim in 12-speech.js; none in calm mode)
+  mood(m, act) {
     const a = $('#lsart');
     if (a) a.innerHTML = petRigHTML(Math.max(S.stars, GROW[1]), m);
+    if (a && act) anim(a, act);
   },
   show() {
     const st = LS.st, it = st && LS.cur(st);
@@ -427,18 +461,18 @@ const LS = {
     LS.seq++; // screens shown (tests wait for the next one)
     const q = it.q, B = LSB[st.b], T = lsTone(), sp = st.L.p || 'math';
     LS.u = {lock: true, typed: '', built: [], tries: 0};
-    const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS_PIPS.map(([k, ic, l], j) => `<span class="ls-pip${j < at || B == 'win' ? ' on' : j == at ? ' now' : ''}" aria-hidden="true">${ico(ic, 18)}</span>`).join('');
+    const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS.track(st, B, at);
     const prompt = LS.prompt(it);
     let input = '';
     if (it.m == 'say') input = UI.btn(it.nx || 'Next', {kind: 'primary', size: 'lg', icon: it.nx ? 'check' : 'go', id: 'lsnext'}); // TEACH-5S: "I said it!" after say it with me
     else if (it.m == 'judge') {
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
     } else input = KIND[q.kind].render(q);
-    const mt = LS.meter(st, B, at);
     // TEACH-UX: the dots are drawn only; the label under them says the step in words (and is what a screen reader reads);
     // fixRev (v184): " of 6" in its own span, which a phone under 400 px leaves out ("Step 4 · Together"), so the step's name is never cut
-    view(`<div class="top tbar round qtop ls-top s-${sp}${mt ? ' ls-m' : ''}">${NAV.house('quit')}<div class="ls-beats"><div class="ls-pips" aria-hidden="true">${pips}</div><span class="ls-step" id="lsstep">${esc(LS.step(B)).replace(/( of \d+)/, '<span class="ls-of">$1</span>')}</span></div>
-     <div class="pl-tag ls-tag">${ico('doc', 24)}<span>${esc(st.L.t)}</span></div>${mt}</div>
+    // LESSON-STAGE: the label is for screen readers only now (the train's stops show where the child is); the stop's world is behind
+    view(`${LS.scene(st.id)}<div class="top tbar round qtop ls-top s-${sp}">${NAV.house('quit')}<div class="ls-beats"><div class="ls-pips" aria-hidden="true">${pips}</div><span class="ls-step" id="lsstep">${esc(LS.step(B)).replace(/( of \d+)/, '<span class="ls-of">$1</span>')}</span></div>
+     <div class="pl-tag ls-tag">${ico('doc', 24)}<span>${esc(st.L.t)}</span></div></div>
     <div class="play qs s-${sp} ls-play" id="lsplay" data-beat="${B}" data-mode="${it.m}"><div class="qarea">
      <div class="ls-pet${it.m == 'judge' ? ' ls-turn' : ''}"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub" id="lsbub" role="status"><span></span></div>
       ${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear', cls: 'ls-hear'})}</div>
@@ -483,7 +517,7 @@ const LS = {
     if (b) b.classList.add(res.ok ? 'right' : 'ls-pk');
     if (res.ok) SFX.right(1); else SFX.pop(2);
     if (!it.petOk) $('#prompt').classList.add('ls-oops');
-    LS.mood(res.mood);
+    LS.mood(res.mood, res.ok ? 'jump' : 'sad');
     LS.go(res);
   },
   // a kind's submit (K.bind): v as the kind gives it; an open frame2 build passes its state
@@ -503,10 +537,11 @@ const LS = {
       K.right(q);
       SFX.right(1);
       if (it.m != 'open') { const r = (el || $('#prompt')).getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2); }
-      LS.mood('happy');
+      LS.mood('happy', 'jump'); // LESSON-STAGE: the pet cheers
       return LS.go(res);
     }
     const h = $('#hint');
+    LS.mood('oops', 'sad'); // LESSON-STAGE: the pet thinks it over with the child (its "oops" face, a little wobble)
     if (res.act == 'retry') {
       SFX.pop(1);
       if (el) { el.classList.add('wrong'); el.disabled = true; }
@@ -553,17 +588,17 @@ const LS = {
     const why = LS.why(st.id, PT.pay);
     const gt = PT.lines.map(([v, l]) => `<li class="ls-gt">${ico('ticket', 18)}<span><b>+${fmtT(v)} game time</b> ${esc(l)}</span></li>`).join('')
       + (why ? `<li class="ls-gt0">${ico('ticket', 18)}<span>${esc(why)}</span></li>` : '');
-    view(`<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div>${UI.chip('ticket', fmtT(rec.bank0), {aria: 'Game time in the bank', id: 'lsbank'})}</div>
-    <div class="scroll ls-end" id="lsend"><div class="ls-endc">
-     <div class="ls-art ls-big" id="lsart" aria-hidden="true"></div>
-     <h1>${esc(line)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}<p class="ls-idea">${ico('hint', 26)}<span>${esc(L.idea)}</span></p>
-     ${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}
-     ${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}
+    // LESSON-STAGE: the stop's world behind, the pet cheering on it, the card beside it (side by side on a wide screen, so the buttons
+    // fit a 1024 x 600 tablet); the stars and the ticket in one row, the ticket landing in the bank chip is the game-time moment
+    view(`${LS.scene(st.id)}<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div>${UI.chip('ticket', fmtT(rec.bank0), {aria: 'Game time in the bank', id: 'lsbank'})}</div>
+    <div class="scroll ls-end" id="lsend"><div class="ls-art ls-big" id="lsart" aria-hidden="true"></div><div class="ls-endc">
+     <div class="ls-h"><h1>${esc(line)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}</div><p class="ls-idea">${ico('hint', 26)}<span>${esc(L.idea)}</span></p>
+     ${rec.pass || PT.sec ? `<div class="ls-win">${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}</div>` : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       ${gt}${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES[p][rec.next].t)}!</span></li>` : ''}</ul>
      <div class="ls-acts">${rec.pass ? UI.btn('Practice', {kind: getSt(p, rec.ni) ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass && getSt(p, rec.ni) ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
-    LS.mood('cheer');
+    LS.mood('cheer', rec.pass ? 'jump' : '');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
     if ($('#lsprac')) $('#lsprac').onclick = () => { SFX.whoosh(); start(p, rec.ni); };
     if ($('#lsagain')) $('#lsagain').onclick = () => { SFX.whoosh(); LS.start(st.id, {learn: 1}); }; // LS-STOP: a failed Show: the lesson again, teaching first

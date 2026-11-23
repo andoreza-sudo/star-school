@@ -1,0 +1,14 @@
+/* LESSON-STAGE (owner, 2026-11-23): the boss round's stage (39u-stage.js, part hints): a window onto the stop's world at the top of
+   the prompt card, the boss big on its ground (the round's .bossE, its hit and knock-out animations as before), the pet facing it.
+   Calm mode and reduced motion stop the motion as everywhere (20-base.css). Tokens only. */
+.qs .qarea>.bstage{margin-top:0}
+.bstage{position:relative;flex:none;align-self:stretch;height:clamp(150px,30vh,210px);margin:calc(var(--s-3) * -1) calc(var(--s-3) * -1) 0;
+  border-radius:var(--r-card) var(--r-card) var(--r-chip) var(--r-chip);overflow:hidden;display:flex;align-items:flex-end;justify-content:center;gap:12%;
+  padding:0 var(--s-4) var(--s-2)}
+.bstage>.wband{border-radius:0;box-shadow:none;top:0}
+.bstage .bs-pet{position:relative;top:auto;z-index:1;font-size:clamp(64px,14vh,96px);transform:scaleX(1)}
+.bstage .bs-pet .petwrap,.bstage .bs-pet .pet-svg{display:block;width:1.2em;height:1.2em;margin:0}
+.bstage .bs-boss{position:relative;z-index:1;line-height:0}
+.bstage .bossE{font-size:clamp(84px,19vh,124px)}
+.bstage .bossE .bubble{top:auto;bottom:100%;left:50%!important;right:auto!important;transform:translateX(-50%);line-height:1.2;font-size:var(--fs-3)}
+@media (max-height:520px){.bstage{height:140px}.bstage .bs-pet{font-size:64px}.bstage .bossE{font-size:80px}}
