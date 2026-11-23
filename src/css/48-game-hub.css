@@ -161,6 +161,14 @@
   .gh-pic{height:118px}
 }
 
+/* GFX-1: the juice kit (59b-fx.js): a star, coin or bolt flying to its counter chip, and the chip's bump when it lands */
+.jfx-fly{position:fixed;left:0;top:0;z-index:60;width:28px;height:28px;pointer-events:none;color:var(--star-shade);--ic2:var(--star-tint);
+  transition:transform 560ms var(--ease),opacity 560ms var(--ease);will-change:transform}
+.jfx-fly .ic{width:28px;height:28px}
+.jfx-bump{animation:jfx-bump 360ms var(--spring)}
+@keyframes jfx-bump{40%{transform:scale(1.18)}}
+html.calm .jfx-fly{display:none}
+@media (prefers-reduced-motion:reduce){.jfx-fly{display:none}.jfx-bump{animation:none}}
 /* ---- G-MOVES (v188): a boss's screen (GH.boss) and the new move card (GH.moveNew). Tokens only; nothing moves but the press. ---- */
 .gh-boss{display:flex;flex-direction:column;gap:var(--s-4);max-width:640px;width:100%;margin:0 auto;padding:var(--s-3) var(--s-4) var(--s-7)}
 .gh-bcard{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--s-4);padding:var(--s-4);border-radius:var(--r-hero);

@@ -10203,12 +10203,13 @@ async function main() {
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
         };
-        // the message at the top of the scene must not cover a customer or an order bubble (R-03 N4)
+        // the message at the top of the scene must not cover a customer or an order bubble (R-03 N4), nor the sign with its
+        // served count (GFX-1, Fable's review)
         const msgClear = () => {
           const m = document.querySelector('#snmsg.on');
           if (!m) return '';
           const a = m.getBoundingClientRect();
-          for (const e of document.querySelectorAll('.sn-cu .sn-an, .sn-cu .sn-bub')) {
+          for (const e of document.querySelectorAll('.sn-cu .sn-an, .sn-cu .sn-bub, #snsign')) {
             const b = e.getBoundingClientRect();
             if (a.left < b.right && b.left < a.right && a.top < b.bottom - 4 && b.top < a.bottom - 4) return 'the message covers ' + e.className;
           }
