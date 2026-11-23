@@ -14483,17 +14483,19 @@ async function main() {
           // 3. the start card
           await pg.click(`.lsn[data-ls="${ti}"]`);
           await pg.waitForSelector('#lsopen', { timeout: 15000 });
-          const op = await pg.evaluate(() => ({ price: (document.querySelector('#lsprice') || {}).textContent, h1: document.querySelector('#lsopen h1').textContent }));
-          if (!/earn \+5 min of game time/.test(op.price || '') || !/^Learn Make Ten with /.test(op.h1)) bad.push(at + 'the start card: ' + JSON.stringify(op));
+          // LESSON-STAGE (owner, 2026-11-23): no price on the start card (game time shows only at the end); the stop's world behind it
+          const op = await pg.evaluate(() => ({ price: !!document.querySelector('#lsprice'), tick: /game time|min\b/.test(document.querySelector('#lsopen').textContent),
+            h1: document.querySelector('#lsopen h1').textContent, scn: !!document.querySelector('.ls-scn svg') }));
+          if (op.price || op.tick || !/^Learn Make Ten with /.test(op.h1) || !op.scn) bad.push(at + 'the start card: ' + JSON.stringify(op));
           await fitS(pg, at + 'start card: ', '#lsopen .btn, .ls-top .btn');
           if (w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-start-${sz}.png`) });
           // 4. "I already know this!" with the first show-me item missed: straight into the lesson, no reveal, no wrong sound
           await pg.evaluate(() => { LS.WAKE = 400; });
           await pg.click('#lsknow');
           await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
-          const m0 = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'), r = m && m.getBoundingClientRect(), vw = document.documentElement.clientWidth;
-            return { t: m && m.textContent, in: r && r.left >= 0 && r.right <= vw, h: r && r.height, f: m && m.style.getPropertyValue('--f') }; });
-          if (m0.t !== '+5 min' || !m0.in || m0.f !== '0.000') bad.push(at + 'the meter at the start: ' + JSON.stringify(m0));
+          // LESSON-STAGE: no ticket meter in the top bar; the train's track has no stop passed yet
+          const m0 = await pg.evaluate(() => ({ meter: !!document.querySelector('#lsmeter'), on: document.querySelectorAll('.ls-top .ls-pip.on').length, n: document.querySelectorAll('.ls-top .ls-pip').length }));
+          if (m0.meter || m0.on || m0.n !== 6) bad.push(at + 'the top bar at the start: ' + JSON.stringify(m0));
           await stepS(pg, true);
           const sl = await pg.evaluate(() => ({ b: LS.st && LSB[LS.st.b], pre: LS.st && LS.st.pre, wrong: window.__wrong, to: LS.st && LS.st.to }));
           if (sl.b == 'pre' || JSON.stringify(sl.pre) !== '[false]' || sl.wrong || sl.to) bad.push(at + 'a missed show-me item after "I already know this!": ' + JSON.stringify(sl));
@@ -14503,13 +14505,13 @@ async function main() {
             const b = await pg.evaluate(() => (LS.st ? LSB[LS.st.b] : null));
             if (!b) break;
             await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
-            const f = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'); return m ? +m.style.getPropertyValue('--f') : -1; });
+            const f = await pg.evaluate(() => (document.querySelector('#lsmeter') ? -1 : document.querySelectorAll('.ls-top .ls-pip.on').length / 6));
             fs0.push(f);
             if (!beats.includes(b)) { beats.push(b); await fitS(pg, at + b + ': ', '#lsinp button, #lsplay .ls-hear, .ls-top .btn');
               if (b == 'tog' && w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-meter-${sz}.png`) }); }
             await stepS(pg, false);
           }
-          if (fs0.some((f, k) => f < 0 || k && f < fs0[k - 1] - 1e-9) || !(fs0[fs0.length - 1] > .8)) bad.push(at + 'the meter does not fill: ' + fs0.join(' '));
+          if (fs0.some((f, k) => f < 0 || k && f < fs0[k - 1] - 1e-9) || !(fs0[fs0.length - 1] > .8)) bad.push(at + 'the track does not fill (or a meter shows): ' + fs0.join(' '));
           // 6. the end card: +5:00 game time, and the bank chip counts up by 5:00
           await pg.waitForSelector('#lsend', { timeout: 10000 });
           const e0 = await pg.evaluate(() => ({ gt: [...document.querySelectorAll('.ls-earn .ls-gt')].map(x => x.textContent).join('|'), bank: document.querySelector('#lsbank b').textContent, tk: !!document.querySelector('#lstk') }));
@@ -14584,9 +14586,35 @@ async function main() {
         for (const u of ta.network) bad.push(at + 'network request: ' + u);
         await ta.ctx.close();
       }
+      // LESSON-STAGE (owner, 2026-11-23; Fable's review: at 1024 x 600 the end card's Practice, Map and Notebook and the start card's
+      // second button were below the screen): every button of the start and end cards is on the screen, with nothing to scroll, at the
+      // tablet and phone sizes, for a 1st grader and a 5th grader (the older pet, the Challenge title)
+      for (const [w, h] of [[1024, 600], [360, 740], [960, 540]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'LS-STOP ' + w + 'x' + h + ' ';
+        try {
+          await pg.evaluate(() => partsLoad(['teach', 'teach12', 'teach35']));
+          for (const [gr, id] of [[1, 'tenf2'], [4, 'frac6']]) {
+            const on = () => pg.evaluate(() => { const o = [], vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+              for (const b of document.querySelectorAll('.ls-acts .btn, .ls-top .btn, .ls-hear')) { const r = b.getBoundingClientRect();
+                if (r.bottom > vh + 1 || r.top < -1 || r.right > vw + 1 || r.left < -1) o.push((b.id || b.className) + ' at ' + Math.round(r.left) + ',' + Math.round(r.bottom)); }
+              const sc = document.querySelector('.ls-end'); if (sc && sc.scrollHeight > sc.clientHeight + 1) o.push('the card scrolls');
+              return o; });
+            await pg.evaluate(([gr, id]) => { S.grade = gr; delete S.les; S.know = {}; LS.open(id); }, [gr, id]);
+            await pg.waitForSelector('#lsknow', { timeout: 5000 });
+            (await on()).forEach(x => bad.push(at + id + ' start card: ' + x));
+            await pg.evaluate(id => { LS.start(id, { learn: 1 }); const st = LS.st; st.post = [true, true]; st.done = true; LS.show(); }, id);
+            await pg.waitForSelector('#lsend', { timeout: 5000 });
+            (await on()).forEach(x => bad.push(at + id + ' end card: ' + x));
+          }
+          notes.push(w + 'x' + h + ' cards');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        await ta.ctx.close();
+      }
       if (bad.length) fail('LS-STOP lesson stops:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card; ' +
-        '"I already know this!" with a miss slides into the lesson with no wrong sound; the top bar meter fills; the end card lists +5:00 game time and the bank chip counts ' +
+      else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card (no price, the stop\'s world); ' +
+        '"I already know this!" with a miss slides into the lesson with no wrong sound; the train\'s track fills (no meter); every start and end card button on the screen; the end card lists +5:00 game time and the bank chip counts ' +
         'up by 5:00; the stop opens and its lesson stop shows +2 min; a proven skip pays; lessons off has no lesson stops or locks; (fix179) a show-me item missed and left ' +
         'during the slide line resumes in the lesson; a lesson part that does not load opens the practice round, one that loads late changes no screen; no console errors, no network requests');
     }
@@ -14622,13 +14650,15 @@ async function main() {
             return { q: it.q.label, kind: it.q.kind, mdl: !!it.mdl, tf: box('#prompt .ls-model svg[aria-label="ten frame"]'), two: [dots('v1'), dots('v2'), it.q.sl.a, it.q.sl.b], eq: box('#prompt .eq'), inp: box('#lsinp'),
               step: st.textContent, clip: st.scrollWidth > st.clientWidth + 1, sb: box('#lsstep'), top: box('.ls-top'), withLabel: h0, without: h1, typed: LS.u.typed, know: JSON.stringify(S.know.add2),
               hint: document.querySelector('#hint').innerHTML, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
-              sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]') };
+              sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]'),
+              now: [...document.querySelectorAll('.ls-top .ls-pip')].findIndex(e => e.classList.contains('now')), on: document.querySelectorAll('.ls-top .ls-pip.on').length };
           }, null, { timeout: 15000 }).then(x => x.jsonValue());
           if (!/^add2 /.test(r0.q) || r0.kind !== 'num' || !r0.mdl || !r0.tf || r0.tf.h < 60 || r0.tf.t < r0.top.b || r0.tf.b > r0.eq.t + 1 || r0.typed || r0.hint)
             bad.push(at + 'the ten frame before any answer: ' + JSON.stringify(r0));
           // the owner's "two colors yes" (v184): the first addend in the first colour, the second in the second
           if (r0.two[0] !== r0.two[2] || r0.two[1] !== r0.two[3]) bad.push(at + 'the ten frame is not the two addends in two colours: ' + JSON.stringify(r0.two));
-          if (!/^Step 1 of 6 · Remember$/.test(r0.step) || r0.clip || !r0.read || r0.sb.r > r0.vw || r0.sb.l < 0 || r0.sb.b > r0.top.b) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.top]));
+          // LESSON-STAGE (owner, 2026-11-23): the words are for screen readers only now (a 1 px clipped label); the train's stops show the step
+          if (!/^Step 1 of 6 · Remember$/.test(r0.step) || !r0.read || r0.sb.w > 1.5 || r0.sb.h > 1.5 || r0.now !== 0 || r0.on !== 0) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.now, r0.on]));
           if (Math.abs(r0.withLabel - r0.without) > .5) bad.push(at + 'the label makes the top bar taller: ' + r0.without + ' -> ' + r0.withLabel);
           if (r0.sw > r0.vw || r0.tf.r > r0.vw || (w < 1000 && r0.eq.b > r0.inp.t + 1)) bad.push(at + 'does not fit: ' + JSON.stringify(r0));
           await pg.waitForFunction(() => !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
@@ -14648,12 +14678,16 @@ async function main() {
           for (const d of String(ans)) await pg.click(`.k[data-k="${d}"]`);
           await pg.click('.k[data-k="go"]');
           await pg.waitForSelector('#lsplay[data-beat="exp"]', { timeout: 15000 });
-          // every beat's label fits whole, with the ticket meter and without it (a lesson that pays nothing shows its name on wide screens)
+          // every beat's label is there for screen readers, whole (LESSON-STAGE: no ticket meter in the top bar any more, whatever the
+          // lesson pays), and the train waits at the beat's stop with the stops before it passed
           const s2 = await pg.evaluate(() => {
             const o = [document.querySelector('#lsstep').textContent], p0 = lsPriceTag, st0 = LS.st;
             for (const pay of [true, false]) { if (!pay) lsPriceTag = () => '';
               for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
-                const e = document.querySelector('#lsstep'); if (!e.textContent || e.scrollWidth > e.clientWidth + 1) o.push('clipped ' + B + (pay ? '' : ' (no meter)') + ': ' + e.textContent); }
+                const e = document.querySelector('#lsstep'), j = LS_PIPS.findIndex(x => x[0] == B), pips = [...document.querySelectorAll('.ls-top .ls-pip')];
+                const now = pips.findIndex(x => x.classList.contains('now')), on = pips.filter(x => x.classList.contains('on')).length;
+                if (e.textContent !== LS.step(B) || document.querySelector('#lsmeter') || pips.length !== 6 || now !== j || on !== (B == 'win' ? 6 : Math.max(0, j)))
+                  o.push('the track at ' + B + (pay ? '' : ' (pays nothing)') + ': ' + JSON.stringify([e.textContent, now, on, !!document.querySelector('#lsmeter')])); }
               lsPriceTag = p0; }
             LS.st = null; return o; });
           if (s2[0] !== 'Step 2 of 6 · Explore' || s2.length > 1) bad.push(at + 'the labels: ' + s2.join(' | '));
@@ -14679,10 +14713,12 @@ async function main() {
             for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
               const e = document.querySelector('#lsstep'), name = LS.step(B).split(' · ').pop(), vis = e.innerText.trim(), r = e.getBoundingClientRect();
               if (document.querySelector('.ls-top #lsmeter')) met++;
-              if (e.scrollWidth > e.clientWidth + 1 || !vis.endsWith(name) || / of /.test(vis) || r.right > vw || r.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
+              // LESSON-STAGE: the label is for screen readers only (1 px), the train's six stops fit the bar
+              const tr = document.querySelector('.ls-top .ls-pips').getBoundingClientRect();
+              if (r.width > 1.5 || !vis.endsWith(name) || / of /.test(vis) || tr.right > vw || tr.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
             const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show();
             return { o, met, tog: document.querySelector('#lsstep').innerText.trim() }; });
-          if (s3.o.length || !s3.met || s3.tog !== 'Step 4 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
+          if (s3.o.length || s3.met || s3.tog !== 'Step 4 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
           await pg.screenshot({ path: path.join(shots, `teachux-step-${sz}.png`) });
           notes.push(sz + ' "' + s3.tog + '"');
         } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
@@ -14692,9 +14728,9 @@ async function main() {
       }
       if (bad.length) fail('TEACH-UX the model up front:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('TEACH-UX: add3 as a 1st grader at ' + notes.join(', ') + ': Remember (add2) shows its ten frame above the sum before any answer; the top bar reads ' +
-        '"Step 1 of 6 · Remember" in words and is no taller for it; the pet says "Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads ' +
-        '"Step 2 of 6 · Explore"; every beat\'s label fits whole, with and without the ticket meter; at 320 and 360 px with the meter every step\'s name shows whole ' +
-        '(no "of 6"); screenshots in tools/out/teachux; no console errors, no network requests');
+        '"Step 1 of 6 · Remember" for screen readers (LESSON-STAGE: hidden on screen, the train waits at the first stop) and is no taller for it; the pet says ' +
+        '"Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads "Step 2 of 6 · Explore"; every beat has its label and its stop on the ' +
+        'track, with no ticket meter; at 320 and 360 px the track fits and the label leaves out "of 6"; screenshots in tools/out/teachux; no console errors, no network requests');
     }
     // end TEACH-UX
 

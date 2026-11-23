@@ -5230,6 +5230,8 @@ const KMONO = {};
 function pickQ(sk, lv) {
   const h = G.kh || (G.kh = []), two = h.length > 1 && h[h.length - 1] === h[h.length - 2] ? h[h.length - 1] : null, id = sk + lv;
   let q, alt;
+  // LESSON-STAGE: a stop whose questions are all one kind: the third in a row comes from its lesson in another kind (lsMix, part teach)
+  if (two && KMONO[id] && typeof lsMix == 'function' && (q = lsMix(sk, lv, two))) return q;
   for (let t = 0; t < 10; t++) {
     q = genQ(sk, lv);
     if (q.label === G.last) continue;

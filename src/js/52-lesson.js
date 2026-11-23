@@ -667,6 +667,27 @@ const LS = {
 // fix179: lesson time stops counting while the app is hidden (LS.vis)
 if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
 const lsName = () => (S.name || 'friend');
+/* LESSON-STAGE (owner, 2026-11-23): practice in more than one shape. When a stop's generator makes only one kind of question (KMONO),
+   pickQ (49b-kinds2.js) asks here for the third question in a row: one of the stop's own lesson items in another kind (its build on
+   the model or its picture, stages 0 and 1), as the lesson asks it (the same reviewed words), once the child has learned that lesson.
+   An item that needs the lesson around it (a goal, a start state, a raw state, its own answer check, a told story) is never used. It
+   is marked as one of the stop's questions (sk, lv) with the label and seed of a fresh generator question of the stop, so a miss
+   comes back in Review as the stop's own kind. null when none fits (the round goes on as before). */
+function lsMix(sk, lv, kind) {
+  const id = sk + lv, L = typeof LESSONS != 'undefined' && LESSONS[id];
+  if (!L || typeof lsLearned != 'function' || !lsLearned(id)) return null;
+  const r = mulberry32(((Math.random() * 4294967295) >>> 0) + 1);
+  for (let t = 0; t < 8; t++) {
+    let q = null;
+    try { q = L.q(t % 2, r); } catch (e) { return null; }
+    const K = q && KIND[q.kind], M = q && q.kind == 'make' && K2MM[q.model];
+    if (!K || q.kind === kind || q.goal || q.s0 || q.raw || q.on || q.tell || q.kind == 'make' && (!M || M.raw)) continue;
+    if (K.validate && K.validate(q).length) continue;
+    const g = genQ(sk, lv);
+    return Object.assign(q, {sk, lv, label: g.label, seed: g.seed, lsx: 1});
+  }
+  return null;
+}
 /* TEACH-5S: Spanish in a spoken line is written «la vaca». lsRuns(t, es) cuts a line into [text, 1 when Spanish] pieces, in order; in a
    Spanish lesson (es) "el" and "la" said alone (the article named as a word) are Spanish too, never one inside a title or a quote. lsSay says each piece in its own voice, one after the other (say()
    queues them; a Spanish piece is its ES-AUDIO recording when there is one); a line with no Spanish is said as before. lsPlain: the
