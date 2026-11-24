@@ -20,7 +20,8 @@
    the bear walks there, a tap on the trail goes back to that spot. The Arrows button shows a 4-arrow pad (remembered in
    S.bt.maze.pad); the keyboard arrows work too. Items picked up stay picked up when the trail is erased.
    Mistakes: each dead end reached that holds nothing (start, flag, stars and keys are not mistakes). The type allows 2.
-   Hints: 1) an arrow flashes toward the next thing to reach (the flag, or the next star or key). 2) dots on the next 5 cells of the
+   Hints: 1) a ring flashes round the next thing to reach (the flag, or the next star or key) and the line says which way it lies
+   (AUD-BT M-3: it was an arrow beside the bear, which mostly pointed at a wall). 2) dots on the next 5 cells of the
    route. 3) dots on the route through the next junction and one cell past it (at least as many as tier 2). Hints never show the
    cell the route ends on, so a hint never draws the whole way.
    Drawing: a static layer (floor and walls, merged into long strokes, three passes: shade, base, highlight; light from the top
@@ -530,7 +531,7 @@ BT.reg({
       if (won) return 'won';
       const c = head(), n = nbIn(c, d);
       if (n < 0) return 'wall';
-      arrow.hidden = true; // the hint arrow points from where the bear was
+      arrow.hidden = true; // the hint ring goes when the bear moves
       if (st.t.length > 1 && st.t[st.t.length - 2] == n) { // back over the trail: erase
         st.t.pop();
         dirty = true;
@@ -675,12 +676,18 @@ BT.reg({
         const d = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
         const what = tg.kind == 'flag' ? 'The flag' : tg.kind == 'star' ? 'The next star' : items.length > 1 ? `Key ${tg.k + 1}` : 'The key';
         const where = ['up', 'to the right', 'down', 'to the left'][d];
-        const off = cs * 0.5 + 30, lim = v => Math.max(28, Math.min(size - 28, v)); // beside the bear, inside the board
-        const ax = lim(cx(c) + MZ.DX[d] * off), ay = lim(cy(c) + MZ.DY[d] * off);
-        arrow.innerHTML = ico(['arrow-up', 'arrow-right', 'arrow-down', 'arrow-left'][d], 40);
-        arrow.style.left = ax + 'px';
-        arrow.style.top = ay + 'px';
+        // AUD-BT M-3: the mark is a ring round the thing itself (the flag, the star, the key), not an arrow beside the bear. The
+        // bear starts in a dead end, so an arrow "toward the flag" pointed at a wall in three starts of four, and a child who
+        // cannot read the line followed the arrow. The line still says where the thing is; the ring shows it.
+        const rs = Math.round(Math.max(44, cs * 1.15));
+        arrow.innerHTML = '';
+        arrow.classList.add('ring');
+        arrow.style.width = arrow.style.height = rs + 'px';
+        arrow.style.margin = (-rs / 2) + 'px 0 0 ' + (-rs / 2) + 'px';
+        arrow.style.left = cx(tg.c) + 'px';
+        arrow.style.top = cy(tg.c) + 'px';
         arrow.dataset.d = MZ.DIR[d];
+        arrow.dataset.c = tg.c;
         arrow.hidden = false;
         arrow.classList.remove('on');
         void arrow.offsetWidth;
