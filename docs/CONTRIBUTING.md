@@ -336,6 +336,7 @@ node tools/perf.js               # timings at 6x CPU throttle and memory over 30
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
 node tools/a11y.js [screen...]   # accessibility scan, DESIGN_SYSTEM 10 (P6-01); must print zero failures
 node tools/brand-icons.js        # BRAND: redraw the app icons (docs/brand/icons/) and the Play icon from docs/brand/*.svg; only when a logo SVG changes
+node tools/brand-feature.js      # BRAND: redraw the Play feature graphic into tools/out/brand/ and count the pixels that differ from docs/brand/store/feature-1024x500.png (--write replaces it)
 bash tools/check.sh              # all of the above plus a11y and the size report; see "The full check" below             (after P0-01)
 node tools/puzzles/build-banks.js [sudoku|mathdoku|logic|robot] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
 node tools/puzzles/build-banks.js --check    # regenerate in memory, compare with the committed bank files byte for byte

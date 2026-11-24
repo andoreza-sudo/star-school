@@ -366,7 +366,7 @@ A crimson and brass steam engine, head-on, at dusk; the wordmark "Whistle" in `-
 | `docs/brand/whistlestop-icon.svg` | The source. `g#mark-ws`: the full-bleed 100x100 mark (dusk sky, hills, rails, the engine inside the circle of radius 33); `g#tile`: the mark zoomed 1.4x in a rounded square (rx 22); `g#word`: the wordmark, outlined |
 | `docs/brand/icon-small.svg` | The engine in a few big shapes on a 32 grid, for 16 to 48 px |
 | `docs/brand/icons/*.png` | Drawn by `node tools/brand-icons.js` (Chrome), committed, copied to the root by `tools/build.py`: `icon-192/512.png` (`any`, the tile, transparent corners), `icon-maskable-192/512.png` (`maskable`, full bleed, opaque), `favicon-32.png` (the small one). Run it again only when an SVG changes |
-| `docs/brand/store/` | Play listing: `icon-512.png` (512x512, 32-bit, full bleed, every pixel opaque) and `feature-1024x500.png` (the feature graphic, no alpha) |
+| `docs/brand/store/` | Play listing: `icon-512.png` (512x512, 32-bit, full bleed, every pixel opaque) and `feature-1024x500.png` (the feature graphic, no alpha; `node tools/brand-feature.js` draws it again from `whistlestop-icon.svg` and compares) |
 | `UI.logo(cls, word)`, `UI.LOGO` (`src/js/14-ui.js`) | In the app: the small icon as inline SVG (tokens only, about 1.3 KB; its sky is the tile's CSS gradient, `.wl-mk` in `10-components.css`) and the wordmark as text in the display font, the i drawn as a dotless i with an SVG star. One `role="img"` named "Whistlestop"; the drawing and the letters are `aria-hidden` |
 
 Where it is used: Home's top bar (the icon alone under 480 px, the word hidden as before), the setup header (the `h1`), the top of
