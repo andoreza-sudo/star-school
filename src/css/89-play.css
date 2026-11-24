@@ -20,6 +20,6 @@
 .pl-btns .btn{min-height:var(--tap)}
 .pl-sh .pl-btns{margin-bottom:var(--s-2)}
 /* sample fix: the free sample's last lock (its 6th stop), in the unlock's star colours */
-.btn.node.lock.pl-end{background:var(--star-tint);color:var(--star-ink);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}
-.pl-es{position:absolute;right:-6px;top:-6px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--star);color:var(--star-ink)}
+.btn.node.lock.pl-end{background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}
+.pl-es{position:absolute;right:-6px;top:-6px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--star);color:var(--ink)}
 .btn.node .pl-es .ic{width:18px;height:18px}
