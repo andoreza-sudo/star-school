@@ -23633,7 +23633,7 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
 // in --brand with a star for the dot on the i. Home's top bar, setup, About and the Try again screen use it; the old star tile is gone.
 run('logo BRAND: UI.logo on Home, setup, About and the Try again screen; one accessible name; no star tile; small; landing static with the logo',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),tok=rd('css/00-tokens.css');
-  const [lg,mk,LOGO]=(()=>eval(js+`[UI.logo('hm-logo'),UI.logo('',false),UI.LOGO]`))(); // its own scope: js declares home(), grown() ...
+  const [lg,mk,LOGO,hid]=(()=>eval(js+`[UI.logo('hm-logo'),UI.logo('',false),UI.LOGO,UI.logo('',true,false)]`))(); // its own scope: js declares home(), grown() ...
   // the markup: one role=img named Whistlestop, everything inside aria-hidden, the two colours, the star dot, no ids, tokens only
   if(!/^<span class="wl hm-logo" role="img" aria-label="Whistlestop"><svg class="wl-mk" viewBox="0 0 32 32" aria-hidden="true"><g stroke="var\(--ill-ink\)" stroke-width="\.9">/.test(lg))p.push('UI.logo: '+lg.slice(0,120));
   if(!/<span class="wl-w" aria-hidden="true">Wh<span class="wl-i">ı<svg viewBox="0 0 14 13\.4"><path d="[^"]+"\/><\/svg><\/span>stle<b>stop<\/b><\/span><\/span>$/.test(lg))p.push('UI.logo wordmark: '+lg.slice(-200));
@@ -23649,8 +23649,10 @@ run('logo BRAND: UI.logo on Home, setup, About and the Try again screen; one acc
   const hjs=rd('js/46-home.js'),gjs=rd('js/80-grown.js'),ajs=rd('js/90-app.js');
   if(!/<div class="top tbar hm-top">\$\{UI\.logo\('hm-logo'\)\}<div class="sp"><\/div>/.test(hjs))p.push('Home top bar does not start with UI.logo(\'hm-logo\')');
   if(!/<h1 class="gx-logo su-logo">\$\{UI\.logo\(\)\}<\/h1>/.test(hjs))p.push('setup header is not <h1> with UI.logo()');
-  if(!/function aboutCard\(\)\{\n  return GW\.card\('gw-about','info','About Whistlestop',\n    `<div class="wl-top ab-logo">\$\{UI\.logo\(\)\}<\/div>/.test(gjs))p.push('About does not show the logo first');
-  if(!/<div class="scroll" id="datamiss"><div class="wl-top">\$\{UI\.logo\(\)\}<\/div>\$\{UI\.empty\('download', 'Whistlestop needs to finish updating/.test(ajs))p.push('the Try again screen does not show the logo');
+  // About (under its title "About Whistlestop") and the Try again screen (its line starts "Whistlestop needs") hide the logo, so the name is read once
+  if(!/function aboutCard\(\)\{\n  return GW\.card\('gw-about','info','About Whistlestop',\n    `<div class="wl-top ab-logo">\$\{UI\.logo\('', true, false\)\}<\/div>/.test(gjs))p.push('About does not show the logo first, hidden from screen readers');
+  if(!/<div class="scroll" id="datamiss"><div class="wl-top">\$\{UI\.logo\('', true, false\)\}<\/div>\$\{UI\.empty\('download', 'Whistlestop needs to finish updating/.test(ajs))p.push('the Try again screen does not show the logo, hidden from screen readers');
+  if(!/^<span class="wl " aria-hidden="true"><svg class="wl-mk"/.test(hid)||/role=|aria-label/.test(hid)||!hid.endsWith(lg.slice(lg.indexOf('<span class="wl-w"'))))p.push('UI.logo(cls, true, false) is not the same logo, aria-hidden and unnamed: '+hid.slice(0,80));
   // no star-tile leftovers
   const all=['js','css'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,rd(d+'/'+n)]));
   for(const [n,t] of all)if(/hm-mark|su-mark|\.hm-logo>span/.test(t))p.push(n+': the old star tile (hm-mark, su-mark) is still there');

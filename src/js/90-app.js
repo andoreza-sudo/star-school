@@ -63,7 +63,7 @@ function dataMissing(stems) {
   logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== '__VER__')
     .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app __VER__)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
-  view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo()}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
+  view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo('', true, false)}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 /* ---------- P6-02: part files loaded on demand ----------
