@@ -4200,7 +4200,7 @@ function k2Gusta(q0) {
 }
 // es_mix 2: two of animales, comida and colores (Spanish is open from Pre-K: 2 bins, 4 words); the fact's word is one of them when it is
 // from those units, and then keeps its review label
-const K2ESU = [['animal', 'animales', 'animals'], ['food', 'comida', 'food'], ['color', 'colores', 'colors']];
+const K2ESU = [['animal', 'animales', 'animals', 'an animal'], ['food', 'comida', 'food', 'a food'], ['color', 'colores', 'colors', 'a color']];
 const K2ESAMB = ['naranja', 'café'];
 function k2EsMix(q0) {
   const f = String(q0.ans), fu = K2ESU.find(u => SPN[u[0]].some(it => esFull(it) == f));
@@ -4216,7 +4216,7 @@ function k2EsMix(q0) {
   const bins = U.map(u => ({v: u[1], l: u[1]}));
   return k2Sort({bins, items, html: `<div class="sub">${esc(k2Cap(U[0][1]))} or ${esc(U[1][1])}?</div>`,
     say: `Sort the Spanish words: ${U[0][1]}, ${U[0][2]}, or ${U[1][1]}, ${U[1][2]}.`,
-    binSay: Object.fromEntries(U.map(u => [u[1], u[2]])), hint: `Say each word. Is it one of the ${U[0][2]}, or one of the ${U[1][2]}?`,
+    binSay: Object.fromEntries(U.map(u => [u[1], u[2]])), hint: `Say each word. Is it ${U[0][3]}, or ${U[1][3]}?`,
     label: fu && k2Fact(q0.label) ? q0.label : k2Lab(bins, items)});
 }
 
