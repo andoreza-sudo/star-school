@@ -2207,8 +2207,9 @@ function galFact3() {
   for (;;) {
     a = R(2, 36); b = R(2, 36);
     if (a == b) continue;
-    // AUDIT-MATH: a story about the greatest number of teams never has the answer 1 (the same draws as before)
-    if (gcf ? (skyGcd(a, b) == 1 && (rnd() < .9 || word)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
+    // AUDIT-MATH: a story about the greatest number of teams never has the answer 1. The bare question keeps a pair with GCF 1 twice as
+    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before)
+    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .8)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
     break;
   }
   const lo = Math.min(a, b), hi = Math.max(a, b);
