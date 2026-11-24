@@ -98,7 +98,8 @@ Open the app twice so the update installs. Then:
 
 ## 6. Known open items (not blockers)
 
-- Start-up is about 2.49 MB of the 2.5 MB budget: the next feature needs code moved to a lazy part first.
+- Start-up is about 2.38 MB of the 2.5 MB budget (TRIM-START, v196: the Brain Teaser data moved from data.<VER>.js into the lazy part bt,
+  2.51 -> 2.38 MB); bt is about 722 KB of its 800 KB fail limit, so the next big move needs another part.
 - Map "longest task" is a little over its 200 ms soft line on a 6x-throttled CPU.
 - British spellings outside lesson text (riddles, Block Builder, "tyres", "favourite", "metres", "Practise") are listed in
   PROGRESS "Ideas and issues".
