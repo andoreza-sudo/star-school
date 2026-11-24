@@ -86,8 +86,8 @@ function ls6mRatio2(id, t, g, idea, home) {
 }
 
 /* ---- Sky City: Integers on a Line, Absolute Value, Integer Add & Subtract (a number line from -10 to 10) ---- */
-const LS6M_INT = [['temp', n => `It is ${ls6mN(n)} degrees.`, n => `${ls6mSay(n)} degrees`], ['floor', n => (n < 0 ? `The lift is ${-n} floors below the ground.` : `The lift is ${n} floors above the ground.`), n => `floor ${ls6mSay(n)}`],
-  ['sea', n => (n < 0 ? `A diver is ${-n} meters below the sea.` : `A bird is ${n} meters above the sea.`), n => `${ls6mSay(n)} meters`]];
+const LS6M_INT = [['temp', n => `It is ${ls6mN(n)} ${qW(n, 'degree')}.`, n => `${ls6mSay(n)} ${qW(n, 'degree')}`], ['floor', n => (n < 0 ? `The lift is ${qN(-n, 'floor')} below the ground.` : `The lift is ${qN(n, 'floor')} above the ground.`), n => `floor ${ls6mSay(n)}`],
+  ['sea', n => (n < 0 ? `A diver is ${qN(-n, 'meter')} below the sea.` : `A bird is ${qN(n, 'meter')} above the sea.`), n => `${ls6mSay(n)} ${qW(n, 'meter')}`]];
 const LS6M_BRIEF_INT1 = `Explore: a number line from negative ten to ten; the child moves a dot anywhere with steppers.
 Name it: the dot they placed; lines on it (slots {x}: where the dot is, {n}: how many steps from zero) and the idea: negative numbers sit to the left of zero, and further left is always less.
 Together (no slots: the number is on the screen and the app says it): line 1 before putting a dot on a number (a temperature, a floor or a depth), line 2 before reading a dot on the line (they type the number), line 3 before comparing two numbers in words only (they type the greater one).
@@ -232,11 +232,11 @@ function ls6mFop7(id, t, g, idea, home) {
     if (R <= 12 && b < R && Number.isInteger(k) && k >= 2 && k != p / b) return [p, q, b, R, m, k]; } };
   D.q = (st, r) => {
     if (st == 0) { const d = lsRi(r, 6, 10), b = lsRi(r, 1, 3), k = lsRi(r, 2, Math.floor(d / b)), a = k * b;
-      return lsDq(D, 0, {kind: 'make', model: 'fit', m: {d, a, b, target: k}, goal: 'value', eq: 'value', ans: k, sl: {}, bug: {flipDiv: [`1/${k}`]}, hint: {k: 'text', s: `Each group is ${b} ${ccPl(d)}. Count the groups that fit.`},
+      return lsDq(D, 0, {kind: 'make', model: 'fit', m: {d, a, b, target: k}, goal: 'value', eq: 'value', ans: k, sl: {}, bug: {flipDiv: [`1/${k}`]}, hint: {k: 'text', s: `Each group is ${b} ${b == 1 ? (d == 2 ? 'half' : FC_NAMES[d]) : ccPl(d)}. Count the groups that fit.`},
         ansSay: `${k} groups`, html: lsEq(`${ls3Fr(a, d)} ÷ ${ls3Fr(b, d)}`) + lsCap(`How many groups of ${ls3Fr(b, d)} fit in ${ls3Fr(a, d)}?`),
         say: `${ls3Frs(a, d)} divided by ${ls3Frs(b, d)}. How many groups of ${ls3Frs(b, d)} fit?`}); }
     const [p, q, b, R, m, k] = pick(r), e = `${ls3Fr(p, q)} ÷ ${ls3Fr(b, R)}`, se = `${ls3Frs(p, q)} divided by ${ls3Frs(b, R)}`;
-    const bug = {noRename: [p / b].filter(Number.isInteger), flipDiv: [`1/${k}`]}, hint = {k: 'text', s: `${ls3Fr(p, q)} is ${ls3Fr(p * m, R)}. How many groups of ${b} ${ccPl(R)} fit in ${p * m}?`};
+    const bug = {noRename: [p / b].filter(Number.isInteger), flipDiv: [`1/${k}`]}, hint = {k: 'text', s: `${ls3Fr(p, q)} is ${ls3Fr(p * m, R)}. How many groups of ${b} ${b == 1 ? (R == 2 ? 'half' : FC_NAMES[R]) : ccPl(R)} fit in ${p * m}?`};
     if (st == 1) return lsDq(D, 1, {kind: 'num', ans: k, sl: {}, bug, hint, max: 2, html: `<div class="pkq">${ls6mFit(R, p * m, b, 0, {one: ls3Fr(b, R)})}</div>` + lsEq(`${e} = ${SLOT}`), say: `${se} equals what?`});
     return lsDq(D, 2, {kind: 'num', ans: k, sl: {}, bug, hint, max: 2, html: lsEq(`${e} = ${SLOT}`), say: `${se} equals what?`});
   };
@@ -550,7 +550,7 @@ function ls6mData5(id, t, g, idea, home) {
   D.warm = ls3WarmFact(D, 2, 9);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'lev', m: {vals: [2, 5, 3, 6], target: 4, s0: 1}, goal: 'moved', eq: 'value', ans: 4, raw: 1, sl: {}, demo: [5],
     html: lsCap('Move the level line anywhere.'), say: 'Move the level line anywhere you like. Watch the blocks above and the gaps below.'}), nudge: 'Move the line, then check.',
-  react: v => { const k = Array.isArray(v) ? v[0] : +v, V = [2, 5, 3, 6], a = ls6mAbove(V, k), b = ls6mGaps(V, k); return {ctx: {k, a, b}, lines: [a == b ? `At ${k}, the blocks above fill the gaps exactly.` : `At ${k}, ${a} blocks above and ${b} gaps below.`]}; }});
+  react: v => { const k = Array.isArray(v) ? v[0] : +v, V = [2, 5, 3, 6], a = ls6mAbove(V, k), b = ls6mGaps(V, k); return {ctx: {k, a, b}, lines: [a == b ? `At ${k}, the blocks above fill the gaps exactly.` : `At ${k}, ${qN(a, 'block')} above and ${qN(b, 'gap')} below.`]}; }});
   D.name = c => ({html: `<div class="pkq">${ls6mTowers([2, 5, 3, 6], c.k)}</div>` + lsEq('2 + 5 + 3 + 6 = 16<br>16 ÷ 4 = 4'), sl: c});
   return D;
 }
