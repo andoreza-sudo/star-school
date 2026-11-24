@@ -14925,12 +14925,13 @@ run('Spanish speaking S-SPK',()=>{
         if(snap()!==s0)B(way+': the round or the save changed '+s0+' -> '+snap());
         if(way=='no-mic'){if(notes!==1)B('no microphone: '+notes+' notes (one, for the session)');G.spk=0;notes=0;spkHook();if(notes)B('no microphone: the note came twice')}}
       SPK.mic='yes';SPK.deny=0;SPK.note=0;
-      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 5
+      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 2
       {day().spk=0;for(let i=0;i<5;i++){G=G0({path:'es',node:1,sk:'es_food',lv:1});G.done=3;spkHook();spkEnd(true)}
        if(day().spk!==5)B('5 steps said: day().spk is '+day().spk);
-       const x={k:'speak',d:0};day().spk=4;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 4');
-       day().spk=5;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 5');
-       if(MIS.title(x)!=='Say 5 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
+       // owner decision 2026-11-24 (P5), a deliberate change: the mission is 2 words (it was 5: done at 5, "Say 5 Spanish words")
+       const x={k:'speak',d:0};day().spk=1;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 1');
+       day().spk=2;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 2');
+       if(MIS.title(x)!=='Say 2 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
        const sub=[{p:'math',i:0,s:null,n:0},{p:'es',i:0,s:null,n:0}],c=on=>({g:2,subs:sub,bt:false,spr:false,due:0,spk:on});let yes=0,no=0;
        for(let d=1;d<=60;d++){const k='2026-1-'+d,a=MIS.draw(k,'Ava',c(true));if(a.some(x=>x.k=='speak'))yes++;
          if(MIS.draw(k,'Ava',c(false)).some(x=>x.k=='speak'))no++;if(!MIS.valid(a))B('a draw with speak is not valid')}
