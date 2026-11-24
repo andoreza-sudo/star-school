@@ -5047,7 +5047,8 @@ Object.assign(SK,{
            key (default: the Spanish with punctuation and the small words en/un/una/el/la/los/las taken off; ' y ' splits it in two)
            is what must appear in the referenced line for the right answer, and in NO line of that kind for a wrong one
      who:  `k` is the exact phrase quoted in the question; `a` is the name of the speaker of `line`, and the other names are not
-   Every question has one right answer, found in the line it points to. Hints are made in code and point at the line. */
+   Every question has one right answer, found in the line it points to. Hints are made in code and point at the line.
+   Audit v195: no wrong answer shows the Hola Plaza picture of a word in the line (🙏 is gracias). */
 const ES_STORY={
  newWords:['dice','quién','quiero','quieres','quiere','aquí','también','con','tu','para','tiempo','color','animal','animales','al','final','mascota'],
  people:{'Ana':'👧','Sofía':'👧','Lucía':'👧','Luis':'👦','Carlos':'👦','Mateo':'👦','Pablo':'👦','Mamá':'👩','Papá':'👨','Abuela':'👵','Abuelo':'👴','La maestra':'👩'},
@@ -5078,7 +5079,7 @@ const ES_STORY={
     {t:'what',line:1,en:'What does Luis want?',es:'¿Qué quiere Luis?',a:['manzanas y queso','apples and cheese','🍎🧀'],
      d:[['galletas y leche','cookies and milk','🍪🥛'],['pan y huevos','bread and eggs','🍞🥚'],['plátanos y uvas','bananas and grapes','🍌🍇']]},
     {t:'reply',line:3,en:'Mamá asks if he wants some ice cream. What does Luis say?',es:'Mamá dice “¿Quieres un helado?”. ¿Qué dice Luis?',
-     a:['Sí, gracias.','Yes, thank you.','👍'],d:[['No, gracias.','No, thank you.','👎'],['De nada.','You are welcome.','🙏'],['Adiós.','Goodbye.','🚶'],['Lo siento.','I am sorry.','😢']]}]},
+     a:['Sí, gracias.','Yes, thank you.','👍'],d:[['No, gracias.','No, thank you.','👎'],['Adiós.','Goodbye.','🚶'],['Lo siento.','I am sorry.','😢']]}]},
   {id:'lapiz',title:'The lost pencil',lines:[
     ['Carlos','¿Dónde está mi lápiz?'],['Lucía','¿Está en la mesa?'],['Carlos','No, aquí no está.'],
     ['Lucía','¡Aquí está! Está en tu mochila.'],['Carlos','¡Gracias, Lucía!']],
@@ -5152,7 +5153,7 @@ const ES_STORY={
     {t:'what',line:2,en:'What is here for Mateo?',es:'¿Qué hay aquí para Mateo?',a:['la leche','the milk','🥛','leche'],
      d:[['el pan','the bread','🍞'],['el helado','the ice cream','🍦'],['las galletas','the cookies','🍪'],['el queso','the cheese','🧀']]},
     {t:'reply',line:3,en:'What does Mateo say at the end?',es:'¿Qué dice Mateo al final?',a:['Buenas noches.','Good night.','🌙'],
-     d:[['Buenos días.','Good morning.','🌅'],['Hola.','Hello.','👋'],['De nada.','You are welcome.','🙏'],['Lo siento.','I am sorry.','😢']]}]},
+     d:[['Buenos días.','Good morning.','🌅'],['Hola.','Hello.','👋'],['Lo siento.','I am sorry.','😢']]}]},
   {id:'biblioteca',title:'At the library',lines:[
     ['Sofía','¡Hola, Carlos! ¿Estás en la biblioteca?'],['Carlos','Sí, leo un libro. ¡Me gusta mucho!'],
     ['Sofía','¿Qué animales hay en el libro?'],['Carlos','Hay un león y un oso.'],['Sofía','¡Qué bonito!']],
@@ -5177,6 +5178,7 @@ Object.assign(SK,{
           that get the English (R-01s: weather, where only the temperature pictures need it)
    confuse  R-01s: pairs of words never offered together in one question, because their pictures or meanings overlap (two right
           answers by picture or by ear: hace sol / hace calor). tools/test.js scans every Spanish skill for such pairs
+          (audit v195: the storm drawing has rain and a cloud: hay tormenta never with llueve or está nublado)
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
    l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
@@ -5348,7 +5350,7 @@ const ES_UNITS=[
   ['otoño','fall','🍂','el'],
   ['invierno','winter','⛄','el','snowman']]},
  {id:'weather',t:'Weather',e:'☀',theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
-  confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],items:[
+  confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento'],['llueve','hay tormenta'],['está nublado','hay tormenta']],items:[
   ['hace sol','it is sunny','☀','','sun'],
   ['hace calor','it is hot','🥵',''],
   ['hace frío','it is cold','🥶',''],

@@ -26,9 +26,13 @@ function enPlural(w){const m=/^(.*?)([a-z]+)$/i.exec(String(w));if(!m)return w;c
 /* genQ(sk,lv,seed): build one question of skill sk, level lv, from a seed (uint32; random when omitted). Same (sk,lv,seed) gives the same question.
    The question is stamped with q.sk, q.lv, q.seed. RNG is always restored, even if the generator throws. */
 function genQ(sk,lv,seed){
-  if(seed==null)seed=Math.floor(Math.random()*4294967296);
+  const fresh=seed==null;if(fresh)seed=Math.floor(Math.random()*4294967296);
   seed=seed>>>0;
   const prev=RNG;RNG=mulberry32(seed);
-  try{const q=SK[sk].gen(lv);q.sk=sk;q.lv=lv;q.seed=seed;return q}
+  try{let q=SK[sk].gen(lv);
+    // audit v195: Pre-K and K get the "Listen" question of the same seed for a new Spanish "Read" one (esRead, 34-gen-es.js); it
+    // stays a question of its stop (q.lv), so the round, mastery and the challenge rules see the stop they asked for
+    if(fresh&&typeof esRead=='function'&&esRead(q,lv)){RNG=mulberry32(seed);q=SK[sk].gen(1)}
+    q.sk=sk;q.lv=lv;q.seed=seed;return q}
   finally{RNG=prev}}
 

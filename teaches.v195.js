@@ -173,7 +173,8 @@ function ls6Spanish(id, t, units, o) {
   // Remember, when nothing older is due: a word of the unit before, heard, and its picture tapped
   const wu = o && o.warmU;
   D.warm = wu ? r => {
-    const u = ES_UNITS.find(x => x.id == wu), xs = ls4Shuf(r, u.items.filter(it => !LS6_NOPIC.includes(it[0]))).slice(0, 3), f = esFull(xs[0]), ch = ls4Shuf(r, xs);
+    // audit v195 (N7): drawn like the listen question (ls6Draw): pictures that differ, and no two words the unit keeps apart (el camión / el autobús)
+    const u = ES_UNITS.find(x => x.id == wu), xs = ls6Draw(r, u.items.filter(it => !LS6_NOPIC.includes(it[0])).map(it => [it, u]), 3).map(x => x[0]), f = esFull(xs[0]), ch = ls4Shuf(r, xs);
     return ls4Q(D, 0, {kind: 'choice', cls: 'pics pk3', ans: f, choices: ch.map(it => ({v: esFull(it), l: ls6Pic(it), h: true})), sl: {}, vsay: v => ls6M(v),
       html: `<div class="pkq">${ls6Ear(f)}</div>` + lsAsk('Tap the picture.'), say: `Listen. ${ls6M(f)}. Tap its picture.`, hint: {k: 'text', s: 'Tap the speaker and listen again.'}, label: `warm ${f}`});
   } : null;

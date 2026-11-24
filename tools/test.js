@@ -14646,7 +14646,8 @@ run('Spanish review fixes R-01s',()=>{
     //      ear, in any Spanish skill and level; no two choices share a meaning (value) or a picture (the picture without its caption)
     const PAIRS=[[/\bsol\b|sunny/i,/calor|\bhot\b/i,'hace sol / hace calor'],[/niev|snow/i,/fr[ií]o|\bcold\b/i,'nieva / hace frío'],
       [/fresco|\bcool\b/i,/viento|windy/i,'hace fresco / hace viento'],[/feliz|happy/i,/tranquil|\bcalm\b/i,'feliz / tranquilo'],
-      [/feliz|happy/i,/emocionad|excited/i,'feliz / emocionado'],[/cami[oó]n/i,/autob[uú]s/i,'el camión / el autobús']];
+      [/feliz|happy/i,/emocionad|excited/i,'feliz / emocionado'],[/cami[oó]n/i,/autob[uú]s/i,'el camión / el autobús'],
+      [/llueve/i,/tormenta/i,'llueve / hay tormenta'],[/nublado/i,/tormenta/i,'está nublado / hay tormenta']]; // audit v195 (N1)
     const picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
     const clashes=q=>{const out=[];if(q.kind!=='choice')return out;
       const t=q.choices.map(c=>strip(c.l)+' | '+c.v);
@@ -14662,10 +14663,12 @@ run('Spanish review fixes R-01s',()=>{
       if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)bad(key+': not exactly one right answer')};
     for(const sk of ES)for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=N;s++){const q=genQ(sk,lv,s);info.q++;scan(q,sk+' L'+lv)}
     // the review's seeds, by name
-    for(const [sk,lv,s] of [['es_weather',2,19],['es_weather',2,38],['es_weather',1,38],['es_weather',2,13],['es_weather',1,13],['es_feel',1,41],['es_feel',1,2],['es_trans',1,40]]){
+    for(const [sk,lv,s] of [['es_weather',2,19],['es_weather',2,38],['es_weather',1,38],['es_weather',2,13],['es_weather',1,13],['es_feel',1,41],['es_feel',1,2],['es_trans',1,40],['es_weather',2,30],['es_weather',1,76],['es_weather',1,1]]){
       const q=genQ(sk,lv,s);if(clashes(q).length)bad('review seed '+sk+' '+lv+' '+s+' still offers '+clashes(q).join(', '))}
     // the confuse lists name real words; the weather pictures that are not enough alone carry their English
-    const CONF={weather:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],
+    // audit v195 (N1): the storm drawing (a dark cloud with rain and lightning) also shows rain and a cloud, so hay tormenta is never
+    // offered with llueve or está nublado: two pairs added to the weather list on purpose (the app's list and this table changed together)
+    const CONF={weather:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento'],['llueve','hay tormenta'],['está nublado','hay tormenta']],
       feel:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],trans:[['camión','autobús']]};
     for(const id in CONF){const u=U(id);
       if(JSON.stringify(u.confuse)!==JSON.stringify(CONF[id]))bad(id+': confuse list '+JSON.stringify(u.confuse));
@@ -14796,6 +14799,66 @@ run('Spanish review fixes R-01s',()=>{
     return info};
   const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(errs),note:r.q+' questions scanned across every Spanish skill and level'};
+});
+
+// ---- Spanish audit v195 (docs/reviews/R-01-spanish.md Must 4 and 5, and the audit's N1, N2, N3, N7): no words changed, only what is offered
+// together and what a Pre-K or K child is asked. Seeded questions are untouched except where a fault was (weather with the storm, the two
+// story questions, the comida-or-colores sort with naranja or café), so the old-stops hashes above stay as they are.
+run('Spanish audit v195: storm pairs, gracias picture, naranja and café, lesson warm-up, Pre-K and K listen instead of read',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    const info={q:0},picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,''),g0=S.grade;
+    const UNITS=ES_UNITS.map(u=>'es_'+u.id).concat(['es_mix']);
+    // N1: the storm drawing is never offered with llueve or está nublado, at either level
+    for(let lv=1;lv<=2;lv++)for(let s=1;s<=3000;s++){const v=genQ('es_weather',lv,s).choices.map(c=>c.v);info.q++;
+      if(v.includes('hay tormenta')&&(v.includes('llueve')||v.includes('está nublado')))bad('es_weather L'+lv+' seed '+s+': '+v.join(' / '))}
+    // N2: at story level 2 (pictures) no wrong answer shows the Hola Plaza picture of a word the line says (🙏 is gracias)
+    const GP=SPN.greet.map(it=>[it[2],stNorm(it[0])]);
+    for(const D of ES_STORY.dialogues)for(const Q of D.qs){if(Q.t==='who')continue;const ln=' '+stNorm(D.lines[Q.line][1])+' ';
+      if(Q.d.length<3)bad(D.id+': fewer than 3 wrong answers');
+      for(const o of Q.d)for(const [p,w] of GP)if(o[2]===p&&Q.a[2]!==p&&ln.includes(' '+w+' '))bad(D.id+': the wrong answer '+o[0]+' shows the picture of "'+w+'", which the line says')}
+    // N3: naranja (also the fruit) and café (also coffee) are never sorted between comida and colores; both bins still get two words
+    let cc=0;
+    for(let s=1;s<=4000;s++){const q=genQ('es_mix',2,s);info.q++;if(q.kind!=='sort')continue;const b=q.bins.map(x=>x.v);
+      if(q.items.length!==4||b.some(x=>q.items.filter(c=>c.b===x).length!==2))bad('es_mix L2 seed '+s+': not two words a bin');
+      if(b.includes('comida')&&b.includes('colores')){cc++;if(q.items.some(c=>c.v==='naranja'||c.v==='café'))bad('es_mix L2 seed '+s+': '+q.items.map(c=>c.v).join(', ')+' into comida or colores')}}
+    if(cc<300)bad('es_mix L2: only '+cc+' comida-or-colores sorts seen');
+    // Must 5 and Must 4 for a Pre-K or K child; every other child, and every seeded question, is as before
+    const J=q=>JSON.stringify(q);
+    for(const g of [undefined,1,3]){S.grade=g;
+      for(const sk of UNITS)for(let k=0;k<20;k++){const q=genQ(sk,2);if(q.lv!==2)bad('grade '+g+': '+sk+' level 2 drawn as level '+q.lv)}}
+    S.grade=3;const ref={};for(const sk of UNITS)for(let lv=1;lv<=2;lv++)for(let s=1;s<=300;s++)ref[sk+lv+'.'+s]=J(genQ(sk,lv,s));
+    for(const g of [-1,0]){S.grade=g;
+      for(const sk of UNITS){
+        // a seeded question is the same question (review items, hashes); level 1 too, but for the days and months, whose pictures repeat
+        for(let s=1;s<=300;s++){if(J(genQ(sk,2,s))!==ref[sk+'2.'+s])bad('grade '+g+': '+sk+' level 2 seed '+s+' changed');
+          if(sk!=='es_days'&&sk!=='es_months'&&J(genQ(sk,1,s))!==ref[sk+'1.'+s])bad('grade '+g+': '+sk+' level 1 seed '+s+' changed')}
+        // a new "Read" question is a "Listen" one: said in Spanish by itself, picture answers, its level 1
+        // (the Big Review's sort stays: its words speak when tapped); it is the level 1 question of its seed and stays a question of its stop (q.lv 2)
+        let srt=0;
+        for(let k=0;k<150;k++){const q=genQ(sk,2);info.q++;
+          if(sk==='es_mix'&&q.kind==='sort'&&q.lv===2&&q.say&&q.items.every(c=>c.say&&c.lang==='es')){srt++;continue}
+          if(q.lv!==2||q.kind!=='choice'||q.lang!=='es'||q.auto!=='must'||!q.say||!q.choices.every(c=>c.h)||!/\(listen\)$/.test(q.label))bad('grade '+g+': a new '+sk+' level 2 question is not a listening one of its stop ('+q.label+')');
+          else if(J(Object.assign(genQ(sk,1,q.seed),{lv:2}))!==J(q))bad('grade '+g+': '+sk+': the listening question is not the level 1 question of its seed')}
+        if(sk==='es_mix'&&(srt<30||srt>120))bad('grade '+g+': es_mix level 2 gave '+srt+' sorts in 150');
+        if(SK[sk].max>2&&genQ(sk,3).lv!==3)bad('grade '+g+': '+sk+' level 3 moved')}
+      for(const [sk,lv] of [['es_art',2],['es_ser',2],['es_gusta',2],['es_phrase',2],['es_sent',2],['es_story',2]])if(genQ(sk,lv).lv!==lv)bad('grade '+g+': '+sk+' level '+lv+' moved (not a unit)');
+      // no listening question shows one picture twice (the calendars of the days and of the months), every word is still asked, one right answer
+      for(const sk of UNITS){const seen=new Set();
+        for(let s=1;s<=(sk==='es_days'||sk==='es_months'?3000:400);s++){const q=genQ(sk,1,s);info.q++;seen.add(q.ans);const ps=q.choices.map(picOf);
+          if(q.choices.length!==3||new Set(ps).size!==3)bad('grade '+g+': '+sk+' L1 seed '+s+': two choices share a picture');
+          if(q.choices.filter(c=>c.v===q.ans).length!==1)bad('grade '+g+': '+sk+' L1 seed '+s+': not one right answer')}
+        if(sk!=='es_mix'&&sk!=='es_big'&&sk!=='es_time'&&seen.size!==SPN[sk.slice(3)].length)bad('grade '+g+': '+sk+' L1 asks '+seen.size+' of its words')}}
+    S.grade=g0;
+    if(typeof esRead!=='function'||!/esRead\(q,lv\)/.test(String(genQ)))bad('genQ does not ask esRead for a new question');
+    return info};
+  const r=eval(js+';('+body.toString()+')()');
+  // N7: the warm-up of the El or La? lesson (words of Transport) never offers el camión with el autobús, and never one picture twice
+  const vmN=require('vm'),ctxN=require('./es-audio.js').loadApp(null),R=x=>vmN.runInContext(x,ctxN),w=R(`(()=>{const bad=[];for(const id of LS_B5.filter(x=>LESSONS[x].p=='es'&&LESSONS[x].warm))for(let s=1;s<=400;s++){const q=LESSONS[id].warm(mulberry32(s)),v=q.choices.map(c=>c.v);
+    if(v.length!==3||new Set(q.choices.map(c=>c.l)).size!==3||!v.includes(q.ans))bad.push(id+' warm-up seed '+s+': '+v.join(' / '));
+    if(v.includes('el camión')&&v.includes('el autobús'))bad.push(id+' warm-up seed '+s+' offers el camión with el autobús')}return bad.slice(0,10)})()`);
+  w.forEach(bad);
+  return{problems:uniq(errs),note:r.q+' questions; Pre-K and K: a new Read question of the units is a Listen one, no calendar twice'};
 });
 
 // ---- S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js): one step per Spanish stop round and one in Daily Review, between
