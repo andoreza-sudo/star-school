@@ -3895,6 +3895,11 @@ async function main() {
         await pg.click('#bthint');
         const h1 = await pg.evaluate(() => ({ on: !document.querySelector('.mz-arrow').hidden, d: document.querySelector('.mz-arrow').dataset.d, msg: document.querySelector('.mz-msg').textContent }));
         if (!h1.on || !h1.d || !/ is /.test(h1.msg)) bad.push('hint 1: ' + JSON.stringify(h1));
+        // AUD-BT M-3: hint 1 rings the thing itself (the flag here, or the next star or key); it is not an arrow beside the bear
+        const ring = await pg.evaluate(() => { const a = document.querySelector('.mz-arrow'), r = a.getBoundingClientRect(), p = MZ.cur.p, o = MZ.decode(p.o);
+          const st = S.bt.cur.state, tg = MZ.target(p, MZ.route(p, o, MZ.cur.head(), st ? st.m : 0), st ? st.m : 0).c, q = MZ.cur.at(tg);
+          return { ring: a.classList.contains('ring'), svg: !!a.querySelector('svg'), c: +a.dataset.c, tg, dx: Math.round(r.left + r.width / 2 - q.x), dy: Math.round(r.top + r.height / 2 - q.y), w: a.offsetWidth }; }); // offsetWidth: the ring pulses, its box does not
+        if (!ring.ring || ring.svg || ring.c !== ring.tg || Math.abs(ring.dx) > 2 || Math.abs(ring.dy) > 2 || ring.w < 44) bad.push('hint 1 does not ring the target: ' + JSON.stringify(ring));
         await vwait(pg, 11500);
         await pg.click('#bthint');
         s = await now();
