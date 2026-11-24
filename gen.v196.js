@@ -2963,8 +2963,8 @@ const esClash=(u,a,b)=>!!(u&&u.confuse&&u.confuse.some(p=>p.includes(a[0])&&p.in
 // two wrong items for `it`: neither clashes with it or with the other (a unit with no confuse list draws exactly as before R-01s)
 // Audit v195 (R-01 Spanish Must 4, 5): a Pre-K or K child (a chosen grade; a save with no grade draws as before) cannot read yet.
 // esRead: a NEW unit "Read" question (level 2: three written words, nothing said) is drawn again as the "Listen" question of the same
-// seed (genQ, 22-qhelpers.js, asks only when it makes up the seed: seeded questions and test hashes stay; the Big
-// Review's sort stays). esSame: for that child no two choices of a listening question show one picture (the days' and months' calendars)
+// seed (genQ asks only when it makes up the seed: seeded questions and test hashes stay; the Big
+// Review's sort stays). esSame: for that child no two listening choices show one picture (calendars)
 const esLittle=()=>S.grade===-1||S.grade===0;
 const esRead=(q,lv)=>lv==2&&esLittle()&&q.kind=='choice'&&q.lang=='es'&&!q.say&&/ \(read\)$/.test(q.label);
 const esSame=(a,b)=>a[2]==b[2]&&(a[4]||'')==(b[4]||'');
@@ -3015,7 +3015,7 @@ function genEsArt(lv){const N=ES_GRAM.nouns,regular=N.filter(n=>/[oa]$/.test(n[0
     return{kind:'choice',cls:'wide',say:`More than one ${n[1]}! How do you say the ${enPlural(n[1])}?`,after:right,afterLang:'es',
       html:`<div class="emo">${picFor('',n[2])}${picFor('',n[2])}</div>${gSub(`More than one! How do you say “the ${esc(enPlural(n[1]))}”?`)}`,
       ans:right,choices:opts.map(x=>({l:x,v:x})),
-      hint:{k:'text',s:'Many things: change the ending (a vowel at the end takes -s, a consonant takes -es), and use the small word that goes with boy words or girl words.'},label:`${right} (plural)`}}
+      hint:{k:'text',s:'Many things: change the ending (a vowel at the end takes -s, a consonant takes -es, and z changes to c: lápiz, lápices), and use the small word that goes with boy words or girl words.'},label:`${right} (plural)`}}
   const n=pick(regular),a=lv==2?(n[3]=='el'?'un':'una'):n[3],ch=lv==2?['un','una']:['el','la'],
     hint=(/o$/.test(n[0])?'This word ends in -o. Words that end in -o are usually “boy” words (masculine).':'This word ends in -a. Words that end in -a are usually “girl” words (feminine).')
       +(lv==2?' The word for “a” has a boy form and a girl form too.':'');

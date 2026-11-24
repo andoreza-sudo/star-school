@@ -26,7 +26,7 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
 // code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
-// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
+// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
@@ -34,7 +34,9 @@ const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB
 // lesson sentence of every grade in the pet's recorded voice (audio/teach): 4.5 -> 8.5 MB, warn raised in proportion 4.0 -> 7.55 MB
 // REC-2 owner decision 2026-11-24 (9.0 MB): "yes record the last two groups too" (the warm-up lines, the Explore lines of grade 3 and up):
 // 8.5 -> 9.0 MB, warn raised in proportion 7.55 -> 7.995 MB
-const AUDIO_WARN=7995000,AUDIO_FAIL=9000000,AUDIO_FILE_FAIL=40000;
+// owner decision 2026-11-24 (D2): the Spanish sort chips and the wrong forms the Spanish lessons read aloud are recorded too (about 128
+// short files): 9.0 -> 9.5 MB, warn raised in proportion 7.995 -> 8.439 MB
+const AUDIO_WARN=8439000,AUDIO_FAIL=9500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -13597,7 +13599,9 @@ run('Spanish Las Frases P2-34',()=>{
         if(cl[i]==='V'&&(lo==='es'||lo==='son')){const subj=ws[i-1].toLowerCase(),plu=/^(zapatos|botas)$/.test(subj);if(plu!==(lo==='son'))bad(w+'es/son');}});}
     // ---- questions: 3000 seeded per skill and level through kindProblems
     let n=0;const hit={};
-    const leaks=q=>{const ht=new Set(toks(q.hint.s)),short=q.sk==='es_phrase'&&q.lv===1,
+    // W60 (owner, 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md): the approved es_art 2 plural hint gives "lápiz, lápices" as the example of
+    // z changing to c, so on the one "los lápices" question the hint holds the answer by the owner's choice; that word only is let through
+    const leaks=q=>{const ht=new Set(toks(q.hint.s).filter(t=>!(q.sk==='es_art'&&q.lv===2&&t==='lápices'))),short=q.sk==='es_phrase'&&q.lv===1,
       at=toks(q.kind==='order'?q.ans.join(' '):q.sk==='es_gusta'&&q.lv===1?String(q.ans).replace(/[+-]$/,''):String(q.ans)).filter(t=>t.length>=4||!short);
       return at.filter(t=>ht.has(t))};
     for(const[id,max]of Object.entries({es_phrase:2,es_art:2,es_ser:3,es_gusta:2,es_sent:2}))for(let lv=1;lv<=max;lv++){
@@ -20179,7 +20183,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // answer away), civ2 (W49
       // the rare stamp, W50 "Each branch can limit", W54 "is called ___"). geo_world1 has W54 too, but it is not a pinned stop.
       // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
-      // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits)
+      // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits; words-spanish set es_art2 again:
+      // W60, owner 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md, adds "and z changes to c: lápiz, lápices" to its plural hint)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
@@ -22141,7 +22146,7 @@ run('teach: every Spanish noun of the lessons has the article and gender of the 
     const rec=[...right].filter(f=>!ES_AUDIO.lines[esKey(f)]),wrec=[...wrong].filter(f=>ES_AUDIO.lines[esKey(f)]);
     if(rec.length)bad.push('right forms with no Spanish recording: '+rec.join(', '));
     return{bad:[...new Set(bad)].slice(0,40),n,right:right.size,wrong:wrong.size,brk:[...new Set(brk)].sort(),wrec:wrec.length}})()`);
-  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered (said by the tablet\'s Spanish voice: not recorded); the last-letter rule breaks for '+r.brk.join(', ')};
+  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered ('+r.wrec+' of them recorded: tools/es-audio.js collects them, owner decision 2026-11-24 (D2)); the last-letter rule breaks for '+r.brk.join(', ')};
 });
 run('teach: simulated children on Spanish and Discover lessons, Check me always wrong when forced, fresh items on resume TEACH-5S',()=>{
   // the TEACH-1 children on the 12 batch 5s lessons (Spanish as a Kindergartner and, for the tone, a 5th grader; Discover as a Kindergartner): the learner
