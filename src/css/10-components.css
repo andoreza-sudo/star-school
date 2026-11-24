@@ -339,7 +339,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .mapnode .rate{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%)}
 .mapnode .tag{position:absolute;top:-14px;right:-22px}
 
-/* ---- BRAND (v193): the logo, UI.logo() (DESIGN_SYSTEM "Logo"): the small icon on its dusk sky, then the wordmark ---- */
+/* ---- BRAND: UI.logo() ---- */
 .wl{display:inline-flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-weight:700;line-height:1.1;
   white-space:nowrap;color:var(--ink)}
 .wl-mk{flex:none;width:1.8em;height:1.8em;border-radius:22%;background:linear-gradient(var(--ill-blue-3),var(--ill-orange-1) 35%,var(--ill-tan-1));
@@ -348,7 +348,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .wl-i{position:relative}
 .wl-i svg{position:absolute;left:50%;bottom:.82em;width:.27em;margin-left:-.135em;overflow:visible;fill:var(--star);stroke:var(--star);
   stroke-width:1.6;stroke-linejoin:round}
-.wl-top{display:flex;justify-content:center;margin:var(--s-5) 0 0;font-size:var(--fs-6)} /* the logo on its own line (the Try again screen, About) */
+.wl-top{display:flex;justify-content:center;margin:var(--s-5) 0 0;font-size:var(--fs-6)}
 .wl-top .wl-mk{width:56px;height:56px}
 
 /* ---- motion (calm mode and reduced motion cut these to 0.01 ms in 20-base.css) ---- */

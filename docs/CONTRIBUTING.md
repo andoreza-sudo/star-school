@@ -246,8 +246,9 @@ How it fits together:
   **precached** (every built file, the LAZY parts too) fail 4.5 MB (R-03 raised it from 3.6 MB for the game updates; the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`, G-01b to 3.6 MB for the Block Builder journey; with the
   games on demand, 3.0 MB holds again for what loads at start; ES-AUDIO raised it to 3.4 MB for the recordings' 28 KB manifest in the data file).
   ES-AUDIO: **audio** (`audio/es/*.ogg`, the recorded Spanish, and since EN-PRAISE `audio/en/*.ogg`, the recorded encouragement) is its
-  own budget: warn 7.55 MB / fail 8.5 MB in all (EN-PRAISE raised it from 2.5 / 3.0 MB to 4.0 / 4.5 MB; REC-ALL, owner decision 2026-11-24, to
-  7.55 / 8.5 MB for every lesson line in the pet's recorded voice), 40 KB a file
+  own budget: warn 7.995 MB / fail 9.0 MB in all (EN-PRAISE raised it from 2.5 / 3.0 MB to 4.0 / 4.5 MB; REC-ALL, owner decision 2026-11-24, to
+  7.55 / 8.5 MB for every lesson line in the pet's recorded voice; REC-2, owner decision 2026-11-24 (9.0 MB), to 7.995 / 9.0 MB for the warm-up
+  lines and the Explore lines of grade 3 and up), 40 KB a file
   (`AUDIO_*` in tools/test.js). It never counts toward the start-up bytes: say() fetches a file the first time its line is said (from the
   service worker's cache once installed). `python3 tools/build.py` prints the audio total. `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
 - ES-AUDIO: every Spanish line the app can say needs a recording. After changing Spanish text (d-es*.js, 34-gen-es.js, a new `say(..., 'es')`),
@@ -336,6 +337,7 @@ node tools/perf.js               # timings at 6x CPU throttle and memory over 30
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
 node tools/a11y.js [screen...]   # accessibility scan, DESIGN_SYSTEM 10 (P6-01); must print zero failures
 node tools/brand-icons.js        # BRAND: redraw the app icons (docs/brand/icons/) and the Play icon from docs/brand/*.svg; only when a logo SVG changes
+node tools/brand-feature.js      # BRAND: redraw the Play feature graphic into tools/out/brand/ and count the pixels that differ from docs/brand/store/feature-1024x500.png (--write replaces it)
 bash tools/check.sh              # all of the above plus a11y and the size report; see "The full check" below             (after P0-01)
 node tools/puzzles/build-banks.js [sudoku|mathdoku|logic|robot] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
 node tools/puzzles/build-banks.js --check    # regenerate in memory, compare with the committed bank files byte for byte

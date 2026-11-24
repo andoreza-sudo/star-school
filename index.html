@@ -414,7 +414,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .mapnode .rate{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%)}
 .mapnode .tag{position:absolute;top:-14px;right:-22px}
 
-/* ---- BRAND (v193): the logo, UI.logo() (DESIGN_SYSTEM "Logo"): the small icon on its dusk sky, then the wordmark ---- */
+/* ---- BRAND: UI.logo() ---- */
 .wl{display:inline-flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-weight:700;line-height:1.1;
   white-space:nowrap;color:var(--ink)}
 .wl-mk{flex:none;width:1.8em;height:1.8em;border-radius:22%;background:linear-gradient(var(--ill-blue-3),var(--ill-orange-1) 35%,var(--ill-tan-1));
@@ -423,7 +423,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .wl-i{position:relative}
 .wl-i svg{position:absolute;left:50%;bottom:.82em;width:.27em;margin-left:-.135em;overflow:visible;fill:var(--star);stroke:var(--star);
   stroke-width:1.6;stroke-linejoin:round}
-.wl-top{display:flex;justify-content:center;margin:var(--s-5) 0 0;font-size:var(--fs-6)} /* the logo on its own line (the Try again screen, About) */
+.wl-top{display:flex;justify-content:center;margin:var(--s-5) 0 0;font-size:var(--fs-6)}
 .wl-top .wl-mk{width:56px;height:56px}
 
 /* ---- motion (calm mode and reduced motion cut these to 0.01 ms in 20-base.css) ---- */
@@ -474,7 +474,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 /* ---- Grown-ups on Home: a labelled button (a tap asks for the PIN, RC-1) ---- */
 .btn.soft.nv-gw>.ic{width:22px;height:22px;color:var(--ink-2)}
 .btn.soft.nv-gw{padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);gap:var(--s-2);font-size:var(--fs-2);white-space:nowrap}
-@media (max-width:480px){.hm-logo .wl-w{display:none}} /* BRAND: the icon alone where the bar is tight (the name stays its label) */
+@media (max-width:480px){.hm-logo .wl-w{display:none}}
 .nv-gate{text-align:center}
 .nv-q{display:flex;align-items:center;justify-content:center;gap:var(--s-3);margin:0 0 var(--s-2);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700}
 .nv-q input{width:4.2ch;min-height:64px;padding:0 var(--s-2);border:3px solid var(--line);border-radius:var(--r-btn);font:inherit;text-align:center;
@@ -2200,7 +2200,7 @@ html.calm .rw-burst{display:none}
 .pf-top{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:var(--s-3);width:min(760px,100%)}
 .pf-t{display:flex;align-items:center;gap:var(--s-3);min-width:0;margin:0;font-family:var(--font-display);font-size:var(--fs-6);
   font-weight:700;line-height:1.15}
-.pf-t .wl-mk{width:48px;height:48px} /* BRAND (v193): the logo's icon, decorative (UI.LOGO) */
+.pf-t .wl-mk{width:48px;height:48px}
 .pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);width:min(760px,100%)}
 .pf-kid{display:flex;flex-direction:column;align-items:stretch;gap:var(--s-2);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-3) var(--s-4);
   border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;text-align:center;cursor:pointer;
@@ -2241,9 +2241,8 @@ html.calm .rw-burst{display:none}
 
 /* ---- top bar: logo, sound, grown-ups gear ---- */
 .hm-top{gap:var(--s-2)}
-.hm-logo{display:flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;
-  line-height:1.1;white-space:nowrap}
-.hm-logo .wl-mk{width:44px;height:44px} /* BRAND (v193): the logo, UI.logo() (10-components.css) */
+.hm-logo{font-size:var(--fs-5)}
+.hm-logo .wl-mk{width:44px;height:44px}
 .hm-top .btn.icon .ic{color:var(--ink-2)}
 
 /* ---- page: one column; two columns on a wide landscape screen ---- */
@@ -2750,7 +2749,7 @@ html.calm .tr-arr.go,html.calm .tr-sdi.pulse,html.calm .tr-sdi.hop,html.calm .tr
 .su-top{display:grid;grid-template-columns:var(--tap) minmax(0,1fr) var(--tap);grid-template-areas:". logo spk" ". hi .";align-items:center;
   gap:var(--s-1) var(--s-2);width:min(640px,100%)}
 .su .su-logo{grid-area:logo;margin:0;font-size:var(--fs-6);line-height:1.1}
-.su-logo .wl-mk{width:56px;height:56px} /* BRAND (v193): UI.logo() */
+.su-logo .wl-mk{width:56px;height:56px}
 .su-top>.btn{grid-area:spk}
 .su-hello{grid-area:hi;margin:0;font-size:var(--fs-3);color:var(--ink-2);line-height:1.35}
 .su-grid{display:grid;gap:var(--s-4);width:min(640px,100%)}
@@ -2894,7 +2893,7 @@ html.calm .pc-fx{display:none}
 .gw-bks dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 
 /* ---- P6-05 About Whistlestop (Grown-ups) ---- */
-.wl-top.ab-logo{justify-content:flex-start;margin:0 0 var(--s-3);font-size:var(--fs-5)}.ab-logo .wl-mk{width:48px;height:48px} /* BRAND (v193) */
+.wl-top.ab-logo{justify-content:flex-start;margin:0 0 var(--s-3);font-size:var(--fs-5)}.ab-logo .wl-mk{width:48px;height:48px}
 #ab-priv{text-decoration:none}
 .ab-ver{margin:var(--s-2) 0;font-size:var(--fs-2)}
 .ab-lic-line{margin:var(--s-1) 0}
@@ -3059,7 +3058,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v194'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v194 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v195'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v195 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3287,7 +3286,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v194'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v195'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -4160,12 +4159,9 @@ const UI = {
     return `<div class="blank"><span class="bi">${ico(icon)}</span><p>${UI.t(line)}</p>${actionHtml}</div>`;
   },
 
-  // BRAND (v193; DESIGN_SYSTEM "Logo"): the logo, the small icon (docs/brand/icon-small.svg without its sky, which is the tile's CSS
-  // background) and the wordmark, "Whistle" in --ink, "stop" in --brand, a star for the dot on the i (a dotless i, U+0131,
-  // with the star drawn over it). One accessible name, Whistlestop;
-  // the drawing and the letters are aria-hidden. cls: where it sits (hm-logo, su-logo ...); word: false draws the icon only.
-  logo(cls = '', word = true) {
-    return `<span class="wl ${cls}" role="img" aria-label="Whistlestop">${UI.LOGO}` + (word ? '<span class="wl-w" aria-hidden="true">Wh' +
+  // BRAND: the logo (DESIGN_SYSTEM 6.6), named Whistlestop. word false: the icon only; name false: hidden (text next to it says the name).
+  logo(cls = '', word = true, name = true) {
+    return `<span class="wl ${cls}" ${name ? 'role="img" aria-label="Whistlestop"' : 'aria-hidden="true"'}>${UI.LOGO}` + (word ? '<span class="wl-w" aria-hidden="true">Wh' +
       '<span class="wl-i">ı<svg viewBox="0 0 14 13.4"><path d="M7 0l2 4.7 5 .4-3.8 3.4 1.1 4.9L7 10.8l-4.4 2.6 1.2-4.9L0 5.1l5-.4z"/></svg></span>' +
       'stle<b>stop</b></span>' : '') + '</span>';
   },
@@ -8241,7 +8237,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v194)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v195)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11242,7 +11238,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v194'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v195'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11867,14 +11863,14 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v194');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v195');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v194')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v194)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v195')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v195)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
-  view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo()}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
+  view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo('', true, false)}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 /* ---------- P6-02: part files loaded on demand ----------
@@ -11894,15 +11890,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v194';
+  return !!f && f[1] === 'v195';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v194') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v195') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v194.js';
+    s.src = stem + '.v195.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11927,9 +11923,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v194.js"></script>
-<script src="gen2.v194.js"></script>
-<script src="data.v194.js"></script>
+<script src="gen.v195.js"></script>
+<script src="gen2.v195.js"></script>
+<script src="data.v195.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
