@@ -26,7 +26,7 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
 // code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
-// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
+// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
