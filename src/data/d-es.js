@@ -7,6 +7,7 @@
           that get the English (R-01s: weather, where only the temperature pictures need it)
    confuse  R-01s: pairs of words never offered together in one question, because their pictures or meanings overlap (two right
           answers by picture or by ear: hace sol / hace calor). tools/test.js scans every Spanish skill for such pairs
+          (audit v195: the storm drawing has rain and a cloud: hay tormenta never with llueve or está nublado)
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
    l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
@@ -178,7 +179,7 @@ const ES_UNITS=[
   ['otoño','fall','🍂','el'],
   ['invierno','winter','⛄','el','snowman']]},
  {id:'weather',t:'Weather',e:'☀',theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
-  confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],items:[
+  confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento'],['llueve','hay tormenta'],['está nublado','hay tormenta']],items:[
   ['hace sol','it is sunny','☀','','sun'],
   ['hace calor','it is hot','🥵',''],
   ['hace frío','it is cold','🥶',''],
