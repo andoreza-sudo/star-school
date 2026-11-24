@@ -10979,13 +10979,20 @@ async function main() {
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
-        // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
+        // ES-AUDIO: every recording is cached in its own cache (none of them was loaded by the page itself). v194 fix2: not at install any
+        // more (one failing file would fail the install): after activation, when the page asks (a few seconds after the start, when idle),
+        // 40 at a time; so this waits until the cache holds them all (SW-AUDIO: one file failing)
         const a1 = await p1.evaluate(async () => {
           await partsLoad(['teach', 'teach12']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext)),
-            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
-          const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
-          return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5) };
+            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))]; // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
+          const t0 = Date.now();let have = new Set();
+          while (Date.now() - t0 < 90000) {
+            const c = await caches.open('starschool-audio');have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
+            if (want.every(f => have.has(f))) break;
+            await new Promise(r => setTimeout(r, 500));
+          }
+          return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5), s: Math.round((Date.now() - t0) / 100) / 10 };
         });
         if (!a1.want || a1.missing.length || a1.have !== a1.want) bad.push('ES-AUDIO: the service worker did not cache every recording: ' + JSON.stringify(a1));
         if (served.some(u => /^audio\//.test(u) && served.indexOf(u) < served.indexOf('sw.js'))) bad.push('ES-AUDIO: a recording was loaded before the service worker (at start)');
@@ -11063,7 +11070,7 @@ async function main() {
         if (a2.err || !(a2.dur > 0.3) || a2.bad.length || !/\/audio\/es\/[0-9a-f]{12}\.ogg$/.test(a2.src || '')) bad.push('ES-AUDIO offline: the recording did not play from the cache: ' + JSON.stringify(a2));
         else notes.push('a recording played offline (' + a2.dur.toFixed(2) + ' s)');
         if (served.length !== n0) bad.push('requests reached the server while offline: ' + served.slice(n0).join(' '));
-        notes.push('precached ' + c1.cached.length + ' files and ' + a1.have + ' recordings; offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
+        notes.push('precached ' + c1.cached.length + ' files, then ' + a1.have + ' recordings after activation (' + a1.s + ' s more); offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
         await p2.close();
       } catch (e) {
         bad.push(e.message.split('\n')[0]);
@@ -11074,6 +11081,78 @@ async function main() {
       for (const e of errs) bad.push(e);
       if (bad.length) fail('P6-02 Game Room on demand, offline:\n  ' + bad.join('\n  '));
       else step('P6-02: ' + notes.join('; ') + '; "Getting the games ready..." then the hub, Snack Stand started, the second open immediate, no request while offline');
+    }
+
+    // SW-AUDIO (v194 fix2, Fable's confirming review): one recording that fails must not cost the service worker. The built files over
+    //    http://127.0.0.1 with one teacher recording answering 503: the worker still installs and takes the page, the code is cached, every
+    //    other recording is cached after activation, and say() of that line falls back to the tablet's voice; then the file is back, and
+    //    a later open fills in just that one.
+    if (seg('SW-AUDIO')) {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), lst = n => (swSrc.match(new RegExp('const ' + n + '=\\[([^\\]]*)\\]')) || [])[1].split(',').map(s => s.replace(/'/g, '').replace(/^\.\//, ''));
+      const F = lst('F'), AF = lst('AF'), BAD = AF.find(u => /^audio\/teach\//.test(u));
+      let fail503 = true;const served = [], socks = new Set(), b503 = [];
+      const srv = http.createServer((req, res) => {
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+        served.push(u);
+        if (u === BAD && fail503) { b503.push(u); res.writeHead(503); return res.end('busy'); }
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+        fs.createReadStream(f).pipe(res);
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      const bad = [], notes = [], errs = [];
+      const ctx = await browser.newContext({ viewport: { width: 380, height: 780 } });
+      await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+      const audioCount = pg => pg.evaluate(async () => (await (await caches.open('starschool-audio')).keys()).map(r => new URL(r.url).pathname.replace(/^\//, '')));
+      const waitAudio = async (pg, n, ms) => { const t0 = Date.now();let have = [];
+        while (Date.now() - t0 < ms) { have = await audioCount(pg); if (have.length >= n) break; await new Promise(r => setTimeout(r, 500)); }
+        return { have, s: Math.round((Date.now() - t0) / 100) / 10 }; };
+      try {
+        // 1. first open, the file answers 503: the worker installs and controls the page; the code is cached
+        const p1 = await ctx.newPage();
+        p1.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p1.goto(base + 'index.html');
+        await p1.locator('#groom').waitFor({ timeout: 15000 });
+        await p1.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 30000 });
+        const r1 = await p1.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(), c = await caches.open('starschool-' + DATA_VER);
+          return { state: reg && reg.active && reg.active.state, code: (await c.keys()).length }; });
+        if (r1.state !== 'activated' || r1.code !== F.length) bad.push('first open with a 503: ' + JSON.stringify(r1) + ' (want activated, ' + F.length + ' code files)');
+        // 2. every other recording is cached after activation; the 503 one is not
+        const w1 = await waitAudio(p1, AF.length - 1, 120000);
+        await new Promise(r => setTimeout(r, 1500));
+        const h1 = await audioCount(p1);
+        if (h1.length !== AF.length - 1 || h1.includes(BAD) || !b503.length) bad.push('after the first fill: ' + h1.length + ' of ' + AF.length + ' recordings, ' + BAD + (h1.includes(BAD) ? ' cached' : ' not cached') + ', 503s: ' + b503.length);
+        else notes.push('one 503 (' + BAD + '): worker activated, ' + r1.code + ' code files, ' + h1.length + ' of ' + AF.length + ' recordings in ' + w1.s + ' s');
+        // say() of that line: the file fails, the tablet's voice says it (ESA.bad marks the file)
+        const s1 = await p1.evaluate(async (f) => { await partsLoad(['teach', 'teach12']); const nm = f.split('/').pop().replace(/\.ogg$/, ''), k = Object.keys(EN_TEACH.lines).find(x => EN_TEACH.lines[x] === nm);
+          ENA.off = false; S.cheerV = 'mix'; say(k); await new Promise(r => setTimeout(r, 3000)); return { k, bad: !!ESA.bad[nm] }; }, BAD);
+        if (!s1.k || !s1.bad) bad.push('say() of the 503 line did not fall back to the tablet voice: ' + JSON.stringify(s1));
+        else notes.push('"' + s1.k + '" fell back to the tablet voice');
+        await p1.close();
+        // 3. the file is back; a later open fills in just that one
+        fail503 = false; const n0 = served.length;
+        const p2 = await ctx.newPage();
+        p2.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p2.goto(base + 'index.html');
+        await p2.locator('#groom').waitFor({ timeout: 15000 });
+        const w2 = await waitAudio(p2, AF.length, 60000);
+        const audio2 = served.slice(n0).filter(u => /^audio\//.test(u));
+        if (w2.have.length !== AF.length || !w2.have.includes(BAD) || audio2.filter(u => u === BAD).length < 1 || audio2.some(u => u !== BAD)) bad.push('the later open: ' + w2.have.length + ' of ' + AF.length + ', fetched ' + audio2.length + ' recordings: ' + audio2.slice(0, 5).join(' '));
+        else notes.push('the next open fetched only that file (' + w2.s + ' s): ' + w2.have.length + ' of ' + AF.length);
+        await p2.close();
+      } catch (e) {
+        bad.push(e.message.split('\n')[0]);
+      } finally {
+        await ctx.close();
+        await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
+      }
+      for (const e of errs) bad.push(e);
+      if (bad.length) fail('SW-AUDIO one recording failing:\n  ' + bad.join('\n  '));
+      else step('SW-AUDIO: ' + notes.join('; '));
     }
 
     // G-04b Sky Hop (src/js/67-game-skyhop.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,

@@ -5,10 +5,23 @@ const AF=['./audio/es/0029b17ce93c.ogg','./audio/es/00b81434c862.ogg','./audio/e
 const aName=u=>new URL(u,self.location).pathname.split('/').pop();
 const NAV_MS=3000; // RC-1: a page open waits this long for the network, then the cached page (RC-2: once the cached page is served, a late
 // network page is NOT cached: it would pair a new index.html with the old cache's parts, "needs to finish updating" offline)
-self.addEventListener('install',e=>{e.waitUntil(Promise.all([caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))),
- caches.open(A).then(c=>c.keys().then(ks=>{const have=new Set(ks.map(r=>aName(r.url)));return c.addAll(AF.filter(u=>!have.has(aName(u))))}))]));self.skipWaiting()});
-self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName));e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.delete(k))))
+// v194 fix2 (Fable): install waits for the code (F) only. The recordings (AF, about 2,400 files) are NOT part of it: one file that fails
+// (a 503) would fail the whole install, so no service worker, and every open would start again from zero. They are cached after
+// activation instead, when the page asks (a message 'audio', sent once the app is up and idle, and on every later open): fillAudio
+// fetches the files not in A yet, AB at a time, each fetch and put on its own, a failure skipped (the next open tries it again).
+// Until a file is cached, say() fetches it from the network, or uses the tablet's voice (12-speech.js esaFail).
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))));self.skipWaiting()});
+// activate: the old release's caches go, but a recording one of them holds (fetched on demand) moves to A first if a release still lists it
+// (names are content hashes); A keeps every file still listed and drops the others
+self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName)),isA=r=>/\/audio\//.test(r.url)&&keep.has(aName(r.url));
+ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.open(k).then(o=>o.keys().then(rs=>Promise.all(rs.filter(isA).map(r=>o.match(r).then(x=>x&&caches.open(A).then(a=>a.put(r,x)))))))
+  .catch(()=>{}).then(()=>caches.delete(k)))))
  .then(()=>caches.open(A)).then(c=>c.keys().then(ks=>Promise.all(ks.filter(r=>!keep.has(aName(r.url))).map(r=>c.delete(r))))).then(()=>self.clients.claim()))});
+const AB=40;let filling=null;
+const fillAudio=()=>filling||(filling=caches.open(A).then(async c=>{const have=new Set((await c.keys()).map(r=>aName(r.url))),todo=AF.filter(u=>!have.has(aName(u)));let got=0;
+ for(let i=0;i<todo.length;i+=AB)await Promise.all(todo.slice(i,i+AB).map(u=>fetch(u).then(r=>r.ok?c.put(u,r).then(()=>{got++}):0).catch(()=>0)));
+ return{todo:todo.length,got}}).finally(()=>{filling=null}));
+self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio())});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\/audio\/e[ns]\/|\/audio\/teach\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\d*)-(\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
@@ -21,4 +34,4 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
    const t=setTimeout(()=>old().then(r=>{if(r)late=1;fin(r)}),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);old().then(r=>fin(r||Response.error()))})}));return}
- e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
+ e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(/\/audio\//.test(e.request.url)?A:C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});

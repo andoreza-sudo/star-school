@@ -23193,6 +23193,63 @@ run('service worker: a page open waits 3 s for the network, then the cached page
     done2(page);await tick();await tick();if(d.resp!==page)p.push('no cache: the network page did not come');
     return{problems:p,note:'slow (late page not cached), fast, offline, first visit'}})();
 });
+run('service worker: install waits for the code only; the recordings are cached after activation, one that fails (503) is skipped and filled on a later open v194',()=>{
+  // v194 fix2 (Fable's confirming review): install was all-or-nothing over the code AND about 2,400 recordings, so one 503 left no service
+  // worker at all and every open started again from zero. Now: install = the code list F; the page asks (a message 'audio') once it is
+  // up, and on later opens; the worker fetches the recordings A does not hold, AB at a time, each on its own; a failure is skipped.
+  const vm=require('vm'),src=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8'),p=[];
+  const F=JSON.parse(((src.match(/const F=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"')),AF=JSON.parse(((src.match(/const AF=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"'));
+  if(!/const AB=40;/.test(src))p.push('sw.js: the recordings are not fetched 40 at a time');
+  if(AF.length<1000)p.push('sw.js lists only '+AF.length+' recordings');
+  const tick=async(n=40)=>{for(let i=0;i<n;i++)await new Promise(r=>setImmediate(r))};
+  // a stand-in browser: CacheStorage (cache name -> Map url -> response), fetch with one recording failing (503) while `down` has it
+  const store=new Map(),down=new Set(),fetched=[];let live=0,peak=0;
+  const norm=u=>new URL(typeof u=='string'?u:u.url,'http://x/').href;
+  const mkCache=n=>{if(!store.has(n))store.set(n,new Map());const m=store.get(n);return{
+    addAll:async rs=>{const got=[];for(const r of rs){const x=await sb.fetch(r);if(!x.ok)throw new TypeError('addAll: '+x.status);got.push([norm(r),x])}for(const [u,x] of got)m.set(u,x)},
+    put:async(r,x)=>{m.set(norm(r),x)},match:async r=>m.get(norm(r)),keys:async()=>[...m.keys()].map(url=>({url})),delete:async r=>m.delete(norm(r.url||r))}};
+  const sb={self:{location:'http://x/',clients:{claim:async()=>{}},addEventListener:(t,f)=>{H[t]=f},skipWaiting(){}},URL,Promise,Set,Map,console,setTimeout,clearTimeout,
+    caches:{open:async n=>mkCache(n),keys:async()=>[...store.keys()],delete:async n=>store.delete(n),match:async r=>{for(const m of store.values())if(m.has(norm(r)))return m.get(norm(r))}},
+    fetch:async r=>{const u=norm(r);fetched.push(u);live++;peak=Math.max(peak,live);await tick(2);live--;return down.has(u)?{ok:false,status:503}:{ok:true,status:200,u,clone(){return this}}},
+    Request:function(u){this.url=u},Response:{error:()=>'ERROR'}};
+  const H={};vm.runInNewContext(src,sb);
+  const ev=(t,data)=>{const w=[];H[t]({data,waitUntil:pr=>w.push(pr)});return Promise.all(w)};
+  const A=[...store.keys()],aUrl=u=>norm(u),inA=()=>store.get('starschool-audio')||new Map(),cname=src.match(/const C='([^']+)'/)[1];
+  const bad=norm(AF.find(u=>/\/audio\/teach\//.test(u))); // one teacher recording answers 503, as Fable's proof
+  return (async()=>{
+    down.add(bad);
+    // 1. install: only the code is fetched, and it is cached; the worker installs although a recording would fail
+    let ok=true;try{await ev('install')}catch(e){ok=false;p.push('install failed: '+e.message)}
+    if(fetched.some(u=>/\/audio\//.test(u)))p.push('install fetched '+fetched.filter(u=>/\/audio\//.test(u)).length+' recordings (the install must wait for the code only)');
+    if(!store.has(cname)||store.get(cname).size!==F.length)p.push('install did not cache the code list: '+(store.get(cname)||new Map()).size+' of '+F.length);
+    // 2. activate: nothing is fetched yet (the recordings never compete with the first paint)
+    const n0=fetched.length;await ev('activate');if(fetched.length!==n0)p.push('activate fetched '+(fetched.length-n0)+' files');
+    // 3. the page asks: every recording but the failing one is cached, 40 at a time at most; the 503 is not cached
+    await ev('message','audio');
+    if(inA().size!==AF.length-1||inA().has(bad))p.push('after the first fill: '+inA().size+' of '+AF.length+' recordings, the 503 one '+(inA().has(bad)?'cached':'not cached'));
+    if(peak>40)p.push('up to '+peak+' fetches at once (want at most 40)');
+    // 4. the next open: only the missing one is fetched, and now it is cached
+    down.clear();const n1=fetched.length;await ev('message','audio');
+    if(fetched.length-n1!==1||fetched[n1]!==bad||!inA().has(bad)||inA().size!==AF.length)p.push('a later open did not fetch just the missing recording: '+(fetched.length-n1)+' fetches, '+inA().size+' of '+AF.length);
+    // 5. the next release: a recording the old release's cache got on demand moves to A; one no release lists goes; A's files stay
+    const keepOne=[...inA().keys()][0];inA().delete(keepOne);store.set('starschool-v1',new Map([[keepOne,{ok:true,u:'old'}],[norm('./audio/teach/000000000000.ogg'),{ok:true}]]));
+    inA().set(norm('./audio/es/ffffffffffff.ogg'),{ok:true});
+    await ev('activate');
+    if(store.has('starschool-v1')||!inA().has(keepOne)||inA().get(keepOne).u!=='old'||inA().has(norm('./audio/es/ffffffffffff.ogg'))||inA().has(norm('./audio/teach/000000000000.ogg'))||inA().size!==AF.length)
+      p.push('activate: old caches '+[...store.keys()].join()+', A has '+inA().size+' of '+AF.length);
+    const n2=fetched.length;await ev('message','audio');if(fetched.length!==n2)p.push('a full audio cache fetched '+(fetched.length-n2)+' files');
+    // 6. two asks at once run one fill
+    inA().delete(bad);const n3=fetched.length;await Promise.all([ev('message','audio'),ev('message','audio')]);if(fetched.length-n3!==1)p.push('two asks at once fetched '+(fetched.length-n3));
+    // 7. a recording fetched on demand (not cached yet) goes to A, not the release cache
+    inA().delete(bad);let put=null;H.fetch({request:{method:'GET',url:bad,mode:'no-cors',headers:{get:()=>null},destination:'audio'},respondWith:pr=>{put=pr},waitUntil(){}});
+    await put;await tick();if(!inA().has(bad))p.push('a recording fetched on demand did not go to the audio cache');
+    // the page asks after it is up and on later opens; the host serves the recordings as immutable (their names are content hashes)
+    const app=fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8');
+    if(!/postMessage\('audio'\)/.test(app)||!/requestIdleCallback/.test(app)||!/visibilitychange[^\n]*swAudio\(\)/.test(app))p.push('90-app.js does not ask the worker for the recordings after the start (idle) and on later opens');
+    const vj=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')),ar=(vj.headers||[]).find(h=>h.source==='/audio/(.*)\\.ogg');
+    if(!ar||!ar.headers.some(h=>h.key==='Cache-Control'&&h.value==='public, max-age=31536000, immutable'))p.push('vercel.json does not serve /audio/*.ogg as immutable');
+    return{problems:p,note:'install: '+F.length+' code files; '+AF.length+' recordings after activation, one 503 skipped and filled on the next open; at most '+peak+' fetches at once'}})();
+});
 
 run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under the old question, change, forgot, Start over keeps it, no backup carries it, every way in RC-1',()=>{
   const E=require('./es-audio.js'),vm=require('vm'),store={};

@@ -171,7 +171,9 @@ hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js
                   loaded by the Ask button beside the pet; 39t-askon.js, the count of reviewed questions, stays in index.html)
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
-                  ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
+                  (install waits for these only); ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es, en, teach
+                  *.ogg AFTER activation (v194 fix2): the page posts 'audio' when idle after the start and on later opens; the worker
+                  fetches the missing files 40 at a time, skips one that fails and tries it again next time. vercel.json: /audio/*.ogg immutable
 audio/es/*.ogg    ES-AUDIO: the recorded Spanish (tools/es-audio.js); not loaded at start, fetched the first time a line is said
 audio/en/*.ogg    EN-PRAISE: the recorded English encouragement, six voices (tools/en-audio.js); the same way
 audio/teach/*.ogg TEACH-4: the pet's recorded teacher lines, one voice (node tools/en-audio.js --teach; manifest src/data/d-teach-audio.js,
