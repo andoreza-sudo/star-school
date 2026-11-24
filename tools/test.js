@@ -22964,6 +22964,21 @@ run('play PLAY-01: free sample (5 stops of the grade\'s start world), Play mode,
   })()`);
   return r.then(x=>({problems:uniq(x.bad),note:x.notes.join('; ')}));
 });
+// ---- sample fix (Fable's cheap-tablet, new-family rehearsal of the Play app's free sample): Find my level led into a locked world, so the
+// free sample does not offer it (Home's card, Grown-ups' row); unlocked and on the web it is as before. The map and the round end are in
+// tools/smoke.js PLAY-02 (Test out, the unlock after the 5th stop, "You unlocked the next stop!").
+run('play sample fix: no Find my level in the free sample (Home card, Grown-ups row); unlocked and on the web unchanged',()=>{
+  const body=function(){const bad=[],B=m=>bad.push(m),keep=[PLAY.on,PLAY.own];
+    try{for(const g of [0,1,3,5]){loadSave(null);migrate();S.grade=g;S.name='Ava';PLACE_HIDE=false;
+      PLAY.on=true;PLAY.own=false;
+      if(placeAsk()||placeBanner()||placeGrownHTML())B('grade '+g+': the free sample offers Find my level');
+      PLAY.own=true;if(!placeAsk()||!placeBanner()||!/data-place="math"/.test(placeGrownHTML()))B('grade '+g+': unlocked, Find my level is not offered');
+      PLAY.on=false;PLAY.own=false;if(!placeAsk()||!/data-place="math"/.test(placeGrownHTML()))B('grade '+g+': the web version does not offer Find my level')}
+    }finally{PLAY.on=keep[0];PLAY.own=keep[1]}
+    return bad};
+  const bad=eval(js+';('+body.toString()+')()');
+  return{problems:bad,note:'grades K, 1, 3, 5: free sample none; unlocked and web: the Home card and the Grown-ups row'};
+});
 // ---- HINT-01: a hint for each common mistake in every Practice question (src/js/39m-mist.js, words in src/js/39n-hintw.js) ----
 // The app works out what each known mistake would answer for a Practice question (hmPredict) and, when a child's wrong first try is
 // one of those, shows that mistake's approved line above the generic hint (hmHint, called by check() in 50-round.js). Simulated
