@@ -5403,16 +5403,17 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
       }
     }
     // level 6: one blank, the sound-alike word is a choice, and the pairs agree both ways
+    // (WORDS-READ W30: an answer that starts the sentence has capital choices, It's / Its, so the pairs are matched without case)
     {
-      const L=items.filter(i=>i.lv==6),ans=new Map();
+      const L=items.filter(i=>i.lv==6),ans=new Map(),lc=x=>x.toLowerCase(),has=(o,w)=>o.d.some(x=>lc(x)==lc(w));
       for(const it of L){
         if(it.q.split('___').length!==2)bad('level 6: '+it.q+': needs exactly one blank');
         if(star(it.q).length)bad('level 6: stars in '+it.q);
-        if(!ans.has(it.a))ans.set(it.a,[]);ans.get(it.a).push(it);
+        if(!ans.has(lc(it.a)))ans.set(lc(it.a),[]);ans.get(lc(it.a)).push(it);
       }
       if(ans.size<45)bad('level 6: only '+ans.size+' different answer words');
-      for(const it of L)if(!it.d.some(w=>ans.has(w)&&ans.get(w).some(o=>o.d.includes(it.a))))bad('level 6: '+it.q+': no sound-alike choice that points back at '+it.a);
-      const groups=new Set(L.map(i=>[i.a,...i.d.filter(w=>ans.has(w)&&ans.get(w).some(o=>o.d.includes(i.a)))].sort().join('/')));
+      for(const it of L)if(!it.d.some(w=>ans.has(lc(w))&&ans.get(lc(w)).some(o=>has(o,it.a))))bad('level 6: '+it.q+': no sound-alike choice that points back at '+it.a);
+      const groups=new Set(L.map(i=>[i.a,...i.d.filter(w=>ans.has(lc(w))&&ans.get(lc(w)).some(o=>has(o,i.a)))].map(lc).sort().join('/')));
       if(groups.size<30)bad('level 6: only '+groups.size+' homophone groups (needs 30)');
     }
     // level 7: the same bold word in the sentence and the question, 4 meanings, no meaning repeats the word
@@ -16904,12 +16905,15 @@ run('reading review fixes R-01r',()=>{
     // AUDIT-READ (the v195 reading audit) changed five of these on purpose, and their hashes were set again: syl2 (the word "family"
     // removed), sound2 (s and k are no longer offered beside x), sight2 (our and are are no longer offered together), vocab3 (the wrong
     // choice that was the right two words turned round is now two parts of another compound) and vocab8 (a second kind that also
-    // fits is not offered). The other 33 are the v135 hashes.
-    const OLD=('abc1:9908fd49446a abc2:4c19dd144a3b abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:b97686b48f5c sound2:b69941486ec1 comp1:1fb0940c60e3 '+
-      'comp2:acfa177fed10 comp3:b70aa1dffd71 comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c4031e7def5a info3:25ad998d9e5b '+
+    // fits is not offered). WORDS-READ (2026-11-24, the owner's approved wording) set four again, each checked to differ from the old
+    // questions only by that wording: abc2 (W34, the little-letter hint "Little p and big P are for pig."), comp3 (W63 "She plugged in a
+    // longer cord.", W64 "sorry and embarrassed"), info1 (W12 "Most penguins live in cold places.") and vocab1 (W9 furry for loud,
+    // W61 dive for swim, E2 no old man beside "the opposite of old"). The other 29 are the v135 hashes.
+    const OLD=('abc1:9908fd49446a abc2:1b630dba155c abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:b97686b48f5c sound2:b69941486ec1 comp1:1fb0940c60e3 '+
+      'comp2:acfa177fed10 comp3:1152d58029da comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c3c35d9c1753 info3:25ad998d9e5b '+
       'info4:8edd1307198b sight2:5833688bee63 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
       'sent5:04c90646fac0 spell1:35ddedc8fd46 spell4:201a12f0db2d spell5:e6a4a11ef010 gram1:51ea83d72579 gram3:2ee838affdca gram5:98e3569be110 '+
-      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:0ab31b6d0199 vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
+      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:d3e03636c01b vocab2:305b1d815e94 vocab3:0ab31b6d0199 vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
       'vocab8:99776c775830 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{for(const [k,h] of OLD){const [,id,lv]=k.match(/^([a-z]+)(\d+)$/),a=[];
@@ -20185,6 +20189,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
       // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits; words-spanish set es_art2 again:
       // W60, owner 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md, adds "and z changes to c: lápiz, lápices" to its plural hint)
+      // (WORDS-READ W10, approved 2026-11-24, set gram8 again: slower / softer / quicker / louder became slowness / softness / quickness /
+      // loudness, which also makes those four questions "wide" (a choice over 7 letters); checked to be the only difference)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}

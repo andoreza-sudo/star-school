@@ -22,10 +22,13 @@ const T1=['I see {a} {w}.','Look at the {w}!','Here is {a} {w}.','I like the {w}
 const T2=['Mom and I see {a} {w} by the door.','We can play with the {w} today.','Look! The {w} is up on the hill.','My friend said, "I want {a} {w}."','Come and find the {w} with me.','The little {w} went down the road.','She saw {a} {w} at the park.','Did you get {a} {w} too?'];
 // R-01r: "I see the sun", "some milk", never "a sun" or "a milk"
 const SENT_ART={sun:'the',milk:'some'};
-function genSent(lv){const [w,e]=pick(lv==1?NOUNS.filter(x=>CVC.includes(x)):NOUNS);
+// WORDS-READ E3: the road sentence only for animals and road vehicles (else the next one); never "hand" as the sentence's word
+const SENT_GO=new Set('cat dog pig fox bat bug hen ant rat frog crab fish duck chick cow owl mouse sheep goat bee snail horse bird turtle lion bear rabbit bus van truck car bike'.split(' '));
+const sentTpl=(T,t,w)=>(/ went down the road\.$/.test(t)&&!SENT_GO.has(w)?T[(T.indexOf(t)+1)%T.length]:t);
+function genSent(lv){const [w,e]=pick(lv==1?NOUNS.filter(x=>CVC.includes(x)):NOUNS.filter(x=>x[0]!='hand'));
   let pool=NOUNS.filter(x=>x[0]!==w);
   if(lv==2){const near=pool.filter(x=>x[0][0]==w[0]||x[0].slice(-2)==w.slice(-2));if(near.length>=2)pool=near}
-  const sh=shuffle(pool),t=pick(lv==1?T1:T2).replace('{a}',SENT_ART[w]||art(w)).replace('{w}',w);
+  const TT=lv==1?T1:T2,sh=shuffle(pool),t=sentTpl(TT,pick(TT),w).replace('{a}',SENT_ART[w]||art(w)).replace('{w}',w);
   // AUDIT-READ: never a picture a child could take for the answer (cup and mug, bug and ant: PICSAME), and never the can under a
   // sentence that holds the word can ("Can you see the egg?"). Filtered after the draws, so every other question keeps its seed.
   const d=sh.filter(x=>!picSame(w,x[0])&&!(x[0]=='can'&&/\bcan\b/i.test(t))).slice(0,2);
@@ -106,7 +109,7 @@ function genAbc(lv){
     const opts=abcOpts(ans,low?LOOKL:LOOKU,low?4:3,low?ABC_LOW:ABC_UP);
     return{kind:'choice',cls:low?'syms sym4':'syms',html:`${HEARBTN(s)}<div class="sub">Tap the ${size} letter you hear</div>`,
       say:s,auto:'must',ans,after:`${ans}. ${L} is for ${w}!`,choices:opts.map(x=>({l:x,v:x})),
-      hint:{k:'say',w:`${L}. ${L} is for ${w}.`,s:`${low?L.toLowerCase()+' and '+L:L} is for ${w}. Look for the ${size} ${ans}.`},label:`${size} ${L}`}}
+      hint:{k:'say',w:`${L}. ${L} is for ${w}.`,s:`${low?'Little '+L.toLowerCase()+' and big '+L+' are':L+' is'} for ${w}. Look for the ${size} ${ans}.`},label:`${size} ${L}`}}
   if(lv==3){ // match 4 big letters to their little letters
     const Ls=[];while(Ls.length<4){const x=pick(ABCP);if(!Ls.includes(x))Ls.push(x)}
     const items=Ls.map(x=>({v:x,l:x})),opts=shuffle(Ls.map(x=>({v:x,l:x.toLowerCase()})));

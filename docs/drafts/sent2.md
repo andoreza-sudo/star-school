@@ -12,7 +12,7 @@ edited: 2026-11-18 by Claude after reading every line (words only; see "After re
 
 ```text
 Read Sentences (sent2), grade 1, the little pet
-Idea: Read each word then the whole sentence.
+Idea: Read each word, then the whole sentence.
 
 Remember:
   - Do you remember this? Listen to the first sound.
@@ -57,7 +57,7 @@ About 3.2 minutes.
  "t": "Read Sentences",
  "grade": 1,
  "age": "little",
- "idea": "Read each word then the whole sentence.",
+ "idea": "Read each word, then the whole sentence.",
  "beats": {
   "remember": [
    "Do you remember this? Listen to the first sound."
