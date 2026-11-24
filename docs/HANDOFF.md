@@ -59,7 +59,7 @@ The launch plan with budget and marketing is the Claude Docs artifact "Star Scho
 - Content: no magic or spells themes, no evolution themes (dragons OK), nothing offensive.
 - Agents never edit hashes, thresholds, KNOWN lists, fixtures or expected values just to pass. A design change that changes an
   expected value is listed with its reason. Budget changes need the owner (start-up 2.5 MB, index.html 1,000,000 bytes, code
-  precache 15 MB, audio 9.0 MB, teacher lines 1500: REC-2, owner decision 2026-11-24 (9.0 MB)).
+  precache 15 MB, audio 9.5 MB, teacher lines 1500: REC-2, owner decision 2026-11-24 (9.0 MB); audio 9.5 MB: owner decision 2026-11-24 (D2)).
 - Kill only processes whose working directory is your own worktree; never `pkill node`.
 - A command blocked by a permission or safety check is reported, not re-sent another way.
 - Push releases only to the session's own `claude/…` branch (this session: `claude/beautiful-rubin-1urk3d`); release by PR to

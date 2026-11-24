@@ -15,6 +15,8 @@
 //     articles generator can make; every ser / estar / tener sentence; every "Me gusta / No me gusta / Me gustan ..." sentence and
 //     noun phrase; every word-order sentence
 //   - Los Cuentos (d-es-story.js): every dialogue line and every Spanish question
+//   - D2 (owner decision 2026-11-24): the words on the sort chips of es_art and es_ser (bare nouns and plurals, the forms of ser and
+//     estar), and the wrong forms the Spanish lessons read aloud ("el vaca"), each in the voice of its word's unit
 //   - then every Spanish skill and level is generated over many seeds (genQ, as the app does) and each question's Spanish speech is
 //     taken (say with lang 'es', after with afterLang 'es', a hint that says Spanish, every data-sayes button): this catches what the
 //     list above misses. A hint that reads a list ("el perro. la vaca. el gato") is played piece by piece when every piece has a
@@ -101,6 +103,17 @@ function collect(ctx, opt = {}) {
     }
   }
   for (const lv of [1, 2]) for (const it of ES_GRAM.sent[lv]) add(it[0], 'es_sent');
+  // D2 (owner decision 2026-11-24): the sort chips say their word when tapped (k2Art, k2Ser in 49b-kinds2.js): every noun bare, one and
+  // many (level 1 and the un / una sort take the -o / -a nouns, the los / las sort every plural), and every form of ser and estar
+  for (const n of ES_GRAM.nouns) { add(n[4], 'es_art sort'); if (/[oa]$/.test(n[0])) add(n[0], 'es_art sort'); }
+  for (const f of R('K2SER.concat(K2ESTAR)')) add(f, 'es_ser sort');
+  // D2: the wrong forms the Spanish lessons read aloud ("el vaca": the other article on every noun a lesson can show, ls6Nouns in
+  // 52s-bench5s.js), in the voice of the word's unit, so a tablet with no Spanish voice says every choice, not only the right ones
+  for (const id of R("LS_B5.filter(x=>LESSONS[x].p=='es')")) for (const [it, u] of R(`ls6Nouns(LS_DRAFTED[${JSON.stringify(id)}].units)`)) {
+    const t = (it[3] == 'el' ? 'la' : 'el') + ' ' + it[0], k = esKey(t);
+    add(t, 'lesson wrong form');
+    if (!unitV.has(k)) unitV.set(k, ES_UNITS.findIndex(x => x.id == u.id) % 2 ? 'eve' : 'leo');
+  }
   // 3. Los Cuentos: the lines (each speaker's voice) and the Spanish questions
   for (const D of ES_STORY.dialogues) {
     for (const [who, t] of D.lines) {
@@ -136,6 +149,7 @@ function harvest(q, from, add, addList, ctx) {
   if (q.afterLang == 'es') { ctx.__q = q; add(q.after || vm.runInContext('K.spoken?K.spoken(__q):(KINDS[__q.kind]||{}).spoken(__q)', ctx), from); }
   if (q.hint && q.hint.k == 'say' && q.hint.lang == 'es') addList(q.hint.w, from + ' hint');
   for (const h of [q.html, q.ctx && q.ctx.html]) if (typeof h == 'string') for (const m of h.matchAll(/data-sayes="([^"]*)"/g)) add(unesc(m[1]), from);
+  if (q.kind == 'sort') for (const c of q.items || []) if (c.lang == 'es' && c.say) add(c.say, from + ' sort'); // D2: a chip says its word when tapped
 }
 
 const VA = require('./voice-audio.js'); // the shared recorder (EN-PRAISE uses it too)

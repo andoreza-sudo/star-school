@@ -34,7 +34,9 @@ const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB
 // lesson sentence of every grade in the pet's recorded voice (audio/teach): 4.5 -> 8.5 MB, warn raised in proportion 4.0 -> 7.55 MB
 // REC-2 owner decision 2026-11-24 (9.0 MB): "yes record the last two groups too" (the warm-up lines, the Explore lines of grade 3 and up):
 // 8.5 -> 9.0 MB, warn raised in proportion 7.55 -> 7.995 MB
-const AUDIO_WARN=7995000,AUDIO_FAIL=9000000,AUDIO_FILE_FAIL=40000;
+// owner decision 2026-11-24 (D2): the Spanish sort chips and the wrong forms the Spanish lessons read aloud are recorded too (about 128
+// short files): 9.0 -> 9.5 MB, warn raised in proportion 7.995 -> 8.439 MB
+const AUDIO_WARN=8439000,AUDIO_FAIL=9500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -22052,7 +22054,7 @@ run('teach: every Spanish noun of the lessons has the article and gender of the 
     const rec=[...right].filter(f=>!ES_AUDIO.lines[esKey(f)]),wrec=[...wrong].filter(f=>ES_AUDIO.lines[esKey(f)]);
     if(rec.length)bad.push('right forms with no Spanish recording: '+rec.join(', '));
     return{bad:[...new Set(bad)].slice(0,40),n,right:right.size,wrong:wrong.size,brk:[...new Set(brk)].sort(),wrec:wrec.length}})()`);
-  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered (said by the tablet\'s Spanish voice: not recorded); the last-letter rule breaks for '+r.brk.join(', ')};
+  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered ('+r.wrec+' of them recorded: tools/es-audio.js collects them, owner decision 2026-11-24 (D2)); the last-letter rule breaks for '+r.brk.join(', ')};
 });
 run('teach: simulated children on Spanish and Discover lessons, Check me always wrong when forced, fresh items on resume TEACH-5S',()=>{
   // the TEACH-1 children on the 12 batch 5s lessons (Spanish as a Kindergartner and, for the tone, a 5th grader; Discover as a Kindergartner): the learner
