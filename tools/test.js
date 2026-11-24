@@ -23711,6 +23711,154 @@ run('picture passwords: the hash, right and wrong, the wait, Grown-up help behin
   return Promise.resolve(r).then(b=>({problems:p.concat(b),note:'hash, order, 1-minute wait, help, Start over, backups, delete, one child, off by default'}));
 });
 
+// ---- AUD-BT: the Brain Teasers audit fixes (pattern sizes M-1 / S-4, robot hint M-2, maze hint M-3, word lists S-6 / S-7, hint reasons S-1 / S-2 / S-3) ----
+run('brain teasers audit fixes AUD-BT',()=>{
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)},note=[];
+    const day=d=>'2026-'+(1+d%12)+'-'+(1+(d*3)%28);
+    // the scale the app draws a tile's shapes at, read from its own SVG
+    const drawn=(it,t)=>+PAT.tile(t,PAT.flatOf(it)).match(/scale\(([\d.]+)\)/)[1];
+    // M-1: "Which one does not belong?": size and count never vary together, and no other tile is the odd one by drawn size
+    {let n=0,bySize=0;
+     for(const b of 'AB')for(let lv=1;lv<=12;lv++)for(let d=0;d<60;d++){
+       const p=BT.make('pattern',b,lv,{day:day(d),salt:d});
+       p.items.forEach((it,i)=>{if(it.k!='odd')return;n++;const w='pattern '+b+lv+' '+day(d)+' salt '+d+' item '+(i+1);
+         const zs=new Set(it.ch.map(t=>t.z)).size,ns=new Set(it.ch.map(t=>t.n)).size;
+         if(zs>1&&ns>1)bad(w+': size and count both vary');
+         const k=it.ch.map(t=>drawn(it,t));
+         for(let j=0;j<4;j++){if(j==it.a)continue;const o=k.filter((_,x)=>x!=j);
+           if(Math.max(...o)/Math.min(...o)<=1.12&&Math.min(...o.map(x=>Math.max(x,k[j])/Math.min(x,k[j])))>=1.3)bad(w+': tile '+(j+1)+' is the odd one by drawn size, the answer is tile '+(it.a+1)+' '+JSON.stringify(k))}
+         if(it.at[0]=='z'){bySize++;const o=k.filter((_,x)=>x!=it.a);if(Math.max(...o)-Math.min(...o)>0.001||Math.abs(k[it.a]-o[0])<0.1)bad(w+': odd by size, drawn '+JSON.stringify(k))}})}
+     // the audit's two examples, as they are made now
+     for(const [lv,dd,sl] of [[9,'2026-11-7',58],[10,'2026-7-19',6]]){const it=BT.make('pattern','A',lv,{day:dd,salt:sl}).items[1];
+       if(new Set(it.ch.map(t=>t.z)).size>1&&new Set(it.ch.map(t=>t.n)).size>1)bad('pattern A'+lv+' '+dd+' salt '+sl+' still mixes size and count')}
+     note.push(n+' odd-one-out items ('+bySize+' by size): size and count never together')}
+    // S-4: where an item's rule changes size and count, a bigger size is always drawn bigger (matrices, rows, 2 x 2)
+    {let n=0;
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<30;d++){
+       const p=BT.make('pattern',b,lv,{day:day(d),salt:d});
+       p.items.forEach((it,i)=>{if(!it.at||!it.at.includes('z')||!it.at.includes('n')||it.k=='odd')return;n++;
+         if(!PAT.flatOf(it))bad('pattern '+b+lv+': an item with size and count is not drawn flat');
+         const ts=it.show.concat(it.ch);
+         for(const x of ts)for(const y of ts)if(x.z>y.z&&!(drawn(it,x)-drawn(it,y)>0.02))bad('pattern '+b+lv+' '+day(d)+' salt '+d+' item '+(i+1)+': '+PAT.say(x)+' is not drawn bigger than '+PAT.say(y))})}
+     if(PAT.flatOf({at:['s','z'],show:[],ch:[]})||PAT.flatOf({at:['n'],show:[],ch:[]})||PAT.flatOf({at:['z','n'],show:[{n:1},{n:3}],ch:[{n:2}]})!==PAT.SCALE[3])bad('flatOf');
+     if(!/scale\(1\.08\)/.test(PAT.tile({s:0,c:0,z:2,n:1,r:0})))bad('a single big shape no longer fills its tile in other items');
+     note.push(n+' items with size and count drawn in size order')}
+    // M-2: Robot Path with the function (D10-12): a main strip that holds every slot, then hint 3 again and again, ends in a program that wins
+    {let n=0;
+     for(const lv of [10,11,12])for(let d=0;d<20;d++)for(const toks of [['fw'],['fw','tl','fw','tr'],['tr','fw']]){
+       const p=BT.make('robot','D',lv,{day:day(d),salt:d}),w='robot D'+lv+' '+day(d)+' salt '+d+' filled with '+toks.join(' ');
+       if(p.kit!='f'){bad(w+': no function kit');continue}
+       let st=RB.fresh(),k=0;
+       while(RB.count(st)<p.slots){const o=RB.add(p,st,toks[k++%toks.length]);if(!o)break;st=o}
+       if(RB.count(st)!==p.slots){bad(w+': could not fill the strip');continue}
+       n++;let ok=false;
+       for(let g=0;g<60;g++){const dv=RB.diverge(p,st);if(dv.kind=='works'){ok=true;break}
+         const o=RB.applyHint(p,st,dv);if(!o){bad(w+': the hint does nothing at main ['+st.m.join(' ')+'] function ['+st.f.join(' ')+'] ('+JSON.stringify({kind:dv.kind,s:dv.s,i:dv.i,want:dv.want})+')');break}
+         if(RB.count(o)>p.slots||!RB.okProg(p,o.m,o.f))bad(w+': the hint made a program that does not fit');st=o}
+       if(ok&&RB.run(p,st).out!='win')bad(w+': the hinted program does not win')}
+     // bands without a function are as before: a block that does not fit and has nothing after it is still refused
+     const pc=BT.make('robot','C',6,{day:'2026-1-1'});let sc=RB.fresh();while(RB.count(sc)<pc.slots){const o=RB.add(pc,sc,'fw');if(!o)break;sc=o}
+     for(let g=0;g<60;g++){const dv=RB.diverge(pc,sc);if(dv.kind=='works')break;const o=RB.applyHint(pc,sc,dv);if(!o){bad('robot C6: the hint does nothing on a full strip');break}sc=o}
+     note.push(n+' full strips hinted to a win')}
+    // S-6: the runs the audit found in Word Search grids are on the rude list, and no grid reads one in any of the 8 directions
+    {const rot=s=>s.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+     const MORE=rot('nefr nahf nany encr tnl ubzb pbba fcvp qlxr shp spx avcf chor gneq ahqr yhfg juber ovgpu anmv cravf').split(' '),RUDE=BTW.rude.split(' ');
+     for(const w of MORE)if(!RUDE.includes(w))bad('the rude list misses '+rot(w)+' (ROT13)');
+     const D8=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];let n=0;
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<25;d++){
+       const p=BT.make('wsearch',b,lv,{day:day(d),salt:d}),N=p.n;n++;
+       for(const w of MORE)for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(p.g[r*N+c]!=w[0])continue;
+         for(const [dr,dc] of D8){let k=1;for(;k<w.length;k++){const rr=r+dr*k,cc=c+dc*k;if(rr<0||cc<0||rr>=N||cc>=N||p.g[rr*N+cc]!=w[k])break}
+           if(k==w.length)bad('word search '+b+lv+' '+day(d)+' salt '+d+' reads '+rot(w)+' (ROT13) at row '+(r+1)+', column '+(c+1))}}}
+     for(const b of 'BCD')if(WS.pool(b).length<100)bad('word search pool '+b+' has only '+WS.pool(b).length+' words');
+     note.push(n+' word searches free of '+MORE.length+' more runs')}
+    // S-7: no Unscramble word has a real anagram, and the tiles never start as a real word
+    {const REAL=['taco','hissed','appraised'],key=w=>[...w].sort().join('');let n=0;
+     for(const w of REAL)if(!BTW.more.split(' ').includes(w))bad('BTW.more misses '+w);
+     for(const b of 'BCD'){const P=US.pool(b).map(x=>x.w);
+       for(const w of ['coat','dishes','disappear'])if(P.includes(w))bad('unscramble '+b+' still uses '+w);
+       for(const w of P)for(const r of REAL)if(key(w)==key(r))bad('unscramble '+b+': '+w+' has the anagram '+r);
+       const need={B:30,C:28,D:70}[b];if(P.length<need)bad('unscramble pool '+b+' has only '+P.length+' words');
+       for(let lv=1;lv<=12;lv++)for(let d=0;d<40;d++){n++;
+         for(const it of BT.make('scramble',b,lv,{day:day(d),salt:d}).items){
+           if(it.s==it.w||key(it.s)!=key(it.w))bad('unscramble '+b+lv+': tiles '+it.s+' for '+it.w);
+           if(REAL.includes(it.s)||(US.dict()[key(it.s)]&&US.dict()[key(it.s)].has(it.s)))bad('unscramble '+b+lv+' '+day(d)+': the tiles start as the word '+it.s)}}}
+     note.push(n+' unscrambles never start on a word')}
+    // S-1: Sudoku band D hard: a hint that names one step (locked candidates, a pair) is followed by a single that this one step gives
+    {let told=0,plain=0;
+     for(let lv=9;lv<=12;lv++)for(let d=0;d<12;d++){
+       const p=BT.make('sudoku','D',lv,{day:day(d),salt:d}),st=SD.fresh(p),N=9,G=SD.geo(9,3,3);
+       for(let i=0;i<81;i++){const s=SD.nextStep(p,st);if(!s)break;
+         if(s.kind=='guess')bad('sudoku D'+lv+': the hints had to guess');
+         if(s.kind=='steps'){plain++;if(s.say2!='Look at its row, its column and its box.'||s.say1!='Try this square.')bad('sudoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='locked'||s.kind=='pair'){told++;const b=SD.vals(p,st);
+           const cs=b.map((v,c)=>{if(v)return null;const o=new Set([1,2,3,4,5,6,7,8,9]);for(const q of G.peers[c])o.delete(b[q]);return o});
+           if(s.kind=='locked'){const v=+s.say2.match(/an? (\d)/)[1],hk=s.say2.match(/of that (row|column|box)/)[1],a0=G.at[s.also[0]];
+             const B=hk=='row'?G.rows[a0.r]:hk=='column'?G.cols[a0.c]:G.boxes[a0.b];
+             if(!s.also.every(c=>B.includes(c)))bad('sudoku: the marked squares are not in that '+hk);
+             // the premise: in the hint's house the number has no other place than the marked squares
+             if(s.house.some(c=>cs[c]&&cs[c].has(v)&&!s.also.includes(c)))bad('sudoku D'+lv+': "'+s.say2+'" but the number has another place in that house');
+             for(const c of B)if(cs[c]&&!s.also.includes(c))cs[c].delete(v);
+           }else{const m=s.say2.match(/only be (\d) and (\d)/);
+             if(!s.also.every(c=>cs[c]&&cs[c].size==2&&cs[c].has(+m[1])&&cs[c].has(+m[2])))bad('sudoku: the marked squares are not a pair');
+             for(const c of s.house)if(cs[c]&&!s.also.includes(c)){cs[c].delete(+m[1]);cs[c].delete(+m[2])}}
+           const a=G.at[s.cell],naked=cs[s.cell].size==1&&cs[s.cell].has(s.v);
+           const hidden=[G.rows[a.r],G.cols[a.c],G.boxes[a.b]].some(h=>h.filter(c=>cs[c]&&cs[c].has(s.v)).length==1&&!h.some(c=>b[c]==s.v));
+           if(!(naked||hidden))bad('sudoku D'+lv+' '+day(d)+' salt '+d+': "'+s.say2+'" does not follow from that one step');
+           if(/Now only/.test(s.say2)&&!naked)bad('sudoku D'+lv+': "Now only ... fits here" but the square has other numbers left')}
+         SD.fill(p,st,s.cell)}
+       if(!SD.won(p,st))bad('sudoku D'+lv+': the hints do not finish')}
+     if(!told)bad('no sudoku hint named a step (the check is not looking at any)');
+     note.push('sudoku: '+told+' one-step hints hold, '+plain+' plain')}
+    // S-2: MathDoku: the same for "Every way to make ... puts a v in the marked squares" (one number) and pairs
+    {let told=0,plain=0;
+     for(const [b,lvs] of [['C',[9,10,11,12]],['D',[5,6,7,8,9,10,11,12]]])for(const lv of lvs)for(let d=0;d<10;d++){
+       const p=BT.make('mdoku',b,lv,{day:day(d),salt:d}),st=MD.fresh(p),n=p.n;
+       for(let i=0;i<n*n;i++){const s=MD.nextStep(p,st);if(!s)break;
+         if(s.kind=='guess')bad('mathdoku '+b+lv+': the hints had to guess');
+         if(s.kind=='steps'){plain++;if(s.say2!='Look at its row, its column and its cage.'||s.say1!='Try this square.')bad('mathdoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='inline'||s.kind=='pair'){told++;const bd=MD.vals(p,st),row=/of this row|of the row/.test(s.say2),a0=s.also[0];
+           const line=[];for(let c=0;c<n*n;c++)if(row?Math.floor(c/n)==Math.floor(a0/n):c%n==a0%n)line.push(c);
+           if(!s.also.every(c=>line.includes(c)))bad('mathdoku: the marked squares are not in that line');
+           const vs=s.kind=='pair'?s.say2.match(/only be (\d) and (\d)/).slice(1).map(Number):[+s.say2.match(/can be (\d)\. Now/)[1]];
+           const el=new Array(n*n).fill(0);for(const c of line)if(!s.also.includes(c)&&!bd[c])for(const v of vs)el[c]|=1<<(v-1);
+           const an=MD.analyse(p,bd,el),bit=1<<(s.v-1),naked=an.cand[s.cell]==bit;
+           const hid=f=>{let k=0;for(let c=0;c<n*n;c++)if(f(c)&&!bd[c]&&an.cand[c]&bit)k++;return k==1};
+           if(!(naked||hid(c=>Math.floor(c/n)==Math.floor(s.cell/n))||hid(c=>c%n==s.cell%n)))bad('mathdoku '+b+lv+' '+day(d)+' salt '+d+': "'+s.say2+'" does not follow from that one step')}
+         MD.fill(p,st,s.cell)}
+       if(!MD.won(p,st))bad('mathdoku '+b+lv+': the hints do not finish')}
+     if(!told)bad('no mathdoku hint named a step (the check is not looking at any)');
+     note.push('mathdoku: '+told+' one-step hints hold, '+plain+' plain')}
+    // S-3: tricky pyramids (D10-12): the brick to guess is one where a guess that is too big makes the bricks above too big
+    {let tricky=0,right=0;
+     for(const lv of [10,11,12])for(let d=0;d<60;d++){
+       const p=BT.make('pyramid','D',lv,{day:day(d),salt:d}),st={done:[]};
+       for(let g=0;g<40;g++){const h2=BTN.PYR.hint(p,st,2);if(!h2)break;
+         if(/^Guess a number/.test(h2.say)){tricky++;const way=BTN.PYR.guessWay(p,BTN.PYR.known(p,st),h2.mark[0]);if(way==1)right++;
+           // the test's own try: the right number + 1 for that brick, worked through the triples, must make some known brick too big
+           if(way==1){const T=BTN.PYR.triples(p.n),kn=BTN.PYR.known(p,st),v=p.v.map((x,k)=>kn[k]?x:null);v[h2.mark[0]]=p.v[h2.mark[0]]+1;let big=0,small=0;
+             for(let more=true;more;){more=false;for(const [t,a,b] of T){const k=(v[t]!=null)+(v[a]!=null)+(v[b]!=null);
+               if(k==2){more=true;if(v[t]==null)v[t]=v[a]+v[b];else if(v[a]==null)v[a]=v[t]-v[b];else v[b]=v[t]-v[a]}}}
+             for(const [t,a,b] of T)if(v[t]!=null&&v[a]!=null&&v[b]!=null){if(v[a]+v[b]>v[t])big++;else if(v[a]+v[b]<v[t])small++}
+             if(!big||small)bad('pyramid D'+lv+' '+day(d)+' salt '+d+': a guess 1 too big does not come out too big ('+big+' / '+small+')')}}
+         st.done.push(BTN.PYR.hint(p,st,3).fill)}}
+     if(!tricky)bad('no tricky pyramid met');
+     if(right<tricky*0.98)bad('pyramid: only '+right+' of '+tricky+' guess hints point the right way');
+     note.push('pyramid: '+right+' of '+tricky+' guess hints the right way')}
+    return{out,note};
+  };
+  const r=eval(js+';('+body.toString()+')()'),p=r.out;
+  // M-3 (the screen itself is in smoke P3-08): hint 1 rings the target cell and draws no arrow beside the bear
+  const src=n=>fs.readFileSync(path.join(SRC,'js',n),'utf8'),rd=n=>fs.readFileSync(path.join(SRC,n),'utf8');
+  const mz=src('75-bt-maze.js');
+  if(!/arrow\.classList\.add\('ring'\)/.test(mz)||!/arrow\.style\.left = cx\(tg\.c\) \+ 'px'/.test(mz)||/arrow\.innerHTML = ico\(/.test(mz))p.push('maze hint 1 does not ring the target (75-bt-maze.js)');
+  if(!/\.mz-arrow\.ring\{/.test(rd('css/49-bt-maze.css')))p.push('.mz-arrow.ring is not styled');
+  // S-8: the board shrinks to the choices' picture size
+  if(!/board\.style\.width = Math\.floor\(board\.getBoundingClientRect\(\)\.width \* cw \/ w\) \+ 'px'/.test(src('76-bt-pattern.js')))p.push('pattern board no longer shrinks to the choice size (S-8)');
+  return{problems:p,note:r.note.join('; ')};
+});
+
 // ---- report ----
 // RC-2 (v189): Fable's confirming review of RC-1. Each part below failed on v188 (mutation-checked by putting v188's code back).
 run('lockouts after a clock change, Back on setup keeps Undo erase, every way into Grown-ups through the gate, Empty bank through ptGift RC-2',()=>{

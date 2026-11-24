@@ -252,18 +252,21 @@ const SD = (() => {
     return null;
   }
   // locked candidates: in house A the value's squares all lie in house B, so it leaves the rest of B
-  function lockedCands(p, cand, b) {
+  function lockedAll(p, cand, b, one) {
+    const out = [];
     for (const [A, B, inter] of gp(p).over) for (let v = 1; v <= p.n; v++) {
       if (A.cells.some(c => b[c] == v)) continue;
       const where = A.cells.filter(c => cand[c] & bit(v));
       if (where.length < 2 || where.some(c => !inter.includes(c))) continue;
       const elim = B.cells.filter(c => !inter.includes(c) && cand[c] & bit(v)).map(c => [c, v]);
-      if (elim.length) return { kind: 'locked', A, B, v, at: where, elim };
+      if (elim.length) { out.push({ kind: 'locked', A, B, v, at: where, elim }); if (one) return out; }
     }
-    return null;
+    return out;
   }
+  const lockedCands = (p, cand, b) => lockedAll(p, cand, b, true)[0] || null;
   // naked pair: two squares of a house with the same two candidates; those two leave the rest of the house
-  function nakedPair(p, cand) {
+  function pairAll(p, cand, one) {
+    const out = [];
     for (const h of gp(p).houses) {
       const two = h.cells.filter(c => popc(cand[c]) == 2);
       for (let i = 0; i < two.length; i++) for (let j = i + 1; j < two.length; j++) {
@@ -271,11 +274,12 @@ const SD = (() => {
         if (cand[two[j]] != m) continue;
         const elim = [];
         for (const c of h.cells) if (c != two[i] && c != two[j] && cand[c] & m) for (let v = 1; v <= p.n; v++) if (cand[c] & m & bit(v)) elim.push([c, v]);
-        if (elim.length) return { kind: 'pair', A: h, at: [two[i], two[j]], vs: [valOf(m & -m), valOf(m)], elim };
+        if (elim.length) { out.push({ kind: 'pair', A: h, at: [two[i], two[j]], vs: [valOf(m & -m), valOf(m)], elim }); if (one) return out; }
       }
     }
-    return null;
+    return out;
   }
+  const nakedPair = (p, cand) => pairAll(p, cand, true)[0] || null;
   function popc(m) { let k = 0; while (m) { m &= m - 1; k++; } return k; }
 
   // The next step: {kind, cell, v, house (squares hint 1 points at), also (squares hint 2 marks besides the cell), say1, say2, say3}
@@ -316,21 +320,32 @@ const SD = (() => {
       say1: s.kind == 'hidden' ? `Look at this ${s.h.k}. Where can ${name(p, s.v)} go?` : 'Look at this box. One square can be filled now.',
       say2: why(s), say3: say3(s.cell, s.v) };
     // 4. band D hard: take candidates away (locked candidates, naked pairs) until a single shows
-    let first = null;
+    // AUD-BT S-1: the hint names ONE step ("a 1 can only go in the marked squares, so ... Now only 9 fits here"), so it is only
+    // given when a single follows from that one step on the board as it is. Every such step is tried (it was: the first step
+    // found, then more steps the words did not mention, so "Now only 9 fits" did not follow in half of these hints).
+    const base = cand.slice(), told = x => {
+      const pre = x.kind == 'locked'
+        ? `In this ${x.A.k}, ${aName(p, x.v)} can only go in the marked squares, so no other square of that ${x.B.k} can be ${aName(p, x.v)}. Now `
+        : `The marked squares can only be ${x.vs[0]} and ${x.vs[1]}, so no other square of this ${x.A.k} can be. Now `;
+      const tail = s.kind == 'naked' ? `only ${name(p, s.v)} fits here.` : `${name(p, s.v)} can only go here in its ${s.h.k}.`;
+      return { kind: x.kind, cell: s.cell, v: s.v, house: x.A.cells, also: x.at,
+        say1: `Look at this ${x.A.k}. Where can ${x.kind == 'locked' ? name(p, x.v) : 'each number'} go?`, say2: pre + tail, say3: say3(s.cell, s.v) };
+    };
+    for (const x of lockedAll(p, base, b).concat(pairAll(p, base))) {
+      cand = base.slice();
+      for (const [c, v] of x.elim) cand[c] &= ~bit(v);
+      s = single();
+      if (s) return told(x);
+    }
+    // a single that needs several steps: the square is still found, with the plain words (no reason that does not hold)
+    cand = base.slice();
     for (let it = 0; it < 60; it++) {
       const x = lockedCands(p, cand, b) || nakedPair(p, cand);
       if (!x) break;
       for (const [c, v] of x.elim) cand[c] &= ~bit(v);
-      if (!first) first = x;
       s = single();
-      if (s) {
-        const pre = first.kind == 'locked'
-          ? `In this ${first.A.k}, ${aName(p, first.v)} can only go in the marked squares, so no other square of that ${first.B.k} can be ${aName(p, first.v)}. Now `
-          : `The marked squares can only be ${first.vs[0]} and ${first.vs[1]}, so no other square of this ${first.A.k} can be. Now `;
-        const tail = s.kind == 'naked' ? `only ${name(p, s.v)} fits here.` : `${name(p, s.v)} can only go here in its ${s.h.k}.`;
-        return { kind: first.kind, cell: s.cell, v: s.v, house: first.A.cells, also: first.at,
-          say1: `Look at this ${first.A.k}. Where can ${first.kind == 'locked' ? name(p, first.v) : 'each number'} go?`, say2: pre + tail, say3: say3(s.cell, s.v) };
-      }
+      if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: [s.cell], also: [],
+        say1: 'Try this square.', say2: 'Look at its row, its column and its box.', say3: say3(s.cell, s.v) };
     }
     // 5. never stuck: the empty square with the fewest choices
     cand = cands(p, b);

@@ -10,11 +10,14 @@
 var BTW = {
   rude: (s => s.replace(/[a-z]/g, c => String.fromCharCode((c.charCodeAt(0) - 84) % 26 + 97)))( // ROT13: no rude word in plain text in the source
     'shpx shx fuvg qvpx pbpx fhpx gvg gvgf snt phz frk nff cvff penc qnza uryy ubr fyhg phag gjng avt snc jnax cbea cbbc cbb ohgg crr sneg ' +
-    'gheq obbo xvyy tha'),
+    'gheq obbo xvyy tha ' +
+    // AUD-BT S-6: more runs the filler letters spelt (about 1 grid in 50 read one of them forwards)
+    'nefr nahf nany encr tnl ubzb pbba fcvp qlxr shp spx avcf chor gneq ahqr yhfg juber ovgpu anmv cravf'),
   more: 'act god tab sub arc hips rats arts tsar sore ores eros roes ebon ones eons carb murd nett rifts ports strop prost writs ' +
     'notices auctioned reflow fowler cleats fluor pam deb nus gorf shore could cloud finder player grown silent enlist tinsel ' +
     'three ether there pots tops opts post spot stop evil vile veil live lemon melon thing night elbow below bowel north thorn ' +
     'inch chin cheap peach study dusty canoe ocean charm march cried cider taste state words sword petal plate pleat leapt ' +
     'steal least slate tales stale cheat teach diary dairy fired fried earth heart hater stone notes tones onset angle angel ' +
-    'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
+    'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea ' +
+    'taco hissed appraised', // AUD-BT S-7: coat, dishes and disappear have these anagrams (the tiles could start as TACO or HISSED)
 };
