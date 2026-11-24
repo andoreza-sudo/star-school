@@ -23871,7 +23871,7 @@ run('brain teasers audit fixes AUD-BT',()=>{
        const p=BT.make('sudoku','D',lv,{day:day(d),salt:d}),st=SD.fresh(p),N=9,G=SD.geo(9,3,3);
        for(let i=0;i<81;i++){const s=SD.nextStep(p,st);if(!s)break;
          if(s.kind=='guess')bad('sudoku D'+lv+': the hints had to guess');
-         if(s.kind=='steps'){plain++;if(s.say2!='Look at its row, its column and its box.'||s.say1!='Try this square.')bad('sudoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='steps'){plain++;if(s.say2!='This one takes two steps. Look at its row, its column and its box.'||s.say1!='Try this square.')bad('sudoku: the plain hint has other words: '+s.say2)}
          if(s.kind=='locked'||s.kind=='pair'){told++;const b=SD.vals(p,st);
            const cs=b.map((v,c)=>{if(v)return null;const o=new Set([1,2,3,4,5,6,7,8,9]);for(const q of G.peers[c])o.delete(b[q]);return o});
            if(s.kind=='locked'){const v=+s.say2.match(/an? (\d)/)[1],hk=s.say2.match(/of that (row|column|box)/)[1],a0=G.at[s.also[0]];
@@ -23897,7 +23897,7 @@ run('brain teasers audit fixes AUD-BT',()=>{
        const p=BT.make('mdoku',b,lv,{day:day(d),salt:d}),st=MD.fresh(p),n=p.n;
        for(let i=0;i<n*n;i++){const s=MD.nextStep(p,st);if(!s)break;
          if(s.kind=='guess')bad('mathdoku '+b+lv+': the hints had to guess');
-         if(s.kind=='steps'){plain++;if(s.say2!='Look at its row, its column and its cage.'||s.say1!='Try this square.')bad('mathdoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='steps'){plain++;if(s.say2!='This one takes two steps. Look at its row, its column and its cage.'||s.say1!='Try this square.')bad('mathdoku: the plain hint has other words: '+s.say2)}
          if(s.kind=='inline'||s.kind=='pair'){told++;const bd=MD.vals(p,st),row=/of this row|of the row/.test(s.say2),a0=s.also[0];
            const line=[];for(let c=0;c<n*n;c++)if(row?Math.floor(c/n)==Math.floor(a0/n):c%n==a0%n)line.push(c);
            if(!s.also.every(c=>line.includes(c)))bad('mathdoku: the marked squares are not in that line');

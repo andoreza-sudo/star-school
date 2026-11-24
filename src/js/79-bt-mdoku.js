@@ -443,7 +443,7 @@ const MD = (() => {
       an = analyse(p, b, elim);
       s = single(an);
       if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: cageOf(s.cell).c, also: [],
-        say1: 'Try this square.', say2: 'Look at its row, its column and its cage.', say3: say3(s.v) };
+        say1: 'Try this square.', say2: 'This one takes two steps. Look at its row, its column and its cage.', say3: say3(s.v) };
     }
     // 6. never stuck: the empty square with the fewest choices
     let c = -1;

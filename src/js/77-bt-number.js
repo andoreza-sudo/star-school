@@ -196,8 +196,8 @@ const BTN = (() => {
       if (tier == 1) {
         return { say: 'A tricky one! No brick follows from two others yet. Start with the glowing brick.', mark: [at], fill: null };
       }
-      if (tier == 2) return { say: 'Guess a number for the glowing brick and work up the pyramid. If the bricks above come out too big, '
-        + 'guess smaller.', mark: [at], fill: null };
+      if (tier == 2) return { say: 'Guess a number for the glowing brick and work out the other bricks. If a brick does not match, '
+        + 'try another number.', mark: [at], fill: null };
       return { say: `This brick is ${p.v[at]}.`, mark: [at], fill: at };
     },
     // the bricks to fill, in an order a child could find them (used by tests and the smoke bot): [[brick, value], ...]
