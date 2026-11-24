@@ -687,12 +687,16 @@ function k2Gusta(q0) {
 // es_mix 2: two of animales, comida and colores (Spanish is open from Pre-K: 2 bins, 4 words); the fact's word is one of them when it is
 // from those units, and then keeps its review label
 const K2ESU = [['animal', 'animales', 'animals'], ['food', 'comida', 'food'], ['color', 'colores', 'colors']];
+const K2ESAMB = ['naranja', 'café'];
 function k2EsMix(q0) {
   const f = String(q0.ans), fu = K2ESU.find(u => SPN[u[0]].some(it => esFull(it) == f));
-  const U = fu ? [fu, pick(K2ESU.filter(u => u !== fu))] : k2Take(K2ESU, 2), its = fu ? [[f, fu[1]]] : [];
+  let U = fu ? [fu, pick(K2ESU.filter(u => u !== fu))] : k2Take(K2ESU, 2);
+  // audit v195 (N3): naranja is also the fruit and café is coffee: never sorted between comida and colores (other draws unchanged)
+  if (fu && K2ESAMB.includes(f) && U[1][0] == 'food') U = [fu, K2ESU[0]];
+  const its = fu ? [[f, fu[1]]] : [], noAmb = U.some(u => u[0] == 'food');
   for (const u of U) while (its.filter(x => x[1] == u[1]).length < 2) {
     const x = esFull(pick(SPN[u[0]]));
-    if (!its.some(y => y[0] == x)) its.push([x, u[1]]);
+    if (!its.some(y => y[0] == x) && !(noAmb && K2ESAMB.includes(x))) its.push([x, u[1]]);
   }
   const items = shuffle(its).map(([x, b]) => ({v: x, l: x, b, say: x, lang: 'es'}));
   const bins = U.map(u => ({v: u[1], l: u[1]}));
