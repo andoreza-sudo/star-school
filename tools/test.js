@@ -23608,25 +23608,28 @@ run('service worker: a page open waits 3 s for the network, then the cached page
     done2(page);await tick();await tick();if(d.resp!==page)p.push('no cache: the network page did not come');
     return{problems:p,note:'slow (late page not cached), fast, offline, first visit'}})();
 });
-run('service worker: install waits for the code only; the recordings are cached after activation, one that fails (503) is skipped and filled on a later open v194',()=>{
+run('service worker: install waits for the code only; the recordings are cached after activation, one that fails (503) is skipped and filled on a later open v194; 10 at a time, after the lines the page asks for (sample fix)',()=>{
   // v194 fix2 (Fable's confirming review): install was all-or-nothing over the code AND about 2,400 recordings, so one 503 left no service
   // worker at all and every open started again from zero. Now: install = the code list F; the page asks (a message 'audio') once it is
   // up, and on later opens; the worker fetches the recordings A does not hold, AB at a time, each on its own; a failure is skipped.
+  // sample fix (Fable's cheap-tablet rehearsal): AB is 10, not 40 (on a slow line 40 at a time made the first lesson's voice late), and a batch
+  // waits while a recording the page asked for is on its way or the page speaks ('hush'): steps 8 and 9. The rest is unchanged.
   const vm=require('vm'),src=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8'),p=[];
   const F=JSON.parse(((src.match(/const F=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"')),AF=JSON.parse(((src.match(/const AF=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"'));
-  if(!/const AB=40;/.test(src))p.push('sw.js: the recordings are not fetched 40 at a time');
+  if(!/const AB=10,HUSH_MS=\d+;/.test(src))p.push('sw.js: the recordings are not fetched 10 at a time (sample fix)');
   if(AF.length<1000)p.push('sw.js lists only '+AF.length+' recordings');
   const tick=async(n=40)=>{for(let i=0;i<n;i++)await new Promise(r=>setImmediate(r))};
   // a stand-in browser: CacheStorage (cache name -> Map url -> response), fetch with one recording failing (503) while `down` has it
-  const store=new Map(),down=new Set(),fetched=[];let live=0,peak=0;
+  const store=new Map(),down=new Set(),fetched=[];let live=0,peak=0,skew=0,gateU=null,gate=null;
   const norm=u=>new URL(typeof u=='string'?u:u.url,'http://x/').href;
   const mkCache=n=>{if(!store.has(n))store.set(n,new Map());const m=store.get(n);return{
     addAll:async rs=>{const got=[];for(const r of rs){const x=await sb.fetch(r);if(!x.ok)throw new TypeError('addAll: '+x.status);got.push([norm(r),x])}for(const [u,x] of got)m.set(u,x)},
     put:async(r,x)=>{m.set(norm(r),x)},match:async r=>m.get(norm(r)),keys:async()=>[...m.keys()].map(url=>({url})),delete:async r=>m.delete(norm(r.url||r))}};
   const sb={self:{location:'http://x/',clients:{claim:async()=>{}},addEventListener:(t,f)=>{H[t]=f},skipWaiting(){}},URL,Promise,Set,Map,console,setTimeout,clearTimeout,
     caches:{open:async n=>mkCache(n),keys:async()=>[...store.keys()],delete:async n=>store.delete(n),match:async r=>{for(const m of store.values())if(m.has(norm(r)))return m.get(norm(r))}},
-    fetch:async r=>{const u=norm(r);fetched.push(u);live++;peak=Math.max(peak,live);await tick(2);live--;return down.has(u)?{ok:false,status:503}:{ok:true,status:200,u,clone(){return this}}},
-    Request:function(u){this.url=u},Response:{error:()=>'ERROR'}};
+    fetch:async r=>{const u=norm(r);fetched.push(u);live++;peak=Math.max(peak,live);await tick(2);if(u===gateU)await gate;live--;return down.has(u)?{ok:false,status:503}:{ok:true,status:200,u,clone(){return this}}},
+    Request:function(u){this.url=u},Response:{error:()=>'ERROR'},Date:{now:()=>Date.now()+skew}};
+  sb.setTimeout=f=>{setImmediate(f);return 0}; // sample fix: the fill's wait (quiet) polls; time is moved by skew (this file's own setTimeout is a no-op)
   const H={};vm.runInNewContext(src,sb);
   const ev=(t,data)=>{const w=[];H[t]({data,waitUntil:pr=>w.push(pr)});return Promise.all(w)};
   const A=[...store.keys()],aUrl=u=>norm(u),inA=()=>store.get('starschool-audio')||new Map(),cname=src.match(/const C='([^']+)'/)[1];
@@ -23639,10 +23642,10 @@ run('service worker: install waits for the code only; the recordings are cached 
     if(!store.has(cname)||store.get(cname).size!==F.length)p.push('install did not cache the code list: '+(store.get(cname)||new Map()).size+' of '+F.length);
     // 2. activate: nothing is fetched yet (the recordings never compete with the first paint)
     const n0=fetched.length;await ev('activate');if(fetched.length!==n0)p.push('activate fetched '+(fetched.length-n0)+' files');
-    // 3. the page asks: every recording but the failing one is cached, 40 at a time at most; the 503 is not cached
+    // 3. the page asks: every recording but the failing one is cached, 10 at a time at most (sample fix; was 40); the 503 is not cached
     await ev('message','audio');
     if(inA().size!==AF.length-1||inA().has(bad))p.push('after the first fill: '+inA().size+' of '+AF.length+' recordings, the 503 one '+(inA().has(bad)?'cached':'not cached'));
-    if(peak>40)p.push('up to '+peak+' fetches at once (want at most 40)');
+    if(peak>10)p.push('up to '+peak+' fetches at once (want at most 10)');
     // 4. the next open: only the missing one is fetched, and now it is cached
     down.clear();const n1=fetched.length;await ev('message','audio');
     if(fetched.length-n1!==1||fetched[n1]!==bad||!inA().has(bad)||inA().size!==AF.length)p.push('a later open did not fetch just the missing recording: '+(fetched.length-n1)+' fetches, '+inA().size+' of '+AF.length);
@@ -23658,12 +23661,22 @@ run('service worker: install waits for the code only; the recordings are cached 
     // 7. a recording fetched on demand (not cached yet) goes to A, not the release cache
     inA().delete(bad);let put=null;H.fetch({request:{method:'GET',url:bad,mode:'no-cors',headers:{get:()=>null},destination:'audio'},respondWith:pr=>{put=pr},waitUntil(){}});
     await put;await tick();if(!inA().has(bad))p.push('a recording fetched on demand did not go to the audio cache');
+    // 8. sample fix: while the page speaks ('hush') the fill fetches nothing; it goes on once the hold is over
+    inA().delete(bad);const n8=fetched.length;await ev('message','hush');const f8=ev('message','audio');await tick();await tick();
+    if(fetched.length!==n8)p.push('the fill fetched '+(fetched.length-n8)+' while the page speaks (hush)');
+    skew+=60000;await f8;if(fetched.length-n8!==1||!inA().has(bad))p.push('the fill did not go on after the hush: '+(fetched.length-n8)+' fetches');
+    // 9. sample fix: a recording the page asked for, still on its way, comes first: the fill starts its batch only after it
+    const want=norm(AF.find(u=>/\/audio\/en\//.test(u)));inA().delete(bad);inA().delete(want);gateU=want;let go;gate=new Promise(r=>{go=r});
+    let p9=null;H.fetch({request:{method:'GET',url:want,mode:'no-cors',headers:{get:()=>null},destination:'audio'},respondWith:pr=>{p9=pr},waitUntil(){}});
+    await tick();const n9=fetched.length;const f9=ev('message','audio');await tick();await tick();
+    if(fetched.length!==n9)p.push('the fill fetched '+fetched.slice(n9).length+' while a recording the page asked for was on its way');
+    go();await p9;await f9;if(!inA().has(want)||!inA().has(bad))p.push('after the asked-for recording: the fill did not finish ('+inA().size+' of '+AF.length+')');gateU=null;
     // the page asks after it is up and on later opens; the host serves the recordings as immutable (their names are content hashes)
     const app=fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8');
     if(!/postMessage\('audio'\)/.test(app)||!/requestIdleCallback/.test(app)||!/visibilitychange[^\n]*swAudio\(\)/.test(app))p.push('90-app.js does not ask the worker for the recordings after the start (idle) and on later opens');
     const vj=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')),ar=(vj.headers||[]).find(h=>h.source==='/audio/(.*)\\.ogg');
     if(!ar||!ar.headers.some(h=>h.key==='Cache-Control'&&h.value==='public, max-age=31536000, immutable'))p.push('vercel.json does not serve /audio/*.ogg as immutable');
-    return{problems:p,note:'install: '+F.length+' code files; '+AF.length+' recordings after activation, one 503 skipped and filled on the next open; at most '+peak+' fetches at once'}})();
+    return{problems:p,note:'install: '+F.length+' code files; '+AF.length+' recordings after activation, one 503 skipped and filled on the next open; at most '+peak+' fetches at once; the fill waits while the page speaks and for a line it asked for'}})();
 });
 
 run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under the old question, change, forgot, Start over keeps it, no backup carries it, every way in RC-1',()=>{

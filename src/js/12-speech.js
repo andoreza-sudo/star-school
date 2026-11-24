@@ -35,7 +35,7 @@ function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.can
   if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
-function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
+function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;swHush(); // sample fix: the worker's audio fill waits while the app speaks (90-app.js)
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
   const M=it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
@@ -128,7 +128,7 @@ function ttsSay(t,btn,es,slow,cheer){
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
-  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll()}catch(e){if(btn)noVoice(btn)}}
+  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
