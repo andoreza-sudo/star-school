@@ -30,8 +30,9 @@ function genQ(sk,lv,seed){
   seed=seed>>>0;
   const prev=RNG;RNG=mulberry32(seed);
   try{let q=SK[sk].gen(lv);
-    // audit v195: Pre-K and K get the "Listen" question of the same seed for a new Spanish "Read" one (esRead, 34-gen-es.js)
-    if(fresh&&typeof esRead=='function'&&esRead(q,lv)){lv=1;RNG=mulberry32(seed);q=SK[sk].gen(lv)}
+    // audit v195: Pre-K and K get the "Listen" question of the same seed for a new Spanish "Read" one (esRead, 34-gen-es.js); it
+    // stays a question of its stop (q.lv), so the round, mastery and the challenge rules see the stop they asked for
+    if(fresh&&typeof esRead=='function'&&esRead(q,lv)){RNG=mulberry32(seed);q=SK[sk].gen(1)}
     q.sk=sk;q.lv=lv;q.seed=seed;return q}
   finally{RNG=prev}}
 

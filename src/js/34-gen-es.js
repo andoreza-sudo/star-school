@@ -14,7 +14,7 @@ const esClash=(u,a,b)=>!!(u&&u.confuse&&u.confuse.some(p=>p.includes(a[0])&&p.in
 // two wrong items for `it`: neither clashes with it or with the other (a unit with no confuse list draws exactly as before R-01s)
 // Audit v195 (R-01 Spanish Must 4, 5): a Pre-K or K child (a chosen grade; a save with no grade draws as before) cannot read yet.
 // esRead: a NEW unit "Read" question (level 2: three written words, nothing said) is drawn again as the "Listen" question of the same
-// seed (genQ, 22-qhelpers.js, asks only when it makes up the seed: seeded questions, review items and test hashes stay; the Big
+// seed (genQ, 22-qhelpers.js, asks only when it makes up the seed: seeded questions and test hashes stay; the Big
 // Review's sort stays). esSame: for that child no two choices of a listening question show one picture (the days' and months' calendars)
 const esLittle=()=>S.grade===-1||S.grade===0;
 const esRead=(q,lv)=>lv==2&&esLittle()&&q.kind=='choice'&&q.lang=='es'&&!q.say&&/ \(read\)$/.test(q.label);
