@@ -337,7 +337,8 @@ const DISC_TOUCH = ['AZ CO', 'NM UT', 'IL MI', 'MI MN', 'NY RI', 'MD DC'];
   // regions: five regions, 41 states whose region books agree on (R-01d: Nevada and Utah are "-": many maps put them in the Southwest)
   ST.forEach((s, i) => {
     if (s.reg === '-') return;
-    const others = REGS.filter(r => r !== s.reg), ds = [];
+    // AUD-DISC: never "West" as a wrong answer for a Southwest state (the Census map puts Arizona and New Mexico in the West)
+    const others = REGS.filter(r => r !== s.reg && !(s.reg === 'SW' && r === 'W')), ds = [];
     for (let k = 0; ds.length < 3; k++) ds.push(NAME[others[(i + k) % others.length]]);
     rows.push(`Which region of the United States is ${s.n} in?|${NAME[s.reg]}|${[...new Set(ds)].join(';')}|regions`);
   });

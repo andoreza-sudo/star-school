@@ -207,7 +207,7 @@ Which season comes after fall?|winter|spring;summer|seasons
 We build snowmen in the ___.|winter|summer;spring|seasons
 Swimming at the beach is most fun in the ___.|summer|winter;fall|seasons
 Mittens, hot cocoa and a snowman. Which season is it?|winter|summer;spring;fall|seasons
-When can we see stars in the sky?|at night|at noon;at breakfast;at recess|daynight
+When can we see stars in the sky?|at night|at breakfast;at recess|daynight
 The sun rises in the ___.|morning|evening;night|daynight
 The sun sets in the ___.|evening|morning;noon|daynight
 Which part of the day is dark?|night|noon;morning;afternoon|daynight

@@ -73,7 +73,6 @@ KD4('sci_phys', 3, [
 // ---- Maps & World ----
 KD4('geo_world', 1, [
   kd4s('landforms', 'Sort them: made by nature or made by people?', 'Was it here before people built things?', {nature: ['mountain', 'river', 'beach'], 'by people': ['road', 'bridge']}),
-  kd4s('continents', 'Where do they live: Africa or Antarctica?', 'One continent is hot and one is covered in ice.', {Africa: ['giraffe', 'lion', 'zebra'], Antarctica: ['penguin', 'seal']}),
   kd4m('oceans', 'Tap the word that names the biggest ocean.', 'It is the ocean on the west side of the United States.', 'The Pacific is the biggest ocean.', 'Pacific'),
 ], true);
 KD4('geo_world', 2, [
@@ -87,7 +86,6 @@ KD4('geo_world', 2, [
 KD4('geo_us', 1, [
   kd4s('states', 'Sort the places: a state or a city?', 'A state is big and has many cities inside it.', {state: ['Texas', 'Ohio', 'Maine'], city: ['Denver', 'Boston']}),
   kd4s('borders', 'Sort the states: on a coast or inland?', 'Does the state touch an ocean?', {coast: ['Florida', 'Oregon', 'Maine'], inland: ['Kansas', 'Utah', 'Iowa']}),
-  kd4m('capitals', 'Tap the city that is our nation\'s capital.', 'The President works there.', 'Our nation\'s capital is Washington, D.C.', 'Washington'),
   kd4m('states', 'Tap the two state names.', 'Look for the words that name states.', 'Ohio and Texas are states.', ['Ohio', 'Texas']),
 ]);
 KD4('geo_us', 2, [
@@ -107,7 +105,6 @@ KD4('civ', 2, [
   kd4s('branches', 'Sort the jobs: President or Congress?', 'One signs and carries out laws. The other writes them.', {President: ['signs a bill', 'leads the military', 'names Cabinet members'], Congress: ['writes bills', 'votes on bills']}),
   kd4s('constitution', 'Sort the jobs: federal or state government?', 'Federal means the whole country. State means one state.', {federal: ['coins money', 'runs the Army', 'declares war'], state: ['gives driver licenses', 'runs state parks']}),
   kd4m('branches', 'Tap the leader of a state.', 'The President leads the country. Who leads a state?', 'A governor leads a state.', 'governor'),
-  kd4m('constitution', 'Tap the word for a proposed law.', 'It is not a law yet.', 'A bill becomes law after the vote.', 'bill'),
 ]);
 
 // ---- why: [text, why] on existing choice items (found by their q and a; an item that is not found is skipped) ----

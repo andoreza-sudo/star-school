@@ -77,7 +77,7 @@ A duck's webbed feet help it ___.|swim|climb trees;dig holes;run fast|adapt|duck
 The shape of a bird's beak depends on ___.|the food it eats|its color;its age;the weather|adapt
 A body part or habit that helps a living thing survive where it lives is an ___.|adaptation|invention;accident;illness|adapt
 Birds that fly far away for the winter to find food and warmth are ___.|migrating|hibernating;camouflaging;hatching|adapt
-A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage;adaptation|adapt
+A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage|adapt
 A camel's wide, flat feet help it walk on ___.|sand|ice;tree branches;a wall|adapt
 Which animal has thick white fur that helps it hide and stay warm in snow?|an Arctic fox|a camel;a lizard;a toucan|adapt
 A thick waxy coat on a leaf helps a plant ___.|keep its water in|catch more snow;sing;move|adapt
@@ -174,7 +174,6 @@ Can a scar from a cut be passed on to a child?|no|yes;always;only if the scar is
 Identical twins have almost exactly the same ___.|genes|friends;clothes;memories|traits
 Which of these did a lion cub get from its parents?|its golden fur|a scar from a fight;a trick it was taught;a name|traits
 Members of one kind of animal are not all exactly alike. This is called ___.|variation|migration;adaptation;extinction|traits
-Over many generations, traits that help living things survive become ___.|more common|less common;impossible;harmless|traits
 `));
 
 BANK.sci_earth.push(...discRows(2, `
