@@ -1728,11 +1728,12 @@ if (typeof genEsGusta == 'function') genEsGusta = k2Wrap('es_gusta', genEsGusta)
 // G.kh: the kinds asked so far this round (makeQ pushes every question it returns). After two of one kind, up to 10 draws look for
 // another kind; a stop that gives only that kind is remembered in KMONO for the session, so it pays the extra draws once.
 const KMONO = {};
-function pickQ(sk, lv) {
+// mix: only Practice's own draw (makeQ) may take a lesson item; never mastQ's other stops, a check-in, a boss or a world test
+function pickQ(sk, lv, mix) {
   const h = G.kh || (G.kh = []), two = h.length > 1 && h[h.length - 1] === h[h.length - 2] ? h[h.length - 1] : null, id = sk + lv;
   let q, alt;
   // LESSON-STAGE: a stop whose questions are all one kind: the third in a row comes from its lesson in another kind (lsMix, part teach)
-  if (two && KMONO[id] && typeof lsMix == 'function' && (q = lsMix(sk, lv, two))) return q;
+  if (mix && two && KMONO[id] && typeof lsMix == 'function' && (q = lsMix(sk, lv, two))) return q;
   for (let t = 0; t < 10; t++) {
     q = genQ(sk, lv);
     if (q.label === G.last) continue;

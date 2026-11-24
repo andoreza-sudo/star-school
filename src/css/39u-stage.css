@@ -11,4 +11,6 @@
 .bstage .bs-boss{position:relative;z-index:1;line-height:0}
 .bstage .bossE{font-size:clamp(84px,19vh,124px)}
 .bstage .bossE .bubble{top:auto;bottom:100%;left:50%!important;right:auto!important;transform:translateX(-50%);line-height:1.2;font-size:var(--fs-3)}
+/* a phone held upright: the number pad takes the bottom half, so the stage stays small enough for the question, Hear it and Help */
+@media (max-aspect-ratio:3/4){.bstage{height:clamp(96px,16vh,150px)}.bstage>.wband{top:auto!important;bottom:0}.bstage .bs-pet{font-size:clamp(48px,8vh,72px)}.bstage .bossE{font-size:clamp(60px,10.5vh,96px)}}
 @media (max-height:520px){.bstage{height:140px}.bstage .bs-pet{font-size:64px}.bstage .bossE{font-size:80px}}

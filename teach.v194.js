@@ -675,11 +675,13 @@ const lsName = () => (S.name || 'friend');
    pickQ (49b-kinds2.js) asks here for the third question in a row: one of the stop's own lesson items in another kind (its build on
    the model or its picture, stages 0 and 1), as the lesson asks it (the same reviewed words), once the child has learned that lesson.
    An item that needs the lesson around it (a goal, a start state, a raw state, its own answer check, a told story) is never used. It
-   is marked as one of the stop's questions (sk, lv) with the label and seed of a fresh generator question of the stop, so a miss
-   comes back in Review as the stop's own kind. null when none fits (the round goes on as before). */
+   is marked as one of the stop's questions (sk, lv, so mastery counts it) with the label and seed of a fresh generator question of
+   the stop, and lsx: a miss is retried in the round but never kept (addMiss skips it: Review and Grown-ups could only show that
+   other, never-shown question). Only Practice asks (pickQ's mix: no check-in, mastQ, boss or test), and only at a math stop. null when none fits. */
 function lsMix(sk, lv, kind) {
   const id = sk + lv, L = typeof LESSONS != 'undefined' && LESSONS[id];
-  if (!L || typeof lsLearned != 'function' || !lsLearned(id)) return null;
+  // fix v194: math only (a Discover, Spanish or reading stop is answered by its choices; its lesson items are not its practice), never with K2.off
+  if (!L || (L.p || 'math') != 'math' || typeof K2 != 'undefined' && K2.off || typeof lsLearned != 'function' || !lsLearned(id)) return null;
   const r = mulberry32(((Math.random() * 4294967295) >>> 0) + 1);
   for (let t = 0; t < 8; t++) {
     let q = null;

@@ -19798,6 +19798,39 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
     return out})()`);
   return{problems:r.bad,note:`${r.n} questions in 200 rounds (${r.mono} triples on single-kind stops); ${r.rt} review round trips`};
 });
+// fix v194 (LESSON-STAGE review): the practice mix-in. Every lesson item lsMix gives is a valid question of its stop (sk, lv, lsx, another
+// kind); only a learned math lesson gives one, never with K2.off; pickQ takes one only when Practice asks (mix), so mastQ's and the
+// check-in's draws (no mix) and a check-in, boss or world-test round never show one; a miss of one is never kept (no phantom label).
+run('LESSON-STAGE lsMix: valid items, Practice and math stops only, a miss never kept',()=>{
+  const r=eval(js+`;(()=>{const out={bad:[],n:0,mix:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    loadSave(null);migrate();S.grade=3;S.know={};
+    const at=id=>{for(const p in NODES){const i=NODES[p].findIndex(n=>nid(n)===id);if(i>=0)return[p,i]}return null};
+    const ids=Object.keys(LESSONS).filter(id=>at(id));let math=0,other=0;
+    for(const id of ids){const L=LESSONS[id],[p,i]=at(id),nd=NODES[p][i],kinds=['choice','num','make','sort','mark','line'];
+      S.know[id]=null;if(lsMix(nd.sk,nd.lv,'num'))bad(id+': a mix-in before its lesson is learned');
+      S.know[id]={s:2};
+      for(let k=0;k<12;k++){const kind=kinds[k%kinds.length],q=lsMix(nd.sk,nd.lv,kind);if(!q)continue;out.n++;
+        if((L.p||'math')!='math'){other++;bad(id+': a mix-in at a '+(L.p)+' stop');continue}
+        math++;const pr=kindProblems(q);if(pr.length)bad(id+': '+q.kind+' mix-in: '+pr.join(' '));
+        if(q.sk!==nd.sk||q.lv!==nd.lv||!q.lsx||!q.label||q.kind===kind)bad(id+': mix-in not marked as the stop\\'s ('+q.kind+' for '+kind+')')}
+      K2.off=true;try{if(lsMix(nd.sk,nd.lv,'num')||lsMix(nd.sk,nd.lv,'choice'))bad(id+': a mix-in with K2.off')}finally{K2.off=false}
+      // pickQ: the third of one kind in a row at a one-kind stop; without mix (mastQ, CHK.qs) never a lesson item
+      const kid=nd.sk+nd.lv,keep=KMONO[kid];KMONO[kid]=1;G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10});
+      for(let k=0;k<20;k++){G.kh=['make','make'];if(pickQ(nd.sk,nd.lv).lsx)bad(id+': pickQ without mix gave a lesson item');G.kh=['num','num'];if(pickQ(nd.sk,nd.lv).lsx)bad(id+': pickQ without mix gave a lesson item')}
+      // a round's own draw: Practice may; a check-in or a boss never
+      for(const f of [{},{chk:{}},{boss:{e:'x',name:'x'}}])for(let k=0;k<12;k++){G=newG(Object.assign({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10},f));G.kh=['num','num'];G.done=5;
+        const q=makeQ1();if(q.lsx&&(f.chk||f.boss))bad(id+': a lesson item in a '+(f.chk?'check-in':'boss')+' round');if(q.lsx&&!f.chk&&!f.boss)out.mix++}
+      if(keep)KMONO[kid]=keep;else delete KMONO[kid];
+      S.know[id]=null}
+    if(!math)bad('no math lesson gave a mix-in');
+    // a missed mix-in: retried in the round, never a miss tally or a review item
+    {const id=ids.find(x=>(LESSONS[x].p||'math')=='math'),[p,i]=at(id),nd=NODES[p][i];S.know[id]={s:2};let q=null;
+     for(const k of ['num','choice','make'])if(!q)q=lsMix(nd.sk,nd.lv,k);
+     if(q){S.rev=[];const m0=JSON.stringify(P(nd.sk).miss||{});addMiss(q);if(JSON.stringify(P(nd.sk).miss||{})!==m0||(S.rev||[]).length)bad('a missed mix-in was kept ('+q.label+')')}}
+    return out})()`);
+  return{problems:r.bad,note:`${r.n} mix-in items checked, ${r.mix} lesson items in Practice draws`};
+});
 
 // ---- KINDS2 batch B (docs/KINDS2-SPEC.md 2.3, 3, 6): the line kind ----
 // K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4 at 40%, not 30%: 30% leaves the number pad at 70%).
