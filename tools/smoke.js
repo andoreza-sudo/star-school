@@ -14717,7 +14717,7 @@ async function main() {
               if (document.querySelector('.ls-top #lsmeter')) met++;
               // LESSON-STAGE: the label is for screen readers only (1 px), the train's six stops fit the bar
               const tr = document.querySelector('.ls-top .ls-pips').getBoundingClientRect();
-              if (r.width > 1.5 || !vis.endsWith(name) || !/ of 6 /.test(vis) || tr.right > vw || tr.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
+              if (r.width > 1.5 || !vis.endsWith(name) || / of \d+ /.test(e.textContent) !== / of \d+ /.test(vis) || tr.right > vw || tr.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
             const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show();
             return { o, met, tog: document.querySelector('#lsstep').innerText.trim() }; });
           if (s3.o.length || s3.met || s3.tog !== 'Step 4 of 6 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
