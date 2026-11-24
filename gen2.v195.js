@@ -1623,7 +1623,7 @@ function skyRatio2() {
   // better buy: two sizes of the same thing, the lower price for one wins
   const [s, pl] = pick(skyItems);
   let n1, n2, u1, u2;
-  do {n1 = R(2, 9); n2 = R(2, 9); u1 = 5 * R(8, 80); u2 = 5 * R(8, 80)} while (n1 == n2 || u1 == u2 || Math.abs(u1 - u2) < 10);
+  do {n1 = R(2, 9); n2 = R(2, 9); u1 = 5 * R(8, 80); u2 = 5 * R(8, 80)} while (n1 == n2 || u1 == u2 || Math.abs(u1 - u2) < 10 || n1 * u1 < 100 || n2 * u2 < 100); // AUDIT-MATH: each deal is a dollar or more (never said "0 dollars and 80 cents")
   const A = `${n1} ${pl} for ${skyMoney(n1 * u1)}`, B = `${n2} ${pl} for ${skyMoney(n2 * u2)}`;
   return {kind: 'choice', cls: 'skyb', ans: u1 < u2 ? 'a' : 'b', choices: [{v: 'a', l: 'Deal A'}, {v: 'b', l: 'Deal B'}],
     html: `<div class="sub">Which is the better buy? It costs less for 1 ${s}.</div><div class="sub">A: ${A}</div><div class="sub">B: ${B}</div>`,
@@ -2210,7 +2210,9 @@ function galFact3() {
   for (;;) {
     a = R(2, 36); b = R(2, 36);
     if (a == b) continue;
-    if (gcf ? (skyGcd(a, b) == 1 && rnd() < .9) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
+    // AUDIT-MATH: a story about the greatest number of teams never has the answer 1. The bare question keeps a pair with GCF 1 twice as
+    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before)
+    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .8)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
     break;
   }
   const lo = Math.min(a, b), hi = Math.max(a, b);
@@ -2378,7 +2380,8 @@ function galStory9() {
       hint: skyHint([['', 'Write an equation:', `Let ${v} be the number shared. ${v} ÷ ${a} = ${b}.`], ['', 'Undo the dividing:', `Multiply both sides by ${a}. ${b} × ${a} = ?`]]), label: `story9 eq div ${a} ${b}`});
   }
   // money: a pen costs $a more than a pencil
-  const pa = 5 * R(5, 50), pn = pa + 5 * R(20, 80), th = pick([['pen', 'pencil'], ['book', 'card'], ['hat', 'scarf']]);
+  // AUDIT-MATH: a difference under a dollar was said "0 dollars and 65 cents": it is a dollar more instead (the same draws, no new words)
+  const pa0 = 5 * R(5, 50), pa = pa0 < 100 ? pa0 + 100 : pa0, pn = pa + 5 * R(20, 80), th = pick([['pen', 'pencil'], ['book', 'card'], ['hat', 'scarf']]);
   const text = `A ${th[0]} costs ${skyMoney(pa)} more than a ${th[1]}. The ${th[0]} costs ${skyMoney(pn)}. How much does the ${th[1]} cost?`;
   const sub = stepsSub(((pn) / 100).toFixed(2), (pa / 100).toFixed(2));
   sub.steps.unshift(ST.step('', 'Write an equation:', `Let ${v} be the cost of the ${th[1]}. ${v} + ${skyMoney(pa)} = ${skyMoney(pn)}. Subtract ${skyMoney(pa)} from both sides.`, null));
@@ -3634,6 +3637,8 @@ KIND.sort = {
     if (st.sortSel == null) { // nothing picked yet: the tray glows to show where to start
       const t = $('.stray');
       if (t) k2Shake(t);
+      // AUDIT-MATH: a box with a word of its own (bin.say: "Even", "Odd") says it for children who do not read yet (Pre-K to 1st)
+      if (q.bins[b] && q.bins[b].say && gradeCfg().auto !== 'tap') say(q.bins[b].say);
       return;
     }
     st.sortAt[st.sortSel] = b;
@@ -4031,7 +4036,7 @@ function k2EO(q0, lv) {
   do ns = [n, ...k2Take(Array.from({length: hi - lo + 1}, (_, i) => lo + i), lv == 1 ? 3 : 4, [n])];
   while (ns.every(x => x % 2) || ns.every(x => x % 2 == 0));
   const items = shuffle(ns).map(x => ({v: x, l: String(x), b: x % 2 ? 'odd' : 'even'}));
-  const bins = [{v: 'even', l: 'Even'}, {v: 'odd', l: 'Odd'}];
+  const bins = [{v: 'even', l: 'Even', say: 'Even'}, {v: 'odd', l: 'Odd', say: 'Odd'}]; // AUDIT-MATH: a box says its word when a young child taps it
   return k2Sort({bins, items, html: '<div class="sub">Sort the numbers: even or odd?</div>', say: 'Sort the numbers: even or odd?',
     hint: lv == 1 ? 'Can you share that many into pairs with none left over? Then it is even.' : 'Look at the last digit. 0, 2, 4, 6 and 8 are even.',
     speak: lv == 1, label: k2Lab(bins, items)});
@@ -4886,23 +4891,83 @@ function k2DecShade(q0) {
 // equations) go on from the wrong number, so every later step is right for what was written and only one step is wrong. The steps
 // before the mistake are the right ones (checked here), the answer is the wrong step's index, and the spoken answer reads the right step.
 // tap gets the same() the newer kinds have: the engine's own comparison (the tapped data-v is the answer)
-if (!KIND.tap.same) KIND.tap.same = (q, v) => String(v) === String(q.ans);
+// AUDIT-MATH M3: q.alt lists other taps that are right too: the closing "So ..." line of a worked example, when the mistake before it
+// makes that line false as written (So 46 − 29 = 27). The keyed step stays q.ans: it is the one marked and read out.
+if (!KIND.tap.same) KIND.tap.same = (q, v) => String(v) === String(q.ans) || (Array.isArray(q.alt) && q.alt.map(String).includes(String(v)));
 const K2WHO = ['Sam', 'Mia', 'Leo', 'Ana', 'Kai', 'Zoe', 'Ben', 'Ivy'];
 const K2PL = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
 const k2Speak = t => String(t).replace(/(\d) R(\d)/g, '$1 remainder $2').replace(/×/g, 'times').replace(/÷/g, 'divided by').replace(/\+/g, 'plus')
   .replace(/−/g, 'minus').replace(/=/g, 'is').replace(/:/g, ',').replace(/\s+/g, ' ').trim();
 const k2Gcd = (x, y) => (y ? k2Gcd(y, x % y) : x);
 // f: {prob (the problem as printed), lab (its short form for the label), build(mis) -> [step text] or null, muts [[i, kind], ...], hint}
+// k2FixFace(line): is the arithmetic written on a worked line true (true), false (false), or is there none to check (null)? It reads the
+// "a op b [op c] = v [R r]" statements after the line's label ("Ones:", "So"), whole numbers, decimals and fractions (a/b), "Write 9
+// as 9.00", and several joined by "and"; a line with a letter in its sums (an equation step) or with no "=" gives null.
+function k2FixFace(line) {
+  const t = String(line).replace(/^[^:=]*:\s*/, '').replace(/^So /, '');
+  let m = /^Write ([\d.]+) as ([\d.]+)$/.exec(t), res = null;
+  if (m) return Math.abs(+m[1] - +m[2]) < 1e-9;
+  const side = s => {
+    const rm = /^(.*) R(\d+)$/.exec(s.trim()), toks = (rm ? rm[1] : s).trim().split(/\s+/), out = [];
+    for (const x of toks) {
+      if (/^\d+\/\d+$/.test(x)) out.push(x.split('/').map(Number));
+      else if (/^\d+(\.\d+)?$/.test(x)) out.push([+x, 1]);
+      else if ('+−×÷'.includes(x) && x.length == 1) out.push(x);
+      else return null;
+    }
+    if (!out.length || out.length % 2 == 0 || out.some((x, j) => (j % 2 ? typeof x != 'string' : typeof x == 'string'))) return null;
+    return {toks: out, r: rm ? +rm[2] : null};
+  };
+  const val = T => { // fractions [n, d]: × and ÷ first, then + and −
+    const a = [T[0]];
+    for (let j = 1; j < T.length; j += 2) {
+      const y = T[j + 1], x = a[a.length - 1];
+      if (T[j] == '×') a[a.length - 1] = [x[0] * y[0], x[1] * y[1]];
+      else if (T[j] == '÷') a[a.length - 1] = [x[0] * y[1], x[1] * y[0]];
+      else a.push(T[j], y);
+    }
+    let v = a[0];
+    for (let j = 1; j < a.length; j += 2) v = a[j] == '+' ? [v[0] * a[j + 1][1] + a[j + 1][0] * v[1], v[1] * a[j + 1][1]] : [v[0] * a[j + 1][1] - a[j + 1][0] * v[1], v[1] * a[j + 1][1]];
+    return v;
+  };
+  for (const e of t.split(' and ')) {
+    const p = e.split(' = ');
+    if (p.length != 2) continue;
+    const L = side(p[0]), R2 = side(p[1]);
+    if (!L || !R2 || R2.toks.length != 1) continue;
+    let ok;
+    if (R2.r != null || (L.toks.length == 3 && L.toks[1] == '÷' && L.toks[0][1] == 1 && L.toks[2][1] == 1 && Number.isInteger(L.toks[0][0]) && Number.isInteger(L.toks[2][0]) && L.toks[0][0] % L.toks[2][0])) {
+      // a division with a remainder (or one that needs it): whole quotient and remainder both as written
+      if (!(L.toks.length == 3 && L.toks[1] == '÷')) continue;
+      const x = L.toks[0][0], d = L.toks[2][0];
+      ok = Math.floor(x / d) === R2.toks[0][0] && x % d === (R2.r || 0);
+    } else {
+      const a = val(L.toks), b = R2.toks[0];
+      ok = Math.abs(a[0] * b[1] - b[0] * a[1]) < 1e-9 * Math.abs(a[1] * b[1]);
+    }
+    if (!ok) return false;
+    res = true;
+  }
+  return res;
+}
 function k2FixQ(q0, f) {
   const ok = f.build(null);
   if (!ok || ok.length < 3 || ok.length > 5) return null;
+  // AUDIT-MATH M3: what a child can check on the line alone. A mistake is kept only when (1) its own line is not true arithmetic as
+  // written (a forgotten carry shows "2 + 4 = 6", which is true: not asked), (2) no other step line is false as written, and (3) the
+  // worked answer is not the right one all the same. The last line may carry the mistake forward ("So 46 − 29 = 27"): that is the
+  // design, and when it is false as written a tap on it counts as right too (q.alt).
+  const last = ok.length - 1;
   const cands = f.muts.filter(([i, k]) => {
     const b = f.build({i, k});
-    return b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]);
+    if (!(b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]))) return false;
+    if (k2FixFace(b[i]) === true || (i != last && b[last] === ok[last])) return false;
+    return b.every((t, j) => j == i || j == last || k2FixFace(t) !== false);
   });
   if (!cands.length) return null;
   const [i, k] = pick(cands), lines = f.build({i, k}), who = pick(K2WHO);
-  return k2New(q0, {q: {kind: 'tap', ans: String(i)}, label: `fix: ${f.lab} ${k} ${i + 1}`,
+  const alt = i != last && k2FixFace(lines[last]) === false ? {alt: [String(last)]} : {};
+  return k2New(q0, {q: Object.assign({kind: 'tap', ans: String(i)}, alt), label: `fix: ${f.lab} ${k} ${i + 1}`,
     html: k2Sub(`${who} worked it out. One step has a mistake. Tap it.`) + `<div class="eq">${esc(f.prob)}</div><div class="fxs">`
       + lines.map((t, j) => `<div class="tp fxl" data-v="${j}"><b class="fxn" aria-hidden="true">${j + 1}</b><span>${esc(t)}</span></div>`).join('') + '</div>',
     say: `${who} worked out ${k2Speak(f.prob)}. One step has a mistake. Find it and tap it.`,

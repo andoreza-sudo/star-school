@@ -202,7 +202,7 @@ function ls4More(id, t, o) {
   return D;
 }
 // shapes
-const LS4_SHP = ['circle', 'square', 'triangle', 'rectangle', 'star', 'diamond'], LS4_SHLOOK = {square: ['rectangle', 'diamond'], rectangle: ['square'], diamond: ['square'], circle: [], triangle: ['diamond'], star: []};
+const LS4_SHP = ['circle', 'square', 'triangle', 'rectangle', 'star', 'diamond'], LS4_SHLOOK = {square: ['rectangle', 'diamond'], rectangle: [], diamond: ['square'], circle: [], triangle: ['diamond'], star: []};
 function ls4Shape(id, t, o) {
   const D = ls4(id, t, 'math', -1, Object.assign({bugs: ['look'], petSt: 2, claim: 'This is the {ans}!',
     fam: 'shape', slots: ls4Sl([], [], ['a', 'b'], [], [])}, o));
@@ -213,7 +213,7 @@ function ls4Shape(id, t, o) {
   D.q = (st, r) => {
     if (st == 0) return sortQ(r, 0);
     const k = st == 1 ? 3 : 4, ans = ls4Pick(r, st == 1 ? LS4_SHP : ['square', 'rectangle', 'diamond', 'triangle']), lk = LS4_SHLOOK[ans].filter(x => x !== ans);
-    const sh = [ans].concat(lk.slice(0, k == 4 ? 2 : 1), ls4Shuf(r, LS4_SHP.filter(x => x !== ans && !lk.includes(x)))).slice(0, k), all = ls4Shuf(r, sh), cs = ls4Shuf(r, PK.cols());
+    const sh = [ans].concat(lk.slice(0, k == 4 ? 2 : 1), ls4Shuf(r, LS4_SHP.filter(x => x !== ans && !lk.includes(x) && !(ans == 'rectangle' && x == 'square')))).slice(0, k), all = ls4Shuf(r, sh), cs = ls4Shuf(r, PK.cols());
     return ls4Q(D, Math.min(st, 2), {kind: 'choice', cls: `pics pk${k}`, ans, auto: 'must', choices: all.map((s, i) => ({v: s, l: PK.shp(s, cs[i % cs.length]) + `<span class="a11y-h">${s}</span>`, h: true})), sl: {},
       bug: {look: lk.filter(x => sh.includes(x))}, html: `<div class="pkq">${pkEar()}</div>` + lsAsk(`Tap the ${ans}.`), say: `Tap the ${ans}.`,
       hint: {k: 'html', html: `<div class="pkhint">${ans == 'circle' || ans == 'star' ? PK.shp(ans, 1) : PK.sides(ans)}</div>`, w: {circle: 'A circle is round.', square: 'A square has four sides, all the same.',

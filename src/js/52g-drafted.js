@@ -255,7 +255,12 @@ function lsPvStop(id, t, kind, bugs) {
       return lsPick(D.sk, D.lv, st, ans, html, `Is ${a} greater than, less than, or equal to ${b}?`, [['<'], ['='], ['>']], {sl, hint, pk: false, bug: {small: [ans == '>' ? '<' : '>']},
         after: `${a} is ${ans == '>' ? 'greater than' : 'less than'} ${b}`});
     }
-    const n = lsRi(r, 102, 989), [h, te, o] = lsDigits(n, 3), sl = {n, a: h * 100, b: te * 10};
+    // AUDIT-MATH M2: "what is the 2 worth?" needs its digit once in the number (not 922): the symbols item of Place Value to 999 draws
+    // again until the hundreds digit, and the tens digit when it is not 0, each appear once (every other draw is as before)
+    const one = x => { const ds = lsDigits(x, 3); return ds.filter(y => y == ds[0]).length == 1 && (!ds[1] || ds.filter(y => y == ds[1]).length == 1); };
+    let n = lsRi(r, 102, 989);
+    if (st == 2 && kind != 'exp') while (!one(n)) n = lsRi(r, 102, 989);
+    const [h, te, o] = lsDigits(n, 3), sl = {n, a: h * 100, b: te * 10};
     const hint = {k: 'html', html: `<div class="pkhint">${VIZ.base10(n)}<div>${h} hundreds, ${te} tens and ${o} ones.</div></div>`, w: 'Flats are hundreds, rods are tens, cubes are ones.'};
     if (st == 0) return b10(0, n, {sl, hint, html: kind == 'exp' ? lsEq(`${h * 100} + ${te * 10} + ${o}`) + lsCap('Make it with blocks.') : lsEq(n) + lsCap(`Make ${n} with blocks.`),
       say: kind == 'exp' ? `${h * 100} plus ${te * 10} plus ${o}. Make it with blocks.` : `Make ${n} with blocks.`, bug: {swap: [h * 100 + o * 10 + te].filter(x => x != n)}});

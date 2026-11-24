@@ -435,10 +435,10 @@ function ls3FName(id, t, g, line, idea, home) {
       : lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d, whole: 1}, ans, eq: 'value', ansSay: ls3Frs(n, d), sl, bug: {}, hint,
         html: lsCap('Shade') + lsEq(ls3Fr(n, d)) + lsCap('of the bar.'), say: `Tap the parts to shade ${ls3Frs(n, d)} of the bar.`});
     if (st == 1) return ls3FQ(D, 1, ans, `<div class="pkq">${line ? VIZ.numLine(Object.assign({}, L, {marks: [n / d]})) : VIZ.fracBar(n, d)}</div>` + lsCap(line ? 'What fraction is marked?' : 'What fraction is shaded?') + lsEq(SLOT_FRAC),
-      line ? 'What fraction does the dot show?' : 'What fraction of the bar is shaded?', {sl, bug, hint});
+      line ? 'What fraction does the dot show?' : 'What fraction of the bar is shaded?', {sl, bug, hint, eq: 'value'}); // AUDIT-MATH M5: an equal fraction is right
     const j = `${n} jump${n > 1 ? 's' : ''}`;
     return ls3FQ(D, 2, ans, lsCap(line ? `The line from 0 to 1 has ${d} equal jumps. The dot is ${j} from 0.` : `${n} of ${d} equal parts are shaded.`) + lsEq(SLOT_FRAC),
-      line ? `${d} equal jumps from 0 to 1. What fraction is ${j} from 0?` : `${n} of ${d} equal parts are shaded. What fraction is that?`, {sl, bug, hint});
+      line ? `${d} equal jumps from 0 to 1. What fraction is ${j} from 0?` : `${n} of ${d} equal parts are shaded. What fraction is that?`, {sl, bug, hint, eq: 'value'});
   };
   D.warm = ls3WarmFact(D, 2, 5);
   D.exp = () => line ? {q: lsLine(D.sk, D.lv, 0, '0.25', {min: 0, max: 1, step: 1 / 4, den: 4, labels: [0, 1]}, lsCap('Put the pin anywhere on the line.'), 'Put the pin anywhere on the line.',

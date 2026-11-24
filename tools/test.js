@@ -105,7 +105,7 @@ const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku 
   'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
   'word search and unscramble P3-15','Block Builder goals G-BB3'];
 const TEST_S={'sky hop G-04b':451,'game moves and bosses G-MOVES':50,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
-  'math review fixes R-01m':18,'robot path P3-13':12,'block builder G-01':8};
+  'math review fixes R-01m':18,'math audit fixes AUDIT-MATH':45,'robot path P3-13':12,'block builder G-01':8};
 const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
   if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
   const m=a.slice(8).match(/^(\d+)\/(\d+)$/);
@@ -2741,7 +2741,7 @@ run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 sample
         if(q.kind=='num'){
           const [n,d]=q.ans.split('/').map(Number);
           if(![2,3,4,6,8].includes(d)||n<1||n>=d||parts(q.html)!==d||shaded(q.html)!==n||!/^frac \\d+\\/\\d+ (bar|circle)$/.test(q.label))bad.push(w+': bad shaded '+q.label);
-          if(q.pad!=='frac'||q.eq)bad.push(w+': pad');
+          if(q.pad!=='frac'||q.eq!=='value')bad.push(w+': pad'); // AUDIT-MATH M5: frac 2 takes any equal fraction (eq 'value'); it took the one form only before
         }else{
           const [n,d]=q.ans.split('/').map(Number),vs=q.choices.map(c=>c.v);
           if(q.choices.length!==3||vs.includes(undefined))bad.push(w+': 3 pictures needed');
@@ -16655,6 +16655,79 @@ run('math review fixes R-01m',()=>{
   return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
 });
 
+// ---- AUDIT-MATH: the math audit's fixes that change no words (story 4, the pv2 lesson, equal fractions, find the mistake, and
+// the small ones: rectangle and square, shapes that can be drawn, GCF stories, money under a dollar, the even/odd boxes) ----
+run('math audit fixes AUDIT-MATH',()=>{
+  const body=()=>{
+    const bad=[],add=m=>{if(bad.length<60)bad.push(m)},note={};
+    S.name='Ava';S.buddy='Ben';
+    const strip=x=>String(x||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+    const gcd=(a,b)=>b?gcd(b,a%b):a;
+    // M1. story 4 "fewer": the other child always has at least 1 (seeds 134 and 431 gave 15 with 18 and 17 fewer)
+    {let n=0;for(let s=1;s<=20000;s++){const q=genQ('story',4,s),m=/has (\d+) .*? has (\d+) fewer than .* together\?$/.exec(q.say);if(!m)continue;n++;
+      if(+m[2]>=+m[1])add('story 4 seed '+s+': '+q.say);else if(String(2*m[1]-m[2])!==q.ans)add('story 4 seed '+s+': answer '+q.ans)}
+     if(n<3000)add('story 4: only '+n+' "fewer" stories in 20,000 seeds');note.fewer=n}
+    // M2. the pv2 lesson's "what is the 5 worth?": the digit is in the number once, and its value is the answer
+    {let n=0;for(let s=1;s<=4000;s++){const q=LESSONS.pv2.q(2,mulberry32(s)),m=/^In (\d+), what is the (\d) worth\?$/.exec(q.say);if(!m){add('pv2 lesson seed '+s+': '+q.say);continue}n++;
+      const at=m[1].indexOf(m[2]);if(m[1].split(m[2]).length!=2)add('pv2 lesson seed '+s+': '+q.say);else if(String(m[2]*Math.pow(10,m[1].length-1-at))!==q.ans)add('pv2 lesson seed '+s+': answer '+q.ans+' for '+q.say);
+      if(!strip(q.html).startsWith(m[1]))add('pv2 lesson seed '+s+': shows '+strip(q.html))}
+     note.pv2=n}
+    // M5. "what fraction is shaded?": any equal fraction is right (frac 2 and the frac2 and frac3 lessons); a different one is not;
+    // "simplest form" (frac 7) still wants its one form
+    {let un=0;const chk=(q,w)=>{const m=/^(\d+)\/(\d+)$/.exec(q.ans);if(!m||q.kind!='num'||q.pad!='frac'){add(w+': not a typed fraction: '+q.ans);return}
+        const n=+m[1],d=+m[2],g=gcd(n,d),same=v=>KIND.num.same(q,v);if(g>1)un++;
+        if(!same(q.ans)||!same((n/g)+'/'+(d/g))||!same((2*n)+'/'+(2*d)))add(w+': an equal fraction of '+q.ans+' is marked wrong');
+        if(same((n+1)+'/'+d)||same(n+'/'+(d+1))||same(d+'/'+n)&&n!=d)add(w+': a different fraction is taken for '+q.ans);
+        if(kindProblems(q).length)add(w+': '+kindProblems(q).join('; '))};
+     for(let s=1;s<=3000;s++){const q=genQ('frac',2,s);if(q.kind=='num')chk(q,'frac 2 seed '+s)}
+     for(const id of ['frac2','frac3'])for(let s=1;s<=1500;s++)for(const st of [1,2])chk(LESSONS[id].q(st,mulberry32(s)),id+' lesson stage '+st+' seed '+s);
+     if(!un)add('frac: no answer that is not in simplest form was checked');note.unsimplified=un;
+     for(let s=1;s<=1000;s++){const q=genQ('frac',7,s),m=/^Write (\d+) over (\d+) in simplest form\.$/.exec(q.say);if(m&&KIND.num.same(q,m[1]+'/'+m[2]))add('frac 7 seed '+s+': the fraction as given is taken as its simplest form')}}
+    // M3. find the mistake. face(line): the arithmetic written on a line is true, false, or there is none (null); written here on its own
+    const fr=x=>/^\d+\/\d+$/.test(x)?x.split('/').map(Number):[+x,1];
+    const val=e=>{const t=e.trim().split(/\s+/);if(t.length%2==0||t.some((x,i)=>i%2?!'+−×÷'.includes(x)||x.length!=1:!/^\d+(\.\d+)?$|^\d+\/\d+$/.test(x)))return null;
+      const a=[fr(t[0])];for(let i=1;i<t.length;i+=2){const y=fr(t[i+1]),x=a[a.length-1];if(t[i]=='×')a[a.length-1]=[x[0]*y[0],x[1]*y[1]];else if(t[i]=='÷')a[a.length-1]=[x[0]*y[1],x[1]*y[0]];else a.push(t[i],y)}
+      let v=a[0];for(let i=1;i<a.length;i+=2){const y=a[i+1];v=a[i]=='+'?[v[0]*y[1]+y[0]*v[1],v[1]*y[1]]:[v[0]*y[1]-y[0]*v[1],v[1]*y[1]]}return v[0]/v[1]};
+    const face=line=>{const t=String(line).replace(/^[^:=]*:\s*/,'').replace(/^So /,'');let m=/^Write ([\d.]+) as ([\d.]+)$/.exec(t),res=null;if(m)return Math.abs(m[1]-m[2])<1e-9;
+      for(const e of t.split(' and ')){const p=e.split(' = ');if(p.length!=2)continue;let ok;
+        if((m=/^(\d+) ÷ (\d+)$/.exec(p[0].trim()))&&/^\d+( R\d+)?$/.test(p[1].trim())){const k=/^(\d+)(?: R(\d+))?$/.exec(p[1].trim());ok=Math.floor(m[1]/m[2])==+k[1]&&m[1]%m[2]==+(k[2]||0)}
+        else{const a=val(p[0]),b=val(p[1]);if(a==null||b==null)continue;ok=Math.abs(a-b)<1e-9}
+        if(!ok)return false;res=true}
+      return res};
+    {const by={},stops=[];for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)if(skArea(id,lv)=='math'&&!skLvEmpty(id,lv))stops.push([id,lv]);
+     let alt=0,noalt=0;
+     for(const [id,lv] of stops)for(let s=1;s<=1200;s++){const q=genQ(id,lv,s);if(q.kind!='tap'||!/^fix: /.test(q.label))continue;const w=id+' '+lv+' seed '+s;by[id]=(by[id]||0)+1;
+       const L=[...q.html.matchAll(/data-v="(\d+)"[^>]*>(?:<b[^>]*>\d+<\/b>)?<span>([\s\S]*?)<\/span><\/div>/g)].map(m=>strip(m[2]).replace(/&lt;/g,'<').replace(/&gt;/g,'>')),a=+q.ans,last=L.length-1;
+       if(L.length<3||!(a>=0&&a<=last)){add(w+': '+L.length+' lines, answer '+q.ans);continue}
+       const f=L.map(face),tap=v=>KIND.tap.same(q,String(v));
+       if(f[a]===true)add(w+': the keyed line is true as written: '+L[a]);
+       L.forEach((t,j)=>{if(j!=a&&j!=last&&f[j]===false)add(w+': a second step is false as written: '+t)});
+       if(!f.includes(false)&&f[a]!==null)add(w+': no line is wrong: '+L.join(' / '));
+       if(!tap(a))add(w+': the keyed step is not taken');
+       L.forEach((t,j)=>{if(j==a)return;const want=j==last&&f[j]===false;if(tap(j)!==want)add(w+': a tap on "'+t+'" is '+(want?'refused':'taken as right'))});
+       if(a!=last&&f[last]===false)alt++;else noalt++;
+       if(kindProblems(q).length)add(w+': '+kindProblems(q).join('; '));
+       const sm=/^Step (\d+)\. It should say: /.exec(q.ansSay||'');if(!sm||+sm[1]!=a+1)add(w+': spoken answer '+q.ansSay)}
+     // the worked example whose every line was right (74 − 49 with the ones flipped: 9 − 4 = 5) is a plain question or another mistake now
+     for(const [id,lv,s] of [['sub',4,55],['sub',7,444],['sub',8,9],['sub',6,198]]){const q=genQ(id,lv,s);if(q.kind=='tap'&&/ flip /.test(q.label))add(id+' '+lv+' seed '+s+': still the flipped digits: '+q.label)}
+     for(const id of ['big','sub','mbig','dbig','dec','fop','ooo','alg'])if(!(by[id]>=150))add('find the mistake: only '+(by[id]||0)+' items for '+id);
+     if(!alt||!noalt)add('find the mistake: closing lines taken '+alt+', not taken '+noalt);note.fix=Object.values(by).reduce((x,y)=>x+y,0);note.soTaken=alt}
+    // the small ones
+    for(let s=1;s<=4000;s++){const q=genQ('shape',1,s);if(q.ans=='rectangle'&&q.choices.some(c=>c.v=='square'))add('shape 1 seed '+s+': a square beside "Tap the rectangle"');
+      if(q.choices.length!=3||new Set(q.choices.map(c=>c.v)).size!=3)add('shape 1 seed '+s+': choices '+q.choices.map(c=>c.v))}
+    for(let s=1;s<=1500;s++)for(const st of [1,2]){const q=LESSONS.shape1.q(st,mulberry32(s));if(q.kind=='choice'&&q.ans=='rectangle'&&q.choices.some(c=>c.v=='square'))add('shape1 lesson seed '+s+': a square beside "Tap the rectangle"');
+      if(q.kind=='choice'&&(new Set(q.choices.map(c=>c.v)).size!=q.choices.length||q.choices.length!=(st==1?3:4)))add('shape1 lesson seed '+s+': choices '+q.choices.map(c=>c.v))}
+    {let n=0;for(let s=1;s<=8000;s++){const q=genQ('geo',1,s),m=/has sides of ([\d, ]+) /.exec(q.say);if(!m)continue;n++;const v=m[1].split(', ').map(Number),t=v.reduce((x,y)=>x+y,0);
+      if(2*Math.max(...v)>=t)add('geo 1 seed '+s+': no such shape: '+q.say);if(String(t)!==q.ans)add('geo 1 seed '+s+': answer '+q.ans)}note.polygons=n}
+    {let n=0;for(let s=1;s<=6000;s++){const q=genQ('fact',3,s);if(/gcf-w/.test(q.label)){n++;if(q.ans=='1')add('fact 3 seed '+s+': '+q.say)}}if(n<800)add('fact 3: only '+n+' GCF stories');note.gcfStories=n}
+    for(const [id,lv] of [['story',9],['ratio',2]])for(let s=1;s<=6000;s++){const q=genQ(id,lv,s);if(/\b0 dollars/.test(q.say)||/\$0\.\d/.test(strip(q.html)))add(id+' '+lv+' seed '+s+': '+q.say)}
+    for(const lv of [1,2])for(let s=1;s<=300;s++){const q=genQ('eo',lv,s);if(q.kind=='sort'&&q.bins.some(b=>b.say!==b.l))add('eo '+lv+' seed '+s+': a box without its spoken word')}
+    return{bad,note};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
+});
+
 // ---- R-01r: reading review fixes (docs/reviews/R-01-reading.md, must items 1-6 and the small should items) ----
 // No offensive word is written here: the blocklist is hashes only (src/data/d-kidsafe.js) and the self-test words are ROT13 below.
 run('reading review fixes R-01r',()=>{
@@ -20164,7 +20237,7 @@ const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',rou
   tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
   coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'04c0ad9c8b15',
   time3:'cf0a72347296',time4:'bff67461efdd',time5:'6ec67e6555e1',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
-  mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'1cc20152a9de',geo2:'e96d9e5b3d06'};
+  mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'d26b15de7a3c',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
 // question valid, K2.off gives the af3d449 questions, and the review round trip (seed path)
 const k2BC=(kind,plan,exempt,extra,off)=>eval(js+`;(()=>{const out={bad:[],rows:[],n:0,rt:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
@@ -20192,6 +20265,7 @@ const k2BC=(kind,plan,exempt,extra,off)=>eval(js+`;(()=>{const out={bad:[],rows:
       if(tn/400>.65&&!EX.includes(id))bad(id+': '+top+' is '+Math.round(tn/4)+'% (over 65%)');
       out.rows.push(id+' '+Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+Math.round(v/4)+'%').join(' '))}
     // K2.off: the stops ask exactly the af3d449 questions (the format draw is the last one and is skipped)
+    // AUDIT-MATH M5: frac2's hash is new (was 1cc20152a9de): its typed questions gained eq 'value' (any equal fraction is right), nothing else
     K2.off=true;
     try{for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++){const q=genQ(sk,+lv,s);a.push(JSON.stringify(q));if(q.kind==KIND_)bad(id+': a '+KIND_+' question with K2.off')}
       const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==OFF[id])bad(id+' with K2.off is not the af3d449 stop ('+h+')')}}
@@ -20301,9 +20375,15 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
         if(q.ansSay.slice(0,6)!=='Step '+(+q.ans+1))bad(id+': ansSay names another step: '+q.label);
         if(/undefined|NaN|Infinity/.test(q.html+q.say+q.ansSay))bad(id+': '+q.label);
         if((q.say+' '+q.html.replace(/<[^>]*>/g,' ')).split(/[^A-Za-z]+/).some(x=>BAD.test(x.toLowerCase())))bad(id+': a word is not kid-safe')}}
-    // one family by hand: 38 + 47, the carry forgotten in the tens (seeded, so the mistake is the same each run)
-    {let q=null;for(let s=1;s<=2000&&!q;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'38 + 47 = ?',hint:{k:'text',s:'x'}});if(t&&/carry 2$/.test(t.label))q=t}
-     if(!q||q.ans!=='1'||!/Tens: 3 \\+ 4 = 7</.test(q.html)||!/Ones: 8 \\+ 7 = 15</.test(q.html)||!/So 38 \\+ 47 = 75</.test(q.html)||!/plus 1 is 8/.test(q.ansSay))bad('38 + 47 carry: '+(q&&q.html))}
+    // one family by hand: 38 + 47 (seeded, so the mistake is the same each run).
+    // AUDIT-MATH M3: this sample was the carry forgotten in the tens ("Tens: 3 + 4 = 7", "So 38 + 47 = 75"). That line is true arithmetic
+    // as written and the only false line was the closing one, so the forgotten carry is not asked any more (nor a forgotten trade, the
+    // flipped digits, the added bottoms, + before ×). The sample is a slip in the ones now: the tens go on from the right carry, the
+    // closing line carries the mistake forward and a tap on it is right too (q.alt).
+    {let q=null,carry=0;for(let s=1;s<=2000;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'38 + 47 = ?',hint:{k:'text',s:'x'}});if(t&&/carry/.test(t.label))carry++;if(t&&!q&&/up 1$/.test(t.label))q=t}
+     if(carry)bad('38 + 47: the forgotten carry is asked ('+carry+' of 2000)');
+     if(!q||q.ans!=='0'||!/Ones: 8 \\+ 7 = 16</.test(q.html)||!/Tens: 3 \\+ 4 \\+ 1 = 8</.test(q.html)||!/So 38 \\+ 47 = 86</.test(q.html)||!/8 plus 7 is 15/.test(q.ansSay)||JSON.stringify(q.alt)!=='["2"]'
+       ||!KIND.tap.same(q,'0')||!KIND.tap.same(q,'2')||KIND.tap.same(q,'1'))bad('38 + 47 ones up: '+(q&&q.html+' '+JSON.stringify(q.alt)))}
     // a mistake that does not change a step is never offered: 31 + 25 has no carry
     {const L=[];for(let s=1;s<=200;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'31 + 25 = ?',hint:{k:'text',s:'x'}});if(t)L.push(t.label)}
      if(L.some(l=>/carry/.test(l))||!L.length)bad('31 + 25: a carry mistake with no carry')}

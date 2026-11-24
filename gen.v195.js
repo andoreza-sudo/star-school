@@ -1298,7 +1298,9 @@ function genSort(lv) { return lv == 1 ? genSort1() : genSort2(); }
 
 // shape 1: hear a shape name, tap it among 3 (random colours, upright)
 function genPkShape() {
-  const names = ['circle', 'square', 'triangle', 'rectangle'], sh = shuffle(names).slice(0, 3), ans = pick(sh);
+  const names = ['circle', 'square', 'triangle', 'rectangle'], all = shuffle(names), sh = all.slice(0, 3), ans = pick(sh);
+  // AUDIT-MATH: a square is a rectangle too, so it is never a wrong choice for "Tap the rectangle": the fourth shape takes its place
+  if (ans == 'rectangle' && sh.includes('square')) sh[sh.indexOf('square')] = all[3];
   const cs = shuffle([0, 1, 2, 3, 4, 5]);
   const facts = { circle: 'A circle is round. It has no corners.', square: 'A square has 4 sides. They are all the same.',
     triangle: 'A triangle has 3 sides.', rectangle: 'A rectangle has 4 sides. Two are long and two are short.' };
@@ -2033,7 +2035,8 @@ function genBayStory4() {
     ans = 2 * a + b; label = `2-step ${a} + (${a} + ${b})`;
     hint = BAY.steps([`First find how many ${other} has: ${b} more than ${a}.`, `Then add ${who}'s ${th} and ${other}'s ${th}.`], 'Do one step at a time.');
   } else {
-    const a = R(15, 50), b = R(5, 20);
+    // AUDIT-MATH M1: never more "fewer" than there are (15 with 18 fewer): the other child keeps at least 1. Same draws as before.
+    const a = R(15, 50), b = Math.min(R(5, 20), a - 1);
     t = `${who} has ${a} ${th}. ${other} has ${b} fewer than ${who}. How many ${th} do they have together?`;
     ans = 2 * a - b; label = `2-step ${a} + (${a} - ${b})`;
     hint = BAY.steps([`First find how many ${other} has: ${b} fewer than ${a}.`, `Then add ${who}'s ${th} and ${other}'s ${th}.`], 'Do one step at a time.');
@@ -2457,7 +2460,8 @@ function fracName() {
   const d = pick([2, 3, 4, 6, 8]), n = R(1, d - 1);
   if (rnd() < .6) {
     const circle = coin(), pic = circle ? VIZ.fracCircle(n, d) : VIZ.fracBar(n, d);
-    return {kind: 'num', pad: 'frac', html: `${pic}<div class="sub">What fraction is shaded?</div><div class="eq">${SLOT_FRAC}</div>`,
+    // AUDIT-MATH M5: any equal fraction is right (1/3 for 2 of 6 parts): the question does not ask for a form
+    return {kind: 'num', pad: 'frac', eq: 'value', html: `${pic}<div class="sub">What fraction is shaded?</div><div class="eq">${SLOT_FRAC}</div>`,
       say: `The shape has ${d} equal parts. What fraction is shaded?`, ans: `${n}/${d}`, hint: fcHintBars(n, d),
       label: `frac ${n}/${d} ${circle ? 'circle' : 'bar'}`};
   }
@@ -2761,7 +2765,8 @@ function ffGeo1() {
   }
   const n = R(3, 6), name = ['', '', '', 'triangle', 'shape with 4 sides', 'pentagon', 'hexagon'][n];
   let s;
-  do s = Array.from({length: n}, () => R(1, 20)); while (n == 3 && (s[0] + s[1] <= s[2] || s[0] + s[2] <= s[1] || s[1] + s[2] <= s[0]) || s.every(x => x == 1));
+  // AUDIT-MATH: the longest side is shorter than the others together, for any number of sides (a shape that can be drawn)
+  do s = Array.from({length: n}, () => R(1, 20)); while (2 * Math.max(...s) >= s.reduce((x, y) => x + y, 0) || s.every(x => x == 1));
   while (s[n - 1] == 1) s.unshift(s.pop()); // R-01m: the unit follows the last side, so it is never "1 meters" (the same polygon, turned)
   const sum = s.reduce((x, y) => x + y, 0);
   return {kind: 'num', html: `${ffPoly(s, unit)}<div class="sub">Find the perimeter of the ${name}.</div><div class="eq">${SLOT} ${unit}</div>`,

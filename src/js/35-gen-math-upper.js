@@ -1620,7 +1620,7 @@ function skyRatio2() {
   // better buy: two sizes of the same thing, the lower price for one wins
   const [s, pl] = pick(skyItems);
   let n1, n2, u1, u2;
-  do {n1 = R(2, 9); n2 = R(2, 9); u1 = 5 * R(8, 80); u2 = 5 * R(8, 80)} while (n1 == n2 || u1 == u2 || Math.abs(u1 - u2) < 10);
+  do {n1 = R(2, 9); n2 = R(2, 9); u1 = 5 * R(8, 80); u2 = 5 * R(8, 80)} while (n1 == n2 || u1 == u2 || Math.abs(u1 - u2) < 10 || n1 * u1 < 100 || n2 * u2 < 100); // AUDIT-MATH: each deal is a dollar or more (never said "0 dollars and 80 cents")
   const A = `${n1} ${pl} for ${skyMoney(n1 * u1)}`, B = `${n2} ${pl} for ${skyMoney(n2 * u2)}`;
   return {kind: 'choice', cls: 'skyb', ans: u1 < u2 ? 'a' : 'b', choices: [{v: 'a', l: 'Deal A'}, {v: 'b', l: 'Deal B'}],
     html: `<div class="sub">Which is the better buy? It costs less for 1 ${s}.</div><div class="sub">A: ${A}</div><div class="sub">B: ${B}</div>`,
@@ -2207,7 +2207,9 @@ function galFact3() {
   for (;;) {
     a = R(2, 36); b = R(2, 36);
     if (a == b) continue;
-    if (gcf ? (skyGcd(a, b) == 1 && rnd() < .9) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
+    // AUDIT-MATH: a story about the greatest number of teams never has the answer 1. The bare question keeps a pair with GCF 1 twice as
+    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before)
+    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .8)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
     break;
   }
   const lo = Math.min(a, b), hi = Math.max(a, b);
@@ -2375,7 +2377,8 @@ function galStory9() {
       hint: skyHint([['', 'Write an equation:', `Let ${v} be the number shared. ${v} ÷ ${a} = ${b}.`], ['', 'Undo the dividing:', `Multiply both sides by ${a}. ${b} × ${a} = ?`]]), label: `story9 eq div ${a} ${b}`});
   }
   // money: a pen costs $a more than a pencil
-  const pa = 5 * R(5, 50), pn = pa + 5 * R(20, 80), th = pick([['pen', 'pencil'], ['book', 'card'], ['hat', 'scarf']]);
+  // AUDIT-MATH: a difference under a dollar was said "0 dollars and 65 cents": it is a dollar more instead (the same draws, no new words)
+  const pa0 = 5 * R(5, 50), pa = pa0 < 100 ? pa0 + 100 : pa0, pn = pa + 5 * R(20, 80), th = pick([['pen', 'pencil'], ['book', 'card'], ['hat', 'scarf']]);
   const text = `A ${th[0]} costs ${skyMoney(pa)} more than a ${th[1]}. The ${th[0]} costs ${skyMoney(pn)}. How much does the ${th[1]} cost?`;
   const sub = stepsSub(((pn) / 100).toFixed(2), (pa / 100).toFixed(2));
   sub.steps.unshift(ST.step('', 'Write an equation:', `Let ${v} be the cost of the ${th[1]}. ${v} + ${skyMoney(pa)} = ${skyMoney(pn)}. Subtract ${skyMoney(pa)} from both sides.`, null));
