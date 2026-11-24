@@ -351,8 +351,7 @@ BANK.gram.push(...[].concat((()=>{
   for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{sent:it.sent})[it.topic]=it.a.toLowerCase();
   const rows=Object.values(S).filter(r=>r.noun&&r.verb&&r.adjective),out=[];
   for(let i=0;i+1<rows.length;i+=2){const a=rows[i],b=rows[i+1],one=i%4?'adjective':'verb';
-    // WORDS-READ (W8, approved 2026-11-24): the two sentences the words come from are shown above the boxes (sents) and read with
-    // the question. Alone, hugs, kick, taste and laughs are everyday nouns too; in "She hugs soft kittens." hugs is a verb only.
+    // WORDS-READ W8: the two source sentences are shown and read (hugs alone could be a noun)
     out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',sents:[a.sent,b.sent],
       say:'Sort the words: noun, verb or adjective? '+a.sent+' '+b.sent,
       hint:'A noun names a person, place or thing. A verb is an action. An adjective describes a noun.',

@@ -22,9 +22,7 @@ const T1=['I see {a} {w}.','Look at the {w}!','Here is {a} {w}.','I like the {w}
 const T2=['Mom and I see {a} {w} by the door.','We can play with the {w} today.','Look! The {w} is up on the hill.','My friend said, "I want {a} {w}."','Come and find the {w} with me.','The little {w} went down the road.','She saw {a} {w} at the park.','Did you get {a} {w} too?'];
 // R-01r: "I see the sun", "some milk", never "a sun" or "a milk"
 const SENT_ART={sun:'the',milk:'some'};
-// WORDS-READ (E3, approved 2026-11-24): "The little {w} went down the road." is kept for animals and road vehicles (never "The little
-// milk went down the road."); for any other word the next sentence of the list is used. "hand" is never the word of a sentence
-// ("She saw a hand at the park."); it can still be a wrong picture.
+// WORDS-READ E3: the road sentence only for animals and road vehicles (else the next one); never "hand" as the sentence's word
 const SENT_GO=new Set('cat dog pig fox bat bug hen ant rat frog crab fish duck chick cow owl mouse sheep goat bee snail horse bird turtle lion bear rabbit bus van truck car bike'.split(' '));
 const sentTpl=(T,t,w)=>(/ went down the road\.$/.test(t)&&!SENT_GO.has(w)?T[(T.indexOf(t)+1)%T.length]:t);
 function genSent(lv){const [w,e]=pick(lv==1?NOUNS.filter(x=>CVC.includes(x)):NOUNS.filter(x=>x[0]!='hand'));
