@@ -21855,9 +21855,11 @@ run('recorded teacher lines TEACH-4',()=>{
   const src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n'),en=vm.runInContext('EN_AUDIO.lines',ctx);
   for(const [k,o] of lines){if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');if(/\d/.test(k))p.push('a teacher line with a number: '+k);if(en[k])p.push('recorded twice: '+k)}
   for(const k of ['My turn. Check me!','Can you fix it?','You learned it!','Read the word. Then tap its picture.','Which one is different?'])if(!M.lines[k])p.push('not recorded: '+k);
-  // 3. the build: the manifest is in the data file, not index.html; sw.js precaches every teacher file and answers a Range request from the cache
-  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
-  if(!data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in '+DATA_FILE+' and not in index.html');
+  // 3. the build: the manifest is src/data/d-teach-audio.js, built into the lesson engine's part (REC-ALL: 1289 lines are 62 KB, needed only in a
+  //    lesson, so not loaded at start: P6-03 keeps 500 KB under the start-up budget), not index.html or the data file; sw.js precaches every
+  //    teacher file and answers a Range request from the cache
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),tp=rd('teach.'+BUILD_VER+'.js');
+  if(!tp.includes('const EN_TEACH=')||data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in teach.'+BUILD_VER+'.js and not in index.html or '+DATA_FILE);
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');

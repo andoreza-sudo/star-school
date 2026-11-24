@@ -56,7 +56,8 @@ const GROUPS = [
 const enKey = E.esKey; // NFC, trimmed, spaces collapsed: the same key as say() uses
 
 /* TEACH-4: the pet's fixed teacher lines for the Pre-K to 2nd grade lessons (docs/TEACH-PLAN-2.md system H, owner addition 3: about 70 lines),
-   recorded in ONE warm voice (the pet is one speaker): audio/teach/<hash>.ogg, manifest src/data/d-teach-audio.js (EN_TEACH: key -> file).
+   recorded in ONE warm voice (the pet is one speaker): audio/teach/<hash>.ogg, manifest src/data/d-teach-audio.js (EN_TEACH: key -> file;
+   REC-ALL: tools/build.py puts it in teach.<VER>.js, the lesson engine's part, not the data file loaded at start).
      node tools/en-audio.js --teach        record only these (new lines; checks each with speech to text; deletes unused files)
    Plain node tools/en-audio.js records them after the encouragement. What is recorded: the little pet's own lines (LS_TONE.little), the lesson
    end card, the pet's reasons and repair lines of the Pre-K to 2nd grade codes (BUGS), and the fixed instructions of the batch 4 lessons.
@@ -103,6 +104,9 @@ const TEACH_GROUPS = [
    (3rd to 6th grade: LS_TONE kid and teen, lessons of grade 3 and up) at speed 1.0 (TEACH_FORMAT_BIG), a little brisker for older
    children. Same voice, same Opus 16 kbps; the file name is the hash of the recipe, so the TEACH-4 files are kept. */
 const TEACH_SPEED_BIG = 1.0, TEACH_FORMAT_BIG = 'xai-tts en wav24k speed1 trim opus16k-mono ogg teach v1';
+// sentences the speech to text check rejected in every take (6 recordings each, 2026-11-24): the voice says "lengths" as "links" and
+// "Rate story" as "Great story", so they stay the tablet's voice
+const NO_REC = new Set(['Add their lengths.', 'Add the lengths.', 'Rate story: build the table.']);
 const NM = 'Zqxvo'; // a stand-in child's name: a sentence with it is never recorded
 // the lesson sentences: [[text, age ('little' | 'big'), where]] (age: the youngest pet that says it)
 function lessonSentences(R) {
@@ -120,7 +124,7 @@ function lessonSentences(R) {
   for (const [t, es, big, w] of raw) for (const [piece, isEs] of lsRuns(t, !!es)) {
     if (isEs) continue;
     for (const s of enSplit(enKey(piece)).map(enKey))
-      if (!/[{}\d]/.test(s) && !s.includes(NM) && /^["“‘]?[A-Z]/.test(s) && /[.!?]["”’]?$/.test(s)) out.push([s, big ? 'big' : 'little', w]);
+      if (!/[{}\d]/.test(s) && !s.includes(NM) && !NO_REC.has(s) && /^["“‘]?[A-Z]/.test(s) && /[.!?]["”’]?$/.test(s)) out.push([s, big ? 'big' : 'little', w]);
   }
   return out;
 }
