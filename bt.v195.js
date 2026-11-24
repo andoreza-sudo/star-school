@@ -5933,11 +5933,19 @@ const RB = {
       else { L.splice(i, 1); put(i, w); }
     }
     // too many blocks now: the last block after i goes (the program was already wrong from i on)
+    // AUD-BT M-2: when this strip has no block after i (the block went into the function while the main strip holds every
+    // slot), the last block of the main strip goes instead: the hint only reaches the function once the main strip is right up
+    // to its Function block, so what is too many is at the end of the main strip. Before, the hint did nothing there.
     while (RB.count(o) > p.slots) {
       let j = L.length - 1;
       while (j > i && L[j] == 'en') j--;
-      if (j <= i) return null;
-      if (RB.isLoop(L[j])) unwrap(j); else L.splice(j, 1);
+      if (j > i) { if (RB.isLoop(L[j])) unwrap(j); else L.splice(j, 1); continue; }
+      if (dv.s != 'f') return null;
+      const M = o.m;
+      let k = M.length - 1;
+      while (k >= 0 && M[k] == 'en') k--;
+      if (k < 0) return null;
+      if (RB.isLoop(M[k])) { M.splice(RB.match(M, k), 1); M.splice(k, 1); } else M.splice(k, 1);
     }
     o.cs = dv.s;
     o.ci = Math.min(L.length, w == null ? i : i + 1);
