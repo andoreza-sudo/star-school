@@ -6,7 +6,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** the owner's Play checklist in docs/PLAY-SETUP.md (two Vercel projects first: the app on app.whistlestoplearning.com, the information page on whistlestoplearning.com; the developer name for privacy.html's DEVELOPER_NAME; the OK for the new About privacy line; confirm the package name com.whistlestoplearning.app before the first upload; the app signing SHA-256 into .well-known/assetlinks.json) and the read of .claude/RENAME-READ.md; then the owner's read of .claude/RC2-READ.md and .claude/RC1-READ.md (RC-2's and RC-1's new lines) and a tablet pass on the Grown-ups PIN; the owner's read-throughs of ASK-01, G-MOVES and TEACH-5S and the 8 TEACH-5S recordings (MERGE-186); P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v194 (LESSON-STAGE and GAMES-GFX: lessons on the world scene with a bigger pet, game time only at the end, a train track for the steps, the boss on a stage; game outlines, depth, effects kit, lighter controls; not live)
+**Current version:** v195 (REC-2: the warm-up lines at every age and the Explore lines of grade 3 and up in the pet's recorded voice too; audio budget 9.0 MB; not live)
 
 ## Chunk status
 
@@ -182,6 +182,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - LESSON-STAGE v194 (branch lesson-stage from v193: Fable's 'feels like homework' report, .claude/FABLE-IMPROVE.md; owner decision 2026-11-23, game time shown only at the end)
 - GAMES-GFX v194 (branch games-gfx from v193: Fable's game graphics report; outlines, depth, effects kit, lighter controls)
 - REC-ALL v194 (branch rec-all from v194: owner decision 2026-11-24, "All lesson lines": every fixed lesson sentence, Pre-K to 6th grade, in the pet's recorded voice, luna; speed 0.95 for the little pet's, 1.0 for the older pet's; 1289 teacher lines, audio/teach 5.38 MB, all audio 8.37 MB; budgets audio 8.5 MB (warn 7.55), teacher lines 1600. Not recorded, for the 8.5 MB budget (everything came to 8.9 MB): the warm-up lines and the Explore lines of grade 3 and up; 3 sentences the speech to text check rejects ("Add their lengths.", "Add the lengths.", "Rate story: build the table."). tools/en-audio.js lessonSentences)
+- REC-2 v195 (branch rec-2 from c0aebc3: owner decision 2026-11-24, "yes record the last two groups too": the warm-up lines and the Explore lines of grade 3 and up; 1420 teacher lines, audio/teach 5.92 MB, all audio 8.91 MB; budgets audio 9.0 MB (warn 7.995), teacher lines 1500)
 
 ## Handoff notes
 
@@ -538,6 +539,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### REC-2 v195: the last two groups of lesson lines in the pet's recorded voice (v195, 2026-11-24, Claude; branch rec-2 from c0aebc3, not live)
+- **What**: owner decision 2026-11-24, "yes record the last two groups too". The two groups REC-ALL left out to fit 8.5 MB are recorded in the pet's voice (luna): the warm-up lines (beats.remember) at every age, and the Explore lines of the lessons of grade 3 and up. tools/en-audio.js lessonSentences: `remember` is back in LS_SAID and the explore test no longer skips grade 3 and up. Only existing approved text; no sentence with a name, a digit or a slot.
+- **Recorded**: 131 new sentences (15 at speed 0.95 for the little pet, 116 at 1.0 for the older pet), 3,936 characters; 1,420 teacher lines (was 1,289). Speech to text check: 0 failures (the 3 sentences already on the skip list stay the tablet's voice). EN_TEACH0 (src/data/d-teach-start.js) rewritten by --teach: 52 lines (adds "Count with me."), 2,531 bytes.
+- **Bytes**: audio/teach 5,378,958 -> 5,922,809; all audio 8,365,981 -> 8,909,832 (2,528 files). teach12 (the full manifest, lazy) 143,503. Start-up 2,494,548 (under 2.5 MB).
+- **Budgets changed** (owner decision 2026-11-24, 9.0 MB): AUDIO_FAIL 8,500,000 -> 9,000,000; AUDIO_WARN 7,550,000 -> 7,995,000 (in proportion); teacher-line cap 60-1400 -> 60-1500. CONTRIBUTING, HANDOFF and check.sh say so. No other threshold, hash, KNOWN list, fixture or expected value changed.
 
 ### FIX2 v194: Fable's confirming review (v194, 2026-11-24, Claude; branch v194-fix2 from 98007d5, not live)
 - **Offline audio no longer all-or-nothing**: sw.js install waits for the code list F only (26 files). The 2,397 recordings (8.37 MB) are cached after activation, when the page asks (90-app.js posts 'audio' 3 s after start when idle, when a new worker takes over, and on every later open): 40 at a time, each fetch and put on its own, a failure skipped and tried again next time, files already in 'starschool-audio' skipped. On activate, a recording an old release cache holds moves to the audio cache before that cache is deleted; a recording fetched on demand goes to the audio cache, not the release cache. vercel.json: /audio/*.ogg is `public, max-age=31536000, immutable` (names are content hashes). Proof in Chrome (smoke SW-AUDIO): with one teacher file returning 503, the worker activates, all 26 code files are cached, 2,396 of 2,397 recordings arrive in about 12 s, that line falls back to the tablet voice, and the next open fetches only that file.

@@ -1,5 +1,5 @@
-/* Whistlestop data banks v194. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v194 loads this file with <script src="data.v194.js"> between the code and the start-up script. */
+/* Whistlestop data banks v195. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v195 loads this file with <script src="data.v195.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -8224,7 +8224,7 @@ function genSpell(lv){
 }
 /* ---------- fix2 v194: the recorded teacher lines said outside a lesson (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach-start) ----------
    The lines of src/data/d-teach-audio.js (EN_TEACH, in the teach12 part) that the code or data outside the lessons says word for word
-   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 51 lines. */
+   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 52 lines. */
 const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "A right angle is a square corner.":"35f7d9f064d2",
 "Add every side.":"e85aa34f679a",
@@ -8232,6 +8232,7 @@ const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Clap each word.":"78cb83528b4c",
 "Clap once for each part you say.":"24f0d21733c9",
 "Count the dots.":"dc3c191195bb",
+"Count with me.":"cfc99091d370",
 "Done.":"ec91bf114d76",
 "Find the missing number.":"43fb67ea5c7d",
 "Find the volume.":"812ef18ce744",
@@ -9639,4 +9640,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v194'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v195'; // last line: the whole file ran (checked by dataReady() before the app starts)
