@@ -1496,7 +1496,26 @@ const BTN = (() => {
       }
       return added;
     },
-    // the first brick that can be worked out now from the known ones, as {at, from: [x, y], how: 'add' | 'sub'} or null
+    // A guess g for brick k: every brick that then follows is a + c * g. Where a triple is known three ways, the two bricks under
+    // it less the brick above is A + C * g, and it is 0 for the right guess. Returns 1 when every such check has C > 0 (a guess
+    // that is too big makes the bricks above come out too big), -1 when every one has C < 0, 0 when they differ or nothing checks.
+    guessWay(p, known, k) {
+      const T = PYR.triples(p.n), A = p.v.map((x, i) => known[i] ? [x, 0] : null);
+      A[k] = [0, 1];
+      for (let more = true; more;) {
+        more = false;
+        for (const [t, a, b] of T) {
+          if ((A[t] ? 1 : 0) + (A[a] ? 1 : 0) + (A[b] ? 1 : 0) != 2) continue;
+          if (!A[t]) A[t] = [A[a][0] + A[b][0], A[a][1] + A[b][1]];
+          else if (!A[a]) A[a] = [A[t][0] - A[b][0], A[t][1] - A[b][1]];
+          else A[b] = [A[t][0] - A[a][0], A[t][1] - A[a][1]];
+          more = true;
+        }
+      }
+      let up = 0, down = 0;
+      for (const [t, a, b] of T) if (A[t] && A[a] && A[b]) { const c = A[a][1] + A[b][1] - A[t][1]; if (c > 0) up++; else if (c < 0) down++; }
+      return up && !down ? 1 : down && !up ? -1 : 0;
+    },
     nextStep(p, known) {
       for (const [t, a, b] of PYR.triples(p.n)) {
         if (!known[t] && known[a] && known[b]) return { at: t, from: [a, b], how: 'add' };
@@ -1553,14 +1572,20 @@ const BTN = (() => {
         return { say, mark: [s.at, x, y], fill: s.at };
       }
       // tricky: no brick follows from two others. The brick to try is the one that lets the most bricks follow.
-      let at = -1, most = -1;
+      // AUD-BT S-3: tier 2 says "If the bricks above come out too big, guess smaller", so the brick to try is one for which that
+      // is true: every brick that can be checked against a known one comes out too big when the guess is too big (PYR.guessWay).
+      // Among those, the one that lets the most bricks follow. (It was the most bricks alone, and for 4 tricky pyramids in 10 a
+      // bigger guess made the bricks above smaller.) When no brick is like that, the old choice stands.
+      let at = -1, most = -1, okAt = -1, okMost = -1;
       for (const k of PYR.hidden(p)) {
         if (known[k]) continue;
         const kn = known.slice();
         kn[k] = true;
         const got = PYR.spread(p.n, p.v, kn);
         if (got > most) { most = got; at = k; }
+        if (got > okMost && PYR.guessWay(p, known, k) == 1) { okMost = got; okAt = k; }
       }
+      if (okAt >= 0) at = okAt;
       if (tier == 1) {
         return { say: 'A tricky one! No brick follows from two others yet. Start with the glowing brick.', mark: [at], fill: null };
       }
@@ -2681,18 +2706,21 @@ const SD = (() => {
     return null;
   }
   // locked candidates: in house A the value's squares all lie in house B, so it leaves the rest of B
-  function lockedCands(p, cand, b) {
+  function lockedAll(p, cand, b, one) {
+    const out = [];
     for (const [A, B, inter] of gp(p).over) for (let v = 1; v <= p.n; v++) {
       if (A.cells.some(c => b[c] == v)) continue;
       const where = A.cells.filter(c => cand[c] & bit(v));
       if (where.length < 2 || where.some(c => !inter.includes(c))) continue;
       const elim = B.cells.filter(c => !inter.includes(c) && cand[c] & bit(v)).map(c => [c, v]);
-      if (elim.length) return { kind: 'locked', A, B, v, at: where, elim };
+      if (elim.length) { out.push({ kind: 'locked', A, B, v, at: where, elim }); if (one) return out; }
     }
-    return null;
+    return out;
   }
+  const lockedCands = (p, cand, b) => lockedAll(p, cand, b, true)[0] || null;
   // naked pair: two squares of a house with the same two candidates; those two leave the rest of the house
-  function nakedPair(p, cand) {
+  function pairAll(p, cand, one) {
+    const out = [];
     for (const h of gp(p).houses) {
       const two = h.cells.filter(c => popc(cand[c]) == 2);
       for (let i = 0; i < two.length; i++) for (let j = i + 1; j < two.length; j++) {
@@ -2700,11 +2728,12 @@ const SD = (() => {
         if (cand[two[j]] != m) continue;
         const elim = [];
         for (const c of h.cells) if (c != two[i] && c != two[j] && cand[c] & m) for (let v = 1; v <= p.n; v++) if (cand[c] & m & bit(v)) elim.push([c, v]);
-        if (elim.length) return { kind: 'pair', A: h, at: [two[i], two[j]], vs: [valOf(m & -m), valOf(m)], elim };
+        if (elim.length) { out.push({ kind: 'pair', A: h, at: [two[i], two[j]], vs: [valOf(m & -m), valOf(m)], elim }); if (one) return out; }
       }
     }
-    return null;
+    return out;
   }
+  const nakedPair = (p, cand) => pairAll(p, cand, true)[0] || null;
   function popc(m) { let k = 0; while (m) { m &= m - 1; k++; } return k; }
 
   // The next step: {kind, cell, v, house (squares hint 1 points at), also (squares hint 2 marks besides the cell), say1, say2, say3}
@@ -2745,21 +2774,32 @@ const SD = (() => {
       say1: s.kind == 'hidden' ? `Look at this ${s.h.k}. Where can ${name(p, s.v)} go?` : 'Look at this box. One square can be filled now.',
       say2: why(s), say3: say3(s.cell, s.v) };
     // 4. band D hard: take candidates away (locked candidates, naked pairs) until a single shows
-    let first = null;
+    // AUD-BT S-1: the hint names ONE step ("a 1 can only go in the marked squares, so ... Now only 9 fits here"), so it is only
+    // given when a single follows from that one step on the board as it is. Every such step is tried (it was: the first step
+    // found, then more steps the words did not mention, so "Now only 9 fits" did not follow in half of these hints).
+    const base = cand.slice(), told = x => {
+      const pre = x.kind == 'locked'
+        ? `In this ${x.A.k}, ${aName(p, x.v)} can only go in the marked squares, so no other square of that ${x.B.k} can be ${aName(p, x.v)}. Now `
+        : `The marked squares can only be ${x.vs[0]} and ${x.vs[1]}, so no other square of this ${x.A.k} can be. Now `;
+      const tail = s.kind == 'naked' ? `only ${name(p, s.v)} fits here.` : `${name(p, s.v)} can only go here in its ${s.h.k}.`;
+      return { kind: x.kind, cell: s.cell, v: s.v, house: x.A.cells, also: x.at,
+        say1: `Look at this ${x.A.k}. Where can ${x.kind == 'locked' ? name(p, x.v) : 'each number'} go?`, say2: pre + tail, say3: say3(s.cell, s.v) };
+    };
+    for (const x of lockedAll(p, base, b).concat(pairAll(p, base))) {
+      cand = base.slice();
+      for (const [c, v] of x.elim) cand[c] &= ~bit(v);
+      s = single();
+      if (s) return told(x);
+    }
+    // a single that needs several steps: the square is still found, with the plain words (no reason that does not hold)
+    cand = base.slice();
     for (let it = 0; it < 60; it++) {
       const x = lockedCands(p, cand, b) || nakedPair(p, cand);
       if (!x) break;
       for (const [c, v] of x.elim) cand[c] &= ~bit(v);
-      if (!first) first = x;
       s = single();
-      if (s) {
-        const pre = first.kind == 'locked'
-          ? `In this ${first.A.k}, ${aName(p, first.v)} can only go in the marked squares, so no other square of that ${first.B.k} can be ${aName(p, first.v)}. Now `
-          : `The marked squares can only be ${first.vs[0]} and ${first.vs[1]}, so no other square of this ${first.A.k} can be. Now `;
-        const tail = s.kind == 'naked' ? `only ${name(p, s.v)} fits here.` : `${name(p, s.v)} can only go here in its ${s.h.k}.`;
-        return { kind: first.kind, cell: s.cell, v: s.v, house: first.A.cells, also: first.at,
-          say1: `Look at this ${first.A.k}. Where can ${first.kind == 'locked' ? name(p, first.v) : 'each number'} go?`, say2: pre + tail, say3: say3(s.cell, s.v) };
-      }
+      if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: [s.cell], also: [],
+        say1: 'Try this square.', say2: 'Look at its row, its column and its box.', say3: say3(s.cell, s.v) };
     }
     // 5. never stuck: the empty square with the fewest choices
     cand = cands(p, b);
@@ -3478,14 +3518,52 @@ const MD = (() => {
     if (s) return { kind: 'hidden', cell: s.cell, v: s.v, house: s.L.cells, also: [],
       say1: `Look at this ${s.L.k}. Where can ${s.v} go?`, say2: hiddenWhy(s), say3: say3(s.v) };
     // 5. take candidates away (a cage in a line, a naked pair) until a single shows
+    // AUD-BT S-2: the hint names ONE step and ONE number ("Every way to make 3+ puts a 1 in the marked squares of this row, so
+    // no other square of the row can be 1. Now ..."), so it is only given when a single follows from exactly that on the board
+    // as it is: every such step is tried, each number of a cage on its own. (It was: the first step found, with every number the
+    // cage takes and then more steps the words did not mention, so the "Now ..." did not follow in two hints of three.)
+    const steps = [];
+    for (const [ci, li, m] of a.must) {
+      const L = G.lines[li], at = p.cg[ci].c.filter(c => !b[c] && G.lineIds[c].includes(li));
+      for (const v of bits(m)) {
+        const out = L.cells.filter(c => !b[c] && I.cageAt[c] != ci && a.cand[c] & bit(v)).map(c => [c, v]);
+        if (out.length) steps.push({ kind: 'inline', ci, L, v, at, out });
+      }
+    }
+    for (const L of G.lines) for (let i = 0; i < n; i++) {
+      const c1 = L.cells[i];
+      if (b[c1] || popc(a.cand[c1]) != 2) continue;
+      for (let j = i + 1; j < n; j++) {
+        const c2 = L.cells[j];
+        if (b[c2] || a.cand[c2] != a.cand[c1]) continue;
+        const out = [];
+        for (const c of L.cells) if (c != c1 && c != c2 && !b[c]) for (const v of bits(a.cand[c] & a.cand[c1])) out.push([c, v]);
+        if (out.length) steps.push({ kind: 'pair', L, vs: bits(a.cand[c1]), at: [c1, c2], out });
+      }
+    }
+    for (const x of steps) {
+      const el = new Array(n * n).fill(0);
+      for (const [c, v] of x.out) el[c] |= bit(v);
+      s = single(analyse(p, b, el));
+      if (!s) continue;
+      const k = x.L.k;
+      const pre = x.kind == 'inline'
+        ? `Every way to make ${label(p.cg[x.ci])} puts ${aN(x.v)} in the marked squares of this ${k}, so no other square of the ${k} can be ${x.v}. Now `
+        : `The marked squares can only be ${x.vs[0]} and ${x.vs[1]}, so no other square of this ${k} can be. Now `;
+      const tail = s.kind == 'cage' ? `only ${s.v} fits here.` : `${s.v} can only go here in its ${s.L.k}.`;
+      return { kind: x.kind, cell: s.cell, v: s.v, house: x.L.cells, also: x.at,
+        say1: x.kind == 'inline' ? `Look at the ${label(p.cg[x.ci])} cage and this ${k}.` : `Look at this ${k}. Which numbers can each square be?`,
+        say2: pre + tail, say3: say3(s.v) };
+    }
+    // a single that needs several steps: the square is still found, with the plain words (no reason that does not hold)
     const elim = new Array(n * n).fill(0);
-    let first = null, an = a;
+    let an = a;
     for (let it = 0; it < 60; it++) {
       let x = null;
       for (const [ci, li, m] of an.must) {
         const L = G.lines[li], out = [];
         for (const c of L.cells) if (!b[c] && I.cageAt[c] != ci) for (const v of bits(m & an.cand[c])) out.push([c, v]);
-        if (out.length) { x = { kind: 'inline', ci, L, v: out[0][1], at: p.cg[ci].c.filter(c => !b[c] && G.lineIds[c].includes(li)), out }; break; }
+        if (out.length) { x = { out }; break; }
       }
       if (!x) for (const L of G.lines) {
         for (let i = 0; i < n && !x; i++) {
@@ -3496,26 +3574,17 @@ const MD = (() => {
             if (b[c2] || an.cand[c2] != an.cand[c1]) continue;
             const out = [];
             for (const c of L.cells) if (c != c1 && c != c2 && !b[c]) for (const v of bits(an.cand[c] & an.cand[c1])) out.push([c, v]);
-            if (out.length) x = { kind: 'pair', L, vs: bits(an.cand[c1]), at: [c1, c2], out };
+            if (out.length) x = { out };
           }
         }
         if (x) break;
       }
       if (!x) break;
       for (const [c, v] of x.out) elim[c] |= bit(v);
-      if (!first) first = x;
       an = analyse(p, b, elim);
       s = single(an);
-      if (s) {
-        const k = first.L.k;
-        const pre = first.kind == 'inline'
-          ? `Every way to make ${label(p.cg[first.ci])} puts ${aN(first.v)} in the marked squares of this ${k}, so no other square of the ${k} can be ${first.v}. Now `
-          : `The marked squares can only be ${first.vs[0]} and ${first.vs[1]}, so no other square of this ${k} can be. Now `;
-        const tail = s.kind == 'cage' ? `only ${s.v} fits here.` : `${s.v} can only go here in its ${s.L.k}.`;
-        return { kind: first.kind, cell: s.cell, v: s.v, house: first.L.cells, also: first.at,
-          say1: first.kind == 'inline' ? `Look at the ${label(p.cg[first.ci])} cage and this ${k}.` : `Look at this ${k}. Which numbers can each square be?`,
-          say2: pre + tail, say3: say3(s.v) };
-      }
+      if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: cageOf(s.cell).c, also: [],
+        say1: 'Try this square.', say2: 'Look at its row, its column and its cage.', say3: say3(s.v) };
     }
     // 6. never stuck: the empty square with the fewest choices
     let c = -1;
