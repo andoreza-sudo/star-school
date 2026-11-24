@@ -491,7 +491,8 @@ function k2Sound(q0, lv) {
   const pool = (lv == 1 ? CVC.concat(BLEND.filter(x => !/^(sh|ch|th|wh)/.test(x[0]))) : CVC).filter(x => !['ten', 'six'].includes(x[0]));
   const key = x => lv == 1 ? x[0][0] : x[0].slice(-1), ch = String(q0.ans), fw = pool.find(x => x[0] == q0.after);
   if (!fw || key(fw) != ch) return null;
-  const others = [...new Set(pool.map(key))].filter(c => c != ch && !(ch == 'c' && c == 'k') && !(ch == 'k' && c == 'c')
+  const sx = (a, b) => a + b == 'sx' || a + b == 'xs' || a + b == 'kx' || a + b == 'xk'; // AUDIT-READ: fox ends in the sound of s too (x is /ks/)
+  const others = [...new Set(pool.map(key))].filter(c => c != ch && !(ch == 'c' && c == 'k') && !(ch == 'k' && c == 'c') && !sx(ch, c)
     && pool.filter(x => key(x) == c).length >= 2);
   const c2 = pick(others), its = [fw, ...k2Take(pool.filter(x => key(x) == ch && x !== fw), 1), ...k2Take(pool.filter(x => key(x) == c2), 2)];
   const items = shuffle(its.map(x => ({v: x[0], b: key(x), h: true, say: x[0], al: x[0], l: k2Pic(x[0], x[1])})));
