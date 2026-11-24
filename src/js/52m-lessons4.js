@@ -90,9 +90,10 @@ function ls4Word(id, t, g, pool, key, bugs, show, o) {
     return near.concat(rest).filter(x => !picSame(w, x)).slice(0, n - 1); // AUDIT-READ: never a look-alike picture (cap and hat, box and gift)
   };
   const bugOf = (w, xs) => { const b = {}; for (const x of xs) { const c = ls4Code(w, x); if (c) (b[c] = b[c] || []).push(x); } return b; };
-  const sentence = (w, r) => ls4Pick(r, LS4_T[g >= 1 ? 1 : 0]).replace('{a}', (typeof SENT_ART != 'undefined' && SENT_ART[w]) || art(w)).replace('{w}', w);
+  // WORDS-READ (E3): the road sentence only for animals and road vehicles, and never "hand" as the word of a sentence (genSent's rules)
+  const sentence = (w, r) => ((T, t) => (typeof sentTpl == 'function' ? sentTpl(T, t, w) : t))(LS4_T[g >= 1 ? 1 : 0], ls4Pick(r, LS4_T[g >= 1 ? 1 : 0])).replace('{a}', (typeof SENT_ART != 'undefined' && SENT_ART[w]) || art(w)).replace('{w}', w);
   D.q = (st, r) => {
-    const w = ls4Pick(r, good()), cs = ls4Shuf(r, coded(w)), sl = {word: w}, hint = {k: 'text', s: `Say it slowly: ${w}. One sound at a time.`};
+    const w = ls4Pick(r, st == 3 && show != 'build' ? good().filter(x => x != 'hand') : good()), cs = ls4Shuf(r, coded(w)), sl = {word: w}, hint = {k: 'text', s: `Say it slowly: ${w}. One sound at a time.`};
     if (st == 0 || st == 3 && show == 'build') {
       const extra = [...new Set([...cs.join('')].filter(c => !w.includes(c)))].slice(0, 1), more = ls4Shuf(r, [...'bdfgmnprst'].filter(c => !w.includes(c) && !extra.includes(c))).slice(0, 2 - extra.length);
       return ls4Q(D, st == 3 ? 2 : 0, {kind: 'build', word: w, tiles: ls4Shuf(r, [...w].concat(extra, more)), ans: w, sl, hint, bug: bugOf(w, cs),

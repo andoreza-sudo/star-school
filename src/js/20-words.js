@@ -56,7 +56,7 @@ DOL.push(
 'about better bring carry clean cut done draw drink eight fall far full got grow hold hot hurt if keep kind laugh light long much myself never only own pick seven shall show six small start ten today together try warm'.split(' '));
 // pic 5 / build 5: r-controlled vowels. [word, emoji, the r-vowel]. Wrong choices swap the r-vowel (bird / bard / burd).
 const RVW=[['car','🚗','ar'],['star','⭐','ar'],['yarn','🧶','ar'],['shark','🦈','ar'],['scarf','🧣','ar'],['cart','🛒','ar'],['dart','🎯','ar'],
-  ['horse','🐴','or'],['corn','🌽','or'],['torch','🔦','or'],['forest','🌲','or'],['sword','⚔️','or'],
+  ['horse','🐴','or'],['corn','🌽','or'],['torch','🔦','or'],['storm','⚡','or'],['sword','⚔️','or'],
   ['hammer','🔨','er'],['monster','👾','er'],['flower','🌸','er'],['water','💧','er'],['tower','🗼','er'],
   ['bird','🐦','ir'],['girl','👧','ir'],['circle','⚪','ir'],['birthday','🎉','ir'],
   ['turtle','🐢','ur'],['purse','👜','ur'],['church','⛪','ur']];
