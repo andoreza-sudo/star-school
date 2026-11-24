@@ -60,6 +60,7 @@ const enKey = E.esKey; // NFC, trimmed, spaces collapsed: the same key as say() 
      node tools/en-audio.js --teach        record only these (new lines; checks each with speech to text; deletes unused files)
    Plain node tools/en-audio.js records them after the encouragement. What is recorded: the little pet's own lines (LS_TONE.little), the lesson
    end card, the pet's reasons and repair lines of the Pre-K to 2nd grade codes (BUGS), and the fixed instructions of the batch 4 lessons.
+   REC-ALL (v194, below) adds every fixed sentence of every lesson at every age: the older pet is no longer the tablet's voice.
    Never a line with a name, a number or a word of the question: those stay the tablet's voice (say() plays a recorded line whole, or its
    recorded sentences in order with the tablet's voice for the rest; 12-speech.js tchSay). A line the encouragement already records (in six
    voices, "Great job!") is left to it. tools/test.js "recorded teacher lines TEACH-4" checks the list against the manifest and the files. */
@@ -71,7 +72,7 @@ const TEACH_GROUPS = [
   ['the little pet\'s own lines (LS_TONE.little, 52c-scripts.js)', R => R("Object.values(LS_TONE.little).filter(v=>typeof v!='function').flat()")],
   ['the little pet\'s hello (LS_TONE.little.hi, after the name)', ["Let's learn together."], 1],
   // LS-STOP: the little pet's lesson stop lines (LS_TONE2.little: the slide into the lesson, "Find my mistake!", the pay lines) and the
-  // start card's question after the name (LS_TONE2.little.open); the older ages' lines stay the tablet's voice, as LS_TONE's do
+  // start card's question after the name (LS_TONE2.little.open); the older ages' lines are recorded too since REC-ALL (lessonSentences)
   ['the little pet\'s lesson stop lines (LS_TONE2.little, 52c-scripts.js)', R => R("Object.values(LS_TONE2.little).filter(v=>typeof v!='function')")],
   ['the little pet\'s lesson stop card (LS_TONE2.little.open, after the name)', ['Want to learn this with me?'], 1],
   ['the lesson end card (52-lesson.js)', ['You learned it!', 'You already knew it!', 'Great learning today!'], 1],
@@ -91,7 +92,11 @@ const TEACH_GROUPS = [
    records "Am I right?"). Collected from the app: LS_TONE and LS_TONE2 at all three ages (functions called with a stand-in name and a
    number, and the sentences with them dropped), LS6_SAY, the lesson end card, and each lesson's words as 52-lesson.js says them (L.w.beats:
    explore, name, together, show; remember when the lesson has a warm-up; check only its {ans} line, the pet's claim; never "why", which no
-   screen says) and its job (LS.job: the start card's line). Spanish pieces (lsRuns: «...» and el / la in a Spanish lesson)
+   screen says) and its job (LS.job: the start card's line).
+   Left out to stay inside the audio budget the owner approved (8.5 MB; everything above came to 8.9 MB): the warm-up lines (beats.remember,
+   said only when nothing older is due) at every age, and the Explore lines of the lessons of grade 3 and up (older children read the
+   caption). They stay the tablet's voice, as does a sentence the speech to text check fails. Recording them too needs about 0.55 MB more:
+   put them back in LS_SAID / the explore test and run --teach again. Spanish pieces (lsRuns: «...» and el / la in a Spanish lesson)
    stay with ES-AUDIO. A sentence is recorded only if it starts with a capital and ends with . ! or ? (never a fragment cut by a Spanish
    word), and has no digit, no {slot} and no name. The pet's reasons (L.w.reasons) and the ideas the grown-ups read are not in this list.
    A sentence the little pet's lessons or lines use is recorded at speed 0.95 (TEACH_FORMAT, as TEACH-4); one only the older pet uses
@@ -104,12 +109,12 @@ function lessonSentences(R) {
   const raw = R(`(()=>{const o=[],add=(t,es,big,w)=>{if(t!=null&&String(t).trim())o.push([String(t),es?1:0,big?1:0,w])};
     for(const a of ['little','kid','teen'])for(const T of [LS_TONE[a],LS_TONE2[a]])for(const [k,v] of Object.entries(T))
       (typeof v=='function'?[v('${NM}'),v(3)]:[].concat(v)).forEach(x=>add(x,0,a!='little','LS_TONE '+a+'.'+k));
-    const LS_SAID={remember:1,explore:1,name:1,together:1,check:1,show:1};
+    const LS_SAID={explore:1,name:1,together:1,check:1,show:1}; // remember: left out for the budget (below)
     if(typeof LS6_SAY!='undefined')for(const a in LS6_SAY)add(LS6_SAY[a],0,a!='little','LS6_SAY.'+a);
     for(const t of ['You learned it!','You already knew it!','Great learning today!'])add(t,0,0,'the lesson end card');
     for(const id of LS_IDS){const L=LESSONS[id];if(!L||!L.w||!L.w.beats)continue;const es=L.p=='es',big=L.g!=null&&L.g>2;
       add(LS.job(L),es,big,'job '+id);
-      for(const [b,ls] of Object.entries(L.w.beats))if(LS_SAID[b]&&(b!='remember'||L.warm))for(const t of [].concat(ls||[]))if(b!='check'||/\{ans\}/.test(t))add(t,es,big,id+'.'+b)}
+      for(const [b,ls] of Object.entries(L.w.beats))if(LS_SAID[b]&&!(b=='explore'&&big))for(const t of [].concat(ls||[]))if(b!='check'||/\{ans\}/.test(t))add(t,es,big,id+'.'+b)}
     return o})()`);
   const enSplit = R('enSplit'), lsRuns = R('lsRuns'), out = [];
   for (const [t, es, big, w] of raw) for (const [piece, isEs] of lsRuns(t, !!es)) {
