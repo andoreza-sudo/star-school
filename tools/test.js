@@ -26,13 +26,15 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
 // code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
-// 8.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
+// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
 // REC-ALL (owner decision 2026-11-24: "the tablet's voice is awful so any recordings you can do the better", "All lesson lines"): every fixed
 // lesson sentence of every grade in the pet's recorded voice (audio/teach): 4.5 -> 8.5 MB, warn raised in proportion 4.0 -> 7.55 MB
-const AUDIO_WARN=7550000,AUDIO_FAIL=8500000,AUDIO_FILE_FAIL=40000;
+// REC-2 owner decision 2026-11-24 (9.0 MB): "yes record the last two groups too" (the warm-up lines, the Explore lines of grade 3 and up):
+// 8.5 -> 9.0 MB, warn raised in proportion 7.55 -> 7.995 MB
+const AUDIO_WARN=7995000,AUDIO_FAIL=9000000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -21902,7 +21904,8 @@ run('recorded teacher lines TEACH-4',()=>{
   // REC-ALL (owner decision 2026-11-24: "All lesson lines", every grade): the cap is raised from 200 to 1600. The unit is the sentence say() matches,
   // so the about 860 fixed lesson lines are about 1400 sentences (with the fixed sentences of lines that also hold a number or a {slot})
   // fix2 v194 (Fable): the cap narrowed to 1400 (1289 lines now; the owner approved the budgets 2026-11-24), so a slip shows sooner
-  if(lines.size<60||lines.size>1400)p.push(lines.size+' teacher lines (want at most 1400: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded)');
+  // REC-2, owner decision 2026-11-24 (9.0 MB): the warm-up lines and the Explore lines of grade 3 and up too: 1420 collected, the cap 1400 -> 1500
+  if(lines.size<60||lines.size>1500)p.push(lines.size+' teacher lines (want at most 1500: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded; REC-2 (owner decision 2026-11-24, 9.0 MB) 1500 with the last two groups)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
     if(f!==EA.teachFileOf(k,o.rec))p.push('"'+k+'": file '+f+' is not the hash of its text and recipe');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
