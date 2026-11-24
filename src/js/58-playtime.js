@@ -54,7 +54,7 @@ function ptBT(b,mis){const L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v
 function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission);if(g.bt)return ptBT(g.bt,mis);
   const per=ptCfg().per*60,L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v,l])}};
   if(g.test){add(testOk?per+60:60,testOk?'Tested out!':'Good try')}
-  else if(g.mix&&g.daily){add(per,'Daily review done');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)} // the first one of the day pays a full round
+  else if(g.mix&&g.daily){add(Math.round(per*Math.min(1,n/REVIEW_N)),'Daily review done');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)} // P4 (owner): by size, 10 = a full round
   else if(g.mix){add(Math.round(per*.6),'Practice round');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)}
   else{const acc=sc/n,mast=prev>=3&&!g.boss;
     if(mast)add(60,'Already mastered this one');
