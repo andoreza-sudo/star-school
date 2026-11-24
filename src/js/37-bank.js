@@ -119,7 +119,8 @@ function bankBuild(id,it,pass){
   if(!q.hint)q.hint={k:'text',s:it.hint||'Read it again slowly. Which one fits best?'};
   else if(it.hint&&q.hint.k=='text')q.hint.s=it.hint;
   if(it.aloud&&q.hint.k=='text')q.hint.w=q.hint.s; // R-01d: Pre-K and K hear the hint (39-hints.js)
-  q.say=it.say||(it.aloud&&(form=='choice'||form=='wide')?bankSayAll(it.q,q.choices.map(c=>c.v)):bankSay(it.q));
+  q.say=it.say||(it.aloud&&(form=='choice'||form=='wide')?bankSayAll(it.q,q.choices.map(c=>c.v)):bankSay(it.q))
+    +(it.aloud&&q.kind=='mark'&&!it.say?' '+it.sent:''); // AUD-DISC: a read-aloud mark item reads its sentence after the prompt
   if(it.label)q.label=it.label; // label: optional, for long prompts (passages)
   else{const av=it.a!=null?it.a:it.bins?Object.values(it.bins).flat():it.order||(it.pairs||[]).map(x=>x[0]); // KINDS2: sort, order, match
     const a=(Array.isArray(av)?av.join(','):av).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)

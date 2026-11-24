@@ -299,8 +299,11 @@ addEventListener('resize', () => {
 });
 
 // ---- mark: tap word(s) in a sentence ----
+const k2MarkWord = w => String(w).replace(/[^\p{L}\p{N}'’-]/gu, ''); // a word of the sentence without its comma or full stop
 KIND.mark = {
-  render: q => `<div class="mkw">${q.words.map((w, i) => `<button class="mkt" data-i="${i}"${q.one ? '' : ' aria-pressed="false"'}>`
+  // AUD-DISC: q.speak (a read-aloud bank item): a word says itself when it is picked (k2SayChip: Pre-K to 1st grade)
+  render: q => `<div class="mkw">${q.words.map((w, i) => `<button class="mkt" data-i="${i}"${q.one ? '' : ' aria-pressed="false"'}`
+    + `${q.speak ? ` data-say="${esc(k2MarkWord(w))}"` : ''}>`
     + `<span class="mkx">${esc(w)}</span>${k2Marks()}</button>`).join('')}</div>`
     + (q.one ? '' : UI.btn('Check', {kind: 'primary', icon: 'check', id: 'mcheck', cls: 'mgo', off: true})),
   bind(q, st, submit) {
@@ -312,7 +315,7 @@ KIND.mark = {
       if (st.lock || b.disabled || st.mkOk.includes(i)) return;
       if (q.one) return submit([String(i)], b);
       const at = st.mkSel.indexOf(i);
-      if (at < 0) st.mkSel.push(i);
+      if (at < 0) { st.mkSel.push(i); k2SayChip(b); }
       else st.mkSel.splice(at, 1);
       SFX.pop(2);
       K.draw(q, st);
@@ -363,7 +366,7 @@ KIND.mark = {
     const go = $('#mcheck');
     if (go) go.disabled = true;
   },
-  spoken: q => q.ansSay || q.ans.map(i => String(q.words[+i]).replace(/[^\p{L}\p{N}'’-]/gu, '')).join(', '),
+  spoken: q => q.ansSay || q.ans.map(i => k2MarkWord(q.words[+i])).join(', '),
   validate(q) {
     const p = [];
     if (!Array.isArray(q.words) || q.words.length < 2) return ['mark: needs at least 2 words'];
@@ -386,8 +389,10 @@ KIND.mark = {
 function k2MarkItem(it, pic) {
   const words = String(it.sent).trim().split(/\s+/), as = Array.isArray(it.a) ? it.a : [it.a];
   const idx = as.map(a => words.findIndex(w => bankWords(w).includes(a)));
-  return {kind: 'mark', words, one: as.length == 1, ans: kindSort(idx.map(String)), ansSay: as.join(', '),
-    html: `${pic || ''}<div class="bq">${esc(it.q)}</div>`};
+  // AUD-DISC: a read-aloud item (it.aloud, Discover K-2) is never "one tap answers": a tap picks a word and says it, Check answers,
+  // so a child who cannot read yet can hear every word first (the prompt reads the sentence too: bankBuild)
+  return Object.assign({kind: 'mark', words, one: as.length == 1 && !it.aloud, ans: kindSort(idx.map(String)), ansSay: as.join(', '),
+    html: `${pic || ''}<div class="bq">${esc(it.q)}</div>`}, it.aloud ? {speak: true} : {});
 }
 const k2BankQ = (it, pic) => `${pic || ''}<div class="bq">${bankTxt(it.q)}</div>`;
 BANKF.tap = (it, id, pic) => k2MarkItem(it, pic);
@@ -395,14 +400,16 @@ BANKF.mark = BANKF.tap;
 BANKF.multi = (it, id, pic) => ({kind: 'multi', ans: kindSort(it.a), choices: shuffle([...it.a, ...it.d]).map(x => ({v: x, l: x})),
   html: k2BankQ(it, pic)});
 BANKF.order = (it, id, pic) => {
-  let items = shuffle(it.order.map(x => ({v: x, l: x})));
+  // AUD-DISC: a read-aloud item (it.aloud, Discover K-2): each tile says its words when tapped, so a non-reader can do it
+  let items = shuffle(it.order.map(x => (it.aloud ? {v: x, l: x, say: x} : {v: x, l: x})));
   if (items.every((x, i) => x.v === it.order[i])) items = [...items.slice(1), items[0]]; // never shown already in order
-  return {kind: 'order', items, ans: [...it.order], html: k2BankQ(it, pic), ansSay: it.order.join(', ')};
+  return Object.assign({kind: 'order', items, ans: [...it.order], html: k2BankQ(it, pic), ansSay: it.order.join(', ')}, it.aloud ? {speak: true} : {});
 };
 BANKF.match = (it, id, pic) => {
-  const items = it.pairs.map((p, i) => ({v: String(i), l: p[0]}));
-  return {kind: 'match', items, opts: shuffle(it.pairs.map((p, i) => ({v: String(i), l: p[1]}))),
-    ans: items.map(c => c.v).sort().join('|'), html: k2BankQ(it, pic)};
+  const side = k => it.pairs.map((p, i) => (it.aloud ? {v: String(i), l: p[k], say: p[k]} : {v: String(i), l: p[k]})); // AUD-DISC: as BANKF.order
+  const items = side(0);
+  return Object.assign({kind: 'match', items, opts: shuffle(side(1)),
+    ans: items.map(c => c.v).sort().join('|'), html: k2BankQ(it, pic)}, it.aloud ? {speak: true} : {});
 };
 // bins {name: [item, ...]}: the names are the bins (shown with a capital), the items are shuffled into the tray; cp {item: [art, emoji]}
 // draws an item as a picture with its word under it
