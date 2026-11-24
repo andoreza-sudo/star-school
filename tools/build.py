@@ -172,8 +172,8 @@ PARTS = [
     ('rally', r'(63-game-race|63b-rally-gl)\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2; GL-02: its 3D look (on games' GLX)
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
-    ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook|d-teach-audio)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
-    ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
+    ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
+    ('teach12', r'(52e-words|52f-bench|52g-drafted|d-teach-audio)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s)\.js|52s-teach5s\.css'),  # TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
@@ -217,7 +217,7 @@ for w in ('400', '700'):
 open(OUT + '/index.html', 'w').write(src)
 for stem, _ in PARTS:
     # REC-ALL: a part may also take a src/data file (d-teach-audio.js, the teacher manifest: 1289 lines are 62 KB, needed only in a lesson,
-    # so it loads with the lesson engine, not at start); it goes after the part's code
+    # so it loads with teach12, which every lesson loads after teach, not at start; teach stays under 150 KB); it goes after the part's code
     names = [n for sub in ('css', 'js', 'data') for n in sorted(os.listdir(os.path.join(S_DIR, sub))) if part_of(n) == stem]
     css = cat('css', '.css', stem)
     part = ('/* Whistlestop ' + stem + ' ' + VER + '. BUILT by tools/build.py from ' + ', '.join(names) + ': never edit by hand.\n'

@@ -57,7 +57,7 @@ const enKey = E.esKey; // NFC, trimmed, spaces collapsed: the same key as say() 
 
 /* TEACH-4: the pet's fixed teacher lines for the Pre-K to 2nd grade lessons (docs/TEACH-PLAN-2.md system H, owner addition 3: about 70 lines),
    recorded in ONE warm voice (the pet is one speaker): audio/teach/<hash>.ogg, manifest src/data/d-teach-audio.js (EN_TEACH: key -> file;
-   REC-ALL: tools/build.py puts it in teach.<VER>.js, the lesson engine's part, not the data file loaded at start).
+   REC-ALL: tools/build.py puts it in teach12.<VER>.js, loaded with every lesson, not the data file loaded at start).
      node tools/en-audio.js --teach        record only these (new lines; checks each with speech to text; deletes unused files)
    Plain node tools/en-audio.js records them after the encouragement. What is recorded: the little pet's own lines (LS_TONE.little), the lesson
    end card, the pet's reasons and repair lines of the Pre-K to 2nd grade codes (BUGS), and the fixed instructions of the batch 4 lessons.

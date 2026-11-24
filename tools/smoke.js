@@ -10981,7 +10981,7 @@ async function main() {
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
-          await partLoad('teach'); // REC-ALL: the teacher manifest is in the lesson engine's part (on demand), not the data file
+          await partsLoad(['teach', 'teach12']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext)),
             Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
           const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));

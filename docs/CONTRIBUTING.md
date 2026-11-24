@@ -176,8 +176,8 @@ audio/es/*.ogg    ES-AUDIO: the recorded Spanish (tools/es-audio.js); not loaded
 audio/en/*.ogg    EN-PRAISE: the recorded English encouragement, six voices (tools/en-audio.js); the same way
 audio/teach/*.ogg TEACH-4: the pet's recorded teacher lines, one voice (node tools/en-audio.js --teach; manifest src/data/d-teach-audio.js,
                   EN_TEACH); REC-ALL: every fixed sentence of every lesson, Pre-K to 6th grade (speed 0.95 for the little pet's, 1.0 for the
-                  older pet's); the same way and cache, inside the same audio budget. The manifest (62 KB) is built into teach.<VER>.js, the
-                  lesson engine's part (tools/build.py: a part may take a src/data file), not data.<VER>.js: it is needed only in a lesson
+                  older pet's); the same way and cache, inside the same audio budget. The manifest (62 KB) is built into teach12.<VER>.js, which
+                  every lesson loads after teach (tools/build.py: a part may take a src/data file), not data.<VER>.js: needed only in a lesson
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:

@@ -12,7 +12,7 @@ const LAZY=[...(((BUILD_PY.match(/^LAZY = \(([^)]*)\)/m)||[])[1]||'').matchAll(/
 const names=(d,ext,part)=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith(ext)&&partOf(n)===part).sort();
 const cat=(d,part,ext='.js')=>names(d,ext,part).map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
 // all code and data, without boot.js, in the order the built page runs it: index.html's own code, each part file, the data file
-const js=cat('js')+PARTS.map(p=>cat('js',p.stem)).join('')+cat('data');
+const js=cat('js')+PARTS.map(p=>cat('js',p.stem)+cat('data',p.stem)).join('')+cat('data'); // REC-ALL: a part may hold a src/data file (teach12: d-teach-audio.js)
 
 // ---- Budgets and known exceptions: the one place to change them ----
 const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROADMAP risk R1)
@@ -3529,12 +3529,12 @@ run('pet age: the stage follows S.grade (Pre-K..6), every species x age x growth
   r.warm=typeof petAgeWarm;r.aged=typeof PET_AGED;r;`;
   const o=(()=>eval(js+prog))();
   // the page as it starts, before the lazy part petage is in: the little one is drawn at every age
-  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)+cat('data',x.stem)).join('')+cat('data');
   const o0=(()=>eval(js0+prog))();
   // the little one as 7de3ff0 drew it, from the git history (skipped when there is no history)
   let old=null;
   try{const cp=require('child_process'),show=f=>cp.execSync('git show 7de3ff0:src/js/'+f,{cwd:ROOT,encoding:'utf8',stdio:['ignore','pipe','ignore']});
-    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)+cat('data',x.stem)).join('')+cat('data');
     old=(()=>eval(oldJs+prog))();}catch(e){}
   const want={'-1':0,0:0,1:0,2:0,3:1,4:1,5:2,6:2};
   for(const g in want)if(o.age[g]!==want[g])p.push('grade '+g+' gives age '+o.age[g]+', expected '+want[g]);
@@ -13313,11 +13313,12 @@ run('word search and unscramble P3-15',()=>{
   const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
   const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
   // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
-  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words)
+  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words); REC-ALL: nor the teacher
+  // manifest, for the same reason (its 1289 hex file names spell "eeb" and the like; its lines are lesson text, not word lists)
   // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
   const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
   const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
-  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -21855,11 +21856,11 @@ run('recorded teacher lines TEACH-4',()=>{
   const src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n'),en=vm.runInContext('EN_AUDIO.lines',ctx);
   for(const [k,o] of lines){if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');if(/\d/.test(k))p.push('a teacher line with a number: '+k);if(en[k])p.push('recorded twice: '+k)}
   for(const k of ['My turn. Check me!','Can you fix it?','You learned it!','Read the word. Then tap its picture.','Which one is different?'])if(!M.lines[k])p.push('not recorded: '+k);
-  // 3. the build: the manifest is src/data/d-teach-audio.js, built into the lesson engine's part (REC-ALL: 1289 lines are 62 KB, needed only in a
-  //    lesson, so not loaded at start: P6-03 keeps 500 KB under the start-up budget), not index.html or the data file; sw.js precaches every
-  //    teacher file and answers a Range request from the cache
-  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),tp=rd('teach.'+BUILD_VER+'.js');
-  if(!tp.includes('const EN_TEACH=')||data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in teach.'+BUILD_VER+'.js and not in index.html or '+DATA_FILE);
+  // 3. the build: the manifest is src/data/d-teach-audio.js, built into teach12, the part every lesson loads right after teach (REC-ALL: 1289
+  //    lines are 62 KB, needed only in a lesson, so not loaded at start: P6-03 keeps 500 KB under the start-up budget, and teach stays under
+  //    150 KB), not index.html or the data file; sw.js precaches every teacher file and answers a Range request from the cache
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),tp=rd('teach12.'+BUILD_VER+'.js');
+  if(!tp.includes('const EN_TEACH=')||data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in teach12.'+BUILD_VER+'.js and not in index.html or '+DATA_FILE);
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');

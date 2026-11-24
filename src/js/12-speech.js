@@ -91,7 +91,7 @@ function pickVoice(es){const k=es?'es':'en';if(VOICE[k]&&VOICE.n===speechSynthes
 let VOICE_WARM=0;
 function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
-/* TEACH-4: the pet's recorded teacher lines. EN_TEACH (src/data/d-teach-audio.js, made by tools/en-audio.js --teach; REC-ALL: built into teach.<VER>.js, so undefined until a lesson loads) maps the fixed lines of the
+/* TEACH-4: the pet's recorded teacher lines. EN_TEACH (src/data/d-teach-audio.js, made by tools/en-audio.js --teach; REC-ALL: built into teach12.<VER>.js, so undefined until a lesson part loads) maps the fixed lines of the
    lessons ("My turn. Check me!", "Read the word. Then tap its picture.") to one recording each, in one warm voice; REC-ALL (v194): every fixed
    sentence of every lesson, Pre-K to 6th grade, so the older pet speaks in the same recorded voice (nothing here depends on the age). A line
    that is recorded whole plays its file; a line of several sentences plays its recorded sentences and says the others with the tablet's
