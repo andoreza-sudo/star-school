@@ -1,6 +1,6 @@
 /* ---------- fix2 v194: the recorded teacher lines said outside a lesson (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach-start) ----------
    The lines of src/data/d-teach-audio.js (EN_TEACH, in the teach12 part) that the code or data outside the lessons says word for word
-   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 52 lines. */
+   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 54 lines. */
 const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "A right angle is a square corner.":"35f7d9f064d2",
 "Add every side.":"e85aa34f679a",
@@ -14,6 +14,7 @@ const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Find the volume.":"812ef18ce744",
 "Go across first, then up.":"50b1c67a0819",
 "Half the perimeter is one long side and one short side.":"28316cad8ee2",
+"Heavy for its size sinks.":"caebda8b4880",
 "Hooray!":"dd634f17d21d",
 "How long is the missing side?":"9fef2c29a1a5",
 "How many are left?":"1fb548dc2235",
@@ -24,6 +25,7 @@ const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "How many?":"2ab7650c0c2d",
 "How much?":"d93970daba6c",
 "Let's learn it together!":"8a649386b85e",
+"Light for its size floats.":"7fc3082de1af",
 "Line up the points.":"525a396b2560",
 "Listen to the middle sound.":"88effcc1375f",
 "Listen to the very first sound.":"6be7000d4d7f",
