@@ -2381,6 +2381,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 
 /* ---- secondary actions: icon tiles ---- */
 .hm-acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s-3);margin-top:var(--s-5)}
+.hm-acts.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hm-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2);min-width:0;min-height:108px;
   padding:var(--s-3) var(--s-1);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;
   font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center;overflow-wrap:normal;cursor:pointer;
@@ -7272,7 +7273,7 @@ function learnHub() {
   }).join('');
   const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
-    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) +
+    (raceOn() ? GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) : '') +
     (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('map', 24)}</span><span>Learn</span></div>${UI.chip('star', S.stars, { aria: 'Stars' })}</div>
   <div class="scroll gx-list lh"><p class="gx-lead">Pick what to learn!</p><div class="games">${cards}</div>
@@ -7282,7 +7283,7 @@ function learnHub() {
   $$('.lh-path').forEach(b => b.onclick = () => { SFX.whoosh(); NAV.mapFrom = 'learn'; pathMap(b.dataset.p); });
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
   if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
-  $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
+  if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
 /* ---------- games (paths), maps ---------- */
@@ -7470,7 +7471,7 @@ const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent firs
      lsStopAt(p, i)      stop i of map p has a lesson stop for this child: lessons on (TEACH.off off), a lesson, the child's band
                          (as planToday, 52b-know.js: Pre-K to 2nd below 3rd grade, 3rd to 6th from 3rd grade; a Pre-K world's
                          lessons for a Pre-K child only)
-     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a stop open before lessons were stops
+     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a lesson run LS_TRIES times (lsTried), a stop open before lessons were stops
                          (S.lsOpen, migration 6 in 00-core.js), a skipped world (placement or Test out proved it), a stop with a later
                          stop of its world passed, "Unlock every stop", or a stop the path has not reached (that one is locked anyway)
      lsOpen(p, i)        loads the lesson's parts and opens its start card (LS.open, 52-lesson.js), only if the screen the child tapped
@@ -7495,11 +7496,15 @@ const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
 function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return p == 'es' || (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
 function lsStopAt(p, i) { const n = NODES[p] && NODES[p][i]; return !!(n && !TEACH.off && LS_STOPS[p] && LS_STOPS[p].has(nid(n)) && lsBand(p, i)); }
 const lsLearned = id => !!(S.know && S.know[id] && S.know[id].s >= 2);
+/* Owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run LS_TRIES times without passing Show opens its practice stop
+   (Practice still has to be passed). S.know[id].n counts lessons run to their end (LS.finish); one left part way is no try. */
+const LS_TRIES = 3;
+const lsTried = id => !!(S.know && S.know[id] && S.know[id].n >= LS_TRIES);
 const LS_PASS = {}; // fix179: stops whose lesson could not load, open for this session (not saved: the next start tries the lesson again)
 function lsGate(p, i) {
   if (!lsStopAt(p, i) || S.unlockAll || passed(p, i) || !unlocked(p, i)) return false;
   const id = nid(NODES[p][i]);
-  return !lsLearned(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
+  return !lsLearned(id) && !lsTried(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
 }
 // the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35 (grade 6: and teach6), Spanish and Discover in teaches
 const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'es' || p == 'disc' ? ['teachrd', 'teaches'] : p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'].concat(lsWorldG(p, i) > 5 ? ['teach6'] : []) : []);
@@ -8214,7 +8219,8 @@ function hmActs() {
   const cr = careTick(), needs = Math.min(cr.food, cr.clean, cr.fun) < 30;
   const a = (id, icon, cls, label, extra = '') =>
     `<button class="hm-act" id="${id}"><span class="hm-ai ${cls}">${ico(icon, 30)}${extra}</span><span>${label}</span></button>`;
-  return `<div class="hm-acts">${a('race', 'bolt', 't-race', 'Fact Race')}` +
+  const rc = raceOn(); // audit v195: from grade 1
+  return `<div class="hm-acts${rc ? '' : ' n3'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}` +
     a('care', 'paw', 't-care', 'Pet Care', needs ? `<i class="hm-need" aria-label="Your pet would like a visit">!</i>` : '') +
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
 }
@@ -8247,7 +8253,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -9806,8 +9812,11 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
 // KINDS2: every question asked goes on G.kh (its kind), whatever its source; the stop's own questions come from pickQ (49b-kinds2.js)
 function makeQ(){const q=makeQ1();if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
 function makeQ1(){if(G.pool)return G.pool.shift();
-  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
+  // audit v195: the review slot comes before adaptation (challenge and support rounds took the slots after question 5); the mode is
+  // still decided first, so the slot's question shows as the mode says. Nothing due: the round is unchanged.
+  if(mastOn(G)&&G.done>=MAST.AT&&G.mode===undefined)G.mode=mastMode(G.fr||[],gradeOf());
   {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
+  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
@@ -9930,6 +9939,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     K.retry(q,G,()=>{$('#hint').innerHTML=mh+hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
+  actQEnd(false,true); // audit v195: a revealed question's time is learning time too ("Learn first"); the question is not counted
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture
   if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
   qProg();
@@ -9980,12 +9990,14 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
     const low=!g.mix&&!g.test&&stars==0;
-    const line=sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    // audit v195: the line goes by the share right (6 of 6 said "Keep practicing"); a beaten boss shows the questions it took
+    const shown=g.boss&&g.won&&g.asked>0?g.asked:n,sh=k=>sc*10>=k*shown;
+    const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
     const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
-    f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
+    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
@@ -10364,6 +10376,8 @@ const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i))
 const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀','Sight Words','Hear it, tap it!'],es:['🌮','Spanish Words','Escucha y toca!']};
 // P4-18: drawn race badges and colours (the emoji in RACES stay as data)
 const RACE_GX={math:['path-math','math'],sight:['eye','read'],es:['path-es','es']};
+// audit v195: a timed race of written sums is for grade 1 up, as Fact Sprint (FLU.on): no Home tile or Learn card for Pre-K and K
+const raceOn=()=>gradeOf()>=1;
 function raceMenu(){S.race=S.race||{};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Fact Race</span></div></div>
   <div class="scroll gx-list"><p class="gx-lead">How many can you get in 60 seconds? Beat your best score!</p>
@@ -10395,7 +10409,8 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);UI.setChip($('#rsc'),RC.score);if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
-  RC.iv=setInterval(()=>{if(!RC||document.hidden||RC.held)return;RC.left--; // R-01b: the clock stops while the app is hidden, like Fact Sprint'sGFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
+  // R-01b: the clock stops while the app is hidden. (audit v195: this note sat inside the next line and cut off its gauge and tick)
+  RC.iv=setInterval(()=>{if(!RC||document.hidden||RC.held)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const ps=ptRace(cat,sc),coins=raceCoins(sc,rec,ps);S.coins+=coins;if(ps)ptEarn(ps);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.chime();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
@@ -10477,7 +10492,7 @@ const MIS = {
     try { due = dueItems().length; } catch (e) {}
     const subs = MIS.subjects();
     let spk = false; // S-SPK: speaking practice on, a Spanish stop to play, and a microphone not ruled out
-    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no'; } catch (e) {}
+    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no' && !SPK.deny; } catch (e) {}
     return { g, subs, bt, spr, due, spk };
   },
   // Pure: three missions [{k, p?, d:0}] for a day key, a child name and a ctx
@@ -10534,7 +10549,11 @@ const MIS = {
   count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
   // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect, n (rounds today)} | {k:'sprint'} | {k:'teaser'}
   hit(x, ev) {
-    if (x.k == 'speak') return (day().spk | 0) >= SPK.GOAL; // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
+    if (x.k == 'speak') { // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
+      if ((day().spk | 0) >= SPK.GOAL) return true;
+      // audit v195: no microphone, or it is blocked (known after the draw): no "Say it!" step runs, so a Spanish round does it
+      return (SPK.mic == 'no' || !!SPK.deny) && ev.k == 'round' && ev.p == 'es' && !ev.mix && !ev.test;
+    }
     if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
     if (ev.k != 'round') return false;
     if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;
