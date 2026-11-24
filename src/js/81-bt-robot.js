@@ -790,8 +790,10 @@ RB.mount = (el, p, api) => {
     }
     st.miss++; // a failed run is one mistake
     bad = tr.at ? { s: tr.at.s, i: tr.at.i } : null;
+    // W14: a move off the board is "the edge" (bands A and B, the arrow kits; band A has no walls at all)
+    const bx = tr.c % p.n + RB.DX[tr.d], by = Math.floor(tr.c / p.n) + RB.DY[tr.d], edge = abs && (bx < 0 || by < 0 || bx >= p.n || by >= p.n);
     const words = {
-      bump: `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`,
+      bump: edge ? 'Bump! The robot hit the edge. Change the amber arrow.' : `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`,
       dizzy: 'The robot got dizzy: that loop went round and round. Change the amber block.',
       short: 'The robot stopped before the flag. Add more blocks, or change some.',
       gems: 'The robot is on the flag, but a gem is missing. Pick it up first.',

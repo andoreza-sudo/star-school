@@ -1589,8 +1589,8 @@ const BTN = (() => {
       if (tier == 1) {
         return { say: 'A tricky one! No brick follows from two others yet. Start with the glowing brick.', mark: [at], fill: null };
       }
-      if (tier == 2) return { say: 'Guess a number for the glowing brick and work up the pyramid. If the bricks above come out too big, '
-        + 'guess smaller.', mark: [at], fill: null };
+      if (tier == 2) return { say: 'Guess a number for the glowing brick and work out the other bricks. If a brick does not match, '
+        + 'try another number.', mark: [at], fill: null };
       return { say: `This brick is ${p.v[at]}.`, mark: [at], fill: at };
     },
     // the bricks to fill, in an order a child could find them (used by tests and the smoke bot): [[brick, value], ...]
@@ -2799,7 +2799,7 @@ const SD = (() => {
       for (const [c, v] of x.elim) cand[c] &= ~bit(v);
       s = single();
       if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: [s.cell], also: [],
-        say1: 'Try this square.', say2: 'Look at its row, its column and its box.', say3: say3(s.cell, s.v) };
+        say1: 'Try this square.', say2: 'This one takes two steps. Look at its row, its column and its box.', say3: say3(s.cell, s.v) };
     }
     // 5. never stuck: the empty square with the fewest choices
     cand = cands(p, b);
@@ -3584,7 +3584,7 @@ const MD = (() => {
       an = analyse(p, b, elim);
       s = single(an);
       if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: cageOf(s.cell).c, also: [],
-        say1: 'Try this square.', say2: 'Look at its row, its column and its cage.', say3: say3(s.v) };
+        say1: 'Try this square.', say2: 'This one takes two steps. Look at its row, its column and its cage.', say3: say3(s.v) };
     }
     // 6. never stuck: the empty square with the fewest choices
     let c = -1;
@@ -3928,8 +3928,9 @@ const LG = (() => {
     ride: 'rides|does not ride', colour: 'likes|does not like', age: 'is|is not', house: 'lives at|does not live at', race: 'came|did not come' };
   const OWN = { swim: 'swims|does not swim|', skate: 'skates|does not skate|', paint: 'paints|does not paint|', read: 'reads|does not read|',
     draw: 'draws|does not draw|', puzzle: 'does|does not do|puzzles' };
-  const NOUN = { pet: 'pet', snack: 'snack', sport: 'sport', hobby: 'hobby', music: 'instrument', ride: 'ride', colour: 'colour', age: 'age',
+  const NOUN = { pet: 'pet', snack: 'snack', sport: 'sport', hobby: 'hobby', music: 'instrument', ride: 'ride', colour: 'color', age: 'age',
     house: 'house', race: 'place' };
+  const ING = { paint: 'painting', draw: 'drawing', read: 'reading', swim: 'swimming', skate: 'skating' };
   const BASE = { age: 'be', house: 'live at', race: 'come' };
   const EXT = { age: ['the youngest', 'the oldest'], house: ['at the smallest number', 'at the biggest number'], race: ['first', 'last'] };
   const ORD = ['1st', '2nd', '3rd', '4th'];
@@ -3937,7 +3938,7 @@ const LG = (() => {
   const range = k => Array.from({ length: k }, (_, i) => i);
   const cap = s => s[0].toUpperCase() + s.slice(1);
   const lcf = s => (s.startsWith('The ') ? 't' + s.slice(1) : s);
-  const list = a => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + (a.length > 2 ? ',' : '') + ' or ' + a[a.length - 1]);
+  const list = a => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' or ' + a[a.length - 1]);
 
   /* ---------- words ---------- */
   const catOf = (p, c) => p.cats[c - 1];
@@ -3969,7 +3970,8 @@ const LG = (() => {
     const cat = catOf(p, c), w = wordOf(p, c, i);
     if (cat == 'age') return 'age ' + w;
     if (cat == 'house') return 'number ' + w;
-    if (cat == 'race' || cat == 'sport' || cat == 'hobby' || cat == 'colour') return w == 'puzzle' ? 'puzzles' : w;
+    // W38: a square is named with the -ing form ("A tick for Hugo and painting."); puzzles, soccer, basketball, tennis stay
+    if (cat == 'race' || cat == 'sport' || cat == 'hobby' || cat == 'colour') return w == 'puzzle' ? 'puzzles' : ING[w] || w;
     return 'the ' + w;
   }
   const noun = (p, c) => (c ? NOUN[catOf(p, c)] : 'child');
@@ -5461,7 +5463,7 @@ const RDL = (() => {
   const art = w => THE.includes(w) ? 'the ' : NONE.includes(w) ? '' : /^[aeiou]/.test(nameOf(w)) ? 'an ' : 'a ';
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   // the answer said in words: "a cow", "an egg", "the sun", "a piano", "63"
-  const said = (p, c) => p.pic ? art(c) + nameOf(c) : c;
+  const said = (p, c) => p.pic ? (c == 'dice' ? 'a die' : art(c) + nameOf(c)) : c; // W41: one of them is "a die"
   const ASK = { A: 'Listen to the riddle. Tap the answer.', B: 'Read the riddle. Tap the answer.' };
 
   function shuffle(a, rnd) {
@@ -6385,8 +6387,10 @@ RB.mount = (el, p, api) => {
     }
     st.miss++; // a failed run is one mistake
     bad = tr.at ? { s: tr.at.s, i: tr.at.i } : null;
+    // W14: a move off the board is "the edge" (bands A and B, the arrow kits; band A has no walls at all)
+    const bx = tr.c % p.n + RB.DX[tr.d], by = Math.floor(tr.c / p.n) + RB.DY[tr.d], edge = abs && (bx < 0 || by < 0 || bx >= p.n || by >= p.n);
     const words = {
-      bump: `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`,
+      bump: edge ? 'Bump! The robot hit the edge. Change the amber arrow.' : `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`,
       dizzy: 'The robot got dizzy: that loop went round and round. Change the amber block.',
       short: 'The robot stopped before the flag. Add more blocks, or change some.',
       gems: 'The robot is on the flag, but a gem is missing. Pick it up first.',
@@ -7298,7 +7302,8 @@ const CUB = (() => {
         st.miss++;
         api.saveState(st);
         api.sfx.wrong();
-        say(+typed < it.n ? `Not ${typed}. Some cubes are hiding. Count again!` : `Not ${typed}. Count each cube just once.`, 'try');
+        say(+typed < it.n ? (it.hid ? `Not ${typed}. Some cubes are hiding. Count again!` : `Not ${typed}. Count again!`) : // W13: flat stacks hide no cube
+          `Not ${typed}. Count each cube just once.`, 'try');
         typed = '';
         boxTxt();
         b.classList.remove('no');
@@ -8573,6 +8578,8 @@ BT.reg({
    word reads exactly once in the grid in any of the 8 directions (its own place), and no word of the rude list (BTW.rude,
    d-words-bt.js) reads anywhere in any direction; a filler square in a bad run is drawn again until both hold. Words that hold a
    rude run, palindromes, and words that hold another listed word (or its reverse) are never put in one grid.
+   D1 (owner, 2026-11-24): no mild word (MILD below) reads anywhere either, unless the run lies wholly inside one listed word
+   (father, died, dog read backwards): such a word stays in the pool. The list lives here, not in d-words-bt.js, so start-up is not larger.
    Play: drag across a word (touch or mouse; the line snaps to the 8 directions), or tap its first letter and then its last. Either
    end may come first. A found word gets a soft coloured band in the grid and is struck through with a tick in the list (never
    colour alone) and spoken. A line of 3 or more letters that is not a word counts one mistake (allow 3); shorter slips do not.
@@ -8597,6 +8604,8 @@ const WS = (() => {
   const tierOf = level => Math.min(2, Math.floor((Math.max(1, Math.min(12, level | 0 || 1)) - 1) / 4));
   const rev = w => [...w].reverse().join('');
   const rude = () => BTW.rude.split(' ');
+  // D1: mild words a grid must not spell by accident, in any direction
+  const MILD = 'die dead death hate fat god bum dumb ugly drug stab devil satan idiot stupid puke jerk perv'.split(' ');
   const cache = {};
   // the words a band can use (spelling words, a-z, no BAD, no rude run either way, no palindrome)
   function pool(band) {
@@ -8665,6 +8674,7 @@ const WS = (() => {
     placed.forEach(x => cellsOf(n, x.r, x.c, x.d, x.t.length).forEach(i => own.add(i)));
     for (let i = 0; i < n * n; i++) if (!g[i]) g[i] = FILL[Math.floor(rnd() * FILL.length)];
     const R = rude();
+    const owns = placed.map(x => new Set(cellsOf(n, x.r, x.c, x.d, x.t.length)));
     for (let t = 0; t < 400; t++) {
       const s = g.join('');
       let badRun = null;
@@ -8673,6 +8683,11 @@ const WS = (() => {
         if (f.length) { badRun = cellsOf(n, ...f[0], x.t.length); break; }
       }
       if (!badRun) for (const w of R) { const f = finds(s, n, w); if (f.length) { badRun = cellsOf(n, ...f[0], w.length); break; } }
+      // D1: a mild run that is not wholly inside one listed word is redrawn too
+      if (!badRun) for (const w of MILD) {
+        const f = finds(s, n, w).map(o => cellsOf(n, ...o, w.length)).filter(cs => !owns.some(o => cs.every(i => o.has(i))));
+        if (f.length) { badRun = f[0]; break; }
+      }
       if (!badRun) return true;
       const free = badRun.filter(i => !own.has(i));
       if (!free.length) return false;
@@ -8931,7 +8946,7 @@ const WS = (() => {
     };
   }
 
-  return { make, solve, mount, fit, fresh, match, line, finds, wcells, pool, hintWord, hintText, TIER, SRC, DIRS, tierOf, rev };
+  return { make, solve, mount, fit, fresh, match, line, finds, wcells, pool, hintWord, hintText, TIER, SRC, DIRS, tierOf, rev, MILD };
 })();
 
 BT.reg({

@@ -106,7 +106,7 @@ const CATS = {
     items: [['bike', '🚲'], ['bus', '🚌'], ['train', '🚂'], ['boat', '⛵'], ['tractor', '🚜']],
   },
   colour: {
-    label: 'Colour', v: 'likes', nv: 'does not like', obj: it => it.w,
+    label: 'Color', v: 'likes', nv: 'does not like', obj: it => it.w,
     items: [['red'], ['blue'], ['green'], ['yellow'], ['purple'], ['orange']],
   },
   age: {

@@ -345,7 +345,7 @@ const SD = (() => {
       for (const [c, v] of x.elim) cand[c] &= ~bit(v);
       s = single();
       if (s) return { kind: 'steps', cell: s.cell, v: s.v, house: [s.cell], also: [],
-        say1: 'Try this square.', say2: 'Look at its row, its column and its box.', say3: say3(s.cell, s.v) };
+        say1: 'Try this square.', say2: 'This one takes two steps. Look at its row, its column and its box.', say3: say3(s.cell, s.v) };
     }
     // 5. never stuck: the empty square with the fewest choices
     cand = cands(p, b);

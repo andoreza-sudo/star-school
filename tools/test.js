@@ -23999,7 +23999,7 @@ run('brain teasers audit fixes AUD-BT',()=>{
        const p=BT.make('sudoku','D',lv,{day:day(d),salt:d}),st=SD.fresh(p),N=9,G=SD.geo(9,3,3);
        for(let i=0;i<81;i++){const s=SD.nextStep(p,st);if(!s)break;
          if(s.kind=='guess')bad('sudoku D'+lv+': the hints had to guess');
-         if(s.kind=='steps'){plain++;if(s.say2!='Look at its row, its column and its box.'||s.say1!='Try this square.')bad('sudoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='steps'){plain++;if(s.say2!='This one takes two steps. Look at its row, its column and its box.'||s.say1!='Try this square.')bad('sudoku: the plain hint has other words: '+s.say2)}
          if(s.kind=='locked'||s.kind=='pair'){told++;const b=SD.vals(p,st);
            const cs=b.map((v,c)=>{if(v)return null;const o=new Set([1,2,3,4,5,6,7,8,9]);for(const q of G.peers[c])o.delete(b[q]);return o});
            if(s.kind=='locked'){const v=+s.say2.match(/an? (\d)/)[1],hk=s.say2.match(/of that (row|column|box)/)[1],a0=G.at[s.also[0]];
@@ -24025,7 +24025,7 @@ run('brain teasers audit fixes AUD-BT',()=>{
        const p=BT.make('mdoku',b,lv,{day:day(d),salt:d}),st=MD.fresh(p),n=p.n;
        for(let i=0;i<n*n;i++){const s=MD.nextStep(p,st);if(!s)break;
          if(s.kind=='guess')bad('mathdoku '+b+lv+': the hints had to guess');
-         if(s.kind=='steps'){plain++;if(s.say2!='Look at its row, its column and its cage.'||s.say1!='Try this square.')bad('mathdoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='steps'){plain++;if(s.say2!='This one takes two steps. Look at its row, its column and its cage.'||s.say1!='Try this square.')bad('mathdoku: the plain hint has other words: '+s.say2)}
          if(s.kind=='inline'||s.kind=='pair'){told++;const bd=MD.vals(p,st),row=/of this row|of the row/.test(s.say2),a0=s.also[0];
            const line=[];for(let c=0;c<n*n;c++)if(row?Math.floor(c/n)==Math.floor(a0/n):c%n==a0%n)line.push(c);
            if(!s.also.every(c=>line.includes(c)))bad('mathdoku: the marked squares are not in that line');
@@ -24054,9 +24054,48 @@ run('brain teasers audit fixes AUD-BT',()=>{
      if(!tricky)bad('no tricky pyramid met');
      if(right<tricky*0.98)bad('pyramid: only '+right+' of '+tricky+' guess hints point the right way');
      note.push('pyramid: '+right+' of '+tricky+' guess hints the right way')}
+    // WORDS (owner-approved 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md): the Brain Teaser rows as they read now
+    {// D1: no mild word in a grid unless it lies inside one listed word
+     const MILD=WS.MILD,D8=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];let n=0,inside=0;
+     for(const w of ['die','fat','god','hate','dead','bum','dumb'])if(!MILD.includes(w))bad('WS.MILD misses '+w);
+     for(const w of MILD)if(BTW.rude.split(' ').includes(w))bad(w+' is in both lists');
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<25;d++){
+       const p=BT.make('wsearch',b,lv,{day:day(d),salt:d}),N=p.n;n++;
+       const own=p.w.map(x=>{const o=new Set();for(let k=0;k<x.t.length;k++)o.add((x.r+D8[x.d][0]*k)*N+x.c+D8[x.d][1]*k);return o});
+       for(const w of MILD)for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(p.g[r*N+c]!=w[0])continue;
+         for(const [dr,dc] of D8){const cs=[r*N+c];let k=1;for(;k<w.length;k++){const rr=r+dr*k,cc=c+dc*k;if(rr<0||cc<0||rr>=N||cc>=N||p.g[rr*N+cc]!=w[k])break;cs.push(rr*N+cc)}
+           if(k<w.length)continue;
+           if(own.some(o=>cs.every(i=>o.has(i))))inside++;else bad('word search '+b+lv+' '+day(d)+' salt '+d+' reads "'+w+'" at row '+(r+1)+', column '+(c+1))}}}
+     if(!inside)bad('no listed word holds a mild run any more (the mild list must not take spelling words out of the pool)');
+     note.push(n+' word searches free of '+MILD.length+' mild words ('+inside+' inside a listed word)')}
+    {const all=JSON.stringify(RIDDLES);
+     for(const w of ['colour','grey','metre','seven colors','ball of fire','alphabet order'])if(all.includes(w))bad('riddles still say "'+w+'"');
+     for(const w of ['I have many colors. What am I?','It is a big, hot ball of glowing gas far away.','whose letters are in alphabetical order','It is a colorful arch.','big and gray','10 meters high'])if(!all.includes(w))bad('riddles miss "'+w+'"');
+     if(RDL.said({pic:true},'dice')!=='a die'||RDL.said({pic:true},'egg')!=='an egg'||RDL.nameOf('dice')!=='dice')bad('W41: '+RDL.said({pic:true},'dice'));
+     // W38, W67, W68: Logic Grid
+     const seen=new Set();
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<6;d++){const p=BT.make('logic',b,lv,{day:day(d),salt:d}),st=LG.fresh(p);
+       for(let i=0;i<300&&!LG.won(p,st);i++){const s=LG.nextStep(p,st);for(const t of [s.say1,s.say2,s.say3]){seen.add(t.replace(/\b[A-Z][a-z]+\b/g,'N'));
+         if(/ (and|for) (paint|draw|read|swim|skate)[.:]/.test(t))bad('logic: a bare verb names a square: '+t);
+         if(/, or /.test(t))bad('logic: a comma before "or": '+t);if(/colour/i.test(t))bad('logic: '+t)}
+         LG.place(p,st,s.cell,s.v)}}
+     if(![...seen].some(t=>/ and (painting|drawing|reading|swimming|skating)\.$/.test(t)))bad('logic: no hint names a square with an -ing word');
+     if(![...seen].some(t=>/number \d, number \d or number \d|\d, \d or \d/.test(t)))bad('logic: no three-item list met');
+     if(PUZ.logic.cats.colour.label!=='Color')bad('Logic Grid label '+PUZ.logic.cats.colour.label);
+     // W15
+     let w15=0;for(let d=0;d<40;d++){const p=BT.make('pyramid','D',11,{day:day(d),salt:d}),st={done:[]};
+       for(let g=0;g<40;g++){const h=BTN.PYR.hint(p,st,2);if(!h)break;if(/^Guess/.test(h.say)){w15++;
+         if(h.say!=='Guess a number for the glowing brick and work out the other bricks. If a brick does not match, try another number.')bad('W15: '+h.say)}st.done.push(BTN.PYR.hint(p,st,3).fill)}}
+     if(!w15)bad('W15: no guess hint met');
+     note.push('approved words: riddles, logic ('+seen.size+' hint forms), pyramid ('+w15+')')}
     return{out,note};
   };
   const r=eval(js+';('+body.toString()+')()'),p=r.out;
+  // W13, W14, W40 (screen code): the approved sentences are the ones in the source, each under its condition
+  {const cb=fs.readFileSync(path.join(SRC,'js','84-bt-cubes.js'),'utf8'),rb=fs.readFileSync(path.join(SRC,'js','81-bt-robot.js'),'utf8'),tz=fs.readFileSync(path.join(SRC,'js','74-teasers.js'),'utf8');
+   if(!cb.includes("(it.hid ? `Not ${typed}. Some cubes are hiding. Count again!` : `Not ${typed}. Count again!`)"))p.push('W13: the cubes line');
+   if(!rb.includes("bump: edge ? 'Bump! The robot hit the edge. Change the amber arrow.' : `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`"))p.push('W14: the robot line');
+   if(!tz.includes("' And ' + (o.badges[1] ? 'new badges: ' : 'a new badge: ')"))p.push('W40: the badge line')}
   // M-3 (the screen itself is in smoke P3-08): hint 1 rings the target cell and draws no arrow beside the bear
   const src=n=>fs.readFileSync(path.join(SRC,'js',n),'utf8'),rd=n=>fs.readFileSync(path.join(SRC,n),'utf8');
   const mz=src('75-bt-maze.js');

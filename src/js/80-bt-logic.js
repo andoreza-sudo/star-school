@@ -16,8 +16,9 @@ const LG = (() => {
     ride: 'rides|does not ride', colour: 'likes|does not like', age: 'is|is not', house: 'lives at|does not live at', race: 'came|did not come' };
   const OWN = { swim: 'swims|does not swim|', skate: 'skates|does not skate|', paint: 'paints|does not paint|', read: 'reads|does not read|',
     draw: 'draws|does not draw|', puzzle: 'does|does not do|puzzles' };
-  const NOUN = { pet: 'pet', snack: 'snack', sport: 'sport', hobby: 'hobby', music: 'instrument', ride: 'ride', colour: 'colour', age: 'age',
+  const NOUN = { pet: 'pet', snack: 'snack', sport: 'sport', hobby: 'hobby', music: 'instrument', ride: 'ride', colour: 'color', age: 'age',
     house: 'house', race: 'place' };
+  const ING = { paint: 'painting', draw: 'drawing', read: 'reading', swim: 'swimming', skate: 'skating' };
   const BASE = { age: 'be', house: 'live at', race: 'come' };
   const EXT = { age: ['the youngest', 'the oldest'], house: ['at the smallest number', 'at the biggest number'], race: ['first', 'last'] };
   const ORD = ['1st', '2nd', '3rd', '4th'];
@@ -25,7 +26,7 @@ const LG = (() => {
   const range = k => Array.from({ length: k }, (_, i) => i);
   const cap = s => s[0].toUpperCase() + s.slice(1);
   const lcf = s => (s.startsWith('The ') ? 't' + s.slice(1) : s);
-  const list = a => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + (a.length > 2 ? ',' : '') + ' or ' + a[a.length - 1]);
+  const list = a => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' or ' + a[a.length - 1]);
 
   /* ---------- words ---------- */
   const catOf = (p, c) => p.cats[c - 1];
@@ -57,7 +58,8 @@ const LG = (() => {
     const cat = catOf(p, c), w = wordOf(p, c, i);
     if (cat == 'age') return 'age ' + w;
     if (cat == 'house') return 'number ' + w;
-    if (cat == 'race' || cat == 'sport' || cat == 'hobby' || cat == 'colour') return w == 'puzzle' ? 'puzzles' : w;
+    // W38: a square is named with the -ing form ("A tick for Hugo and painting."); puzzles, soccer, basketball, tennis stay
+    if (cat == 'race' || cat == 'sport' || cat == 'hobby' || cat == 'colour') return w == 'puzzle' ? 'puzzles' : ING[w] || w;
     return 'the ' + w;
   }
   const noun = (p, c) => (c ? NOUN[catOf(p, c)] : 'child');

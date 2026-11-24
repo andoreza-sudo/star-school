@@ -236,7 +236,8 @@ const CUB = (() => {
         st.miss++;
         api.saveState(st);
         api.sfx.wrong();
-        say(+typed < it.n ? `Not ${typed}. Some cubes are hiding. Count again!` : `Not ${typed}. Count each cube just once.`, 'try');
+        say(+typed < it.n ? (it.hid ? `Not ${typed}. Some cubes are hiding. Count again!` : `Not ${typed}. Count again!`) : // W13: flat stacks hide no cube
+          `Not ${typed}. Count each cube just once.`, 'try');
         typed = '';
         boxTxt();
         b.classList.remove('no');

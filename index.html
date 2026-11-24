@@ -11855,7 +11855,7 @@ const BT = {
     document.body.appendChild(card);
     (o.stars == 3 ? SFX.fanfare : SFX.chime)();
     RW.burst(card.querySelector('.rw-card'), o.stars == 3 ? 30 : 16);
-    if (S.voice) say((o.stars == 3 ? 'Perfect!' : 'You solved it!') + (nb ? ' And a new badge: ' + BT.badgeNames(o.badges) + '!' : ''));
+    if (S.voice) say((o.stars == 3 ? 'Perfect!' : 'You solved it!') + (nb ? ' And ' + (o.badges[1] ? 'new badges: ' : 'a new badge: ') + BT.badgeNames(o.badges) + '!' : ''));
     if (o.grew) setTimeout(() => { if (card.isConnected) growShow(o.before); }, 1200);
     const go = f => () => { card.remove(); f(); };
     if ($('#btnext')) $('#btnext').onclick = go(() => BT.start(run.id, run.band, next));
