@@ -25,11 +25,11 @@ night|day|dark,moon|night,🌙
 open|shut|wide,broken|open,🔓
 happy|sad|glad,silly|happy,😊
 fast|slow|quick,late|fast,🏎
-old|new|dusty,tall|old,👴
+old|new|dusty,tall
 young|old|little,small|young,👶
 wet|dry|damp,cold|wet,💧
 full|empty|heavy,more|full,🥛
-soft|hard|fluffy,loud
+soft|hard|fluffy,furry
 loud|quiet|noisy,busy|loud,🔊
 stop|go|halt,wait
 push|pull|shove,pick
@@ -63,7 +63,7 @@ before|after|first,early
 always|never|often,usually
 many|few|lots,plenty
 stand|sit|run,jump
-sink|float|swim,drop
+sink|float|dive,drop
 rough|smooth|bumpy,hard
 tight|loose|snug,small
 brave|scared|bold,strong
@@ -381,7 +381,7 @@ We walked ___ the park after lunch.|to|too|two,toe
 Is this ___ lunch box?|your|you're|you,yours
 I think ___ very kind to share.|you're|your|you,yours
 The puppy wagged ___ tail.|its|it's|is,it
-___ raining outside, so take an umbrella.|it's|its|him,his
+___ raining outside, so take an umbrella.|It's|Its|Him,His
 Can you ___ the music from the next room?|hear|here|hair,heard
 Come over ___ and sit next to me.|here|hear|her,hire
 I will ___ a new notebook at the store.|buy|by|bye,bay
@@ -411,7 +411,7 @@ The sky is ___ today.|blue|blew|blow,glue
 The wind ___ my hat right off.|blew|blue|blow,glow
 She ___ a big lunch at school.|ate|eight|eat,at
 I have ___ stickers in my pocket.|eight|ate|eat,at
-___ Grandma, thank you for the gift.|dear|deer|door,dare
+___ Grandma, thank you for the gift.|Dear|Deer|Door,Dare
 We saw a ___ eating grass in the woods.|deer|dear|door,dare
 The mole dug a ___ in the yard.|hole|whole|hall,hold
 I ate the ___ pizza by myself.|whole|hole|hold,hall
@@ -426,7 +426,7 @@ The ___ of the backpack surprised me.|weight|wait|wet,white
 The table is made of ___.|wood|would|hood,wouldn't
 I ___ like some juice, please.|would|wood|hood,wool
 I ___ I could fly like a bird.|wish|which|watch,wash
-___ coat is yours?|which|wish|watch,with
+___ coat is yours?|Which|Wish|Watch,With
 Be careful not to ___ the glass.|break|brake|bread,bleak
 Press the ___ to stop the bike.|brake|break|bark,bake
 A tiny red ___ carried a crumb up the leaf.|ant|aunt|and,at
@@ -440,7 +440,7 @@ After the war, the land was at ___.|peace|piece|pole,pearl
 We left ___ boots by the door.|our|hour|out,are
 The movie was one ___ long.|hour|our|out,ore
 Read the poem ___ to the class.|aloud|allowed|aloof,along
-Dogs are not ___ in the pool.|allowed|aloud|alone,ahead
+Dogs are not ___ in the pool.|allowed|aloud|along,ahead
 I wonder ___ it will rain tomorrow.|whether|weather|wither,feather
 The ___ is sunny and warm today.|weather|whether|wither,feather
 She ___ the ball to me.|threw|through|thrown,three
