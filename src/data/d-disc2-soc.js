@@ -378,7 +378,7 @@ Crater Lake, the deepest lake in the United States, is in ___.|Oregon|Washington
 Mount St. Helens is a volcano in ___.|Washington|Oregon;Idaho;Montana|landmarks
 Death Valley, one of the hottest places on Earth, is mostly in ___.|California|Arizona;Nevada;Texas|landmarks
 Lake Michigan is the only Great Lake entirely inside the ___.|United States|Canada;Mexico;Alaska|landmarks||The other four Great Lakes are shared with the country to the north. This one is not.
-Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks||Its name is a word that means greater than the rest. It is the one farthest north.
+Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks||It is the one farthest north. Minnesota is on its shore.
 Cape Canaveral, where rockets are launched, is in ___.|Florida|Texas;California;Alaska|landmarks
 The Mississippi River flows into the ___.|Gulf of Mexico, also called Gulf of America|Atlantic Ocean, near New York;Pacific Ocean, near California;Great Lakes, near Canada|rivers
 The Mississippi River flows mostly from north to ___.|south|east;west;north|rivers
