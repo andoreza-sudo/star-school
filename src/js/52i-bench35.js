@@ -233,7 +233,9 @@ const ls3Say = v => (/\//.test(v) ? ls3FrSay(String(v)) : /R/.test(v) ? String(v
 // m.lock [true, false]: a bar the child does not change (it shows the given fraction); m.lab: write each bar's fraction beside it
 function ls3Bars(s, d, o = {}) {
   // LESSON-STAGE: o.tap, each part a target (data-v) on a bar that says which it is (data-b), for K2MM.bars2.tap
-  const row = (n, dd, i) => `<div class="ls-bar"${o.tap ? ` data-b="${i}"` : ''}>${o.lab ? `<span class="ls-barl">${ls3Fr(n, dd)}</span>` : ''}${VIZ.fracBar(n, dd, {w: 240, tap: o.tap}).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
+  // fix v194: tapped, both bars as wide as the one with more parts needs (50 a part, VIZ.fracBar), so the two wholes stay the same length
+  const W = o.tap ? Math.max(240, 50 * Math.max(d[0], d[1])) : 240;
+  const row = (n, dd, i) => `<div class="ls-bar"${o.tap ? ` data-b="${i}"` : ''}>${o.lab ? `<span class="ls-barl">${ls3Fr(n, dd)}</span>` : ''}${VIZ.fracBar(n, dd, {w: W, tap: o.tap}).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
   return `<div class="ls-bars" role="img" aria-label="two fraction bars">${row(s[0], d[0], 0)}${row(s[1], d[1], 1)}</div>`;
 }
 // a place-value chart: the digits of a number under their places (o.pl: the places, biggest first, as powers of ten; o.mark: the place
