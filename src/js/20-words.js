@@ -45,7 +45,7 @@ const SYLP=[['cat','🐱',1],['dog','🐶',1],['sun','☀️',1],['bus','🚌',1
 const SYLW=[
   'cat jump stop black train house light plant spoon bread smile thumb'.split(' '),
   'tiger apple window happy monkey pencil garden rabbit table circle summer winter finger basket pillow button yellow market'.split(' '),
-  'banana elephant umbrella bicycle family computer dinosaur tomato potato animal butterfly beautiful yesterday remember strawberry kangaroo marshmallow vitamin'.split(' '),
+  'banana elephant umbrella bicycle computer dinosaur tomato potato animal butterfly beautiful yesterday remember strawberry kangaroo marshmallow vitamin'.split(' '),
   'alligator watermelon caterpillar dictionary helicopter motorcycle celebration elevator invitation category refrigerate generation'.split(' ')];
 
 /* ---------- P2-18 phonics 1st-2nd (CURRICULUM E-phon) ---------- */
@@ -187,7 +187,12 @@ bowl:bow howl blow`.split('\n').map(r=>{const [w,d]=r.split(':');return [w,d.spl
 const SAMESOUND=['to two too','for four','right write','there their','no know','eight ate','by buy','red read','new knew','our hour','one won',
   'blue blew','be bee','see sea','so sew','some sum','here hear','would wood','whole hole','its it\'s','your you\'re',
   'not knot','i eye','made maid','wait weight','been bin','sun son','tail tale','mail male','road rode','rain rein','feet feat',
-  'meet meat','week weak','pair pear','flour flower','night knight','dear deer','where wear'].map(g=>g.split(' '));
+  'meet meat','week weak','pair pear','flour flower','night knight','dear deer','where wear','our are'].map(g=>g.split(' '));
+// AUDIT-READ: picture words whose pictures a child could take for each other (the drawn cup has a handle like the mug, an ant is a bug,
+// the gift is a box, a cap is a hat, a glass of milk is a cup to a small child). A question whose answer is one of a pair never offers
+// the picture of the other (Read & Match, the lessons' "tap the picture" items).
+const PICSAME=['cup mug','cup milk','bug ant','box gift','cap hat'].map(g=>g.split(' '));
+const picSame=(a,b)=>a!==b&&PICSAME.some(g=>g.includes(a)&&g.includes(b));
 const sameSound=w=>{const k=String(w).toLowerCase();return SAMESOUND.filter(g=>g.includes(k)).flat().filter(x=>x!==k)};
 
 // The blocklist itself lives in src/data/d-kidsafe.js as hashes only (KIDSAFE). ksHash is cyrb53 (public domain), in base 36.
