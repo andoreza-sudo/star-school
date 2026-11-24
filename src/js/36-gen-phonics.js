@@ -1,7 +1,8 @@
 /* ---------- early reading: sounds & rhymes ---------- */
 function genSound(lv){const [w,e]=pick(lv==1?CVC.concat(BLEND.filter(x=>!/^(sh|ch|th|wh)/.test(x[0]))):CVC),ch=lv==1?w[0]:w[w.length-1];
   // R-01r: c and k are never offered together (both are right for /k/), and the picture goes through picFor (drawings)
-  const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch&&!(ch=='c'&&x=='k')&&!(ch=='k'&&x=='c'))).slice(0,2)]);
+  // AUDIT-READ: x says /ks/, so the last sound of fox, box and six is also s (and k is its other half): never offered beside x
+  const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch&&!(ch=='c'&&x=='k')&&!(ch=='k'&&x=='c')&&!(ch=='x'&&(x=='s'||x=='k')))).slice(0,2)]);
   return{kind:'choice',cls:'syms',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">${lv==1?'What sound does it START with?':'What sound does it END with?'}</div>`,
     say:`${w}. What sound does ${w} ${lv==1?'start':'end'} with?`,auto:true,ans:ch,after:w,choices:opts.map(x=>({l:x,v:x})),
     hint:{k:'say',w:`${w}... ${w}`,s:lv==1?'Say it slowly. Listen to the very first sound.':'Say it slowly. Listen to the very last sound.'},label:`${lv==1?'starts':'ends'}: ${w}`}}

@@ -26,13 +26,15 @@ function ls4Sound(id, t, key, pool, o) {
   // letters to offer beside the right one: the contrast words' first, then others (never c with k, never the same letter twice)
   const others = (w, n, r) => {
     const c = LS4_KEY[key](w), from = ls4Wrong(w, key).map(x => x[at(w)]), pool2 = key == 'mid' ? [...LS4_V] : [...'bdfghlmnprstw'];
-    const o2 = [...new Set(from.concat(ls4Shuf(r, pool2)))].filter(x => x !== c && !(c == 'c' && x == 'k') && !(c == 'k' && x == 'c'));
+    const o2 = [...new Set(from.concat(ls4Shuf(r, pool2)))].filter(x => x !== c && !(c == 'c' && x == 'k') && !(c == 'k' && x == 'c')
+      && !(key == 'last' && ls4Same('last', c, x))); // AUDIT-READ: never s beside x (fox ends in the sound of s too)
     return o2.slice(0, n);
   };
   const pics = (w, n, r) => {
     const c = LS4_KEY[key](w), alt = ls4Shuf(r, okL().filter(x => LS4_KEY[key](x) !== c && !(c == 'c' && LS4_KEY[key](x) == 'k')));
     const out = [];
-    for (const x of alt) if (out.length < n - 1 && !out.some(y => LS4_KEY[key](y) == LS4_KEY[key](x))) out.push(x);
+    // AUDIT-READ: skipped after the shuffle (every other draw keeps its seed): a word that ends in the same sound (bus beside fox)
+    for (const x of alt) if (out.length < n - 1 && !out.some(y => LS4_KEY[key](y) == LS4_KEY[key](x)) && !(key == 'last' && ls4Same('last', c, LS4_KEY[key](x)))) out.push(x);
     return out;
   };
   D.q = (st, r) => {
@@ -85,7 +87,7 @@ function ls4Word(id, t, g, pool, key, bugs, show, o) {
   // the pictures to offer beside w: drawn words that differ from it by one of the lesson's codes first, then other drawn words of the lesson
   const picsFor = (w, n, r) => {
     const near = ls4Shuf(r, Object.keys(ART).filter(x => x !== w && bugs.includes(ls4Code(w, x)))), rest = ls4Shuf(r, okL().filter(x => x !== w && !near.includes(x)));
-    return near.concat(rest).slice(0, n - 1);
+    return near.concat(rest).filter(x => !picSame(w, x)).slice(0, n - 1); // AUDIT-READ: never a look-alike picture (cap and hat, box and gift)
   };
   const bugOf = (w, xs) => { const b = {}; for (const x of xs) { const c = ls4Code(w, x); if (c) (b[c] = b[c] || []).push(x); } return b; };
   const sentence = (w, r) => ls4Pick(r, LS4_T[g >= 1 ? 1 : 0]).replace('{a}', (typeof SENT_ART != 'undefined' && SENT_ART[w]) || art(w)).replace('{w}', w);

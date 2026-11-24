@@ -25,7 +25,10 @@ const SENT_ART={sun:'the',milk:'some'};
 function genSent(lv){const [w,e]=pick(lv==1?NOUNS.filter(x=>CVC.includes(x)):NOUNS);
   let pool=NOUNS.filter(x=>x[0]!==w);
   if(lv==2){const near=pool.filter(x=>x[0][0]==w[0]||x[0].slice(-2)==w.slice(-2));if(near.length>=2)pool=near}
-  const d=shuffle(pool).slice(0,2),t=pick(lv==1?T1:T2).replace('{a}',SENT_ART[w]||art(w)).replace('{w}',w);
+  const sh=shuffle(pool),t=pick(lv==1?T1:T2).replace('{a}',SENT_ART[w]||art(w)).replace('{w}',w);
+  // AUDIT-READ: never a picture a child could take for the answer (cup and mug, bug and ant: PICSAME), and never the can under a
+  // sentence that holds the word can ("Can you see the egg?"). Filtered after the draws, so every other question keeps its seed.
+  const d=sh.filter(x=>!picSame(w,x[0])&&!(x[0]=='can'&&/\bcan\b/i.test(t))).slice(0,2);
   // R-01r: pictures go through picFor (drawings where they exist) and are named aloud, so a child knows what each one is meant to be
   const ch=shuffle([[w,e],...d]),names=ch.map(x=>x[0]);
   return{kind:'choice',cls:'pics',html:`<div class="sent">${words(t)}</div><div class="sub">Tap the picture that matches</div>`,

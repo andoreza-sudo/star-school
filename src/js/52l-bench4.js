@@ -131,7 +131,8 @@ const LS4_KEY = {
 };
 // v182 (review): keys of a sort that make the same sound, so a sort of pictures (heard, not read) could not tell them apart: never
 // drawn as the two sides of one sort. Per key, so no other lesson's draw changes (ou in house and ow in cow: Vowel Teams 2, 52p).
-const LS4_SAME = {team2: [['ou', 'ow']]};
+// AUDIT-READ: ee and ea (tree, leaf) sound the same too, and so does the end of bus and fox (x is /ks/)
+const LS4_SAME = {team2: [['ou', 'ow']], team: [['ee', 'ea']], last: [['s', 'x']]};
 const ls4Same = (key, a, b) => (LS4_SAME[key] || []).some(s => s.includes(a) && s.includes(b));
 // two keys of a pool with at least two drawn pictures each, and two pictures of each (a sort of four)
 function ls4Pairs(pool, key, r, want) {
