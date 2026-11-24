@@ -77,7 +77,7 @@ compAdd([
   {t:'vocab',q:'In this story, "batch" means...',a:'a group made at one time',d:['a kind of oven','a loud noise','a small plate'],ev:[0]},
   {t:'main',q:'What is "The Cookie Surprise" mostly about?',a:'Max takes cookies and then says sorry',
    d:['Grandma loses her phone at home','Max bakes cookies with Grandma','Max sells cookies at a small shop'],ev:[3,4,5,7]},
-  {t:'infer',q:'How did Max feel when he looked at his shirt?',a:'sorry that he got caught',d:['proud of what he did','sleepy from the long day','full of joy and pride'],ev:[5,6,7]}]},
+  {t:'infer',q:'How did Max feel when he looked at his shirt?',a:'sorry and embarrassed',d:['proud of what he did','sleepy from the long day','full of joy and pride'],ev:[5,6,7]}]},
 
 {id:'g2f05',g:2,type:'f',title:'Zip the Robot',text:[
   'Zip was a small robot who loved to sweep.',
@@ -85,12 +85,12 @@ compAdd([
   'Zip rolled slowly to the wall plug.',
   'But the cord was too short to reach.',
   'He beeped for help, and Nina woke up.',
-  'She moved the plug to a longer cord.',
+  'She plugged in a longer cord.',
   'Soon, Zip\'s lights glowed bright again.',
   '"Thank you," he beeped, and he swept until morning.'],
  qs:[
   {t:'detail',q:'Why could Zip not reach the plug?',a:'The cord was too short',d:['The door was locked','His wheel was broken','Nina was asleep'],ev:[3]},
-  {t:'sequence',q:'What did Nina do after she woke up?',a:'She moved the plug to a longer cord',
+  {t:'sequence',q:'What did Nina do after she woke up?',a:'She plugged in a longer cord',
    d:['She swept the floor for Zip','She turned off all his lights','She gave him a brand new battery pack'],ev:[4,5]},
   {t:'vocab',q:'In this story, "dim" means...',a:'not bright',d:['very loud','very hot','broken in two'],ev:[1]},
   {t:'main',q:'What is "Zip the Robot" mostly about?',a:'Zip needs power and gets help from Nina',
@@ -174,7 +174,7 @@ compAdd([
   'Penguins are birds that cannot fly.',
   'Their wings work like flippers in the water.',
   'They swim fast to catch fish.',
-  'Penguins live in cold places.',
+  'Most penguins live in cold places.',
   'A thick layer of fat keeps them warm.',
   'When the wind blows, they stand close together.',
   'Then they take turns standing on the cold outer edge.',
