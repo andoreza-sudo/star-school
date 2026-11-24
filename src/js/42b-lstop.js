@@ -8,7 +8,7 @@
      lsStopAt(p, i)      stop i of map p has a lesson stop for this child: lessons on (TEACH.off off), a lesson, the child's band
                          (as planToday, 52b-know.js: Pre-K to 2nd below 3rd grade, 3rd to 6th from 3rd grade; a Pre-K world's
                          lessons for a Pre-K child only)
-     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a stop open before lessons were stops
+     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a lesson run LS_TRIES times (lsTried), a stop open before lessons were stops
                          (S.lsOpen, migration 6 in 00-core.js), a skipped world (placement or Test out proved it), a stop with a later
                          stop of its world passed, "Unlock every stop", or a stop the path has not reached (that one is locked anyway)
      lsOpen(p, i)        loads the lesson's parts and opens its start card (LS.open, 52-lesson.js), only if the screen the child tapped
@@ -33,11 +33,15 @@ const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
 function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return p == 'es' || (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
 function lsStopAt(p, i) { const n = NODES[p] && NODES[p][i]; return !!(n && !TEACH.off && LS_STOPS[p] && LS_STOPS[p].has(nid(n)) && lsBand(p, i)); }
 const lsLearned = id => !!(S.know && S.know[id] && S.know[id].s >= 2);
+/* Owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run LS_TRIES times without passing Show opens its practice stop
+   (Practice still has to be passed). S.know[id].n counts lessons run to their end (LS.finish); one left part way is no try. */
+const LS_TRIES = 3;
+const lsTried = id => !!(S.know && S.know[id] && S.know[id].n >= LS_TRIES);
 const LS_PASS = {}; // fix179: stops whose lesson could not load, open for this session (not saved: the next start tries the lesson again)
 function lsGate(p, i) {
   if (!lsStopAt(p, i) || S.unlockAll || passed(p, i) || !unlocked(p, i)) return false;
   const id = nid(NODES[p][i]);
-  return !lsLearned(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
+  return !lsLearned(id) && !lsTried(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
 }
 // the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35 (grade 6: and teach6), Spanish and Discover in teaches
 const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'es' || p == 'disc' ? ['teachrd', 'teaches'] : p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'].concat(lsWorldG(p, i) > 5 ? ['teach6'] : []) : []);
