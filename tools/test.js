@@ -20171,7 +20171,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // AUD-DISC-W (the words the owner approved on 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md) changed choice items of nine stops, so
       // their hashes are new again: sci_life1 (W59: a hint each for the cactus and the water lily), sci_life2 (W47 "germination", W54
       // "called ___" twice), sci_earth1 (W54 twice), sci_earth2 (W37 "stars", W54 "a path called ___"), sci_earth3 (W37 "comet", W58
-      // "a few ___"), sci_phys2 (W54 twice), sci_phys3 (W37 "steadier"), geo_us2 (W51 "The lower 48 states", W59 three hints), civ2 (W49
+      // "a few ___"), sci_phys2 (W54 twice), sci_phys3 (W37 "steadier"), geo_us2 (W51 "The lower 48 states", W59 three hints; set again when the biggest Great Lake hint was redrafted so it does not give the
+      // answer away), civ2 (W49
       // the rare stamp, W50 "Each branch can limit", W54 "is called ___"). geo_world1 has W54 too, but it is not a pinned stop.
       // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
       // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits)
