@@ -1,5 +1,5 @@
-/* Whistlestop data banks v195. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v195 loads this file with <script src="data.v195.js"> between the code and the start-up script. */
+/* Whistlestop data banks v196. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v196 loads this file with <script src="data.v196.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -9647,4 +9647,4 @@ var BTW = {
     'taco hissed appraised', // AUD-BT S-7: coat, dishes and disappear have these anagrams (the tiles could start as TACO or HISSED)
 };
 
-var DATA_VER='v195'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v196'; // last line: the whole file ran (checked by dataReady() before the app starts)
