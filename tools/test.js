@@ -19831,6 +19831,20 @@ run('LESSON-STAGE lsMix: valid items, Practice and math stops only, a miss never
     return out})()`);
   return{problems:r.bad,note:`${r.n} mix-in items checked, ${r.mix} lesson items in Practice draws`};
 });
+// fix v194 (GFX-1 review): the juice kit's pool without a screen: the cap holds, dead bits are reused, slow frames halve the cap and quick
+// ones give it back; with no flight in the air, stop() is safe and live() is 0
+run('GFX-1 JFX: the bit pool and its cap, stop with nothing flying',()=>{
+  const r=eval(js+`;(()=>{const bad=[];const P=JFX.pool(10);
+    for(let i=0;i<15;i++)P.emit({x:i,y:0,life:.5});if(P.list.length!==10)bad.push('cap: '+P.list.length+' bits alive (10 wanted)');
+    P.step(.6);if(P.list.length||P.free.length!==10)bad.push('step: dead bits not freed ('+P.list.length+' alive, '+P.free.length+' free)');
+    const q=P.free[P.free.length-1];if(P.emit({x:1,y:2})!==q)bad.push('a dead bit is not reused');
+    for(let i=0;i<200;i++)P.frame(.04);if(P.cap!==8)bad.push('slow frames: cap '+P.cap+' (8 wanted)');
+    for(let i=0;i<400;i++)P.frame(1/60);if(P.cap!==10)bad.push('quick frames: cap '+P.cap+' (10 wanted)');
+    P.clear();if(P.list.length)bad.push('clear left bits');
+    try{JFX.stop()}catch(e){bad.push('stop: '+e.message)}if(JFX.live()!==0)bad.push('live: '+JFX.live());
+    return bad})()`);
+  return{problems:r};
+});
 
 // ---- KINDS2 batch B (docs/KINDS2-SPEC.md 2.3, 3, 6): the line kind ----
 // K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4 at 40%, not 30%: 30% leaves the number pad at 70%).
@@ -22345,10 +22359,11 @@ run('teach: review fixes, the model never shows the answer, no homophone tiles, 
       notes.kinds['plural wrongs '+said.size]=1}
     return {bad,model:[...notes.model].length,kinds:Object.keys(notes.kinds),builds}})()`);
   const p=r.bad.slice();
-  // 5. the step label under 400 px: " of 6" in its own span, which the narrow layout leaves out (smoke TEACH-UX measures 320 and 360 px)
+  // 5. the step label under 400 px: " of 6" in its own span. fix v194: since LESSON-STAGE the label is for screen readers only (a 1 px
+  // clipped label, the train's stops show the step), so the narrow layout no longer leaves " of 6" out (it only cut it from what is read)
   const src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
   if(!/<span class="ls-of">\$1<\/span>/.test(src))p.push('the step label has no " of 6" span');
-  if(!/@media \(max-width:400px\)\{[^\n]*\.ls-step \.ls-of\{display:none\}/.test(css))p.push('the step label keeps " of 6" under 400 px');
+  if(/\.ls-of\{display:none\}/.test(css))p.push('the step label leaves " of 6" out of what a screen reader reads');
   return{problems:p.slice(0,40),note:r.model+' lessons carry a model, each group a number the question says ('+r.kinds.join(', ')+'); '+r.builds+' spelling builds'};
 });
 

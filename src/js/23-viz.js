@@ -333,7 +333,7 @@ const VIZ = (() => {
   function fracBar(n, d, o = {}) {
     d = clamp(Math.round(d) || 1, 1, 12);
     n = Math.max(0, Math.round(n) || 0);
-    const w = o.tap ? Math.max(def(o.w, 280), d * 50) : def(o.w, 280); // fix v194: 50 a part, so the end parts (1.5 inside the outline) stay 48
+    const w = o.tap ? Math.max(def(o.w, 280), d * 50) : def(o.w, 280); // fix v194: end parts stay 48
     const h = 56, P = 3, G = 14, pw = w / d;
     const bars = Math.max(1, Math.ceil(n / d));
     let body = '';

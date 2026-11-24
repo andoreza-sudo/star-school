@@ -2095,15 +2095,20 @@ function rlDrawMe(R, top) {
 }
 
 // GFX-1: little exhaust puffs from behind the car while it drives (a pool of 12 from the shared kit, one soft sprite made once;
-// none in calm mode, none while the race waits)
+// none in calm mode, none while the race waits). fix v194: the slow-frame throttle (E.frame) takes the real time between frames (the
+// race clock stops and runs at its own pace); no new object or closure a frame (one emit object reused, a plain loop to draw)
 function rlPuffs(R, x, y, w, h) {
   if (typeof JFX == 'undefined') return;
   const c = R.ctx, P = R.st.P, t = R.t || 0, dt = Math.max(0, Math.min(.1, t - (R.pf0 == null ? t : R.pf0))), E = R.ex || (R.ex = JFX.pool(12));
+  const now = performance.now();
   R.pf0 = t;
-  E.frame(dt);
+  if (R.pfr != null) E.frame((now - R.pfr) / 1000);
+  R.pfr = now;
   if (dt > 0 && !R.st.done && P.v > RL_VMAX * .15) {
     R.pa = (R.pa || 0) + dt * 9;
-    for (; R.pa >= 1; R.pa--) for (const sd of [-1, 1]) E.emit({ x: x + sd * w * .22, y: y - h * .14, vx: sd * w * .2, vy: h * .45, life: .45, r: w * .03 });
+    const o = R.eo || (R.eo = {});
+    o.y = y - h * .14; o.vy = h * .45; o.life = .45; o.r = w * .03;
+    for (; R.pa >= 1; R.pa--) for (let sd = -1; sd <= 1; sd += 2) { o.x = x + sd * w * .22; o.vx = sd * w * .2; E.emit(o); }
   }
   E.step(dt);
   if (!E.list.length) return;
@@ -2119,18 +2124,18 @@ function rlPuffs(R, x, y, w, h) {
     g.fill();
     return q;
   })());
-  E.each((q, f) => {
-    const r = q.r * (1 + (1 - f) * 1.8);
+  for (const q of E.list) {
+    const f = q.life / q.max, r = q.r * (1 + (1 - f) * 1.8);
     c.globalAlpha = f * .5;
     c.drawImage(S, q.x - r, q.y - r, 2 * r, 2 * r);
-  });
+  }
   c.globalAlpha = 1;
 }
 // GFX-1: a sparkle flies from the car to the sparkles chip (JFX.fly: off in calm mode)
 function rlFly() {
   const cv = RL && RL.cv, V = RL && RL.v;
   if (!cv || !V || typeof JFX == 'undefined') return;
-  const b = cv.getBoundingClientRect();
+  const b = JFX.rect(cv); // fix v194: measured once per screen size
   JFX.fly(b.left + b.width / 2, b.top + b.height * (V.ground / V.H) - 30, '#rlspk', 'sparkle');
 }
 // G-RALLY2: the trail behind the car: pieces come out from behind the car on both sides and float up and out as they fade (fewer

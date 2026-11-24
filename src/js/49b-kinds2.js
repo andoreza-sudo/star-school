@@ -992,7 +992,7 @@ KIND.make = {
     st.mm0 = st.mm.slice();
     st.mmMoved = false;
     const act = t => {
-      if (st.lock || !t || t.closest('.mm-notap')) return; // fix v194: fraction parts too small to tap (paint): the buttons only
+      if (st.lock || !t || t.closest('.mm-notap')) return;
       let s = null;
       if (M.tap && t.closest('.mmv')) s = M.tap(q, st.mm, t); // LESSON-STAGE: a model that takes taps on its drawing (frame2, bars2)
       else if (t.dataset.d != null) s = M.step(q, st.mm, +t.dataset.i, +t.dataset.d);
@@ -1033,8 +1033,7 @@ KIND.make = {
       v.querySelectorAll('[data-v]').forEach(e => { e.removeAttribute('role'); e.removeAttribute('aria-label'); });
     }
     $$('.mmn').forEach(o => { o.textContent = s[+o.dataset.o]; });
-    // fix v194: a fraction bar's parts (parts, bars2) take taps only while each is 48 px or more on the screen (the drawing's layout
-    // size, not a card animation's); else the drawing is a picture and the buttons do it (many small parts on a narrow phone)
+    // fix v194: fraction parts under 48 px (layout size) take no taps (mm-notap); the buttons do it
     let small = null;
     v.querySelectorAll('svg').forEach(g => {
       const ps = g.querySelectorAll('rect.vp[data-v]'), vw = ps.length && g.viewBox.baseVal && g.viewBox.baseVal.width;
@@ -1736,7 +1735,7 @@ if (typeof genEsGusta == 'function') genEsGusta = k2Wrap('es_gusta', genEsGusta)
 // G.kh: the kinds asked so far this round (makeQ pushes every question it returns). After two of one kind, up to 10 draws look for
 // another kind; a stop that gives only that kind is remembered in KMONO for the session, so it pays the extra draws once.
 const KMONO = {};
-// mix: only Practice's own draw (makeQ) may take a lesson item; never mastQ's other stops, a check-in, a boss or a world test
+// mix: Practice's own draw only (lsMix)
 function pickQ(sk, lv, mix) {
   const h = G.kh || (G.kh = []), two = h.length > 1 && h[h.length - 1] === h[h.length - 2] ? h[h.length - 1] : null, id = sk + lv;
   let q, alt;

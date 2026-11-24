@@ -523,6 +523,8 @@ GH.reg({
      JFX.pool(max)               a particle pool: emit(o), step(dt), each(fn), frame(dt) (halves the cap while frames take > 20 ms)
      JFX.shaker()                a gentle screen shake: kick(amp, s), at(dt) -> [dx, dy] (zero in calm mode)
      JFX.fly(x, y, to, kind)     a star or coin that flies from a screen point to a counter chip, which bumps (DOM, transform only)
+     JFX.rect(el)                el's box, measured once per screen size (no layout read per frame or pick-up)
+     JFX.stop()                  takes every flight still in the air off the screen (leaving a game)
 */
 const JFX = (() => {
   const calm = () => !!(typeof S != 'undefined' && S && S.calm) ||
@@ -644,41 +646,53 @@ const JFX = (() => {
     };
     return K;
   }
-  // a star or coin flying to its counter (a chip in the top bar); the chip bumps when it lands. Calm: only the bump
-  let flying = 0;
+  // a star or coin flying to its counter (a chip in the top bar); the chip bumps when it lands. Calm: only the bump.
+  // Per pick-up no layout work (fix v194): a chip's place is measured once per screen size (rect: a resize or a turn measures again),
+  // the flying spans are reused (FREE), and the bump restarts through the Web Animations API (no class off, layout read, class on).
+  let RG = 0;
+  const RC = new WeakMap(), FREE = [], LIVE = new Set();
+  if (typeof addEventListener == 'function') addEventListener('resize', () => { RG++; });
+  const rect = el => {
+    let m = RC.get(el);
+    if (!m || m.g !== RG) { const r = el.getBoundingClientRect(); RC.set(el, (m = { g: RG, left: r.left, top: r.top, width: r.width, height: r.height })); }
+    return m;
+  };
+  const still = () => typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bump = t => {
+    if (still() || !t.animate) return;
+    if (t._jb) t._jb.cancel();
+    t._jb = t.animate([{ transform: 'none' }, { transform: 'scale(1.18)', offset: .4 }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.34,1.56,.64,1)' }); // --t-slow, --spring
+  };
   function fly(x, y, to, kind = 'star') {
     let t = typeof to == 'string' ? document.querySelector(to) : to;
     if (!t || !t.getBoundingClientRect) return;
     t = (t.closest && t.closest('.stat')) || t; // a number inside a chip: the whole chip bumps
-    const bump = () => {
-      t.classList.remove('jfx-bump');
-      void t.offsetWidth;
-      t.classList.add('jfx-bump');
-      clearTimeout(t._jb);
-      t._jb = setTimeout(() => t.classList.remove('jfx-bump'), 400);
-    };
-    if (calm() || flying >= 6 || typeof ico != 'function') return bump();
-    const b = t.getBoundingClientRect(), e = document.createElement('span');
-    e.className = 'jfx-fly jfx-' + kind;
-    e.setAttribute('aria-hidden', 'true');
-    e.innerHTML = ico({ coin: 'coin', nut: 'nut', sparkle: 'sparkle' }[kind] || 'star', 28);
+    if (calm() || LIVE.size >= 6 || typeof ico != 'function') return bump(t);
+    const b = rect(t);
+    let e = FREE.pop();
+    if (!e) { e = document.createElement('span'); e.setAttribute('aria-hidden', 'true'); e.addEventListener('transitionend', () => e._done && e._done()); }
+    if (e._k !== kind) { e.className = 'jfx-fly jfx-' + kind; e.innerHTML = ico({ coin: 'coin', nut: 'nut', sparkle: 'sparkle' }[kind] || 'star', 28); e._k = kind; }
     e.style.transform = `translate(${Math.round(x - 14)}px,${Math.round(y - 14)}px) scale(1.25)`;
-    document.body.appendChild(e);
-    flying++;
-    const done = () => {
-      if (!e.parentNode) return;
-      e.remove();
-      flying--;
-      bump();
-    };
+    e.style.opacity = '';
+    document.body.appendChild(e); // out of the page since its last flight, so it starts here with no transition, like a new one
+    LIVE.add(e);
+    const n = (e._n = (e._n || 0) + 1);
+    const done = (e._done = () => {
+      if (e._n !== n || !LIVE.has(e)) return;
+      end(e);
+      bump(t);
+    });
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (e._n !== n || !LIVE.has(e)) return;
       e.style.transform = `translate(${Math.round(b.left + 6)}px,${Math.round(b.top + b.height / 2 - 14)}px) scale(.7)`;
       e.style.opacity = '.6';
     }));
-    e.addEventListener('transitionend', done);
     setTimeout(done, 900); // --t-xl is 600 ms
   }
-  return { calm, css, can, ink, tint, pool, shaker, fly };
+  const end = e => { e.remove(); LIVE.delete(e); e._done = null; FREE.push(e); };
+  // stop: every flight still in the air goes (a game left mid-flight: show() in 40-view.js calls it)
+  const stop = () => { for (const e of [...LIVE]) end(e); };
+  return { calm, css, can, ink, tint, pool, shaker, fly, rect, stop, live: () => LIVE.size };
 })();
 /* ---------- GLX: a small shared WebGL 1 layer for the Game Room (GL-01) ----------
    Plain WebGL 1, no library, works offline. It goes into games.<VER>.js (tools/build.py PARTS) before 62-hill.js, which uses it
@@ -1371,10 +1385,15 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,u
   if(H.fuel<=0){if(sp<25&&ground)H.stuckT+=dt;else H.stuckT=0;if(H.stuckT>1.4){if(C.endless){H.over=true;H.result='fuel';return}H.why='fuel';H.crashes++;H.crashT=.9;if(ui){hcMsg('Out of gas! Back to the checkpoint with a full tank.',2200);if(S.voice)say('Out of gas! Here is a full tank.')}return}}
   if(ui)hcFx(H,gas,ang,cx,cy,sp,wet);
   hcParts(H,dt)}
-// GFX-1: a pick-up's little burst of stars and its flight to the bolts chip (JFX.fly, 59b-fx.js; neither in calm mode)
-function hcJuice(H,wx,wy,n){if(H.calm)return;for(let i=0;i<n;i++){const a=i/n*6.28+H.t;H.parts.push({x:wx,y:wy,vx:Math.cos(a)*140,vy:Math.sin(a)*140+120,g:.5,l:.55,s:4,c:i%2?'y':'y1'})}
-  const cv=document.getElementById('hcv');if(!cv||!H.scr||typeof JFX=='undefined')return;const b=cv.getBoundingClientRect(),k=b.width/cv.width;JFX.fly(b.left+H.scr[0](wx)*k,b.top+H.scr[1](wy)*k,'#hcb','nut')}
+// GFX-1: a pick-up's little burst of stars and its flight to the bolts chip (JFX.fly, 59b-fx.js; neither in calm mode). fix v194: the
+// burst has its own small budget (H.jp, at most 12 bits: a run of bolts never pushes out the dust or the crash bits, nor they it), and the
+// canvas's place comes from JFX.rect (measured once per screen size) and the frame's camera numbers (H.sk, H.sx0, H.sy0), not a layout read
+const HC_JP=12;
+function hcJuice(H,wx,wy,n){if(H.calm)return;const jp=H.jp||(H.jp=[]);for(let i=0;i<n;i++){const a=i/n*6.28+H.t;jp.push({x:wx,y:wy,vx:Math.cos(a)*140,vy:Math.sin(a)*140+120,g:.5,l:.55,s:4,c:i%2?'y':'y1'})}
+  if(jp.length>HC_JP)jp.splice(0,jp.length-HC_JP);
+  const cv=document.getElementById('hcv');if(!cv||H.sk==null||typeof JFX=='undefined')return;const b=JFX.rect(cv),k=b.width/cv.width;JFX.fly(b.left+((wx-H.camX)*H.sk+H.sx0)*k,b.top+(H.sy0-(wy-H.camY)*H.sk)*k,'#hcb','nut')}
 function hcParts(H,dt){const g=HCW[H.wi].g;for(const d of H.parts){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy-=g*dt*d.g;d.l-=dt}H.parts=H.parts.filter(d=>d.l>0);const pc=H.pcap||30;if(H.parts.length>pc)H.parts.splice(0,H.parts.length-pc);
+  if(H.jp&&H.jp.length){for(const d of H.jp){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy-=g*dt*d.g;d.l-=dt}H.jp=H.jp.filter(d=>d.l>0)}
   for(const p of H.pops){p.l-=dt;p.y+=60*dt}H.pops=H.pops.filter(p=>p.l>0)}
 // dust, smoke, splashes and the engine note (only on screen)
 function hcFx(H,gas,ang,cx,cy,sp,wet){const C=H.C,Wd=HCW[H.wi],soft=hcSoftAt(C,H.w1.x);
@@ -1872,7 +1891,7 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   if(H.camX==null){H.camX=cx;H.camY=cy}
   H.camX+=(cx+W*.1/sc-H.camX)*.09;H.camY+=(cy+30-H.camY)*.07;if(H.shake>0)H.shake-=1/60;
   const sh=H.shake>0&&!H.calm?Math.round((Math.random()-.5)*14*H.shake*dpr):0;
-  const SX=wxp=>(wxp-H.camX)*sc+W*.38+sh,SY=wy=>Hh*R.base-(wy-H.camY)*sc+sh,WX=sx=>(sx-W*.38)/sc+H.camX;H.scr=[SX,SY];
+  const SX=wxp=>(wxp-H.camX)*sc+W*.38+sh,SY=wy=>Hh*R.base-(wy-H.camY)*sc+sh,WX=sx=>(sx-W*.38)/sc+H.camX;H.sk=sc;H.sx0=W*.38+sh;H.sy0=Hh*R.base+sh;
   {const now=performance.now(),fdt=H.lastF?(now-H.lastF)/1000:0;H.lastF=now;if(typeof JFX!='undefined'){H.fxp=H.fxp||JFX.pool(30);H.fxp.frame(fdt);H.pcap=H.fxp.cap}
    const gas=!!H.gas;if(gas&&!H.gas0&&(H.speed||0)<80&&!H.calm)H.ant=.16;H.gas0=gas;H.ant=Math.max(0,(H.ant||0)-fdt)}
   // GL-01: the 3D look draws the sky, ranges, ground and car on its own canvas; this one is cleared and carries the rest
@@ -1911,7 +1930,7 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
     y.fillStyle=hcC('y3');y.beginPath();y.arc(px,py,4*s,0,7);y.fill();y.fillStyle=hcA('w',.7);y.beginPath();y.arc(px-4*s,py-4*s,2*s,0,7);y.fill()});
   for(let j=Math.max(0,H.ci-3);j<C.coins.length;j++){const o=C.coins[j];if(o.x>right)break;if(o.x<left||H.took.has(j))continue;x.drawImage(nut,Math.round(SX(o.x)-nut.width/2),Math.round(SY(o.y)+Math.sin(T*4+j)*3*sc-nut.height/2))}
   if(H.pops.length){x.fillStyle=hcC('y');x.strokeStyle=hcC('n3');x.lineWidth=3*sc;x.font=`bold ${16*sc}px sans-serif`;for(const p of H.pops){x.globalAlpha=Math.min(1,p.l*2);x.strokeText('+1',SX(p.x),SY(p.y));x.fillText('+1',SX(p.x),SY(p.y))}x.globalAlpha=1}
-  for(const d of H.parts){x.globalAlpha=Math.max(0,Math.min(1,d.l*1.4))*(d.smoke?.5:1);if(d.star)hcStarD(x,SX(d.x),SY(d.y),7*sc);else{const r=(d.smoke?d.s+(.8-d.l)*18:d.s)*sc;x.drawImage(hcDot(R,d.c),SX(d.x)-r,SY(d.y)-r,r*2,r*2)}}x.globalAlpha=1;
+  for(let pi=0,pn=H.parts.length+(H.jp?H.jp.length:0);pi<pn;pi++){const d=pi<H.parts.length?H.parts[pi]:H.jp[pi-H.parts.length];x.globalAlpha=Math.max(0,Math.min(1,d.l*1.4))*(d.smoke?.5:1);if(d.star)hcStarD(x,SX(d.x),SY(d.y),7*sc);else{const r=(d.smoke?d.s+(.8-d.l)*18:d.s)*sc;x.drawImage(hcDot(R,d.c),SX(d.x)-r,SY(d.y)-r,r*2,r*2)}}x.globalAlpha=1;
   if(H.boss)hcRivalDraw(x,R,H,SX,SY,sc,left,right,T); // G-MOVES: the rival (both looks draw it here, behind the car)
   // the car from its sprites (it blinks while it starts again); in the 3D look only its balloons are drawn here
   if(gl){if(H.ballT>0&&(H.crashT<=0||Math.floor(H.crashT*8)%2)){const lift=H.R+6,bx=SX(cx)-Math.sin(ang)*lift*sc,by=SY(cy)-Math.cos(ang)*lift*sc;hcBalloons(x,bx,by-90*sc,sc,bx,by-40*sc)}}

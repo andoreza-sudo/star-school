@@ -14698,7 +14698,8 @@ async function main() {
         for (const u of ta.network) bad.push(at + 'network request: ' + u);
         await ta.ctx.close();
       }
-      // fixRev (v184): on 320 and 360 px phones, with the ticket meter, the label leaves out " of 6" and every step's name shows whole
+      // fixRev (v184): on 320 and 360 px phones, with the ticket meter, every step's name shows whole. fix v194: the label is for screen
+      // readers only since LESSON-STAGE, so " of 6" is no longer left out at this width (it only took it from what is read)
       for (const [w, h] of [[320, 640], [360, 740]]) {
         const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const pg = ta.page, sz = w + 'x' + h, at = 'TEACH-UX ' + sz + ' ';
@@ -14716,10 +14717,10 @@ async function main() {
               if (document.querySelector('.ls-top #lsmeter')) met++;
               // LESSON-STAGE: the label is for screen readers only (1 px), the train's six stops fit the bar
               const tr = document.querySelector('.ls-top .ls-pips').getBoundingClientRect();
-              if (r.width > 1.5 || !vis.endsWith(name) || / of /.test(vis) || tr.right > vw || tr.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
+              if (r.width > 1.5 || !vis.endsWith(name) || !/ of 6 /.test(vis) || tr.right > vw || tr.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
             const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show();
             return { o, met, tog: document.querySelector('#lsstep').innerText.trim() }; });
-          if (s3.o.length || s3.met || s3.tog !== 'Step 4 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
+          if (s3.o.length || s3.met || s3.tog !== 'Step 4 of 6 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
           await pg.screenshot({ path: path.join(shots, `teachux-step-${sz}.png`) });
           notes.push(sz + ' "' + s3.tog + '"');
         } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }

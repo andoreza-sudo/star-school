@@ -20,7 +20,7 @@
 /* LESSON-STAGE: the words are for screen readers only (the train's stops show the step) */
 .ls-beats>.ls-step{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media (max-width:480px){.ls-top .ls-tag{display:none}}
-@media (max-width:400px){.top.tbar.ls-top{gap:var(--s-1)}.ls-step .ls-of{display:none}}
+@media (max-width:400px){.top.tbar.ls-top{gap:var(--s-1)}} /* fix v194: " of 6" stays (the label is for screen readers only now) */
 .ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}
 .ls-top .ls-tag{flex:none}
 .ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}
@@ -89,6 +89,7 @@
 .ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}
 .ls-job{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);text-align:left}
 .ls-job .ls-jp{flex:none;width:56px;height:56px}
+.ls-win .ls-jp{flex:none;width:40px;height:40px} /* fix v194: the job the lesson helped with, by the stars (a picture, no words) */
 @media (orientation:landscape){
   .ls-end{flex-direction:row;justify-content:center;align-items:flex-end;gap:var(--s-5)}
   .ls-end>.ls-art.ls-big{width:clamp(130px,34vh,240px);height:clamp(130px,34vh,240px);margin:0}

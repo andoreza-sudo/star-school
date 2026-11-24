@@ -1522,12 +1522,12 @@ function hopDraw(R, dt) {
   // little bits: dust when landing, sparkles when collecting, the trail, the poof of a fall (sprites)
   R.fx.frame(dt);
   R.fx.step(dt);
-  R.fx.each(q => {
+  for (const q of R.fx.list) { // fix v194: a plain loop (no closure made each frame)
     c.globalAlpha = Math.min(1, q.life * 2.5);
     const r = q.r * T * (q.grow ? 1 + (1 - q.life) : 1) * 2.2;
     if (q.k == 'star') hopImg(c, V.glint, X(q.x) - r * 1.6, Y(q.y) - r * 1.6, 3.2 * r);
     else hopImg(c, V.dot[q.c] || V.dot.w, X(q.x) - r, Y(q.y) - r, 2 * r);
-  });
+  }
   c.globalAlpha = 1;
   // the pet (with its costume behind it): stretched when it hops, squashed when it lands, tipped a little forward when it runs
   if (!hidden) {
@@ -1987,7 +1987,7 @@ function hopEvents() {
 function hopFly(to) {
   const R = HP, V = R && R.v;
   if (!V || typeof JFX == 'undefined' || !R.cv) return;
-  const b = R.cv.getBoundingClientRect(), T = V.T, p = R.st.p, k = b.width / V.W;
+  const b = JFX.rect(R.cv), T = V.T, p = R.st.p, k = b.width / V.W; // fix v194: measured once per screen size
   JFX.fly(b.left + ((p.x - R.cx) * T) * k, b.top + (V.base - (p.y + 1 - R.cy) * T) * k, to, 'star');
 }
 const hopSpringAt = st => {

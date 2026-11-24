@@ -372,7 +372,8 @@ const LS = {
     $('#lsknow').onclick = () => { SFX.whoosh(); LS.start(id, {know: 1}); };
     $('#lshear2').onclick = () => say(said);
     UI.hear();
-    if (LS.voice()) say(said);
+    LS.job1 = '';
+    if (LS.voice()) { say(said); LS.job1 = job; }
   },
   /* LESSON-STAGE: the lesson's place: its stop's world on the map (the world band's scene, SCN.band in 43-scenes.js, drawn for the
      screen with nothing to keep clear, its horizon at about 40% of a wide screen and 30% of a tall one, the sky above it in its own top
@@ -382,6 +383,7 @@ const LS = {
     return n && PATHS[p].worlds[n.wi] || null;
   },
   scene(id) {
+    LS.scnId = id;
     const w = LS.world(id), T = w && typeof SCN != 'undefined' && SCN.theme(w);
     if (!T) return '';
     const W = Math.max(320, innerWidth | 0), H = Math.max(400, innerHeight | 0), y0 = Math.max(0, Math.round(H * (W > H ? .42 : .3)) - 76);
@@ -429,7 +431,11 @@ const LS = {
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
   talk(lines, then, cap0) {
-    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = lsPlain(cap0 || t);
+    let t = lines.filter(Boolean).join(' ');
+    const b = $('#lsbub'), me = LS.st, c = lsPlain(cap0 || t);
+    // fix v194: the start card has just said the job (LS.job1): the first line after it does not say that sentence again (the bubble keeps it)
+    if (LS.job1 && t.startsWith(LS.job1)) t = t.slice(LS.job1.length).trim();
+    LS.job1 = '';
     if (b) { b.firstChild.textContent = c; b.classList.toggle('on', !!c); }
     // TEACH-4: a recorded line (EN_TEACH, 12-speech.js) plays wherever its sentence falls in the lines; the rest is the tablet's voice
     // TEACH-5S: a line with «Spanish» in it, or any line of a Spanish lesson, is said piece by piece in its own voice (lsSay)
@@ -594,7 +600,7 @@ const LS = {
     view(`${LS.scene(st.id)}<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div>${UI.chip('ticket', fmtT(rec.bank0), {aria: 'Game time in the bank', id: 'lsbank'})}</div>
     <div class="scroll ls-end" id="lsend"><div class="ls-art ls-big" id="lsart" aria-hidden="true"></div><div class="ls-endc">
      <div class="ls-h"><h1>${esc(line)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}</div><p class="ls-idea">${ico('hint', 26)}<span>${esc(L.idea)}</span></p>
-     ${rec.pass || PT.sec ? `<div class="ls-win">${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}</div>` : ''}
+     ${rec.pass || PT.sec ? `<div class="ls-win">${rec.pass ? LS.jobPic(st.id, 'ls-jp') + UI.stars(rec.stars, 3, 34) : ''}${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}</div>` : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       ${gt}${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES[p][rec.next].t)}!</span></li>` : ''}</ul>
      <div class="ls-acts">${rec.pass ? UI.btn('Practice', {kind: getSt(p, rec.ni) ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass && getSt(p, rec.ni) ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
@@ -667,6 +673,8 @@ const LS = {
 };
 // fix179: lesson time stops counting while the app is hidden (LS.vis)
 if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
+// fix v194: a turned phone (or a resized window) draws the lesson's scene again for the new shape, once it settles
+if (typeof addEventListener == 'function') { let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { try { const e = document.querySelector('.ls-scn'), h = e && LS.scnId && LS.scene(LS.scnId); if (h) e.outerHTML = h; } catch (x) {} }, 200); }); }
 const lsName = () => (S.name || 'friend');
 /* LESSON-STAGE (owner, 2026-11-23): practice in more than one shape. When a stop's generator makes only one kind of question (KMONO),
    pickQ (49b-kinds2.js) asks here for the third question in a row: one of the stop's own lesson items in another kind (its build on

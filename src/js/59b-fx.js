@@ -11,6 +11,8 @@
      JFX.pool(max)               a particle pool: emit(o), step(dt), each(fn), frame(dt) (halves the cap while frames take > 20 ms)
      JFX.shaker()                a gentle screen shake: kick(amp, s), at(dt) -> [dx, dy] (zero in calm mode)
      JFX.fly(x, y, to, kind)     a star or coin that flies from a screen point to a counter chip, which bumps (DOM, transform only)
+     JFX.rect(el)                el's box, measured once per screen size (no layout read per frame or pick-up)
+     JFX.stop()                  takes every flight still in the air off the screen (leaving a game)
 */
 const JFX = (() => {
   const calm = () => !!(typeof S != 'undefined' && S && S.calm) ||
@@ -132,39 +134,51 @@ const JFX = (() => {
     };
     return K;
   }
-  // a star or coin flying to its counter (a chip in the top bar); the chip bumps when it lands. Calm: only the bump
-  let flying = 0;
+  // a star or coin flying to its counter (a chip in the top bar); the chip bumps when it lands. Calm: only the bump.
+  // Per pick-up no layout work (fix v194): a chip's place is measured once per screen size (rect: a resize or a turn measures again),
+  // the flying spans are reused (FREE), and the bump restarts through the Web Animations API (no class off, layout read, class on).
+  let RG = 0;
+  const RC = new WeakMap(), FREE = [], LIVE = new Set();
+  if (typeof addEventListener == 'function') addEventListener('resize', () => { RG++; });
+  const rect = el => {
+    let m = RC.get(el);
+    if (!m || m.g !== RG) { const r = el.getBoundingClientRect(); RC.set(el, (m = { g: RG, left: r.left, top: r.top, width: r.width, height: r.height })); }
+    return m;
+  };
+  const still = () => typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bump = t => {
+    if (still() || !t.animate) return;
+    if (t._jb) t._jb.cancel();
+    t._jb = t.animate([{ transform: 'none' }, { transform: 'scale(1.18)', offset: .4 }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.34,1.56,.64,1)' }); // --t-slow, --spring
+  };
   function fly(x, y, to, kind = 'star') {
     let t = typeof to == 'string' ? document.querySelector(to) : to;
     if (!t || !t.getBoundingClientRect) return;
     t = (t.closest && t.closest('.stat')) || t; // a number inside a chip: the whole chip bumps
-    const bump = () => {
-      t.classList.remove('jfx-bump');
-      void t.offsetWidth;
-      t.classList.add('jfx-bump');
-      clearTimeout(t._jb);
-      t._jb = setTimeout(() => t.classList.remove('jfx-bump'), 400);
-    };
-    if (calm() || flying >= 6 || typeof ico != 'function') return bump();
-    const b = t.getBoundingClientRect(), e = document.createElement('span');
-    e.className = 'jfx-fly jfx-' + kind;
-    e.setAttribute('aria-hidden', 'true');
-    e.innerHTML = ico({ coin: 'coin', nut: 'nut', sparkle: 'sparkle' }[kind] || 'star', 28);
+    if (calm() || LIVE.size >= 6 || typeof ico != 'function') return bump(t);
+    const b = rect(t);
+    let e = FREE.pop();
+    if (!e) { e = document.createElement('span'); e.setAttribute('aria-hidden', 'true'); e.addEventListener('transitionend', () => e._done && e._done()); }
+    if (e._k !== kind) { e.className = 'jfx-fly jfx-' + kind; e.innerHTML = ico({ coin: 'coin', nut: 'nut', sparkle: 'sparkle' }[kind] || 'star', 28); e._k = kind; }
     e.style.transform = `translate(${Math.round(x - 14)}px,${Math.round(y - 14)}px) scale(1.25)`;
-    document.body.appendChild(e);
-    flying++;
-    const done = () => {
-      if (!e.parentNode) return;
-      e.remove();
-      flying--;
-      bump();
-    };
+    e.style.opacity = '';
+    document.body.appendChild(e); // out of the page since its last flight, so it starts here with no transition, like a new one
+    LIVE.add(e);
+    const n = (e._n = (e._n || 0) + 1);
+    const done = (e._done = () => {
+      if (e._n !== n || !LIVE.has(e)) return;
+      end(e);
+      bump(t);
+    });
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (e._n !== n || !LIVE.has(e)) return;
       e.style.transform = `translate(${Math.round(b.left + 6)}px,${Math.round(b.top + b.height / 2 - 14)}px) scale(.7)`;
       e.style.opacity = '.6';
     }));
-    e.addEventListener('transitionend', done);
     setTimeout(done, 900); // --t-xl is 600 ms
   }
-  return { calm, css, can, ink, tint, pool, shaker, fly };
+  const end = e => { e.remove(); LIVE.delete(e); e._done = null; FREE.push(e); };
+  // stop: every flight still in the air goes (a game left mid-flight: show() in 40-view.js calls it)
+  const stop = () => { for (const e of [...LIVE]) end(e); };
+  return { calm, css, can, ink, tint, pool, shaker, fly, rect, stop, live: () => LIVE.size };
 })();
