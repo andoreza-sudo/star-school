@@ -1039,7 +1039,7 @@ function vlOooVal(s) {
    Every label holds the numbers of its question, so tools/test.js can rebuild the right answer from the label. */
 
 // a step hint from [picture, head, text] rows; plain text only (fractions as 3/8), the last row has a "?"
-const ccHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text, say]) => ST.step(pic || '', head, text, null, say))}); // say: the spoken words when they differ (WORDS-MATH W20)
+const ccHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text, say]) => ST.step(pic || '', head, text, null, say))}); // say: W20
 // put one text step in front of a step hint made by stepsAdd, stepsSub ...
 const ccLead = (h, text) => {h.steps.unshift({html: `<p class="hsc">${esc(text)}</p>`, say: text}); return h};
 const ccGcd = (a, b) => (b ? ccGcd(b, a % b) : a);
@@ -1152,7 +1152,7 @@ function ccFop5() {
     html: `<div class="sub">Multiply. Write the answer as a fraction.</div><div class="eq">${fcFr(a, b)} × ${W} ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
     say: `${fcSay(a, b)} times ${W} and ${fcSay(c, d)}. Write the answer as a fraction.`, ans: ccFr(n, b * d),
     hint: ccHint([['', 'Mixed number to fraction:', `${W} ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`,
-      ST.spk(`Mixed number to fraction: ${W} and ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`)], // W20: "2 and 2 over 3", not "2 2 over 3"
+      ST.spk(`Mixed number to fraction: ${W} and ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`)],
       ['', 'Multiply:', `${a}/${b} × ${top}/${d}. Tops: ${a} × ${top} = ? Bottoms: ${b} × ${d} = ?`],
       ['', 'Simplest form:', 'Does one number go into both the top and the bottom? Divide to make the fraction as small as it can be. What is left?']]),
     label: `fop5 ${a}/${b} x ${W} ${c}/${d}`};
@@ -1340,7 +1340,7 @@ const CC_LP = [['leaf', 'leaves', 'inches'], ['ribbon', 'ribbons', 'yards'], ['w
 // an amount k/den as html (whole numbers stay whole; the rest are written like the labels of the line plot) and as speech
 const ccPl = d => (d == 2 ? 'halves' : FC_NAMES[d] + 's'); // halves, thirds, fourths
 const CC_SING = {inches: 'inch', yards: 'yard', feet: 'foot'};
-const ccAn = unit => (unit == 'inches' ? 'an inch' : 'a ' + CC_SING[unit]); // WORDS-MATH W26: "6 eighths of a yard long"
+const ccAn = unit => (unit == 'inches' ? 'an inch' : 'a ' + CC_SING[unit]); // W26
 const ccAmt = (k, den) => (k % den ? fcFr(k, den) : String(k / den));
 const ccAmtSay = (k, den) => (k % den ? fcSay(k, den) : String(k / den));
 function ccData4() {
@@ -1531,7 +1531,7 @@ const skySpeak = s => ST.spk(s.replace(/−(\d)/g, 'negative $1'));
 // a step hint from [picture, head, text] rows; plain text only, the last row has a "?"
 const skyHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text]) => ST.step(pic || '', head, text, null, skySpeak((head ? head + ' ' : '') + text)))});
 const skyMoney = c => '$' + (c % 100 ? (c / 100).toFixed(2) : String(c / 100)); // cents -> $7.50, $12
-const skyMoneySay = c => (c > 0 && c < 100 ? qN(c, 'cent') : `${Math.floor(c / 100)} dollar${Math.floor(c / 100) == 1 ? '' : 's'}` + (c % 100 ? ` and ${c % 100} cents` : '')); // WORDS-MATH W70: "65 cents", never "0 dollars and 65 cents"
+const skyMoneySay = c => (c > 0 && c < 100 ? qN(c, 'cent') : `${Math.floor(c / 100)} dollar${Math.floor(c / 100) == 1 ? '' : 's'}` + (c % 100 ? ` and ${c % 100} cents` : '')); // W70
 const skyDec = c => { const s = String(c).padStart(3, '0'), w = s.slice(0, -2), f = s.slice(-2).replace(/0+$/, ''); return f ? `${w}.${f}` : w; }; // hundredths as a whole number -> 7.5, 12
 const skyPairs = [[['red', 'red'], ['blue', 'blue']], [['cat', 'cats'], ['dog', 'dogs']], [['boy', 'boys'], ['girl', 'girls']], [['apple', 'apples'], ['pear', 'pears']], [['pen', 'pens'], ['pencil', 'pencils']], [['circle', 'circles'], ['square', 'squares']]];
 const skyCnt = (n, w) => `${n} ${n == 1 ? w[0] : w[1]}`; // 1 cat, 3 cats
@@ -1889,11 +1889,11 @@ const galSpeak = s => s.replace(/\^2/g, ' squared').replace(/\^3/g, ' cubed').re
 // a string with $12.50 in it, spoken: "12 dollars and 50 cents"
 const galMoneyWords = s => s.replace(/\$(\d+)(?:\.(\d\d?))?/g, (m, d, c) => {
   const cents = c ? +(c.length == 1 ? c + '0' : c) : 0;
-  if (+d == 0 && cents) return qN(cents, 'cent'); // WORDS-MATH W70
+  if (+d == 0 && cents) return qN(cents, 'cent');
   return `${d} dollar${d == '1' ? '' : 's'}` + (cents ? ` and ${cents} cents` : '');
 });
 const galNum = v => (Number.isInteger(v) ? String(v) : v.toFixed(1)); // 31.5, 40
-const galCash = v => (Number.isInteger(v) ? String(v) : v.toFixed(2)); // money: 52.50, 40
+const galCash = v => (Number.isInteger(v) ? String(v) : v.toFixed(2)); // W28
 
 /* ---- ooo 2: exponents and parentheses ---- */
 // a power: a square (base 2-12) or, in 30% of them, a cube (base 2-5)
@@ -2269,7 +2269,7 @@ function galData5() {
   vals.forEach(v => { cnt[v] = (cnt[v] || 0) + 1 });
   const mode = +Object.keys(cnt).find(k => cnt[k] == Math.max(...Object.values(cnt))), lo = sorted[0], hi = sorted[n - 1];
   const list = vals.join(', ');
-  const shows = ctx[2] == 'score' ? "It shows that friend's quiz score." : `It shows the number of ${ctx[1]}.`; // WORDS-MATH W19: a dot is a score, not how many scores
+  const shows = ctx[2] == 'score' ? "It shows that friend's quiz score." : `It shows the number of ${ctx[1]}.`; // W19
   const head = plot ? `${VIZ.linePlot(vals, {min: 0, max: 10, w: 290})}<div class="sub">Each dot is one of ${n} friends. ${shows}</div>`
     : `<div class="sub">${ctx[0]}:</div><div class="eq" style="font-size:.9em">${list}</div>`;
   const says = plot ? `Each dot is one of ${n} friends. ${shows}` : `${ctx[0]}: ${list}.`;
@@ -2347,7 +2347,7 @@ function galStory9() {
       const text = `A jacket costs $${P}. It is on sale for ${pct}% off. What is the sale price?`;
       return story(text, {pad: 'dec', eq: 'value', html: html(text, `$ ${SLOT}`), ans: galNum(P - disc), max: 4,
         hint: skyHint([['', 'Percent off:', `${pct}% off means you take away ${pct}% of the price.`],
-          ['', 'The discount:', `${pct}% of $${P} is ${P} × ${pct} ÷ 100 = $${galCash(disc)}.`], ['', 'Subtract:', `$${P} − $${galCash(disc)} = ?`]]), // WORDS-MATH W28: $52.50, not $52.5
+          ['', 'The discount:', `${pct}% of $${P} is ${P} × ${pct} ÷ 100 = $${galCash(disc)}.`], ['', 'Subtract:', `$${P} − $${galCash(disc)} = ?`]]),
         label: `story9 pct sale ${pct} ${P}`});
     }
     const text = `${who}'s meal costs $${P}. ${who} leaves a ${pct}% tip. How much is the tip, in dollars?`;

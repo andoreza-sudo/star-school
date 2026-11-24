@@ -323,8 +323,8 @@ function genSgShape2() {
   const ans = pick(['hexagon', 'rhombus', 'trapezoid', 'oval']);
   let pool = ['hexagon', 'rhombus', 'trapezoid', 'oval', 'circle', 'square', 'triangle', 'rectangle'].filter(n => n != ans);
   if (ans == 'rhombus') pool = pool.filter(n => n != 'square'); // a square is a rhombus too
-  if (ans == 'oval') pool = pool.filter(n => n != 'circle'); // WORDS-MATH E6: a circle is never a wrong choice beside the oval
-  if (ans == 'trapezoid') pool = pool.filter(n => !['rectangle', 'square', 'rhombus'].includes(n)); // E7: some books count these as trapezoids too
+  if (ans == 'oval') pool = pool.filter(n => n != 'circle'); // E6
+  if (ans == 'trapezoid') pool = pool.filter(n => !['rectangle', 'square', 'rhombus'].includes(n)); // E7
   const names = shuffle([ans, ...shuffle(pool).slice(0, 3)]), w = SG_FACT[ans];
   return pkQ({
     kind: 'choice', cls: 'pics pk4', ans, auto: 'must', choices: names.map(n => ({ l: sgShp(n), v: n, h: true })),
@@ -409,7 +409,7 @@ const SG_CATS = {
 };
 const sgCat = (c, other) => (c == 'animals' && other == 'food' ? SG_CATS[c].filter(x => x[0] != 'fish') : SG_CATS[c]);
 function genSgSort() {
-  // WORDS-MATH E8: a fish is an animal and a food: it is left out when the two kinds are animals and food (sgCat, also the sort form)
+  // E8: no fish in a food and animals sort
   const [c1, c2] = shuffle(Object.keys(SG_CATS)).slice(0, 2), three = shuffle(sgCat(c1, c2)).slice(0, 3), odd = pick(sgCat(c2, c1));
   const all = shuffle([...three.map(x => ({ x, odd: false })), { x: odd, odd: true }]), w = `Three of these are ${c1}.`;
   return pkQ({

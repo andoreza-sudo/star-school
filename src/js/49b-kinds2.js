@@ -486,7 +486,7 @@ function k2SortSize() {
 function k2SortKinds() {
   const [c1, c2] = k2Take(Object.keys(SG_CATS), 2), its = [];
   const bins = [c1, c2].map(c => {
-    const xs = k2Take(sgCat(c, c == c1 ? c2 : c1), 3); // WORDS-MATH E8: no fish between animals and food
+    const xs = k2Take(sgCat(c, c == c1 ? c2 : c1), 3); // E8
     xs.slice(0, 2).forEach(x => its.push({v: x[0], b: c, h: true, say: x[0], al: x[0], l: k2Pic(x[0], x[1])}));
     return {v: c, h: true, al: k2Cap(c), l: `${k2Pic(xs[2][0], xs[2][1], 'k2bp')}<span>${k2Cap(c)}</span>`};
   });
@@ -1262,7 +1262,7 @@ function k2Frame(q0, lv) {
     const n = +m[1], t = n > 10 ? 20 : 10;
     if (!n) return null;
     return k2Make(q0, {model: 'frame', m: {total: t}, ans: n, ansSay: String(n), speak: true,
-      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${qN(n, 'counter')}.`)}`, say: `Make ${n}. Tap the ten frame to put in ${qN(n, 'counter')}.`, // WORDS-MATH W21: 1 counter
+      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${qN(n, 'counter')}.`)}`, say: `Make ${n}. Tap the ten frame to put in ${qN(n, 'counter')}.`,
       hint: n > 5 ? 'Fill the top row first: that is 5. Then count on.' : 'Count as you tap: 1, 2, 3 ...'});
   }
   if ((m = /^(\d+) and \? make 10$/.exec(l))) {
