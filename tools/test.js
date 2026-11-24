@@ -17697,7 +17697,7 @@ run('Art Studio gallery and packs G-ART2',()=>{
   for(const [id,n] of CB_PICS){const d=cbData(id);if(d.G.length!==256||d.G.some(k=>!CB_COL[k]))bad(id+': not 256 squares of known colours');if(d.keys.length<3||d.keys.length>8)bad(id+': '+d.keys.length+' colours')}
   CB_PICS.slice(12).forEach(([id])=>{if(!ART_ALL.includes('px:'+id))bad('new pixel picture '+id+' is in no pack')});
   // 2. pixel squares at least 32 px on a phone (380 x 780) and a tablet (1024 x 600), whatever the palette
-  for(const [W,H] of [[380,780],[360,640],[1024,600],[800,1280]])for(const n of [3,6,8]){const c=pxCell(W,H,n);if(c<32)bad('pixel squares '+c+' px at '+W+'x'+H);}
+  for(const [W,H] of [[380,780],[360,640],[1024,600],[800,1280]])for(const n of [3,6,8]){const c=pxCell(W,H,n);if(c<40)bad('pixel squares '+c+' px at '+W+'x'+H);} // audit v195 (R-03 T2): 40 px at the least (was 32)
   r.notes.push('squares '+pxCell(380,780,6)+' px at 380x780, '+pxCell(1024,600,6)+' at 1024x600');
   // 3. compact data: fills, pixel bits and neon strokes come back exactly
   const regs=mandala(17),f={};regs.forEach((x,i)=>{if(i%3==0)f[i]=['c:#f97316','k:#3b82f6','s:#facc15','r:#22c55e','m:#a855f7','g:#ef4444'][i%6]});
@@ -18538,7 +18538,9 @@ run('Brain Teasers and practice fixes R-01b',()=>{
      S.maps.math.add1=1;if(!FLU.on()||!FLU.set('add10').ok()||FLU.set('add20').ok())res.push('Adding to 10 passed: '+FLU.on()+' '+FLU.set('add20').ok());
      load(null);S.grade=1;S.maps.math.add2=1;if(!FLU.set('add10').ok()||!FLU.set('add20').ok())res.push('a later adding stop does not open the sets');
      load(null);S.grade=2;(S.skip=S.skip||{})[NODES.math[ni('math','add',1)].wid]=1;if(!FLU.on())res.push('a skipped Number Meadow does not open Adding to 10');
-     load(null);delete S.grade;S.maps.math.add1=1;if(!FLU.on())res.push('a save with no grade that passed Adding to 10');
+     // audit v195 (n8), a deliberate change: a save with no grade is a Kindergartner everywhere else (gradeOf() is 0), so it shows no
+     // Fact Sprint either (R-01b had kept the stop rule alone for it: this line expected FLU.on() to be true)
+     load(null);delete S.grade;S.maps.math.add1=1;if(FLU.on())res.push('a save with no grade (a Kindergartner, gradeOf() 0) shows Fact Sprint');
      if(res.length)add('Fact Sprint gating: '+res.join('; '));
      note.push('Fact Sprint: Pre-K and K never (tile, sprint mission); grade 1 up once Adding to 10 or a later adding stop is passed')}
     // Should 6: Pre-K and K missions: "Play 2 rounds today" in place of "Get a perfect round"
@@ -23747,6 +23749,108 @@ run('online voice RENAME-2: a non-local voice never hears a child name, a local 
   {const ctx=E.loadApp(null,{window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>net,speak(){},cancel(){}}});
     const shown=vm.runInContext("S.name='Maya';const L='Hi Maya!';ttsSay(L,null,false);L",ctx);if(shown!=='Hi Maya!')p.push('the line itself changed: '+shown)}
   return{problems:p,note:cases.length+' lines'};
+});
+
+// ---- audit v195 (Fable's practice audit, 2026-11-24): the fixes that change no word a child sees or hears. Each part runs the real
+// code on fake elements (the app loaded as the other checks load it) and failed on v195 as it was. ----
+run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-first time, speak mission, Fact Race and Sprint by grade, check-in as a round, pixel squares, review slots, practice after 3 lesson tries v195',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={};
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(doc,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx);
+  try{
+  R(`var __off=0;{const D0=Date;Date=class extends D0{constructor(...a){if(a.length)super(...a);else super(D0.now()+__off)}static now(){return D0.now()+__off}}}
+   say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   var __asked=[];renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q);__asked.push(q)};
+   function __step(g){if(g.done<g.n){g.q=makeQ();g.retry=false;g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;SPK.mic='?';SPK.deny=0}
+   // plays the round in G to its end: model(q, g) -> right on the first try? (a second try is wrong too; a retry at the end is right); sec: seconds a question is on screen
+   function __play(model,sec){const g=G;let n=0;while(g.__pend&&n++<80){const ok=g.retry||model(g.q,g);__off+=(sec||3)*1000;G.qt=Date.now()-3000;
+       if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}finish();return g}
+   var __chest={},__card=null;document.querySelector=s=>s=='#chest'?__chest:__fk;RW.done=function(o){__card=o;return''};
+   function __end(){__card=null;__chest.onclick();return __card.sc+' out of '+__card.n+': '+__card.line}`);
+  // 1. Fact Race: the gauge follows the clock and the last five seconds tick (the R-01b note had commented both out)
+  {const r=JSON.parse(R(`(()=>{__fresh(2);let iv=null,bars=[],ticks=0,ended=0;setInterval=f=>{iv=f;return 1};const b0=GFX.bar,e0=GFX.endCard;GFX.bar=(el,v)=>{bars.push(v)};SFX.tick=()=>{ticks++};GFX.endCard=()=>{ended++;return __fk};
+     race('math');for(let i=0;i<60;i++)iv();GFX.bar=b0;GFX.endCard=e0;setInterval=()=>0;return JSON.stringify({n:bars.length,first:bars[0],at30:bars[29],ticks,ended})})()`));
+   if(r.n<59||Math.abs(r.first-59/60)>1e-9||Math.abs(r.at30-.5)>1e-9)p.push('Fact Race: the gauge does not follow the clock '+JSON.stringify(r));
+   if(r.ticks!==5||r.ended!==1)p.push('Fact Race: '+r.ticks+' ticks in the last five seconds (want 5), '+r.ended+' end cards')}
+  // 2. a lesson mix-in gets no mistake hint (its label is another question's): the same wrong answers that get one without the mark
+  {const r=JSON.parse(R(`(()=>{__fresh(1);let made=0,with_=0,now=0,tip=0;
+     for(const id of ['add1','add2','miss2','mfact4','dfact2']){const i=NODES.math.findIndex(n=>nid(n)===id),nd=NODES.math[i];S.know={[id]:{s:2}};const kind=genQ(nd.sk,nd.lv,1).kind;
+       for(let t=0;t<30;t++){const q=lsMix(nd.sk,nd.lv,kind);if(!q)continue;made++;G=newG({path:'math',node:i,sk:nd.sk,lv:nd.lv});G.q=q;G.tries=1;
+         for(let v=0;v<=40;v++){if(String(v)===String(q.ans))continue;q.lsx=0;const a=hmHint(q,String(v));q.lsx=1;const b=hmHint(q,String(v));if(a){with_++;if(b)now++;
+           const g=askGenHint(q),t2=askTip({q,v:String(v)});if(t2&&t2!==g)tip++}}}}
+     return JSON.stringify({made,with_,now,tip})})()`));
+   if(r.made<50||r.with_<50)p.push('mix-in hints: the check found too few cases '+JSON.stringify(r));
+   if(r.now)p.push('mix-in hints: '+r.now+' of '+r.with_+' wrong answers to a lesson mix-in still get a mistake hint from the borrowed label');
+   if(r.tip)p.push('mix-in hints: "Why did I get that wrong?" gave a mistake line for a mix-in '+r.tip+' times')}
+  // 3. the end card's line goes by the share right; a beaten boss shows the questions it took. Deliberate change: 6 of 6 (Pre-K) said
+  //    "Good job! Keep practicing!", a 2 of 2 review "Nice try! ...", a boss beaten in 7 "7 out of 10". Rounds of 10 read as before.
+  {const rows=JSON.parse(R(`(()=>{const o=[],all=()=>true,st=(g,p,sk,lv,m)=>{__fresh(g);S.unlockAll=true;const i=NODES[p].findIndex(n=>n.sk==sk&&n.lv==lv);start(p,i);__play(m);return __end()};
+     o.push(st(-1,'math','pk_count',1,all));o.push(st(0,'math','pk_count',3,all));o.push(st(2,'math','big',3,all));
+     let k=0;o.push(st(2,'math','big',3,(q,g)=>g.done<7));o.push(st(2,'math','big',3,(q,g)=>g.done<5));o.push(st(2,'math','big',3,(q,g)=>g.done<4&&false||g.done>=6));
+     __fresh(2);S.unlockAll=true;{const n=NODES.math[WR.math[6][1]];G=newG({path:'math',node:WR.math[6][1],sk:'boss',boss:{e:'',name:n.boss[1]},hp:7,pool:worldPool('math',n.wi,10)});next();__play(all);o.push(__end())}
+     __fresh(2);S.unlockAll=true;{const n=NODES.math[WR.math[6][1]];G=newG({path:'math',node:WR.math[6][1],sk:'boss',boss:{e:'',name:n.boss[1]},hp:7,pool:worldPool('math',n.wi,10)});next();__play(()=>false);o.push(__end())}
+     __fresh(2);S.rev=[1,2].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1}));startReview();const n=G.n;__play(all);o.push(n+'|'+__end());
+     return JSON.stringify(o)})()`));
+   const want=['6 out of 6: You are a superstar!','8 out of 8: You are a superstar!','10 out of 10: You are a superstar!','7 out of 10: Fantastic work!','5 out of 10: Good job! Keep practicing!',
+     '4 out of 10: Nice try! Practice makes you stronger!','7 out of 7: You are a superstar!','0 out of 10: Nice try! Practice makes you stronger!','2|2 out of 2: You are a superstar!'];
+   want.forEach((w,i)=>{if(rows[i]!==w)p.push('end card '+(i+1)+': "'+rows[i]+'", want "'+w+'"')})}
+  // 4. learn first: the time on a question that ends revealed counts (the question is not counted); every answer wrong logged 0 s
+  {const r=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;ptCfg().need=2;const i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);start('math',i);const g=G;let n=0;
+     while(g.done<g.n&&n++<40){__off+=20000;check(__NO,__fk);if(!G.lock)check(__NO,__fk);g.__pend=false;__step(g)}
+     const e=ACT.entry(today())||{sec:0,q:0};return JSON.stringify({sec:e.sec,q:e.q,locked:ptGate().locked})})()`));
+   if(r.sec<180||r.q!==0||r.locked)p.push('learn first: 10 questions of 20 s, every answer wrong: '+JSON.stringify(r)+' (want about 200 s logged, 0 questions, the Game Room open after 2 minutes)')}
+  // 5. "Say 5 Spanish words" with no microphone or a blocked one: a finished Spanish round does it; with a microphone only the count does
+  {const r=JSON.parse(R(`(()=>{__fresh(2);const x={k:'speak',d:0},es={k:'round',p:'es',mix:false,test:false},o={};
+     SPK.mic='yes';SPK.deny=0;o.micOk=MIS.hit(x,es);SPK.deny=1;o.blocked=MIS.hit(x,es);o.blockedMath=MIS.hit(x,{k:'round',p:'math'});o.blockedMix=MIS.hit(x,{k:'round',p:'es',mix:true});
+     o.drawnBlocked=MIS.ctx().spk;SPK.deny=0;SPK.mic='no';o.none=MIS.hit(x,es);SPK.mic='yes';o.drawnOk=MIS.ctx().spk;day().spk=SPK.GOAL;o.said=MIS.hit(x,{k:'round',p:'math'});return JSON.stringify(o)})()`));
+   if(JSON.stringify(r)!==JSON.stringify({micOk:false,blocked:true,blockedMath:false,blockedMix:false,drawnBlocked:false,none:true,drawnOk:true,said:true}))p.push('speak mission: '+JSON.stringify(r))}
+  // 6. Fact Race from grade 1 (Home tile, Learn card), and a save with no grade is a Kindergartner for both timed drills
+  {const r=JSON.parse(R(`(()=>{const o={};for(const g of GRADES){__fresh(g);setSt('math',NODES.math.findIndex(n=>n.sk=='add'&&n.lv==1),3);const h=hmActs();o[g]=[/id="race"/.test(h),/hm-acts n3/.test(h),raceOn(),FLU.on(),(h.match(/class="hm-act"/g)||[]).length]}
+     __fresh(1);delete S.grade;setSt('math',NODES.math.findIndex(n=>n.sk=='add'&&n.lv==1),3);o.none=[/id="race"/.test(hmActs()),raceOn(),FLU.on()];return JSON.stringify(o)})()`));
+   for(const g of [-1,0])if(JSON.stringify(r[g])!=='[false,true,false,false,3]')p.push('grade '+g+': Fact Race or Fact Sprint shows '+JSON.stringify(r[g]));
+   for(const g of [1,2,3,4,5,6])if(JSON.stringify(r[g])!=='[true,false,true,true,4]')p.push('grade '+g+': Fact Race or Fact Sprint missing '+JSON.stringify(r[g]));
+   if(JSON.stringify(r.none)!=='[false,false,false]')p.push('a save with no grade shows a timed drill '+JSON.stringify(r.none))}
+  // 7. a check-in is a round of the day: the day's rounds, the streak's day, the "round" mission of its subject
+  {const r=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);setSt(p,i,2);S.mast={big3:{n:14,p:.9,ms:4000,d:1,last:1}};
+     day().m=[{k:'round',p:'math',d:0},{k:'mix',d:0},{k:'perfect',p:'math',d:0}];const r0=day().r,s0=STRK.info().count,st0=Object.keys(S.stickers||{}).reduce((a,k)=>a+S.stickers[k],0);
+     const rd=CHK.ready(p,i);CHK.start(p,i);const g=G;let n=0;while(g.done<g.n&&n++<10){check(__OK,__fk);g.__pend=false;__step(g)}finish();
+     return JSON.stringify({rd,r:day().r-r0,streak:STRK.info().count-s0,days:STRK.get().days[today()]|0,m:day().m.map(x=>x.d).join(''),badge:CHK.has('big3'),stk:Object.keys(S.stickers||{}).reduce((a,k)=>a+S.stickers[k],0)-st0})})()`));
+   if(JSON.stringify(r)!==JSON.stringify({rd:true,r:1,streak:1,days:1,m:'101',badge:true,stk:2}))p.push('check-in as a round: '+JSON.stringify(r)+' (want 1 round, the streak day, the round and perfect missions done with a sticker each, the mix mission not)')}
+  // 8. pixel art squares: 40 px at the least on every screen (R-03 T2 asked for 40; they were 32)
+  {const r=JSON.parse(R(`JSON.stringify([[380,780],[780,380],[600,960],[1024,600],[1024,552],[320,568]].map(([w,h])=>[4,8].map(n=>pxCell(w,h,n))))`));
+   if(Math.min(...r.flat())<40)p.push('pixel squares under 40 px: '+JSON.stringify(r))}
+  // 9. review slots come before adaptation: a challenge round with items of the path due asks one at questions 6 and 8 (it asked none
+  //    after question 4: here items of another stop of the path, so questions 4 and 8), the other questions after the fifth stay
+  //    Challenge questions; with nothing due the round is as before
+  {const r=JSON.parse(R(`(()=>{const go=due=>{__fresh(2);S.unlockAll=true;const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);
+       S.rev=due?[1,2,3,4,5,6].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1})):[];__asked=[];start(p,i);const g=__play(()=>true);
+       return{mode:g.mode,tags:__asked.slice(0,10).map(q=>q.review?'r':mastTag(q)||'-').join(''),left:REV.get().filter(x=>x.box==0).length,stars:getSt(p,i)}};
+     return JSON.stringify([go(true),go(false)])})()`));
+   if(r[0].mode!=='challenge'||r[0].tags.replace(/ch/g,'c')!=='---r-ccrcc')p.push('review slots in a challenge round: '+JSON.stringify(r[0])+' (want a review question of the path at questions 4 and 8)');
+   if(r[0].left!==4||r[0].stars!==3)p.push('review slots: '+r[0].left+' of 6 items still in box 0 after a perfect round (want 4: two were asked), stars '+r[0].stars);
+   if(r[1].mode!=='challenge'||r[1].tags.replace(/ch/g,'c')!=='-----ccccc')p.push('nothing due: the challenge round changed: '+JSON.stringify(r[1]))}
+  // 10. owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run to its end three times without passing Show opens its
+  //     practice stop. The stop is not passed (Practice still has to be), the stop after it stays shut, a lesson left part way is no try.
+  {const r=JSON.parse(R(`(()=>{const K=${TEACH_KIDS};__fresh(1);const p='math',i=NODES.math.findIndex(n=>nid(n)=='add2'),id='add2',o={gate:[],n:[]};
+     const snap=()=>{o.gate.push(lsGate(p,i));o.n.push((S.know&&S.know[id]||{}).n|0)};snap();
+     {const st=LS.make(id,{seed:5,day:100,proof:true,learn:true});LS.keep(st);snap();delete S.les} // opened and left: not a try
+     let runs=0;for(let s=1;runs<3&&s<40;s++){const c=K.kid(0,0,mulberry32(s*7+1)),x=K.run(id,c,s*11,{proof:true,learn:true});if(x.st.post.length==2&&x.st.post.every(Boolean))continue;LS.finish(x.st);runs++;snap()}
+     o.learned=lsLearned(id);o.tried=lsTried(id);o.passed=passed(p,i);o.open=unlocked(p,i);o.next=unlocked(p,i+1);o.nextGate=lsGate(p,i+1);
+     S.know.add2.n=2;o.two=lsGate(p,i);delete S.know.add2.n;o.none=lsGate(p,i);return JSON.stringify(o)})()`));
+   if(JSON.stringify(r)!==JSON.stringify({gate:[true,true,true,true,false],n:[0,0,1,2,3],learned:false,tried:true,passed:false,open:true,next:false,nextGate:false,two:true,none:true}))p.push('practice after 3 lesson tries: '+JSON.stringify(r))}
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // the source: the note that swallowed the gauge is on its own line
+  if(!/RC\.left--;GFX\.bar\(\$\('#rbar'\),RC\.left\/60\);if\(RC\.left<=5&&RC\.left>0\)SFX\.tick\(\);/.test(fs.readFileSync(path.join(SRC,'js','54-race.js'),'utf8')))p.push('54-race.js: the clock line does not update the gauge and tick');
+  return{problems:p,note:'the race gauge over 60 ticks; mix-in hints on 5 stops; 9 end cards; learn-first with every answer wrong; the speak mission; 8 grades and a save with no grade; a check-in; 6 screens; review slots; the lesson gate after 0 to 3 tries'};
 });
 
 Promise.all(PENDING).then(()=>{
