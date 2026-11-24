@@ -3200,7 +3200,7 @@ let PL=null;          // the quiz on screen (this session only; never saved)
 let PLACE_HIDE=false; // "Not now" on the home card hides it until the app is opened again
 // Home card: offered to a new child (no stop passed on a graded path, never placed), K and up.
 function placeAsk(){
-  if(PLACE_HIDE||!placeOK()||(S.place&&Object.keys(S.place).length))return false;
+  if(PLACE_HIDE||!placeOK()||PLAY.locked()||(S.place&&Object.keys(S.place).length))return false; // sample fix: none in the Play app's free sample (its result would be a locked world)
   return placePaths().every(p=>!NODES[p].some((n,i)=>passed(p,i)));
 }
 const placeSubBtn=p=>`<button class="btn pl-sub s-${p}" data-place="${p}"><span class="pl-pe">${ico(UI.SUBJ_ICON[p]||'map',26)}</span>${esc(placeName(p))}</button>`; // P4-18: drawn subject icon
@@ -3216,7 +3216,7 @@ function placeBannerBind(){
   $('#plno').onclick=()=>{PLACE_HIDE=true;SFX.click();const c=$('#plcard');if(c)c.remove()};
 }
 // Grown-ups row: start a quiz for either path and see the last result.
-function placeGrownHTML(){
+function placeGrownHTML(){if(PLAY.locked())return''; // sample fix: not in the Play app's free sample (as placeAsk)
   const last=placePaths().map(p=>{
     const r=S.place&&S.place[p],w=r&&PATHS[p].worlds.find(x=>x.id===r.world);
     return r&&w?`${esc(placeName(p))}: ${esc(w.n)} (${esc(gradeLabel(r.g))}, ${r.right|0} of ${r.asked|0} right, ${esc(r.date||'')})`:'';
