@@ -540,6 +540,13 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### SMALL-FIX v195: Fable's logo nits, the ten-frame tap, two tooling investigations (v195, 2026-11-24, Claude; branch small-fix from c0aebc3)
+- Owner: "do the small fixes too". Logo comments trimmed (-907 bytes start-up); the logo is unnamed (aria-hidden) where the text beside it says Whistlestop (About, Try again); contrast.js names the wordmark pairs (--brand on --paper 5.41, on --surface 5.67); tools/brand-feature.js rebuilds the feature graphic (0 pixels differ; the committed PNG kept); the maskable safe-zone check measures the engine shapes' geometry (radius 33.4 of the allowed 40) as well as the crimson pixels.
+- Ten frame: the tapped square changes (empty, blue, orange, empty); the state stays [blue, orange] with the layout as a `lay` property, so checks, answers and fixtures see the same counts.
+- Bundled headless Chromium crash: chrome-headless-shell kills the page on `SpeechRecognition.available({processLocally:true})` (spkProbe); full Chrome answers. Tooling only; HANDOFF section 6.
+- P5-10 flake: the app saves synchronously; 300 save-and-reload runs lost nothing; the smoke loss matches Chrome's storage process dying under load. HANDOFF documents it.
+- Expected values changed: the two "logo BRAND" regexes (UI.logo('', true, false)). Start-up 2,493,860 before the REC-2 merge.
+
 ### REC-2 v195: the last two groups of lesson lines in the pet's recorded voice (v195, 2026-11-24, Claude; branch rec-2 from c0aebc3, not live)
 - **What**: owner decision 2026-11-24, "yes record the last two groups too". The two groups REC-ALL left out to fit 8.5 MB are recorded in the pet's voice (luna): the warm-up lines (beats.remember) at every age, and the Explore lines of the lessons of grade 3 and up. tools/en-audio.js lessonSentences: `remember` is back in LS_SAID and the explore test no longer skips grade 3 and up. Only existing approved text; no sentence with a name, a digit or a slot.
 - **Recorded**: 131 new sentences (15 at speed 0.95 for the little pet, 116 at 1.0 for the older pet), 3,936 characters; 1,420 teacher lines (was 1,289). Speech to text check: 0 failures (the 3 sentences already on the skip list stay the tablet's voice). EN_TEACH0 (src/data/d-teach-start.js) rewritten by --teach: 52 lines (adds "Count with me."), 2,531 bytes.
