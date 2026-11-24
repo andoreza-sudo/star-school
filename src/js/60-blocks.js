@@ -580,6 +580,14 @@ const bbDecode = s => {
 };
 
 let BB = null;
+// sample fix (Fable): leaving the play screen gives its WebGL context back (view() calls this, as the other games' 60-gl.js end() does):
+// a tablet keeps only a few contexts alive. The build's data stays in BB (the end card and the save read it); the next play screen makes a new one.
+function bbStop() {
+  const R = BB && BB.gl;
+  if (!R) return;
+  try { const x = R.gl && R.gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (e) {}
+  R.gl = null; BB.gl = null; if (BB.api) BB.api.gl = null;
+}
 // stamps: offsets from the tapped cell (the view's turn is applied so a stamp faces the child)
 const BBSTAMPS = (() => {
   const L = [];
@@ -1587,6 +1595,7 @@ function bbMini(cv, cells, o = {}) {
 /* ---- the play screen ---- */
 // ci: a blueprint's index in BBP, 'day' (the build of the day, G-01b) or nothing (free build in the current world)
 function blockBuilder(ci) {
+  bbStop(); // sample fix: the play screen it replaces (the 3D look switch opens it again) gives its WebGL context back first
   const boss = typeof ci == 'string' && /^boss\d$/.test(ci) ? +ci[4] : null; // G-MOVES: Bea's mirror build of a chapter
   const bs = bbS(), bp = ci == null ? null : ci == 'day' ? bbDaily(today()) : boss != null ? bbBossBP(boss) : BBP[ci], world = bp ? null : bs.worlds[bs.cur];
   const mode = bp ? bbMode(bp) : null, goalMap = bp ? bbGoal(bp) : null;
@@ -2495,7 +2504,7 @@ function bbSaveHook() {
 // WebGL can be made here (checked once; a tablet whose graphics chip Chrome blocks has none, R-03 4.2)
 let BB_GLOK = null;
 function bbGlOk() {
-  if (BB_GLOK == null) { try { const c = bbCanvas(2); BB_GLOK = !!(c.getContext('webgl')); } catch (e) { BB_GLOK = false; } }
+  if (BB_GLOK == null) { try { const c = bbCanvas(2), g = c.getContext('webgl'); BB_GLOK = !!g; const x = g && g.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (e) { BB_GLOK = false; } } // sample fix: the test context is given back at once
   return BB_GLOK && !BB_NOGL;
 }
 const bbCalm = () => !!S.calm || (typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);

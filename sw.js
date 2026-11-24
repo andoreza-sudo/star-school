@@ -17,15 +17,20 @@ self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName)),isA=r=>/\
  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.open(k).then(o=>o.keys().then(rs=>Promise.all(rs.filter(isA).map(r=>o.match(r).then(x=>x&&caches.open(A).then(a=>a.put(r,x)))))))
   .catch(()=>{}).then(()=>caches.delete(k)))))
  .then(()=>caches.open(A)).then(c=>c.keys().then(ks=>Promise.all(ks.filter(r=>!keep.has(aName(r.url))).map(r=>c.delete(r))))).then(()=>self.clients.claim()))});
-const AB=40;let filling=null;
+// sample fix (Fable's cheap-tablet rehearsal): on a slow connection 40 at a time kept the line a child needs now waiting behind the
+// fill. Now AB at a time (10), and a batch starts only when no recording asked for by the page is on its way (dem: on-demand fetches)
+// and the page is not speaking (a message 'hush' holds the fill for HUSH_MS; the page sends it as each recorded line starts, 90-app.js)
+const AB=10,HUSH_MS=8000;let filling=null,dem=0,hushT=0;
+const quiet=async()=>{while(dem>0||Date.now()<hushT)await new Promise(r=>setTimeout(r,250))};
+const onDemand=r=>{dem++;const f=fetch(r),d=()=>{dem--};f.then(d,d);return f};
 const fillAudio=()=>filling||(filling=caches.open(A).then(async c=>{const have=new Set((await c.keys()).map(r=>aName(r.url))),todo=AF.filter(u=>!have.has(aName(u)));let got=0;
- for(let i=0;i<todo.length;i+=AB)await Promise.all(todo.slice(i,i+AB).map(u=>fetch(u).then(r=>r.ok?c.put(u,r).then(()=>{got++}):0).catch(()=>0)));
+ for(let i=0;i<todo.length;i+=AB){await quiet();await Promise.all(todo.slice(i,i+AB).map(u=>fetch(u).then(r=>r.ok?c.put(u,r).then(()=>{got++}):0).catch(()=>0)))}
  return{todo:todo.length,got}}).finally(()=>{filling=null}));
-self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio())});
+self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio());if(e.data==='hush')hushT=Date.now()+HUSH_MS});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\/audio\/e[ns]\/|\/audio\/teach\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\d*)-(\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
-  return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
+  return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):onDemand(e.request)));return}
  if(e.request.mode==='navigate'&&!/\/(index\.html)?$/.test(new URL(e.request.url).pathname)){const net=fetch(e.request),own=()=>caches.match(e.request,{ignoreSearch:true});e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},t=setTimeout(()=>own().then(fin),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);own().then(r=>fin(r||Response.error()))})}));return}
@@ -34,4 +39,4 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
    const t=setTimeout(()=>old().then(r=>{if(r)late=1;fin(r)}),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);old().then(r=>fin(r||Response.error()))})}));return}
- e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(/\/audio\//.test(e.request.url)?A:C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
+ e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||(/\/audio\//.test(e.request.url)?onDemand:fetch)(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(/\/audio\//.test(e.request.url)?A:C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});

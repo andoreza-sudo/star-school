@@ -3044,6 +3044,10 @@ html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:non
 .pl-msg,.sheet .pl-msg{min-height:1.45em;margin:var(--s-2) 0;color:var(--ink);font-weight:700}
 .pl-btns .btn{min-height:var(--tap)}
 .pl-sh .pl-btns{margin-bottom:var(--s-2)}
+/* sample fix: the free sample's last lock (its 6th stop), in the unlock's star colours */
+.btn.node.lock.pl-end{background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}
+.pl-es{position:absolute;right:-6px;top:-6px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--star);color:var(--ink)}
+.btn.node .pl-es .ic{width:18px;height:18px}
 </style>
 </head>
 <body>
@@ -3806,7 +3810,7 @@ const stkN=s=>(S.stickers[s]||0)+(s=='\u{1F420}'?(S.stickers['\u{1F984}']||0):0)
 let AC,MG;
 const MG_V=.8; // master level; ducked to MG_V * .3 under the voice
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=MG_V;MG.connect(AC.destination)}catch(e){}}
-  if(AC&&AC.state=='suspended')AC.resume();return AC}
+  if(AC&&AC.state=='suspended'&&!document.hidden)AC.resume();return AC} // sample fix: never wakes the sound while the app is hidden (sfxVis)
 let FXG=null; // while an effect is being built: {g: its gain node, end: when it stops}
 const FXON=[]; // effects still sounding, oldest first
 // a note: frequency f (Hz), length d (s), start t (s from now), wave type, peak level vol, optional slide to frequency `slide`
@@ -3869,6 +3873,11 @@ function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0
   musT=setInterval(()=>{if(!AC||AC.state!='running')return;
     if(i%8==0)synth(NOTE(bass[(i/8|0)%4]),1.2,0,'sine',.05);
     if(i%2==0&&Math.random()<.8)synth(NOTE(pick(sc)),.35,0,'triangle',.035);i++},260)}
+// sample fix (Fable): music, game sounds (all through AC) and a playing recording pause while the app is hidden, and go on after
+function sfxVis(){const h=document.hidden,a=typeof ESA!='undefined'&&ESA.au;
+  try{const p=AC&&(h?AC.suspend():AC.resume());if(p&&p.catch)p.catch(()=>{})}catch(e){}
+  try{if(a&&h&&!a.paused){a.pause();a._vis=1}else if(a&&!h&&a._vis){a._vis=0;a.play().catch(()=>{})}}catch(e){}}
+document.addEventListener('visibilitychange',sfxVis);addEventListener('pagehide',()=>{try{if(AC)AC.suspend()}catch(e){}});addEventListener('pageshow',sfxVis);
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
@@ -3907,7 +3916,7 @@ function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.can
   if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
-function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
+function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;swHush(); // sample fix: the worker's audio fill waits while the app speaks (90-app.js)
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
   const M=it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
@@ -4000,7 +4009,7 @@ function ttsSay(t,btn,es,slow,cheer){
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
-  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll()}catch(e){if(btn)noVoice(btn)}}
+  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
@@ -7089,7 +7098,7 @@ let ASK_ON = 8;
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
 const view=h=>{music(false);calmApply();if(typeof NAV!='undefined'){if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0} // RC-2: a child screen ends the grown-up session
   if(typeof NAV!='undefined'&&NAV.held){NAV.held=false;if(typeof GH!='undefined')GH.held=false} // NAV-01: a Go Home? sheet the new screen removed
-  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();if(typeof JFX!='undefined')JFX.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
+  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof bbStop=='function')bbStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();if(typeof JFX!='undefined')JFX.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -7296,6 +7305,21 @@ function learnHub() {
   if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
+/* sample fix (Fable): the Android back gesture. The Play app (a TWA) closes when back finds no history, so away from Home one history
+   entry stands in front: back takes it and does the screen's own way back (the open sheet, Back, the house's "Go Home?", an end card's
+   Home, the bar's Home), then it is put back. On Home, "Who is playing?" and the name screen there is none: back leaves the app. */
+const NAVB={skip:0,
+  act(){const m=UI.modal.top();if(m)return m._esc||(()=>{}); // a card with no way back of its own stays
+    if(document.getElementById('hs'))return null;
+    const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
+  on:()=>!!(history.state&&history.state.navb),
+  sync(){if(typeof SWU!='undefined'&&SWU.due===2)return; // RC-1: Home is reloading into an update: a history step would stop it
+    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
+  pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
+if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
+  try{if(NAVB.on())history.replaceState(null,'')}catch(e){} // a reload (an update, Start over) kept the last page's entry: going back to it would load the app again
+  const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
+  mo.observe(document.body,{childList:true});if(a)mo.observe(a,{childList:true})}
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
@@ -8311,6 +8335,7 @@ function worldStrip(p){
 }
 function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].worlds,W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];
   const sel=Math.min(Math.max(MAPW[p]|0,0),ws.length-1),w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);MAPW[p]=sel;
+  const fw=PLAY.locked()?PLAY.freeW(p):-1,pe=fw>=0&&WR[p][fw][1]>=WR[p][fw][0]+PLAY.FREE_STOPS?WR[p][fw][0]+PLAY.FREE_STOPS:-1; // sample fix: the Play app's free sample ends before stop pe (its 6th)
   const st=$('#wstrip');if(st){ // the world strip is rebuilt only when what it shows changes; picking a world just moves the highlight
     const ms=MAPW[p];MAPW[p]=-1;const sh=worldStrip(p);MAPW[p]=ms; // its markup with no world picked is the key
     if(st.dataset.k!==p+'|'+sh){st.dataset.k=p+'|'+sh;st.innerHTML=sh;$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))}
@@ -8319,15 +8344,16 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
-  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=!PLAY.locked()&&worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
-    for(let i=a;i<=b;i++){if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
+    for(let i=a;i<=b;i++){if(i==pe){bands+=PLAY.bandHTML(y);y+=100} // sample fix: the grown-ups' unlock right after the sample's 5th stop
+      if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest||pl]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W,allDone?-1:cur);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}${i==pe?' pl-end':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}${i==pe?`<i class="pl-es">${ico('star',18)}</i>`:''}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur&&!q[3]),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
@@ -9977,6 +10003,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
+  const n1=!!p&&ni>=0&&ni+1<NODES[p].length,was1=n1&&unlocked(p,ni+1); // sample fix: was the next stop open before this round?
   const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
   if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
@@ -9984,6 +10011,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
+  const unl=newPass&&n1&&!was1&&unlocked(p,ni+1); // sample fix: a stop really opened (not at the free sample's end, the map's end, or one open already)
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
   d.r++;const stk=streakTick();
@@ -9991,7 +10019,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   mi.won.forEach(w=>prizes.push(w.st));
   const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
-  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
+  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,unl,testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
@@ -10021,7 +10049,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(newPass?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))},t);
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
@@ -10029,7 +10057,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',`+${coins} coins for the pet shop!`),null]];
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
-    if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
+    if(unl&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
     const ck=!g.mix&&!g.boss&&!g.test&&typeof CHK!='undefined'&&CHK.ready(p,ni);if(ck)M('medal',CHK.offerHTML(),'chime','win'); // CHECK-IN: the stop is ready for one
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
@@ -11850,6 +11878,9 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
    every file is in (the worker skips the ones it has; one that failed is tried again the next time) */
 const swAudio=()=>{try{navigator.serviceWorker.ready.then(x=>{if(x.active)x.active.postMessage('audio')}).catch(()=>{})}catch(e){}},
   swAudioLater=()=>setTimeout(()=>(window.requestIdleCallback||(f=>f()))(swAudio,{timeout:5000}),3000);
+// sample fix (Fable): while the app speaks the worker holds its audio fill (sw.js 'hush'; sent at most every 2 s)
+let swHushT=0;
+function swHush(){const n=Date.now();if(n-swHushT<2000)return;swHushT=n;try{const c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(c)c.postMessage('hush')}catch(e){}}
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{swAudioLater();navigator.serviceWorker.addEventListener('controllerchange',swAudioLater);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){r.update().catch(()=>{});swAudio()}})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,

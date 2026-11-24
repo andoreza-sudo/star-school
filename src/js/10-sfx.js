@@ -10,7 +10,7 @@
 let AC,MG;
 const MG_V=.8; // master level; ducked to MG_V * .3 under the voice
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=MG_V;MG.connect(AC.destination)}catch(e){}}
-  if(AC&&AC.state=='suspended')AC.resume();return AC}
+  if(AC&&AC.state=='suspended'&&!document.hidden)AC.resume();return AC} // sample fix: never wakes the sound while the app is hidden (sfxVis)
 let FXG=null; // while an effect is being built: {g: its gain node, end: when it stops}
 const FXON=[]; // effects still sounding, oldest first
 // a note: frequency f (Hz), length d (s), start t (s from now), wave type, peak level vol, optional slide to frequency `slide`
@@ -73,4 +73,9 @@ function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0
   musT=setInterval(()=>{if(!AC||AC.state!='running')return;
     if(i%8==0)synth(NOTE(bass[(i/8|0)%4]),1.2,0,'sine',.05);
     if(i%2==0&&Math.random()<.8)synth(NOTE(pick(sc)),.35,0,'triangle',.035);i++},260)}
+// sample fix (Fable): music, game sounds (all through AC) and a playing recording pause while the app is hidden, and go on after
+function sfxVis(){const h=document.hidden,a=typeof ESA!='undefined'&&ESA.au;
+  try{const p=AC&&(h?AC.suspend():AC.resume());if(p&&p.catch)p.catch(()=>{})}catch(e){}
+  try{if(a&&h&&!a.paused){a.pause();a._vis=1}else if(a&&!h&&a._vis){a._vis=0;a.play().catch(()=>{})}}catch(e){}}
+document.addEventListener('visibilitychange',sfxVis);addEventListener('pagehide',()=>{try{if(AC)AC.suspend()}catch(e){}});addEventListener('pageshow',sfxVis);
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
