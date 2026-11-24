@@ -14933,12 +14933,13 @@ run('Spanish speaking S-SPK',()=>{
         if(snap()!==s0)B(way+': the round or the save changed '+s0+' -> '+snap());
         if(way=='no-mic'){if(notes!==1)B('no microphone: '+notes+' notes (one, for the session)');G.spk=0;notes=0;spkHook();if(notes)B('no microphone: the note came twice')}}
       SPK.mic='yes';SPK.deny=0;SPK.note=0;
-      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 5
+      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 2
       {day().spk=0;for(let i=0;i<5;i++){G=G0({path:'es',node:1,sk:'es_food',lv:1});G.done=3;spkHook();spkEnd(true)}
        if(day().spk!==5)B('5 steps said: day().spk is '+day().spk);
-       const x={k:'speak',d:0};day().spk=4;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 4');
-       day().spk=5;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 5');
-       if(MIS.title(x)!=='Say 5 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
+       // owner decision 2026-11-24 (P5), a deliberate change: the mission is 2 words (it was 5: done at 5, "Say 5 Spanish words")
+       const x={k:'speak',d:0};day().spk=1;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 1');
+       day().spk=2;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 2');
+       if(MIS.title(x)!=='Say 2 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
        const sub=[{p:'math',i:0,s:null,n:0},{p:'es',i:0,s:null,n:0}],c=on=>({g:2,subs:sub,bt:false,spr:false,due:0,spk:on});let yes=0,no=0;
        for(let d=1;d<=60;d++){const k='2026-1-'+d,a=MIS.draw(k,'Ava',c(true));if(a.some(x=>x.k=='speak'))yes++;
          if(MIS.draw(k,'Ava',c(false)).some(x=>x.k=='speak'))no++;if(!MIS.valid(a))B('a draw with speak is not valid')}
@@ -24476,6 +24477,66 @@ run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-f
   // the source: the note that swallowed the gauge is on its own line
   if(!/RC\.left--;GFX\.bar\(\$\('#rbar'\),RC\.left\/60\);if\(RC\.left<=5&&RC\.left>0\)SFX\.tick\(\);/.test(fs.readFileSync(path.join(SRC,'js','54-race.js'),'utf8')))p.push('54-race.js: the clock line does not update the gauge and tick');
   return{problems:p,note:'the race gauge over 60 ticks; mix-in hints on 5 stops; 9 end cards; learn-first with every answer wrong; the speak mission; 8 grades and a save with no grade; a check-in; 6 screens; review slots; the lesson gate after 0 to 3 tries'};
+});
+
+// ---- owner decisions 2026-11-24 on the practice audit's open points (docs/drafts/AUDIT-WORDS-READ.md, P1-P6; "approve all with
+// fable's recommendations"). P3 is "keep as is" (a Challenge miss never costs stars): the existing P1-08 checks cover it. ----
+run('practice owner decisions P1-P6: the boss only says Try again, short rounds round up, review pay by size, 2 Spanish words, a check-in pays game time',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={},rd=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  let appH='';const app=new Proxy(function(){},{get:(t,k)=>k==='innerHTML'?appH:fk[k],set:(t,k,v)=>{if(k==='innerHTML')appH=String(v);return true},apply:()=>fk}); // #app: keeps what view() draws
+  Object.assign(doc,{querySelector:s=>s=='#app'?app:fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  ctx.__app=app;
+  const R=x=>vm.runInContext(x,ctx);
+  try{
+  R(`say=()=>{};burst=()=>{};anim=()=>{};var __fb=[],__pet=[];fb=t=>{__fb.push(t)};petSay=t=>{__pet.push(t)};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q)};
+   function __step(g){if(g.done<g.n){g.q=makeQ();g.retry=false;g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;SPK.mic='?';SPK.deny=0}
+   // a round with its first 'right' questions right and the rest wrong twice (20 s a question, so no Challenge or hint-first mode gets in the way of the count)
+   function __play(right){const g=G;let n=0,k=0;while(g.__pend&&n++<80){const ok=g.retry||k++<right;G.qt=Date.now()-20000;if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}finish();return g}`);
+  // P1: a missed boss question: the boss says "Try again!" and nothing else (it could say "Ha ha! Missed me!" or "Hee hee!")
+  {const said=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;const o=new Set();for(let t=0;t<40;t++){const bi=WR.math[6][1],n=NODES.math[bi];G=newG({path:'math',node:bi,sk:'boss',boss:{e:'',name:n.boss[1]},hp:7,pool:worldPool('math',n.wi,10)});next();__pet=[];check(__NO,__fk);__pet.forEach(x=>o.add(x))}return JSON.stringify([...o])})()`));
+   if(JSON.stringify(said)!=='["Try again!"]')p.push('P1: the boss says '+JSON.stringify(said)+' on a miss');
+   if(/Missed me|Hee hee/.test(rd('50-round.js')))p.push('P1: a laughing boss line is still in 50-round.js')}
+  // P2: the right answers a round needs, rounded up: pass and 2 stars by round length; one miss always passes; 10 as before
+  {const r=JSON.parse(R(`JSON.stringify([2,3,4,5,6,8,10].map(n=>[n,starNeed(n,.7),starNeed(n,.8)]))`));
+   if(JSON.stringify(r)!==JSON.stringify([[2,1,1],[3,2,2],[4,3,3],[5,4,4],[6,5,5],[8,6,7],[10,7,8]]))p.push('P2: [length, pass, 2 stars] '+JSON.stringify(r));
+   // whole rounds: Pre-K (6), K (8), tracing (5), a round of 10: stars for each number right
+   const rows=JSON.parse(R(`(()=>{const o={},go=(g,pth,sk,lv)=>{const out=[];let n=0;for(let k=0;k<=12;k++){__fresh(g);S.unlockAll=true;const i=NODES[pth].findIndex(x=>x.sk==sk&&x.lv==lv);start(pth,i);n=G.n;if(k>n)break;__play(k);out.push(getSt(pth,i))}return n+':'+out.join('')};
+     o.prek=go(-1,'math','pk_count',1);o.k=go(0,'math','pk_count',3);o.trace=go(-1,'read','trace',2);o.g2=go(2,'math','big',3);return JSON.stringify(o)})()`));
+   const want={prek:'6:0000023',k:'8:000000123',trace:'5:000023',g2:'10:00000001223'};
+   for(const k in want)if(rows[k]!==want[k])p.push('P2: '+k+' stars by right answers '+rows[k]+', want '+want[k]+' (length:stars for 0, 1, 2 ... right)');
+   // the tip under a round that did not pass names the new number
+   const tip=R(`(()=>{__fresh(-1);S.unlockAll=true;const i=NODES.math.findIndex(x=>x.sk=='pk_count'&&x.lv==1);var chest={};const q0=document.querySelector;document.querySelector=s=>s=='#chest'?chest:q0(s);let card=null;const d0=RW.done;RW.done=o=>{card=o;return''};start('math',i);__play(4);chest.onclick();RW.done=d0;document.querySelector=q0;return card.tip})()`);
+   if(tip!=='Get 5 right to open the next stop. You can do it!')p.push('P2: a Pre-K round with 4 of 6 says "'+tip+'"')}
+  // P4: Daily Review pays in proportion to its questions (10 = a full round; 1 question paid a full round)
+  {const r=JSON.parse(R(`JSON.stringify([1,2,5,10].map(n=>{__fresh(2);const c=ptCalc({mix:true,daily:true,path:null},n,n,0,0,false,false,null,null);return[n,c.lines[0][0],c.sec]}))`));
+   if(JSON.stringify(r)!==JSON.stringify([[1,18,30],[2,36,30],[5,90,90],[10,180,180]]))p.push('P4: Daily Review [questions, "Daily review done" seconds, paid] '+JSON.stringify(r))}
+  // P5: the speak mission is 2 words, with the approved lines
+  {const r=JSON.parse(R(`(()=>{__fresh(2);const x={k:'speak',d:0},o={goal:SPK.GOAL,title:MIS.title(x),hit:[]};SPK.mic='yes';for(let k=0;k<3;k++){o.hit.push(MIS.hit(x,{k:'round',p:'math'}));__fb=[];SPK.done=null;spkEnd(true);o['fb'+(k+1)]=__fb[0]}return JSON.stringify(o)})()`));
+   if(JSON.stringify(r)!==JSON.stringify({goal:2,title:'Say 2 Spanish words',hit:[false,false,true],fb1:'¡Muy bien!',fb2:'¡Muy bien! 2 Spanish words said today!',fb3:'¡Muy bien!'}))p.push('P5: '+JSON.stringify(r));
+   if(/5 Spanish words/.test(rd('50-say.js').replace(/\/\*[\s\S]*?\*\//g,'')+rd('55-missions.js').replace(/\/\*[\s\S]*?\*\//g,'')))p.push('P5: "5 Spanish words" is still in the code')}
+  // P6: a check-in pays game time as a round of its stop does, into the bank, with the existing line; less for the same stop again today
+  {const r=JSON.parse(R(`(()=>{const o=[],go=(sc,st,again)=>{if(!again){__fresh(2);S.unlockAll=true}const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);setSt(p,i,st);delete S.chk;const b0=pt().bank;
+       G=newG({path:p,node:i,sk:'big',lv:3,chk:true,kh:[]});G.n=CHK.Q;G.done=CHK.Q;G.score=sc;__app.innerHTML='';finish();const h=__app.innerHTML,m=/id="ckgt"[\\s\\S]*?<div class="rw-et">([\\s\\S]*?)<\\/div>/.exec(h);
+       o.push([sc,st,pt().bank-b0,m?m[1].replace(/<[^>]+>/g,''):''])};
+     go(5,2);go(4,2);go(2,2);go(5,3);go(5,2);go(5,2,true);go(5,2,true);return JSON.stringify(o)})()`));
+   const want=[[5,2,240,'+4:00 You earned game time!'],[4,2,180,'+3:00 You earned game time!'],[2,2,60,'+1:00 You earned game time!'],[5,3,120,'+2:00 You earned game time!'],
+     [5,2,240,'+4:00 You earned game time!'],[5,2,150,'+2:30 You earned game time!'],[5,2,90,'+1:30 You earned game time!']];
+   if(JSON.stringify(r)!==JSON.stringify(want))p.push('P6: [right, the stop\'s stars, bank gain, the card\'s line] '+JSON.stringify(r));
+   // the same pay as ptCalc gives a round of that stop with that score and no new pass
+   const same=R(`(()=>{__fresh(2);const nd=NODES.math.find(n=>n.sk=='big'&&n.lv==3);return ptCalc({path:'math'},5,5,0,2,false,false,nd,null).sec})()`);
+   if(same!==240)p.push('P6: ptCalc for a 5 of 5 round of the stop is '+same+' s')}
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note:'40 boss misses; pass and 2 stars for 7 round lengths, whole rounds of 6, 8, 5 and 10; reviews of 1, 2, 5 and 10; the speak mission said 3 times; 7 check-ins'};
 });
 
 Promise.all(PENDING).then(()=>{

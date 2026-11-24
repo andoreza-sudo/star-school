@@ -22,8 +22,8 @@
       recorded model and a few similar words: "Great job!", "Close! Listen again", "I couldn't hear you" (or a softer voice).
    Never a server recogniser, never "wrong".
    Saved: S.esSpk (Grown-ups switch "Spanish speaking practice", per child; absent = on), S.day.spk (Spanish things said today; the
-   daily mission "Say 5 Spanish words", 55-missions.js). Styles: src/css/42-say.css. */
-const SPK={MAX:4,AT:3,GOAL:5,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,jd:null,told:0,it:null,done:null};
+   daily mission "Say 2 Spanish words", 55-missions.js). Styles: src/css/42-say.css. */
+const SPK={MAX:4,AT:3,GOAL:2,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,jd:null,told:0,it:null,done:null};
 const spkOn=()=>S.esSpk!==false&&S.esSpk!==0;
 // once per session: is there a microphone? ('?' not asked, 'wait' asking, 'yes', 'no'); SPK.deny: the permission is blocked
 function spkProbe(){if(SPK.mic!='?')return;
@@ -186,5 +186,5 @@ function spkGU(kind){SPK.state='gu';SPK.note=1;if(kind=='denied')SPK.deny=1;else
   spkT(()=>spkEnd(false),15000)}
 // leave the step: "I said it!" counts one Spanish thing said today (the mission); a skip counts nothing and is never a miss
 function spkEnd(said){const cb=SPK.done;spkLeave();
-  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.chime();fb(d.spk==SPK.GOAL?'¡Muy bien! 5 Spanish words said today!':'¡Muy bien!')}
+  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.chime();fb(d.spk==SPK.GOAL?'¡Muy bien! 2 Spanish words said today!':'¡Muy bien!')}
   SPK.done=null;if(cb)cb()}

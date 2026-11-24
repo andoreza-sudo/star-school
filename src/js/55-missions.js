@@ -10,7 +10,7 @@
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
      mix      one Mixed Practice round
-     speak    say 5 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
+     speak    say 2 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
               can play Spanish, speaking practice is on and the tablet may have a microphone (ctx.spk). Done at the next finish().
    "round" is always one of the three; the other two are drawn from what is left. Finishing a mission gives a sticker, once (it is
    marked done first). All three together give the old mission bonus once a day: 5 stars, 5 coins and a sticker (S.day.done).

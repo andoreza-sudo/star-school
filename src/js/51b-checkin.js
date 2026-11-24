@@ -113,12 +113,16 @@ const CHK = {
     S.coins += coins;
     actRound(); // P5-05: minutes and rounds for the report card
     // audit v195: a check-in is a round of the day, as in finish() (50-round.js): the day's rounds, the streak, the missions
-    let stk = { msg: '' }, mis = '';
+    // P6 (owner 2026-11-24): game time as a round of the stop pays (ptCalc)
+    let stk = { msg: '' }, mis = '', gt = 0;
     try {
       const d = day();
       d.r++;
       stk = streakTick();
-      mis = MIS.pay(MIS.done({ k: 'round', p, mix: false, test: false, boss: false, daily: false, perfect: sc >= n, n: d.r }));
+      const mi = MIS.done({ k: 'round', p, mix: false, test: false, boss: false, daily: false, perfect: sc >= n, n: d.r });
+      mis = MIS.pay(mi);
+      gt = ptCalc(g, sc, n, 0, getSt(p, i), false, false, nd, { mission: mi.bonus }).sec;
+      ptEarn(gt);
     } catch (e) { logErr('check-in round: ' + e.message); } // the badge card never fails over the day's bookkeeping
     save();
     const nx = ok ? CHK.nextStop(p, i) : -1;
@@ -128,7 +132,8 @@ const CHK = {
     view(`<div class="center ck-end s-${p}" id="ckend">${art}<h1 class="rw-h">${esc(head)}</h1><p class="ck-name">${esc(nd.t)}</p>` +
       `<p class="ck-sc"><b>${sc}</b> out of ${n} right</p><p class="ck-line">${esc(line)}</p>` +
       (nx >= 0 ? `<p class="ck-nx">${ico('arrow-right', 22)}<span>Next: ${esc(NODES[p][nx].t)}</span></p>` : '') +
-      (coins ? RW.row('coin', 'coin', `+${coins} coins for the pet shop!`) : '') + mis +
+      (coins ? RW.row('coin', 'coin', `+${coins} coins for the pet shop!`) : '') +
+      (gt ? RW.row('ticket', 'ticket', `<b>+${fmtT(gt)}</b> You earned game time!`, 'ckgt') : '') + mis +
       (stk.msg ? `<p class="ck-line">${esc(RW.clean(stk.msg))}</p>` : '') +
       `<div class="ck-dock">${NAV.end3({ again: ok ? '' : 'ckagain', next: nx >= 0 ? 'cknext' : '', home: 'ckhome',
         extra: ok ? UI.btn('My badges', { kind: 'subject', p, icon: 'medal', id: 'ckshelf' }) : '' })}</div></div>`);

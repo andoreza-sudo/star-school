@@ -164,7 +164,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
-  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?'Try again!':pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
     ASK_LM={q,v,k:SKEY}; // ASK-01: the last mistake, for "Why did I get that wrong?" (39r-ask.js; this session only, never saved)
     G.hm='';let mh='';try{mh=typeof hmHint=='function'?hmHint(q,v):''}catch(e){} // HINT-01 (v182: guarded, a lazy part): this mistake's hint (39m-mist.js) above the generic one, once its words are approved
     $('#hint').innerHTML=mh+hintHTML(q);fit();hintIn();
@@ -192,6 +192,8 @@ const stkDoubles=()=>STK.reduce((a,s)=>a+stkDup(s),0);
 function stkSwap(t){if(!STK.includes(t)||stkN(t)||stkDoubles()<SWAP_COST)return null;
   let k=SWAP_COST;for(const s of STK){while(k&&stkDup(s)){S.stickers[s]--;k--}}
   S.stickers[t]=1;S.stkDry=0;save();return{s:t,isNew:true}}
+// P2 (owner 2026-11-24): right answers for share f of n, rounded up (5/6, 6/8, 4/5; 10 as before); one miss always passes
+const starNeed=(n,f)=>Math.min(Math.max(1,n-1),Math.ceil(n*f-1e-9));
 function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // CHECK-IN: its own end card (51b-checkin.js)
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
@@ -200,7 +202,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
   if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=starNeed(n,.8)?2:ss>=starNeed(n,.7)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
@@ -229,7 +231,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const need=starNeed(n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
     f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
