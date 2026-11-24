@@ -5,6 +5,8 @@ const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i))
 const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀','Sight Words','Hear it, tap it!'],es:['🌮','Spanish Words','Escucha y toca!']};
 // P4-18: drawn race badges and colours (the emoji in RACES stay as data)
 const RACE_GX={math:['path-math','math'],sight:['eye','read'],es:['path-es','es']};
+// audit v195: a timed race of written sums is for grade 1 up, as Fact Sprint (FLU.on): no Home tile or Learn card for Pre-K and K
+const raceOn=()=>gradeOf()>=1;
 function raceMenu(){S.race=S.race||{};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Fact Race</span></div></div>
   <div class="scroll gx-list"><p class="gx-lead">How many can you get in 60 seconds? Beat your best score!</p>
@@ -36,7 +38,8 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);UI.setChip($('#rsc'),RC.score);if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
-  RC.iv=setInterval(()=>{if(!RC||document.hidden||RC.held)return;RC.left--; // R-01b: the clock stops while the app is hidden, like Fact Sprint'sGFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
+  // R-01b: the clock stops while the app is hidden. (audit v195: this note sat inside the next line and cut off its gauge and tick)
+  RC.iv=setInterval(()=>{if(!RC||document.hidden||RC.held)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const ps=ptRace(cat,sc),coins=raceCoins(sc,rec,ps);S.coins+=coins;if(ps)ptEarn(ps);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.chime();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,

@@ -105,7 +105,7 @@ function askTip(lm) {
   const q = lm.q, v = lm.v, open = typeof G != 'undefined' && G && G.q;
   const ok = t => t && !askLeak(q, t) && !(open && open !== q && askLeak(open, t)) && !(typeof ksBad == 'function' && ksBad(t, true));
   try {
-    const own = !TEACH.off && !twoWay(q) && !(typeof mastTag == 'function' && mastTag(q) == 'ch');
+    const own = !q.lsx && !TEACH.off && !twoWay(q) && !(typeof mastTag == 'function' && mastTag(q) == 'ch');
     const m = own && typeof hmMatch == 'function' ? hmMatch(q, v) : null, w = m && HINTW[m.c];
     const line = w && !(m.s.o != null && ksBad(m.s.o, true)) ? hmFill(w, m.s) : null;
     if (ok(line)) return line;

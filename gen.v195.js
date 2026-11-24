@@ -3755,9 +3755,9 @@ const FLU = {
   set: id => FLU.SETS.find(s => s.id == id),
   sets: () => FLU.SETS.filter(s => s.ok()),
   // R-01b (R-01 practice review, Must 1): timed fact practice is for facts a child already knows by a strategy, from grade 1. Fact
-  // Sprint shows (Home tile, daily mission) from grade 1 once a set is open; Pre-K and K never see it. A save with no grade (older
-  // than grades) shows it once a set is open, as before.
-  on: () => (GRADES.includes(S.grade) ? S.grade >= 1 : true) && FLU.sets().length > 0,
+  // Sprint shows (Home tile, daily mission) from grade 1 once a set is open; Pre-K and K never see it, nor a save with no grade
+  // (audit v195: gradeOf() makes it a Kindergartner everywhere else).
+  on: () => gradeOf() >= 1 && FLU.sets().length > 0,
   key: (set, mode) => mode == 'n20' ? set + '-20' : set,
   fkey: f => f.a + f.op + f.b,
   // Next fact for a sprint. st = {set, last, redo: [{f, wait}]}. A missed fact comes back after 3 other facts.

@@ -1189,13 +1189,16 @@ async function main() {
         return i;
       });
       await mp.waitForSelector('#prompt');
-      let missed = 0, tags = 0, tagH = 99;
+      // audit v195 (n5): a due review item now takes its slot (questions 6 and 8) before a Challenge question, so the questions after
+      // the fifth are Challenge questions except the review ones (revs, at most 2); before, a challenge round asked no review after question 4
+      let missed = 0, tags = 0, tagH = 99, revs = 0, lastRev = null;
       for (let guard = 0; guard < 60; guard++) {
         const st = await mp.evaluate(() => document.querySelector('#fin') ? { fin: 1 } : G && G.q && !G.lock
-          ? { tag: mastTag(G.q), tries: G.tries, kind: G.q.kind, h: (document.querySelector('.mtag') || {}).offsetHeight || 0 } : null);
+          ? { tag: mastTag(G.q), tries: G.tries, kind: G.q.kind, h: (document.querySelector('.mtag') || {}).offsetHeight || 0, rev: !G.retry && G.done >= 5 && !!G.q.review, done: G.done } : null);
         if (st && st.fin) break;
         if (!st) { await mp.waitForTimeout(150); continue; }
         await mp.evaluate(() => { window.__q = G.q; });
+        if (st.rev && st.done !== lastRev) { revs++; lastRev = st.done; }
         if (st.tag === 'ch' && st.tries === 0) {
           tags++;
           tagH = Math.min(tagH, st.h);
@@ -1222,9 +1225,9 @@ async function main() {
       await mp.waitForSelector('#chest', { timeout: 5000 });
       const res = await mp.evaluate(i => ({ mode: G.mode, score: G.score, n: G.n, forgive: G.forgive || 0, st: getSt('math', i),
         rec: S.mast && S.mast.eo1, saved: !!JSON.parse(localStorage.getItem(KEY)).mast }), mi);
-      if (res.mode !== 'challenge' || tags !== res.n - 5 || tagH < 20 || !missed || res.forgive !== missed || res.score !== res.n - missed || res.st !== 3)
-        fail('challenge round: ' + JSON.stringify({ ...res, tags, tagH, missed }));
-      else step(`challenge: questions 6-${res.n} came from the harder stop with the tag, ${missed} of them missed once, ${res.score}/${res.n} still gave 3 stars`);
+      if (res.mode !== 'challenge' || tags !== res.n - 5 - revs || revs > 2 || tagH < 20 || !missed || res.forgive !== missed || res.score !== res.n - missed || res.st !== 3)
+        fail('challenge round: ' + JSON.stringify({ ...res, tags, revs, tagH, missed }));
+      else step(`challenge: questions 6-${res.n} came from the harder stop with the tag (${revs} review question${revs == 1 ? '' : 's'} in the slots), ${missed} of them missed once, ${res.score}/${res.n} still gave 3 stars`);
       if (!res.rec || res.rec.n < 4 || !res.saved) fail('mastery record for eo1 not saved: ' + JSON.stringify(res.rec));
       // support: five wrong first tries, then the 6th question shows its hint before any answer
       const sp = await mp.evaluate(i => {
@@ -9998,7 +10001,7 @@ async function main() {
     // G-ART2 Art Studio by real touch (CDP touch events), midway save with 20 min of game time and two Neon pictures in the old
     //    separate store, the real clock. At 380x780 and 1024x600: Home -> Game Room -> Coloring opens on the picture packs (next goal,
     //    today's picture, packs; the two Neon pictures are in the gallery with a heart, the old store untouched); the first pack picture
-    //    (Kitty, pixel art) has squares of 32 px or more and a tap colours a square; Pause -> Quit back to the packs; a mandala coloured by
+    //    (Kitty, pixel art) has squares of 40 px or more (32 until the v195 audit, R-03 T2) and a tap colours a square; Pause -> Quit back to the packs; a mandala coloured by
     //    taps, Done -> the end card with the framed picture -> My gallery shows it first -> its big view opens and closes; a Neon drawing
     //    drawn with one finger -> Done -> kept as strokes. Every button 48 px or more (Done 64), no emoji in the menus and tools, no
     //    sideways scroll.
@@ -10059,7 +10062,7 @@ async function main() {
           const px = await pg.evaluate(() => { const r = document.querySelector('#cbc').getBoundingClientRect(), v = document.querySelector('#pxv').getBoundingClientRect(), d = cbData('cat');
             const i = d.num.findIndex((n, j) => n == 1 && r.left + (j % 16 + .5) * r.width / 16 > v.left + 4 && r.left + (j % 16 + .5) * r.width / 16 < v.right - 4 && r.top + ((j / 16 | 0) + .5) * r.width / 16 < v.bottom - 4);
             return { sq: r.width / 16, i, pt: [r.left + (i % 16 + .5) * r.width / 16, r.top + ((i / 16 | 0) + .5) * r.width / 16], in: v.right <= innerWidth + 1 }; });
-          if (px.sq < 32 || px.i < 0 || !px.in) bad.push(at + 'pixel squares: ' + JSON.stringify(px));
+          if (px.sq < 40 || px.i < 0 || !px.in) bad.push(at + 'pixel squares: ' + JSON.stringify(px));
           const c0 = await pg.evaluate(() => document.querySelector('#cbc').dataset.n);
           await tap(px.pt);
           await pg.waitForTimeout(200);
@@ -10134,7 +10137,7 @@ async function main() {
       }
       if (bad.length) fail('G-ART2 Art Studio:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
       else step('G-ART2 Art Studio by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): packs menu with the next goal and today\'s picture, ' +
-        'old Neon pictures moved into the gallery (old store untouched); pixel art with 32 px+ squares coloured by a tap; a mandala coloured by taps, Done -> framed end card -> ' +
+        'old Neon pictures moved into the gallery (old store untouched); pixel art with 40 px+ squares coloured by a tap; a mandala coloured by taps, Done -> framed end card -> ' +
         'My gallery shows it first and its big view; a Neon drawing kept as strokes; 48 px targets (Done 64), no emoji, no sideways scroll');
     }
 
