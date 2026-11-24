@@ -9384,7 +9384,8 @@ const KIND={
   //        A wrong pair submits '!' (a miss for the engine: first one retries, second one reveals); matched pairs stay.
   match:{
     render:q=>{
-      const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`;
+      // AUD-DISC: q.speak (a read-aloud bank item): every word says itself when tapped (k2SayChip: Pre-K to 1st grade)
+      const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}"${q.speak&&c.say?` data-say="${esc(c.say)}"`:''}>${c.h?c.l:esc(c.l)}</button>`;
       return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
@@ -9395,6 +9396,7 @@ const KIND={
       const btn=(s,i)=>$(`.mb[data-s="${s}"][data-i="${i}"]`);
       $$('.mb').forEach(b=>b.onclick=()=>{
         if(st.lock||b.classList.contains('done'))return;
+        if(b.dataset.say&&typeof k2SayChip=='function')k2SayChip(b);
         const s=b.dataset.s,i=+b.dataset.i,sel=st.mSel;
         if(!sel||sel.s==s){
           if(sel)btn(sel.s,sel.i).classList.remove('sel');
@@ -9629,13 +9631,14 @@ const KIND={
   order:{
     render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}`
       +`${q.end?`<span class="oend" aria-hidden="true">${esc(q.end)}</span>`:''}</div>`
-      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
+      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}"${q.speak&&t.say?` data-say="${esc(t.say)}"`:''}>${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
     bind(q,st,submit){
       const K=KIND.order;
       st.ord=[];
       $$('.ot').forEach(b=>b.onclick=()=>{
         const i=+b.dataset.i;
         if(st.lock||st.ord.includes(i)||st.ord.length>=q.ans.length)return;
+        if(b.dataset.say&&typeof k2SayChip=='function')k2SayChip(b);
         st.ord.push(i);
         SFX.pop(st.ord.length);
         K.draw(q,st);

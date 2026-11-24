@@ -2570,7 +2570,7 @@ Which season comes after fall?|winter|spring;summer|seasons
 We build snowmen in the ___.|winter|summer;spring|seasons
 Swimming at the beach is most fun in the ___.|summer|winter;fall|seasons
 Mittens, hot cocoa and a snowman. Which season is it?|winter|summer;spring;fall|seasons
-When can we see stars in the sky?|at night|at noon;at breakfast;at recess|daynight
+When can we see stars in the sky?|at night|at breakfast;at recess|daynight
 The sun rises in the ___.|morning|evening;night|daynight
 The sun sets in the ___.|evening|morning;noon|daynight
 Which part of the day is dark?|night|noon;morning;afternoon|daynight
@@ -2738,7 +2738,7 @@ A duck's webbed feet help it ___.|swim|climb trees;dig holes;run fast|adapt|duck
 The shape of a bird's beak depends on ___.|the food it eats|its color;its age;the weather|adapt
 A body part or habit that helps a living thing survive where it lives is an ___.|adaptation|invention;accident;illness|adapt
 Birds that fly far away for the winter to find food and warmth are ___.|migrating|hibernating;camouflaging;hatching|adapt
-A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage;adaptation|adapt
+A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage|adapt
 A camel's wide, flat feet help it walk on ___.|sand|ice;tree branches;a wall|adapt
 Which animal has thick white fur that helps it hide and stay warm in snow?|an Arctic fox|a camel;a lizard;a toucan|adapt
 A thick waxy coat on a leaf helps a plant ___.|keep its water in|catch more snow;sing;move|adapt
@@ -2835,7 +2835,6 @@ Can a scar from a cut be passed on to a child?|no|yes;always;only if the scar is
 Identical twins have almost exactly the same ___.|genes|friends;clothes;memories|traits
 Which of these did a lion cub get from its parents?|its golden fur|a scar from a fight;a trick it was taught;a name|traits
 Members of one kind of animal are not all exactly alike. This is called ___.|variation|migration;adaptation;extinction|traits
-Over many generations, traits that help living things survive become ___.|more common|less common;impossible;harmless|traits
 `));
 
 BANK.sci_earth.push(...discRows(2, `
@@ -3471,7 +3470,8 @@ const DISC_TOUCH = ['AZ CO', 'NM UT', 'IL MI', 'MI MN', 'NY RI', 'MD DC'];
   // regions: five regions, 41 states whose region books agree on (R-01d: Nevada and Utah are "-": many maps put them in the Southwest)
   ST.forEach((s, i) => {
     if (s.reg === '-') return;
-    const others = REGS.filter(r => r !== s.reg), ds = [];
+    // AUD-DISC: never "West" as a wrong answer for a Southwest state (the Census map puts Arizona and New Mexico in the West)
+    const others = REGS.filter(r => r !== s.reg && !(s.reg === 'SW' && r === 'W')), ds = [];
     for (let k = 0; ds.length < 3; k++) ds.push(NAME[others[(i + k) % others.length]]);
     rows.push(`Which region of the United States is ${s.n} in?|${NAME[s.reg]}|${[...new Set(ds)].join(';')}|regions`);
   });
@@ -3720,8 +3720,8 @@ DK2('sci_life', 1, 'living', [
     bins: {fur: ['cat', 'bear'], feathers: ['duck', 'owl'], scales: ['fish', 'snake']},
     cp: {cat: ['cat', '🐱'], bear: ['bear', '🐻'], duck: ['duck', '🦆'], owl: ['owl', '🦉'], fish: ['fish', '🐟'], snake: ['snake', '🐍']}},
   {form: 'sort', topic: 'habitat', q: 'Where does it live: in water or on land?', hint: 'Can it breathe and swim under the water all day?',
-    bins: {water: ['fish', 'octopus', 'whale'], land: ['horse', 'cow']},
-    cp: {fish: ['fish', '🐟'], octopus: ['octopus', '🐙'], whale: ['whale', '🐳'], horse: ['horse', '🐴'], cow: ['cow', '🐄']}},
+    bins: {water: ['fish', 'octopus'], land: ['horse', 'cow']},
+    cp: {fish: ['fish', '🐟'], octopus: ['octopus', '🐙'], horse: ['horse', '🐴'], cow: ['cow', '🐄']}},
   {form: 'sort', topic: 'needs', q: 'Sort them: does a plant need it, or not?', hint: 'A plant needs water, light and air to grow.',
     bins: {'plant needs': ['water', 'sunlight', 'air'], 'not needed': ['candy', 'teddy bear']},
     cp: {water: ['water', '💧'], sunlight: ['sun', '☀'], air: ['wind', '💨'], candy: ['candy', '🍬'], 'teddy bear': ['teddy', '🧸']}},
@@ -3775,8 +3775,8 @@ DK2('sci_earth', 1, 'weather', [
     bins: {'rainy day': ['umbrella', 'rain cloud'], 'snowy day': ['scarf', 'sled', 'snowman']},
     cp: {umbrella: ['umbrella', '☔'], 'rain cloud': ['rain', '🌧'], scarf: ['scarf', '🧣'], sled: ['sled', '🛷'], snowman: ['snowman', '⛄']}},
   {form: 'sort', topic: 'daynight', q: 'Sort them: do we see it in the day or at night?', hint: 'Which one lights up the day?',
-    bins: {day: ['sun', 'rainbow'], night: ['moon', 'stars']},
-    cp: {sun: ['sun', '☀'], rainbow: ['rainbow', '🌈'], moon: ['moon', '🌙'], stars: ['star', '⭐']}},
+    bins: {day: ['sun', 'rainbow'], night: ['stars']},
+    cp: {sun: ['sun', '☀'], rainbow: ['rainbow', '🌈'], stars: ['star', '⭐']}},
   {form: 'sort', topic: 'landwater', q: 'Sort them: land or water?', hint: 'Can you walk on it, or do you need a boat?',
     bins: {land: ['mountain', 'desert', 'hill'], water: ['ocean', 'river']}},
   {form: 'sort', topic: 'seasons', q: 'Sort them: summer or winter?', hint: 'Summer is hot. Winter is cold.',
@@ -3896,7 +3896,7 @@ DK2('geo_world', 1, 'landforms', [
   {form: 'sort', topic: 'oceans', q: 'Is it a continent or an ocean?', hint: 'There are seven continents and five oceans.',
     bins: {continent: ['North America', 'Australia'], ocean: ['Arctic', 'Indian']}},
   {form: 'sort', topic: 'continents', q: 'Sort the places: hot place or cold place?', hint: 'The North and South Poles are icy all year.',
-    bins: {'hot place': ['desert', 'rain forest'], 'cold place': ['North Pole', 'Antarctica']}},
+    bins: {'hot place': ['rain forest'], 'cold place': ['North Pole', 'Antarctica']}},
   {form: 'sort', q: 'Is it land or water?', hint: 'Water you can swim in. Land you can stand on.',
     bins: {land: ['island', 'beach', 'valley'], water: ['sea', 'pond']}},
   {form: 'match', topic: 'mapwords', q: 'Match each letter on a compass to its direction.', hint: 'Each letter is the start of a word.',
@@ -3910,7 +3910,7 @@ DK2('geo_world', 2, 'hemi', [
   {form: 'sort', q: 'Sort the countries: Northern or Southern Hemisphere?', hint: 'The equator splits Earth into north and south.',
     bins: {'Northern Hemisphere': ['Canada', 'Russia', 'Mexico'], 'Southern Hemisphere': ['Australia', 'Argentina']}},
   {form: 'sort', topic: 'climate', q: 'Sort the places: hot climate or cold climate?', hint: 'Places near the equator are hot. Places near the poles are cold.',
-    bins: {hot: ['desert', 'rain forest', 'savanna'], cold: ['tundra', 'polar region']}},
+    bins: {hot: ['rain forest', 'savanna'], cold: ['tundra', 'polar region']}},
   {form: 'sort', topic: 'features', q: 'Sort them: landform or body of water?', hint: 'A landform is a shape of the land. A body of water holds water.',
     bins: {landform: ['plateau', 'canyon', 'peninsula'], 'body of water': ['gulf', 'strait']}},
   {form: 'sort', topic: 'key', q: 'Sort the map symbols: natural or made by people?', hint: 'People built some of these. Nature made the others.',
@@ -4075,7 +4075,6 @@ KD4('sci_phys', 3, [
 // ---- Maps & World ----
 KD4('geo_world', 1, [
   kd4s('landforms', 'Sort them: made by nature or made by people?', 'Was it here before people built things?', {nature: ['mountain', 'river', 'beach'], 'by people': ['road', 'bridge']}),
-  kd4s('continents', 'Where do they live: Africa or Antarctica?', 'One continent is hot and one is covered in ice.', {Africa: ['giraffe', 'lion', 'zebra'], Antarctica: ['penguin', 'seal']}),
   kd4m('oceans', 'Tap the word that names the biggest ocean.', 'It is the ocean on the west side of the United States.', 'The Pacific is the biggest ocean.', 'Pacific'),
 ], true);
 KD4('geo_world', 2, [
@@ -4089,7 +4088,6 @@ KD4('geo_world', 2, [
 KD4('geo_us', 1, [
   kd4s('states', 'Sort the places: a state or a city?', 'A state is big and has many cities inside it.', {state: ['Texas', 'Ohio', 'Maine'], city: ['Denver', 'Boston']}),
   kd4s('borders', 'Sort the states: on a coast or inland?', 'Does the state touch an ocean?', {coast: ['Florida', 'Oregon', 'Maine'], inland: ['Kansas', 'Utah', 'Iowa']}),
-  kd4m('capitals', 'Tap the city that is our nation\'s capital.', 'The President works there.', 'Our nation\'s capital is Washington, D.C.', 'Washington'),
   kd4m('states', 'Tap the two state names.', 'Look for the words that name states.', 'Ohio and Texas are states.', ['Ohio', 'Texas']),
 ]);
 KD4('geo_us', 2, [
@@ -4109,7 +4107,6 @@ KD4('civ', 2, [
   kd4s('branches', 'Sort the jobs: President or Congress?', 'One signs and carries out laws. The other writes them.', {President: ['signs a bill', 'leads the military', 'names Cabinet members'], Congress: ['writes bills', 'votes on bills']}),
   kd4s('constitution', 'Sort the jobs: federal or state government?', 'Federal means the whole country. State means one state.', {federal: ['coins money', 'runs the Army', 'declares war'], state: ['gives driver licenses', 'runs state parks']}),
   kd4m('branches', 'Tap the leader of a state.', 'The President leads the country. Who leads a state?', 'A governor leads a state.', 'governor'),
-  kd4m('constitution', 'Tap the word for a proposed law.', 'It is not a law yet.', 'A bill becomes law after the vote.', 'bill'),
 ]);
 
 // ---- why: [text, why] on existing choice items (found by their q and a; an item that is not found is skipped) ----
