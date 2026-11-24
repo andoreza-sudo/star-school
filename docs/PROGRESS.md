@@ -181,6 +181,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - BRAND v193 (branch brand from v192: the owner approved the refined D2 logo 2026-11-22; icons, in-app logo, landing page, store assets)
 - LESSON-STAGE v194 (branch lesson-stage from v193: Fable's 'feels like homework' report, .claude/FABLE-IMPROVE.md; owner decision 2026-11-23, game time shown only at the end)
 - GAMES-GFX v194 (branch games-gfx from v193: Fable's game graphics report; outlines, depth, effects kit, lighter controls)
+- REC-ALL v194 (branch rec-all from v194: owner decision 2026-11-24, "All lesson lines": every fixed lesson sentence, Pre-K to 6th grade, in the pet's recorded voice, luna; speed 0.95 for the little pet's, 1.0 for the older pet's; 1289 teacher lines, audio/teach 5.38 MB, all audio 8.37 MB; budgets audio 8.5 MB (warn 7.55), teacher lines 1600. Not recorded, for the 8.5 MB budget (everything came to 8.9 MB): the warm-up lines and the Explore lines of grade 3 and up; 3 sentences the speech to text check rejects ("Add their lengths.", "Add the lengths.", "Rate story: build the table."). tools/en-audio.js lessonSentences)
 
 ## Handoff notes
 

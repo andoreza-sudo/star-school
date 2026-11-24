@@ -12,7 +12,7 @@ const LAZY=[...(((BUILD_PY.match(/^LAZY = \(([^)]*)\)/m)||[])[1]||'').matchAll(/
 const names=(d,ext,part)=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith(ext)&&partOf(n)===part).sort();
 const cat=(d,part,ext='.js')=>names(d,ext,part).map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
 // all code and data, without boot.js, in the order the built page runs it: index.html's own code, each part file, the data file
-const js=cat('js')+PARTS.map(p=>cat('js',p.stem)).join('')+cat('data');
+const js=cat('js')+PARTS.map(p=>cat('js',p.stem)+cat('data',p.stem)).join('')+cat('data'); // REC-ALL: a part may hold a src/data file (teach12: d-teach-audio.js)
 
 // ---- Budgets and known exceptions: the one place to change them ----
 const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROADMAP risk R1)
@@ -25,11 +25,14 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 // G-01b raised it to 3.6 MB for the Block Builder journey; ES-AUDIO had raised it from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
-// code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB.
+// code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
+// 8.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
-const AUDIO_WARN=4000000,AUDIO_FAIL=4500000,AUDIO_FILE_FAIL=40000;
+// REC-ALL (owner decision 2026-11-24: "the tablet's voice is awful so any recordings you can do the better", "All lesson lines"): every fixed
+// lesson sentence of every grade in the pet's recorded voice (audio/teach): 4.5 -> 8.5 MB, warn raised in proportion 4.0 -> 7.55 MB
+const AUDIO_WARN=7550000,AUDIO_FAIL=8500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -3526,12 +3529,12 @@ run('pet age: the stage follows S.grade (Pre-K..6), every species x age x growth
   r.warm=typeof petAgeWarm;r.aged=typeof PET_AGED;r;`;
   const o=(()=>eval(js+prog))();
   // the page as it starts, before the lazy part petage is in: the little one is drawn at every age
-  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)+cat('data',x.stem)).join('')+cat('data');
   const o0=(()=>eval(js0+prog))();
   // the little one as 7de3ff0 drew it, from the git history (skipped when there is no history)
   let old=null;
   try{const cp=require('child_process'),show=f=>cp.execSync('git show 7de3ff0:src/js/'+f,{cwd:ROOT,encoding:'utf8',stdio:['ignore','pipe','ignore']});
-    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)+cat('data',x.stem)).join('')+cat('data');
     old=(()=>eval(oldJs+prog))();}catch(e){}
   const want={'-1':0,0:0,1:0,2:0,3:1,4:1,5:2,6:2};
   for(const g in want)if(o.age[g]!==want[g])p.push('grade '+g+' gives age '+o.age[g]+', expected '+want[g]);
@@ -13310,11 +13313,12 @@ run('word search and unscramble P3-15',()=>{
   const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
   const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
   // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
-  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words)
+  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words); REC-ALL: nor the teacher
+  // manifest, for the same reason (its 1289 hex file names spell "eeb" and the like; its lines are lesson text, not word lists)
   // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
   const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
   const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
-  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -21882,23 +21886,28 @@ run('recorded teacher lines TEACH-4',()=>{
   const ctx=E.loadApp(),lines=EA.collectTeach(ctx),M=vm.runInContext('typeof EN_TEACH=="undefined"?null:EN_TEACH',ctx),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
   if(!M)return{problems:['no EN_TEACH: run node tools/en-audio.js --teach']};
   if(M.dir!==EA.TEACH_DIR||M.voice!==EA.TEACH_VOICE||!EA.VOICES.some(v=>v[0]===M.voice))p.push('EN_TEACH: dir '+M.dir+', voice '+M.voice+' (one of the EN-PRAISE voices)');
-  if(lines.size<60||lines.size>200)p.push(lines.size+' teacher lines (want at most 200: the owner raised the cap from 110 on 2026-11-19)');
+  // REC-ALL (owner decision 2026-11-24: "All lesson lines", every grade): the cap is raised from 200 to 1600. The unit is the sentence say() matches,
+  // so the about 860 fixed lesson lines are about 1400 sentences (with the fixed sentences of lines that also hold a number or a {slot})
+  if(lines.size<60||lines.size>1600)p.push(lines.size+' teacher lines (want at most 1600: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
-    if(f!==EA.teachFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
+    if(f!==EA.teachFileOf(k,o.rec))p.push('"'+k+'": file '+f+' is not the hash of its text and recipe');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
   for(const k in M.lines)if(!lines.has(k))p.push('the teacher manifest has a line the list does not: '+k);
   for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);if(!used.has(f))p.push(EA.TEACH_DIR+f+' is not in the manifest');
     const h=b.indexOf('OpusHead');if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.TEACH_DIR+f+' is not mono Ogg Opus');
     if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.TEACH_DIR+f+' is '+b.length+' bytes')}
   const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total;
   if(all>AUDIO_FAIL)p.push('the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
-  // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions; never a digit; no cheer twice
+  // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions, and (REC-ALL) every lesson's fixed
+  //    sentences at every age; never a digit; no cheer twice
   const src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n'),en=vm.runInContext('EN_AUDIO.lines',ctx);
   for(const [k,o] of lines){if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');if(/\d/.test(k))p.push('a teacher line with a number: '+k);if(en[k])p.push('recorded twice: '+k)}
   for(const k of ['My turn. Check me!','Can you fix it?','You learned it!','Read the word. Then tap its picture.','Which one is different?'])if(!M.lines[k])p.push('not recorded: '+k);
-  // 3. the build: the manifest is in the data file, not index.html; sw.js precaches every teacher file and answers a Range request from the cache
-  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
-  if(!data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in '+DATA_FILE+' and not in index.html');
+  // 3. the build: the manifest is src/data/d-teach-audio.js, built into teach12, the part every lesson loads right after teach (REC-ALL: 1289
+  //    lines are 62 KB, needed only in a lesson, so not loaded at start: P6-03 keeps 500 KB under the start-up budget, and teach stays under
+  //    150 KB), not index.html or the data file; sw.js precaches every teacher file and answers a Range request from the cache
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),tp=rd('teach12.'+BUILD_VER+'.js');
+  if(!tp.includes('const EN_TEACH=')||data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in teach12.'+BUILD_VER+'.js and not in index.html or '+DATA_FILE);
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');
