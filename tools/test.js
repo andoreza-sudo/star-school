@@ -19873,6 +19873,10 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       const F=${JSON.stringify(K2_FIX)};
       for(const id in F.labels){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);for(const [s,l] of F.labels[id]){const g=genQ(sk,+lv,s).label;if(g!==l)bad(id+' seed '+s+': '+g+', v169 '+l)}}
       // K2.off: every switched stop asks exactly the v169 questions (the new format draw is the last one, so the old draws are unchanged)
+      // AUD-DISC (the v195 audit) changed four of these stops' choice items on purpose, so their four hashes in tools/lib/kinds2-seeds.json
+      // are the new ones; every other hash is the v169 one. sci_life2: the wrong answer "adaptation" left the hibernation item (hibernation
+      // is an adaptation). sci_life3: the natural selection row was removed (no evolution content). sci_earth1: the wrong answer "at noon"
+      // left "When can we see stars in the sky?" (the sun is a star). geo_us1: a Southwest state no longer offers West as a wrong region.
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
