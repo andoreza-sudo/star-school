@@ -932,9 +932,10 @@ function hcA(role,a){const c=hcC(role);if(!/^#[0-9a-f]{6}$/i.test(c))return c;co
 
 /* ---- worlds and stages ----
    per world: g gravity (px/s^2), soft (the world's soft ground), pit (what a gap holds), sky (two --sc-* tokens), top/top2 (road),
-   dirt/dirt2, far/far2/mid (background layers), prop (roadside things), water (the fill of gaps, fords, under bridges) */
+   dirt/dirt2, far/far2/mid (background layers), prop (roadside things), water (the fill of gaps, fords, under bridges). fix v194: the
+   meadow's far ranges blue hills behind green ones (b1 was the sky's own tone, so its caps floated; c2 read as a flat wall), no snow caps */
 const HCW=[
-  {id:'meadow',n:'Green Meadow',g:620,soft:'mud',pit:'water',sky:['sc-sky','sc-sky-1'],top:'g',top2:'g2',dirt:'n',dirt2:'n2',far:'c2',far2:'b1',mid:'g1',water:'c',prop:'tree',snowcap:1},
+  {id:'meadow',n:'Green Meadow',g:620,soft:'mud',pit:'water',sky:['sc-sky','sc-sky-1'],top:'g',top2:'g2',dirt:'n',dirt2:'n2',far:'g2',far2:'b',mid:'g1',water:'c',prop:'tree',snowcap:0},
   {id:'desert',n:'Sunny Desert',g:620,soft:'sand',pit:'water',sky:['sc-dusk','sc-sun'],top:'y',top2:'y2',dirt:'o2',dirt2:'o3',far:'o2',far2:'o3',mid:'t',water:'c',prop:'cactus'},
   {id:'jungle',n:'Jungle River',g:620,soft:'mud',pit:'water',sky:['sc-mint','sc-green'],top:'g2',top2:'g3',dirt:'n2',dirt2:'n3',far:'g3',far2:'g2',mid:'g2',water:'c2',prop:'palm'},
   {id:'snow',n:'Snowy Peaks',g:620,soft:'ice',pit:'water',sky:['sc-blue','sc-sky-1'],top:'w',top2:'w2',dirt:'e2',dirt2:'e3',far:'e2',far2:'e3',mid:'w2',water:'b1',prop:'pine',snowcap:1},
