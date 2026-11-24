@@ -6,7 +6,7 @@
 .pf-top{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:var(--s-3);width:min(760px,100%)}
 .pf-t{display:flex;align-items:center;gap:var(--s-3);min-width:0;margin:0;font-family:var(--font-display);font-size:var(--fs-6);
   font-weight:700;line-height:1.15}
-.pf-t .wl-mk{width:48px;height:48px} /* BRAND (v193): the logo's icon, decorative (UI.LOGO) */
+.pf-t .wl-mk{width:48px;height:48px}
 .pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);width:min(760px,100%)}
 .pf-kid{display:flex;flex-direction:column;align-items:stretch;gap:var(--s-2);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-3) var(--s-4);
   border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;text-align:center;cursor:pointer;

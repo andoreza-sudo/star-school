@@ -105,3 +105,23 @@ Open the app twice so the update installs. Then:
 - Bossy R lessons need new pictures; a few Word Workshop stops need a passage-reading lesson shape.
 - Job-frame story lines ("Help fill the reef stall!") were left out (would need owner wording and recordings).
 - Many old worktrees under /home/user/wt-* and .claude/worktrees can be removed once their branches are merged.
+- Headless tooling (v195 small fixes; not app bugs):
+  - **Playwright's own headless browser crashes as soon as Home opens** (the `midway` fixture; `fresh` stops at setup, before
+    Home). Cause: Home's daily missions (MIS.ctx, 55-missions.js) call `spkProbe()`, which calls `SpeechRecognition.available({langs, processLocally: true})`
+    (50-say.js). `chrome-headless-shell` (what `chromium.launch()` runs when no `executablePath` is given,
+    /opt/pw-browsers/chromium_headless_shell-*) has no browser-side handler for `media.mojom.OnDeviceSpeechRecognition`, so the
+    browser kills the page ("Terminating render process for bad Mojo message ... OnDeviceSpeechRecognition", seen with
+    `DEBUG=pw:browser`). A one-line page with just that call crashes the same way; the full Chrome (`/usr/bin/google-chrome`,
+    which tools/lib/browser.js uses, and Chrome on tablets, where the Play app runs) answers `downloadable`. It cannot be caught
+    in JavaScript. Workaround: launch through `tools/lib/browser.js` (or pass `executablePath: '/usr/bin/google-chrome'`); for a
+    one-off script on the headless shell, add an init script that deletes `window.SpeechRecognition` and
+    `window.webkitSpeechRecognition` (the app then treats Spanish listening as unavailable).
+  - **Smoke flake P5-10 "all saves gone after a reload"** is not the app losing a save. Each smoke context is a Playwright
+    `newContext()`, an off-the-record profile whose localStorage lives only in Chrome's storage service process; if that process
+    dies (a busy shared machine), every localStorage key is gone while sessionStorage stays, so lib/browser.js does not seed the
+    fixture again and the app starts as new. Reproduced by killing the storage process (`--utility-sub-type=storage...`): all
+    keys gone. The app's own write-then-reload never lost a write: 300 runs of `localStorage.setItem` followed at once by
+    `location.reload()` (200 of them with the CPU oversubscribed 2x) read the new value every time. On a tablet (a profile on
+    disk) the same crash loses only the writes of the last few seconds (Chrome writes localStorage to disk in batches; a write
+    4 s old was lost, one 6 s old kept), with or without a reload, and no web API forces that write. `reloadSaved()` (00-core.js)
+    keeps its 250 ms wait. Workaround: rerun the segment alone.

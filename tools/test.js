@@ -14297,6 +14297,44 @@ run('setup, grown-ups, pet care, icon P4-12',()=>{
       const [r,g,b]=im.at(Math.round(s/2),1);if(!(b>r+25&&r<70&&g<70))p.push(f+': the top of the sky is not the dusk navy: '+[r,g,b]);
     }else if(corner[3]!==0)p.push(f+': corner is not transparent ('+corner+'): "any" is the rounded tile');
   }
+  // the safe zone, as strong as before v193 (then: no drawn pixel outside the 40% circle; the sky now reaches the edges, so the pixels
+  // cannot tell art from sky): every part of the engine in docs/brand/whistlestop-icon.svg (g#mark-ws minus class "bg", the 100-unit
+  // maskable art), with half its stroke, measured from the SVG geometry (rect corners, circle and ellipse radii, path points with Q
+  // control points and circular arcs sampled), stays within radius 40 of the centre; the crimson pixel check above backs it up
+  let safeNote='';
+  {const svg=fs.readFileSync(path.join(ROOT,'docs','brand','whistlestop-icon.svg'),'utf8'),mk=/<g id="mark-ws">\n([\s\S]*?)\n<\/g>\n<clipPath/.exec(svg);
+    if(!mk)p.push('whistlestop-icon.svg: no g#mark-ws');else{
+      const num=(t,a)=>+((new RegExp('\\s'+a+'="([^"]*)"').exec(t)||[])[1]||0);
+      let M=[1,0,0,1,0,0],far=0,farWhat='',n=0;const stack=[];
+      const at=(x,y,pad,what)=>{const X=M[0]*x+M[2]*y+M[4],Y=M[1]*x+M[3]*y+M[5],d=Math.hypot(X-50,Y-50)+pad*Math.abs(M[0]);if(d>far){far=d;farWhat=what}};
+      for(const t of mk[1].split('\n').filter(l=>!/class="bg"/.test(l)).join('\n').match(/<\/?[a-z]+[^>]*>/g)){
+        if(t.startsWith('</g')){M=stack.pop();continue}
+        const tag=/^<(\w+)/.exec(t)[1],sw=/stroke="(?!none)/.test(t)?num(t,'stroke-width')/2:0;
+        if(tag=='g'){stack.push(M);const tf=/transform="matrix\(([^)]+)\)"/.exec(t);if(tf){const m=tf[1].trim().split(/[\s,]+/).map(Number);
+            M=[M[0]*m[0]+M[2]*m[1],M[1]*m[0]+M[3]*m[1],M[0]*m[2]+M[2]*m[3],M[1]*m[2]+M[3]*m[3],M[0]*m[4]+M[2]*m[5]+M[4],M[1]*m[4]+M[3]*m[5]+M[5]]}
+          else if(/transform=/.test(t))p.push('whistlestop-icon.svg: cannot measure the transform '+t);continue}
+        n++;
+        if(tag=='rect'){const x=num(t,'x'),y=num(t,'y'),w=num(t,'width'),h=num(t,'height');for(const [a,b] of [[x,y],[x+w,y],[x,y+h],[x+w,y+h]])at(a,b,sw,t)}
+        else if(tag=='circle'||tag=='ellipse'){const r=tag=='circle'?num(t,'r'):Math.max(num(t,'rx'),num(t,'ry'));at(num(t,'cx'),num(t,'cy'),r+sw,t)}
+        else if(tag=='path'){const d=(/\sd="([^"]+)"/.exec(t)||[])[1]||'',tk=d.match(/[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?/g)||[];
+          let i=0,c='',x=0,y=0,x0=0,y0=0;const nx=()=>+tk[i++];
+          while(i<tk.length){if(/[A-Za-z]/.test(tk[i]))c=tk[i++];
+            if(c=='M'||c=='L'){x=nx();y=nx();if(c=='M'){x0=x;y0=y}}else if(c=='H')x=nx();else if(c=='V')y=nx();else if(c=='Z'){x=x0;y=y0;continue}
+            else if(c=='Q'){at(nx(),nx(),sw,t);x=nx();y=nx()}
+            else if(c=='A'){let rx=nx(),ry=nx();nx();const la=nx(),sf=nx(),x2=nx(),y2=nx();
+              if(Math.abs(rx-ry)>1e-9){p.push('whistlestop-icon.svg: cannot measure an elliptical arc in '+t.slice(0,60));break}
+              const mx=(x+x2)/2,my=(y+y2)/2,hd=Math.hypot(x2-x,y2-y)/2;let r=Math.max(rx,hd),h=Math.sqrt(Math.max(0,r*r-hd*hd));
+              const ux=-(y2-y)/(2*hd||1),uy=(x2-x)/(2*hd||1),sg=la!==sf?1:-1,cx=mx+sg*h*ux,cy=my+sg*h*uy;
+              let a0=Math.atan2(y-cy,x-cx),a1=Math.atan2(y2-cy,x2-cx),da=a1-a0;if(sf&&da<0)da+=2*Math.PI;if(!sf&&da>0)da-=2*Math.PI;
+              for(let k=0;k<=64;k++){const a=a0+da*k/64;at(cx+r*Math.cos(a),cy+r*Math.sin(a),sw,t)}x=x2;y=y2}
+            else{p.push('whistlestop-icon.svg: cannot measure the path command '+c);break}
+            at(x,y,sw,t)}}
+        else p.push('whistlestop-icon.svg: cannot measure <'+tag+'> in the mark');
+      }
+      if(n<40)p.push('whistlestop-icon.svg: only '+n+' engine shapes found in g#mark-ws');
+      if(far>40)p.push('the engine reaches '+far.toFixed(1)+' units from the centre, outside the maskable safe circle (radius 40 of 100): '+farWhat.slice(0,90));
+      safeNote='; engine within radius '+far.toFixed(1)+' of 100';
+    }}
   {const st=path.join(ROOT,'docs','brand','store');
     const si=fs.existsSync(path.join(st,'icon-512.png'))&&png(path.join(st,'icon-512.png'));
     if(!si||si.w!==512||si.h!==512||si.ct!==6||!si.at)p.push('docs/brand/store/icon-512.png: the Play icon must be a 512x512 32-bit (RGBA) PNG');
@@ -14321,7 +14359,7 @@ run('setup, grown-ups, pet care, icon P4-12',()=>{
   }
   const sw=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
   for(const [f] of ICONS)if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
-  return{problems:p,note:fns.length+' functions, '+ICONS.length+' icons and the Play icon checked pixel by pixel'};
+  return{problems:p,note:fns.length+' functions, '+ICONS.length+' icons and the Play icon checked pixel by pixel'+safeNote};
 });
 
 // ---- P4-14: object art set B (DESIGN_SYSTEM 6.5; drawings in src/data/d-art-b.js) ----
@@ -19807,6 +19845,25 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
 // fix v194 (LESSON-STAGE review): the practice mix-in. Every lesson item lsMix gives is a valid question of its stop (sk, lv, lsx, another
 // kind); only a learned math lesson gives one, never with K2.off; pickQ takes one only when Practice asks (mix), so mastQ's and the
 // check-in's draws (no mix) and a check-in, boss or world-test round never show one; a miss of one is never kept (no phantom label).
+// small-fix (v195): the two-colour ten frame (K2MM.frame2, 52b-know.js) changes the square that is tapped (it turned the LAST blue one
+// orange); which square holds which counter rides on the state as s.lay, so the state, the checks and what is submitted stay [blue, orange]
+run('LESSON-STAGE frame2: a tap changes the tapped square; the state stays the two counts',()=>{
+  const out=eval(js+`;(()=>{const p=[],M=K2MM.frame2,q={kind:'make',model:'frame2',m:{total:10},goal:'fill',ans:10},tap=(s,c)=>M.tap(q,s,{dataset:{c:String(c)}});
+    const at=(s,c,cls)=>new RegExp('<g class="'+cls+'">(<circle [^>]*>)*<circle cx="'+(24+40*(c%5))+'" cy="'+(24+40*Math.floor(c/5))+'"').test(M.draw(q,s));
+    let s=M.s0(q);for(const c of [2,5,7])s=tap(s,c);
+    if(JSON.stringify(s)!=='[3,0]'||!at(s,2,'v1')||!at(s,5,'v1')||!at(s,7,'v1')||at(s,0,'v1'))p.push('three taps on empty squares 2, 5, 7: '+JSON.stringify(s)+' '+(s.lay||[]).join(''));
+    s=tap(s,5);if(JSON.stringify(s)!=='[2,1]'||!at(s,5,'v2')||!at(s,7,'v1')||!at(s,2,'v1'))p.push('a tap on blue square 5 did not turn that square orange: '+(s.lay||[]).join(''));
+    s=tap(s,5);if(JSON.stringify(s)!=='[2,0]'||at(s,5,'v2')||at(s,5,'v1'))p.push('a tap on orange square 5 did not empty it: '+(s.lay||[]).join(''));
+    s=M.step(q,s,0,1);if(JSON.stringify(s)!=='[3,0]'||!at(s,0,'v1'))p.push('the + stepper did not fill the first empty square: '+(s.lay||[]).join(''));
+    s=M.step(q,s,0,-1);if(JSON.stringify(s)!=='[2,0]'||at(s,7,'v1')||!at(s,0,'v1'))p.push('the - stepper did not empty the last blue square: '+(s.lay||[]).join(''));
+    if(M.step(q,s,1,-1)!==null)p.push('an orange taken from none');
+    if(JSON.stringify(s.slice())!=='[2,0]'||s.slice().lay)p.push('the submitted state (a copy) is not the two counts');
+    let f=M.s0(q);for(let c=9;c>=0;c--)f=tap(f,c);f=tap(f,3);if(!LSGOAL.fill(q,f.slice())||M.val(q,f)!==10)p.push('a full frame with one orange is not a fill: '+JSON.stringify(f));
+    if(M.draw(q,[3,1])!==VIZ.tenFrame(4,10,{b:1,cells:1}))p.push('a state without squares (the answer, the pet\\'s) is not drawn in turn, blue first');
+    return p})()`);
+  return{problems:out};
+});
+
 run('LESSON-STAGE lsMix: valid items, Practice and math stops only, a miss never kept',()=>{
   const r=eval(js+`;(()=>{const out={bad:[],n:0,mix:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
     const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
@@ -23636,7 +23693,7 @@ run('rename RENAME: no user-facing Star School in src, manifest and title say Wh
 // in --brand with a star for the dot on the i. Home's top bar, setup, About and the Try again screen use it; the old star tile is gone.
 run('logo BRAND: UI.logo on Home, setup, About and the Try again screen; one accessible name; no star tile; small; landing static with the logo',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),tok=rd('css/00-tokens.css');
-  const [lg,mk,LOGO]=(()=>eval(js+`[UI.logo('hm-logo'),UI.logo('',false),UI.LOGO]`))(); // its own scope: js declares home(), grown() ...
+  const [lg,mk,LOGO,hid]=(()=>eval(js+`[UI.logo('hm-logo'),UI.logo('',false),UI.LOGO,UI.logo('',true,false)]`))(); // its own scope: js declares home(), grown() ...
   // the markup: one role=img named Whistlestop, everything inside aria-hidden, the two colours, the star dot, no ids, tokens only
   if(!/^<span class="wl hm-logo" role="img" aria-label="Whistlestop"><svg class="wl-mk" viewBox="0 0 32 32" aria-hidden="true"><g stroke="var\(--ill-ink\)" stroke-width="\.9">/.test(lg))p.push('UI.logo: '+lg.slice(0,120));
   if(!/<span class="wl-w" aria-hidden="true">Wh<span class="wl-i">ı<svg viewBox="0 0 14 13\.4"><path d="[^"]+"\/><\/svg><\/span>stle<b>stop<\/b><\/span><\/span>$/.test(lg))p.push('UI.logo wordmark: '+lg.slice(-200));
@@ -23652,8 +23709,10 @@ run('logo BRAND: UI.logo on Home, setup, About and the Try again screen; one acc
   const hjs=rd('js/46-home.js'),gjs=rd('js/80-grown.js'),ajs=rd('js/90-app.js');
   if(!/<div class="top tbar hm-top">\$\{UI\.logo\('hm-logo'\)\}<div class="sp"><\/div>/.test(hjs))p.push('Home top bar does not start with UI.logo(\'hm-logo\')');
   if(!/<h1 class="gx-logo su-logo">\$\{UI\.logo\(\)\}<\/h1>/.test(hjs))p.push('setup header is not <h1> with UI.logo()');
-  if(!/function aboutCard\(\)\{\n  return GW\.card\('gw-about','info','About Whistlestop',\n    `<div class="wl-top ab-logo">\$\{UI\.logo\(\)\}<\/div>/.test(gjs))p.push('About does not show the logo first');
-  if(!/<div class="scroll" id="datamiss"><div class="wl-top">\$\{UI\.logo\(\)\}<\/div>\$\{UI\.empty\('download', 'Whistlestop needs to finish updating/.test(ajs))p.push('the Try again screen does not show the logo');
+  // About (under its title "About Whistlestop") and the Try again screen (its line starts "Whistlestop needs") hide the logo, so the name is read once
+  if(!/function aboutCard\(\)\{\n  return GW\.card\('gw-about','info','About Whistlestop',\n    `<div class="wl-top ab-logo">\$\{UI\.logo\('', true, false\)\}<\/div>/.test(gjs))p.push('About does not show the logo first, hidden from screen readers');
+  if(!/<div class="scroll" id="datamiss"><div class="wl-top">\$\{UI\.logo\('', true, false\)\}<\/div>\$\{UI\.empty\('download', 'Whistlestop needs to finish updating/.test(ajs))p.push('the Try again screen does not show the logo, hidden from screen readers');
+  if(!/^<span class="wl " aria-hidden="true"><svg class="wl-mk"/.test(hid)||/role=|aria-label/.test(hid)||!hid.endsWith(lg.slice(lg.indexOf('<span class="wl-w"'))))p.push('UI.logo(cls, true, false) is not the same logo, aria-hidden and unnamed: '+hid.slice(0,80));
   // no star-tile leftovers
   const all=['js','css'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,rd(d+'/'+n)]));
   for(const [n,t] of all)if(/hm-mark|su-mark|\.hm-logo>span/.test(t))p.push(n+': the old star tile (hm-mark, su-mark) is still there');

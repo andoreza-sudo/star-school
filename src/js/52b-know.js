@@ -272,19 +272,33 @@ function lsOk(q, v) {
   const K = KIND[q.kind];
   return K.same ? K.same(q, v) : String(v) === String(q.ans);
 }
-// the two-colour ten frame (TEACH-PLAN-2 system B): state [blue, orange], a stepper row each; the frame draws them in turn
+// the two-colour ten frame (TEACH-PLAN-2 system B): state [blue, orange], a stepper row each. small-fix: which square holds which
+// counter is s.lay (0 empty, 1 blue, 2 orange per square), a property on the state array, so the state, what is checked and what is
+// submitted stay the two counts; a state without it (the start, an answer, the pet's) fills the squares in turn, blue first
+const f2Lay = (q, s) => s.lay || Array.from({length: q.m.total}, (_, i) => (i < s[0] ? 1 : i < s[0] + s[1] ? 2 : 0));
+const f2Of = lay => Object.assign([lay.filter(x => x == 1).length, lay.filter(x => x == 2).length], {lay});
 if (typeof K2MM != 'undefined') K2MM.frame2 = {
   s0: () => [0, 0],
   val: (q, s) => s[0] + s[1],
   ans: q => [Math.max(1, +q.ans - 1), 1],
-  step: (q, s, i, d) => (s[i] + d < 0 || s[0] + s[1] + d > q.m.total ? null : s.map((x, j) => (j == i ? x + d : x))),
-  draw: (q, s) => VIZ.tenFrame(s[0] + s[1], q.m.total, {b: s[1], cells: 1}),
+  // a stepper: + fills the first empty square, - empties the last square of that colour
+  step: (q, s, i, d) => {
+    if (s[i] + d < 0 || s[0] + s[1] + d > q.m.total) return null;
+    const L = f2Lay(q, s).slice();
+    for (let k = 0; k < Math.abs(d); k++) L[d > 0 ? L.indexOf(0) : L.lastIndexOf(i + 1)] = d > 0 ? i + 1 : 0;
+    return f2Of(L);
+  },
+  draw: (q, s) => {
+    const L = f2Lay(q, s);
+    return VIZ.tenFrame(s[0] + s[1], q.m.total, {b: s[1], cells: 1, at: [1, 2].flatMap(k => L.flatMap((x, i) => (x == k ? [i] : [])))});
+  },
   // LESSON-STAGE (owner, 2026-11-23): tap the frame itself (KIND.make): an empty square puts in a blue one, a blue one turns orange, an
-  // orange one comes out (the counters fill in turn, blue first); the stepper rows stay for the keyboard
+  // orange one comes out; the stepper rows stay for the keyboard. small-fix: the square tapped is the one that changes
   tap: (q, s, t) => {
-    const c = +t.dataset.c, n = s[0] + s[1];
-    if (!(c >= 0)) return null;
-    return c >= n ? (n < q.m.total ? [s[0] + 1, s[1]] : null) : c < s[0] ? [s[0] - 1, s[1] + 1] : [s[0], s[1] - 1];
+    const c = +t.dataset.c, L = f2Lay(q, s).slice();
+    if (!(c >= 0 && c < L.length)) return null;
+    L[c] = (L[c] + 1) % 3;
+    return f2Of(L);
   },
   ctl: () => `<div class="mmc mmcol">${[['blue', 'ls-d1'], ['orange', 'ls-d2']].map(([c, k], i) => `<div class="mms"><span class="mml"><i class="ls-dot ${k}" aria-hidden="true"></i></span>`
     + `${mmBtn(i, -1, 'minus', 'Take away a ' + c + ' one')}<output class="mmn" data-o="${i}">0</output>${mmBtn(i, 1, 'plus', 'Put in a ' + c + ' one')}</div>`).join('')}</div>`,
