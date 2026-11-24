@@ -8223,11 +8223,10 @@ run('keys: Enter or Space on an SVG button clicks it (UI.press)',()=>{
 run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why on choice items, K2.off gives the old draws',()=>{
   const r=eval(js+`;(()=>{const out={bad:[],rows:{},n:0,why:0,before:{},after:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
     const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],LV={sci_life:3,sci_earth:3,sci_phys:3,geo_world:2,geo_us:2,civ:2};
-    // new items per stop (6 to 10). AUD-DISC (v195 audit) removed three of them, so geo_world is 6 (was 7: "Where do they live: Africa or
-    // Antarctica?" had two right answers, penguins and seals live in Africa too), geo_us 7 (was 8: "Tap the city that is our nation's
-    // capital" marked "D.C." wrong) and civ 6 (was 7: its sentence "A bill becomes law after the vote" is false)
-    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:6,geo_us:7,civ:6};
-    const SORTS=(id,lv)=>id=='geo_world'&&lv==1?1:2; // geo_world 1 keeps one new sort item: the Africa or Antarctica one was its second
+    // new items per stop (6 to 10). The v195 audit (AUD-DISC) removed three of them; the owner approved new words for each on 2026-11-24
+    // (docs/drafts/AUDIT-WORDS-READ.md W44, W45, W46), so they are back and the counts are the first ones again: geo_world 7, geo_us 8, civ 7
+    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:7,geo_us:8,civ:7};
+    const SORTS=()=>2;
     const GR={sci_life:['K-2','3-4','5-6'],sci_earth:['K-2','3-4','5-6'],sci_phys:['K-2','3-4','5-6'],geo_world:['K-2','3-4'],geo_us:['3-4','5-6'],civ:['K-2','5-6']};
     const keep={};
     for(const id of IDS){
@@ -18633,7 +18632,9 @@ run('Discover review fixes R-01d',()=>{
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{const a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ('sci_phys',3,s)));
       const h=require('crypto').createHash('md5').update(a.join('\n')).digest('hex').slice(0,12);
-      if(h!=='d7726a821099')bad('sci_phys 3 changed by seed ('+h+'), but R-01d does not touch it')}
+      // AUD-DISC-W (W37, approved 2026-11-24): one wrong answer of one sci_phys 3 item changed ("the same" to "steadier" in "the ___ the
+      // pull of gravity between them"), so the hash is the new one (it was d7726a821099 from v139 to v196)
+      if(h!=='d38801d3cfd5')bad('sci_phys 3 changed by seed ('+h+'), but only W37 touched it since v139')}
     finally{Object.assign(ART,artKeep)}
   };
   eval(js+K2OLD+';('+body.toString()+')()');
@@ -18705,7 +18706,8 @@ run('Discover audit AUD-DISC: K-2 items of every form are spoken, no evolution i
       [/A bill becomes law after the vote/,'a bill "becomes law after the vote"'],[/capital is Washington, D\.C\./,'the Washington, D.C. mark item (D.C. was marked wrong)']];
     for(const [re,what] of gone)if(all.some(x=>re.test(text(x.it))))bad('back in the bank: '+what);
     const bins=(id,re)=>{const it=BANK[id].find(x=>re.test(x.q));return it&&it.bins?Object.values(it.bins).flat():['(item missing)']};
-    if(bins('sci_life',/in water or on land/).includes('whale'))bad('the whale is sorted by a hint that asks if it can breathe under water');
+    // the whale is back in this sort (W42, approved 2026-11-24) with a hint that no longer asks about breathing under water
+    if(/breathe/.test((BANK.sci_life.find(x=>/in water or on land/.test(x.q))||{hint:'breathe'}).hint))bad('the water or land hint asks if the animal can breathe under water (a whale cannot)');
     if(bins('sci_earth',/in the day or at night/).includes('moon'))bad('the moon is sorted to night only');
     for(const [id,re] of [['geo_world',/hot place or cold place/],['geo_world',/hot climate or cold climate/]])if(bins(id,re).includes('desert'))bad('"desert" is sorted as hot: '+re);
     let it=BANK.sci_life.find(x=>/^A bear sleeps through the cold winter/.test(x.q));
@@ -18721,6 +18723,83 @@ run('Discover audit AUD-DISC: K-2 items of every form are spoken, no evolution i
   };
   eval(js+';('+body.toString()+')()');
   return{problems:uniq(p),note:'K-2 items spoken: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+'; '+note.sw+' Southwest items without West'};
+});
+
+// ---- AUD-DISC-W: the Discover words the owner approved on 2026-11-24 (docs/drafts/AUDIT-WORDS-READ.md, W1-W6, W36, W37, W42-W59, D4) ----
+// Every old text is gone from the app's source and every approved text is there; the three items that came back have the approved
+// words; the five drafted hints (W59) are their items' own hints and do not name the answer; the rock and the coin are drawn by the
+// rules of the object art sets, the pebble shows the rock, and the float or sink lesson draws both.
+run('Discover words AUD-DISC-W: approved texts in, old texts out, items back, W59 hints, rock and coin drawn',()=>{
+  const p=[];
+  const srcAll=['data','js'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).filter(f=>f.endsWith('.js')&&f!=='d-teach-audio.js').map(f=>fs.readFileSync(path.join(SRC,d,f),'utf8'))).join('\n').replace(/\\'/g,"'");
+  const OLD=['Rubber is a good insulator','Think about the rubber on a cord','ice, fire and rock','A compass rose shows north','Only frozen things melt','Light things like leaves',
+    'sun, moon and snow','driver licenses',';the stars|',';a comet;','stronger;the same;heavier','breathe and swim under the water','A bill becomes law after the vote',
+    'capital is Washington, D.C.','Africa or Antarctica','Egg, chick, hen.','Put the day in order: morning','Put them in order: ice, water, steam','biggest: room, house, town',
+    'Very few diamonds exist','Three branches keep any one group','The lower 48 United States','but the capital is not','Water has three forms',"'has no air'",
+    'Can you get the old stuff back','Would you want to touch it, or to hold it','about a few ___','all around it is an ___','salty water is an ___','path called an ___',
+    'simple machine called an ___','flow easily is an ___','plants and animals is an ___','where it lives is an ___','Constitution is called an ___'];
+  const NEW=['An insulator blocks electricity.','It is the opposite of a conductor.','Match each one to how it feels: ice, fire and pillow.','A compass shows north, south, east and west.',
+    'Oops. Frozen things melt in the sun. These ones stay.','Match each one to when you see it: sun, stars and snow.',"gives driver's licenses",'Mars;Jupiter;stars|','Sun;comet;Venus|',
+    'stronger;steadier;heavier','Does it swim in the water all day?','A bill is a plan for a new law.',"Our nation's capital is Washington.'",'Where do they live: Africa or the Arctic?',
+    'One place is hot and one is covered in ice.','migration;camouflage;germination',"'Put them in order: how does a hen grow up?'","'Put the day in order.'","'Heat it up! Put them in order.'",
+    "'Put them in order from smallest to biggest.'",'Very few of a rare stamp exist and many people want one. Its price is ___.','Each branch can limit the power of the others. This idea is called ___.',
+    'The lower 48 states have ___ main time zones.','Los Angeles is the biggest city, but it is not the capital.','Anchorage is the biggest city, but it is not the capital.',
+    'Sort the forms of water: ice, liquid or gas?',"'has craters'",'Is it still the same stuff? Then it is a physical change.','Would it burn you, or make you shiver?',
+    "Earth's plates move slowly, a few ___ each year.",'Land with water all around it is called ___.','Land that has water all around it is called ___.','A very big body of salty water is called ___.',
+    'in a path called ___.','simple machine called ___.','flow easily is called ___.','plants and animals is called ___.','where it lives is called ___.','Constitution is called ___.'];
+  for(const x of OLD)if(srcAll.includes(x))p.push('the old text is still in src: '+x);
+  for(const x of NEW)if(!srcAll.includes(x))p.push('the approved text is not in src: '+x);
+  const body=function(){
+    const bad=m=>p.push(m);
+    const item=(id,re)=>BANK[id].find(x=>re.test(x.q))||{q:'(missing '+re+')',hint:'',bins:{},pairs:[],d:[]};
+    // items and chips that came back, and the changed pairs
+    let it=item('geo_world',/Africa or the Arctic/);
+    if(JSON.stringify(it.bins)!=='{"Africa":["giraffe","lion","zebra"],"the Arctic":["polar bear","walrus"]}'||it.lv!==1||!it.aloud)bad('W46: '+JSON.stringify(it.bins));
+    it=item('geo_us',/our nation's capital\.$/);if(it.form!=='mark'||it.a!=='Washington'||it.sent!=="Our nation's capital is Washington.")bad('W45: '+it.sent);
+    it=item('civ',/^Tap the word for a proposed law/);if(it.form!=='mark'||it.a!=='bill'||it.sent!=='A bill is a plan for a new law.')bad('W44: '+it.sent);
+    it=item('sci_life',/in water or on land/);if(!Object.values(it.bins).flat().includes('whale')||!it.cp||!it.cp.whale)bad('W42: the whale is not back with its picture');
+    it=item('geo_world',/hot place or cold place/);if(JSON.stringify(it.bins['hot place'])!=='["the Sahara","rain forest"]')bad('W43 K-2: '+JSON.stringify(it.bins));
+    it=item('geo_world',/hot climate or cold climate/);if(JSON.stringify(it.bins.hot)!=='["the Sahara","rain forest","savanna"]')bad('W43 3-4: '+JSON.stringify(it.bins));
+    it=item('sci_phys',/how it feels/);if(JSON.stringify(it.pairs)!=='[["ice","cold"],["fire","hot"],["pillow","soft"]]')bad('W2: '+JSON.stringify(it.pairs));
+    it=item('sci_earth',/when you see it/);if(JSON.stringify(it.pairs)!=='[["sun","day"],["stars","night"],["snow","winter"]]')bad('W6: '+JSON.stringify(it.pairs));
+    it=item('sci_phys',/material that blocks electricity/);
+    if(it.a!=='insulator'||/rubber/i.test(it.sent+it.hint))bad('W1: '+it.sent+' / '+it.hint);
+    else{const q=genBank('sci_phys',2,{bi:BANK.sci_phys.indexOf(it),s:1});if(q.words.filter(w=>/insulator/i.test(w)).length!==1||!q.one)bad('W1: the sentence must have the answer once')}
+    it=item('sci_phys',/^Sort them: floats or sinks/);if(it.hint!=='Light for its size floats. Heavy for its size sinks.')bad('W5: '+it.hint);
+    // W48: an order prompt no longer lists its tiles in the right order
+    for(const id of ['sci_life','sci_earth','sci_phys','geo_world','civ'])for(const x of BANK[id])if(x.form==='order'&&x.lv===1&&x.q.toLowerCase().includes(x.order.join(', ').toLowerCase()))bad('W48: the prompt gives the order: '+x.q);
+    // W54: no Discover choice stem ends "an ___." with one choice only that starts with a vowel sound (the four the pattern does not fit are known)
+    const KEEP=[/^Tissues that work together form an/,/^The heart is an example of an/,/make up an ___\.$/,/stands for an ___\.$/];
+    for(const id of ['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'])for(const x of BANK[id])if(!x.form&&/\ban ___\.$/.test(x.q)&&!KEEP.some(re=>re.test(x.q)))bad('W54: still "an ___": '+x.q);
+    // W59: the five drafted hints
+    const H=[['sci_life',/^A cactus grows/],['sci_life',/^A water lily grows/],['geo_us',/^Lake Michigan is the only/],['geo_us',/^Which is the biggest of the Great Lakes/],['geo_us',/^Mauna Loa and Kilauea/]];
+    note.hints=[];
+    for(const [id,re] of H){it=item(id,re);note.hints.push(it.hint);
+      if(!it.hint||it.hint===DISC_HINT[it.topic])bad('W59: '+it.q+' still has the topic hint');
+      if(it.hint.length>100)bad('W59: a hint over 100 letters: '+it.hint);
+      for(const w of String(it.a).split(' '))if(w.length>3&&new RegExp('\\b'+w+'\\b','i').test(it.hint))bad('W59: the hint names the answer: '+it.hint)}
+    // D4: rock and coin, by the rules of the object art sets (the set C check); the pebble shows the rock; the lesson draws both
+    for(const n of ['rock','coin']){const d=ART[n];
+      if(!d){bad('D4: no drawing: '+n);continue}
+      if(d.length>2500)bad(n+': '+d.length+' bytes (limit 2500)');
+      if((d.match(/<[^>]*\/>/g)||[]).join('')!==d)bad(n+': every element must be self-closing');
+      if((d.match(/<[a-z]+/g)||[]).length>40)bad(n+': over 40 elements');
+      for(const t of d.match(/<\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad(n+': element '+t);
+      for(const m of d.matchAll(/\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad(n+': attribute '+m[1]);
+      for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\(--a-[a-z0-9]+\))"$/.test(a))bad(n+': colour '+a);
+      for(const m of d.matchAll(/var\(--(a-[a-z0-9]+)\)/g))if(!artCss.includes('--'+m[1]+':var(--ill-'))bad(n+': role --'+m[1]+' is not in 21-art.css');
+      for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\(-?[\d.]+ -?[\d.]+ -?[\d.]+\)$/.test(m[1]))bad(n+': transform '+m[1]);
+      for(const m of d.matchAll(/\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\d.]+/g)||[])if(+v<0||+v>64||/\.\d{2}/.test(v))bad(n+': path number '+v);
+      for(const m of d.matchAll(/\s(cx|cy|x|y)="(-?[\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad(n+': '+m[1]+' '+m[2]);
+      if(!/<svg/.test(picFor(n,'x')))bad(n+': picFor does not draw it')}
+    if(DISC_PIC['a pebble'][0]!=='rock'||DISC_PIC['a rock'][0]!=='rock')bad('D4: the pebble and the rock must show the rock drawing');
+    for(const x of BANK.sci_life)if(x.cp&&x.cp['a pebble']&&x.cp['a rock'])bad('D4: one item shows the rock twice: '+x.q);
+  };
+  const note={},artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  eval(js+';('+body.toString()+')()');
+  const bench=fs.readFileSync(path.join(SRC,'js','52s-bench5s.js'),'utf8');
+  if(!bench.includes("coin: ['coin', 'coin', '🪙']")||!bench.includes("rock: ['rock', 'rock', '🪨']"))p.push('D4: the float or sink lesson does not draw the rock and the coin');
+  return{problems:uniq(p),note:OLD.length+' old texts gone, '+NEW.length+' approved texts in; W59 hints: '+(note.hints||[]).join(' | ')};
 });
 
 // ---- R-01b: Brain Teasers and practice review fixes (docs/reviews/R-01-brain-teasers.md, docs/reviews/R-01-practice.md: the must
@@ -20093,6 +20172,12 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // are the new ones; every other hash is the v169 one. sci_life2: the wrong answer "adaptation" left the hibernation item (hibernation
       // is an adaptation). sci_life3: the natural selection row was removed (no evolution content). sci_earth1: the wrong answer "at noon"
       // left "When can we see stars in the sky?" (the sun is a star). geo_us1: a Southwest state no longer offers West as a wrong region.
+      // AUD-DISC-W (the words the owner approved on 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md) changed choice items of nine stops, so
+      // their hashes are new again: sci_life1 (W59: a hint each for the cactus and the water lily), sci_life2 (W47 "germination", W54
+      // "called ___" twice), sci_earth1 (W54 twice), sci_earth2 (W37 "stars", W54 "a path called ___"), sci_earth3 (W37 "comet", W58
+      // "a few ___"), sci_phys2 (W54 twice), sci_phys3 (W37 "steadier"), geo_us2 (W51 "The lower 48 states", W59 three hints; set again when the biggest Great Lake hint was redrafted so it does not give the
+      // answer away), civ2 (W49
+      // the rare stamp, W50 "Each branch can limit", W54 "is called ___"). geo_world1 has W54 too, but it is not a pinned stop.
       // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
       // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits)
       K2.off=true;

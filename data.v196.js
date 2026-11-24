@@ -2393,6 +2393,27 @@ const DISC_HINT = {
   solid: 'Imagine spilling it on the floor. Does it spread out, or does it stay in one piece?',
 };
 
+/* D4 (the v196 word approvals, option 2): a rock and a coin, drawn (they were emoji that an old tablet shows as an empty box; the float
+   or sink lesson asks a young child to know them by sight). Same rules as the object art sets (DESIGN_SYSTEM 6.5; d-art-c.js). A
+   pebble shows the rock. tools/test.js "Discover words AUD-DISC-W" checks them. */
+Object.assign(ART, {
+  rock:
+    '<ellipse cx="32" cy="55.5" rx="24" ry="2.6" fill="var(--a-k)" opacity="0.1"/>' +
+    '<path fill="var(--a-e3)" d="M8 44Q6 32 16 24Q22 12 36 12Q50 12 55 26Q60 36 57 46Q54 54 40 54H20Q10 54 8 44Z"/>' +
+    '<path fill="var(--a-e2)" d="M8 43Q6.5 32 16 24.5Q22 13 35.5 13Q48.5 13 53.5 26Q58 35.5 55.5 44.5Q52.5 52 39.5 52H20Q10 52 8 43Z"/>' +
+    '<path fill="var(--a-e)" d="M9 41Q8 32 17 25Q23 14 35 14Q46 14 50 25Q53 33 48 40Q42 47 28 47Q12 48 9 41Z"/>' +
+    '<path fill="var(--a-e1)" opacity="0.9" d="M18 26Q24 16 34 16Q40 16 43 20Q34 20 28 25Q22 30 20 36Q15 32 18 26Z"/>' +
+    '<path fill="none" stroke="var(--a-e3)" stroke-width="1.6" opacity="0.6" d="M40 24L44 32L41 38M27 40L31 44"/>' +
+    '<ellipse cx="24" cy="22" rx="3.4" ry="1.6" fill="var(--a-w)" opacity="0.8" transform="rotate(-40 24 22)"/>',
+  coin:
+    '<ellipse cx="32" cy="58" rx="18" ry="2.4" fill="var(--a-k)" opacity="0.1"/><circle cx="33" cy="33" r="23" fill="var(--a-y3)"/>' +
+    '<circle cx="32" cy="32" r="23" fill="var(--a-y2)"/><circle cx="31.6" cy="31.6" r="21.4" fill="var(--a-y)"/>' +
+    '<circle cx="32" cy="32" r="15" fill="none" stroke="var(--a-y2)" stroke-width="2.4"/>' +
+    '<path fill="var(--a-y2)" d="M32 22L34.9 28.5L42 29.3L36.7 34.1L38.2 41L32 37.5L25.8 41L27.3 34.1L22 29.3L29.1 28.5Z"/>' +
+    '<path fill="none" stroke="var(--a-y1)" stroke-width="2.6" opacity="0.9" d="M14 26Q18 15 29 12.4"/>' +
+    '<ellipse cx="21" cy="19" rx="3.6" ry="1.6" fill="var(--a-w)" opacity="0.8" transform="rotate(-40 21 19)"/>',
+});
+
 // Grade band of each level (CURRICULUM 6: Lv 1 is K-2, Lv 2 is 3-4, Lv 3 is 5-6). Every item carries it as `grade`.
 const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
 
@@ -2402,7 +2423,7 @@ const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
    fallback and is in tools/emoji-allow.txt. */
 const DISC_PIC = {
   'a tree': ['tree', '🌳'], 'a rock': ['rock', '🪨'], 'a chair': ['chair', '🪑'], 'a ball': ['ball', '⚽'], 'a daisy': ['daisy', '🌼'],
-  'a brick': ['brick', '🧱'], 'a cup': ['cup', '🥤'], 'a shoe': ['shoes', '👟'], 'a goldfish': ['goldfish', '🐠'], 'a pebble': ['pebble', '🪨'],
+  'a brick': ['brick', '🧱'], 'a cup': ['cup', '🥤'], 'a shoe': ['shoes', '👟'], 'a goldfish': ['goldfish', '🐠'], 'a pebble': ['rock', '🪨'],
   'a book': ['book', '📖'], 'a toy boat': ['boat', '⛵'], 'a bird': ['bird', '🐦'], 'a flower': ['flower', '🌷'], 'a fish': ['fish', '🐟'],
   'a spoon': ['spoon', '🥄'], 'a frog': ['frog', '🐸'], 'a bee': ['bee', '🐝'], 'a toy robot': ['robot', '🤖'], 'a duck': ['duck', '🦆'],
   'a tulip': ['tulip', '🌷'], 'a bicycle': ['bike', '🚲'], 'a horse': ['horse', '🐴'], 'a rose': ['rose', '🌹'], 'a hen': ['hen', '🐔'],
@@ -2501,8 +2522,8 @@ Where does a rabbit make its home?|in a burrow|in a hive;in a pond;in a treetop|
 Which animal lives in a forest?|a deer|a shark;a camel;a penguin|habitat
 A polar bear lives in a place that is ___.|cold and icy|hot and sandy;warm and wet|habitat
 A shark lives in the ___.|ocean|desert;forest;barn|habitat
-A cactus grows in the ___.|desert|ocean;pond;snow|habitat
-A water lily grows in a ___.|pond|desert;cave;sandbox|habitat
+A cactus grows in the ___.|desert|ocean;pond;snow|habitat||A cactus can go a long time with no rain. Think of a hot place with lots of sand.
+A water lily grows in a ___.|pond|desert;cave;sandbox|habitat||A water lily floats, with its roots in the mud. Think of still water where frogs live.
 Which part of a plant is under the ground?|roots|flowers;leaves;fruit|plants
 Which part of a plant takes in water from the soil?|roots|leaves;flower;seed|plants
 Which part of a plant holds it up tall?|stem|flower;seed;leaf|plants
@@ -2592,9 +2613,9 @@ The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
 The sun gives our world ___.|light and heat|rain and snow;wind and clouds;rocks and sand|sunmoon
 What is the moon mostly made of?|rock|ice;clouds;fire|sunmoon||Look at photos of the moon: the ground is gray, bumpy and dusty.
 Most of the Earth is covered by ___.|water|land;sand|landwater
-A very big body of salty water is an ___.|ocean|pond;puddle;river|landwater
+A very big body of salty water is called ___.|ocean|pond;puddle;river|landwater
 Water that flows along in a long line is a ___.|river|hill;pond;beach|landwater
-Land with water all around it is an ___.|island|lake;valley;beach|landwater
+Land with water all around it is called ___.|island|lake;valley;beach|landwater
 A big body of water with land all around it is a ___.|lake|island;hill;beach|landwater
 A very tall, rocky piece of land is a ___.|mountain|valley;pond;beach|landwater
 The low land between mountains is a ___.|valley|island;mountain;lake|landwater
@@ -2724,7 +2745,7 @@ An animal that is hunted by another animal is called ___.|prey|a predator;a prod
 Mushrooms and some bacteria break down dead plants and animals. They are ___.|decomposers|producers;predators;herbivores|foodchain|mushroom,🍄
 An animal that eats only plants is a ___.|herbivore|carnivore;omnivore;decomposer|foodchain
 An animal that eats only other animals is a ___.|carnivore|herbivore;omnivore;producer|foodchain
-An animal that eats both plants and animals is an ___.|omnivore|herbivore;carnivore;decomposer|foodchain
+An animal that eats both plants and animals is called ___.|omnivore|herbivore;carnivore;decomposer|foodchain
 An arrow in a food chain shows where the ___ goes.|energy|rain;wind;sound|foodchain||The arrow points from the food to the eater. Think about what the eater gets from the food that lets it run, grow and play.
 Almost every food chain starts with energy from the ___.|Sun|soil;wind;rain|foodchain
 A snake that eats mice is the ___ of the mice.|predator|producer;decomposer;prey|foodchain
@@ -2736,9 +2757,9 @@ A giraffe's long neck helps it ___.|reach leaves high in trees|swim fast;dig hol
 A stick insect looks like a twig. This helps it ___.|hide from hungry animals|sing loudly;swim fast;dig holes|adapt
 A duck's webbed feet help it ___.|swim|climb trees;dig holes;run fast|adapt|duck,🦆
 The shape of a bird's beak depends on ___.|the food it eats|its color;its age;the weather|adapt
-A body part or habit that helps a living thing survive where it lives is an ___.|adaptation|invention;accident;illness|adapt
+A body part or habit that helps a living thing survive where it lives is called ___.|adaptation|invention;accident;illness|adapt
 Birds that fly far away for the winter to find food and warmth are ___.|migrating|hibernating;camouflaging;hatching|adapt
-A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage|adapt
+A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage;germination|adapt
 A camel's wide, flat feet help it walk on ___.|sand|ice;tree branches;a wall|adapt
 Which animal has thick white fur that helps it hide and stay warm in snow?|an Arctic fox|a camel;a lizard;a toucan|adapt
 A thick waxy coat on a leaf helps a plant ___.|keep its water in|catch more snow;sing;move|adapt
@@ -2883,7 +2904,7 @@ The changing shape of the Moon that we see in the sky is called the Moon's ___.|
 When we can see the whole round face of the Moon lit up, it is a ___ Moon.|full|new;crescent;quarter|moonphase
 When we cannot see the Moon's lit side at all, it is a ___ Moon.|new|full;half;crescent|moonphase
 About how long does the Moon take to go through all its phases?|one month|one day;one week;one year|moonphase
-The Moon travels around the ___.|Earth|Mars;Jupiter;the stars|moonphase
+The Moon travels around the ___.|Earth|Mars;Jupiter;stars|moonphase
 A Moon that looks like a thin curved slice is a ___ Moon.|crescent|full;new;round|moonphase
 Why does the Moon seem to change shape over a month?|more or less of its sunlit side faces Earth|Earth's shadow covers part of it;the Moon grows and then shrinks;clouds hide part of it|moonphase
 After a new Moon, the lit part we see gets bigger each night. This is called ___.|waxing|waning;falling;shrinking|moonphase
@@ -2900,14 +2921,14 @@ Which planet comes right after Earth, going away from the Sun?|Mars|Venus;Jupite
 Which planet is the farthest from the Sun?|Neptune|Uranus;Saturn;Jupiter|planets
 Pluto is now called a ___ planet.|dwarf|giant;gas;rocky|planets
 Our Sun is a ___.|star|planet;moon;comet|planets
-A planet travels around the Sun in a path called an ___.|orbit|equator;horizon;axis|planets
+A planet travels around the Sun in a path called ___.|orbit|equator;horizon;axis|planets
 How many planets are in our solar system?|eight|seven;nine;ten|planets
 Which planet is the hottest, with thick clouds that trap heat?|Venus|Mercury;Mars;Neptune|planets
 `));
 
 BANK.sci_earth.push(...discRows(3, `
 Earth's outer shell is broken into huge slabs called ___ plates.|tectonic|crystal;desert;ocean|plates
-Earth's plates move slowly, about a few ___ each year.|centimeters|kilometers;meters;miles|plates
+Earth's plates move slowly, a few ___ each year.|centimeters|kilometers;meters;miles|plates
 Earthquakes happen most often where plates ___.|meet and rub or push|stay far from edges;disappear;stop for good|plates
 Mountains can form where two plates push together. This is a ___ boundary.|convergent|divergent;transform;central|plates
 Where plates pull apart, the boundary is called ___.|divergent|convergent;transform;central|plates
@@ -2972,7 +2993,7 @@ Earth's axis is tilted about ___ degrees.|23|90;45;10|rotrev
 When it is summer in the Northern Hemisphere, it is ___ in the Southern Hemisphere.|winter|summer;autumn;spring|rotrev
 Earth spins in one direction, so the Sun seems to rise in the ___.|east|west;north;south|rotrev
 A year is about 365 and a quarter days, so every four years we add a ___.|leap day|extra week;moon day;second summer|rotrev
-A solar eclipse happens when the ___ passes between Earth and the Sun.|Moon|Sun;a comet;Venus|rotrev
+A solar eclipse happens when the ___ passes between Earth and the Sun.|Moon|Sun;comet;Venus|rotrev
 A lunar eclipse happens when Earth is between the Sun and the ___.|Moon|stars;Mars;Venus|rotrev
 Summer days are longer because Earth's tilt points your half of the world ___ the Sun.|toward|away from;sideways to;behind|rotrev
 Near the equator, day and night are about the same length ___.|all year|in winter only;in summer only;never|rotrev
@@ -3013,7 +3034,7 @@ A ball rolling across grass slows down and stops mostly because of ___.|friction
 If the forces on an object are balanced, the object ___.|does not change how it is moving|speeds up;gets heavier;turns magnetic|forces
 A bigger push makes a ball go ___.|faster and farther|slower;nowhere;backward|forces
 Wheels on a wagon make it easier to move because they ___.|cut down friction|add weight;make it magnetic;make it stick|forces
-A ramp is a kind of simple machine called an ___.|inclined plane|lever;pulley;wheel and axle|machines
+A ramp is a kind of simple machine called ___.|inclined plane|lever;pulley;wheel and axle|machines
 A seesaw is a ___.|lever|ramp;pulley;wedge|machines
 A knife blade works as a ___.|wedge|screw;pulley;wheel and axle|machines
 A flagpole uses a rope and a wheel called a ___.|pulley|lever;wedge;screw|machines
@@ -3044,7 +3065,7 @@ A complete path that electricity can flow around is a ___.|circuit|battery;switc
 A circuit has to be ___ for a bulb to light.|closed|open;broken;empty|circuits
 A switch turns a circuit off by making a ___ in it.|gap|bulb;battery;wire|circuits
 Which material lets electricity flow through it?|copper wire|rubber;plastic;wood|circuits
-A material that does NOT let electricity flow easily is an ___.|insulator|conductor;battery;wire|circuits
+A material that does NOT let electricity flow easily is called ___.|insulator|conductor;battery;wire|circuits
 A material that lets electricity flow easily is a ___.|conductor|insulator;shadow;spring|circuits
 The plastic around a wire keeps us safe because plastic is a good ___.|insulator|conductor;battery;magnet|circuits
 Which would NOT carry electricity in a circuit?|a rubber band|a metal paper clip;a copper wire;a steel key|circuits
@@ -3092,7 +3113,7 @@ Weight is a measure of the pull of ___ on an object.|gravity|friction;magnetism;
 Gravity pulls objects ___.|toward the center of Earth|away from Earth;sideways;upward|gravity
 A feather and a hammer dropped together on the airless Moon will ___.|land at the same time|float upward;fall very slowly;land at different times|gravity
 The more mass an object has, the ___ its gravity.|stronger|weaker;shorter;colder|gravity
-The farther apart two objects are, the ___ the pull of gravity between them.|weaker|stronger;the same;heavier|gravity
+The farther apart two objects are, the ___ the pull of gravity between them.|weaker|stronger;steadier;heavier|gravity
 What keeps the Moon traveling around Earth?|gravity|friction;magnetism;wind|gravity
 The Sun's gravity keeps the planets ___.|in their orbits|still;from spinning;frozen|gravity
 Weight is measured in units called ___.|newtons|meters;liters;seconds|gravity
@@ -3201,7 +3222,7 @@ If you walk toward the place where the Sun sets, you are walking ___.|west|east;
 On a map, the top is north. Which way is the bottom of the map?|south|east;west;north|mapwords
 A very tall landform with a peak is a ___.|mountain|valley;island;lake|landforms
 A low area of land between mountains or hills is a ___.|valley|mountain;island;desert|landforms
-Land that has water all around it is an ___.|island|valley;mountain;plain|landforms
+Land that has water all around it is called ___.|island|valley;mountain;plain|landforms
 A big flat area of land is a ___.|plain|mountain;island;volcano|landforms
 A hill is ___ than a mountain.|smaller|taller;wetter;wider|landforms
 A large area of very dry land with little rain is a ___.|desert|island;beach;volcano|landforms
@@ -3510,8 +3531,8 @@ The White House is in ___.|Washington, D.C.|New York City;Boston;Philadelphia|la
 Crater Lake, the deepest lake in the United States, is in ___.|Oregon|Washington;Idaho;Nevada|landmarks
 Mount St. Helens is a volcano in ___.|Washington|Oregon;Idaho;Montana|landmarks
 Death Valley, one of the hottest places on Earth, is mostly in ___.|California|Arizona;Nevada;Texas|landmarks
-Lake Michigan is the only Great Lake entirely inside the ___.|United States|Canada;Mexico;Alaska|landmarks
-Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks
+Lake Michigan is the only Great Lake entirely inside the ___.|United States|Canada;Mexico;Alaska|landmarks||The other four Great Lakes are shared with the country to the north. This one is not.
+Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks||It is the one farthest north. Minnesota is on its shore.
 Cape Canaveral, where rockets are launched, is in ___.|Florida|Texas;California;Alaska|landmarks
 The Mississippi River flows into the ___.|Gulf of Mexico, also called Gulf of America|Atlantic Ocean, near New York;Pacific Ocean, near California;Great Lakes, near Canada|rivers
 The Mississippi River flows mostly from north to ___.|south|east;west;north|rivers
@@ -3536,8 +3557,8 @@ Which is the tallest mountain in the United States?|Denali, also called Mount Mc
 The long mountain chain down the western side of North America, with peaks over 14,000 feet, is the ___.|Rocky Mountains|Appalachians;Ozarks;Alps|mountains
 The ___ Mountains are in the northeast of the United States and include Mount Washington.|White|Rocky;Sierra;Cascade|mountains
 Mount Whitney, the highest peak in the lower 48 states, is in the ___ mountains.|Sierra Nevada|Appalachian;Ozark;Catskill|mountains
-Mauna Loa and Kilauea are volcanoes in ___.|Hawaii|Alaska;Oregon;Florida|mountains
-The lower 48 United States have ___ main time zones.|four|two;three;six|timezones
+Mauna Loa and Kilauea are volcanoes in ___.|Hawaii|Alaska;Oregon;Florida|mountains||This state is a chain of islands in the Pacific Ocean. Volcanoes made them.
+The lower 48 states have ___ main time zones.|four|two;three;six|timezones
 Which is the easternmost main time zone of the lower 48 states?|Eastern|Pacific;Central;Mountain|timezones
 When it is noon in New York (Eastern), it is ___ in Chicago (Central).|11 a.m.|1 p.m.;noon;10 a.m.|timezones
 When it is 3 p.m. in Eastern Time, it is ___ in Pacific Time.|noon|6 p.m.;2 p.m.;1 p.m.|timezones
@@ -3634,7 +3655,7 @@ Which branch carries out and enforces the laws?|executive|legislative;judicial;s
 Congress has two parts, the Senate and the ___.|House of Representatives|Supreme Court;Cabinet;White House|branches
 How many senators does each state have?|two|one;three;fifty|branches
 The highest court in the United States is the ___.|Supreme Court|Senate;Cabinet;Court of Appeals|branches
-Three branches keep any one group from having too much power. This idea is called ___.|checks and balances|majority rule;free trade;taxes|branches
+Each branch can limit the power of the others. This idea is called ___.|checks and balances|majority rule;free trade;taxes|branches
 A President can say no to a bill by using a ___.|veto|vote;verdict;visa|branches
 A proposed law is called a ___.|bill|ballot;budget;bond|branches
 The leader of a state government is a ___.|governor|mayor;state senator;judge|branches
@@ -3644,7 +3665,7 @@ In a republic, the people choose ___ to make decisions for them.|representatives
 Congress meets in the Capitol building in ___.|Washington, D.C.|New York City;Philadelphia, Pennsylvania;Boston|branches
 The Constitution is the ___ of the United States.|supreme law of the land|oldest song;first map;flag|constitution
 The first words of the Constitution are "We the ___."|People|Kings;States only;Judges|constitution
-A change added to the Constitution is called an ___.|amendment|invention;election;island|constitution
+A change added to the Constitution is called ___.|amendment|invention;election;island|constitution
 The first ten amendments are called the ___.|Bill of Rights|Declaration of Independence;Pledge;Preamble|constitution
 The Bill of Rights protects the rights of ___.|the people|only the President;only judges;only soldiers|constitution
 The Constitution was written in the year ___.|1787|1492;1620;1865|constitution
@@ -3696,7 +3717,7 @@ More people want umbrellas on a rainy day. The demand ___.|goes up|goes down;sta
 A price is the amount of money you pay for ___.|a good or service|a vote;a law;a river|supply
 Competition between businesses often leads to ___.|lower prices and better goods|higher prices and fewer choices;no choices;empty stores|supply
 A market is any place where buyers and ___ meet.|sellers|judges;voters;firefighters|supply
-Very few diamonds exist and many people want them. Their price is ___.|high|low;zero;always the same|supply
+Very few of a rare stamp exist and many people want one. Its price is ___.|high|low;zero;always the same|supply
 A shop has too many winter coats left in spring. It may ___ the price to sell them.|lower|raise;triple;hide|supply
 Which would make the price of gas go up?|less gas being supplied|more gas being made;fewer drivers;a new gas well opening nearby|supply
 `, '5-6'));
@@ -3719,9 +3740,9 @@ DK2('sci_life', 1, 'living', [
   {form: 'sort', topic: 'covers', q: 'Sort the animals: fur, feathers or scales?', hint: 'Think about touching it. Is it fluffy, soft and light, or smooth and hard?',
     bins: {fur: ['cat', 'bear'], feathers: ['duck', 'owl'], scales: ['fish', 'snake']},
     cp: {cat: ['cat', '🐱'], bear: ['bear', '🐻'], duck: ['duck', '🦆'], owl: ['owl', '🦉'], fish: ['fish', '🐟'], snake: ['snake', '🐍']}},
-  {form: 'sort', topic: 'habitat', q: 'Where does it live: in water or on land?', hint: 'Can it breathe and swim under the water all day?',
-    bins: {water: ['fish', 'octopus'], land: ['horse', 'cow']},
-    cp: {fish: ['fish', '🐟'], octopus: ['octopus', '🐙'], horse: ['horse', '🐴'], cow: ['cow', '🐄']}},
+  {form: 'sort', topic: 'habitat', q: 'Where does it live: in water or on land?', hint: 'Does it swim in the water all day?',
+    bins: {water: ['fish', 'octopus', 'whale'], land: ['horse', 'cow']},
+    cp: {fish: ['fish', '🐟'], octopus: ['octopus', '🐙'], whale: ['whale', '🐳'], horse: ['horse', '🐴'], cow: ['cow', '🐄']}},
   {form: 'sort', topic: 'needs', q: 'Sort them: does a plant need it, or not?', hint: 'A plant needs water, light and air to grow.',
     bins: {'plant needs': ['water', 'sunlight', 'air'], 'not needed': ['candy', 'teddy bear']},
     cp: {water: ['water', '💧'], sunlight: ['sun', '☀'], air: ['wind', '💨'], candy: ['candy', '🍬'], 'teddy bear': ['teddy', '🧸']}},
@@ -3729,7 +3750,7 @@ DK2('sci_life', 1, 'living', [
     pairs: [['see', 'eyes'], ['hear', 'ears'], ['smell', 'nose'], ['taste', 'mouth']]},
   {form: 'match', topic: 'habitat', q: 'Match each animal to its home: bird, bee and spider.', hint: 'Where does it sleep and keep its babies?',
     pairs: [['bird', 'nest'], ['bee', 'hive'], ['spider', 'web']]},
-  {form: 'order', topic: 'babies', q: 'Put them in order: how does a hen grow up? Egg, chick, hen.', hint: 'What comes first? A hen lays it.',
+  {form: 'order', topic: 'babies', q: 'Put them in order: how does a hen grow up?', hint: 'What comes first? A hen lays it.',
     order: ['egg', 'chick', 'hen']},
 ]);
 DK2('sci_life', 2, 'classify', [
@@ -3787,9 +3808,9 @@ DK2('sci_earth', 1, 'weather', [
     cp: {cloud: ['cloud', '☁'], sun: ['sun', '☀'], moon: ['moon', '🌙'], tree: ['tree', '🌳'], house: ['house', '🏠']}},
   {form: 'match', q: 'Match the weather to what you wear: rainy, snowy and sunny.', hint: 'What keeps you dry? What keeps you warm?',
     pairs: [['rainy', 'raincoat'], ['snowy', 'mittens'], ['sunny', 'sun hat']]},
-  {form: 'match', topic: 'daynight', q: 'Match each one to when you see it: sun, moon and snow.', hint: 'The sun is in the day sky.',
-    pairs: [['sun', 'day'], ['moon', 'night'], ['snow', 'winter']]},
-  {form: 'order', topic: 'daynight', q: 'Put the day in order: morning, afternoon, night.', hint: 'What comes when you wake up?',
+  {form: 'match', topic: 'daynight', q: 'Match each one to when you see it: sun, stars and snow.', hint: 'The sun is in the day sky.',
+    pairs: [['sun', 'day'], ['stars', 'night'], ['snow', 'winter']]},
+  {form: 'order', topic: 'daynight', q: 'Put the day in order.', hint: 'What comes when you wake up?',
     order: ['morning', 'afternoon', 'night']},
 ]);
 DK2('sci_earth', 2, 'planets', [
@@ -3800,7 +3821,7 @@ DK2('sci_earth', 2, 'planets', [
   {form: 'sort', topic: 'rocks', q: 'Sort the rocks: igneous or sedimentary?', hint: 'Igneous rock forms when hot melted rock cools. Sedimentary rock forms from layers pressed together.',
     bins: {igneous: ['granite', 'basalt', 'obsidian'], sedimentary: ['sandstone', 'limestone']}},
   {form: 'sort', topic: 'moonphase', q: 'Sort the facts: the Moon or the Sun?', hint: 'The Sun makes its own light. The Moon goes around Earth.',
-    bins: {'the Moon': ['has no air', 'orbits Earth'], 'the Sun': ['is a star', 'gives off its own light']}},
+    bins: {'the Moon': ['has craters', 'orbits Earth'], 'the Sun': ['is a star', 'gives off its own light']}},
   {form: 'sort', q: 'Sort the planets: inner planet or outer planet?', hint: 'The inner planets are the four closest to the Sun.',
     bins: {'inner planet': ['Earth', 'Mercury'], 'outer planet': ['Neptune', 'Saturn', 'Uranus']}},
   {form: 'match', topic: 'watercycle', q: 'Match each step of the water cycle to what happens.', hint: 'Evaporation goes up. Precipitation comes down.',
@@ -3833,7 +3854,7 @@ DK2('sci_earth', 3, 'rotrev', [
 DK2('sci_phys', 1, 'push', [
   {form: 'sort', q: 'Sort them: push or pull?', hint: 'A push moves a thing away from you. A pull brings it closer.',
     bins: {push: ['kick a ball', 'press a button'], pull: ['pull a wagon', 'tug a rope', 'open a drawer']}},
-  {form: 'sort', topic: 'stuff', q: 'Sort them: floats or sinks?', hint: 'Light things like leaves stay on top of the water.',
+  {form: 'sort', topic: 'stuff', q: 'Sort them: floats or sinks?', hint: 'Light for its size floats. Heavy for its size sinks.',
     bins: {floats: ['leaf', 'boat', 'rubber duck'], sinks: ['rock', 'key']}},
   {form: 'sort', topic: 'solid', q: 'Sort them: solid or liquid?', hint: 'A solid keeps its shape. A liquid pours.',
     bins: {solid: ['block', 'spoon', 'crayon'], liquid: ['milk', 'juice']}},
@@ -3845,9 +3866,9 @@ DK2('sci_phys', 1, 'push', [
     cp: {sun: ['sun', '☀'], 'light bulb': ['bulb', '💡'], fire: ['fire', '🔥'], ball: ['ball', '⚽'], book: ['book', '📖']}},
   {form: 'match', topic: 'soundlight', q: 'Match each one to its sound: drum, bell and dog.', hint: 'Say the sound out loud.',
     pairs: [['drum', 'bang'], ['bell', 'ring'], ['dog', 'woof']]},
-  {form: 'match', topic: 'stuff', q: 'Match each one to how it feels: ice, fire and rock.', hint: 'Would you want to touch it?',
-    pairs: [['ice', 'cold'], ['fire', 'hot'], ['rock', 'hard']]},
-  {form: 'order', topic: 'solid', q: 'Heat it up! Put them in order: ice, water, steam.', hint: 'Ice melts first.',
+  {form: 'match', topic: 'stuff', q: 'Match each one to how it feels: ice, fire and pillow.', hint: 'Would you want to touch it?',
+    pairs: [['ice', 'cold'], ['fire', 'hot'], ['pillow', 'soft']]},
+  {form: 'order', topic: 'solid', q: 'Heat it up! Put them in order.', hint: 'Ice melts first.',
     order: ['ice', 'water', 'steam']},
 ]);
 DK2('sci_phys', 2, 'states', [
@@ -3871,7 +3892,7 @@ DK2('sci_phys', 2, 'states', [
 DK2('sci_phys', 3, 'change', [
   {form: 'sort', q: 'Sort them: physical change or chemical change?', hint: 'A chemical change makes a new substance. A physical change only changes shape or state.',
     bins: {'physical change': ['ice melting', 'paper torn', 'glass breaking'], 'chemical change': ['wood burning', 'iron rusting']}},
-  {form: 'sort', q: 'Physical change or chemical change?', hint: 'Can you get the old stuff back? Then it is a physical change.',
+  {form: 'sort', q: 'Physical change or chemical change?', hint: 'Is it still the same stuff? Then it is a physical change.',
     bins: {'physical change': ['water boiling', 'chopping wood'], 'chemical change': ['baking a cake', 'an egg cooking', 'milk going sour']}},
   {form: 'sort', topic: 'mixtures', q: 'Sort them: solution or other mixture?', hint: 'In a solution one thing dissolves and you cannot see it anymore.',
     bins: {solution: ['salt water', 'sugar in tea'], 'other mixture': ['trail mix', 'salad', 'sand and water']}},
@@ -3896,21 +3917,21 @@ DK2('geo_world', 1, 'landforms', [
   {form: 'sort', topic: 'oceans', q: 'Is it a continent or an ocean?', hint: 'There are seven continents and five oceans.',
     bins: {continent: ['North America', 'Australia'], ocean: ['Arctic', 'Indian']}},
   {form: 'sort', topic: 'continents', q: 'Sort the places: hot place or cold place?', hint: 'The North and South Poles are icy all year.',
-    bins: {'hot place': ['rain forest'], 'cold place': ['North Pole', 'Antarctica']}},
+    bins: {'hot place': ['the Sahara', 'rain forest'], 'cold place': ['North Pole', 'Antarctica']}},
   {form: 'sort', q: 'Is it land or water?', hint: 'Water you can swim in. Land you can stand on.',
     bins: {land: ['island', 'beach', 'valley'], water: ['sea', 'pond']}},
   {form: 'match', topic: 'mapwords', q: 'Match each letter on a compass to its direction.', hint: 'Each letter is the start of a word.',
     pairs: [['N', 'north'], ['S', 'south'], ['E', 'east'], ['W', 'west']]},
   {form: 'match', q: 'Match each place to what it is: ocean, lake and mountain.', hint: 'Which one is very tall? Which one is salty and huge?',
     pairs: [['ocean', 'huge salty water'], ['lake', 'water with land all around'], ['mountain', 'very tall land']]},
-  {form: 'order', topic: 'mapwords', q: 'Put them in order from smallest to biggest: room, house, town, country.', hint: 'Your room is inside your house.',
+  {form: 'order', topic: 'mapwords', q: 'Put them in order from smallest to biggest.', hint: 'Your room is inside your house.',
     order: ['my room', 'my house', 'my town', 'my country']},
 ]);
 DK2('geo_world', 2, 'hemi', [
   {form: 'sort', q: 'Sort the countries: Northern or Southern Hemisphere?', hint: 'The equator splits Earth into north and south.',
     bins: {'Northern Hemisphere': ['Canada', 'Russia', 'Mexico'], 'Southern Hemisphere': ['Australia', 'Argentina']}},
   {form: 'sort', topic: 'climate', q: 'Sort the places: hot climate or cold climate?', hint: 'Places near the equator are hot. Places near the poles are cold.',
-    bins: {hot: ['rain forest', 'savanna'], cold: ['tundra', 'polar region']}},
+    bins: {hot: ['the Sahara', 'rain forest', 'savanna'], cold: ['tundra', 'polar region']}},
   {form: 'sort', topic: 'features', q: 'Sort them: landform or body of water?', hint: 'A landform is a shape of the land. A body of water holds water.',
     bins: {landform: ['plateau', 'canyon', 'peninsula'], 'body of water': ['gulf', 'strait']}},
   {form: 'sort', topic: 'key', q: 'Sort the map symbols: natural or made by people?', hint: 'People built some of these. Nature made the others.',
@@ -4045,7 +4066,7 @@ KD4('sci_earth', 1, [
   kd4m('seasons', 'Tap the word that names a season.', 'There are four seasons in a year.', 'We swim at the lake in summer.', 'summer'),
 ], true);
 KD4('sci_earth', 2, [
-  kd4s('watercycle', 'Water has three forms: ice, liquid or gas?', 'Ice is hard. A liquid pours. A gas is in the air.', {ice: ['snow', 'hail'], liquid: ['rain', 'puddle'], gas: ['water vapor']}),
+  kd4s('watercycle', 'Sort the forms of water: ice, liquid or gas?', 'Ice is hard. A liquid pours. A gas is in the air.', {ice: ['snow', 'hail'], liquid: ['rain', 'puddle'], gas: ['water vapor']}),
   kd4s('erosion', 'Sort the changes to land: slow or fast?', 'Some changes take a very long time. Others happen in a moment.', {slow: ['a river digs a canyon', 'wind wears rock smooth'], fast: ['a volcano erupts', 'a landslide', 'an earthquake']}),
   kd4m('moonphase', 'Tap the word for the Moon\'s changing shapes.', 'The Moon looks different from night to night.', 'The Moon goes through phases each month.', 'phases'),
 ]);
@@ -4058,13 +4079,13 @@ KD4('sci_earth', 3, [
 // ---- Push, Pull & Stuff ----
 KD4('sci_phys', 1, [
   kd4s('stuff', 'Sort them: hard or soft?', 'Press on it. Does it give?', {hard: ['rock', 'brick', 'spoon'], soft: ['sponge', 'blanket']}),
-  kd4s('stuff', 'Sort them: hot or cold?', 'Would you want to touch it, or to hold it in your hand?', {hot: ['fire', 'soup'], cold: ['ice', 'snow']}),
+  kd4s('stuff', 'Sort them: hot or cold?', 'Would it burn you, or make you shiver?', {hot: ['fire', 'soup'], cold: ['ice', 'snow']}),
   kd4m('soundlight', 'Tap the word that tells how a drum sounds when you hit it hard.', 'A soft tap and a hard hit sound different.', 'A hard hit makes a loud sound.', 'loud'),
 ], true);
 KD4('sci_phys', 2, [
   kd4s('states', 'Sort the changes: heat added or heat taken away?', 'Ice melts when it gets warm. What about the others?', {'heat added': ['ice melting', 'water boiling', 'a puddle drying'], 'heat taken away': ['juice freezing', 'dew forming']}),
   kd4s('machines', 'Sort the simple machines: lever or ramp?', 'A lever turns on a point. A ramp is a slope.', {lever: ['seesaw', 'crowbar'], ramp: ['slide', 'wheelchair ramp', 'loading ramp']}),
-  kd4m('circuits', 'Tap the word for a material that blocks electricity.', 'Think about the rubber on a cord.', 'Rubber is a good insulator.', 'insulator'),
+  kd4m('circuits', 'Tap the word for a material that blocks electricity.', 'It is the opposite of a conductor.', 'An insulator blocks electricity.', 'insulator'),
 ]);
 KD4('sci_phys', 3, [
   kd4s('gravity', 'Sort the forces: touching or at a distance?', 'Some forces need to touch. Others reach across the air.', {touching: ['pushing a door', 'friction', 'kicking a ball'], 'at a distance': ['gravity', 'a magnet pulling a nail']}),
@@ -4075,19 +4096,21 @@ KD4('sci_phys', 3, [
 // ---- Maps & World ----
 KD4('geo_world', 1, [
   kd4s('landforms', 'Sort them: made by nature or made by people?', 'Was it here before people built things?', {nature: ['mountain', 'river', 'beach'], 'by people': ['road', 'bridge']}),
+  kd4s('continents', 'Where do they live: Africa or the Arctic?', 'One place is hot and one is covered in ice.', {Africa: ['giraffe', 'lion', 'zebra'], 'the Arctic': ['polar bear', 'walrus']}),
   kd4m('oceans', 'Tap the word that names the biggest ocean.', 'It is the ocean on the west side of the United States.', 'The Pacific is the biggest ocean.', 'Pacific'),
 ], true);
 KD4('geo_world', 2, [
   kd4s('hemi', 'Sort the lines: latitude or longitude?', 'Latitude lines go around like rings. Longitude lines go from pole to pole.', {latitude: ['equator', 'Arctic Circle'], longitude: ['Prime Meridian']}),
   kd4s('key', 'Sort the map tools: direction or distance?', 'One tells which way. One tells how far.', {direction: ['compass rose', 'north arrow'], distance: ['map scale', 'scale bar']}),
   kd4s('climate', 'Sort the places: tropical or polar?', 'Is it hot all year, or icy all year?', {tropical: ['Amazon rain forest', 'Hawaii', 'Indonesia'], polar: ['Antarctica', 'Greenland']}),
-  kd4m('key', 'Tap the word for the tool that shows directions.', 'It has an arrow that points north.', 'A compass rose shows north, south, east and west.', 'compass'),
+  kd4m('key', 'Tap the word for the tool that shows directions.', 'It has an arrow that points north.', 'A compass shows north, south, east and west.', 'compass'),
 ]);
 
 // ---- United States ----
 KD4('geo_us', 1, [
   kd4s('states', 'Sort the places: a state or a city?', 'A state is big and has many cities inside it.', {state: ['Texas', 'Ohio', 'Maine'], city: ['Denver', 'Boston']}),
   kd4s('borders', 'Sort the states: on a coast or inland?', 'Does the state touch an ocean?', {coast: ['Florida', 'Oregon', 'Maine'], inland: ['Kansas', 'Utah', 'Iowa']}),
+  kd4m('capitals', 'Tap the city that is our nation\'s capital.', 'The President works there.', 'Our nation\'s capital is Washington.', 'Washington'),
   kd4m('states', 'Tap the two state names.', 'Look for the words that name states.', 'Ohio and Texas are states.', ['Ohio', 'Texas']),
 ]);
 KD4('geo_us', 2, [
@@ -4105,8 +4128,9 @@ KD4('civ', 1, [
 ], true);
 KD4('civ', 2, [
   kd4s('branches', 'Sort the jobs: President or Congress?', 'One signs and carries out laws. The other writes them.', {President: ['signs a bill', 'leads the military', 'names Cabinet members'], Congress: ['writes bills', 'votes on bills']}),
-  kd4s('constitution', 'Sort the jobs: federal or state government?', 'Federal means the whole country. State means one state.', {federal: ['coins money', 'runs the Army', 'declares war'], state: ['gives driver licenses', 'runs state parks']}),
+  kd4s('constitution', 'Sort the jobs: federal or state government?', 'Federal means the whole country. State means one state.', {federal: ['coins money', 'runs the Army', 'declares war'], state: ['gives driver\'s licenses', 'runs state parks']}),
   kd4m('branches', 'Tap the leader of a state.', 'The President leads the country. Who leads a state?', 'A governor leads a state.', 'governor'),
+  kd4m('constitution', 'Tap the word for a proposed law.', 'It is not a law yet.', 'A bill is a plan for a new law.', 'bill'),
 ]);
 
 // ---- why: [text, why] on existing choice items (found by their q and a; an item that is not found is skipped) ----
@@ -4135,8 +4159,8 @@ const KD4WHY = {
     ['On a scale where 1 inch equals 10 miles, 3 inches on the map is ___ miles.', '30', {'13': 'Do not add. Multiply 3 inches by 10 miles.'}],
   ],
   geo_us: [
-    ['What is the capital of California?', 'Sacramento', {'Los Angeles': 'Los Angeles is the biggest city, but the capital is not.'}],
-    ['What is the capital of Alaska?', 'Juneau', {Anchorage: 'Anchorage is the biggest city, but the capital is not.'}],
+    ['What is the capital of California?', 'Sacramento', {'Los Angeles': 'Los Angeles is the biggest city, but it is not the capital.'}],
+    ['What is the capital of Alaska?', 'Juneau', {Anchorage: 'Anchorage is the biggest city, but it is not the capital.'}],
     ['The capital of the United States is ___.', 'Washington, D.C.', {'New York City': 'New York City is big, but it is not our capital.'}],
     ['When it is 3 p.m. in Eastern Time, it is ___ in Pacific Time.', 'noon', {'6 p.m.': 'Going west, clocks go back. Pacific is earlier.'}],
   ],
@@ -6530,7 +6554,7 @@ function genSpell(lv){
 }
 /* ---------- fix2 v194: the recorded teacher lines said outside a lesson (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach-start) ----------
    The lines of src/data/d-teach-audio.js (EN_TEACH, in the teach12 part) that the code or data outside the lessons says word for word
-   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 52 lines. */
+   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 54 lines. */
 const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "A right angle is a square corner.":"35f7d9f064d2",
 "Add every side.":"e85aa34f679a",
@@ -6544,6 +6568,7 @@ const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Find the volume.":"812ef18ce744",
 "Go across first, then up.":"50b1c67a0819",
 "Half the perimeter is one long side and one short side.":"28316cad8ee2",
+"Heavy for its size sinks.":"caebda8b4880",
 "Hooray!":"dd634f17d21d",
 "How long is the missing side?":"9fef2c29a1a5",
 "How many are left?":"1fb548dc2235",
@@ -6554,6 +6579,7 @@ const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "How many?":"2ab7650c0c2d",
 "How much?":"d93970daba6c",
 "Let's learn it together!":"8a649386b85e",
+"Light for its size floats.":"7fc3082de1af",
 "Line up the points.":"525a396b2560",
 "Listen to the middle sound.":"88effcc1375f",
 "Listen to the very first sound.":"6be7000d4d7f",

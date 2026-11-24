@@ -43,7 +43,7 @@ KD4('sci_earth', 1, [
   kd4m('seasons', 'Tap the word that names a season.', 'There are four seasons in a year.', 'We swim at the lake in summer.', 'summer'),
 ], true);
 KD4('sci_earth', 2, [
-  kd4s('watercycle', 'Water has three forms: ice, liquid or gas?', 'Ice is hard. A liquid pours. A gas is in the air.', {ice: ['snow', 'hail'], liquid: ['rain', 'puddle'], gas: ['water vapor']}),
+  kd4s('watercycle', 'Sort the forms of water: ice, liquid or gas?', 'Ice is hard. A liquid pours. A gas is in the air.', {ice: ['snow', 'hail'], liquid: ['rain', 'puddle'], gas: ['water vapor']}),
   kd4s('erosion', 'Sort the changes to land: slow or fast?', 'Some changes take a very long time. Others happen in a moment.', {slow: ['a river digs a canyon', 'wind wears rock smooth'], fast: ['a volcano erupts', 'a landslide', 'an earthquake']}),
   kd4m('moonphase', 'Tap the word for the Moon\'s changing shapes.', 'The Moon looks different from night to night.', 'The Moon goes through phases each month.', 'phases'),
 ]);
@@ -56,13 +56,13 @@ KD4('sci_earth', 3, [
 // ---- Push, Pull & Stuff ----
 KD4('sci_phys', 1, [
   kd4s('stuff', 'Sort them: hard or soft?', 'Press on it. Does it give?', {hard: ['rock', 'brick', 'spoon'], soft: ['sponge', 'blanket']}),
-  kd4s('stuff', 'Sort them: hot or cold?', 'Would you want to touch it, or to hold it in your hand?', {hot: ['fire', 'soup'], cold: ['ice', 'snow']}),
+  kd4s('stuff', 'Sort them: hot or cold?', 'Would it burn you, or make you shiver?', {hot: ['fire', 'soup'], cold: ['ice', 'snow']}),
   kd4m('soundlight', 'Tap the word that tells how a drum sounds when you hit it hard.', 'A soft tap and a hard hit sound different.', 'A hard hit makes a loud sound.', 'loud'),
 ], true);
 KD4('sci_phys', 2, [
   kd4s('states', 'Sort the changes: heat added or heat taken away?', 'Ice melts when it gets warm. What about the others?', {'heat added': ['ice melting', 'water boiling', 'a puddle drying'], 'heat taken away': ['juice freezing', 'dew forming']}),
   kd4s('machines', 'Sort the simple machines: lever or ramp?', 'A lever turns on a point. A ramp is a slope.', {lever: ['seesaw', 'crowbar'], ramp: ['slide', 'wheelchair ramp', 'loading ramp']}),
-  kd4m('circuits', 'Tap the word for a material that blocks electricity.', 'Think about the rubber on a cord.', 'Rubber is a good insulator.', 'insulator'),
+  kd4m('circuits', 'Tap the word for a material that blocks electricity.', 'It is the opposite of a conductor.', 'An insulator blocks electricity.', 'insulator'),
 ]);
 KD4('sci_phys', 3, [
   kd4s('gravity', 'Sort the forces: touching or at a distance?', 'Some forces need to touch. Others reach across the air.', {touching: ['pushing a door', 'friction', 'kicking a ball'], 'at a distance': ['gravity', 'a magnet pulling a nail']}),
@@ -73,19 +73,21 @@ KD4('sci_phys', 3, [
 // ---- Maps & World ----
 KD4('geo_world', 1, [
   kd4s('landforms', 'Sort them: made by nature or made by people?', 'Was it here before people built things?', {nature: ['mountain', 'river', 'beach'], 'by people': ['road', 'bridge']}),
+  kd4s('continents', 'Where do they live: Africa or the Arctic?', 'One place is hot and one is covered in ice.', {Africa: ['giraffe', 'lion', 'zebra'], 'the Arctic': ['polar bear', 'walrus']}),
   kd4m('oceans', 'Tap the word that names the biggest ocean.', 'It is the ocean on the west side of the United States.', 'The Pacific is the biggest ocean.', 'Pacific'),
 ], true);
 KD4('geo_world', 2, [
   kd4s('hemi', 'Sort the lines: latitude or longitude?', 'Latitude lines go around like rings. Longitude lines go from pole to pole.', {latitude: ['equator', 'Arctic Circle'], longitude: ['Prime Meridian']}),
   kd4s('key', 'Sort the map tools: direction or distance?', 'One tells which way. One tells how far.', {direction: ['compass rose', 'north arrow'], distance: ['map scale', 'scale bar']}),
   kd4s('climate', 'Sort the places: tropical or polar?', 'Is it hot all year, or icy all year?', {tropical: ['Amazon rain forest', 'Hawaii', 'Indonesia'], polar: ['Antarctica', 'Greenland']}),
-  kd4m('key', 'Tap the word for the tool that shows directions.', 'It has an arrow that points north.', 'A compass rose shows north, south, east and west.', 'compass'),
+  kd4m('key', 'Tap the word for the tool that shows directions.', 'It has an arrow that points north.', 'A compass shows north, south, east and west.', 'compass'),
 ]);
 
 // ---- United States ----
 KD4('geo_us', 1, [
   kd4s('states', 'Sort the places: a state or a city?', 'A state is big and has many cities inside it.', {state: ['Texas', 'Ohio', 'Maine'], city: ['Denver', 'Boston']}),
   kd4s('borders', 'Sort the states: on a coast or inland?', 'Does the state touch an ocean?', {coast: ['Florida', 'Oregon', 'Maine'], inland: ['Kansas', 'Utah', 'Iowa']}),
+  kd4m('capitals', 'Tap the city that is our nation\'s capital.', 'The President works there.', 'Our nation\'s capital is Washington.', 'Washington'),
   kd4m('states', 'Tap the two state names.', 'Look for the words that name states.', 'Ohio and Texas are states.', ['Ohio', 'Texas']),
 ]);
 KD4('geo_us', 2, [
@@ -103,8 +105,9 @@ KD4('civ', 1, [
 ], true);
 KD4('civ', 2, [
   kd4s('branches', 'Sort the jobs: President or Congress?', 'One signs and carries out laws. The other writes them.', {President: ['signs a bill', 'leads the military', 'names Cabinet members'], Congress: ['writes bills', 'votes on bills']}),
-  kd4s('constitution', 'Sort the jobs: federal or state government?', 'Federal means the whole country. State means one state.', {federal: ['coins money', 'runs the Army', 'declares war'], state: ['gives driver licenses', 'runs state parks']}),
+  kd4s('constitution', 'Sort the jobs: federal or state government?', 'Federal means the whole country. State means one state.', {federal: ['coins money', 'runs the Army', 'declares war'], state: ['gives driver\'s licenses', 'runs state parks']}),
   kd4m('branches', 'Tap the leader of a state.', 'The President leads the country. Who leads a state?', 'A governor leads a state.', 'governor'),
+  kd4m('constitution', 'Tap the word for a proposed law.', 'It is not a law yet.', 'A bill is a plan for a new law.', 'bill'),
 ]);
 
 // ---- why: [text, why] on existing choice items (found by their q and a; an item that is not found is skipped) ----
@@ -133,8 +136,8 @@ const KD4WHY = {
     ['On a scale where 1 inch equals 10 miles, 3 inches on the map is ___ miles.', '30', {'13': 'Do not add. Multiply 3 inches by 10 miles.'}],
   ],
   geo_us: [
-    ['What is the capital of California?', 'Sacramento', {'Los Angeles': 'Los Angeles is the biggest city, but the capital is not.'}],
-    ['What is the capital of Alaska?', 'Juneau', {Anchorage: 'Anchorage is the biggest city, but the capital is not.'}],
+    ['What is the capital of California?', 'Sacramento', {'Los Angeles': 'Los Angeles is the biggest city, but it is not the capital.'}],
+    ['What is the capital of Alaska?', 'Juneau', {Anchorage: 'Anchorage is the biggest city, but it is not the capital.'}],
     ['The capital of the United States is ___.', 'Washington, D.C.', {'New York City': 'New York City is big, but it is not our capital.'}],
     ['When it is 3 p.m. in Eastern Time, it is ___ in Pacific Time.', 'noon', {'6 p.m.': 'Going west, clocks go back. Pacific is earlier.'}],
   ],

@@ -182,7 +182,7 @@ function ls6Spanish(id, t, units, o) {
 // the things: [what the pet and the lesson call it, art name, emoji fallback]
 const LS6_TH = {
   leaf: ['leaf', 'leaf', '🍃'], boat: ['toy boat', 'boat', '⛵'], apple: ['apple', 'apple', '🍎'], sponge: ['sponge', '', '🧽'], ball: ['ball', 'ball', '⚽'],
-  duck: ['duck', 'duck', '🦆'], coin: ['coin', '', '🪙'], ring: ['ring', '', '💍'], rock: ['rock', '', '🪨'], hammer: ['hammer', '', '🔨'], brick: ['brick', '', '🧱'],
+  duck: ['duck', 'duck', '🦆'], coin: ['coin', 'coin', '🪙'], ring: ['ring', '', '💍'], rock: ['rock', 'rock', '🪨'], hammer: ['hammer', '', '🔨'], brick: ['brick', '', '🧱'],
   chick: ['chick', 'chick', '🐥'], hen: ['hen', 'hen', '🐔'], seed: ['seedling', '', '🌱'], sunfl: ['sunflower', 'sunflower', '🌻'], baby: ['baby', '', '👶'], girl: ['child', '', '👧'],
   car: ['car', 'car', '🚗'], train: ['train', 'train', '🚂'], robot: ['robot', '', '🤖'], kite: ['kite', 'kite', '🪁'], teddy: ['teddy bear', '', '🧸'], bike: ['bike', 'bike', '🚲'],
   tree: ['tree', 'tree', '🌳'], fish: ['fish', 'fish', '🐟'], bird: ['bird', 'bird', '🐦'], flower: ['flower', 'flower', '🌷'], frog: ['frog', 'frog', '🐸'],
