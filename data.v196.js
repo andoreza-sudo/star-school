@@ -1217,7 +1217,7 @@ compAdd([
   {t:'vocab',q:'In this story, "batch" means...',a:'a group made at one time',d:['a kind of oven','a loud noise','a small plate'],ev:[0]},
   {t:'main',q:'What is "The Cookie Surprise" mostly about?',a:'Max takes cookies and then says sorry',
    d:['Grandma loses her phone at home','Max bakes cookies with Grandma','Max sells cookies at a small shop'],ev:[3,4,5,7]},
-  {t:'infer',q:'How did Max feel when he looked at his shirt?',a:'sorry that he got caught',d:['proud of what he did','sleepy from the long day','full of joy and pride'],ev:[5,6,7]}]},
+  {t:'infer',q:'How did Max feel when he looked at his shirt?',a:'sorry and embarrassed',d:['proud of what he did','sleepy from the long day','full of joy and pride'],ev:[5,6,7]}]},
 
 {id:'g2f05',g:2,type:'f',title:'Zip the Robot',text:[
   'Zip was a small robot who loved to sweep.',
@@ -1225,12 +1225,12 @@ compAdd([
   'Zip rolled slowly to the wall plug.',
   'But the cord was too short to reach.',
   'He beeped for help, and Nina woke up.',
-  'She moved the plug to a longer cord.',
+  'She plugged in a longer cord.',
   'Soon, Zip\'s lights glowed bright again.',
   '"Thank you," he beeped, and he swept until morning.'],
  qs:[
   {t:'detail',q:'Why could Zip not reach the plug?',a:'The cord was too short',d:['The door was locked','His wheel was broken','Nina was asleep'],ev:[3]},
-  {t:'sequence',q:'What did Nina do after she woke up?',a:'She moved the plug to a longer cord',
+  {t:'sequence',q:'What did Nina do after she woke up?',a:'She plugged in a longer cord',
    d:['She swept the floor for Zip','She turned off all his lights','She gave him a brand new battery pack'],ev:[4,5]},
   {t:'vocab',q:'In this story, "dim" means...',a:'not bright',d:['very loud','very hot','broken in two'],ev:[1]},
   {t:'main',q:'What is "Zip the Robot" mostly about?',a:'Zip needs power and gets help from Nina',
@@ -1314,7 +1314,7 @@ compAdd([
   'Penguins are birds that cannot fly.',
   'Their wings work like flippers in the water.',
   'They swim fast to catch fish.',
-  'Penguins live in cold places.',
+  'Most penguins live in cold places.',
   'A thick layer of fat keeps them warm.',
   'When the wind blows, they stand close together.',
   'Then they take turns standing on the cold outer edge.',
@@ -5710,8 +5710,8 @@ GR(8,'adverbs','An adverb tells how, when or where an action happens. Many end i
  ['Tap the adverb.','The cat sleeps quietly.','quietly'],['Tap the adverb.','Mom drives carefully.','carefully'],
  ['Tap the adverb.','He jumped happily.','happily']]),
 GR(8,'adverbs','Does the blank tell how the action is done? A word that describes an action usually ends in -ly.','choice',[
- ['The turtle moves ___.','slowly','slow','slower'],['He spoke ___ to the baby.','softly','soft','softer'],
- ['She ran ___ to school.','quickly','quick','quicker'],['The band played ___.','loudly','loud','louder'],
+ ['The turtle moves ___.','slowly','slow','slowness'],['He spoke ___ to the baby.','softly','soft','softness'],
+ ['She ran ___ to school.','quickly','quick','quickness'],['The band played ___.','loudly','loud','loudness'],
  ['Please walk ___.','carefully','careful','care'],['We waited ___ for the bus.','patiently','patient','patience']]),
 GR(8,'prepositions','A preposition shows where something is or when it happens, and it comes before a noun. Ask: where, or when?','tap',[
  ['Tap the preposition.','Cats sleep under beds.','under'],['Tap the preposition.','Birds fly over us.','over'],
@@ -5804,10 +5804,12 @@ GR(9,'clear pronouns','A pronoun must point to one clear noun. If it could mean 
 BANK.gram.push(...[].concat((()=>{
   // level 2: the words of the level 2 sentences, two sentences a question; a sentence's noun, verb and adjective come from its tap items
   const S={};
-  for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{})[it.topic]=it.a.toLowerCase();
+  for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{sent:it.sent})[it.topic]=it.a.toLowerCase();
   const rows=Object.values(S).filter(r=>r.noun&&r.verb&&r.adjective),out=[];
   for(let i=0;i+1<rows.length;i+=2){const a=rows[i],b=rows[i+1],one=i%4?'adjective':'verb';
-    out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',
+    // WORDS-READ W8: the two source sentences are shown and read (hugs alone could be a noun)
+    out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',sents:[a.sent,b.sent],
+      say:'Sort the words: noun, verb or adjective? '+a.sent+' '+b.sent,
       hint:'A noun names a person, place or thing. A verb is an action. An adjective describes a noun.',
       bins:{noun:[a.noun,b.noun],verb:one=='verb'?[a.verb]:[a.verb,b.verb],adjective:one=='adjective'?[a.adjective]:[a.adjective,b.adjective]}})}
   return out})(),
@@ -5848,7 +5850,7 @@ GR(7,'commas','A comma goes after yes or oh no, after a name you are talking to,
   ['Tap the word that needs a comma after it.','Yes I would like some milk.','Yes'],
   ['Tap the word that needs a comma after it.','Ben can you help me?','Ben'],
   ['Tap the word that needs a comma after it.','We were tired so we went home.','tired'],
-  ['Tap the word that needs a comma after it.','Oh no I lost my hat!','no'],
+  ['Tap the word that needs a comma after it.','Wow I lost my hat!','Wow'],
   ['Tap the word that needs a comma after it.','Mom I finished my homework.','Mom']]),
 [['I packed socks shirts and shoes.',['socks','shirts']],['We saw cows pigs and goats.',['cows','pigs']],
   ['Bring a pencil a ruler and glue.',['pencil','ruler']]].map(([sent,a])=>({lv:7,topic:'commas',sent,a,
@@ -8109,12 +8111,12 @@ different|My sister and I are different.
 beautiful|The garden is beautiful in spring.
 favorite|Blue is my favorite color.
 interesting|That was an interesting book.
-vegetable|Carrot is a vegetable.
+vegetable|A carrot is a vegetable.
 library|I borrowed a book from the library.
 knowledge|Reading books adds to your knowledge.
 government|The government makes the laws.
 neighbor|My neighbor waves from her porch.
-exercise|We do exercise every morning.
+exercise|We exercise every morning.
 important|It is important to drink water.
 probably|It will probably rain today.
 surprise|The party was a big surprise.
@@ -8148,7 +8150,7 @@ committee|The committee voted on the plan.
 address|Write your address on the envelope.
 success|Hard work leads to success.
 across|The bridge goes across the river.
-tomorrow|We will visit grandma tomorrow.
+tomorrow|We will visit Grandma tomorrow.
 paragraph|Each paragraph has a main idea.
 conscience|Her conscience told her to tell the truth.
 disappear|The sun will disappear behind the clouds.
@@ -8645,11 +8647,11 @@ night|day|dark,moon|night,🌙
 open|shut|wide,broken|open,🔓
 happy|sad|glad,silly|happy,😊
 fast|slow|quick,late|fast,🏎
-old|new|dusty,tall|old,👴
+old|new|dusty,tall
 young|old|little,small|young,👶
 wet|dry|damp,cold|wet,💧
 full|empty|heavy,more|full,🥛
-soft|hard|fluffy,loud
+soft|hard|fluffy,furry
 loud|quiet|noisy,busy|loud,🔊
 stop|go|halt,wait
 push|pull|shove,pick
@@ -8683,7 +8685,7 @@ before|after|first,early
 always|never|often,usually
 many|few|lots,plenty
 stand|sit|run,jump
-sink|float|swim,drop
+sink|float|dive,drop
 rough|smooth|bumpy,hard
 tight|loose|snug,small
 brave|scared|bold,strong
@@ -9001,7 +9003,7 @@ We walked ___ the park after lunch.|to|too|two,toe
 Is this ___ lunch box?|your|you're|you,yours
 I think ___ very kind to share.|you're|your|you,yours
 The puppy wagged ___ tail.|its|it's|is,it
-___ raining outside, so take an umbrella.|it's|its|him,his
+___ raining outside, so take an umbrella.|It's|Its|Him,His
 Can you ___ the music from the next room?|hear|here|hair,heard
 Come over ___ and sit next to me.|here|hear|her,hire
 I will ___ a new notebook at the store.|buy|by|bye,bay
@@ -9031,7 +9033,7 @@ The sky is ___ today.|blue|blew|blow,glue
 The wind ___ my hat right off.|blew|blue|blow,glow
 She ___ a big lunch at school.|ate|eight|eat,at
 I have ___ stickers in my pocket.|eight|ate|eat,at
-___ Grandma, thank you for the gift.|dear|deer|door,dare
+___ Grandma, thank you for the gift.|Dear|Deer|Door,Dare
 We saw a ___ eating grass in the woods.|deer|dear|door,dare
 The mole dug a ___ in the yard.|hole|whole|hall,hold
 I ate the ___ pizza by myself.|whole|hole|hold,hall
@@ -9046,7 +9048,7 @@ The ___ of the backpack surprised me.|weight|wait|wet,white
 The table is made of ___.|wood|would|hood,wouldn't
 I ___ like some juice, please.|would|wood|hood,wool
 I ___ I could fly like a bird.|wish|which|watch,wash
-___ coat is yours?|which|wish|watch,with
+___ coat is yours?|Which|Wish|Watch,With
 Be careful not to ___ the glass.|break|brake|bread,bleak
 Press the ___ to stop the bike.|brake|break|bark,bake
 A tiny red ___ carried a crumb up the leaf.|ant|aunt|and,at
@@ -9060,7 +9062,7 @@ After the war, the land was at ___.|peace|piece|pole,pearl
 We left ___ boots by the door.|our|hour|out,are
 The movie was one ___ long.|hour|our|out,ore
 Read the poem ___ to the class.|aloud|allowed|aloof,along
-Dogs are not ___ in the pool.|allowed|aloud|alone,ahead
+Dogs are not ___ in the pool.|allowed|aloud|along,ahead
 I wonder ___ it will rain tomorrow.|whether|weather|wither,feather
 The ___ is sunny and warm today.|weather|whether|wither,feather
 She ___ the ball to me.|threw|through|thrown,three

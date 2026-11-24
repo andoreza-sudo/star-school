@@ -3926,7 +3926,9 @@ BANKF.sort = (it, id, pic) => {
     if (it.cp && it.cp[w]) Object.assign(c, {h: true, al: w, l: `<span class="pcap">${picFor(it.cp[w][0], it.cp[w][1])}<small>${esc(w)}</small></span>`});
     return c;
   })));
-  return {kind: 'sort', bins: names.map(n => ({v: n, l: k2Cap(n)})), items, ans: items.map(c => c.b).join('|'), html: k2BankQ(it, pic)};
+  // sents (WORDS-READ W8): the sentences the words come from, shown under the question
+  const sents = (it.sents || []).map(s => `<div class="bsent">${esc(s)}</div>`).join('');
+  return {kind: 'sort', bins: names.map(n => ({v: n, l: k2Cap(n)})), items, ans: items.map(c => c.b).join('|'), html: k2BankQ(it, pic) + sents};
 };
 // forms drawn by share (genBank): their own draw comes after the usual item choice, with these shares unless BANKMIX says otherwise
 const BANKNEW = ['sort', 'mark', 'order', 'match', 'multi'];
