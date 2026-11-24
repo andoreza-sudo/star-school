@@ -8216,7 +8216,11 @@ run('keys: Enter or Space on an SVG button clicks it (UI.press)',()=>{
 run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why on choice items, K2.off gives the old draws',()=>{
   const r=eval(js+`;(()=>{const out={bad:[],rows:{},n:0,why:0,before:{},after:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
     const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],LV={sci_life:3,sci_earth:3,sci_phys:3,geo_world:2,geo_us:2,civ:2};
-    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:7,geo_us:8,civ:7}; // new items per stop (6 to 10)
+    // new items per stop (6 to 10). AUD-DISC (v195 audit) removed three of them, so geo_world is 6 (was 7: "Where do they live: Africa or
+    // Antarctica?" had two right answers, penguins and seals live in Africa too), geo_us 7 (was 8: "Tap the city that is our nation's
+    // capital" marked "D.C." wrong) and civ 6 (was 7: its sentence "A bill becomes law after the vote" is false)
+    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:6,geo_us:7,civ:6};
+    const SORTS=(id,lv)=>id=='geo_world'&&lv==1?1:2; // geo_world 1 keeps one new sort item: the Africa or Antarctica one was its second
     const GR={sci_life:['K-2','3-4','5-6'],sci_earth:['K-2','3-4','5-6'],sci_phys:['K-2','3-4','5-6'],geo_world:['K-2','3-4'],geo_us:['3-4','5-6'],civ:['K-2','5-6']};
     const keep={};
     for(const id of IDS){
@@ -8236,7 +8240,7 @@ run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why 
           const b=bankRebuild(q.bk);if(JSON.stringify(b)!==JSON.stringify(q))bad(w+'bankRebuild differs');
           K2.off=true;try{if(bankCan(it))bad(w+'drawn with K2.off')}finally{K2.off=false}}});
       for(let lv=1;lv<=LV[id];lv++){const m=mine.filter(it=>it.lv==lv);
-        if(m.filter(it=>it.form=='sort').length<2||m.filter(it=>it.form=='mark').length<1)bad(id+' level '+lv+': needs 2 sort and 1 mark items, has '+m.map(x=>x.form))}
+        if(m.filter(it=>it.form=='sort').length<SORTS(id,lv)||m.filter(it=>it.form=='mark').length<1)bad(id+' level '+lv+': needs '+SORTS(id,lv)+' sort and 1 mark items, has '+m.map(x=>x.form))}
       keep[id]=B.slice();
     }
     // why: [text, why] distractors on existing choice items. Their draws do not change (a plain copy builds the same question) and
@@ -18420,6 +18424,89 @@ run('Discover review fixes R-01d',()=>{
   };
   eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.pics+' Nature Trail items with picture answers; longest-answer share '+(note.long||[]).join(', ')};
+});
+
+// ---- AUD-DISC: the Discover audit at v195 (the R-01 Musts checked again in the live code, and a fresh sweep) ----
+// 1. Nature Trail (K-2) can be played without reading: every item of the five K-2 stops, of every form, is spoken. A choice item
+//    reads its choices in the order shown; a sort chip, a match word (both sides) and an order tile say their words when tapped; a
+//    mark item reads its sentence after the prompt, each word says itself when picked and no tap answers at once (Check does).
+//    Every hint is read aloud. (KINDS2, v171, had added match, order and mark items that only a reader could do: 25% of a stop.)
+// 2. No Discover item, hint or why teaches evolution (the owner's content rule), and the items the audit removed stay removed.
+// 3. A Southwest state never offers "West" as a wrong region.
+run('Discover audit AUD-DISC: K-2 items of every form are spoken, no evolution item, removed items stay out, Southwest without West',()=>{
+  const p=[],note={};
+  const body=function(){
+    const bad=m=>{if(p.length<60)p.push(m)};
+    const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],K2S=['sci_life','sci_earth','sci_phys','geo_world','civ'];
+    const txt=x=>String(x).replace(/<[^>]*>/g,'').trim();
+    // 1. spoken
+    const n={};
+    for(const id of K2S)BANK[id].forEach((it,bi)=>{
+      if(it.lv!==1)return;
+      const form=it.form||'choice',w=id+' "'+it.q+'" ('+form+'): ';
+      n[form]=(n[form]||0)+1;
+      if(it.aloud!==true)bad(w+'is not a read-aloud item');
+      for(let s=1;s<=3;s++){
+        const q=genBank(id,1,{bi,s}),html=KIND[q.kind].render(q);
+        if(!q.say)bad(w+'no spoken prompt');
+        if(!q.hint||q.hint.k!=='text'||q.hint.w!==q.hint.s||!q.hint.s)bad(w+'the hint is not read aloud');
+        const says=[...html.matchAll(/data-say="([^"]*)"/g)].map(m=>m[1]);
+        const need=(cs,what)=>{for(const c of cs){if(!c.say||!says.includes(esc(c.say)))bad(w+what+' "'+txt(c.l)+'" does not say itself');
+          else if(c.say!==txt(c.al||c.l)&&c.say!==c.v)bad(w+what+' says "'+c.say+'" but shows "'+txt(c.l)+'"')}};
+        if(q.kind=='choice'){let at=0;for(const c of q.choices){const i=q.say.indexOf(String(c.v),at);if(i<0)bad(w+'"'+c.v+'" is not read in the order shown: '+q.say);else at=i+String(c.v).length}}
+        else if(q.kind=='sort')need(q.items,'chip');
+        else if(q.kind=='match'){if(!q.speak)bad(w+'q.speak is not set');need(q.items,'left word');need(q.opts,'right word')}
+        else if(q.kind=='order'){if(!q.speak)bad(w+'q.speak is not set');need(q.items,'tile')}
+        else if(q.kind=='mark'){
+          if(!q.speak||q.one)bad(w+'a tap answers at once, so a word cannot be heard first');
+          if(!q.say.endsWith(it.sent))bad(w+'the sentence is not read: '+q.say);
+          if(says.length!==q.words.length||q.words.some((x,i)=>says[i]!==esc(k2MarkWord(x))))bad(w+'a word does not say itself');
+          if(!/id="mcheck"/.test(html))bad(w+'no Check button');
+          if(!KIND.mark.same(q,q.ans)||KIND.mark.same(q,['0'])&&q.ans.join()!=='0')bad(w+'the answer check');
+        }
+        else bad(w+'a kind this check does not know: '+q.kind);
+        for(const x of kindProblems(q))bad(w+x);
+        if(JSON.stringify(bankRebuild(q.bk))!==JSON.stringify(q))bad(w+'bankRebuild differs');
+      }
+    });
+    note.n=n;
+    for(const f of ['choice','sort','match','order','mark'])if(!n[f])bad('no K-2 '+f+' item was checked');
+    // the items of the older grades are as before: no speak flag, a mark with one answer is still one tap
+    for(const id of IDS)BANK[id].forEach((it,bi)=>{if(it.aloud||!it.form)return;const q=genBank(id,it.lv,{bi,s:1});
+      if(q.speak||/data-say=/.test(KIND[q.kind].render(q))&&q.kind!=='sort')bad(id+' "'+it.q+'": an item that is not read aloud speaks');
+      if(q.kind=='mark'&&q.one!==(q.ans.length==1))bad(id+' "'+it.q+'": one')});
+    // a tap says the word for Pre-K to 1st grade only (k2SayChip), and never for a button without a word
+    const said=[],say0=say,g0=S.grade;
+    try{say=t=>{said.push(t)};
+      for(const [g,want] of [[-1,1],[0,1],[1,1],[2,0],[5,0]]){S.grade=g;said.length=0;k2SayChip({dataset:{say:'hen'}});k2SayChip({dataset:{}});
+        if(said.length!==want||want&&said[0]!=='hen')bad('grade '+g+': a tapped word is said '+said.length+' times, expected '+want)}}
+    finally{say=say0;S.grade=g0}
+    // 2. evolution, and the removed items
+    const all=IDS.flatMap(id=>BANK[id].map(it=>({id,it})));
+    const text=it=>[it.q,it.a,it.sent,it.hint,...(it.d||[]).flat(),...Object.keys(it.bins||{}),...Object.values(it.bins||{}).flat(),...(it.pairs||[]).flat(),...(it.order||[])].filter(x=>x!=null).join(' | ');
+    const EVO=/\bevolution|\bevolv|natural selection|ancestor|descend|over (many|the) generations|millions? of years|billions? of years|survival of the fittest/i;
+    for(const x of all)if(EVO.test(text(x.it)))bad(x.id+': evolution content: '+x.it.q);
+    for(const k in DISC_HINT)if(EVO.test(DISC_HINT[k]))bad('hint '+k+': evolution content');
+    const gone=[[/Over many generations/,'the natural selection row'],[/Africa or Antarctica/,'penguins and seals sorted to Antarctica only'],
+      [/A bill becomes law after the vote/,'a bill "becomes law after the vote"'],[/capital is Washington, D\.C\./,'the Washington, D.C. mark item (D.C. was marked wrong)']];
+    for(const [re,what] of gone)if(all.some(x=>re.test(text(x.it))))bad('back in the bank: '+what);
+    const bins=(id,re)=>{const it=BANK[id].find(x=>re.test(x.q));return it&&it.bins?Object.values(it.bins).flat():['(item missing)']};
+    if(bins('sci_life',/in water or on land/).includes('whale'))bad('the whale is sorted by a hint that asks if it can breathe under water');
+    if(bins('sci_earth',/in the day or at night/).includes('moon'))bad('the moon is sorted to night only');
+    for(const [id,re] of [['geo_world',/hot place or cold place/],['geo_world',/hot climate or cold climate/]])if(bins(id,re).includes('desert'))bad('"desert" is sorted as hot: '+re);
+    let it=BANK.sci_life.find(x=>/^A bear sleeps through the cold winter/.test(x.q));
+    if(!it||it.a!=='hibernation'||it.d.flat().includes('adaptation')||it.d.length<2)bad('hibernation item: "adaptation" is a wrong answer (hibernation is one)');
+    it=BANK.sci_earth.find(x=>/^When can we see stars/.test(x.q));
+    if(!it||it.d.flat().includes('at noon')||it.d.length<2)bad('stars item: "at noon" is a wrong answer (the sun is a star)');
+    // 3. regions
+    const reg=BANK.geo_us.filter(x=>x.topic==='regions'&&!x.form);
+    note.sw=reg.filter(x=>x.a==='Southwest').length;
+    if(note.sw<3)bad('fewer than 3 Southwest region items');
+    for(const x of reg){if(x.a==='Southwest'&&x.d.flat().includes('West'))bad(x.q+': offers West');
+      if(x.d.length!==3||new Set([x.a,...x.d]).size!==4)bad(x.q+': choices '+x.d)}
+  };
+  eval(js+';('+body.toString()+')()');
+  return{problems:uniq(p),note:'K-2 items spoken: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+'; '+note.sw+' Southwest items without West'};
 });
 
 // ---- R-01b: Brain Teasers and practice review fixes (docs/reviews/R-01-brain-teasers.md, docs/reviews/R-01-practice.md: the must

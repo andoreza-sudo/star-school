@@ -10485,6 +10485,63 @@ async function main() {
       await shot('frogs-hint');
       notes.push('frogs question ' + s.bq + ' px with the hint open');
       await k2Old(dp, false);
+      // AUD-DISC (the v195 audit): the Nature Trail items that are not a choice can be done without reading, by a Kindergartner, with
+      // real taps. A mark item reads its sentence, a tapped word says itself and nothing answers before Check; every match word and
+      // every order tile says itself when tapped. A 2nd grader's taps say nothing (words are spoken on a tap for Pre-K to 1st grade).
+      const showItem = (id, re) => dp.evaluate(([id, re]) => {
+        const bi = BANK[id].findIndex(it => it.lv === 1 && new RegExp(re).test(it.q));
+        G.q = genBank(id, 1, { bi, s: 3 });
+        G.q.sk = id; G.tries = 0; G.lock = false;
+        window.__said = [];
+        renderQ();
+        return { kind: G.q.kind, say: G.q.say };
+      }, [id, re]);
+      const said = () => dp.evaluate(() => window.__said.slice());
+      const locked = () => dp.evaluate(() => !!G.lock);
+      await dp.waitForTimeout(900);
+      let it = await showItem('sci_life', 'what covers a bird');
+      await dp.waitForTimeout(700);
+      if (it.kind !== 'mark' || !(await said()).some(t => /covers a bird\. A bird has soft feathers\.$/.test(t))) bad.push('K-2 mark: the sentence is not read: ' + JSON.stringify([it, await said()]));
+      await dp.click('.mkt[data-i="0"]');
+      if ((await said()).pop() !== 'A' || await locked() || !(await dp.evaluate(() => document.querySelector('.mkt[data-i="0"]').getAttribute('aria-pressed') === 'true'))) bad.push('K-2 mark: a tapped word is not said, or the tap answered: ' + JSON.stringify(await said()));
+      await dp.click('.mkt[data-i="0"]');
+      await dp.click('.mkt[data-i="4"]');
+      if ((await said()).pop() !== 'feathers' || await locked()) bad.push('K-2 mark: "feathers" is not said: ' + JSON.stringify(await said()));
+      await shot('k2-mark');
+      await dp.click('#mcheck');
+      if (!(await locked()) || !(await dp.evaluate(() => document.querySelector('.mkt[data-i="4"]').classList.contains('right')))) bad.push('K-2 mark: Check with the right word did not answer');
+      await dp.waitForTimeout(900);
+      it = await showItem('sci_phys', 'how it feels');
+      const mt = await dp.evaluate(() => ({ L: G.q.items.map(c => c.l), R: G.q.opts.map(c => c.l), pair: G.q.items.map(c => G.q.opts.findIndex(o => o.v === c.v)) }));
+      for (let i = 0; i < mt.R.length; i++) { await dp.click(`.mb[data-s="R"][data-i="${i}"]`); if ((await said()).pop() !== mt.R[i]) bad.push('K-2 match: "' + mt.R[i] + '" is not said'); }
+      if (await locked() || (await dp.evaluate(() => G.tries)) !== 0) bad.push('K-2 match: hearing the words on one side counted as an answer');
+      await dp.click('.mb.sel'); // put the last one down again
+      for (let i = 0; i < mt.L.length; i++) {
+        await dp.click(`.mb[data-s="L"][data-i="${i}"]`);
+        if ((await said()).pop() !== mt.L[i]) bad.push('K-2 match: "' + mt.L[i] + '" is not said');
+        if (i === 0) await shot('k2-match');
+        await dp.click(`.mb[data-s="R"][data-i="${mt.pair[i]}"]`);
+      }
+      if (it.kind !== 'match' || !(await locked())) bad.push('K-2 match: every pair made, but not answered');
+      await dp.waitForTimeout(900);
+      it = await showItem('civ', 'Crossing the street');
+      const od = await dp.evaluate(() => ({ l: G.q.items.map(c => c.l), go: G.q.ans.map(a => G.q.items.findIndex(c => c.v === a)) }));
+      const wrongFirst = od.go[od.go.length - 1];
+      await dp.click(`.ot[data-i="${wrongFirst}"]`);
+      if ((await said()).pop() !== od.l[wrongFirst] || await locked()) bad.push('K-2 order: a tapped tile is not said: ' + JSON.stringify(await said()));
+      await dp.click('.os[data-s="0"]'); // take it back
+      await shot('k2-order');
+      for (const i of od.go) { await dp.click(`.ot[data-i="${i}"]`); if ((await said()).pop() !== od.l[i]) bad.push('K-2 order: "' + od.l[i] + '" is not said'); }
+      if (it.kind !== 'order' || !(await locked())) bad.push('K-2 order: the right order did not answer');
+      await dp.waitForTimeout(900);
+      await dp.evaluate(() => { S.grade = 2; });
+      await showItem('sci_phys', 'how it feels');
+      await dp.waitForTimeout(700);
+      await dp.evaluate(() => { window.__said = []; });
+      await dp.click('.mb[data-s="R"][data-i="0"]');
+      if ((await said()).length) bad.push('2nd grade: a tapped match word is said: ' + JSON.stringify(await said()));
+      await dp.evaluate(() => { S.grade = 0; });
+      notes.push('K-2 mark, match and order: every word says itself on a tap, the mark sentence is read, Check answers');
       if (bad.length) fail('R-01d Discover review fixes:\n  ' + bad.join('\n  '));
       else step('R-01d at 380x780: ' + notes.join('; ') + '; 48 px buttons, no sideways scroll');
       network.push(...dx.network);
