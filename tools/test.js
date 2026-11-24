@@ -7080,8 +7080,9 @@ run('sudoku banks P3-02: format, givens agree with the solution, exactly one sol
   const inApp=eval(js+';PUZ.sudoku');
   const bank=vb.loadBank('d-puz-sudoku.js').sudoku;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.sudoku differs when loaded with the whole app');
-  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):''; // A11: banks are in the data file
-  if(!built.includes('PUZ.sudoku = {'))p.push(DATA_FILE+' has no sudoku bank (rebuild)');
+  // TRIM-START (v196): the puzzle banks moved from the data file to the bt part (only the puzzle types read them; off the start-up path)
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],built=fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):'';
+  if(!built.includes('PUZ.sudoku = {'))p.push(BTF+' has no sudoku bank (rebuild)');
   // every stored puzzle: format, givens count, valid solution, givens agree, symmetric 9x9, one solution, grade, no duplicates
   const v=vb.verifySudoku(bank);
   p.push(...v.problems);
@@ -9211,8 +9212,8 @@ run('mathdoku banks P3-04: format, Latin solution, cage targets, connected cages
   const bank=vb.loadBank('d-puz-mathdoku.js').mathdoku;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.mathdoku differs when loaded with the whole app');
   if(!eval(js+';PUZ.sudoku&&PUZ.sudoku.D'))p.push('PUZ.sudoku lost when the mathdoku bank loads');
-  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
-  if(!built.includes('PUZ.mathdoku = {'))p.push(DATA_FILE+' has no mathdoku bank (rebuild)');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],built=fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):''; // TRIM-START: in the bt part
+  if(!built.includes('PUZ.mathdoku = {'))p.push(BTF+' has no mathdoku bank (rebuild)');
   // every stored puzzle through verify-banks.js: format, sizes, Latin solution, cages cover the grid once, connected, band
   // operations and cage sizes, targets match the solution, single-cell limits, one solution, grade and score, sorted, no duplicates
   const v=vb.verifyMathdoku(bank);
@@ -9742,8 +9743,8 @@ run('logic grid banks P3-06: format, every clue true of the solution, exactly on
   const bank=vb.loadBank('d-puz-logic.js').logic;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.logic differs when loaded with the whole app');
   if(!eval(js+';PUZ.sudoku&&PUZ.sudoku.D&&PUZ.mathdoku&&PUZ.mathdoku.D'))p.push('PUZ.sudoku or PUZ.mathdoku lost when the logic bank loads');
-  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
-  if(!built.includes('PUZ.logic = {'))p.push(DATA_FILE+' has no logic bank (rebuild)');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],built=fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):''; // TRIM-START: in the bt part
+  if(!built.includes('PUZ.logic = {'))p.push(BTF+' has no logic bank (rebuild)');
   // every stored puzzle through verify-banks.js: format, band sizes and categories, clue kinds and indexes, sentence = render(),
   // one solution and no redundant clue (its counter), grade and score reproduce, band grade and chain limits, sorted, no duplicates
   const v=vb.verifyLogic(bank);
@@ -12345,7 +12346,9 @@ run('riddles, memory, copy cat P3-14',()=>{
   const r=eval(js+';const ALLOW_='+JSON.stringify(ALLOW)+';('+body.toString()+')()');
   const p=r.out,s=r.stat;
   for(const k of ["id: 'riddle'","id: 'memory'","id: 'copycat'",'const RDL','const MM','const CC'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
-  if(!DATA.includes('var RIDDLES')||!DATA.includes('var MEMW'))p.push(DATA_FILE+' has no riddles or memory words (rebuild)');
+  // TRIM-START (v196): RIDDLES and MEMW are built into the bt part with the puzzle types that read them, not the data file
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],BTB=(fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):'');
+  if(!BTB.includes('var RIDDLES')||!BTB.includes('var MEMW')||DATA.includes('var RIDDLES')||DATA.includes('var MEMW'))p.push(BTF+' should hold the riddles and memory words, not '+DATA_FILE+' (rebuild)');
   const avg=s.n?s.ms/s.n:0;
   if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
   return{problems:p,note:s.rd+' riddle, '+s.mm+' memory and '+s.cc+' copy cat puzzles; riddle words per sentence '+JSON.stringify(s.words)+', pairs '+JSON.stringify(s.pairs)+
@@ -13474,7 +13477,8 @@ run('word search and unscramble P3-15',()=>{
   const r=eval(js+';('+body.toString()+')(HARVEST)');
   const p=r.out,s=r.stat;
   for(const k of ["id: 'wsearch'","id: 'scramble'",'const WS','const US'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
-  if(!DATAB.includes('var BTW'))p.push('BTW is not in '+DATA_FILE+' (rebuild)');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')]; // TRIM-START (v196): BTW is built into the bt part with the two puzzle types that read it, not the data file
+  if(!(fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):'').includes('var BTW')||DATAB.includes('var BTW'))p.push('BTW is not in '+BTF+' (rebuild)');
   const ms=s.n?s.ms/s.n:0;
   if(ms>25)p.push('make() takes '+ms.toFixed(1)+' ms on average (limit 25 ms)');
   return{problems:p,note:s.per.wsearch+' word searches, '+s.per.scramble+' unscrambles; grid squares '+JSON.stringify(s.cells)+', words '+JSON.stringify(s.words)+

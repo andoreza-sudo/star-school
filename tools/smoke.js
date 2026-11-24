@@ -771,18 +771,18 @@ async function main() {
       const g = await d.page.evaluate(() => {
         const src = [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src'));
         const vq = genQ('vocab', 1, 4242);
-        const pz = PUZ.sudoku.A.easy[0].split('|');
+        const pz = typeof PUZ == 'undefined' ? null : PUZ.sudoku.A.easy[0].split('|'); // TRIM-START (v196): the puzzle banks come with bt
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
         return { src, files: appFiles(), lazy: LAZY_PARTS, btIn: partReady('bt') || typeof MZ != 'undefined', dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
-          pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
+          pz: pz ? pz.length + ':' + pz[0].length + ':' + pz[1].length : 'later', ix, bt: BT.list().map(t => t.id).join(),
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
       if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
-        || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
+        || g.spell !== 'function' || !g.vq || g.pz !== 'later' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
       // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css), in before bt's (the same change as test.js P6-02)
@@ -795,7 +795,7 @@ async function main() {
       const words = await d.page.evaluate(() => document.querySelectorAll('.bctx-p .w').length);
       if (words < 20) fail('A11: reading passage did not open (' + words + ' words)');
       else step('A11: ' + files.join(', ') + ' loaded over file:// (' + g.vocab + ' vocabulary items, ' + g.comp + '+' + g.info + ' passages, '
-        + 'sudoku bank), a vocabulary question built, a passage opened (' + words + ' words)');
+        + 'no puzzle banks until bt), a vocabulary question built, a passage opened (' + words + ' words)');
 
       // A11c: the question generators are in gen/gen2 part files now: the first lesson of each subject opens a real question
       for (const area of ['math', 'read', 'es', 'disc']) {
@@ -826,6 +826,10 @@ async function main() {
         } catch (e) { fail('A11b: ' + id + ' puzzle did not open from the hub: ' + e.message.split('\n')[0]); }
         await d.page.evaluate(() => { BT.stop(); home(); });
       }
+      // TRIM-START (v196): the puzzle banks (PUZ, RIDDLES, MEMW, BTW) are built into bt now, so they are in once the hub loaded it
+      const pzb = await d.page.evaluate(() => { if (typeof PUZ == 'undefined') return 'none'; const z = PUZ.sudoku.A.easy[0].split('|');
+        return z.length + ':' + z[0].length + ':' + z[1].length + ':' + [typeof RIDDLES, typeof MEMW, typeof BTW].join(); });
+      if (pzb !== '3:16:16:object,object,object') fail('A11b: the puzzle banks did not come with ' + btF + ': ' + pzb);
       // A11b: the Game Room (games.<VER>.js) opens and lists the games; P6-02: it loads games and games2 (code and <style>) on the way
       await d.page.evaluate(() => gameRoom());
       await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
