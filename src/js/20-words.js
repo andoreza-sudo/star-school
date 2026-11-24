@@ -41,7 +41,8 @@ const SYLP=[['cat','🐱',1],['dog','🐶',1],['sun','☀️',1],['bus','🚌',1
   ['guitar','🎸',2],['trumpet','🎺',2],['balloon','🎈',2],['dragon','🐉',2],['castle','🏰',2],['pumpkin','🎃',2],
   ['banana','🍌',3],['elephant','🐘',3],['butterfly','🦋',3],['octopus','🐙',3],['strawberry','🍓',3],['ladybug','🐞',3],['crocodile','🐊',3],['volcano','🌋',3],
   ['sunflower','🌻',3],['bicycle','🚲',3],['dinosaur','🦖',3],['triangle','🔺',3]];
-// Syllable words for syl 2 (60, printed, no picture), by number of syllables (index 0 = one syllable).
+// Syllable words for syl 2 (59, printed, no picture), by number of syllables (index 0 = one syllable).
+// AUDIT-READ: "family" is gone (fam-ly or fam-i-ly: two claps or three, so no key was fair).
 const SYLW=[
   'cat jump stop black train house light plant spoon bread smile thumb'.split(' '),
   'tiger apple window happy monkey pencil garden rabbit table circle summer winter finger basket pillow button yellow market'.split(' '),

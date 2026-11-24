@@ -2020,9 +2020,10 @@ run('ABC Beach (P2-15): letters, middle vowels, digraphs, syllables; 3,000 sampl
   // data sizes and word lists
   if(SYLP.length!==40)bad.push('SYLP has '+SYLP.length+', want 40');
   const sw=SYLW.reduce((a,l)=>a+l.length,0);
-  if(sw!==60)bad.push('SYLW has '+sw+', want 60');
+  // AUDIT-READ: 59, not 60: "family" was removed (it has two claps or three, depending on the speaker; the R-01 reading review asked for it)
+  if(sw!==59)bad.push('SYLW has '+sw+', want 59');
   for(const w of new Set([...SYLP.map(x=>x[0]),...SYLW.flat(),...DIGR.map(x=>x[0]),...CVCM.map(x=>x[0])]))if(BAD.test(w))bad.push('BAD word '+w);
-  if(new Set(SYLW.flat()).size!==60)bad.push('SYLW has a repeated word');
+  if(new Set(SYLW.flat()).size!==59)bad.push('SYLW has a repeated word');
   if(new Set(SYLP.map(x=>x[0])).size!==40)bad.push('SYLP has a repeated word');
   for(const L of ABCO)if(!LETW[L])bad.push('no word for letter '+L);
   if(ABCO.length!==26||new Set(ABCO).size!==26)bad.push('ABCO is not the 26 letters');
@@ -5385,7 +5386,10 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
       for(const it of L){
         const all=[it.a,...it.d].map(x=>x.toLowerCase());
         if(new Set(all).size!==all.length)bad(w2+it.q+': a choice repeats');
-        if(it.d.length!==3)bad(w2+it.q+': needs 4 choices');
+        // AUDIT-READ: "Which kind of language ..." has 3 choices where a second kind is also right and was taken out: "idiom" for the
+        // stock similes (as busy as a bee is a fixed saying too) and "metaphor" for an idiom of the form "X was a Y" (a piece of cake)
+        const k3=lv==8&&/^Which kind of language is /.test(it.q)&&(it.a=='simile'||(it.a=='idiom'&&/ (is|was|are|were) a /.test(it.q)));
+        if(it.d.length!==(k3?2:3))bad(w2+it.q+': needs '+(k3?3:4)+' choices');
         if((it.form||'')!==(Math.max(it.a.length,...it.d.map(x=>x.length))>8?'wide':''))bad(w2+it.q+': form '+it.form+' (wide only when a choice is over 8 letters)');
         if(!it.hint||it.hint.length<20)bad(w2+it.q+': hint missing');
         if(it.hint&&it.hint.toLowerCase().split(/[^a-z']+/).includes(it.a.toLowerCase()))bad(w2+it.q+': the hint gives the answer');
@@ -5421,7 +5425,9 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
       const L=items.filter(i=>i.lv==8),kinds=L.filter(i=>/^Which kind of language is /.test(i.q)),idi=L.filter(i=>/^What does ".+" mean\?$/.test(i.q));
       if(kinds.length+idi.length!==L.length)bad('level 8: item shape');
       for(const it of kinds){
-        if(JSON.stringify([it.a,...it.d].sort())!==JSON.stringify([...KINDS].sort()))bad('level 8: '+it.q+': wrong set of kinds');
+        // AUDIT-READ: the four kinds, less the one that is also right for this item (idiom for a stock simile, metaphor for "X was a Y")
+        const also=it.a=='simile'?'idiom':it.a=='idiom'&&/ (is|was|are|were) a /.test(it.q)?'metaphor':'';
+        if(JSON.stringify([it.a,...it.d].sort())!==JSON.stringify(KINDS.filter(k=>k!=also).sort()))bad('level 8: '+it.q+': wrong set of kinds');
         const p=it.q.match(/"(.+)"/)[1].toLowerCase(),clue=/\bas .+ as\b|\blike\b/.test(p);
         if((it.a==='simile')!==clue)bad('level 8: '+it.q+': a simile has like or as, and nothing else here does');
       }
@@ -5467,7 +5473,7 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
         if(q.kind!=='choice')bad(w2+q.label+': kind '+q.kind);
         const vs=q.choices.map(c=>c.v);
         if(new Set(vs).size!==vs.length||vs.filter(v=>v===q.ans).length!==1)bad(w2+q.label+': not exactly one right choice');
-        if(vs.length!==4)bad(w2+q.label+': '+vs.length+' choices');
+        if(vs.length!==1+BANK.vocab[q.bk.bi].d.length)bad(w2+q.label+': '+vs.length+' choices'); // AUDIT-READ: every choice of the item (4, or 3 for the kind items checked above)
         if(!q.say||!q.say.trim()||q.say.includes('*'))bad(w2+q.label+': say text');
         if(!q.hint||q.hint.k!=='text'||q.hint.s.length<20)bad(w2+q.label+': hint');
         if(!q.label||q.label.length>=60||q.label.includes('*'))bad(w2+'label '+q.label);
@@ -16748,12 +16754,16 @@ run('reading review fixes R-01r',()=>{
     for(const v of 'aeiou')if(!((SEEN[v]||0)/tot>.15))bad('sound3: '+v+' in '+Math.round(100*(SEEN[v]||0)/tot)+'% of questions');
     note.vowels=[...'aeiou'].map(v=>v+' '+Math.round(100*(SEEN[v]||0)/tot)+'%').join(', ');
     // 10. the reading levels this chunk did not touch ask exactly the same questions as before (v135, seeds 1-150, emoji fallback)
-    const OLD=('abc1:9908fd49446a abc2:4c19dd144a3b abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:8965b72e2fd0 sound2:07324c8dc100 comp1:1fb0940c60e3 '+
+    // AUDIT-READ (the v195 reading audit) changed five of these on purpose, and their hashes were set again: syl2 (the word "family"
+    // removed), sound2 (s and k are no longer offered beside x), sight2 (our and are are no longer offered together), vocab3 (the wrong
+    // choice that was the right two words turned round is now two parts of another compound) and vocab8 (a second kind that also
+    // fits is not offered). The other 33 are the v135 hashes.
+    const OLD=('abc1:9908fd49446a abc2:4c19dd144a3b abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:b97686b48f5c sound2:b69941486ec1 comp1:1fb0940c60e3 '+
       'comp2:acfa177fed10 comp3:b70aa1dffd71 comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c4031e7def5a info3:25ad998d9e5b '+
-      'info4:8edd1307198b sight2:37ed72d3dc40 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
+      'info4:8edd1307198b sight2:5833688bee63 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
       'sent5:04c90646fac0 spell1:35ddedc8fd46 spell4:201a12f0db2d spell5:e6a4a11ef010 gram1:51ea83d72579 gram3:2ee838affdca gram5:98e3569be110 '+
-      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
-      'vocab8:e9c52e884e42 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
+      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:0ab31b6d0199 vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
+      'vocab8:99776c775830 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{for(const [k,h] of OLD){const [,id,lv]=k.match(/^([a-z]+)(\d+)$/),a=[];
       for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(id,+lv,s)));
@@ -16764,6 +16774,70 @@ run('reading review fixes R-01r',()=>{
   };
   eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.scan+'; middle vowels '+note.vowels+'; '+note.same+' untouched levels unchanged by seed'};
+});
+
+// ---- AUDIT-READ: the reading audit of v195 (no word changes): no question with two right answers among the ones it found ----
+// Last Sounds never offers s (or k) beside x: fox, box and six end in the sound of s too. Read & Match never shows a look-alike picture
+// (PICSAME) or the can under a sentence with the word can. Compound Words never offers the right two words turned round. Figurative
+// Language never offers a second kind that also fits. Count the Claps has no "family" (two or three claps). The lessons follow the
+// same rules, and no picture sort has two bins that sound the same (ee / ea).
+run('reading audit fixes AUDIT-READ',()=>{
+  const p=[],bad=m=>p.push(m),note={};
+  const body=()=>{
+    const N=4000;let nx=0,ns=0;
+    if(typeof picSame!='function'){bad('picSame (20-words.js) is missing');return}
+    for(let s=1;s<=N;s++){
+      let q=genQ('sound',2,s);
+      if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);
+        if(vs.length!=3||new Set(vs).size!=3)bad('sound 2 seed '+s+': '+vs.length+' choices');
+        if(q.ans=='x'){nx++;if(vs.includes('s')||vs.includes('k'))bad('sound 2 seed '+s+': '+vs.join(' ')+' offered for a word that ends in x')}
+        if(q.ans=='s'&&vs.includes('x'))bad('sound 2 seed '+s+': x offered for a word that ends in s')}
+      else if(q.kind=='sort'){const b=q.bins.map(x=>x.v).sort().join('');if(b=='sx'||b=='kx')bad('sound 2 seed '+s+': a sort with the bins '+b)}
+      for(const lv of [1,2]){q=genQ('sent',lv,s);const vs=q.choices.map(c=>c.v);ns++;
+        if(vs.length!=3||new Set(vs).size!=3||!vs.includes(q.ans))bad('sent '+lv+' seed '+s+': choices '+vs.join(' '));
+        for(const v of vs)if(picSame(q.ans,v))bad('sent '+lv+' seed '+s+': the picture of '+v+' beside the answer '+q.ans);
+        if(q.ans!='can'&&vs.includes('can')&&/\bcan\b/i.test(q.after))bad('sent '+lv+' seed '+s+': the can picture under "'+q.after+'"');
+        if(q.say.indexOf(vs.slice(0,-1).join(', ')+' or '+vs[vs.length-1]+'.')<0)bad('sent '+lv+' seed '+s+': the spoken names do not match the pictures')}
+      q=genQ('syl',2,s);if(/\bfamily\b/.test(q.say+' '+(q.items||[]).map(c=>c.v).join(' ')))bad('syl 2 seed '+s+': family');
+      q=genQ('sight',2,s);if(['our','are'].includes(q.ans)&&q.choices.some(c=>c.v!=q.ans&&['our','are'].includes(c.v)))bad('sight 2 seed '+s+': our and are together');
+    }
+    if(!nx)bad('no x word was drawn in sound 2 (the check proves nothing)');
+    if(!picSame('cup','mug')||!picSame('ant','bug')||picSame('cup','cup')||picSame('cat','dog'))bad('picSame does not know its pairs');
+    if(SYLW.flat().includes('family'))bad('SYLW still has family');
+    // bank items
+    const V=BANK.vocab,comp=V.filter(it=>it.lv==3&&/^Which two words make /.test(it.q));
+    if(comp.length<40)bad('compound items not found');
+    for(const it of comp){const ch=[it.a,...it.d];
+      if(ch.length!=4||new Set(ch).size!=4)bad('compound "'+it.q+'": choices '+ch.join(' | '));
+      for(const d of it.d)if(d.split(' + ').sort().join()==it.a.split(' + ').sort().join())bad('compound "'+it.q+'": the wrong choice '+d+' is the right two words')}
+    const fig=V.filter(it=>it.lv==8&&/^Which kind of language is /.test(it.q));
+    if(fig.length<30)bad('figurative kind items not found');
+    for(const it of fig){
+      if(it.d.length<2||it.d.includes(it.a))bad('figurative "'+it.q+'": choices '+it.d.join(' | '));
+      if(it.a=='simile'&&it.d.includes('idiom'))bad('figurative "'+it.q+'": idiom offered for a stock simile');
+      if(it.a=='idiom'&&/ (is|was|are|were) a /.test(it.q)&&it.d.includes('metaphor'))bad('figurative "'+it.q+'": metaphor offered for "X was a Y"')}
+    if(!fig.some(it=>it.a=='idiom'&&/piece of cake/.test(it.q)))bad('the piece of cake item was not found');
+    // lessons (tools/test.js evaluates every source, so the lesson parts are loaded)
+    let nl=0;
+    if(typeof LESSONS!='undefined'&&LESSONS.sound2&&LESSONS.build4){
+      for(let s=1;s<=1500;s++){
+        for(const st of [0,1,2,3]){const q=LESSONS.sound2.q(st,mulberry32(s*104729+7)),vs=(q.choices||[]).map(c=>String(c.v)).concat(q.tiles||[]),m=/ends with (\w)\?/.exec(q.say);nl++;
+          if(m){if((m[1]=='s'&&vs.some(v=>v.endsWith('x')))||(m[1]=='x'&&vs.some(v=>v.endsWith('s'))))bad('lesson sound2 stage '+st+': "'+q.say+'"');
+            if(new Set(vs).size!=(st==3?4:3))bad('lesson sound2 stage '+st+': '+vs.length+' pictures')}
+          else if(q.sl&&q.sl.word&&q.sl.word.endsWith('x')&&vs.includes('s'))bad('lesson sound2 stage '+st+': s offered for '+q.sl.word)}
+        for(const id of ['sound2','pic4','build4']){const q=LESSONS[id].exp(mulberry32(s*31)).q,b=(q.bins||[]).map(x=>x.v).sort().join('/');
+          if(b=='ea/ee'||b=='s/x')bad('lesson '+id+' Explore: a picture sort with the bins '+b+' (they sound the same)')}
+        for(const id of ['pic1','sent1','pic2','sent2'])for(const st of [2,3]){const q=LESSONS[id].q(st,mulberry32(s*104729+7));if(q.kind!='choice')continue;
+          const vs=q.choices.map(c=>String(c.v));nl++;
+          if(new Set(vs).size!=(st==3?4:3))bad('lesson '+id+' stage '+st+': '+vs.join(' '));
+          for(const v of vs)if(picSame(q.ans,v))bad('lesson '+id+' stage '+st+': the picture of '+v+' beside the answer '+q.ans)}
+        for(const st of [1,2,3]){const q=LESSONS.syl2.q(st,mulberry32(s*104729+7));if(/\bfamily\b/.test(q.say))bad('lesson syl2: family')}
+      }
+    }else bad('the lessons sound2 and build4 are not loaded');
+    note.n=N+' seeds ('+nx+' words ending in x, '+ns+' Read & Match), '+comp.length+' compound and '+fig.length+' figurative items, '+nl+' lesson questions';
+  };
+  eval(js+';('+body.toString()+')()');
+  return{problems:uniq(p).slice(0,60),note:note.n||''};
 });
 
 // ---- G-01: Block Builder made easy to use by touch (src/js/60-blocks.js, src/css/60-game-blocks.css; R-02 section 3) ----
@@ -19786,6 +19860,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       const F=${JSON.stringify(K2_FIX)};
       for(const id in F.labels){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);for(const [s,l] of F.labels[id]){const g=genQ(sk,+lv,s).label;if(g!==l)bad(id+' seed '+s+': '+g+', v169 '+l)}}
       // K2.off: every switched stop asks exactly the v169 questions (the new format draw is the last one, so the old draws are unchanged)
+      // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
+      // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
