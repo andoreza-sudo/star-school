@@ -292,7 +292,9 @@ function vocBuild() {
     const e = em ? em.split(',') : undefined;
     const d1 = other(i, 7, c => c[2] !== b && !words.has(a + c[2]));
     const d2 = other(i, 11, c => c[1] !== a && !words.has(c[1] + b));
-    const d3 = !words.has(b + a) && b + a !== w ? b + ' + ' + a : other(i, 13, c => c[1] !== a && c[2] !== b && !words.has(c[1] + d1[2])).slice(1, 3).join(' + ');
+    // AUDIT-READ: the third wrong choice was the right two words turned round ("bow + rain" for rainbow): they ARE the two words that
+    // make it, so a child who picked them was right. It is the two parts of another compound now (the branch a few items already took).
+    const d3 = other(i, 13, c => c[1] !== a && c[2] !== b && !words.has(c[1] + d1[2])).slice(1, 3).join(' + ');
     out.push(VOC_IT(3, 'compound', `Which two words make ${w}?`, a + ' + ' + b, [a + ' + ' + d1[2], d2[1] + ' + ' + b, d3], 'wide', e));
   });
   L.forEach(([w, a, b], i) => {
@@ -707,7 +709,10 @@ function vocBuildB() {
   // level 8 figurative language
   VOC_ROWS(VOC_L8A).forEach(([p, a, d]) => it(8, 'idioms', `What does "${p}" mean?`, a, d.split(',')));
   const KINDS = ['simile', 'metaphor', 'personification', 'idiom'];
-  VOC_ROWS(VOC_L8B).forEach(([p, k]) => it(8, 'figurative language', `Which kind of language is "${p}"?`, k, KINDS.filter(x => x != k), VOC_HINT_B[8.1]));
+  // AUDIT-READ: a second kind that is also right is never offered. A stock simile (as busy as a bee, slept like a log) is a fixed saying
+  // too, so "idiom" is left out for the similes; "The test was a piece of cake." says one thing IS another, so "metaphor" is left out.
+  const ALSO = (p, k) => (k == 'simile' ? ['idiom'] : k == 'idiom' && / (is|was|are|were) a /.test(p) ? ['metaphor'] : []);
+  VOC_ROWS(VOC_L8B).forEach(([p, k]) => it(8, 'figurative language', `Which kind of language is "${p}"?`, k, KINDS.filter(x => x != k && !ALSO(p, k).includes(x)), VOC_HINT_B[8.1]));
   // level 9: what a root means (the wrong choices are other roots' meanings), then what a word built from roots means
   const R = VOC_ROWS(VOC_L9R), meanings = [...new Set(R.map(r => r[1]))];
   R.forEach(([r, m, ex], i) => {
