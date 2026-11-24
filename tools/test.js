@@ -13596,7 +13596,9 @@ run('Spanish Las Frases P2-34',()=>{
         if(cl[i]==='V'&&(lo==='es'||lo==='son')){const subj=ws[i-1].toLowerCase(),plu=/^(zapatos|botas)$/.test(subj);if(plu!==(lo==='son'))bad(w+'es/son');}});}
     // ---- questions: 3000 seeded per skill and level through kindProblems
     let n=0;const hit={};
-    const leaks=q=>{const ht=new Set(toks(q.hint.s)),short=q.sk==='es_phrase'&&q.lv===1,
+    // W60 (owner, 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md): the approved es_art 2 plural hint gives "lápiz, lápices" as the example of
+    // z changing to c, so on the one "los lápices" question the hint holds the answer by the owner's choice; that word only is let through
+    const leaks=q=>{const ht=new Set(toks(q.hint.s).filter(t=>!(q.sk==='es_art'&&q.lv===2&&t==='lápices'))),short=q.sk==='es_phrase'&&q.lv===1,
       at=toks(q.kind==='order'?q.ans.join(' '):q.sk==='es_gusta'&&q.lv===1?String(q.ans).replace(/[+-]$/,''):String(q.ans)).filter(t=>t.length>=4||!short);
       return at.filter(t=>ht.has(t))};
     for(const[id,max]of Object.entries({es_phrase:2,es_art:2,es_ser:3,es_gusta:2,es_sent:2}))for(let lv=1;lv<=max;lv++){
@@ -20092,7 +20094,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // is an adaptation). sci_life3: the natural selection row was removed (no evolution content). sci_earth1: the wrong answer "at noon"
       // left "When can we see stars in the sky?" (the sun is a star). geo_us1: a Southwest state no longer offers West as a wrong region.
       // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
-      // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits)
+      // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits; words-spanish set es_art2 again:
+      // W60, owner 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md, adds "and z changes to c: lápiz, lápices" to its plural hint)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
