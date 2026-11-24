@@ -13318,7 +13318,7 @@ run('word search and unscramble P3-15',()=>{
   // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
   const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
   const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
-  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js'&&n!=='d-teach-start.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -21919,6 +21919,13 @@ run('recorded teacher lines TEACH-4',()=>{
   //    150 KB), not index.html or the data file; sw.js precaches every teacher file and answers a Range request from the cache
   const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),tp=rd('teach12.'+BUILD_VER+'.js');
   if(!tp.includes('const EN_TEACH=')||data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in teach12.'+BUILD_VER+'.js and not in index.html or '+DATA_FILE);
+  // fix2 v194 (Fable): the lines said outside a lesson (Practice prompts, hints) keep their recording before teach12 loads and with lessons off:
+  //    EN_TEACH0 (src/data/d-teach-start.js, in the data file) is exactly tools/en-audio.js teachStart() of the full manifest, small
+  const M0=vm.runInContext('typeof EN_TEACH0=="undefined"?null:EN_TEACH0',ctx),want0=EA.teachStart(M.lines);
+  if(!M0||JSON.stringify(M0.lines)!==JSON.stringify(want0)||M0.dir!==M.dir||M0.ext!==M.ext)p.push('EN_TEACH0 is not the start-up list of the teacher manifest ('+(M0?Object.keys(M0.lines).length:0)+' lines, want '+Object.keys(want0).length+'): run node tools/en-audio.js --teach-start');
+  if(!data.includes('const EN_TEACH0=')||tp.includes('const EN_TEACH0=')||html.includes('const EN_TEACH0='))p.push('EN_TEACH0 must be in '+DATA_FILE+' only');
+  for(const k of ['What comes next?','How many in all?','Say it slowly.'])if(!M0||!M0.lines[k])p.push('not recorded outside a lesson: '+k);
+  const b0=fs.statSync(path.join(SRC,'data','d-teach-start.js')).size;if(b0>6000)p.push('src/data/d-teach-start.js is '+b0+' bytes (want at most 6000: it loads at start)');
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');
@@ -21935,6 +21942,13 @@ run('recorded teacher lines TEACH-4',()=>{
     S2("S.cheerV='tts';hush()");log.length=0;S2("say('Can you fix it?')");if(log.join()!=='speak Can you fix it?')p.push('Tablet voice: '+log.join(' | '));S2("S.cheerV='mix'");
     S2('hush()');log.length=0;S2("say('Can you fix it?')");const a=S2('ESA.au');a.onerror();if(log.pop()!=='speak Can you fix it?')p.push('a failed file did not fall back to the voice: '+log.join(' | '));
   }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  // fix2 v194: no lesson part loaded (EN_TEACH undefined, as at start or with lessons off): a Practice prompt plays EN_TEACH0's file; a lesson line is the tablet's voice
+  try{const s0=E.loadApp(E.appSource().replace('const EN_TEACH=','const EN_TEACH_NOT_LOADED='),{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text);setTimeout(()=>u.onend&&u.onend(),0)},cancel(){},speaking:false,pending:false}});
+    const S0=t=>vm.runInContext(t,s0);S0("S.voice=true;CLIPS=[];ENA.t=0");
+    if(S0('typeof EN_TEACH')!=='undefined')p.push('the stand-in still has EN_TEACH');
+    log.length=0;S0("say('What comes next?')");if(log.join('|')!=='play '+M.dir+M.lines['What comes next?']+M.ext)p.push('before teach12: a Practice prompt did not play its recording: '+log.join(' | '));
+    S0('hush()');log.length=0;S0("say('Can you fix it?')");if(log.join('|')!=='speak Can you fix it?')p.push('before teach12: '+log.join(' | '))}
+  catch(e){p.push('say() before teach12 could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
   if(!/if \(t && LS\.voice\(\)\) say\(t\);/.test(rd('src/js/52-lesson.js')))p.push('the lesson does not say its lines through say() (LS.talk), where recorded sentences are found');
   return{problems:p,note:lines.size+' lines in the voice '+M.voice+', '+files.length+' files, '+Math.round(total/1000)+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round(all/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'};
 });

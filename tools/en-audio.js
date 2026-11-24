@@ -156,6 +156,32 @@ function teachManifest(lines) {
     + 'const EN_TEACH={dir:' + JSON.stringify(TEACH_DIR) + ',ext:' + JSON.stringify(EXT) + ',voice:' + JSON.stringify(TEACH_VOICE) + ',lines:{\n'
     + keys.map(k => JSON.stringify(k) + ':' + JSON.stringify(teachFileOf(k, lines.get(k).rec))).join(',\n') + '}};\n';
 }
+/* fix2 v194 (Fable's confirming review): EN_TEACH is built into teach12, which loads with a lesson, so a teacher line said OUTSIDE a lesson
+   (a Practice prompt, "What comes next?", "How many in all?"; a hint, "Say it slowly.") lost its recording until a map loaded the lesson
+   parts, and for good with lessons off (TEACH.off). EN_TEACH0, src/data/d-teach-start.js (in the data file loaded at start, about 3 KB),
+   lists the manifest's lines that appear word for word in the code or data outside the lessons (every src/js and src/data file but
+   52*.js and the teacher manifests), with the same files. tchM() in 12-speech.js uses EN_TEACH once teach12 is in, EN_TEACH0 until then.
+   Written with the full manifest (--teach), or alone from it: node tools/en-audio.js --teach-start (no recording). tools/test.js
+   "recorded teacher lines TEACH-4" checks that it is exactly teachStart(EN_TEACH.lines). */
+const TEACH_START = path.join(SRC, 'data', 'd-teach-start.js');
+function teachStart(M) {
+  const txt = ['js', 'data'].flatMap(d => fs.readdirSync(path.join(SRC, d)).filter(f => f.endsWith('.js') && !/^(52|d-teach-)/.test(f)).sort()
+    .map(f => fs.readFileSync(path.join(SRC, d, f), 'utf8'))).join('\n');
+  return Object.fromEntries(Object.keys(M).filter(k => txt.includes(k) || txt.includes(k.replace(/'/g, "\\'"))).sort().map(k => [k, M[k]]));
+}
+function teachStartText(M) {
+  const L = teachStart(M), keys = Object.keys(L);
+  return '/* ---------- fix2 v194: the recorded teacher lines said outside a lesson (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach-start) ----------\n'
+    + '   The lines of src/data/d-teach-audio.js (EN_TEACH, in the teach12 part) that the code or data outside the lessons says word for word\n'
+    + '   (Practice prompts, hints), so they play the pet\'s recording before a lesson part loads and with lessons off. ' + keys.length + ' lines. */\n'
+    + 'const EN_TEACH0={dir:' + JSON.stringify(TEACH_DIR) + ',ext:' + JSON.stringify(EXT) + ',voice:' + JSON.stringify(TEACH_VOICE) + ',lines:{\n'
+    + keys.map(k => JSON.stringify(k) + ':' + JSON.stringify(L[k])).join(',\n') + '}};\n';
+}
+const writeTeachStart = () => {
+  const M = Function(fs.readFileSync(TEACH_MANIFEST, 'utf8') + ';return EN_TEACH')().lines;
+  fs.writeFileSync(TEACH_START, teachStartText(M));
+  console.log(`teacher lines at start (EN_TEACH0): ${Object.keys(teachStart(M)).length} lines, ${fs.statSync(TEACH_START).size} bytes`);
+};
 // the size of a new recording, roughly (fitted on the TEACH-4 files: about 350 bytes a file and 137 a character)
 const estBytes = os => os.reduce((s, o) => s + 354 + 137 * o.text.length, 0);
 async function teachMain(dry) {
@@ -171,6 +197,7 @@ async function teachMain(dry) {
   if (dry) return failed;
   const have = new Map([...lines].filter(([, o]) => fs.existsSync(path.join(dir, fileOf(o) + EXT))));
   fs.writeFileSync(TEACH_MANIFEST, teachManifest(have));
+  writeTeachStart(); // fix2 v194: the lines said outside a lesson, in the data file
   const keep = new Set([...have.values()].map(o => fileOf(o) + EXT)), [gone, bytes] = VA.prune(TEACH_DIR, EXT, keep);
   console.log(`teacher manifest: ${have.size} lines, ${fs.statSync(TEACH_MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
   return failed;
@@ -219,6 +246,7 @@ function check(j, file) {
 
 async function main() {
   const dry = process.argv.includes('--dry');
+  if (process.argv.includes('--teach-start')) { writeTeachStart(); return; } // fix2 v194: only the start-up list, from the manifest
   if (process.argv.includes('--teach')) { if ((await teachMain(dry)).length) process.exitCode = 1; return; } // TEACH-4: the teacher lines only
   const lines = collect(), all = [...lines.values()];
   console.log(`lines: ${all.length} x ${VOICES.length} voices = ${all.length * VOICES.length} files, ${all.reduce((s, o) => s + o.text.length, 0) * VOICES.length} characters`);
@@ -235,5 +263,5 @@ async function main() {
   if ((await teachMain(false)).length) process.exitCode = 1; // TEACH-4: then the teacher lines
 }
 
-module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectTeach, teachFileOf, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_FORMAT_BIG, TEACH_GROUPS };
+module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectTeach, teachFileOf, teachStart, teachStartText, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_FORMAT_BIG, TEACH_GROUPS };
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });

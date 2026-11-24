@@ -180,6 +180,8 @@ audio/teach/*.ogg TEACH-4: the pet's recorded teacher lines, one voice (node too
                   EN_TEACH); REC-ALL: every fixed sentence of every lesson, Pre-K to 6th grade (speed 0.95 for the little pet's, 1.0 for the
                   older pet's); the same way and cache, inside the same audio budget. The manifest (62 KB) is built into teach12.<VER>.js, which
                   every lesson loads after teach (tools/build.py: a part may take a src/data file), not data.<VER>.js: needed only in a lesson
+                  (fix2 v194: the lines said outside a lesson, Practice prompts and hints, are also in src/data/d-teach-start.js, EN_TEACH0,
+                  in data.<VER>.js, about 2.5 KB: node tools/en-audio.js --teach-start writes it from the manifest; tchM() in 12-speech.js)
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:
