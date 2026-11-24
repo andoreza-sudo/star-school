@@ -67,7 +67,8 @@ function genBig(lv){let a,b,s;
   else{const a1=R(2,9),b1=R(10-a1,9),a2=R(1,7),b2=R(1,8-a2);a=a2*10+a1;b=b2*10+b1;s=`Ones first: ${a1} + ${b1} = ${a1+b1}. Write ${(a1+b1)%10}, carry the 1 to the tens!`}
   return mathQ(a,'+',b,a+b,'c',true,{hint:{k:'text',s}})}
 function genEO(lv){const n=lv==1?R(0,20):R(21,99);
-  return{kind:'choice',html:`<div>${n}</div><div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`,ans:n%2?'odd':'even',
+  return{kind:'choice',html:`<div>${n}</div><div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`+(lv==1?' Even is on the left.':''),ans:n%2?'odd':'even', // WORDS-MATH W69: K cannot read the two buttons
+   
     choices:[{l:'Even',v:'even'},{l:'Odd',v:'odd'}],hint:{k:'pairs',n},label:`${n} even/odd`}}
 function genCnt(lv){let step,start;
   if(lv==1){step=pick([1,10]);start=step==1?R(0,25):10*R(0,5)}
