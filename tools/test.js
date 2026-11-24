@@ -14295,6 +14295,44 @@ run('setup, grown-ups, pet care, icon P4-12',()=>{
       const [r,g,b]=im.at(Math.round(s/2),1);if(!(b>r+25&&r<70&&g<70))p.push(f+': the top of the sky is not the dusk navy: '+[r,g,b]);
     }else if(corner[3]!==0)p.push(f+': corner is not transparent ('+corner+'): "any" is the rounded tile');
   }
+  // the safe zone, as strong as before v193 (then: no drawn pixel outside the 40% circle; the sky now reaches the edges, so the pixels
+  // cannot tell art from sky): every part of the engine in docs/brand/whistlestop-icon.svg (g#mark-ws minus class "bg", the 100-unit
+  // maskable art), with half its stroke, measured from the SVG geometry (rect corners, circle and ellipse radii, path points with Q
+  // control points and circular arcs sampled), stays within radius 40 of the centre; the crimson pixel check above backs it up
+  let safeNote='';
+  {const svg=fs.readFileSync(path.join(ROOT,'docs','brand','whistlestop-icon.svg'),'utf8'),mk=/<g id="mark-ws">\n([\s\S]*?)\n<\/g>\n<clipPath/.exec(svg);
+    if(!mk)p.push('whistlestop-icon.svg: no g#mark-ws');else{
+      const num=(t,a)=>+((new RegExp('\\s'+a+'="([^"]*)"').exec(t)||[])[1]||0);
+      let M=[1,0,0,1,0,0],far=0,farWhat='',n=0;const stack=[];
+      const at=(x,y,pad,what)=>{const X=M[0]*x+M[2]*y+M[4],Y=M[1]*x+M[3]*y+M[5],d=Math.hypot(X-50,Y-50)+pad*Math.abs(M[0]);if(d>far){far=d;farWhat=what}};
+      for(const t of mk[1].split('\n').filter(l=>!/class="bg"/.test(l)).join('\n').match(/<\/?[a-z]+[^>]*>/g)){
+        if(t.startsWith('</g')){M=stack.pop();continue}
+        const tag=/^<(\w+)/.exec(t)[1],sw=/stroke="(?!none)/.test(t)?num(t,'stroke-width')/2:0;
+        if(tag=='g'){stack.push(M);const tf=/transform="matrix\(([^)]+)\)"/.exec(t);if(tf){const m=tf[1].trim().split(/[\s,]+/).map(Number);
+            M=[M[0]*m[0]+M[2]*m[1],M[1]*m[0]+M[3]*m[1],M[0]*m[2]+M[2]*m[3],M[1]*m[2]+M[3]*m[3],M[0]*m[4]+M[2]*m[5]+M[4],M[1]*m[4]+M[3]*m[5]+M[5]]}
+          else if(/transform=/.test(t))p.push('whistlestop-icon.svg: cannot measure the transform '+t);continue}
+        n++;
+        if(tag=='rect'){const x=num(t,'x'),y=num(t,'y'),w=num(t,'width'),h=num(t,'height');for(const [a,b] of [[x,y],[x+w,y],[x,y+h],[x+w,y+h]])at(a,b,sw,t)}
+        else if(tag=='circle'||tag=='ellipse'){const r=tag=='circle'?num(t,'r'):Math.max(num(t,'rx'),num(t,'ry'));at(num(t,'cx'),num(t,'cy'),r+sw,t)}
+        else if(tag=='path'){const d=(/\sd="([^"]+)"/.exec(t)||[])[1]||'',tk=d.match(/[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?/g)||[];
+          let i=0,c='',x=0,y=0,x0=0,y0=0;const nx=()=>+tk[i++];
+          while(i<tk.length){if(/[A-Za-z]/.test(tk[i]))c=tk[i++];
+            if(c=='M'||c=='L'){x=nx();y=nx();if(c=='M'){x0=x;y0=y}}else if(c=='H')x=nx();else if(c=='V')y=nx();else if(c=='Z'){x=x0;y=y0;continue}
+            else if(c=='Q'){at(nx(),nx(),sw,t);x=nx();y=nx()}
+            else if(c=='A'){let rx=nx(),ry=nx();nx();const la=nx(),sf=nx(),x2=nx(),y2=nx();
+              if(Math.abs(rx-ry)>1e-9){p.push('whistlestop-icon.svg: cannot measure an elliptical arc in '+t.slice(0,60));break}
+              const mx=(x+x2)/2,my=(y+y2)/2,hd=Math.hypot(x2-x,y2-y)/2;let r=Math.max(rx,hd),h=Math.sqrt(Math.max(0,r*r-hd*hd));
+              const ux=-(y2-y)/(2*hd||1),uy=(x2-x)/(2*hd||1),sg=la!==sf?1:-1,cx=mx+sg*h*ux,cy=my+sg*h*uy;
+              let a0=Math.atan2(y-cy,x-cx),a1=Math.atan2(y2-cy,x2-cx),da=a1-a0;if(sf&&da<0)da+=2*Math.PI;if(!sf&&da>0)da-=2*Math.PI;
+              for(let k=0;k<=64;k++){const a=a0+da*k/64;at(cx+r*Math.cos(a),cy+r*Math.sin(a),sw,t)}x=x2;y=y2}
+            else{p.push('whistlestop-icon.svg: cannot measure the path command '+c);break}
+            at(x,y,sw,t)}}
+        else p.push('whistlestop-icon.svg: cannot measure <'+tag+'> in the mark');
+      }
+      if(n<40)p.push('whistlestop-icon.svg: only '+n+' engine shapes found in g#mark-ws');
+      if(far>40)p.push('the engine reaches '+far.toFixed(1)+' units from the centre, outside the maskable safe circle (radius 40 of 100): '+farWhat.slice(0,90));
+      safeNote='; engine within radius '+far.toFixed(1)+' of 100';
+    }}
   {const st=path.join(ROOT,'docs','brand','store');
     const si=fs.existsSync(path.join(st,'icon-512.png'))&&png(path.join(st,'icon-512.png'));
     if(!si||si.w!==512||si.h!==512||si.ct!==6||!si.at)p.push('docs/brand/store/icon-512.png: the Play icon must be a 512x512 32-bit (RGBA) PNG');
@@ -14319,7 +14357,7 @@ run('setup, grown-ups, pet care, icon P4-12',()=>{
   }
   const sw=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
   for(const [f] of ICONS)if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
-  return{problems:p,note:fns.length+' functions, '+ICONS.length+' icons and the Play icon checked pixel by pixel'};
+  return{problems:p,note:fns.length+' functions, '+ICONS.length+' icons and the Play icon checked pixel by pixel'+safeNote};
 });
 
 // ---- P4-14: object art set B (DESIGN_SYSTEM 6.5; drawings in src/data/d-art-b.js) ----
