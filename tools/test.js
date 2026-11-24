@@ -21898,7 +21898,8 @@ run('recorded teacher lines TEACH-4',()=>{
   if(M.dir!==EA.TEACH_DIR||M.voice!==EA.TEACH_VOICE||!EA.VOICES.some(v=>v[0]===M.voice))p.push('EN_TEACH: dir '+M.dir+', voice '+M.voice+' (one of the EN-PRAISE voices)');
   // REC-ALL (owner decision 2026-11-24: "All lesson lines", every grade): the cap is raised from 200 to 1600. The unit is the sentence say() matches,
   // so the about 860 fixed lesson lines are about 1400 sentences (with the fixed sentences of lines that also hold a number or a {slot})
-  if(lines.size<60||lines.size>1600)p.push(lines.size+' teacher lines (want at most 1600: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line)');
+  // fix2 v194 (Fable): the cap narrowed to 1400 (1289 lines now; the owner approved the budgets 2026-11-24), so a slip shows sooner
+  if(lines.size<60||lines.size>1400)p.push(lines.size+' teacher lines (want at most 1400: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
     if(f!==EA.teachFileOf(k,o.rec))p.push('"'+k+'": file '+f+' is not the hash of its text and recipe');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
