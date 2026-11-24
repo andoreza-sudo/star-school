@@ -133,7 +133,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
-    if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
+    if(first&&!q.lsx&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js); fix2 v194: never for a lesson mix-in (lsx), whose label can be a review item's
     G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);

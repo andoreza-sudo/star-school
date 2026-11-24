@@ -19831,7 +19831,17 @@ run('LESSON-STAGE lsMix: valid items, Practice and math stops only, a miss never
     // a missed mix-in: retried in the round, never a miss tally or a review item
     {const id=ids.find(x=>(LESSONS[x].p||'math')=='math'),[p,i]=at(id),nd=NODES[p][i];S.know[id]={s:2};let q=null;
      for(const k of ['num','choice','make'])if(!q)q=lsMix(nd.sk,nd.lv,k);
-     if(q){S.rev=[];const m0=JSON.stringify(P(nd.sk).miss||{});addMiss(q);if(JSON.stringify(P(nd.sk).miss||{})!==m0||(S.rev||[]).length)bad('a missed mix-in was kept ('+q.label+')')}}
+     if(q){S.rev=[];const m0=JSON.stringify(P(nd.sk).miss||{});addMiss(q);if(JSON.stringify(P(nd.sk).miss||{})!==m0||(S.rev||[]).length)bad('a missed mix-in was kept ('+q.label+')');
+       // fix2 v194 (Fable): a right first try of a mix-in never moves a review item up (no phantom revRight: its label can be a due review
+       // item's, as here), and G.fixed does not count it; the same question without lsx does (so the guard is what stops it)
+       const ST={say,burst,anim,fb,petSay,qProg,qStreak,flyStar,next,cheerSay,right:SFX.right},KR=KIND[q.kind].right,KS=KIND[q.kind].same,el={classList:{add(){}},getBoundingClientRect:()=>({left:0,top:0,width:1,height:1})};
+       say=burst=anim=fb=petSay=qProg=qStreak=flyStar=next=()=>{};cheerSay=()=>false;SFX.right=()=>{};KIND[q.kind].right=()=>{};KIND[q.kind].same=()=>true; // the answer is right, whatever the kind
+       try{for(const lsx of [1,0]){const it={sk:q.sk,lv:q.lv,seed:1,label:revLabel(q.label),box:0,due:0,n:1};S.rev=[it];
+           G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10});G.res=[];G.q=Object.assign({},q,{lsx});G.tries=0;G.retry=false;G.lock=false;check(q.ans,el);
+           const moved=S.rev.length!==1||S.rev[0].box!==0||(G.fixed||0)!==0;if(lsx&&moved)bad('a right mix-in moved a review item up (phantom revRight): '+JSON.stringify(S.rev)+' fixed '+G.fixed);
+           if(!lsx&&!moved)bad('the stand-in round did not reach revRight (the mix-in check above proves nothing)')}}
+       catch(e){bad('check() on a mix-in: '+e.message)}
+       finally{({say,burst,anim,fb,petSay,qProg,qStreak,flyStar,next,cheerSay}=ST);SFX.right=ST.right;KIND[q.kind].right=KR;KIND[q.kind].same=KS;if(KS===undefined)delete KIND[q.kind].same;S.rev=[]}}}
     return out})()`);
   return{problems:r.bad,note:`${r.n} mix-in items checked, ${r.mix} lesson items in Practice draws`};
 });
