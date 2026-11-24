@@ -213,5 +213,6 @@ const NAVB={skip:0,
     try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
   pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
 if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
+  try{if(NAVB.on())history.replaceState(null,'')}catch(e){} // a reload (an update, Start over) kept the last page's entry: going back to it would load the app again
   const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
   mo.observe(document.body,{childList:true});if(a)mo.observe(a,{childList:true})}
