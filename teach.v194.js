@@ -350,6 +350,9 @@ const LS = {
     LS.st = LS.make(id, les ? LS.resume(les, day0)
       : {rem: pl.remember || [], day: day0, repair: pl.id === id && pl.code, proof: true, know: !!o.know, learn: !!o.learn});
     LS.t0 = 0;
+    // fix2 v194: LS.job1 (the job the start card just said) counts only when this start comes from that card; a start from anywhere
+    // else (the card was left by Home, then a lesson started another way) must not drop the first line's sentence
+    if (!$('#lsopen')) LS.job1 = '';
     warmVoices();
     LS.show();
   },

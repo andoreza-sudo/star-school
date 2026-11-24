@@ -3793,6 +3793,8 @@ KIND.sort = {
 addEventListener('resize', () => {
   const q = KIND.sort.cur;
   if (q && q.kind === 'sort' && $('.stray')) KIND.sort.hold(q);
+  const v = $('.mmv'); // fix2 v194: and whether the make model's fraction parts are big enough to tap
+  if (v && KIND.make && KIND.make.notap) KIND.make.notap(v);
 });
 
 // ---- mark: tap word(s) in a sentence ----
@@ -4532,18 +4534,22 @@ KIND.make = {
       v.querySelectorAll('[data-v]').forEach(e => { e.removeAttribute('role'); e.removeAttribute('aria-label'); });
     }
     $$('.mmn').forEach(o => { o.textContent = s[+o.dataset.o]; });
-    // fix v194: fraction parts under 48 px (layout size) take no taps (mm-notap); the buttons do it
+    KIND.make.notap(v);
+    if (at) {
+      const f = v.querySelector(`[data-p="${a.dataset.p}"]`) || v.querySelector('[data-p]') || $('.mmc button');
+      if (f) f.focus();
+    }
+    k2Fit();
+  },
+  // fix v194: fraction parts under 48 px (layout size) take no taps (mm-notap); the buttons do it. fix2 v194: measured again on a resize
+  // (a turned tablet: the parts change size), below
+  notap(v) {
     let small = null;
     v.querySelectorAll('svg').forEach(g => {
       const ps = g.querySelectorAll('rect.vp[data-v]'), vw = ps.length && g.viewBox.baseVal && g.viewBox.baseVal.width;
       if (vw && g.clientWidth) small = small || [...ps].some(e => Math.min(e.width.baseVal.value, e.height.baseVal.value) * g.clientWidth / vw < 48);
     });
     if (small != null) v.classList.toggle('mm-notap', small);
-    if (at) {
-      const f = v.querySelector(`[data-p="${a.dataset.p}"]`) || v.querySelector('[data-p]') || $('.mmc button');
-      if (f) f.focus();
-    }
-    k2Fit();
   },
   draw(q, st) {
     KIND.make.paint(q, st.mm);

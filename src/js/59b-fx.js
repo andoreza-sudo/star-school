@@ -11,7 +11,7 @@
      JFX.pool(max)               a particle pool: emit(o), step(dt), each(fn), frame(dt) (halves the cap while frames take > 20 ms)
      JFX.shaker()                a gentle screen shake: kick(amp, s), at(dt) -> [dx, dy] (zero in calm mode)
      JFX.fly(x, y, to, kind)     a star or coin that flies from a screen point to a counter chip, which bumps (DOM, transform only)
-     JFX.rect(el)                el's box, measured once per screen size (no layout read per frame or pick-up)
+     JFX.rect(el)                el's box, measured once per screen and screen size (no layout read per frame or pick-up)
      JFX.stop()                  takes every flight still in the air off the screen (leaving a game)
 */
 const JFX = (() => {
@@ -178,7 +178,8 @@ const JFX = (() => {
     setTimeout(done, 900); // --t-xl is 600 ms
   }
   const end = e => { e.remove(); LIVE.delete(e); e._done = null; FREE.push(e); };
-  // stop: every flight still in the air goes (a game left mid-flight: show() in 40-view.js calls it)
-  const stop = () => { for (const e of [...LIVE]) end(e); };
+  // stop: every flight still in the air goes (a game left mid-flight: show() in 40-view.js calls it). fix2 v194: a new screen also measures
+  // the chips again (a chip kept across screens can move without a resize)
+  const stop = () => { RG++; for (const e of [...LIVE]) end(e); };
   return { calm, css, can, ink, tint, pool, shaker, fly, rect, stop, live: () => LIVE.size };
 })();

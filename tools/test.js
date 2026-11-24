@@ -19856,6 +19856,9 @@ run('GFX-1 JFX: the bit pool and its cap, stop with nothing flying',()=>{
     for(let i=0;i<400;i++)P.frame(1/60);if(P.cap!==10)bad.push('quick frames: cap '+P.cap+' (10 wanted)');
     P.clear();if(P.list.length)bad.push('clear left bits');
     try{JFX.stop()}catch(e){bad.push('stop: '+e.message)}if(JFX.live()!==0)bad.push('live: '+JFX.live());
+    // fix2 v194: a chip's box is measured once, and again after a new screen (view() calls JFX.stop)
+    {let n=0;const el={getBoundingClientRect:()=>(n++,{left:n,top:0,width:10,height:10})};JFX.rect(el);JFX.rect(el);if(n!==1)bad.push('rect measured '+n+' times on one screen');
+     JFX.stop();if(JFX.rect(el).left!==2||n!==2)bad.push('rect not measured again after a screen change ('+n+')')}
     return bad})()`);
   return{problems:r};
 });
