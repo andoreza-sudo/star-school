@@ -1042,11 +1042,28 @@ function snAwning(n, h) {
     ghR(0, 0, W, 6, 0, h + '2') + ghR(0, 27, W, 3.6, 0, 'k', .08) + ghL(`M0 8H${W}`, 'w', 1.6, .45) + '</svg>';
 }
 // the scene behind the stand, per place (400 x 200, sliced to fit; the sky is the CSS gradient)
+// GFX-1 scenery pieces: a little striped stall far off (x, y: the middle of its foot), a white picket fence across the scene at y,
+// and small flowers [[x, y, colour]]
+const snStall = (x, y, c) => ghShad(x, y + 1, 15, 2) + ghR(x - 12, y - 12, 24, 12, 1, 'm2') + ghR(x - 12, y - 12, 22, 11, 1, 'm') +
+  ghR(x - 8, y - 9, 16, 4, 1, 'n1', .8) + ghP(`M${x - 15} ${y - 12}L${x - 11} ${y - 20}H${x + 11}L${x + 15} ${y - 12}Z`, c + '2') +
+  [0, 1, 2, 3, 4, 5].map(i => ghP(`M${x - 15 + i * 5} ${y - 12}L${x - 10.6 + i * 3.6} ${y - 20}H${x - 8.8 + i * 3.6}L${x - 12.5 + i * 5} ${y - 12}Z`, i % 2 ? 'w' : c)).join('') +
+  ghR(x - 1, y - 25, 2, 6, 1, 'n2') + ghP(`M${x + 1} ${y - 25}l6 2l-6 2Z`, 'y');
+const snFence = y => {
+  let s = ghR(0, y - 9, 400, 2.6, 1, 'w2') + ghR(0, y - 3, 400, 2.6, 1, 'w2');
+  for (let x = 4; x < 400; x += 11) s += ghP(`M${x} ${y + 4}V${y - 11}l2.5 -3l2.5 3V${y + 4}Z`, 'w2') + ghP(`M${x} ${y + 3}V${y - 11}l2 -2.6l2 2.6V${y + 3}Z`, 'w');
+  return s;
+};
+const snFlowers = list => list.map(([x, y, c]) => ghL(`M${x} ${y + 5}V${y}`, 'g2', 1.4) + ghC(x, y, 2.6, c + '2') + ghC(x - .3, y - .3, 2, c) + ghC(x, y, .9, 'y1')).join('');
 const SN_BACK = {
+  // GFX-1: the park is a place, not a flat field: a hazy far hill, two little stalls across the green, a white fence, the path,
+  // bushes and flowers (far things pale, near things stronger; all of it drawn once as one picture)
   park: () => ghSun(52, 40, 15) + ghCloud(170, 36, 1.2) + ghCloud(320, 50, .9) +
-    ghP('M0 132Q60 96 130 118T260 108T400 116V200H0Z', 'g1') + ghTree(40, 136, 1.3) + ghTree(352, 128, 1.5) + ghTree(300, 134, .9) +
-    ghP('M0 150Q100 132 200 146T400 140V200H0Z', 'g') + ghP('M180 200Q196 160 214 148L232 148Q226 166 240 200Z', 't1', .8) +
-    ghE(110, 156, 14, 6, 'g2') + ghE(106, 153, 11, 5, 'g') + ghE(290, 160, 16, 6.4, 'g2') + ghE(286, 157, 12, 5, 'g'),
+    ghP('M0 122Q90 92 170 108T330 98T400 104V200H0Z', 'c1', .55) +
+    ghP('M0 132Q60 96 130 118T260 108T400 116V200H0Z', 'g1') + snStall(132, 126, 'r') + snStall(262, 122, 'b') +
+    ghTree(40, 136, 1.3) + ghTree(352, 128, 1.5) + ghTree(300, 134, .9) + ghTree(96, 130, .7) +
+    snFence(140) + ghP('M0 150Q100 132 200 146T400 140V200H0Z', 'g') + ghP('M180 200Q196 160 214 148L232 148Q226 166 240 200Z', 't1', .8) +
+    ghE(110, 156, 14, 6, 'g2') + ghE(106, 153, 11, 5, 'g') + ghE(290, 160, 16, 6.4, 'g2') + ghE(286, 157, 12, 5, 'g') +
+    snFlowers([[102, 151, 'p'], [116, 153, 'y'], [282, 155, 'v'], [296, 156, 'p'], [160, 176, 'y'], [262, 180, 'r'], [60, 172, 'v'], [342, 170, 'y']]),
   beach: () => ghSun(340, 38, 16) + ghCloud(110, 44, 1) + ghP('M0 112H400V160H0Z', 'b') + ghP('M0 112H400V118H0Z', 'b1') +
     ghL('M30 128q10 -5 20 0t20 0M220 136q10 -5 20 0t20 0M300 124q8 -4 16 0t16 0', 'w', 2, .7) +
     ghP('M0 150Q100 138 200 146T400 144V200H0Z', 't1') + ghP('M0 164Q120 154 240 162T400 160V200H0Z', 't') +
@@ -1667,7 +1684,7 @@ function snDay(o = {}) {
   snLine();
   snPlate();
   snGoalChip();
-  // the day's first message sits at the top of the scene (over the awning and sign), never over the customers (R-03 N4)
+  // the day's first message sits just under the sign (GFX-1: never over its served count), never over the customers (R-03 N4)
   snMsg(chef ? `${snChefName(pl.id)}: Make me ${st.n} snacks. Get ${SN_CHEF_WIN} right the first time!` :
     st.how == 'plain' ? (r.days ? `Today's goal: ${st.goal.text}.` : 'Look at the order, then tap the food!') :
     `${snKindName(kind, pl.id)}! ${snKindLine(kind, pl.id)}`, 3200);
@@ -1806,6 +1823,40 @@ function snCellTicks(c, cells, plate) {
 const snCellHTML = (x, t) => `<span class="sn-oi${t >= x.n && !x.no ? ' ok' : ''}${x.no ? ' no' : ''}${x.ask ? ' ask' : ''}" data-oi="${x.id}">${snPic(x.id)}` +
   (x.cnt ? `<em class="sn-n">${x.n > 1 ? `${t}/${x.n}` : ''}</em>` : x.step ? `<em class="sn-n">${x.step}</em>` : x.plus ? '<em class="sn-n">+1</em>' : x.ask ? '<em class="sn-n">?</em>' : '') +
   (t >= x.n && !x.no ? `<i>${ico('check', 18)}</i>` : '') + '</span>';
+// GFX-1: customers with bodies. Each animal's fur colour is read from its own head drawing (the role of its biggest round shape),
+// and each customer wears one of six outfits in a colour picked from the day's seed and their place in the line, so the same
+// animal comes back as a different character. The body is drawn behind the head (object-art style: shade, base, highlight),
+// its paws rest on the counter; the arms are their own groups so they can wave when served (CSS, a few times, never forever)
+const SN_FUR = {};
+function snFur(who) {
+  if (SN_FUR[who]) return SN_FUR[who];
+  let best = 0, role = 'e';
+  for (const m of String(ART[who] || '').matchAll(/<(ellipse|circle)\b([^>]*)>/g)) {
+    const a = k => +((new RegExp('\\s' + k + '="([\\d.]+)"').exec(m[2]) || [])[1] || 0);
+    const f = /fill="var\(--a-([a-z])\d?\)"/.exec(m[2]), area = m[1] == 'circle' ? a('r') * a('r') : a('rx') * a('ry');
+    if (f && f[1] != 'k' && area > best) { best = area; role = f[1]; }
+  }
+  return (SN_FUR[who] = role);
+}
+const SN_NOBODY = { fish: 1, bee: 1, butterfly: 1, crab: 1 }; // these stay as they are (no shirt on a fish)
+const SN_TOPS = ['b', 'r', 'g', 'v', 'o', 'c', 'p', 'y'];
+function snBody(who, k) {
+  const f = snFur(who), t = SN_TOPS[k % SN_TOPS.length], u = SN_TOPS[(k * 3 + 2) % SN_TOPS.length] == t ? 'n' : SN_TOPS[(k * 3 + 2) % SN_TOPS.length];
+  const style = Math.floor(k / SN_TOPS.length + k) % 6;
+  const arm = (x, a, cls) => `<g class="sn-arm ${cls}">${ghE(x, 27, 6.5, 11, t + '2', 1, a)}${ghE(x - 0.6, 26.2, 5.4, 10, t, 1, a)}` +
+    `${ghC(x + (a > 0 ? -3 : 3), 35.5, 5, f + '2')}${ghC(x + (a > 0 ? -3.4 : 2.6), 35, 4.2, f)}${ghE(x + (a > 0 ? -4.4 : 1.6), 33.4, 1.6, 1, 'w', .5)}</g>`;
+  let s = ghP('M9 42V26Q9 13 22 11H42Q55 13 55 26V42Z', t + '2') + ghP('M10 42V26.5Q10 14.5 22.5 12.4H41Q53 14.5 53 27V42Z', t) +
+    ghE(20, 20, 7, 3.4, 'w', .3, -20);
+  if (style == 1) s += ghR(20, 22, 24, 20, 3, u + '2') + ghR(21, 22, 21, 20, 3, u) + ghL('M22 22L18 13M42 22L46 13', u + '2', 3) + ghC(24, 26, 1.6, 'y') + ghC(39, 26, 1.6, 'y');
+  else if (style == 2) s += ghR(10, 24, 43, 4, 0, 'w', .55) + ghR(10, 33, 43, 4, 0, 'w', .55);
+  else if (style == 3) s += ghP('M21 18H43V42H21Z', 'w2') + ghP('M22 18H42V42H22Z', 'w') + ghR(27, 30, 10, 7, 2, 'w2') + ghL('M22 18L26 11M42 18L38 11', 'w2', 2);
+  else if (style == 4) s += ghP('M32 14L24 10V19Z', u + '2') + ghP('M32 14L40 10V19Z', u + '2') + ghP('M32 14L25 11V17.6Z', u) + ghP('M32 14L39 11V17.6Z', u) + ghC(32, 14, 2.4, u + '2');
+  else if (style == 5) s += ghP('M17 13Q32 21 47 13L48 18Q32 26 16 18Z', u + '2') + ghP('M17 12.4Q32 20 47 12.4L47.4 16Q32 23.6 16.6 16Z', u) + ghR(38, 17, 6, 14, 3, u + '2') + ghR(38, 17, 5, 13, 2.5, u);
+  else s += ghL('M26 13L32 19L38 13', t + '2', 2.4);
+  return arm(11, 12, 'l') + s + arm(53, -12, 'r');
+}
+const snFig = (c, k) => SN_NOBODY[c.who] ? picArt(c.who, '100%') : `<span class="sn-fig" aria-hidden="true">` +
+  `<svg class="art sn-bod" viewBox="0 0 64 42" aria-hidden="true" focusable="false">${snBody(c.who, k)}</svg>${picArt(c.who, '100%', 'sn-hd')}</span>`;
 // the customers at the counter: the animal (a button: choose who you make it for), the order bubble, the patience heart;
 // G-04a2: friends at a group order, a crown for today's guest and the king, a party hat, a thinking bubble when they arrive or look again
 function snLine() {
@@ -1823,11 +1874,12 @@ function snLine() {
     const friends = c.group && c.friends ? c.friends.map((f, k) => `<span class="sn-fr f${k}" aria-hidden="true">${picArt(f, '100%')}</span>`).join('') : '';
     const kindCls = c.special ? ' sp' : c.steps ? ' steps' : c.group ? ' grp' : c.req ? ' req' : c.any ? ' ask' : '';
     const yum = c.any && c.state != 'wait' ? `Mmm, ${SN_ING[c.order[0]][0].toLowerCase()}!` : c.group ? 'Hooray! Thank you!' : SN_YUM[(c.i + st.seed) % SN_YUM.length];
-    return `<div class="sn-cu${c.state != 'wait' ? ' happy' : ''}${i === st.sel && st.at.length > 1 ? ' sel' : ''}${c.group ? ' grp' : ''}" data-ci="${i}" data-who="${c.who}">` +
+    const low = st.mode == 'busy' && c.state == 'wait' && c.pat / c.patMax < .35 ? ' low' : ''; // GFX-1: a little slump while waiting long
+    return `<div class="sn-cu${c.state != 'wait' ? ' happy' : ''}${i === st.sel && st.at.length > 1 ? ' sel' : ''}${c.group ? ' grp' : ''}${low}${SN_NOBODY[c.who] ? '' : ' body'}" data-ci="${i}" data-who="${c.who}">` +
       (c.state == 'wait' ? `<div class="sn-bub n${cells.length}${kindCls}">${c.special ? `<span class="sn-bst" aria-hidden="true">${ico('star', 16)}</span>` : ''}${icons}</div>${heart}` :
         `<div class="sn-bub yum">${ico('heart', 26)}<span>${c.state == 'pay' ? 'Here you are!' : yum}</span><span class="sn-eat" aria-hidden="true">${snPic(c.order[0])}</span></div>`) +
       `<div class="sn-who">${friends}${think}${hat}<button class="sn-an" data-ci="${i}" aria-label="${esc(c.name + ' the ' + c.who)}${c.state == 'wait' ? ': make my order' : ''}">` +
-      `${picArt(c.who, '100%')}</button></div></div>`;
+      `${snFig(c, ((c.i | 0) + (st.seed | 0)) >>> 0)}</button></div></div>`;
   }).join('');
   for (const b of $$('.sn-an')) b.onclick = () => {
     const i = +b.dataset.ci;
@@ -2006,6 +2058,13 @@ function snStarBtn() {
   b.setAttribute('aria-label', st.armed ? 'Star serve: ready' : st.star >= SN_STAR_NEED ? 'Star serve: tap to use' : `Star serve: ${st.star} of ${SN_STAR_NEED} stars`);
   b.querySelectorAll('.sn-pips i').forEach((e, i) => e.classList.toggle('on', i < st.star || st.armed));
 }
+// GFX-1: coins fly from the customer to the coins chip (JFX.fly in 59b-fx.js; only the chip's bump in calm mode)
+function snCoinFly(i, n) {
+  const an = $(`.sn-cu[data-ci="${i}"] .sn-an`) || $('#snplate');
+  if (!an || typeof JFX == 'undefined') return;
+  const b = an.getBoundingClientRect();
+  for (let k = 0; k < n; k++) setTimeout(() => { if (SN) JFX.fly(b.left + b.width * (.3 + k * .15), b.top + b.height * .4, '#sncoin', 'coin'); }, 120 + k * 110);
+}
 function snDoServe() {
   const st = SN.st, res = snServe(st);
   if (res.empty) return;
@@ -2031,6 +2090,7 @@ function snDoServe() {
   }
   SFX.right(st.combo);
   setTimeout(() => SFX.coin(1), 260);
+  snCoinFly(st.at.indexOf(res.c), Math.min(4, Math.max(1, Math.round(res.pay / 3))));
   if (SN.r.own.bell) snTone(1568, .5, .05, 'sine', .05);
   snChirp(res.c.who);
   SN.r.coins += res.pay;

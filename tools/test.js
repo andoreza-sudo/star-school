@@ -12,7 +12,7 @@ const LAZY=[...(((BUILD_PY.match(/^LAZY = \(([^)]*)\)/m)||[])[1]||'').matchAll(/
 const names=(d,ext,part)=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith(ext)&&partOf(n)===part).sort();
 const cat=(d,part,ext='.js')=>names(d,ext,part).map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
 // all code and data, without boot.js, in the order the built page runs it: index.html's own code, each part file, the data file
-const js=cat('js')+PARTS.map(p=>cat('js',p.stem)).join('')+cat('data');
+const js=cat('js')+PARTS.map(p=>cat('js',p.stem)+cat('data',p.stem)).join('')+cat('data'); // REC-ALL: a part may hold a src/data file (teach12: d-teach-audio.js)
 
 // ---- Budgets and known exceptions: the one place to change them ----
 const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROADMAP risk R1)
@@ -25,11 +25,14 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 // G-01b raised it to 3.6 MB for the Block Builder journey; ES-AUDIO had raised it from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
-// code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB.
+// code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
+// 8.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
-const AUDIO_WARN=4000000,AUDIO_FAIL=4500000,AUDIO_FILE_FAIL=40000;
+// REC-ALL (owner decision 2026-11-24: "the tablet's voice is awful so any recordings you can do the better", "All lesson lines"): every fixed
+// lesson sentence of every grade in the pet's recorded voice (audio/teach): 4.5 -> 8.5 MB, warn raised in proportion 4.0 -> 7.55 MB
+const AUDIO_WARN=7550000,AUDIO_FAIL=8500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -3526,12 +3529,12 @@ run('pet age: the stage follows S.grade (Pre-K..6), every species x age x growth
   r.warm=typeof petAgeWarm;r.aged=typeof PET_AGED;r;`;
   const o=(()=>eval(js+prog))();
   // the page as it starts, before the lazy part petage is in: the little one is drawn at every age
-  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)+cat('data',x.stem)).join('')+cat('data');
   const o0=(()=>eval(js0+prog))();
   // the little one as 7de3ff0 drew it, from the git history (skipped when there is no history)
   let old=null;
   try{const cp=require('child_process'),show=f=>cp.execSync('git show 7de3ff0:src/js/'+f,{cwd:ROOT,encoding:'utf8',stdio:['ignore','pipe','ignore']});
-    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)+cat('data',x.stem)).join('')+cat('data');
     old=(()=>eval(oldJs+prog))();}catch(e){}
   const want={'-1':0,0:0,1:0,2:0,3:1,4:1,5:2,6:2};
   for(const g in want)if(o.age[g]!==want[g])p.push('grade '+g+' gives age '+o.age[g]+', expected '+want[g]);
@@ -13310,11 +13313,12 @@ run('word search and unscramble P3-15',()=>{
   const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
   const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
   // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
-  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words)
+  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words); REC-ALL: nor the teacher
+  // manifest, for the same reason (its 1289 hex file names spell "eeb" and the like; its lines are lesson text, not word lists)
   // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
   const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
   const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
-  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js'&&n!=='d-teach-start.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -19798,6 +19802,66 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
     return out})()`);
   return{problems:r.bad,note:`${r.n} questions in 200 rounds (${r.mono} triples on single-kind stops); ${r.rt} review round trips`};
 });
+// fix v194 (LESSON-STAGE review): the practice mix-in. Every lesson item lsMix gives is a valid question of its stop (sk, lv, lsx, another
+// kind); only a learned math lesson gives one, never with K2.off; pickQ takes one only when Practice asks (mix), so mastQ's and the
+// check-in's draws (no mix) and a check-in, boss or world-test round never show one; a miss of one is never kept (no phantom label).
+run('LESSON-STAGE lsMix: valid items, Practice and math stops only, a miss never kept',()=>{
+  const r=eval(js+`;(()=>{const out={bad:[],n:0,mix:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    loadSave(null);migrate();S.grade=3;S.know={};
+    const at=id=>{for(const p in NODES){const i=NODES[p].findIndex(n=>nid(n)===id);if(i>=0)return[p,i]}return null};
+    const ids=Object.keys(LESSONS).filter(id=>at(id));let math=0,other=0;
+    for(const id of ids){const L=LESSONS[id],[p,i]=at(id),nd=NODES[p][i],kinds=['choice','num','make','sort','mark','line'];
+      S.know[id]=null;if(lsMix(nd.sk,nd.lv,'num'))bad(id+': a mix-in before its lesson is learned');
+      S.know[id]={s:2};
+      for(let k=0;k<12;k++){const kind=kinds[k%kinds.length],q=lsMix(nd.sk,nd.lv,kind);if(!q)continue;out.n++;
+        if((L.p||'math')!='math'){other++;bad(id+': a mix-in at a '+(L.p)+' stop');continue}
+        math++;const pr=kindProblems(q);if(pr.length)bad(id+': '+q.kind+' mix-in: '+pr.join(' '));
+        if(q.sk!==nd.sk||q.lv!==nd.lv||!q.lsx||!q.label||q.kind===kind)bad(id+': mix-in not marked as the stop\\'s ('+q.kind+' for '+kind+')')}
+      K2.off=true;try{if(lsMix(nd.sk,nd.lv,'num')||lsMix(nd.sk,nd.lv,'choice'))bad(id+': a mix-in with K2.off')}finally{K2.off=false}
+      // pickQ: the third of one kind in a row at a one-kind stop; without mix (mastQ, CHK.qs) never a lesson item
+      const kid=nd.sk+nd.lv,keep=KMONO[kid];KMONO[kid]=1;G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10});
+      for(let k=0;k<20;k++){G.kh=['make','make'];if(pickQ(nd.sk,nd.lv).lsx)bad(id+': pickQ without mix gave a lesson item');G.kh=['num','num'];if(pickQ(nd.sk,nd.lv).lsx)bad(id+': pickQ without mix gave a lesson item')}
+      // a round's own draw: Practice may; a check-in or a boss never
+      for(const f of [{},{chk:{}},{boss:{e:'x',name:'x'}}])for(let k=0;k<12;k++){G=newG(Object.assign({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10},f));G.kh=['num','num'];G.done=5;
+        const q=makeQ1();if(q.lsx&&(f.chk||f.boss))bad(id+': a lesson item in a '+(f.chk?'check-in':'boss')+' round');if(q.lsx&&!f.chk&&!f.boss)out.mix++}
+      if(keep)KMONO[kid]=keep;else delete KMONO[kid];
+      S.know[id]=null}
+    if(!math)bad('no math lesson gave a mix-in');
+    // a missed mix-in: retried in the round, never a miss tally or a review item
+    {const id=ids.find(x=>(LESSONS[x].p||'math')=='math'),[p,i]=at(id),nd=NODES[p][i];S.know[id]={s:2};let q=null;
+     for(const k of ['num','choice','make'])if(!q)q=lsMix(nd.sk,nd.lv,k);
+     if(q){S.rev=[];const m0=JSON.stringify(P(nd.sk).miss||{});addMiss(q);if(JSON.stringify(P(nd.sk).miss||{})!==m0||(S.rev||[]).length)bad('a missed mix-in was kept ('+q.label+')');
+       // fix2 v194 (Fable): a right first try of a mix-in never moves a review item up (no phantom revRight: its label can be a due review
+       // item's, as here), and G.fixed does not count it; the same question without lsx does (so the guard is what stops it)
+       const ST={say,burst,anim,fb,petSay,qProg,qStreak,flyStar,next,cheerSay,right:SFX.right},KR=KIND[q.kind].right,KS=KIND[q.kind].same,el={classList:{add(){}},getBoundingClientRect:()=>({left:0,top:0,width:1,height:1})};
+       say=burst=anim=fb=petSay=qProg=qStreak=flyStar=next=()=>{};cheerSay=()=>false;SFX.right=()=>{};KIND[q.kind].right=()=>{};KIND[q.kind].same=()=>true; // the answer is right, whatever the kind
+       try{for(const lsx of [1,0]){const it={sk:q.sk,lv:q.lv,seed:1,label:revLabel(q.label),box:0,due:0,n:1};S.rev=[it];
+           G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10});G.res=[];G.q=Object.assign({},q,{lsx});G.tries=0;G.retry=false;G.lock=false;check(q.ans,el);
+           const moved=S.rev.length!==1||S.rev[0].box!==0||(G.fixed||0)!==0;if(lsx&&moved)bad('a right mix-in moved a review item up (phantom revRight): '+JSON.stringify(S.rev)+' fixed '+G.fixed);
+           if(!lsx&&!moved)bad('the stand-in round did not reach revRight (the mix-in check above proves nothing)')}}
+       catch(e){bad('check() on a mix-in: '+e.message)}
+       finally{({say,burst,anim,fb,petSay,qProg,qStreak,flyStar,next,cheerSay}=ST);SFX.right=ST.right;KIND[q.kind].right=KR;KIND[q.kind].same=KS;if(KS===undefined)delete KIND[q.kind].same;S.rev=[]}}}
+    return out})()`);
+  return{problems:r.bad,note:`${r.n} mix-in items checked, ${r.mix} lesson items in Practice draws`};
+});
+// fix v194 (GFX-1 review): the juice kit's pool without a screen: the cap holds, dead bits are reused, slow frames halve the cap and quick
+// ones give it back; with no flight in the air, stop() is safe and live() is 0
+run('GFX-1 JFX: the bit pool and its cap, stop with nothing flying',()=>{
+  const r=eval(js+`;(()=>{const bad=[];const P=JFX.pool(10);
+    for(let i=0;i<15;i++)P.emit({x:i,y:0,life:.5});if(P.list.length!==10)bad.push('cap: '+P.list.length+' bits alive (10 wanted)');
+    P.step(.6);if(P.list.length||P.free.length!==10)bad.push('step: dead bits not freed ('+P.list.length+' alive, '+P.free.length+' free)');
+    const q=P.free[P.free.length-1];if(P.emit({x:1,y:2})!==q)bad.push('a dead bit is not reused');
+    for(let i=0;i<200;i++)P.frame(.04);if(P.cap!==8)bad.push('slow frames: cap '+P.cap+' (8 wanted)');
+    for(let i=0;i<400;i++)P.frame(1/60);if(P.cap!==10)bad.push('quick frames: cap '+P.cap+' (10 wanted)');
+    P.clear();if(P.list.length)bad.push('clear left bits');
+    try{JFX.stop()}catch(e){bad.push('stop: '+e.message)}if(JFX.live()!==0)bad.push('live: '+JFX.live());
+    // fix2 v194: a chip's box is measured once, and again after a new screen (view() calls JFX.stop)
+    {let n=0;const el={getBoundingClientRect:()=>(n++,{left:n,top:0,width:10,height:10})};JFX.rect(el);JFX.rect(el);if(n!==1)bad.push('rect measured '+n+' times on one screen');
+     JFX.stop();if(JFX.rect(el).left!==2||n!==2)bad.push('rect not measured again after a screen change ('+n+')')}
+    return bad})()`);
+  return{problems:r};
+});
 
 // ---- KINDS2 batch B (docs/KINDS2-SPEC.md 2.3, 3, 6): the line kind ----
 // K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4 at 40%, not 30%: 30% leaves the number pad at 70%).
@@ -21835,23 +21899,36 @@ run('recorded teacher lines TEACH-4',()=>{
   const ctx=E.loadApp(),lines=EA.collectTeach(ctx),M=vm.runInContext('typeof EN_TEACH=="undefined"?null:EN_TEACH',ctx),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
   if(!M)return{problems:['no EN_TEACH: run node tools/en-audio.js --teach']};
   if(M.dir!==EA.TEACH_DIR||M.voice!==EA.TEACH_VOICE||!EA.VOICES.some(v=>v[0]===M.voice))p.push('EN_TEACH: dir '+M.dir+', voice '+M.voice+' (one of the EN-PRAISE voices)');
-  if(lines.size<60||lines.size>200)p.push(lines.size+' teacher lines (want at most 200: the owner raised the cap from 110 on 2026-11-19)');
+  // REC-ALL (owner decision 2026-11-24: "All lesson lines", every grade): the cap is raised from 200 to 1600. The unit is the sentence say() matches,
+  // so the about 860 fixed lesson lines are about 1400 sentences (with the fixed sentences of lines that also hold a number or a {slot})
+  // fix2 v194 (Fable): the cap narrowed to 1400 (1289 lines now; the owner approved the budgets 2026-11-24), so a slip shows sooner
+  if(lines.size<60||lines.size>1400)p.push(lines.size+' teacher lines (want at most 1400: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
-    if(f!==EA.teachFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
+    if(f!==EA.teachFileOf(k,o.rec))p.push('"'+k+'": file '+f+' is not the hash of its text and recipe');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
   for(const k in M.lines)if(!lines.has(k))p.push('the teacher manifest has a line the list does not: '+k);
   for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);if(!used.has(f))p.push(EA.TEACH_DIR+f+' is not in the manifest');
     const h=b.indexOf('OpusHead');if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.TEACH_DIR+f+' is not mono Ogg Opus');
     if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.TEACH_DIR+f+' is '+b.length+' bytes')}
   const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total;
   if(all>AUDIO_FAIL)p.push('the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
-  // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions; never a digit; no cheer twice
+  // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions, and (REC-ALL) every lesson's fixed
+  //    sentences at every age; never a digit; no cheer twice
   const src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n'),en=vm.runInContext('EN_AUDIO.lines',ctx);
   for(const [k,o] of lines){if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');if(/\d/.test(k))p.push('a teacher line with a number: '+k);if(en[k])p.push('recorded twice: '+k)}
   for(const k of ['My turn. Check me!','Can you fix it?','You learned it!','Read the word. Then tap its picture.','Which one is different?'])if(!M.lines[k])p.push('not recorded: '+k);
-  // 3. the build: the manifest is in the data file, not index.html; sw.js precaches every teacher file and answers a Range request from the cache
-  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
-  if(!data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in '+DATA_FILE+' and not in index.html');
+  // 3. the build: the manifest is src/data/d-teach-audio.js, built into teach12, the part every lesson loads right after teach (REC-ALL: 1289
+  //    lines are 62 KB, needed only in a lesson, so not loaded at start: P6-03 keeps 500 KB under the start-up budget, and teach stays under
+  //    150 KB), not index.html or the data file; sw.js precaches every teacher file and answers a Range request from the cache
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),tp=rd('teach12.'+BUILD_VER+'.js');
+  if(!tp.includes('const EN_TEACH=')||data.includes('const EN_TEACH=')||html.includes('const EN_TEACH='))p.push('the teacher manifest must be src/data/d-teach-audio.js, in teach12.'+BUILD_VER+'.js and not in index.html or '+DATA_FILE);
+  // fix2 v194 (Fable): the lines said outside a lesson (Practice prompts, hints) keep their recording before teach12 loads and with lessons off:
+  //    EN_TEACH0 (src/data/d-teach-start.js, in the data file) is exactly tools/en-audio.js teachStart() of the full manifest, small
+  const M0=vm.runInContext('typeof EN_TEACH0=="undefined"?null:EN_TEACH0',ctx),want0=EA.teachStart(M.lines);
+  if(!M0||JSON.stringify(M0.lines)!==JSON.stringify(want0)||M0.dir!==M.dir||M0.ext!==M.ext)p.push('EN_TEACH0 is not the start-up list of the teacher manifest ('+(M0?Object.keys(M0.lines).length:0)+' lines, want '+Object.keys(want0).length+'): run node tools/en-audio.js --teach-start');
+  if(!data.includes('const EN_TEACH0=')||tp.includes('const EN_TEACH0=')||html.includes('const EN_TEACH0='))p.push('EN_TEACH0 must be in '+DATA_FILE+' only');
+  for(const k of ['What comes next?','How many in all?','Say it slowly.'])if(!M0||!M0.lines[k])p.push('not recorded outside a lesson: '+k);
+  const b0=fs.statSync(path.join(SRC,'data','d-teach-start.js')).size;if(b0>6000)p.push('src/data/d-teach-start.js is '+b0+' bytes (want at most 6000: it loads at start)');
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');
@@ -21868,6 +21945,13 @@ run('recorded teacher lines TEACH-4',()=>{
     S2("S.cheerV='tts';hush()");log.length=0;S2("say('Can you fix it?')");if(log.join()!=='speak Can you fix it?')p.push('Tablet voice: '+log.join(' | '));S2("S.cheerV='mix'");
     S2('hush()');log.length=0;S2("say('Can you fix it?')");const a=S2('ESA.au');a.onerror();if(log.pop()!=='speak Can you fix it?')p.push('a failed file did not fall back to the voice: '+log.join(' | '));
   }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  // fix2 v194: no lesson part loaded (EN_TEACH undefined, as at start or with lessons off): a Practice prompt plays EN_TEACH0's file; a lesson line is the tablet's voice
+  try{const s0=E.loadApp(E.appSource().replace('const EN_TEACH=','const EN_TEACH_NOT_LOADED='),{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text);setTimeout(()=>u.onend&&u.onend(),0)},cancel(){},speaking:false,pending:false}});
+    const S0=t=>vm.runInContext(t,s0);S0("S.voice=true;CLIPS=[];ENA.t=0");
+    if(S0('typeof EN_TEACH')!=='undefined')p.push('the stand-in still has EN_TEACH');
+    log.length=0;S0("say('What comes next?')");if(log.join('|')!=='play '+M.dir+M.lines['What comes next?']+M.ext)p.push('before teach12: a Practice prompt did not play its recording: '+log.join(' | '));
+    S0('hush()');log.length=0;S0("say('Can you fix it?')");if(log.join('|')!=='speak Can you fix it?')p.push('before teach12: '+log.join(' | '))}
+  catch(e){p.push('say() before teach12 could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
   if(!/if \(t && LS\.voice\(\)\) say\(t\);/.test(rd('src/js/52-lesson.js')))p.push('the lesson does not say its lines through say() (LS.talk), where recorded sentences are found');
   return{problems:p,note:lines.size+' lines in the voice '+M.voice+', '+files.length+' files, '+Math.round(total/1000)+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round(all/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'};
 });
@@ -22312,10 +22396,11 @@ run('teach: review fixes, the model never shows the answer, no homophone tiles, 
       notes.kinds['plural wrongs '+said.size]=1}
     return {bad,model:[...notes.model].length,kinds:Object.keys(notes.kinds),builds}})()`);
   const p=r.bad.slice();
-  // 5. the step label under 400 px: " of 6" in its own span, which the narrow layout leaves out (smoke TEACH-UX measures 320 and 360 px)
+  // 5. the step label under 400 px: " of 6" in its own span. fix v194: since LESSON-STAGE the label is for screen readers only (a 1 px
+  // clipped label, the train's stops show the step), so the narrow layout no longer leaves " of 6" out (it only cut it from what is read)
   const src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','52-lesson.css'),'utf8');
   if(!/<span class="ls-of">\$1<\/span>/.test(src))p.push('the step label has no " of 6" span');
-  if(!/@media \(max-width:400px\)\{[^\n]*\.ls-step \.ls-of\{display:none\}/.test(css))p.push('the step label keeps " of 6" under 400 px');
+  if(/\.ls-of\{display:none\}/.test(css))p.push('the step label leaves " of 6" out of what a screen reader reads');
   return{problems:p.slice(0,40),note:r.model+' lessons carry a model, each group a number the question says ('+r.kinds.join(', ')+'); '+r.builds+' spelling builds'};
 });
 
@@ -23135,6 +23220,63 @@ run('service worker: a page open waits 3 s for the network, then the cached page
     let done2;const d=mk(new Promise(r=>{done2=r}),undefined);await tick();d.T[0].f();await tick();await tick();if(d.resp)p.push('no cache: answered before the network');
     done2(page);await tick();await tick();if(d.resp!==page)p.push('no cache: the network page did not come');
     return{problems:p,note:'slow (late page not cached), fast, offline, first visit'}})();
+});
+run('service worker: install waits for the code only; the recordings are cached after activation, one that fails (503) is skipped and filled on a later open v194',()=>{
+  // v194 fix2 (Fable's confirming review): install was all-or-nothing over the code AND about 2,400 recordings, so one 503 left no service
+  // worker at all and every open started again from zero. Now: install = the code list F; the page asks (a message 'audio') once it is
+  // up, and on later opens; the worker fetches the recordings A does not hold, AB at a time, each on its own; a failure is skipped.
+  const vm=require('vm'),src=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8'),p=[];
+  const F=JSON.parse(((src.match(/const F=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"')),AF=JSON.parse(((src.match(/const AF=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"'));
+  if(!/const AB=40;/.test(src))p.push('sw.js: the recordings are not fetched 40 at a time');
+  if(AF.length<1000)p.push('sw.js lists only '+AF.length+' recordings');
+  const tick=async(n=40)=>{for(let i=0;i<n;i++)await new Promise(r=>setImmediate(r))};
+  // a stand-in browser: CacheStorage (cache name -> Map url -> response), fetch with one recording failing (503) while `down` has it
+  const store=new Map(),down=new Set(),fetched=[];let live=0,peak=0;
+  const norm=u=>new URL(typeof u=='string'?u:u.url,'http://x/').href;
+  const mkCache=n=>{if(!store.has(n))store.set(n,new Map());const m=store.get(n);return{
+    addAll:async rs=>{const got=[];for(const r of rs){const x=await sb.fetch(r);if(!x.ok)throw new TypeError('addAll: '+x.status);got.push([norm(r),x])}for(const [u,x] of got)m.set(u,x)},
+    put:async(r,x)=>{m.set(norm(r),x)},match:async r=>m.get(norm(r)),keys:async()=>[...m.keys()].map(url=>({url})),delete:async r=>m.delete(norm(r.url||r))}};
+  const sb={self:{location:'http://x/',clients:{claim:async()=>{}},addEventListener:(t,f)=>{H[t]=f},skipWaiting(){}},URL,Promise,Set,Map,console,setTimeout,clearTimeout,
+    caches:{open:async n=>mkCache(n),keys:async()=>[...store.keys()],delete:async n=>store.delete(n),match:async r=>{for(const m of store.values())if(m.has(norm(r)))return m.get(norm(r))}},
+    fetch:async r=>{const u=norm(r);fetched.push(u);live++;peak=Math.max(peak,live);await tick(2);live--;return down.has(u)?{ok:false,status:503}:{ok:true,status:200,u,clone(){return this}}},
+    Request:function(u){this.url=u},Response:{error:()=>'ERROR'}};
+  const H={};vm.runInNewContext(src,sb);
+  const ev=(t,data)=>{const w=[];H[t]({data,waitUntil:pr=>w.push(pr)});return Promise.all(w)};
+  const A=[...store.keys()],aUrl=u=>norm(u),inA=()=>store.get('starschool-audio')||new Map(),cname=src.match(/const C='([^']+)'/)[1];
+  const bad=norm(AF.find(u=>/\/audio\/teach\//.test(u))); // one teacher recording answers 503, as Fable's proof
+  return (async()=>{
+    down.add(bad);
+    // 1. install: only the code is fetched, and it is cached; the worker installs although a recording would fail
+    let ok=true;try{await ev('install')}catch(e){ok=false;p.push('install failed: '+e.message)}
+    if(fetched.some(u=>/\/audio\//.test(u)))p.push('install fetched '+fetched.filter(u=>/\/audio\//.test(u)).length+' recordings (the install must wait for the code only)');
+    if(!store.has(cname)||store.get(cname).size!==F.length)p.push('install did not cache the code list: '+(store.get(cname)||new Map()).size+' of '+F.length);
+    // 2. activate: nothing is fetched yet (the recordings never compete with the first paint)
+    const n0=fetched.length;await ev('activate');if(fetched.length!==n0)p.push('activate fetched '+(fetched.length-n0)+' files');
+    // 3. the page asks: every recording but the failing one is cached, 40 at a time at most; the 503 is not cached
+    await ev('message','audio');
+    if(inA().size!==AF.length-1||inA().has(bad))p.push('after the first fill: '+inA().size+' of '+AF.length+' recordings, the 503 one '+(inA().has(bad)?'cached':'not cached'));
+    if(peak>40)p.push('up to '+peak+' fetches at once (want at most 40)');
+    // 4. the next open: only the missing one is fetched, and now it is cached
+    down.clear();const n1=fetched.length;await ev('message','audio');
+    if(fetched.length-n1!==1||fetched[n1]!==bad||!inA().has(bad)||inA().size!==AF.length)p.push('a later open did not fetch just the missing recording: '+(fetched.length-n1)+' fetches, '+inA().size+' of '+AF.length);
+    // 5. the next release: a recording the old release's cache got on demand moves to A; one no release lists goes; A's files stay
+    const keepOne=[...inA().keys()][0];inA().delete(keepOne);store.set('starschool-v1',new Map([[keepOne,{ok:true,u:'old'}],[norm('./audio/teach/000000000000.ogg'),{ok:true}]]));
+    inA().set(norm('./audio/es/ffffffffffff.ogg'),{ok:true});
+    await ev('activate');
+    if(store.has('starschool-v1')||!inA().has(keepOne)||inA().get(keepOne).u!=='old'||inA().has(norm('./audio/es/ffffffffffff.ogg'))||inA().has(norm('./audio/teach/000000000000.ogg'))||inA().size!==AF.length)
+      p.push('activate: old caches '+[...store.keys()].join()+', A has '+inA().size+' of '+AF.length);
+    const n2=fetched.length;await ev('message','audio');if(fetched.length!==n2)p.push('a full audio cache fetched '+(fetched.length-n2)+' files');
+    // 6. two asks at once run one fill
+    inA().delete(bad);const n3=fetched.length;await Promise.all([ev('message','audio'),ev('message','audio')]);if(fetched.length-n3!==1)p.push('two asks at once fetched '+(fetched.length-n3));
+    // 7. a recording fetched on demand (not cached yet) goes to A, not the release cache
+    inA().delete(bad);let put=null;H.fetch({request:{method:'GET',url:bad,mode:'no-cors',headers:{get:()=>null},destination:'audio'},respondWith:pr=>{put=pr},waitUntil(){}});
+    await put;await tick();if(!inA().has(bad))p.push('a recording fetched on demand did not go to the audio cache');
+    // the page asks after it is up and on later opens; the host serves the recordings as immutable (their names are content hashes)
+    const app=fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8');
+    if(!/postMessage\('audio'\)/.test(app)||!/requestIdleCallback/.test(app)||!/visibilitychange[^\n]*swAudio\(\)/.test(app))p.push('90-app.js does not ask the worker for the recordings after the start (idle) and on later opens');
+    const vj=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')),ar=(vj.headers||[]).find(h=>h.source==='/audio/(.*)\\.ogg');
+    if(!ar||!ar.headers.some(h=>h.key==='Cache-Control'&&h.value==='public, max-age=31536000, immutable'))p.push('vercel.json does not serve /audio/*.ogg as immutable');
+    return{problems:p,note:'install: '+F.length+' code files; '+AF.length+' recordings after activation, one 503 skipped and filled on the next open; at most '+peak+' fetches at once'}})();
 });
 
 run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under the old question, change, forgot, Start over keeps it, no backup carries it, every way in RC-1',()=>{

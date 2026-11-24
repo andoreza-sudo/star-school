@@ -17,10 +17,11 @@
 .hc-tick{position:absolute;top:-4px;width:4px;height:20px;margin-left:-2px;border-radius:2px;background:var(--ill-orange-2)}
 .hc-bestm{position:absolute;top:-5px;width:6px;height:22px;margin-left:-3px;border-radius:3px;background:var(--ill-yellow);box-shadow:0 0 0 2px var(--ill-brown-3);display:none}
 @media (max-width:480px){.hc-hud2{top:60px;padding:0 var(--s-2);gap:var(--s-1)}.hc-fuel{min-width:116px}.hc-prog{padding:var(--s-1) var(--s-2)}}
-.pedal{position:absolute;bottom:14px;width:clamp(96px,16vw,140px);height:clamp(96px,16vw,140px);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:var(--surface);font-weight:700;box-shadow:0 6px 0 var(--shadow-ink);pointer-events:none;opacity:.92;transition:transform var(--t-fast) var(--ease)}
-.pedal .ic{width:52px;height:52px}.pedal small{font-size:var(--fs-3)}
-.pedal.brake{left:14px;background:var(--danger-shade)}.pedal.gas{right:14px;background:var(--good-ink)}.pedal.on{transform:translateY(4px) scale(.96);opacity:1}
+.pedal{position:absolute;bottom:14px;width:clamp(72px,10vw,88px);height:clamp(72px,10vw,88px);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--surface);font-weight:700;box-shadow:inset 0 0 0 3px var(--surface),0 4px 0 var(--shadow-ink);pointer-events:none;opacity:.6;transition:transform var(--t-fast) var(--ease)}
+/* GFX-1 lighter controls: round, see-through, symbol only (the touch is still the whole half of the screen) */
+.pedal .ic{width:44px;height:44px}.pedal small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;font-size:var(--fs-3)}
+.pedal.brake{left:14px;background:var(--danger-shade)}.pedal.gas{right:14px;background:var(--good-ink)}.pedal.on{transform:translateY(4px) scale(.96);opacity:.9}
 .hcmsg{position:absolute;left:50%;top:118px;transform:translateX(-50%);z-index:3;background:var(--surface);color:var(--ink);border-radius:var(--r-card);padding:var(--s-2) var(--s-4);
   font-size:var(--fs-4);font-weight:700;text-align:center;width:max-content;max-width:min(92vw,560px);opacity:0;transition:opacity var(--t) linear;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft)}
 .hcmsg.on{opacity:1}
@@ -93,7 +94,7 @@
 .hc-t2.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}.hc-t2.lock{opacity:.75}
 .hc-dayt span,.hc-dayt small{font-weight:400}.hc-menu .hc-day{margin:var(--s-3) 0 0}
 /* G-MOVES (v188): the Hop button above Gas (a real button, its own touch), the rival on the progress bar, the rival run card on the menu */
-.hc-hop{position:absolute;right:14px;bottom:calc(26px + clamp(96px,16vw,140px));width:clamp(72px,12vw,96px);height:clamp(72px,12vw,96px);
+.hc-hop{position:absolute;right:14px;bottom:calc(26px + clamp(72px,10vw,88px));opacity:.75;width:clamp(72px,12vw,96px);height:clamp(72px,12vw,96px);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:0;border-radius:50%;background:var(--play-shade);color:var(--surface);
   font:inherit;font-weight:700;box-shadow:0 5px 0 var(--shadow-ink);touch-action:none;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
 .hc-hop:active{transform:translateY(4px)}

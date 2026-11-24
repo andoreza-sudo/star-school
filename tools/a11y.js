@@ -1,6 +1,6 @@
 // Accessibility scan (P6-01, DESIGN_SYSTEM.md section 10). Opens the built app like smoke.js (tools/lib/browser.js) and checks the
 // named screens below at 380x780 and 1024x600. Usage:
-//   node tools/a11y.js                     every screen, both sizes; exit 1 on any failure
+//   node tools/a11y.js                     every screen, both sizes (a screen with its own sizes: those); exit 1 on any failure
 //   node tools/a11y.js home map --size=380x780 --v    some screens, one size, -v prints what was measured
 //   A11Y_SHOTS=dir node tools/a11y.js ...  also writes a 2x screenshot of each screen and of each focus-ring stop it checks
 //
@@ -201,6 +201,16 @@ const SCREENS = {
   home: { run: ev(() => home(true)) },
   map: { run: ev(() => pathMap('math')) },
   'math-question': qScreen(() => { window.say = window.__a11y.say; start('math', 0); }),
+  // LESSON-STAGE: a boss round on its stage (the hints part puts the boss and the pet on the world's scene in the prompt card)
+  'boss-round': { run: async p => { await p.evaluate(async () => { window.say = window.__a11y.say; await partsLoad(['hints']); const a = NODES.math.findIndex(n => nid(n) === 'add3'), i = NODES.math.findIndex((n, j) => j > a && n.sk == 'boss');
+    G = newG({ path: 'math', node: i, sk: 'boss', boss: { e: RW.boss('Robo-Bonk', 'idle') || 'x', name: 'Robo-Bonk' }, hp: 7, pool: [genQ('add', 3)] }); next(); });
+    await p.waitForSelector('.bstage .bossE'); await p.waitForTimeout(400); } },
+  // fix v194: the same at a small phone (360x740, its own size only): the stage leaves the question (the taller, column form), Hear it and Help in the card
+  'boss-round-360': { sizes: [[360, 740]], run: async p => { await p.evaluate(async () => { window.say = window.__a11y.say; await partsLoad(['hints']); const a = NODES.math.findIndex(n => nid(n) === 'add3'), i = NODES.math.findIndex((n, j) => j > a && n.sk == 'boss');
+    G = newG({ path: 'math', node: i, sk: 'boss', boss: { e: RW.boss('Robo-Bonk', 'idle') || 'x', name: 'Robo-Bonk' }, hp: 7, pool: [genQ('add', 3, 2)] }); next(); });
+    await p.waitForSelector('.bstage .bossE'); await p.waitForTimeout(400);
+    const cut = await p.evaluate(() => { const qa = document.querySelector('.qarea').getBoundingClientRect(); return ['#spk', '#hb', '#prompt'].filter(s => { const e = document.querySelector(s); if (!e) return true; const r = e.getBoundingClientRect(); return r.bottom > qa.bottom + 1 || r.top < qa.top - 1; }); });
+    if (cut.length) throw new Error('boss stage: cut off in the card: ' + cut.join(' ')); } },
   'read-question': qScreen(() => start('read', NODES.read.findIndex(n => n.sk == 'pic'))),
   'es-question': qScreen(() => start('es', 0)),
   // KINDS2: sort (a Kindergarten picture sort with three bins of Discover, and an even / odd sort) and mark, fresh and after a miss
@@ -1121,7 +1131,9 @@ async function main() {
   const t0 = Date.now();
   try {
     const jobs = [];
-    for (const size of sizes) for (const n of names) jobs.push([n, size]);
+    // a screen with its own sizes (SCREENS[].sizes) runs at those only, unless --size names one
+    for (const size of sizes) for (const n of names) if (sizeArg || !SCREENS[n].sizes) jobs.push([n, size]);
+    if (!sizeArg) for (const n of names) for (const size of SCREENS[n].sizes || []) jobs.push([n, size]);
     const total = jobs.length;
     if (shard) jobs.splice(0, jobs.length, ...jobs.filter((j, k) => k % shard[1] === shard[0] - 1));
     if (shard) console.log(`a11y shard ${shard[0]}/${shard[1]}: ${jobs.length} of ${total} jobs (screen x size)`);

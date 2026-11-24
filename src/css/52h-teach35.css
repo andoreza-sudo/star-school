@@ -3,6 +3,7 @@
 .ls-bars{display:flex;flex-direction:column;gap:var(--s-2);align-items:center;max-width:100%}
 .ls-bar{display:flex;align-items:center;gap:var(--s-2);max-width:100%}
 .ls-bar .viz{max-width:min(240px,62vw);height:auto}
+.mm-bars2 .ls-bar{max-width:100%}.mm-bars2 .ls-bar .viz{max-width:100%} /* fix v194: the tapped bars at their own width (50 a part) where the card has room */
 .ls-barl{font-size:var(--fs-3);font-weight:700;color:var(--ink);min-width:2.2em;text-align:center}
 .ls-copies{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;max-width:100%}
 .ls-copies .viz{max-width:min(150px,40vw);height:auto}

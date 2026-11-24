@@ -56,10 +56,12 @@ const GROUPS = [
 const enKey = E.esKey; // NFC, trimmed, spaces collapsed: the same key as say() uses
 
 /* TEACH-4: the pet's fixed teacher lines for the Pre-K to 2nd grade lessons (docs/TEACH-PLAN-2.md system H, owner addition 3: about 70 lines),
-   recorded in ONE warm voice (the pet is one speaker): audio/teach/<hash>.ogg, manifest src/data/d-teach-audio.js (EN_TEACH: key -> file).
+   recorded in ONE warm voice (the pet is one speaker): audio/teach/<hash>.ogg, manifest src/data/d-teach-audio.js (EN_TEACH: key -> file;
+   REC-ALL: tools/build.py puts it in teach12.<VER>.js, loaded with every lesson, not the data file loaded at start).
      node tools/en-audio.js --teach        record only these (new lines; checks each with speech to text; deletes unused files)
    Plain node tools/en-audio.js records them after the encouragement. What is recorded: the little pet's own lines (LS_TONE.little), the lesson
    end card, the pet's reasons and repair lines of the Pre-K to 2nd grade codes (BUGS), and the fixed instructions of the batch 4 lessons.
+   REC-ALL (v194, below) adds every fixed sentence of every lesson at every age: the older pet is no longer the tablet's voice.
    Never a line with a name, a number or a word of the question: those stay the tablet's voice (say() plays a recorded line whole, or its
    recorded sentences in order with the tablet's voice for the rest; 12-speech.js tchSay). A line the encouragement already records (in six
    voices, "Great job!") is left to it. tools/test.js "recorded teacher lines TEACH-4" checks the list against the manifest and the files. */
@@ -71,7 +73,7 @@ const TEACH_GROUPS = [
   ['the little pet\'s own lines (LS_TONE.little, 52c-scripts.js)', R => R("Object.values(LS_TONE.little).filter(v=>typeof v!='function').flat()")],
   ['the little pet\'s hello (LS_TONE.little.hi, after the name)', ["Let's learn together."], 1],
   // LS-STOP: the little pet's lesson stop lines (LS_TONE2.little: the slide into the lesson, "Find my mistake!", the pay lines) and the
-  // start card's question after the name (LS_TONE2.little.open); the older ages' lines stay the tablet's voice, as LS_TONE's do
+  // start card's question after the name (LS_TONE2.little.open); the older ages' lines are recorded too since REC-ALL (lessonSentences)
   ['the little pet\'s lesson stop lines (LS_TONE2.little, 52c-scripts.js)', R => R("Object.values(LS_TONE2.little).filter(v=>typeof v!='function')")],
   ['the little pet\'s lesson stop card (LS_TONE2.little.open, after the name)', ['Want to learn this with me?'], 1],
   ['the lesson end card (52-lesson.js)', ['You learned it!', 'You already knew it!', 'Great learning today!'], 1],
@@ -84,36 +86,119 @@ const TEACH_GROUPS = [
     'How many dots? Tap the number.', 'Put in as many counters as you like!', 'What comes next?', 'Put in some blue and some orange. Any way you like!', 'Tap a shape, then tap its group.',
     'Use both colors.', 'Match them up.', 'Tap a picture to hear it. Clap it. Then tap its bin.'], 1],
 ];
-// collectTeach(ctx?) -> Map key -> {text, from: [where], lit}; lines the encouragement records are left out
+/* REC-ALL (owner decision 2026-11-24: "the tablet's voice is awful so any recordings you can do the better"; the owner picked "All lesson
+   lines"): every fixed sentence of every lesson, for every age (Pre-K to 6th grade), in the same voice. The unit is the sentence, as say()
+   matches it: LS.talk joins a screen's lines into one text, and tchRuns (12-speech.js) plays each recorded sentence of it (enSplit) in order,
+   the others in the tablet's voice. So a line with a {slot} or a number still gets its fixed sentences recorded ("I pick {ans}. Am I right?"
+   records "Am I right?"). Collected from the app: LS_TONE and LS_TONE2 at all three ages (functions called with a stand-in name and a
+   number, and the sentences with them dropped), LS6_SAY, the lesson end card, and each lesson's words as 52-lesson.js says them (L.w.beats:
+   explore, name, together, show; remember when the lesson has a warm-up; check only its {ans} line, the pet's claim; never "why", which no
+   screen says) and its job (LS.job: the start card's line).
+   Left out to stay inside the audio budget the owner approved (8.5 MB; everything above came to 8.9 MB): the warm-up lines (beats.remember,
+   said only when nothing older is due) at every age, and the Explore lines of the lessons of grade 3 and up (older children read the
+   caption). They stay the tablet's voice, as does a sentence the speech to text check fails. Recording them too needs about 0.55 MB more:
+   put them back in LS_SAID / the explore test and run --teach again. Spanish pieces (lsRuns: «...» and el / la in a Spanish lesson)
+   stay with ES-AUDIO. A sentence is recorded only if it starts with a capital and ends with . ! or ? (never a fragment cut by a Spanish
+   word), and has no digit, no {slot} and no name. The pet's reasons (L.w.reasons) and the ideas the grown-ups read are not in this list.
+   A sentence the little pet's lessons or lines use is recorded at speed 0.95 (TEACH_FORMAT, as TEACH-4); one only the older pet uses
+   (3rd to 6th grade: LS_TONE kid and teen, lessons of grade 3 and up) at speed 1.0 (TEACH_FORMAT_BIG), a little brisker for older
+   children. Same voice, same Opus 16 kbps; the file name is the hash of the recipe, so the TEACH-4 files are kept. */
+const TEACH_SPEED_BIG = 1.0, TEACH_FORMAT_BIG = 'xai-tts en wav24k speed1 trim opus16k-mono ogg teach v1';
+// sentences the speech to text check rejected in every take (6 recordings each, 2026-11-24): the voice says "lengths" as "links" and
+// "Rate story" as "Great story", so they stay the tablet's voice
+const NO_REC = new Set(['Add their lengths.', 'Add the lengths.', 'Rate story: build the table.']);
+const NM = 'Zqxvo'; // a stand-in child's name: a sentence with it is never recorded
+// the lesson sentences: [[text, age ('little' | 'big'), where]] (age: the youngest pet that says it)
+function lessonSentences(R) {
+  const raw = R(`(()=>{const o=[],add=(t,es,big,w)=>{if(t!=null&&String(t).trim())o.push([String(t),es?1:0,big?1:0,w])};
+    for(const a of ['little','kid','teen'])for(const T of [LS_TONE[a],LS_TONE2[a]])for(const [k,v] of Object.entries(T))
+      (typeof v=='function'?[v('${NM}'),v(3)]:[].concat(v)).forEach(x=>add(x,0,a!='little','LS_TONE '+a+'.'+k));
+    const LS_SAID={explore:1,name:1,together:1,check:1,show:1}; // remember: left out for the budget (below)
+    if(typeof LS6_SAY!='undefined')for(const a in LS6_SAY)add(LS6_SAY[a],0,a!='little','LS6_SAY.'+a);
+    for(const t of ['You learned it!','You already knew it!','Great learning today!'])add(t,0,0,'the lesson end card');
+    for(const id of LS_IDS){const L=LESSONS[id];if(!L||!L.w||!L.w.beats)continue;const es=L.p=='es',big=L.g!=null&&L.g>2;
+      add(LS.job(L),es,big,'job '+id);
+      for(const [b,ls] of Object.entries(L.w.beats))if(LS_SAID[b]&&!(b=='explore'&&big))for(const t of [].concat(ls||[]))if(b!='check'||/\{ans\}/.test(t))add(t,es,big,id+'.'+b)}
+    return o})()`);
+  const enSplit = R('enSplit'), lsRuns = R('lsRuns'), out = [];
+  for (const [t, es, big, w] of raw) for (const [piece, isEs] of lsRuns(t, !!es)) {
+    if (isEs) continue;
+    for (const s of enSplit(enKey(piece)).map(enKey))
+      if (!/[{}\d]/.test(s) && !s.includes(NM) && !NO_REC.has(s) && /^["“‘]?[A-Z]/.test(s) && /[.!?]["”’]?$/.test(s)) out.push([s, big ? 'big' : 'little', w]);
+  }
+  return out;
+}
+// collectTeach(ctx?) -> Map key -> {text, from: [where], lit, rec ('little' | 'big': the recipe)}; lines the encouragement records are left out
 function collectTeach(ctx) {
   ctx = ctx || E.loadApp();
   const R = s => vm.runInContext(s, ctx), en = R('typeof EN_AUDIO=="undefined"?{}:EN_AUDIO.lines'), lines = new Map();
-  for (const [from, ls, lit] of TEACH_GROUPS) for (const t of (typeof ls == 'function' ? ls(R) : ls)) {
+  const add = (t, from, lit, rec) => {
     const k = enKey(t);
-    if (!k || en[k] || /\d/.test(k)) continue;
-    if (!lines.has(k)) lines.set(k, { text: k, from: [], lit: !!lit });
-    lines.get(k).from.push(from);
-  }
+    if (!k || en[k] || /\d/.test(k)) return;
+    if (!lines.has(k)) lines.set(k, { text: k, from: [], lit: !!lit, rec });
+    const o = lines.get(k);
+    if (rec == 'little') o.rec = 'little'; // the little pet's speed wins for a sentence both ages say
+    o.from.push(from);
+  };
+  for (const [from, ls, lit] of TEACH_GROUPS) for (const t of (typeof ls == 'function' ? ls(R) : ls)) add(t, from, lit, 'little');
+  // REC-ALL: little first, so a sentence both ages say is recorded at the little pet's speed
+  const ss = lessonSentences(R);
+  for (const [s, rec, w] of ss.filter(x => x[1] == 'little').concat(ss.filter(x => x[1] == 'big'))) add(s, 'lesson ' + w, 0, rec);
   return lines;
 }
-const teachFileOf = k => VA.fileOf(TEACH_FORMAT, TEACH_VOICE, k);
+const teachFileOf = (k, rec) => VA.fileOf(rec == 'big' ? TEACH_FORMAT_BIG : TEACH_FORMAT, TEACH_VOICE, k);
 function teachManifest(lines) {
   const keys = [...lines.keys()].sort();
   return '/* ---------- TEACH-4: the pet\'s recorded teacher lines (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach) ----------\n'
-    + '   The fixed lines of the Pre-K to 2nd grade lessons -> their file, ' + TEACH_DIR + '<file>.ogg (xAI text to speech, English, the voice ' + TEACH_VOICE + ',\n'
-    + '   speed ' + TEACH_SPEED + ', Opus 16 kbps mono). One voice: the pet is one speaker. Keys are esKey(text). ' + keys.length + ' lines. */\n'
+    + '   The fixed lines and sentences of every lesson, Pre-K to 6th grade (REC-ALL) -> their file, ' + TEACH_DIR + '<file>.ogg (xAI text to speech,\n'
+    + '   English, the voice ' + TEACH_VOICE + ', speed ' + TEACH_SPEED + ' (the little pet) or ' + TEACH_SPEED_BIG + ' (only the older pet), Opus 16 kbps mono). One voice: the pet is\n'
+    + '   one speaker. Keys are esKey(text). ' + keys.length + ' lines. */\n'
     + 'const EN_TEACH={dir:' + JSON.stringify(TEACH_DIR) + ',ext:' + JSON.stringify(EXT) + ',voice:' + JSON.stringify(TEACH_VOICE) + ',lines:{\n'
-    + keys.map(k => JSON.stringify(k) + ':' + JSON.stringify(teachFileOf(k))).join(',\n') + '}};\n';
+    + keys.map(k => JSON.stringify(k) + ':' + JSON.stringify(teachFileOf(k, lines.get(k).rec))).join(',\n') + '}};\n';
 }
+/* fix2 v194 (Fable's confirming review): EN_TEACH is built into teach12, which loads with a lesson, so a teacher line said OUTSIDE a lesson
+   (a Practice prompt, "What comes next?", "How many in all?"; a hint, "Say it slowly.") lost its recording until a map loaded the lesson
+   parts, and for good with lessons off (TEACH.off). EN_TEACH0, src/data/d-teach-start.js (in the data file loaded at start, about 3 KB),
+   lists the manifest's lines that appear word for word in the code or data outside the lessons (every src/js and src/data file but
+   52*.js and the teacher manifests), with the same files. tchM() in 12-speech.js uses EN_TEACH once teach12 is in, EN_TEACH0 until then.
+   Written with the full manifest (--teach), or alone from it: node tools/en-audio.js --teach-start (no recording). tools/test.js
+   "recorded teacher lines TEACH-4" checks that it is exactly teachStart(EN_TEACH.lines). */
+const TEACH_START = path.join(SRC, 'data', 'd-teach-start.js');
+function teachStart(M) {
+  const txt = ['js', 'data'].flatMap(d => fs.readdirSync(path.join(SRC, d)).filter(f => f.endsWith('.js') && !/^(52|d-teach-)/.test(f)).sort()
+    .map(f => fs.readFileSync(path.join(SRC, d, f), 'utf8'))).join('\n');
+  return Object.fromEntries(Object.keys(M).filter(k => txt.includes(k) || txt.includes(k.replace(/'/g, "\\'"))).sort().map(k => [k, M[k]]));
+}
+function teachStartText(M) {
+  const L = teachStart(M), keys = Object.keys(L);
+  return '/* ---------- fix2 v194: the recorded teacher lines said outside a lesson (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach-start) ----------\n'
+    + '   The lines of src/data/d-teach-audio.js (EN_TEACH, in the teach12 part) that the code or data outside the lessons says word for word\n'
+    + '   (Practice prompts, hints), so they play the pet\'s recording before a lesson part loads and with lessons off. ' + keys.length + ' lines. */\n'
+    + 'const EN_TEACH0={dir:' + JSON.stringify(TEACH_DIR) + ',ext:' + JSON.stringify(EXT) + ',voice:' + JSON.stringify(TEACH_VOICE) + ',lines:{\n'
+    + keys.map(k => JSON.stringify(k) + ':' + JSON.stringify(L[k])).join(',\n') + '}};\n';
+}
+const writeTeachStart = () => {
+  const M = Function(fs.readFileSync(TEACH_MANIFEST, 'utf8') + ';return EN_TEACH')().lines;
+  fs.writeFileSync(TEACH_START, teachStartText(M));
+  console.log(`teacher lines at start (EN_TEACH0): ${Object.keys(teachStart(M)).length} lines, ${fs.statSync(TEACH_START).size} bytes`);
+};
+// the size of a new recording, roughly (fitted on the TEACH-4 files: about 350 bytes a file and 137 a character)
+const estBytes = os => os.reduce((s, o) => s + 354 + 137 * o.text.length, 0);
 async function teachMain(dry) {
-  const lines = collectTeach(), all = [...lines.values()];
-  console.log(`teacher lines: ${all.length} in the voice ${TEACH_VOICE}, ${all.reduce((s, o) => s + o.text.length, 0)} characters`);
-  const jobs = all.map(o => ({ text: o.text, voice: TEACH_VOICE, file: teachFileOf(o.text) }));
-  const { failed } = await VA.record(jobs, { dir: TEACH_DIR, ext: EXT, lang: LANG, speed: TEACH_SPEED, dry, check });
+  const lines = collectTeach(), all = [...lines.values()], dir = path.join(ROOT, TEACH_DIR), fileOf = o => teachFileOf(o.text, o.rec);
+  const big = all.filter(o => o.rec == 'big'), todo = all.filter(o => !fs.existsSync(path.join(dir, fileOf(o) + EXT)));
+  console.log(`teacher lines: ${all.length} in the voice ${TEACH_VOICE} (${all.length - big.length} at speed ${TEACH_SPEED}, ${big.length} at ${TEACH_SPEED_BIG}), ${all.reduce((s, o) => s + o.text.length, 0)} characters`);
+  console.log(`new: ${todo.length} files, ${todo.reduce((s, o) => s + o.text.length, 0)} characters, about ${estBytes(todo)} bytes`);
+  const failed = [];
+  for (const [rec, speed] of [['little', TEACH_SPEED], ['big', TEACH_SPEED_BIG]]) {
+    const jobs = all.filter(o => o.rec == rec).map(o => ({ text: o.text, voice: TEACH_VOICE, file: fileOf(o) }));
+    failed.push(...(await VA.record(jobs, { dir: TEACH_DIR, ext: EXT, lang: LANG, speed, dry, check })).failed);
+  }
   if (dry) return failed;
-  const dir = path.join(ROOT, TEACH_DIR), have = new Map([...lines].filter(([k]) => fs.existsSync(path.join(dir, teachFileOf(k) + EXT))));
+  const have = new Map([...lines].filter(([, o]) => fs.existsSync(path.join(dir, fileOf(o) + EXT))));
   fs.writeFileSync(TEACH_MANIFEST, teachManifest(have));
-  const keep = new Set([...have.keys()].map(k => teachFileOf(k) + EXT)), [gone, bytes] = VA.prune(TEACH_DIR, EXT, keep);
+  writeTeachStart(); // fix2 v194: the lines said outside a lesson, in the data file
+  const keep = new Set([...have.values()].map(o => fileOf(o) + EXT)), [gone, bytes] = VA.prune(TEACH_DIR, EXT, keep);
   console.log(`teacher manifest: ${have.size} lines, ${fs.statSync(TEACH_MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
   return failed;
 }
@@ -161,6 +246,7 @@ function check(j, file) {
 
 async function main() {
   const dry = process.argv.includes('--dry');
+  if (process.argv.includes('--teach-start')) { writeTeachStart(); return; } // fix2 v194: only the start-up list, from the manifest
   if (process.argv.includes('--teach')) { if ((await teachMain(dry)).length) process.exitCode = 1; return; } // TEACH-4: the teacher lines only
   const lines = collect(), all = [...lines.values()];
   console.log(`lines: ${all.length} x ${VOICES.length} voices = ${all.length * VOICES.length} files, ${all.reduce((s, o) => s + o.text.length, 0) * VOICES.length} characters`);
@@ -177,5 +263,5 @@ async function main() {
   if ((await teachMain(false)).length) process.exitCode = 1; // TEACH-4: then the teacher lines
 }
 
-module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectTeach, teachFileOf, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_GROUPS };
+module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectTeach, teachFileOf, teachStart, teachStartText, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_FORMAT_BIG, TEACH_GROUPS };
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });

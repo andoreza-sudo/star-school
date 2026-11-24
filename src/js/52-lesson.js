@@ -347,6 +347,9 @@ const LS = {
     LS.st = LS.make(id, les ? LS.resume(les, day0)
       : {rem: pl.remember || [], day: day0, repair: pl.id === id && pl.code, proof: true, know: !!o.know, learn: !!o.learn});
     LS.t0 = 0;
+    // fix2 v194: LS.job1 (the job the start card just said) counts only when this start comes from that card; a start from anywhere
+    // else (the card was left by Home, then a lesson started another way) must not drop the first line's sentence
+    if (!$('#lsopen')) LS.job1 = '';
     warmVoices();
     LS.show();
   },
@@ -356,21 +359,52 @@ const LS = {
     if (!L) return;
     if (S.les && S.les.n === id) return LS.start(id);
     LS.st = null;
-    const p = L.p || 'math', up = gradeOf() > 2, tag = lsPriceTag(id), T2 = lsTone2(), title = up ? 'Challenge: ' + L.t : `Learn ${L.t} with ${petN()}`;
-    view(`<div class="top tbar s-${p} ls-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico(up ? 'bolt' : 'doc', 30)}<span>${esc(L.t)}</span></div></div>
-    <div class="scroll ls-end" id="lsopen"><div class="ls-endc">
-     <div class="ls-art ls-big" id="lsart" aria-hidden="true"></div>
-     <h1>${esc(title)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}
-     ${tag ? `<p class="ls-price${tag == 'done today' ? ' dn' : ''}" id="lsprice">${ico(tag == 'done today' ? 'check' : 'ticket', 26)}<span>${tag == 'done today' ? 'Game time for this one: done today' : `Pass it to earn ${tag} of game time`}</span></p>` : ''}
+    const p = L.p || 'math', up = gradeOf() > 2, T2 = lsTone2(), title = up ? 'Challenge: ' + L.t : `Learn ${L.t} with ${petN()}`;
+    // LESSON-STAGE (owner, 2026-11-23): no price on the start card (game time shows only at the end); the stop's world behind it, the
+    // pet standing on it, and the job the lesson helps with (its approved Show line's first sentence) with the job's map picture
+    const job = LS.job(L), said = T2.open(lsName()) + (job ? ' ' + job : '');
+    view(`${LS.scene(id)}<div class="top tbar s-${p} ls-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico(up ? 'bolt' : 'doc', 30)}<span>${esc(L.t)}</span></div></div>
+    <div class="scroll ls-end" id="lsopen"><div class="ls-art ls-big" id="lsart" aria-hidden="true"></div><div class="ls-endc">
+     <div class="ls-h"><h1>${esc(title)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}</div>
+     ${job ? `<p class="ls-job" id="lsjob">${LS.jobPic(id, 'ls-jp')}<span>${esc(job)}</span></p>` : ''}
      <div class="ls-acts">${UI.btn(up ? 'Start the challenge' : "Let's learn", {kind: 'primary', size: 'lg', icon: up ? 'bolt' : 'play', id: 'lslearn'})}${UI.btn('I already know this!', {kind: 'soft', size: 'lg', icon: 'star', id: 'lsknow'})}</div>
     </div></div>`);
     LS.mood('happy');
     $('#back').onclick = () => { SFX.whoosh(); pathMap(p); };
     $('#lslearn').onclick = () => { SFX.whoosh(); LS.start(id, {learn: 1}); };
     $('#lsknow').onclick = () => { SFX.whoosh(); LS.start(id, {know: 1}); };
-    $('#lshear2').onclick = () => say(T2.open(lsName()));
+    $('#lshear2').onclick = () => say(said);
     UI.hear();
-    if (LS.voice()) say(T2.open(lsName()));
+    LS.job1 = '';
+    if (LS.voice()) { say(said); LS.job1 = job; }
+  },
+  /* LESSON-STAGE: the lesson's place: its stop's world on the map (the world band's scene, SCN.band in 43-scenes.js, drawn for the
+     screen with nothing to keep clear, its horizon at about 40% of a wide screen and 30% of a tall one, the sky above it in its own top
+     colour); '' when there is none (a lesson with no stop, no scene data). Decoration only: aria-hidden, no taps, no motion. */
+  world(id) {
+    const L = LESSONS[id], p = L && (L.p || 'math'), n = p && NODES[p] && NODES[p].find(x => nid(x) === id);
+    return n && PATHS[p].worlds[n.wi] || null;
+  },
+  scene(id) {
+    LS.scnId = id;
+    const w = LS.world(id), T = w && typeof SCN != 'undefined' && SCN.theme(w);
+    if (!T) return '';
+    const W = Math.max(320, innerWidth | 0), H = Math.max(400, innerHeight | 0), y0 = Math.max(0, Math.round(H * (W > H ? .42 : .3)) - 76);
+    return `<div class="ls-scn" aria-hidden="true" style="background:var(--sc-${T.sky[0]})">${SCN.band(w, W, y0, H - y0, {stops: [], trail: [], pet: null})}</div>`;
+  },
+  // the world's job prop (the map's G-PROPS drawing: shells, planks, fuel ...) as its own small picture; '' when the world has none
+  jobPic(id, cls) {
+    const w = LS.world(id), T = w && typeof SCN != 'undefined' && SCN.theme(w), P = T && T.job && SCN.prop(T.job);
+    if (!P) return '';
+    const sw = q => (q.sw ? ` stroke-width="${q.sw}"${q.da ? ` stroke-dasharray="${q.da.join(' ')}"` : ''}` : '');
+    return `<svg class="${cls}" viewBox="${-P.hw - 2} ${-P.hh - 2} ${2 * P.hw + 4} ${P.hh + 6}" aria-hidden="true" focusable="false">`
+      + P.sh.map(q => `<path d="${SCN.xf(q.segs, 1, 0, 0)}" ${q.st}${sw(q)}/>`).join('') + '</svg>';
+  },
+  // the job: the first sentence of the script's first Show line when it is a whole sentence with no number to fill ("The reef shop
+  // counts shells."); '' for a lesson with no such line (never a new sentence)
+  job(L) {
+    const t = L && L.w && L.w.beats && (L.w.beats.show || [])[0], s = t && (String(t).match(/^[^.!?]*[.!]/) || [])[0];
+    return s && !/[{}]/.test(s) ? s.trim() : '';
   },
   /* LS-STOP: lesson time counts as learning (the activity log, so "learn first" sees it). fix179: only active time, as a round counts
      it (ACT.qEnd): a screen's time counts when the child answers or goes on (tick, from submit, judge and Next), from when the screen
@@ -387,17 +421,24 @@ const LS = {
     if (sec >= 1 && st) try { ACT.add(today(), {sec, area: st.L.p || 'math'}); } catch (e) {}
     if (LS.t0) LS.screen(now);
   },
-  // LS-STOP: the ticket meter in the top bar: what this lesson pays now, filled as the beats are done
-  meter(st, B, at) {
-    const tag = lsPriceTag(st.id);
-    if (!tag) return '';
-    const n = B == 'tog' ? LS.TOG : st.items.length || 1, f = B == 'pre' ? 0 : B == 'win' ? 5 / 6 : Math.min(1, (Math.max(0, at) + st.i / n) / 6), dn = tag == 'done today';
-    return `<div class="ls-meter${dn ? ' dn' : ''}" id="lsmeter" role="img" style="--f:${f.toFixed(3)}" aria-label="${dn ? 'Game time for this lesson: done today' : `Pass to earn ${tag.slice(1).replace('min', 'minutes')} of game time, ${Math.round(f * 100)} percent done`}">${ico(dn ? 'check' : 'ticket', 22)}<span>${tag}</span></div>`;
+  /* LESSON-STAGE (owner, 2026-11-23): the six beats as a little train's stops (no ticket meter: game time shows only at the end). A
+     stop passed holds the world's job prop, so the job fills up as the lesson goes; the train waits at the stop of now. The words
+     ("Step 4 of 6 · Together") stay for screen readers only (.ls-step). */
+  track(st, B, at) {
+    const job = LS.jobPic(st.id, 'ls-jp'), tr = typeof ART != 'undefined' && ART.train ? picArt('train', 26, 'ls-tr') : '';
+    return LS_PIPS.map((x, j) => {
+      const on = j < at || B == 'win', now = j == at;
+      return `<span class="ls-pip${on ? ' on' : now ? ' now' : ''}" aria-hidden="true">${on ? job : now ? tr : ''}</span>`;
+    }).join('');
   },
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
   talk(lines, then, cap0) {
-    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = lsPlain(cap0 || t);
+    let t = lines.filter(Boolean).join(' ');
+    const b = $('#lsbub'), me = LS.st, c = lsPlain(cap0 || t);
+    // fix v194: the start card has just said the job (LS.job1): the first line after it does not say that sentence again (the bubble keeps it)
+    if (LS.job1 && t.startsWith(LS.job1)) t = t.slice(LS.job1.length).trim();
+    LS.job1 = '';
     if (b) { b.firstChild.textContent = c; b.classList.toggle('on', !!c); }
     // TEACH-4: a recorded line (EN_TEACH, 12-speech.js) plays wherever its sentence falls in the lines; the rest is the tablet's voice
     // TEACH-5S: a line with «Spanish» in it, or any line of a Spanish lesson, is said piece by piece in its own voice (lsSay)
@@ -413,9 +454,12 @@ const LS = {
     };
     setTimeout(go, 200);
   },
-  mood(m) {
+  calm: () => document.documentElement.classList.contains('calm') || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches),
+  // the pet's face (LESSON-STAGE: and its reaction, the pet's own jump or wobble, anim in 12-speech.js; none in calm mode)
+  mood(m, act) {
     const a = $('#lsart');
     if (a) a.innerHTML = petRigHTML(Math.max(S.stars, GROW[1]), m);
+    if (a && act && !LS.calm()) anim(a, act);
   },
   show() {
     const st = LS.st, it = st && LS.cur(st);
@@ -427,18 +471,18 @@ const LS = {
     LS.seq++; // screens shown (tests wait for the next one)
     const q = it.q, B = LSB[st.b], T = lsTone(), sp = st.L.p || 'math';
     LS.u = {lock: true, typed: '', built: [], tries: 0};
-    const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS_PIPS.map(([k, ic, l], j) => `<span class="ls-pip${j < at || B == 'win' ? ' on' : j == at ? ' now' : ''}" aria-hidden="true">${ico(ic, 18)}</span>`).join('');
+    const at = LS_PIPS.findIndex(x => x[0] == B), pips = LS.track(st, B, at);
     const prompt = LS.prompt(it);
     let input = '';
     if (it.m == 'say') input = UI.btn(it.nx || 'Next', {kind: 'primary', size: 'lg', icon: it.nx ? 'check' : 'go', id: 'lsnext'}); // TEACH-5S: "I said it!" after say it with me
     else if (it.m == 'judge') {
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
     } else input = KIND[q.kind].render(q);
-    const mt = LS.meter(st, B, at);
     // TEACH-UX: the dots are drawn only; the label under them says the step in words (and is what a screen reader reads);
     // fixRev (v184): " of 6" in its own span, which a phone under 400 px leaves out ("Step 4 · Together"), so the step's name is never cut
-    view(`<div class="top tbar round qtop ls-top s-${sp}${mt ? ' ls-m' : ''}">${NAV.house('quit')}<div class="ls-beats"><div class="ls-pips" aria-hidden="true">${pips}</div><span class="ls-step" id="lsstep">${esc(LS.step(B)).replace(/( of \d+)/, '<span class="ls-of">$1</span>')}</span></div>
-     <div class="pl-tag ls-tag">${ico('doc', 24)}<span>${esc(st.L.t)}</span></div>${mt}</div>
+    // LESSON-STAGE: the label is for screen readers only now (the train's stops show where the child is); the stop's world is behind
+    view(`${LS.scene(st.id)}<div class="top tbar round qtop ls-top s-${sp}">${NAV.house('quit')}<div class="ls-beats"><div class="ls-pips" aria-hidden="true">${pips}</div><span class="ls-step" id="lsstep">${esc(LS.step(B)).replace(/( of \d+)/, '<span class="ls-of">$1</span>')}</span></div>
+     <div class="pl-tag ls-tag">${ico('doc', 24)}<span>${esc(st.L.t)}</span></div></div>
     <div class="play qs s-${sp} ls-play" id="lsplay" data-beat="${B}" data-mode="${it.m}"><div class="qarea">
      <div class="ls-pet${it.m == 'judge' ? ' ls-turn' : ''}"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub" id="lsbub" role="status"><span></span></div>
       ${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear', cls: 'ls-hear'})}</div>
@@ -483,7 +527,7 @@ const LS = {
     if (b) b.classList.add(res.ok ? 'right' : 'ls-pk');
     if (res.ok) SFX.right(1); else SFX.pop(2);
     if (!it.petOk) $('#prompt').classList.add('ls-oops');
-    LS.mood(res.mood);
+    LS.mood(res.mood, res.ok ? 'jump' : 'sad');
     LS.go(res);
   },
   // a kind's submit (K.bind): v as the kind gives it; an open frame2 build passes its state
@@ -503,10 +547,11 @@ const LS = {
       K.right(q);
       SFX.right(1);
       if (it.m != 'open') { const r = (el || $('#prompt')).getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2); }
-      LS.mood('happy');
+      LS.mood('happy', 'jump'); // LESSON-STAGE: the pet cheers
       return LS.go(res);
     }
     const h = $('#hint');
+    LS.mood('oops', 'sad'); // LESSON-STAGE: the pet thinks it over with the child (its "oops" face, a little wobble)
     if (res.act == 'retry') {
       SFX.pop(1);
       if (el) { el.classList.add('wrong'); el.disabled = true; }
@@ -553,17 +598,17 @@ const LS = {
     const why = LS.why(st.id, PT.pay);
     const gt = PT.lines.map(([v, l]) => `<li class="ls-gt">${ico('ticket', 18)}<span><b>+${fmtT(v)} game time</b> ${esc(l)}</span></li>`).join('')
       + (why ? `<li class="ls-gt0">${ico('ticket', 18)}<span>${esc(why)}</span></li>` : '');
-    view(`<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div>${UI.chip('ticket', fmtT(rec.bank0), {aria: 'Game time in the bank', id: 'lsbank'})}</div>
-    <div class="scroll ls-end" id="lsend"><div class="ls-endc">
-     <div class="ls-art ls-big" id="lsart" aria-hidden="true"></div>
-     <h1>${esc(line)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}<p class="ls-idea">${ico('hint', 26)}<span>${esc(L.idea)}</span></p>
-     ${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}
-     ${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}
+    // LESSON-STAGE: the stop's world behind, the pet cheering on it, the card beside it (side by side on a wide screen, so the buttons
+    // fit a 1024 x 600 tablet); the stars and the ticket in one row, the ticket landing in the bank chip is the game-time moment
+    view(`${LS.scene(st.id)}<div class="top tbar s-${p} ls-top">${NAV.house('lshome')}<div class="ttl">${ico('doc', 30)}<span>${esc(L.t)}</span></div>${UI.chip('ticket', fmtT(rec.bank0), {aria: 'Game time in the bank', id: 'lsbank'})}</div>
+    <div class="scroll ls-end" id="lsend"><div class="ls-art ls-big" id="lsart" aria-hidden="true"></div><div class="ls-endc">
+     <div class="ls-h"><h1>${esc(line)}</h1>${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'lshear2', cls: 'ls-hear'})}</div><p class="ls-idea">${ico('hint', 26)}<span>${esc(L.idea)}</span></p>
+     ${rec.pass || PT.sec ? `<div class="ls-win">${rec.pass ? LS.jobPic(st.id, 'ls-jp') + UI.stars(rec.stars, 3, 34) : ''}${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}</div>` : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       ${gt}${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES[p][rec.next].t)}!</span></li>` : ''}</ul>
      <div class="ls-acts">${rec.pass ? UI.btn('Practice', {kind: getSt(p, rec.ni) ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass && getSt(p, rec.ni) ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
-    LS.mood('cheer');
+    LS.mood('cheer', rec.pass ? 'jump' : '');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
     if ($('#lsprac')) $('#lsprac').onclick = () => { SFX.whoosh(); start(p, rec.ni); };
     if ($('#lsagain')) $('#lsagain').onclick = () => { SFX.whoosh(); LS.start(st.id, {learn: 1}); }; // LS-STOP: a failed Show: the lesson again, teaching first
@@ -587,7 +632,7 @@ const LS = {
   // LS-STOP: the moment the minutes are earned: the ticket lands in the bank chip, which counts up (at once in calm mode or with
   // reduced motion), with a sound
   land(rec) {
-    const k = $('#lstk'), b = $('#lsbank'), calm = document.documentElement.classList.contains('calm') || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const k = $('#lstk'), b = $('#lsbank'), calm = LS.calm();
     setTimeout(() => {
       if (!$('#lsend')) return;
       if (k) { k.classList.add('land'); setTimeout(() => k.remove(), calm ? 0 : 700); }
@@ -631,7 +676,32 @@ const LS = {
 };
 // fix179: lesson time stops counting while the app is hidden (LS.vis)
 if (typeof document != 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { try { LS.vis(!!document.hidden); } catch (e) {} });
+// fix v194: a turned phone (or a resized window) draws the lesson's scene again for the new shape, once it settles
+if (typeof addEventListener == 'function') { let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { try { const e = document.querySelector('.ls-scn'), h = e && LS.scnId && LS.scene(LS.scnId); if (h) e.outerHTML = h; } catch (x) {} }, 200); }); }
 const lsName = () => (S.name || 'friend');
+/* LESSON-STAGE (owner, 2026-11-23): practice in more than one shape. When a stop's generator makes only one kind of question (KMONO),
+   pickQ (49b-kinds2.js) asks here for the third question in a row: one of the stop's own lesson items in another kind (its build on
+   the model or its picture, stages 0 and 1), as the lesson asks it (the same reviewed words), once the child has learned that lesson.
+   An item that needs the lesson around it (a goal, a start state, a raw state, its own answer check, a told story) is never used. It
+   is marked as one of the stop's questions (sk, lv, so mastery counts it) with the label and seed of a fresh generator question of
+   the stop, and lsx: a miss is retried in the round but never kept (addMiss skips it: Review and Grown-ups could only show that
+   other, never-shown question). Only Practice asks (pickQ's mix: no check-in, mastQ, boss or test), and only at a math stop. null when none fits. */
+function lsMix(sk, lv, kind) {
+  const id = sk + lv, L = typeof LESSONS != 'undefined' && LESSONS[id];
+  // fix v194: math only (a Discover, Spanish or reading stop is answered by its choices; its lesson items are not its practice), never with K2.off
+  if (!L || (L.p || 'math') != 'math' || typeof K2 != 'undefined' && K2.off || typeof lsLearned != 'function' || !lsLearned(id)) return null;
+  const r = mulberry32(((Math.random() * 4294967295) >>> 0) + 1);
+  for (let t = 0; t < 8; t++) {
+    let q = null;
+    try { q = L.q(t % 2, r); } catch (e) { return null; }
+    const K = q && KIND[q.kind], M = q && q.kind == 'make' && K2MM[q.model];
+    if (!K || q.kind === kind || q.goal || q.s0 || q.raw || q.on || q.tell || q.kind == 'make' && (!M || M.raw)) continue;
+    if (K.validate && K.validate(q).length) continue;
+    const g = genQ(sk, lv);
+    return Object.assign(q, {sk, lv, label: g.label, seed: g.seed, lsx: 1});
+  }
+  return null;
+}
 /* TEACH-5S: Spanish in a spoken line is written «la vaca». lsRuns(t, es) cuts a line into [text, 1 when Spanish] pieces, in order; in a
    Spanish lesson (es) "el" and "la" said alone (the article named as a word) are Spanish too, never one inside a title or a quote. lsSay says each piece in its own voice, one after the other (say()
    queues them; a Spanish piece is its ES-AUDIO recording when there is one); a line with no Spanish is said as before. lsPlain: the

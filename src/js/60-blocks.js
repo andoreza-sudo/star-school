@@ -1800,6 +1800,7 @@ function blockBuilder(ci) {
     // a goal of this world's list: say it (G-BB3: read aloud too), and the next one that comes in its place
     if (bbWGoals(world).includes(G)) setTimeout(() => {
       SFX.chime();
+      if (typeof JFX != 'undefined') JFX.fly(innerWidth * .35, innerHeight * .5, '#bbgoal', 'star'); // GFX-1: a star flies to the goal chip
       const nx = bbGoalNext(world, 3)[2], line = (G[4] ? `You finished the ${G[5]}!` : 'Goal done: ' + G[1] + '!') + (nx ? ' New goal: ' + bbGoalLine(world, nx) + '.' : '');
       say1(line, 'good', 3600);
       if (S.voice) say(line);

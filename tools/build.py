@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # (BRAND, v193: the icons are copied from docs/brand/icons/, drawn by tools/brand-icons.js; the build no longer needs Pillow)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v193'
+VER = 'v194'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -168,18 +168,18 @@ PARTS = [
     ('gen', r'(23-viz|30-gen-math|30p-pers|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|45-placement|50-say|50-say-cmp|50-say-corner|57-fluency|80-grown|81-backup|82-report|88-online|89-play)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note); PLAY-01: the Play app's unlock screens and purchase; MERGE-186 (ROOM 2): placement (Find my level), Say it! with its sound check and listening corner, and Fact Sprint, called only from screens after start-up (their CSS stays in index.html)
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2|51b-checkin)\.js|(37b-kinds-c|51b-checkin)\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds; CHECK-IN: check-ins and stop badges
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
-    ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
+    ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub|59b-fx)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
     ('rally', r'(63-game-race|63b-rally-gl)\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2; GL-02: its 3D look (on games' GLX)
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
-    ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
+    ('teach12', r'(52e-words|52f-bench|52g-drafted|d-teach-audio)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s)\.js|52s-teach5s\.css'),  # TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
-    ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw)\.js|(39p-pers|39r-ask)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
+    ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw|39u-stage)\.js|(39p-pers|39r-ask|39u-stage)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
     ('gate', r'(41b-pin|41c-kidpw)\.js|(41b-pin|41c-kidpw)\.css'),  # RC-1 (v188): the Grown-ups PIN pad and the children's picture passwords, loaded when asked for (NAV.quiz, the picker)
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
@@ -216,14 +216,16 @@ for w in ('400', '700'):
     src = src.replace('__F%s__' % w, base64.b64encode(open(F % w, 'rb').read()).decode())
 open(OUT + '/index.html', 'w').write(src)
 for stem, _ in PARTS:
-    names = [n for sub in ('css', 'js') for n in sorted(os.listdir(os.path.join(S_DIR, sub))) if part_of(n) == stem]
+    # REC-ALL: a part may also take a src/data file (d-teach-audio.js, the teacher manifest: 1289 lines are 62 KB, needed only in a lesson,
+    # so it loads with teach12, which every lesson loads after teach, not at start; teach stays under 150 KB); it goes after the part's code
+    names = [n for sub in ('css', 'js', 'data') for n in sorted(os.listdir(os.path.join(S_DIR, sub))) if part_of(n) == stem]
     css = cat('css', '.css', stem)
     part = ('/* Whistlestop ' + stem + ' ' + VER + '. BUILT by tools/build.py from ' + ', '.join(names) + ': never edit by hand.\n'
             + ('   index.html ' + VER + ' loads this file on demand (partsThen in src/js/90-app.js, P6-02), after ' + DATA + '. */\n' if stem in LAZY else
                '   index.html ' + VER + ' loads this file with <script src="' + stem + '.' + VER + '.js"> after its own code, before ' + DATA + '. */\n')
             + ("(function(){var s=document.createElement('style');s.id='css-" + stem + "';s.textContent=" + json.dumps(css, ensure_ascii=False)
                + ";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)\n" if css else '')
-            + cat('js', '.js', stem) + "\nvar " + stem.upper() + "_VER='" + VER + "'; // last line: the whole file ran (checked by dataReady() before the app starts)\n")
+            + cat('js', '.js', stem) + cat('data', '.js', stem) + "\nvar " + stem.upper() + "_VER='" + VER + "'; // last line: the whole file ran (checked by dataReady() before the app starts)\n")
     open(OUT + '/%s.%s.js' % (stem, VER), 'w', encoding='utf-8', newline='').write(part)
 data = ('/* Whistlestop data banks ' + VER + '. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.\n'
         '   index.html ' + VER + ' loads this file with <script src="' + DATA + '"> between the code and the start-up script. */\n'
@@ -255,7 +257,7 @@ json.dump({"name": "Whistlestop", "short_name": "Whistlestop", "start_url": "./"
           open(OUT + '/manifest.json', 'w'), indent=1)
 
 # ES-AUDIO: the recorded Spanish, audio/es/*.ogg (tools/es-audio.js; src/data/d-es-audio.js names them). Not loaded at start: say()
-# fetches a file the first time its line is said. sw.js caches every one at install in a second cache, AUDIO_CACHE, which keeps its
+# fetches a file the first time its line is said. sw.js caches every one in a second cache, A ('starschool-audio'), which keeps its
 # name across releases: a file's name is the hash of its text, voice and recipe, so a file never changes, and an update fetches only
 # the new ones (activate drops the ones no release lists any more). Budget: tools/test.js AUDIO_FAIL (CONTRIBUTING 3.3).
 # EN-PRAISE: the recorded English encouragement, audio/en/*.ogg (tools/en-audio.js; src/data/d-en-audio.js), the same way and cache.
@@ -275,10 +277,23 @@ const AF=["""+','.join("'./audio/%s'" % n for n in AUDIO)+"""];
 const aName=u=>new URL(u,self.location).pathname.split('/').pop();
 const NAV_MS=3000; // RC-1: a page open waits this long for the network, then the cached page (RC-2: once the cached page is served, a late
 // network page is NOT cached: it would pair a new index.html with the old cache's parts, "needs to finish updating" offline)
-self.addEventListener('install',e=>{e.waitUntil(Promise.all([caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))),
- caches.open(A).then(c=>c.keys().then(ks=>{const have=new Set(ks.map(r=>aName(r.url)));return c.addAll(AF.filter(u=>!have.has(aName(u))))}))]));self.skipWaiting()});
-self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName));e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.delete(k))))
+// v194 fix2 (Fable): install waits for the code (F) only. The recordings (AF, about 2,400 files) are NOT part of it: one file that fails
+// (a 503) would fail the whole install, so no service worker, and every open would start again from zero. They are cached after
+// activation instead, when the page asks (a message 'audio', sent once the app is up and idle, and on every later open): fillAudio
+// fetches the files not in A yet, AB at a time, each fetch and put on its own, a failure skipped (the next open tries it again).
+// Until a file is cached, say() fetches it from the network, or uses the tablet's voice (12-speech.js esaFail).
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))));self.skipWaiting()});
+// activate: the old release's caches go, but a recording one of them holds (fetched on demand) moves to A first if a release still lists it
+// (names are content hashes); A keeps every file still listed and drops the others
+self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName)),isA=r=>/\\/audio\\//.test(r.url)&&keep.has(aName(r.url));
+ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.open(k).then(o=>o.keys().then(rs=>Promise.all(rs.filter(isA).map(r=>o.match(r).then(x=>x&&caches.open(A).then(a=>a.put(r,x)))))))
+  .catch(()=>{}).then(()=>caches.delete(k)))))
  .then(()=>caches.open(A)).then(c=>c.keys().then(ks=>Promise.all(ks.filter(r=>!keep.has(aName(r.url))).map(r=>c.delete(r))))).then(()=>self.clients.claim()))});
+const AB=40;let filling=null;
+const fillAudio=()=>filling||(filling=caches.open(A).then(async c=>{const have=new Set((await c.keys()).map(r=>aName(r.url))),todo=AF.filter(u=>!have.has(aName(u)));let got=0;
+ for(let i=0;i<todo.length;i+=AB)await Promise.all(todo.slice(i,i+AB).map(u=>fetch(u).then(r=>r.ok?c.put(u,r).then(()=>{got++}):0).catch(()=>0)));
+ return{todo:todo.length,got}}).finally(()=>{filling=null}));
+self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio())});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
@@ -291,7 +306,7 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
    const t=setTimeout(()=>old().then(r=>{if(r)late=1;fin(r)}),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);old().then(r=>fin(r||Response.error()))})}));return}
- e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
+ e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(/\\/audio\\//.test(e.request.url)?A:C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
 """)
 
 # The information page's project (owner decision 2026-11-20: whistlestoplearning.com is a static info page, site/landing.html; the app is on

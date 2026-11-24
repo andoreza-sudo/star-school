@@ -1632,8 +1632,9 @@ function rlCol(role) {
 const rlRes = svg => svg.replace(/var\(--a-([a-z]\d?)\)/g, (m, r) => rlCol(r));
 // an SVG drawing as a canvas of pxw pixels wide (cached by key; .c is set once the image has loaded; .m: c and its half-size copies)
 const RL_SPR = {};
-function rlSprite(key, vw, vh, inner, pxw) {
-  const k = key + '@' + Math.round(pxw);
+// (ink, GFX-1: [width, mix] a thin outline in a dark shade of its own colours, baked in before the smaller copies are made)
+function rlSprite(key, vw, vh, inner, pxw, ink) {
+  const k = key + '@' + Math.round(pxw) + (ink ? '~' + ink.join() : '');
   if (RL_SPR[k]) return RL_SPR[k];
   const w = Math.max(2, Math.round(pxw)), h = Math.max(2, Math.round(pxw * vh / vw)), s = (RL_SPR[k] = { c: null, m: [], w, h, ar: vh / vw });
   const img = new Image();
@@ -1642,8 +1643,8 @@ function rlSprite(key, vw, vh, inner, pxw) {
     c.width = w;
     c.height = h;
     c.getContext('2d').drawImage(img, 0, 0, w, h);
-    const m = [c];
-    for (let p = c; p.width > 32;) {
+    const m = [ink && typeof JFX != 'undefined' ? JFX.ink(c, ink[0], { mix: ink[1] }) : c];
+    for (let p = m[0]; p.width > 32;) {
       const q = document.createElement('canvas');
       q.width = Math.ceil(p.width / 2);
       q.height = Math.max(1, Math.ceil(p.height / 2));
@@ -1651,7 +1652,7 @@ function rlSprite(key, vw, vh, inner, pxw) {
       m.push((p = q));
     }
     s.m = m;
-    s.c = c;
+    s.c = m[0];
   };
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vw} ${vh}" ` +
     `width="${w}" height="${h}">${rlRes(inner)}</svg>`);
@@ -1692,7 +1693,7 @@ function rlSize(R) {
   // cars: the player's and the five rivals'; props, sparkle, arch, gate, hazards and pick-ups at a size they are often seen at
   const rs = rw / sc, cw2 = Math.min(360, RL_CARW * rs * 1.25), r = rlS();
   const kx = rlMyKx(r);
-  V.me = rlSprite(`me-${r.body}-${r.paint}-${r.stk}-${kx.kit}-${kx.whl}`, 120, 84, rlCarArt(r.body, r.paint, r.stk, 'you', false, kx), cw2);
+  V.me = rlSprite(`me-${r.body}-${r.paint}-${r.stk}-${kx.kit}-${kx.whl}`, 120, 84, rlCarArt(r.body, r.paint, r.stk, 'you', false, kx), cw2, [Math.max(1.5, cw2 / 70), .68]);
   // G-RALLY2: the trail's pieces (small sprites, made once) and a fixed pool of 32 pieces (no allocation while racing)
   V.trail = r.trail && RL_TRAIL_ART[r.trail] ? RL_TRAIL_ART[r.trail]().map((a, i) => rlSprite('tr-' + r.trail + i, 40, 40, a, Math.max(8, cw2 * .22))) : null;
   if (!R.tr) R.tr = { x: new Float32Array(32), y: new Float32Array(32), vx: new Float32Array(32), vy: new Float32Array(32), life: new Float32Array(32),
@@ -2065,6 +2066,7 @@ function rlDrawMe(R, top) {
     c.stroke(p);
     c.globalAlpha = 1;
   }
+  if (!calm) rlPuffs(R, x, y, w, h);
   if (P.spin > 0 || P.dizzy > 0) rlDizzy(R, x, y - h * 1.05, w);
   if (P.drifting) {
     // review fix (v186, perf): the dots move every frame, so they go straight into the context's own path (no new Path2D a frame)
@@ -2092,6 +2094,50 @@ function rlDrawMe(R, top) {
   }
 }
 
+// GFX-1: little exhaust puffs from behind the car while it drives (a pool of 12 from the shared kit, one soft sprite made once;
+// none in calm mode, none while the race waits). fix v194: the slow-frame throttle (E.frame) takes the real time between frames (the
+// race clock stops and runs at its own pace); no new object or closure a frame (one emit object reused, a plain loop to draw)
+function rlPuffs(R, x, y, w, h) {
+  if (typeof JFX == 'undefined') return;
+  const c = R.ctx, P = R.st.P, t = R.t || 0, dt = Math.max(0, Math.min(.1, t - (R.pf0 == null ? t : R.pf0))), E = R.ex || (R.ex = JFX.pool(12));
+  const now = performance.now();
+  R.pf0 = t;
+  if (R.pfr != null) E.frame((now - R.pfr) / 1000);
+  R.pfr = now;
+  if (dt > 0 && !R.st.done && P.v > RL_VMAX * .15) {
+    R.pa = (R.pa || 0) + dt * 9;
+    const o = R.eo || (R.eo = {});
+    o.y = y - h * .14; o.vy = h * .45; o.life = .45; o.r = w * .03;
+    for (; R.pa >= 1; R.pa--) for (let sd = -1; sd <= 1; sd += 2) { o.x = x + sd * w * .22; o.vx = sd * w * .2; E.emit(o); }
+  }
+  E.step(dt);
+  if (!E.list.length) return;
+  const S = R.puffS || (R.puffS = (() => {
+    const q = JFX.can(32, 32), g = q.getContext('2d');
+    g.fillStyle = JFX.css('--ill-white-3');
+    g.beginPath();
+    g.arc(16, 16, 15, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = JFX.css('--ill-white');
+    g.beginPath();
+    g.arc(13, 13, 10, 0, Math.PI * 2);
+    g.fill();
+    return q;
+  })());
+  for (const q of E.list) {
+    const f = q.life / q.max, r = q.r * (1 + (1 - f) * 1.8);
+    c.globalAlpha = f * .5;
+    c.drawImage(S, q.x - r, q.y - r, 2 * r, 2 * r);
+  }
+  c.globalAlpha = 1;
+}
+// GFX-1: a sparkle flies from the car to the sparkles chip (JFX.fly: off in calm mode)
+function rlFly() {
+  const cv = RL && RL.cv, V = RL && RL.v;
+  if (!cv || !V || typeof JFX == 'undefined') return;
+  const b = JFX.rect(cv); // fix v194: measured once per screen size
+  JFX.fly(b.left + b.width / 2, b.top + b.height * (V.ground / V.H) - 30, '#rlspk', 'sparkle');
+}
 // G-RALLY2: the trail behind the car: pieces come out from behind the car on both sides and float up and out as they fade (fewer
 // and slower in calm mode). A fixed pool (R.tr), moved by the race clock; nothing is made while racing.
 const RL_TRAIL_ART = {
@@ -2764,6 +2810,7 @@ function rlEvents() {
       setTimeout(() => { if (RL && RL.st === st) rlHorn(RL.horn); }, 450);
     } else if (k == 'spark') {
       const m = [72, 74, 76, 79, 81, 84][a % 6];
+      if (a % 3 == 1) rlFly();
       rlTone(NOTE(m + 12), .08, 0, 'sine', .07);
       rlTone(NOTE(m + 19), .12, .05, 'triangle', .04);
     } else if (k == 'pad' || k == 'zoom') {

@@ -48,7 +48,7 @@ function makeQ1(){if(G.pool)return G.pool.shift();
   {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
-  const q=pickQ(G.sk,G.lv); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js)
+  const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01: Go Home? is open: go on when Keep playing closes it
   if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored
@@ -64,8 +64,16 @@ function fitCh(){for(const g of document.querySelectorAll('.choices')){const bs=
   for(const b of bs){if(b.scrollWidth<=b.clientWidth+1)continue;const cs=getComputedStyle(b),av=b.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
     const r=document.createRange();r.selectNodeContents(b);const w=r.getBoundingClientRect().width;if(w>av+1)k=Math.min(k,av/w)}
   if(k<1){const f=Math.max(.6,k*.97);bs.forEach(b=>b.style.fontSize=(parseFloat(getComputedStyle(b).fontSize)*f).toFixed(1)+'px')}}}
+// The step loop forces a layout per step. When the overflow is one --k does not shrink (a boss's stage over a question at 1024x600:
+// 4-62 px at any --k) it ran all 12 steps for nothing, 15-45 ms inside the tap that opened the question (P4-17: Let's go over 100 ms
+// on a busy machine). So an overflowing question tries the smallest --k first: still over, the loop would end there anyway (the
+// same FIT_KMIN); it fits there, the loop finds the largest --k that fits, as before.
+const FIT_KMIN=(()=>{let k=1;while(k>.42)k-=.05;return k})();
 function fit(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
-  while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
+  const over=()=>qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1;
+  if(!over())return;
+  pr.style.setProperty('--k',FIT_KMIN);if(over())return;pr.style.setProperty('--k',1);
+  while(k>.42&&over()){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 // R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
 // scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
@@ -109,11 +117,12 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   if(G.retry){fb("Let's try this one again!",'again');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
+  if(G.boss&&typeof bossStage=='function')bossStage(); // LESSON-STAGE: the boss on a stage (39u-stage.js, part hints)
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
+function addMiss(q){if(q.lsx)return;const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
 /* TEACH-1: the lessons' switch (part teach, 52-lesson.js). TEACH.off gives the app as it was before them: no lesson offer on the map, and in
@@ -132,7 +141,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
-    if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
+    if(first&&!q.lsx&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js); fix2 v194: never for a lesson mix-in (lsx), whose label can be a review item's
     G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);

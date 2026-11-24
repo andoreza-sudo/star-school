@@ -6,7 +6,13 @@ addEventListener('appinstalled',()=>{installEvt=null});
 document.addEventListener('pointerup',()=>{const d=document.documentElement;
   if(!document.fullscreenElement&&d.requestFullscreen&&!matchMedia('(display-mode: fullscreen)').matches)d.requestFullscreen({navigationUI:'hide'}).catch(()=>{})},true);
 document.addEventListener('contextmenu',e=>e.preventDefault());
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
+/* v194 fix2: sw.js caches the recordings after it is active, when asked (swAudio: a message 'audio'), never at install: a few seconds after
+   the start, when the browser is idle (not against the first paint), again when a new worker takes over, and on every later open, until
+   every file is in (the worker skips the ones it has; one that failed is tried again the next time) */
+const swAudio=()=>{try{navigator.serviceWorker.ready.then(x=>{if(x.active)x.active.postMessage('audio')}).catch(()=>{})}catch(e){}},
+  swAudioLater=()=>setTimeout(()=>(window.requestIdleCallback||(f=>f()))(swAudio,{timeout:5000}),3000);
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{swAudioLater();navigator.serviceWorker.addEventListener('controllerchange',swAudioLater);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){r.update().catch(()=>{});swAudio()}})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
    Learn, the Brain Teasers hub, the Game Room; RC-2: not Grown-ups; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
    is set, and view() (40-view.js) tries again after every new screen, UI.sheet (14-ui.js) when a sheet closes. */

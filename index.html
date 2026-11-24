@@ -3059,7 +3059,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v193'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v193 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v194'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v194 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3287,7 +3287,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v193'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v194'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3910,7 +3910,7 @@ function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)retu
 function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
-  const M=it.tch?EN_TEACH:it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  const M=it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
   if(it.btn)it.btn.classList.add('talking');
   try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
   sfxDuck(speakBusy)}
@@ -3963,16 +3963,19 @@ function pickVoice(es){const k=es?'es':'en';if(VOICE[k]&&VOICE.n===speechSynthes
 let VOICE_WARM=0;
 function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
-/* TEACH-4: the pet's recorded teacher lines. EN_TEACH (src/data/d-teach-audio.js, made by tools/en-audio.js --teach) maps the fixed lines of the
-   Pre-K to 2nd grade lessons ("My turn. Check me!", "Read the word. Then tap its picture.") to one recording each, in one warm voice. A line
+/* TEACH-4: the pet's recorded teacher lines. EN_TEACH (src/data/d-teach-audio.js, made by tools/en-audio.js --teach; REC-ALL: built into teach12.<VER>.js, so undefined until a lesson part loads) maps the fixed lines of the
+   lessons ("My turn. Check me!", "Read the word. Then tap its picture.") to one recording each, in one warm voice; REC-ALL (v194): every fixed
+   sentence of every lesson, Pre-K to 6th grade, so the older pet speaks in the same recorded voice (nothing here depends on the age). A line
    that is recorded whole plays its file; a line of several sentences plays its recorded sentences and says the others with the tablet's
    voice, in order (tchRuns). Anything with a name, a number or a word of the question is the tablet's voice. Off with ENA.off, the Cheer
    voices choice "Tablet voice", where Opus cannot play, or for a file that failed (the tablet's voice says it instead). */
-function tchRuns(t){if(ENA.off||typeof EN_TEACH=='undefined'||t==null||!esaOk()||cheerMode()=='tts')return null;const m=EN_TEACH.lines,k=esKey(t),ok=x=>!!m[x]&&!ESA.bad[m[x]];
+// fix2 v194: until teach12 is in (and with lessons off), EN_TEACH0 (src/data/d-teach-start.js, loaded at start): the lines said outside a lesson
+const tchM=()=>typeof EN_TEACH!='undefined'?EN_TEACH:typeof EN_TEACH0!='undefined'?EN_TEACH0:null;
+function tchRuns(t){const M=tchM();if(ENA.off||!M||t==null||!esaOk()||cheerMode()=='tts')return null;const m=M.lines,k=esKey(t),ok=x=>!!m[x]&&!ESA.bad[m[x]];
   if(ok(k)){const r=[k];r.r=true;return[r]}const ps=enSplit(k);if(!ps.some(ok))return null;const o=[];
   for(const p of ps){const r=ok(p),l=o[o.length-1];if(l&&l.r===r)l.push(p);else{const n=[p];n.r=r;o.push(n)}}return o}
 function tchSay(t,btn,q,slow){const rs=tchRuns(t);if(!rs)return false;if(!q)hush();
-  rs.forEach((r,i)=>{if(!r.r)return say(r.join(' '),btn,null,1,slow);const it={a:r.map(x=>[EN_TEACH.lines[x],0]),i:0,t:r.join(' '),ts:r.slice(),btn,slow,tch:1};
+  rs.forEach((r,i)=>{if(!r.r)return say(r.join(' '),btn,null,1,slow);const it={a:r.map(x=>[tchM().lines[x],0]),i:0,t:r.join(' '),ts:r.slice(),btn,slow,tch:1};
     if((q||i)&&speakBusy())ESA.q.push(it);else esaPlay(it)});return true}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
 function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
@@ -7079,7 +7082,7 @@ let ASK_ON = 8;
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
 const view=h=>{music(false);calmApply();if(typeof NAV!='undefined'){if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0} // RC-2: a child screen ends the grown-up session
   if(typeof NAV!='undefined'&&NAV.held){NAV.held=false;if(typeof GH!='undefined')GH.held=false} // NAV-01: a Go Home? sheet the new screen removed
-  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
+  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();if(typeof JFX!='undefined')JFX.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -8238,7 +8241,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v193)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v194)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -9811,7 +9814,7 @@ function makeQ1(){if(G.pool)return G.pool.shift();
   {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
-  const q=pickQ(G.sk,G.lv); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js)
+  const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01: Go Home? is open: go on when Keep playing closes it
   if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored
@@ -9827,8 +9830,16 @@ function fitCh(){for(const g of document.querySelectorAll('.choices')){const bs=
   for(const b of bs){if(b.scrollWidth<=b.clientWidth+1)continue;const cs=getComputedStyle(b),av=b.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
     const r=document.createRange();r.selectNodeContents(b);const w=r.getBoundingClientRect().width;if(w>av+1)k=Math.min(k,av/w)}
   if(k<1){const f=Math.max(.6,k*.97);bs.forEach(b=>b.style.fontSize=(parseFloat(getComputedStyle(b).fontSize)*f).toFixed(1)+'px')}}}
+// The step loop forces a layout per step. When the overflow is one --k does not shrink (a boss's stage over a question at 1024x600:
+// 4-62 px at any --k) it ran all 12 steps for nothing, 15-45 ms inside the tap that opened the question (P4-17: Let's go over 100 ms
+// on a busy machine). So an overflowing question tries the smallest --k first: still over, the loop would end there anyway (the
+// same FIT_KMIN); it fits there, the loop finds the largest --k that fits, as before.
+const FIT_KMIN=(()=>{let k=1;while(k>.42)k-=.05;return k})();
 function fit(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
-  while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
+  const over=()=>qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1;
+  if(!over())return;
+  pr.style.setProperty('--k',FIT_KMIN);if(over())return;pr.style.setProperty('--k',1);
+  while(k>.42&&over()){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 // R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
 // scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
@@ -9872,11 +9883,12 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   if(G.retry){fb("Let's try this one again!",'again');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
+  if(G.boss&&typeof bossStage=='function')bossStage(); // LESSON-STAGE: the boss on a stage (39u-stage.js, part hints)
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
+function addMiss(q){if(q.lsx)return;const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
 /* TEACH-1: the lessons' switch (part teach, 52-lesson.js). TEACH.off gives the app as it was before them: no lesson offer on the map, and in
@@ -9895,7 +9907,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
-    if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
+    if(first&&!q.lsx&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js); fix2 v194: never for a lesson mix-in (lsx), whose label can be a review item's
     G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
@@ -11230,7 +11242,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v193'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v194'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11805,7 +11817,13 @@ addEventListener('appinstalled',()=>{installEvt=null});
 document.addEventListener('pointerup',()=>{const d=document.documentElement;
   if(!document.fullscreenElement&&d.requestFullscreen&&!matchMedia('(display-mode: fullscreen)').matches)d.requestFullscreen({navigationUI:'hide'}).catch(()=>{})},true);
 document.addEventListener('contextmenu',e=>e.preventDefault());
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
+/* v194 fix2: sw.js caches the recordings after it is active, when asked (swAudio: a message 'audio'), never at install: a few seconds after
+   the start, when the browser is idle (not against the first paint), again when a new worker takes over, and on every later open, until
+   every file is in (the worker skips the ones it has; one that failed is tried again the next time) */
+const swAudio=()=>{try{navigator.serviceWorker.ready.then(x=>{if(x.active)x.active.postMessage('audio')}).catch(()=>{})}catch(e){}},
+  swAudioLater=()=>setTimeout(()=>(window.requestIdleCallback||(f=>f()))(swAudio,{timeout:5000}),3000);
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{swAudioLater();navigator.serviceWorker.addEventListener('controllerchange',swAudioLater);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){r.update().catch(()=>{});swAudio()}})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
    Learn, the Brain Teasers hub, the Game Room; RC-2: not Grown-ups; no sheet open), never in a round, lesson, puzzle or game: until then SWU.due
    is set, and view() (40-view.js) tries again after every new screen, UI.sheet (14-ui.js) when a sheet closes. */
@@ -11849,12 +11867,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v193');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v194');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v193')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v193)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v194')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v194)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo()}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11876,15 +11894,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v193';
+  return !!f && f[1] === 'v194';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v193') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v194') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v193.js';
+    s.src = stem + '.v194.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11909,9 +11927,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v193.js"></script>
-<script src="gen2.v193.js"></script>
-<script src="data.v193.js"></script>
+<script src="gen.v194.js"></script>
+<script src="gen2.v194.js"></script>
+<script src="data.v194.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

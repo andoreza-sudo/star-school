@@ -10203,12 +10203,13 @@ async function main() {
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
         };
-        // the message at the top of the scene must not cover a customer or an order bubble (R-03 N4)
+        // the message at the top of the scene must not cover a customer or an order bubble (R-03 N4), nor the sign with its
+        // served count (GFX-1, Fable's review)
         const msgClear = () => {
           const m = document.querySelector('#snmsg.on');
           if (!m) return '';
           const a = m.getBoundingClientRect();
-          for (const e of document.querySelectorAll('.sn-cu .sn-an, .sn-cu .sn-bub')) {
+          for (const e of document.querySelectorAll('.sn-cu .sn-an, .sn-cu .sn-bub, #snsign')) {
             const b = e.getBoundingClientRect();
             if (a.left < b.right && b.left < a.right && a.top < b.bottom - 4 && b.top < a.bottom - 4) return 'the message covers ' + e.className;
           }
@@ -10978,12 +10979,20 @@ async function main() {
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
-        // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
+        // ES-AUDIO: every recording is cached in its own cache (none of them was loaded by the page itself). v194 fix2: not at install any
+        // more (one failing file would fail the install): after activation, when the page asks (a few seconds after the start, when idle),
+        // 40 at a time; so this waits until the cache holds them all (SW-AUDIO: one file failing)
         const a1 = await p1.evaluate(async () => {
+          await partsLoad(['teach', 'teach12']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext)),
-            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
-          const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
-          return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5) };
+            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))]; // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
+          const t0 = Date.now();let have = new Set();
+          while (Date.now() - t0 < 90000) {
+            const c = await caches.open('starschool-audio');have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
+            if (want.every(f => have.has(f))) break;
+            await new Promise(r => setTimeout(r, 500));
+          }
+          return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5), s: Math.round((Date.now() - t0) / 100) / 10 };
         });
         if (!a1.want || a1.missing.length || a1.have !== a1.want) bad.push('ES-AUDIO: the service worker did not cache every recording: ' + JSON.stringify(a1));
         if (served.some(u => /^audio\//.test(u) && served.indexOf(u) < served.indexOf('sw.js'))) bad.push('ES-AUDIO: a recording was loaded before the service worker (at start)');
@@ -11061,7 +11070,7 @@ async function main() {
         if (a2.err || !(a2.dur > 0.3) || a2.bad.length || !/\/audio\/es\/[0-9a-f]{12}\.ogg$/.test(a2.src || '')) bad.push('ES-AUDIO offline: the recording did not play from the cache: ' + JSON.stringify(a2));
         else notes.push('a recording played offline (' + a2.dur.toFixed(2) + ' s)');
         if (served.length !== n0) bad.push('requests reached the server while offline: ' + served.slice(n0).join(' '));
-        notes.push('precached ' + c1.cached.length + ' files and ' + a1.have + ' recordings; offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
+        notes.push('precached ' + c1.cached.length + ' files, then ' + a1.have + ' recordings after activation (' + a1.s + ' s more); offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
         await p2.close();
       } catch (e) {
         bad.push(e.message.split('\n')[0]);
@@ -11072,6 +11081,78 @@ async function main() {
       for (const e of errs) bad.push(e);
       if (bad.length) fail('P6-02 Game Room on demand, offline:\n  ' + bad.join('\n  '));
       else step('P6-02: ' + notes.join('; ') + '; "Getting the games ready..." then the hub, Snack Stand started, the second open immediate, no request while offline');
+    }
+
+    // SW-AUDIO (v194 fix2, Fable's confirming review): one recording that fails must not cost the service worker. The built files over
+    //    http://127.0.0.1 with one teacher recording answering 503: the worker still installs and takes the page, the code is cached, every
+    //    other recording is cached after activation, and say() of that line falls back to the tablet's voice; then the file is back, and
+    //    a later open fills in just that one.
+    if (seg('SW-AUDIO')) {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), lst = n => (swSrc.match(new RegExp('const ' + n + '=\\[([^\\]]*)\\]')) || [])[1].split(',').map(s => s.replace(/'/g, '').replace(/^\.\//, ''));
+      const F = lst('F'), AF = lst('AF'), BAD = AF.find(u => /^audio\/teach\//.test(u));
+      let fail503 = true;const served = [], socks = new Set(), b503 = [];
+      const srv = http.createServer((req, res) => {
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+        served.push(u);
+        if (u === BAD && fail503) { b503.push(u); res.writeHead(503); return res.end('busy'); }
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+        fs.createReadStream(f).pipe(res);
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      const bad = [], notes = [], errs = [];
+      const ctx = await browser.newContext({ viewport: { width: 380, height: 780 } });
+      await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+      const audioCount = pg => pg.evaluate(async () => (await (await caches.open('starschool-audio')).keys()).map(r => new URL(r.url).pathname.replace(/^\//, '')));
+      const waitAudio = async (pg, n, ms) => { const t0 = Date.now();let have = [];
+        while (Date.now() - t0 < ms) { have = await audioCount(pg); if (have.length >= n) break; await new Promise(r => setTimeout(r, 500)); }
+        return { have, s: Math.round((Date.now() - t0) / 100) / 10 }; };
+      try {
+        // 1. first open, the file answers 503: the worker installs and controls the page; the code is cached
+        const p1 = await ctx.newPage();
+        p1.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p1.goto(base + 'index.html');
+        await p1.locator('#groom').waitFor({ timeout: 15000 });
+        await p1.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 30000 });
+        const r1 = await p1.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(), c = await caches.open('starschool-' + DATA_VER);
+          return { state: reg && reg.active && reg.active.state, code: (await c.keys()).length }; });
+        if (r1.state !== 'activated' || r1.code !== F.length) bad.push('first open with a 503: ' + JSON.stringify(r1) + ' (want activated, ' + F.length + ' code files)');
+        // 2. every other recording is cached after activation; the 503 one is not
+        const w1 = await waitAudio(p1, AF.length - 1, 120000);
+        await new Promise(r => setTimeout(r, 1500));
+        const h1 = await audioCount(p1);
+        if (h1.length !== AF.length - 1 || h1.includes(BAD) || !b503.length) bad.push('after the first fill: ' + h1.length + ' of ' + AF.length + ' recordings, ' + BAD + (h1.includes(BAD) ? ' cached' : ' not cached') + ', 503s: ' + b503.length);
+        else notes.push('one 503 (' + BAD + '): worker activated, ' + r1.code + ' code files, ' + h1.length + ' of ' + AF.length + ' recordings in ' + w1.s + ' s');
+        // say() of that line: the file fails, the tablet's voice says it (ESA.bad marks the file)
+        const s1 = await p1.evaluate(async (f) => { await partsLoad(['teach', 'teach12']); const nm = f.split('/').pop().replace(/\.ogg$/, ''), k = Object.keys(EN_TEACH.lines).find(x => EN_TEACH.lines[x] === nm);
+          ENA.off = false; S.cheerV = 'mix'; say(k); await new Promise(r => setTimeout(r, 3000)); return { k, bad: !!ESA.bad[nm] }; }, BAD);
+        if (!s1.k || !s1.bad) bad.push('say() of the 503 line did not fall back to the tablet voice: ' + JSON.stringify(s1));
+        else notes.push('"' + s1.k + '" fell back to the tablet voice');
+        await p1.close();
+        // 3. the file is back; a later open fills in just that one
+        fail503 = false; const n0 = served.length;
+        const p2 = await ctx.newPage();
+        p2.on('pageerror', e => errs.push('exception: ' + e.message));
+        await p2.goto(base + 'index.html');
+        await p2.locator('#groom').waitFor({ timeout: 15000 });
+        const w2 = await waitAudio(p2, AF.length, 60000);
+        const audio2 = served.slice(n0).filter(u => /^audio\//.test(u));
+        if (w2.have.length !== AF.length || !w2.have.includes(BAD) || audio2.filter(u => u === BAD).length < 1 || audio2.some(u => u !== BAD)) bad.push('the later open: ' + w2.have.length + ' of ' + AF.length + ', fetched ' + audio2.length + ' recordings: ' + audio2.slice(0, 5).join(' '));
+        else notes.push('the next open fetched only that file (' + w2.s + ' s): ' + w2.have.length + ' of ' + AF.length);
+        await p2.close();
+      } catch (e) {
+        bad.push(e.message.split('\n')[0]);
+      } finally {
+        await ctx.close();
+        await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
+      }
+      for (const e of errs) bad.push(e);
+      if (bad.length) fail('SW-AUDIO one recording failing:\n  ' + bad.join('\n  '));
+      else step('SW-AUDIO: ' + notes.join('; '));
     }
 
     // G-04b Sky Hop (src/js/67-game-skyhop.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
@@ -14483,17 +14564,19 @@ async function main() {
           // 3. the start card
           await pg.click(`.lsn[data-ls="${ti}"]`);
           await pg.waitForSelector('#lsopen', { timeout: 15000 });
-          const op = await pg.evaluate(() => ({ price: (document.querySelector('#lsprice') || {}).textContent, h1: document.querySelector('#lsopen h1').textContent }));
-          if (!/earn \+5 min of game time/.test(op.price || '') || !/^Learn Make Ten with /.test(op.h1)) bad.push(at + 'the start card: ' + JSON.stringify(op));
+          // LESSON-STAGE (owner, 2026-11-23): no price on the start card (game time shows only at the end); the stop's world behind it
+          const op = await pg.evaluate(() => ({ price: !!document.querySelector('#lsprice'), tick: /game time|min\b/.test(document.querySelector('#lsopen').textContent),
+            h1: document.querySelector('#lsopen h1').textContent, scn: !!document.querySelector('.ls-scn svg') }));
+          if (op.price || op.tick || !/^Learn Make Ten with /.test(op.h1) || !op.scn) bad.push(at + 'the start card: ' + JSON.stringify(op));
           await fitS(pg, at + 'start card: ', '#lsopen .btn, .ls-top .btn');
           if (w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-start-${sz}.png`) });
           // 4. "I already know this!" with the first show-me item missed: straight into the lesson, no reveal, no wrong sound
           await pg.evaluate(() => { LS.WAKE = 400; });
           await pg.click('#lsknow');
           await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
-          const m0 = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'), r = m && m.getBoundingClientRect(), vw = document.documentElement.clientWidth;
-            return { t: m && m.textContent, in: r && r.left >= 0 && r.right <= vw, h: r && r.height, f: m && m.style.getPropertyValue('--f') }; });
-          if (m0.t !== '+5 min' || !m0.in || m0.f !== '0.000') bad.push(at + 'the meter at the start: ' + JSON.stringify(m0));
+          // LESSON-STAGE: no ticket meter in the top bar; the train's track has no stop passed yet
+          const m0 = await pg.evaluate(() => ({ meter: !!document.querySelector('#lsmeter'), on: document.querySelectorAll('.ls-top .ls-pip.on').length, n: document.querySelectorAll('.ls-top .ls-pip').length }));
+          if (m0.meter || m0.on || m0.n !== 6) bad.push(at + 'the top bar at the start: ' + JSON.stringify(m0));
           await stepS(pg, true);
           const sl = await pg.evaluate(() => ({ b: LS.st && LSB[LS.st.b], pre: LS.st && LS.st.pre, wrong: window.__wrong, to: LS.st && LS.st.to }));
           if (sl.b == 'pre' || JSON.stringify(sl.pre) !== '[false]' || sl.wrong || sl.to) bad.push(at + 'a missed show-me item after "I already know this!": ' + JSON.stringify(sl));
@@ -14503,13 +14586,13 @@ async function main() {
             const b = await pg.evaluate(() => (LS.st ? LSB[LS.st.b] : null));
             if (!b) break;
             await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
-            const f = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'); return m ? +m.style.getPropertyValue('--f') : -1; });
+            const f = await pg.evaluate(() => (document.querySelector('#lsmeter') ? -1 : document.querySelectorAll('.ls-top .ls-pip.on').length / 6));
             fs0.push(f);
             if (!beats.includes(b)) { beats.push(b); await fitS(pg, at + b + ': ', '#lsinp button, #lsplay .ls-hear, .ls-top .btn');
               if (b == 'tog' && w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-meter-${sz}.png`) }); }
             await stepS(pg, false);
           }
-          if (fs0.some((f, k) => f < 0 || k && f < fs0[k - 1] - 1e-9) || !(fs0[fs0.length - 1] > .8)) bad.push(at + 'the meter does not fill: ' + fs0.join(' '));
+          if (fs0.some((f, k) => f < 0 || k && f < fs0[k - 1] - 1e-9) || !(fs0[fs0.length - 1] > .8)) bad.push(at + 'the track does not fill (or a meter shows): ' + fs0.join(' '));
           // 6. the end card: +5:00 game time, and the bank chip counts up by 5:00
           await pg.waitForSelector('#lsend', { timeout: 10000 });
           const e0 = await pg.evaluate(() => ({ gt: [...document.querySelectorAll('.ls-earn .ls-gt')].map(x => x.textContent).join('|'), bank: document.querySelector('#lsbank b').textContent, tk: !!document.querySelector('#lstk') }));
@@ -14584,9 +14667,35 @@ async function main() {
         for (const u of ta.network) bad.push(at + 'network request: ' + u);
         await ta.ctx.close();
       }
+      // LESSON-STAGE (owner, 2026-11-23; Fable's review: at 1024 x 600 the end card's Practice, Map and Notebook and the start card's
+      // second button were below the screen): every button of the start and end cards is on the screen, with nothing to scroll, at the
+      // tablet and phone sizes, for a 1st grader and a 5th grader (the older pet, the Challenge title)
+      for (const [w, h] of [[1024, 600], [360, 740], [960, 540]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'LS-STOP ' + w + 'x' + h + ' ';
+        try {
+          await pg.evaluate(() => partsLoad(['teach', 'teach12', 'teach35']));
+          for (const [gr, id] of [[1, 'tenf2'], [4, 'frac6']]) {
+            const on = () => pg.evaluate(() => { const o = [], vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+              for (const b of document.querySelectorAll('.ls-acts .btn, .ls-top .btn, .ls-hear')) { const r = b.getBoundingClientRect();
+                if (r.bottom > vh + 1 || r.top < -1 || r.right > vw + 1 || r.left < -1) o.push((b.id || b.className) + ' at ' + Math.round(r.left) + ',' + Math.round(r.bottom)); }
+              const sc = document.querySelector('.ls-end'); if (sc && sc.scrollHeight > sc.clientHeight + 1) o.push('the card scrolls');
+              return o; });
+            await pg.evaluate(([gr, id]) => { S.grade = gr; delete S.les; S.know = {}; LS.open(id); }, [gr, id]);
+            await pg.waitForSelector('#lsknow', { timeout: 5000 });
+            (await on()).forEach(x => bad.push(at + id + ' start card: ' + x));
+            await pg.evaluate(id => { LS.start(id, { learn: 1 }); const st = LS.st; st.post = [true, true]; st.done = true; LS.show(); }, id);
+            await pg.waitForSelector('#lsend', { timeout: 5000 });
+            (await on()).forEach(x => bad.push(at + id + ' end card: ' + x));
+          }
+          notes.push(w + 'x' + h + ' cards');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        await ta.ctx.close();
+      }
       if (bad.length) fail('LS-STOP lesson stops:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card; ' +
-        '"I already know this!" with a miss slides into the lesson with no wrong sound; the top bar meter fills; the end card lists +5:00 game time and the bank chip counts ' +
+      else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card (no price, the stop\'s world); ' +
+        '"I already know this!" with a miss slides into the lesson with no wrong sound; the train\'s track fills (no meter); every start and end card button on the screen; the end card lists +5:00 game time and the bank chip counts ' +
         'up by 5:00; the stop opens and its lesson stop shows +2 min; a proven skip pays; lessons off has no lesson stops or locks; (fix179) a show-me item missed and left ' +
         'during the slide line resumes in the lesson; a lesson part that does not load opens the practice round, one that loads late changes no screen; no console errors, no network requests');
     }
@@ -14622,13 +14731,15 @@ async function main() {
             return { q: it.q.label, kind: it.q.kind, mdl: !!it.mdl, tf: box('#prompt .ls-model svg[aria-label="ten frame"]'), two: [dots('v1'), dots('v2'), it.q.sl.a, it.q.sl.b], eq: box('#prompt .eq'), inp: box('#lsinp'),
               step: st.textContent, clip: st.scrollWidth > st.clientWidth + 1, sb: box('#lsstep'), top: box('.ls-top'), withLabel: h0, without: h1, typed: LS.u.typed, know: JSON.stringify(S.know.add2),
               hint: document.querySelector('#hint').innerHTML, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
-              sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]') };
+              sw: document.documentElement.scrollWidth, read: st.getAttribute('aria-hidden') == null && !st.closest('[aria-hidden="true"]'),
+              now: [...document.querySelectorAll('.ls-top .ls-pip')].findIndex(e => e.classList.contains('now')), on: document.querySelectorAll('.ls-top .ls-pip.on').length };
           }, null, { timeout: 15000 }).then(x => x.jsonValue());
           if (!/^add2 /.test(r0.q) || r0.kind !== 'num' || !r0.mdl || !r0.tf || r0.tf.h < 60 || r0.tf.t < r0.top.b || r0.tf.b > r0.eq.t + 1 || r0.typed || r0.hint)
             bad.push(at + 'the ten frame before any answer: ' + JSON.stringify(r0));
           // the owner's "two colors yes" (v184): the first addend in the first colour, the second in the second
           if (r0.two[0] !== r0.two[2] || r0.two[1] !== r0.two[3]) bad.push(at + 'the ten frame is not the two addends in two colours: ' + JSON.stringify(r0.two));
-          if (!/^Step 1 of 6 · Remember$/.test(r0.step) || r0.clip || !r0.read || r0.sb.r > r0.vw || r0.sb.l < 0 || r0.sb.b > r0.top.b) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.top]));
+          // LESSON-STAGE (owner, 2026-11-23): the words are for screen readers only now (a 1 px clipped label); the train's stops show the step
+          if (!/^Step 1 of 6 · Remember$/.test(r0.step) || !r0.read || r0.sb.w > 1.5 || r0.sb.h > 1.5 || r0.now !== 0 || r0.on !== 0) bad.push(at + 'the label: ' + JSON.stringify([r0.step, r0.sb, r0.now, r0.on]));
           if (Math.abs(r0.withLabel - r0.without) > .5) bad.push(at + 'the label makes the top bar taller: ' + r0.without + ' -> ' + r0.withLabel);
           if (r0.sw > r0.vw || r0.tf.r > r0.vw || (w < 1000 && r0.eq.b > r0.inp.t + 1)) bad.push(at + 'does not fit: ' + JSON.stringify(r0));
           await pg.waitForFunction(() => !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
@@ -14648,12 +14759,16 @@ async function main() {
           for (const d of String(ans)) await pg.click(`.k[data-k="${d}"]`);
           await pg.click('.k[data-k="go"]');
           await pg.waitForSelector('#lsplay[data-beat="exp"]', { timeout: 15000 });
-          // every beat's label fits whole, with the ticket meter and without it (a lesson that pays nothing shows its name on wide screens)
+          // every beat's label is there for screen readers, whole (LESSON-STAGE: no ticket meter in the top bar any more, whatever the
+          // lesson pays), and the train waits at the beat's stop with the stops before it passed
           const s2 = await pg.evaluate(() => {
             const o = [document.querySelector('#lsstep').textContent], p0 = lsPriceTag, st0 = LS.st;
             for (const pay of [true, false]) { if (!pay) lsPriceTag = () => '';
               for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
-                const e = document.querySelector('#lsstep'); if (!e.textContent || e.scrollWidth > e.clientWidth + 1) o.push('clipped ' + B + (pay ? '' : ' (no meter)') + ': ' + e.textContent); }
+                const e = document.querySelector('#lsstep'), j = LS_PIPS.findIndex(x => x[0] == B), pips = [...document.querySelectorAll('.ls-top .ls-pip')];
+                const now = pips.findIndex(x => x.classList.contains('now')), on = pips.filter(x => x.classList.contains('on')).length;
+                if (e.textContent !== LS.step(B) || document.querySelector('#lsmeter') || pips.length !== 6 || now !== j || on !== (B == 'win' ? 6 : Math.max(0, j)))
+                  o.push('the track at ' + B + (pay ? '' : ' (pays nothing)') + ': ' + JSON.stringify([e.textContent, now, on, !!document.querySelector('#lsmeter')])); }
               lsPriceTag = p0; }
             LS.st = null; return o; });
           if (s2[0] !== 'Step 2 of 6 · Explore' || s2.length > 1) bad.push(at + 'the labels: ' + s2.join(' | '));
@@ -14663,7 +14778,8 @@ async function main() {
         for (const u of ta.network) bad.push(at + 'network request: ' + u);
         await ta.ctx.close();
       }
-      // fixRev (v184): on 320 and 360 px phones, with the ticket meter, the label leaves out " of 6" and every step's name shows whole
+      // fixRev (v184): on 320 and 360 px phones, with the ticket meter, every step's name shows whole. fix v194: the label is for screen
+      // readers only since LESSON-STAGE, so " of 6" is no longer left out at this width (it only took it from what is read)
       for (const [w, h] of [[320, 640], [360, 740]]) {
         const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const pg = ta.page, sz = w + 'x' + h, at = 'TEACH-UX ' + sz + ' ';
@@ -14679,10 +14795,12 @@ async function main() {
             for (const B of LSB) { const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf(B)); if (!LS.cur(st)) continue; LS.st = st; LS.show();
               const e = document.querySelector('#lsstep'), name = LS.step(B).split(' · ').pop(), vis = e.innerText.trim(), r = e.getBoundingClientRect();
               if (document.querySelector('.ls-top #lsmeter')) met++;
-              if (e.scrollWidth > e.clientWidth + 1 || !vis.endsWith(name) || / of /.test(vis) || r.right > vw || r.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
+              // LESSON-STAGE: the label is for screen readers only (1 px), the train's six stops fit the bar
+              const tr = document.querySelector('.ls-top .ls-pips').getBoundingClientRect();
+              if (r.width > 1.5 || !vis.endsWith(name) || / of \d+ /.test(e.textContent) !== / of \d+ /.test(vis) || tr.right > vw || tr.left < 0 || e.textContent !== LS.step(B)) o.push(B + ': "' + vis + '" (' + e.textContent + ')'); }
             const st = LS.make('add3', { seed: 2, day: lsDay(), learn: 1 }); LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show();
             return { o, met, tog: document.querySelector('#lsstep').innerText.trim() }; });
-          if (s3.o.length || !s3.met || s3.tog !== 'Step 4 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
+          if (s3.o.length || s3.met || s3.tog !== 'Step 4 of 6 · Together') bad.push(at + 'the short labels: ' + JSON.stringify(s3));
           await pg.screenshot({ path: path.join(shots, `teachux-step-${sz}.png`) });
           notes.push(sz + ' "' + s3.tog + '"');
         } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
@@ -14692,9 +14810,9 @@ async function main() {
       }
       if (bad.length) fail('TEACH-UX the model up front:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('TEACH-UX: add3 as a 1st grader at ' + notes.join(', ') + ': Remember (add2) shows its ten frame above the sum before any answer; the top bar reads ' +
-        '"Step 1 of 6 · Remember" in words and is no taller for it; the pet says "Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads ' +
-        '"Step 2 of 6 · Explore"; every beat\'s label fits whole, with and without the ticket meter; at 320 and 360 px with the meter every step\'s name shows whole ' +
-        '(no "of 6"); screenshots in tools/out/teachux; no console errors, no network requests');
+        '"Step 1 of 6 · Remember" for screen readers (LESSON-STAGE: hidden on screen, the train waits at the first stop) and is no taller for it; the pet says ' +
+        '"Quick one first, then we build!"; a miss adds the hint\'s words only; Explore reads "Step 2 of 6 · Explore"; every beat has its label and its stop on the ' +
+        'track, with no ticket meter; at 320 and 360 px the track fits and the label leaves out "of 6"; screenshots in tools/out/teachux; no console errors, no network requests');
     }
     // end TEACH-UX
 

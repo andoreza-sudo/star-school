@@ -42,7 +42,9 @@ function appSource() {
   const parts = [...((py.match(/^PARTS = \[\n([\s\S]*?)^\]/m) || [])[1] || '').matchAll(/^ +\('(\w+)', r'([^']+)'\),/gm)].map(m => ({ stem: m[1], re: new RegExp('^(?:' + m[2] + ')$') }));
   const partOf = n => (parts.find(p => p.re.test(n)) || {}).stem;
   const cat = (d, part) => fs.readdirSync(path.join(SRC, d)).filter(n => n.endsWith('.js') && partOf(n) === part).sort().map(n => fs.readFileSync(path.join(SRC, d, n), 'utf8')).join('\n');
-  return cat('js') + parts.map(p => cat('js', p.stem)).join('') + cat('data');
+  // the data files last, all of them (REC-ALL: d-teach-audio.js is built into the teach12 part, but the tools read it like any data file)
+  const data = fs.readdirSync(path.join(SRC, 'data')).filter(n => n.endsWith('.js')).sort().map(n => fs.readFileSync(path.join(SRC, 'data', n), 'utf8')).join('\n');
+  return cat('js') + parts.map(p => cat('js', p.stem)).join('') + data;
 }
 function loadApp(code, extra) {
   const ctx = vm.createContext({ console, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },

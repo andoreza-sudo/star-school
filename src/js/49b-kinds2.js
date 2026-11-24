@@ -294,6 +294,8 @@ KIND.sort = {
 addEventListener('resize', () => {
   const q = KIND.sort.cur;
   if (q && q.kind === 'sort' && $('.stray')) KIND.sort.hold(q);
+  const v = $('.mmv'); // fix2 v194: and whether the make model's fraction parts are big enough to tap
+  if (v && KIND.make && KIND.make.notap) KIND.make.notap(v);
 });
 
 // ---- mark: tap word(s) in a sentence ----
@@ -992,9 +994,10 @@ KIND.make = {
     st.mm0 = st.mm.slice();
     st.mmMoved = false;
     const act = t => {
-      if (st.lock || !t) return;
+      if (st.lock || !t || t.closest('.mm-notap')) return;
       let s = null;
-      if (t.dataset.d != null) s = M.step(q, st.mm, +t.dataset.i, +t.dataset.d);
+      if (M.tap && t.closest('.mmv')) s = M.tap(q, st.mm, t); // LESSON-STAGE: a model that takes taps on its drawing (frame2, bars2)
+      else if (t.dataset.d != null) s = M.step(q, st.mm, +t.dataset.i, +t.dataset.d);
       else if (t.dataset.p != null) s = M.step(q, st.mm, +t.dataset.p, -1);
       else if (t.dataset.v != null) s = M.step(q, st.mm, +t.dataset.v);
       else if (t.dataset.c != null) { // a ten-frame cell: an empty one adds a counter, a filled one (not a fixed one) takes one away
@@ -1026,17 +1029,28 @@ KIND.make = {
     if (!v) return;
     const a = document.activeElement, at = a && v.contains(a) && a.dataset.p != null;
     v.innerHTML = K2MM[q.model].draw(q, s);
-    if (q.model == 'frame' || q.model == 'parts') {
+    if (q.model == 'frame' || q.model == 'parts' || K2MM[q.model].tap) {
       const g = v.querySelector('svg');
       if (g) g.setAttribute('aria-hidden', 'true');
       v.querySelectorAll('[data-v]').forEach(e => { e.removeAttribute('role'); e.removeAttribute('aria-label'); });
     }
     $$('.mmn').forEach(o => { o.textContent = s[+o.dataset.o]; });
+    KIND.make.notap(v);
     if (at) {
       const f = v.querySelector(`[data-p="${a.dataset.p}"]`) || v.querySelector('[data-p]') || $('.mmc button');
       if (f) f.focus();
     }
     k2Fit();
+  },
+  // fix v194: fraction parts under 48 px (layout size) take no taps (mm-notap); the buttons do it. fix2 v194: measured again on a resize
+  // (a turned tablet: the parts change size), below
+  notap(v) {
+    let small = null;
+    v.querySelectorAll('svg').forEach(g => {
+      const ps = g.querySelectorAll('rect.vp[data-v]'), vw = ps.length && g.viewBox.baseVal && g.viewBox.baseVal.width;
+      if (vw && g.clientWidth) small = small || [...ps].some(e => Math.min(e.width.baseVal.value, e.height.baseVal.value) * g.clientWidth / vw < 48);
+    });
+    if (small != null) v.classList.toggle('mm-notap', small);
   },
   draw(q, st) {
     KIND.make.paint(q, st.mm);
@@ -1727,9 +1741,12 @@ if (typeof genEsGusta == 'function') genEsGusta = k2Wrap('es_gusta', genEsGusta)
 // G.kh: the kinds asked so far this round (makeQ pushes every question it returns). After two of one kind, up to 10 draws look for
 // another kind; a stop that gives only that kind is remembered in KMONO for the session, so it pays the extra draws once.
 const KMONO = {};
-function pickQ(sk, lv) {
+// mix: Practice's own draw only (lsMix)
+function pickQ(sk, lv, mix) {
   const h = G.kh || (G.kh = []), two = h.length > 1 && h[h.length - 1] === h[h.length - 2] ? h[h.length - 1] : null, id = sk + lv;
   let q, alt;
+  // LESSON-STAGE: a stop whose questions are all one kind: the third in a row comes from its lesson in another kind (lsMix, part teach)
+  if (mix && two && KMONO[id] && typeof lsMix == 'function' && (q = lsMix(sk, lv, two))) return q;
   for (let t = 0; t < 10; t++) {
     q = genQ(sk, lv);
     if (q.label === G.last) continue;

@@ -1148,9 +1148,10 @@ function hopGoal(r) {
    sprites; the canvas has at most 1.2 M pixels and drops to 85 / 70 / 60 % when frames run long (adaptive render scale). */
 const HOP_SPR = {};
 // an SVG drawing as a canvas pxw pixels wide (cached; .c is set once it has loaded, .p resolves then); fade: [colour, 0-1] mixes
-// the picture toward a colour (the far layers toward the sky)
-function hopSprite(key, vw, vh, inner, pxw, fade) {
-  const k = key + '@' + Math.round(pxw) + (fade ? fade.join() : '');
+// the picture toward a colour (the far layers toward the sky); ink (GFX-1): a thin outline in a dark shade of its own colours,
+// [width in sprite pixels, tone token, mix], baked in once (JFX.ink, 59b-fx.js) so a frame still only stamps it
+function hopSprite(key, vw, vh, inner, pxw, fade, ink) {
+  const k = key + '@' + Math.round(pxw) + (fade ? fade.join() : '') + (ink ? '~' + ink.join() : '');
   if (HOP_SPR[k]) return HOP_SPR[k];
   const w = Math.max(2, Math.round(pxw)), h = Math.max(2, Math.round(pxw * vh / vw)), s = (HOP_SPR[k] = { c: null, w, h, vw, vh });
   s.p = new Promise(ok => {
@@ -1167,7 +1168,7 @@ function hopSprite(key, vw, vh, inner, pxw, fade) {
         x.fillStyle = fade[0];
         x.fillRect(0, 0, w, h);
       }
-      s.c = c;
+      s.c = ink && typeof JFX != 'undefined' ? JFX.ink(c, ink[0], { tone: ink[1], mix: ink[2] }) : c;
       ok();
     };
     img.onerror = () => ok();
@@ -1180,7 +1181,8 @@ function hopSprite(key, vw, vh, inner, pxw, fade) {
 // ground shadow is left out: the course draws a soft shadow on the cloud under the pet that shrinks as it hops (G-04b2)
 function hopPetSprite(mood, px) {
   const w = S.wear || {}, key = ['pet', S.pet, stage(S.stars), mood, w.hat || '', w.toy || ''].join('-');
-  if (HOP_SPR[key + '@' + px]) return HOP_SPR[key + '@' + px];
+  const ink = HOP_INK.hero(px), memo = key + '@' + px + '~' + ink.join(); // the same key hopSprite keeps it under
+  if (HOP_SPR[memo]) return HOP_SPR[memo];
   let inner = '';
   try {
     const host = document.createElement('div');
@@ -1200,8 +1202,16 @@ function hopPetSprite(mood, px) {
     inner = svg.innerHTML;
     host.remove();
   } catch (e) {}
-  return hopSprite(key, 200, 200, inner, px);
+  return hopSprite(key, 200, 200, inner, px, null, ink);
 }
+// GFX-1 outlines: the hero strongest (about 2.5 px on a tablet), what the child lands on or picks up thinner and cooler
+const HOP_INK = {
+  hero: px => [Math.max(1.5, Math.round(px / 64 * 10) / 10), '--ill-ink', .72],
+  thing: px => [Math.max(1, Math.round(px / 90 * 10) / 10), '--ill-ink', .6],
+  cloud: () => [1.6, '--ill-blue-3', .55],
+};
+// GFX-1: the pet drawn this many tiles wide (about 30 % bigger than before; its feet and the rules are unchanged)
+const HOP_PETW = 2.7;
 let HP = null; // the course on screen
 const hopNow = () => (window.__realNow || (() => performance.now()))();
 const hopCalm = () => !!S.calm || (typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1209,6 +1219,8 @@ const hopCalm = () => !!S.calm || (typeof matchMedia == 'function' && matchMedia
 const hopTone = (f, d, t, type, vol, slide) => tone(f, d, t, type, vol * (hopCalm() ? .6 : 1), slide);
 const HOP_DOTS = ['w', 'w2', 'y', 'y1', 'p', 'c', 'g', 'v', 'r', 'o', 'b', 'c1'];
 const HOP_DARK = { night: 1, aurora: 1 };
+// GFX-1: the things the child lands on or picks up get a thin outline (the hero a stronger one)
+const HOP_TOUCH = { spring: 1, puff: 1, star: 1, key: 1, kite: 1, balloon: 1, goal: 1, flag0: 1, flag1: 1 };
 // sizes and the pictures at this screen size
 function hopSize(R) {
   const cv = R.cv, cw = Math.max(1, cv.clientWidth), ch = Math.max(1, cv.clientHeight);
@@ -1231,22 +1243,23 @@ function hopSize(R) {
   V.fl = C.floors.map(f => {
     if (f.k == 'b') return hopSprite(`br-${W.id}-${f.x1 - f.x0}`, (f.x1 - f.x0) * 40 + 16, 40, hopBridgeArt(f.x1 - f.x0, W.id == 'rainbow'), ((f.x1 - f.x0) + .4) * sp);
     const dep = Math.round((f.dep || 1.2) * 4) / 4, w = f.x1 - f.x0;
-    return hopSprite(`cl-${W.id}-${w}-${dep}${f.k == 'q' ? 'q' : ''}`, w * 40 + 16, dep * 40 + 24, hopCloudArt(w, dep, pal, f.k == 'q'), (w + .4) * sp);
+    return hopSprite(`cl-${W.id}-${w}-${dep}${f.k == 'q' ? 'q' : ''}`, w * 40 + 16, dep * 40 + 24, hopCloudArt(w, dep, pal, f.k == 'q'), (w + .4) * sp, null,
+      HOP_INK.cloud());
   });
-  V.mv = C.movers.map(m => hopSprite(`cl-${W.id}-${m.w}-1`, m.w * 40 + 16, 64, hopCloudArt(m.w, 1, pal), (m.w + .4) * sp));
+  V.mv = C.movers.map(m => hopSprite(`cl-${W.id}-${m.w}-1`, m.w * 40 + 16, 64, hopCloudArt(m.w, 1, pal), (m.w + .4) * sp, null, HOP_INK.cloud()));
   for (const [n, vw, vh, art, wt] of [['spring', 48, 48, HOP_ART.spring(), 1.2], ['puff', 48, 48, HOP_ART.puff(), 1.3], ['star', 40, 40, HOP_ART.star(), 1],
     ['spark', 24, 24, HOP_ART.spark(), .55], ['flag0', 40, 80, HOP_ART.flag(0), 1], ['flag1', 40, 80, HOP_ART.flag(1), 1], ['goal', 80, 140, HOP_ART.goal(), 2],
     ['pad0', 48, 24, HOP_ART.pad(0), 1.2], ['pad1', 48, 24, HOP_ART.pad(1), 1.2], ['gate0', 40, 140, HOP_ART.gate(0), 1],
     ['gate1', 40, 140, HOP_ART.gate(1), 1], ['kite', 40, 80, HOP_ART.kite(), 1], ['balloon', 80, 120, HOP_ART.balloon(), 2],
     ['door0', 40, 140, HOP_DECO.door(0), 1], ['door1', 40, 140, HOP_DECO.door(1), 1], ['key', 40, 40, HOP_DECO.key(), 1], ['glint', 40, 40, HOP_DECO.glint(), 1],
     ['shadow', 80, 24, HOP_DECO.shadow(), 2], ['drift', 120, 60, HOP_DECO.drift(), 3], ['fore', 120, 60, hopTint(HOP_DECO.drift(), { w: pal[0], w2: pal[1] }), 3], ['bird0', 36, 18, HOP_DECO.bird0(), .7], ['bird1', 36, 18, HOP_DECO.bird1(), .7]]) {
-    V[n] = hopSprite('h-' + n, vw, vh, art, wt * sp);
+    V[n] = hopSprite('h-' + n, vw, vh, art, wt * sp, null, HOP_TOUCH[n] ? HOP_INK.thing(wt * sp) : null);
   }
   V.dot = {};
   for (const c of HOP_DOTS) V.dot[c] = hopSprite('dot-' + c, 24, 24, ghC(12, 12, 12, c, .22) + ghC(12, 12, 8.5, c, .5) + ghC(12, 12, 5.5, c), .5 * sp);
-  const ps = Math.round(sp * 2.1 * V.ps);
+  const ps = Math.round(sp * HOP_PETW * V.ps);
   V.pet = { happy: hopPetSprite('happy', ps), cheer: hopPetSprite('cheer', ps), oops: hopPetSprite('oops', ps) };
-  V.cos = HOP_COSTUME[R.r.wear] ? hopSprite('cos-' + R.r.wear, 200, 200, HOP_COSTUME[R.r.wear](), ps) : null;
+  V.cos = HOP_COSTUME[R.r.wear] ? hopSprite('cos-' + R.r.wear, 200, 200, HOP_COSTUME[R.r.wear](), ps, null, HOP_INK.hero(ps)) : null;
   V.col = { w: rlCol('w') };
   V.dark = HOP_DARK[W.id] || R.st.tw == 'lamp';
   R.v = V;
@@ -1272,6 +1285,22 @@ function hopBackdrop(V) {
   b.fillStyle = V.sky;
   b.fillRect(0, 0, w, V.H);
   hopImg(b, V.sun, V.W * .8 - V.sun.w * V.sc, V.T * 1.3, V.sun.w * V.sc);
+  // GFX-1: the far sky is not empty: rows of pale clouds, smaller and fainter higher up (they move with the backdrop, so they cost
+  // nothing a frame); on a tall phone screen more rows fill the extra sky
+  const d = V.drift;
+  if (d && d.c) {
+    const rows = V.H > V.W ? 4 : 2, dim = V.dark ? .2 : 1, hs = i => Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+    for (let r = 0; r < rows; r++) {
+      const gap = d.w * V.sc * (2.4 - r * .3);
+      for (let i = 0, x = -gap * hs(r + 7) * .5; x < w; i++, x += gap) {
+        const h = hs(i * 3.1 + r * 17), k = (.42 + r * .14 + h * .2) * V.sc;
+        if (h < .22) continue;
+        b.globalAlpha = dim * (.3 + r * .1 + h * .1);
+        b.drawImage(d.c, Math.round(x + h * gap * .5), Math.round(V.H * (.12 + (r + h * .6) * (.4 / rows))), Math.round(d.w * k), Math.round(d.h * k));
+      }
+    }
+    b.globalAlpha = 1;
+  }
   if (s.c) for (let x = 0; x < w; x += s.w * V.sc) b.drawImage(s.c, Math.round(x), Math.round(V.H * .74 - s.h * V.sc), Math.ceil(s.w * V.sc) + 1, Math.ceil(s.h * V.sc));
   V.bg = c;
 }
@@ -1468,7 +1497,7 @@ function hopDraw(R, dt) {
   if (!hidden) {
     const gy = hopGround(st, p.x, p.y);
     if (gy != null && p.y - gy < 7) {
-      const u = Math.max(.25, 1 - (p.y - gy) / 6), w = 1.8 * T * V.ps * u;
+      const u = Math.max(.25, 1 - (p.y - gy) / 6), w = 2.2 * T * V.ps * u;
       c.globalAlpha = u;
       hopImg(c, V.shadow, X(p.x) - w / 2, Y(gy) - w * .15 - T * .06, w);
       c.globalAlpha = 1;
@@ -1477,7 +1506,7 @@ function hopDraw(R, dt) {
   // the ghost of the best run: the pet's picture, see-through
   const g = R.gh && hopGhostAt(R.gh, st.t);
   if (g && !g.jump && V.pet.happy.c) {
-    const wid = 2.1 * T * V.ps;
+    const wid = HOP_PETW * T * V.ps;
     c.globalAlpha = .38;
     c.drawImage(V.pet.happy.c, X(g.x) - wid / 2, Y(g.y) + T * .08 - wid * .92, wid, wid);
     c.globalAlpha = 1;
@@ -1491,28 +1520,36 @@ function hopDraw(R, dt) {
     hopImg(c, s, X(bx) - .8 * T, Y(by) - .8 * T, 1.6 * T);
   }
   // little bits: dust when landing, sparkles when collecting, the trail, the poof of a fall (sprites)
-  for (let i = R.fx.length - 1; i >= 0; i--) {
-    const q = R.fx[i];
-    q.life -= dt;
-    if (q.life <= 0) { R.fx.splice(i, 1); continue; }
-    q.x += q.vx * dt;
-    q.y += q.vy * dt;
+  R.fx.frame(dt);
+  R.fx.step(dt);
+  for (const q of R.fx.list) { // fix v194: a plain loop (no closure made each frame)
     c.globalAlpha = Math.min(1, q.life * 2.5);
     const r = q.r * T * (q.grow ? 1 + (1 - q.life) : 1) * 2.2;
-    hopImg(c, V.dot[q.c] || V.dot.w, X(q.x) - r, Y(q.y) - r, 2 * r);
+    if (q.k == 'star') hopImg(c, V.glint, X(q.x) - r * 1.6, Y(q.y) - r * 1.6, 3.2 * r);
+    else hopImg(c, V.dot[q.c] || V.dot.w, X(q.x) - r, Y(q.y) - r, 2 * r);
   }
   c.globalAlpha = 1;
   // the pet (with its costume behind it): stretched when it hops, squashed when it lands, tipped a little forward when it runs
   if (!hidden) {
     const s = V.pet[p.vy > 1 && !p.gr ? 'cheer' : st.wait == 'back' || p.kb > 0 ? 'oops' : 'happy'];
     R.sq = Math.max(0, (R.sq || 0) - dt * 4);
-    const str = p.gr ? 1 - R.sq * .18 : 1 + Math.min(.12, Math.abs(p.vy) * .008), wid = 2.1 * T * V.ps / Math.sqrt(str);
+    R.ant = Math.max(0, (R.ant || 0) - dt);
+    // GFX-1: squash on landing (about 15 % flatter, springing back a touch past round), a quick crouch as it leaves the ground
+    let str = p.gr ? 1 - R.sq * .18 + (R.sq > 0 && R.sq < .4 ? Math.sin(R.sq / .4 * Math.PI) * .05 : 0) : 1 + Math.min(.12, Math.abs(p.vy) * .008);
+    if (R.ant > 0 && !calm) str = 1 - .16 * Math.sin(R.ant / .09 * Math.PI);
+    const wid = HOP_PETW * T * V.ps / Math.sqrt(str);
     c.save();
     c.translate(X(p.x), Y(p.y) + T * .08);
     c.rotate(p.gr ? Math.max(-.12, Math.min(.12, p.vx * .012)) : Math.max(-.2, Math.min(.2, p.vx * .02 - p.vy * .004)));
     if (p.face < 0) c.scale(-1, 1);
     if (V.cos && V.cos.c) c.drawImage(V.cos.c, -wid / 2, -wid * str * .92, wid, wid * str);
     if (s.c) c.drawImage(s.c, -wid / 2, -wid * str * .92, wid, wid * str);
+    // GFX-1: a short white hit flash when a puff bumps the pet (the tint is made once per picture, JFX.tint)
+    if (s.c && p.kb > 0 && !calm && typeof JFX != 'undefined') {
+      c.globalAlpha = Math.min(.55, p.kb * 2);
+      c.drawImage(JFX.tint(s.c), -wid / 2, -wid * str * .92, wid, wid * str);
+      c.globalAlpha = 1;
+    }
     c.restore();
   }
   // the helper balloon: offered next to the pet, or carrying it
@@ -1529,14 +1566,15 @@ function hopDraw(R, dt) {
   if (V.lamp) c.drawImage(V.lamp, Math.round(X(p.x) - V.W), Math.round(Y(p.y + .6) - V.H), V.W * 2, V.H * 2);
 }
 // the bits: [x, y, vx, vy, life, radius, colour, grows]
-function hopFx(x, y, n, c, sp, r = .08, grow) {
-  if (!HP || (hopCalm() && n > 3)) n = Math.min(n, 3);
-  for (let i = 0; i < n; i++) {
-    const a = i / n * 6.28 + (HP.fx.length % 7);
-    HP.fx.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * .7 + sp * .3, life: .5 + (i % 3) * .1, r, c, grow });
-  }
-  if (HP.fx.length > 80) HP.fx.splice(0, HP.fx.length - 80);
+// (GFX-1: kept in the shared pool, JFX.pool in 59b-fx.js: at most 30 alive, half that while frames are slow; k 'star': a glint)
+function hopFx(x, y, n, c, sp, r = .08, grow, k) {
+  if (!HP) return;
+  if (hopCalm() && n > 3) n = 3;
+  HP.fx.burst(x, y, n, c, sp, { r, grow, k, up: sp * .3 });
 }
+// a pool without the kit (a game file loaded on its own, as in some tests): the old plain list, at most 30
+const hopPool = () => (typeof JFX != 'undefined' ? JFX.pool(30) : { list: [], frame() {}, step(dt) { this.list = this.list.filter(q => (q.life -= dt) > 0); },
+  each(fn) { this.list.forEach(q => fn(q, 1)); }, burst() {} });
 // music (R-03 A1): a gentle loop for each world, made of soft notes; only with Sound effects and Music on and not in calm mode;
 // it waits while the course waits (paused, hidden, the balloon's question) and goes quiet under the voice (the shared duck)
 const HOP_SCALE5 = [[0, 2, 4, 7, 9, 12, 14, 16, 19], [0, 3, 5, 7, 10, 12, 15, 17, 19]];
@@ -1756,7 +1794,7 @@ function hopPlay(id, tw, race) {
   cv.setAttribute('role', 'img'); // G-MOVES: the course canvas has a name (P6-01, like Hill Climb's)
   cv.setAttribute('aria-label', 'The clouds and your pet');
   HP = { st, c, r, cv, ctx: cv.getContext('2d', { alpha: false }), ptr: {}, key: {}, pend: false, acc: 0, last: 0, raf: 0, paused: false,
-    ft: [], fi: [], q: 1, fc: 0, qAt: 0, fx: [], shake: 0, sec: -1, said: {},
+    ft: [], fi: [], q: 1, fc: 0, qAt: 0, fx: hopPool(), shake: 0, sec: -1, said: {},
     rec: hopRecNew(), gh: twist || boss ? null : hopGhostIn(r.ghost[id]), ghMs: r.best[id] || 0, dpend: false };
   hopRec(HP.rec, st);
   hopSize(HP);
@@ -1873,6 +1911,7 @@ function hopEvents() {
   for (const [k, a] of st.ev) {
     if (k == 'jump' || k == 'jump2') {
       hopTone(k == 'jump' ? 330 : 520, .12, 0, 'sine', .07, k == 'jump' ? 640 : 980);
+      HP.ant = .09;
       if (tr && tr[3]) hopFx(p.x, p.y + .2, 4, tr[0] == 'rainbow' ? ['r', 'o', 'y', 'g', 'b', 'v'][Math.floor(st.t * 7) % 6] : tr[3], 1.2, .1);
     } else if (k == 'spring') {
       hopTone(220, .3, 0, 'triangle', .08, 900);
@@ -1888,6 +1927,8 @@ function hopEvents() {
     } else if (k == 'star') {
       SFX.star();
       hopFx(p.x, p.y + .8, 8, 'y', 3, .1);
+      hopFx(p.x, p.y + .8, 4, 'w', 1.8, .12, false, 'star');
+      hopFly('#hpst');
       const n = hopBits(st.stars);
       hopMsg(n == 3 ? 'All three stars!' : `A star! ${n} of 3`, 1400, 'big');
       UI.setChip($('#hpst'), n + '/3');
@@ -1941,6 +1982,13 @@ function hopEvents() {
     const el = $('#hpclk b');
     if (el) el.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   }
+}
+// GFX-1: a star flies from the pet to its chip in the top bar (JFX.fly: off in calm mode)
+function hopFly(to) {
+  const R = HP, V = R && R.v;
+  if (!V || typeof JFX == 'undefined' || !R.cv) return;
+  const b = JFX.rect(R.cv), T = V.T, p = R.st.p, k = b.width / V.W; // fix v194: measured once per screen size
+  JFX.fly(b.left + ((p.x - R.cx) * T) * k, b.top + (V.base - (p.y + 1 - R.cy) * T) * k, to, 'star');
 }
 const hopSpringAt = st => {
   let best = null;

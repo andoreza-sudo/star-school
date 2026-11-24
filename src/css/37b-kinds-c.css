@@ -121,6 +121,7 @@
 .mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}
 .mm-clock .mmv .viz{max-height:150px}
 .mm-frame,.mm-parts{cursor:pointer}
+.mmv.mm-notap [data-v]{pointer-events:none;cursor:default}
 .k2pulse{animation:k-pop var(--t-xl) var(--ease)}
 .mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}
 .mmcol{flex-direction:column;gap:var(--s-1)}
