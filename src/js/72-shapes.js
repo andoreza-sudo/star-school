@@ -160,11 +160,11 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
   if(S.voice)setTimeout(()=>say(free?'Pick a color and tap to paint!':mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
 
 function cbLayout(n){const land=innerWidth>innerHeight,avW=land?innerWidth-260:innerWidth-24,avH=land?innerHeight-80:innerHeight-80-(n>6?190:120);return Math.max(14,Math.floor(Math.min(avW,avH)/CBN))}
-// G-ART2 (R-03 T2): pixel art that looks like art. Squares are at least 32 px (pxCell); on a phone the picture is bigger than the
+// G-ART2 (R-03 T2): pixel art that looks like art. Squares are at least 40 px (pxCell; 32 until the v195 audit); on a phone the picture is bigger than the
 // screen: two fingers (or the Move tool) move it, pinch or the zoom tool shows it whole. A coloured square is a bead with a light
 // edge and its number fades away; unfinished squares show a faint tint of their colour. Done keeps it in the gallery; the last
 // square shows the finished picture in a frame.
-function pxCell(W,H,n){const land=W>H,avW=land?W-260:W-24,avH=land?H-80:H-80-(n>6?200:130);return Math.max(32,Math.floor(Math.min(avW,avH)/CBN))}
+function pxCell(W,H,n){const land=W>H,avW=land?W-260:W-24,avH=land?H-80:H-80-(n>6?200:130);return Math.max(40,Math.floor(Math.min(avW,avH)/CBN))} // audit v195 (R-03 T2): squares of 40 px at the least (they were 32); the picture scrolls and zooms as before
 // the room the picture has on screen: below the top bar, beside (landscape) or above (portrait) the palette as it is laid out
 function pxArea(n){const land=innerWidth>innerHeight,t=$('.gh-top'),pal=$('.cbpal'),top=t?t.getBoundingClientRect().bottom+8:84;
   if(land)return[innerWidth-(pal?pal.getBoundingClientRect().width+44:260),innerHeight-top-12];return[innerWidth-24,innerHeight-top-(pal?pal.getBoundingClientRect().height+28:(n>6?200:130))]}
