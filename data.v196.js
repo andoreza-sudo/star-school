@@ -6556,7 +6556,7 @@ function genSpell(lv){
 }
 /* ---------- fix2 v194: the recorded teacher lines said outside a lesson (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --teach-start) ----------
    The lines of src/data/d-teach-audio.js (EN_TEACH, in the teach12 part) that the code or data outside the lessons says word for word
-   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 54 lines. */
+   (Practice prompts, hints), so they play the pet's recording before a lesson part loads and with lessons off. 55 lines. */
 const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "A right angle is a square corner.":"35f7d9f064d2",
 "Add every side.":"e85aa34f679a",
@@ -6611,7 +6611,8 @@ const EN_TEACH0={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "What is left?":"f46ac92ea295",
 "What is the answer?":"8faffff7ea72",
 "What time is it?":"63e4c15c4bd9",
-"Which letter is missing?":"a852bc6c1a29"}};
+"Which letter is missing?":"a852bc6c1a29",
+"You earned game time!":"71561c2eceac"}};
 /* ---------- tracing glyphs (P2-16 digits; P2-17 adds A-Z and a-z in the same format) ----------
    Read by the tracing engine (src/js/47-trace.js, kind 'trace') only inside functions: this file loads after all code (A11).
 
