@@ -19843,6 +19843,25 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
 // fix v194 (LESSON-STAGE review): the practice mix-in. Every lesson item lsMix gives is a valid question of its stop (sk, lv, lsx, another
 // kind); only a learned math lesson gives one, never with K2.off; pickQ takes one only when Practice asks (mix), so mastQ's and the
 // check-in's draws (no mix) and a check-in, boss or world-test round never show one; a miss of one is never kept (no phantom label).
+// small-fix (v195): the two-colour ten frame (K2MM.frame2, 52b-know.js) changes the square that is tapped (it turned the LAST blue one
+// orange); which square holds which counter rides on the state as s.lay, so the state, the checks and what is submitted stay [blue, orange]
+run('LESSON-STAGE frame2: a tap changes the tapped square; the state stays the two counts',()=>{
+  const out=eval(js+`;(()=>{const p=[],M=K2MM.frame2,q={kind:'make',model:'frame2',m:{total:10},goal:'fill',ans:10},tap=(s,c)=>M.tap(q,s,{dataset:{c:String(c)}});
+    const at=(s,c,cls)=>new RegExp('<g class="'+cls+'">(<circle [^>]*>)*<circle cx="'+(24+40*(c%5))+'" cy="'+(24+40*Math.floor(c/5))+'"').test(M.draw(q,s));
+    let s=M.s0(q);for(const c of [2,5,7])s=tap(s,c);
+    if(JSON.stringify(s)!=='[3,0]'||!at(s,2,'v1')||!at(s,5,'v1')||!at(s,7,'v1')||at(s,0,'v1'))p.push('three taps on empty squares 2, 5, 7: '+JSON.stringify(s)+' '+(s.lay||[]).join(''));
+    s=tap(s,5);if(JSON.stringify(s)!=='[2,1]'||!at(s,5,'v2')||!at(s,7,'v1')||!at(s,2,'v1'))p.push('a tap on blue square 5 did not turn that square orange: '+(s.lay||[]).join(''));
+    s=tap(s,5);if(JSON.stringify(s)!=='[2,0]'||at(s,5,'v2')||at(s,5,'v1'))p.push('a tap on orange square 5 did not empty it: '+(s.lay||[]).join(''));
+    s=M.step(q,s,0,1);if(JSON.stringify(s)!=='[3,0]'||!at(s,0,'v1'))p.push('the + stepper did not fill the first empty square: '+(s.lay||[]).join(''));
+    s=M.step(q,s,0,-1);if(JSON.stringify(s)!=='[2,0]'||at(s,7,'v1')||!at(s,0,'v1'))p.push('the - stepper did not empty the last blue square: '+(s.lay||[]).join(''));
+    if(M.step(q,s,1,-1)!==null)p.push('an orange taken from none');
+    if(JSON.stringify(s.slice())!=='[2,0]'||s.slice().lay)p.push('the submitted state (a copy) is not the two counts');
+    let f=M.s0(q);for(let c=9;c>=0;c--)f=tap(f,c);f=tap(f,3);if(!LSGOAL.fill(q,f.slice())||M.val(q,f)!==10)p.push('a full frame with one orange is not a fill: '+JSON.stringify(f));
+    if(M.draw(q,[3,1])!==VIZ.tenFrame(4,10,{b:1,cells:1}))p.push('a state without squares (the answer, the pet\\'s) is not drawn in turn, blue first');
+    return p})()`);
+  return{problems:out};
+});
+
 run('LESSON-STAGE lsMix: valid items, Practice and math stops only, a miss never kept',()=>{
   const r=eval(js+`;(()=>{const out={bad:[],n:0,mix:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
     const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};

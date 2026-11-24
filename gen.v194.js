@@ -30,7 +30,8 @@
    API (n, d, h, m, rows, cols are whole numbers; o is an optional options object):
      tenFrame(n, total = 10, o)   total 5, 10 or 20 cells; n counters fill row by row.  o.b: the last b counters
                                   are the second colour; o.fade: the last `fade` counters are faded (taken away);
-                                  o.cells (KINDS2 make): a transparent .vh rect over each cell (data-c = 0..), shown 1.25x
+                                  o.cells (KINDS2 make): a transparent .vh rect over each cell (data-c = 0..), shown 1.25x;
+                                  o.at: the cells the counters sit in, in order (0..n-1 when left out)
      base10(n)                    flats, rods and units for 0..999 (bigger cells below 100)
      numLine(o)                   o.min = 0, o.max = 10, o.step = 1 (tick spacing), o.labels: values to label, 'all',
                                   or left out for automatic (every tick when it fits, else multiples of 2/5/10..);
@@ -175,7 +176,7 @@ const VIZ = (() => {
         `<rect class="vo" x="${P}" y="${y0}" width="${5 * C}" height="${fh}" rx="8"/><path class="vl" d="${d}"/>`;
     }
     const pts = [];
-    for (let i = 0; i < n; i++) {
+    for (const i of o.at || [...Array(n).keys()]) {
       const fi = Math.floor(i / 10), j = i % 10;
       pts.push([P + (j % 5) * C + C / 2, P + fi * (fh + G) + Math.floor(j / 5) * C + C / 2]);
     }
