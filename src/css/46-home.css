@@ -2,9 +2,8 @@
 
 /* ---- top bar: logo, sound, grown-ups gear ---- */
 .hm-top{gap:var(--s-2)}
-.hm-logo{display:flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;
-  line-height:1.1;white-space:nowrap}
-.hm-logo .wl-mk{width:44px;height:44px} /* BRAND (v193): the logo, UI.logo() (10-components.css) */
+.hm-logo{font-size:var(--fs-5)}
+.hm-logo .wl-mk{width:44px;height:44px}
 .hm-top .btn.icon .ic{color:var(--ink-2)}
 
 /* ---- page: one column; two columns on a wide landscape screen ---- */

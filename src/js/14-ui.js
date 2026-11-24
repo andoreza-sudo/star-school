@@ -124,10 +124,7 @@ const UI = {
     return `<div class="blank"><span class="bi">${ico(icon)}</span><p>${UI.t(line)}</p>${actionHtml}</div>`;
   },
 
-  // BRAND (v193; DESIGN_SYSTEM "Logo"): the logo, the small icon (docs/brand/icon-small.svg without its sky, which is the tile's CSS
-  // background) and the wordmark, "Whistle" in --ink, "stop" in --brand, a star for the dot on the i (a dotless i, U+0131,
-  // with the star drawn over it). One accessible name, Whistlestop;
-  // the drawing and the letters are aria-hidden. cls: where it sits (hm-logo, su-logo ...); word: false draws the icon only.
+  // BRAND: the logo (DESIGN_SYSTEM 6.6), named Whistlestop. word false: the icon only.
   logo(cls = '', word = true) {
     return `<span class="wl ${cls}" role="img" aria-label="Whistlestop">${UI.LOGO}` + (word ? '<span class="wl-w" aria-hidden="true">Wh' +
       '<span class="wl-i">ı<svg viewBox="0 0 14 13.4"><path d="M7 0l2 4.7 5 .4-3.8 3.4 1.1 4.9L7 10.8l-4.4 2.6 1.2-4.9L0 5.1l5-.4z"/></svg></span>' +
