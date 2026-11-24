@@ -64,8 +64,16 @@ function fitCh(){for(const g of document.querySelectorAll('.choices')){const bs=
   for(const b of bs){if(b.scrollWidth<=b.clientWidth+1)continue;const cs=getComputedStyle(b),av=b.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
     const r=document.createRange();r.selectNodeContents(b);const w=r.getBoundingClientRect().width;if(w>av+1)k=Math.min(k,av/w)}
   if(k<1){const f=Math.max(.6,k*.97);bs.forEach(b=>b.style.fontSize=(parseFloat(getComputedStyle(b).fontSize)*f).toFixed(1)+'px')}}}
+// The step loop forces a layout per step. When the overflow is one --k does not shrink (a boss's stage over a question at 1024x600:
+// 4-62 px at any --k) it ran all 12 steps for nothing, 15-45 ms inside the tap that opened the question (P4-17: Let's go over 100 ms
+// on a busy machine). So an overflowing question tries the smallest --k first: still over, the loop would end there anyway (the
+// same FIT_KMIN); it fits there, the loop finds the largest --k that fits, as before.
+const FIT_KMIN=(()=>{let k=1;while(k>.42)k-=.05;return k})();
 function fit(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
-  while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
+  const over=()=>qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1;
+  if(!over())return;
+  pr.style.setProperty('--k',FIT_KMIN);if(over())return;pr.style.setProperty('--k',1);
+  while(k>.42&&over()){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 // R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
 // scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
