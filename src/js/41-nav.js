@@ -201,3 +201,16 @@ function learnHub() {
   if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
+/* sample fix (Fable): the Android back gesture. The Play app (a TWA) closes when back finds no history, so away from Home one history
+   entry stands in front: back takes it and does the screen's own way back (the open sheet, Back, the house's "Go Home?", an end card's
+   Home, the bar's Home), then it is put back. On Home, "Who is playing?" and the name screen there is none: back leaves the app. */
+const NAVB={skip:0,
+  act(){const m=UI.modal.top();if(m)return m._esc||(()=>{}); // a card with no way back of its own stays
+    if(document.getElementById('hs'))return null;
+    const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
+  on:()=>!!(history.state&&history.state.navb),
+  sync(){try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
+  pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
+if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
+  const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
+  mo.observe(document.body,{childList:true});if(a)mo.observe(a,{childList:true})}
