@@ -1400,8 +1400,9 @@ A review of MERGE-186 (G-MOVES, TEACH-5S). VER stays v186.
   56/66 = 85%, child-like 1048/1048), **false accept 15.0%** of 1,105 (similar word 149/524 = 28%, another word 17/521 = 3.3%, silence
   and noise 0/60). Grid (true match / false accept): RATIO 1.0 98.1 / 8.8, 1.1 98.8 / 13.9, 1.15 99.1 / 15.0; ABS 1.4 97.6 / 4.9. Chosen
   for "rarely tell a right child to listen again": a similar word sometimes passes, a different word or silence almost never.
-  tools/test.js recomputes a smaller set (every 6th line as target, 466 cases: true match 95.8% of 236, other voice 56/66, false accept
-  12.6% of 230: similar 25/85, other 4/85, silence 0/60) and fails if it moves. Real children's voices differ more than Leo and Eve, so
+  tools/test.js recomputes a smaller set (every 6th line as target: true match 95.8% of 288, other voice 54/66, false accept
+  14.9% of 282; set again in v196, owner 2026-11-25, for the 128 new Spanish lines, with the lessons' wrong forms such as "el camisa"
+  left out of the other-voice pairs because no child is asked to say one) and fails if it moves. Real children's voices differ more than Leo and Eve, so
   expect fewer "Great job!" for right words than here; the self-check stays the real decision.
 - A page opened from a file (file://, the test harness) cannot read its own recordings, so there is no sound check there (no fetch is
   tried); the installed app and GitHub Pages (https, service worker cache) have it.

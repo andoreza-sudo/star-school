@@ -15074,7 +15074,7 @@ run('Spanish speaking check S-SPK2',()=>{
   return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
     // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
     try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6,other2:false}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
-      const want={npos:236,nneg:230,voice:56,child:170,similar:25,other:4,silence:0};
+      const want={npos:288,nneg:282,voice:54,child:222,similar:39,other:3,silence:0}; // v196 (owner 2026-11-25): 128 new Spanish lines; the lessons' wrong forms make no voice pair (tools/spk-calib.js)
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
       if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
