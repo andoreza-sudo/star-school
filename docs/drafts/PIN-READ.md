@@ -12,7 +12,7 @@ How it works now:
 
 Every sentence on these screens is an approved RC-1 string except the ones below.
 
-## New or changed sentences (pending approval)
+## New or changed sentences (approved by the owner 2026-11-25)
 
 | Where | Proposed text | Why |
 |---|---|---|
