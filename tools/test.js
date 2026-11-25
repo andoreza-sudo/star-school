@@ -72,11 +72,10 @@ const KNOWN={ // check name -> exact problem strings that are known content issu
     'es_verb L2: no say (choice)',
     'es_adj L2: no say (choice)'
   ],
-  // R-01s: left for later chunks (docs/reviews/R-01-spanish.md, logged in PROGRESS.md): days and months level 1 show one calendar picture
-  // for every day and month (Must 4, M), and a "who" answer at story level 2 can show the same face with a different name under it (Should 16, M)
+  // R-01s: left for later chunks (docs/reviews/R-01-spanish.md, logged in PROGRESS.md): a "who" answer at story level 2 can show the same
+  // face with a different name under it (Should 16, M). (Must 4, one calendar picture for every day and month at level 1, is fixed by
+  // the DAYS-D3 drawings, src/data/d-art-cal.js: its two entries came off this list because they no longer happen.)
   'Spanish review fixes R-01s':[
-    'es_days L1: two choices share a picture',
-    'es_months L1: two choices share a picture',
     'es_story L2: two choices share a picture'
   ],
 };
@@ -15421,6 +15420,99 @@ run('object art DRAW8 E1: eight picture words drawn',()=>{
   if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('DRAW8, the v196 word audit E1'))p.push('the DRAW8 drawings must not be in index.html');
   if(out.asked.length<NAMES.length)p.push('only '+out.asked.join(', ')+' were asked in the picture-word sample');
   return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes; asked in the sample: '+out.asked.join(' ')};
+});
+
+// ---- DAYS-D3: the Spanish days and months drawn (docs/drafts/AUDIT-WORDS-READ.md D3, owner: option 1; src/data/d-art-cal.js) ----
+// From grade 1 every day showed one calendar emoji and every month another. Each word now has its own picture, made by one helper:
+// a week strip of 7 boxes (lunes first) with the day's box lit, a ring of 12 dots (January at one o'clock) with the month's dot lit,
+// and three boxes with today's star for hoy, mañana and ayer. Checked: the object art rules (tokens only), every word a distinct
+// drawing, the lit cell where the word says, the drawings shown by the units' questions, and no two choices with one picture.
+run('DAYS-D3: Spanish days and months each drawn, lit in the right place',()=>{
+  const p=[];
+  const DAYS=['mon','tue','wed','thu','fri','sat','sun'],MON='jan feb mar apr may jun jul aug sep oct nov dec'.split(' ');
+  const WANT={lunes:'week-mon',martes:'week-tue','miércoles':'week-wed',jueves:'week-thu',viernes:'week-fri','sábado':'week-sat',domingo:'week-sun',
+    hoy:'day-today','mañana':'day-tomorrow',ayer:'day-yesterday',enero:'month-jan',febrero:'month-feb',marzo:'month-mar',abril:'month-apr',
+    mayo:'month-may',junio:'month-jun',julio:'month-jul',agosto:'month-aug',septiembre:'month-sep',octubre:'month-oct',noviembre:'month-nov',diciembre:'month-dec'};
+  const NAMES=Object.values(WANT),artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  const out=eval(js+`
+  const bad=[],N=${JSON.stringify(NAMES)},W=${JSON.stringify(WANT)},css=${JSON.stringify(artCss)},DAYS=${JSON.stringify(DAYS)},MON=${JSON.stringify(MON)};let total=0;
+  const num=(el,a)=>{const m=new RegExp('\\\\s'+a+'="(-?[\\\\d.]+)"').exec(el);return m?+m[1]:NaN};
+  // 1. the rules of the object art sets (DESIGN_SYSTEM 6.5, as the DRAW8 check): tokens only, no raw colours, on the grid, small
+  for(const n of N){const d=ART[n];
+    if(!d){bad.push('no drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing');
+    if((d.match(/<[a-z]+/g)||[]).length>40)bad.push(n+': over 40 elements');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t);
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad.push(n+': attribute '+m[1]);
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour '+a);
+    for(const m of d.matchAll(/var\\(--(a-[a-z0-9]+)\\)/g))if(!css.includes('--'+m[1]+':var(--ill-'))bad.push(n+': role --'+m[1]+' is not in 21-art.css');
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity '+m[1]);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the grid');
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the grid');
+    for(const el of d.match(/<rect[^>]*>/g)||[])if(num(el,'x')+num(el,'width')>64||num(el,'y')+num(el,'height')>64)bad.push(n+': a box runs off the grid');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+    // 2. a distinct drawing: not the same as any other drawing (the other days, the other months, anything else in ART)
+    for(const k in ART)if(k!==n&&ART[k]===d)bad.push(n+': the same drawing as '+k)}
+  if(total>60000)bad.push('the 22 are '+total+' bytes (limit 60000)');
+  // 3. the lit cell is where the word says. Lit is orange (--a-o2 shade, one per drawing); the rest is grey or blue, today yellow
+  const lit=d=>(d.match(/<(rect|circle)[^>]*var\\(--a-o2\\)[^>]*>/g)||[]);
+  DAYS.forEach((k,i)=>{const d=ART['week-'+k]||'',L=lit(d);
+    if(L.length!==1){bad.push('week-'+k+': '+L.length+' lit boxes');return}
+    // the unlit boxes: grey or blue rects with no opacity (the binder rings' glints have one)
+    const cells=(d.match(/<rect[^>]*var\\(--a-(e|b)\\)"\\/>/g)||[]).map(el=>num(el,'x')).sort((a,b)=>a-b);
+    if(cells.length!==6)bad.push('week-'+k+': '+cells.length+' unlit boxes, wants 6');
+    const cx=num(L[0],'x')+num(L[0],'width')/2,pos=cells.filter(x=>x+3.3<cx).length;
+    if(pos!==i)bad.push('week-'+k+': the lit box is box '+(pos+1)+' of 7, wants '+(i+1));
+    if(Math.abs(cx-(7.4+i*8.2))>1)bad.push('week-'+k+': the lit box is off its place in the strip ('+cx+')');
+    // the weekend boxes are the blue ones, Monday first: the blue boxes are in the last two places
+    const blue=(d.match(/<rect[^>]*var\\(--a-b\\)"\\/>/g)||[]).map(el=>num(el,'x'));
+    if(blue.some(x=>x<4.1+5*8.2-.1))bad.push('week-'+k+': a weekday box is blue')});
+  MON.forEach((k,i)=>{const d=ART['month-'+k]||'',L=lit(d);
+    if(L.length!==1){bad.push('month-'+k+': '+L.length+' lit dots');return}
+    const dots=(d.match(/<circle[^>]*var\\(--a-e\\)[^>]*>/g)||[]);
+    if(dots.length!==11)bad.push('month-'+k+': '+dots.length+' unlit dots, wants 11');
+    const a=Math.atan2(num(L[0],'cx')-32,33-num(L[0],'cy'))*6/Math.PI,clock=((Math.round(a)%12)+12)%12||12;
+    if(clock!==i+1)bad.push('month-'+k+': the lit dot is at '+clock+" o'clock, wants "+(i+1));
+    if(num(L[0],'r')<1.5*Math.max(...dots.map(el=>num(el,'r'))))bad.push('month-'+k+': the lit dot is not clearly bigger')});
+  [['today',0],['tomorrow',1],['yesterday',-1]].forEach(([w,dir])=>{const d=ART['day-'+w]||'',L=lit(d);
+    if(L.length!==1){bad.push('day-'+w+': '+L.length+' lit boxes');return}
+    const cx=num(L[0],'x')+num(L[0],'width')/2,want=32+dir*19.6;
+    if(Math.abs(cx-want)>1.5)bad.push('day-'+w+': the lit box is at '+cx+', wants '+want);
+    const arrow=/var\\(--a-k2\\)" d="M([\\d.]+) [\\d.]+L([\\d.]+)/.exec(d.replace(/<rect[^>]*>/g,''));
+    if(!dir&&arrow)bad.push('day-today: an arrow');
+    if(dir&&(!arrow||Math.sign(+arrow[2]-+arrow[1])!==dir))bad.push('day-'+w+': the arrow does not point from today to the lit box');
+    if((d.match(/var\\(--a-y\\)" d=/g)||[]).length!==1)bad.push('day-'+w+': not one star for today')});
+  // 4. the words name these drawings (nothing else does), and their questions show them, never the calendar emoji
+  const its=ES_UNITS.filter(u=>u.id==='days'||u.id==='months').flatMap(u=>u.items);
+  for(const w in W){const it=its.find(x=>x[0]===w);if(!it||it[4]!==W[w])bad.push(w+': art '+(it&&it[4]))}
+  for(const u of ES_UNITS)for(const it of u.items)if(N.includes(it[4])&&W[it[0]]!==it[4])bad.push(u.id+' '+it[0]+' uses '+it[4]);
+  const seen=new Set(),g0=S.grade;let qn=0;
+  for(const g of [undefined,-1,0,1,3]){S.grade=g;
+    for(const sk of ['es_days','es_months'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=(g===3?600:150);s++){const q=genQ(sk,lv,s);qn++;
+      const h=q.html+(q.choices||[]).map(c=>c.l).join('');
+      for(const n of N)if(h.includes(picArt(n)))seen.add(n);
+      if(/📅|📆|🌅|📌|◀/.test(h))bad.push(sk+' L'+lv+' seed '+s+': an emoji picture');
+      if(lv===1){const ps=q.choices.map(c=>String(c.l).replace(/<small>[\\s\\S]*?<\\/small>/g,''));
+        if(new Set(ps).size!==ps.length)bad.push('grade '+g+': '+sk+' L1 seed '+s+': two choices share a picture')}}}
+  S.grade=g0;
+  for(const n of N)if(!seen.has(n))bad.push(n+': never shown by a days or months question');
+  ({bad,total,qn});`);
+  // 5. one helper makes them; it is deterministic (a second evaluation gives the same drawings byte for byte)
+  const CSRC=fs.readFileSync(path.join(SRC,'data','d-art-cal.js'),'utf8');
+  if(/Math\.random|Date|rnd\(/.test(CSRC))p.push('d-art-cal.js must not use randomness or the date');
+  const ev=()=>eval(js+';JSON.stringify('+JSON.stringify(NAMES)+'.map(n=>ART[n]))');
+  if(ev()!==ev())p.push('the drawings differ between two evaluations');
+  // 6. where they live: the data file (start-up is index.html + gen + gen2 + data: performance P6-03 has the budget), not index.html
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!DATAC.includes('the Spanish days and months (D3'))p.push('the D3 drawings are not in '+DATA_FILE+' (rebuild)');
+  if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('the Spanish days and months (D3'))p.push('the D3 drawings must not be in index.html');
+  if(!fs.existsSync(path.join(ROOT,'docs','drafts','DAYS-MONTHS.png')))p.push('the review sheet docs/drafts/DAYS-MONTHS.png is missing');
+  return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes (made at load from '+CSRC.length+' bytes of source); '+out.qn+' questions'};
 });
 
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
