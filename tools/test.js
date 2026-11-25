@@ -23927,6 +23927,64 @@ run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under 
     finally{PIN.pad=keep.pad;NAV.askQ=keep.askQ;UI.sheet=keep.sheet;fb=keep.fb;grown=keep.grown;SFX.wrong=keep.wrong;Date.now=D0}})()`);
   return Promise.resolve(r).then(b=>({problems:p.concat(b),note:'hash, waits 1-5-15-30-60, first time, change, forgot, Start over, backups'}));
 });
+// PIN-SETUP (owner decision 2026-11-25): the grown-up chooses the Grown-ups PIN in first setup, not later at the first Grown-ups entry
+run('grown-ups PIN in first setup: setup asks for it twice before saving, the gate needs it, an old save without one is not locked out, Forgot PIN keeps progress PIN-SETUP',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,setInterval(){},clearInterval(){},location:{protocol:'file:',reload(){}}}),R=x=>vm.runInContext(x,ctx);
+  // setup() really runs: $ reads a document whose elements are plain objects, made on first use
+  const els={},mk=q=>els[q]||(els[q]={value:'',textContent:'',innerHTML:'',placeholder:'',dataset:{},style:{},
+    classList:{toggle(){},add(){},remove(){},contains:()=>false},setAttribute(){},getAttribute:()=>null,focus(){},querySelector:()=>mk(q+' *'),
+    querySelectorAll:()=>[],addEventListener(){},appendChild(){},remove(){}});
+  ctx.document={querySelector:mk,querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk('new'),body:mk('body'),documentElement:mk('html')};
+  ctx.__st=store;ctx.__els=els;
+  const p=[],src=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  if(!/suPin\(\(\) => \{ S\.name = n;/.test(src('46-home.js')))p.push("setup's Let's go! saves the child before the PIN is chosen");
+  const r=R(`(()=>{const bad=[];const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,home,wrong:SFX.wrong,put:PIN.put,psheet:PLAY.sheet};
+    try{
+    PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toHome=0,toGrown=0;home=()=>{toHome++};grown=()=>{toGrown++};
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    const q=x=>document.querySelector(x),go=nm=>{loadSave(null);setup();q('#nm').value=nm;q('#pn').value='Rex';q('#go').onclick()};
+    // 1. a new tablet: Let's go! asks for the PIN before anything is saved; no name: no PIN asked
+    for(const k in __st)delete __st[k];
+    loadSave(null);setup();q('#nm').value='';q('#go').onclick();if(pads.length||toHome)bad.push('no name: the PIN was asked or setup went on');
+    go('Mia');
+    if(pads.length!==1||last().title!=='Choose a Grown-ups PIN'||!/grown-up/i.test(last().line)||last().forgot)bad.push('setup did not ask a grown-up to choose a PIN: '+JSON.stringify(pads.map(x=>x.title)));
+    if(toHome||S.name||PIN.has())bad.push('setup went on or saved before the PIN was chosen');
+    // typed differently twice: nothing saved, asked again; Cancel (the pad closes, nothing typed) stays on setup
+    last().done('1357',pd());last().done('1358',pd());
+    if(PIN.has()||toHome||S.name||pads.length!==3||!/match/.test(last().line))bad.push('setup saved a PIN typed differently twice');
+    last().done('1357',pd());last().done('1357',pd());
+    if(!PIN.has()||toHome!==1||S.name!=='Mia'||S.petName!=='Rex'||PIN.check('1357')!=='ok')bad.push('the PIN typed twice: not saved, or setup did not go on');
+    // 2. the gate needs it: Grown-ups, the Unlock sheet (purchases); no old question; a wrong PIN stays out
+    let asked=0;NAV.askQ=()=>{asked++};pads.length=0;NAV.quiz();
+    if(asked||pads.length!==1||!pads[0].forgot)bad.push('Grown-ups: not the PIN pad with Forgot PIN?');
+    pads[0].done('9999',pd());if(toGrown)bad.push('a wrong PIN opened Grown-ups');
+    pads[0].done('1357',pd());if(toGrown!==1)bad.push('the right PIN did not open Grown-ups');
+    let sheet=0;PLAY.sheet=()=>{sheet++};pads.length=0;PLAY.grown(()=>{});
+    if(asked||pads.length!==1)bad.push('the Unlock sheet is not behind the PIN');
+    pads[0].done('2468',pd());if(sheet)bad.push('a wrong PIN opened the Unlock sheet');pads[0].done('1357',pd());if(sheet!==1)bad.push('the right PIN did not open the Unlock sheet');
+    // 3. another child's setup on this tablet (or Start over): the PIN is kept and not asked again
+    pads.length=0;go('Leo');if(pads.length||toHome!==2||S.name!=='Leo'||PIN.check('1357')!=='ok')bad.push('a second setup asked for the PIN again or changed it');
+    // 4. storage full: the PIN cannot be saved, setup still goes on (nobody is stuck); the old question guards Grown-ups later
+    for(const k in __st)delete __st[k];PIN.put=()=>false;pads.length=0;go('Zoe');last().done('1111',pd());last().done('1111',pd());PIN.put=keep.put;
+    if(toHome!==3||S.name!=='Zoe'||PIN.has())bad.push('storage full: setup did not go on');
+    // 5. an old save with progress and no PIN: the old question once, then choose a PIN, then Grown-ups; progress untouched
+    for(const k in __st)delete __st[k];loadSave(null);S.name='Ava';S.stars=85;S.coins=64;save();const s0=JSON.stringify(S);
+    let ok=null;NAV.askQ=t=>{asked++;ok=t};pads.length=0;NAV.quiz();
+    if(asked!==1||pads.length)bad.push('an old save without a PIN: not the old question first');
+    ok();if(pads.length!==1||pads[0].title!=='Choose a Grown-ups PIN')bad.push('an old save: after the question, no PIN to choose');
+    last().done('4321',pd());last().done('4321',pd());
+    if(toGrown!==2||!PIN.has()||JSON.stringify(S)!==s0)bad.push('an old save: not into Grown-ups with a new PIN and the same progress');
+    // 6. Forgot PIN?: the three products, then a new PIN; the progress is the same, the old PIN no longer works
+    const xs={};UI.sheet=h=>{const s={h,close(){},el:{querySelector:q=>xs[q]||(xs[q]={value:'',textContent:'',disabled:false})}};return s};
+    pads.length=0;const f=PIN.forgot(()=>toGrown++);f.ans.forEach((a,i)=>{f.el.querySelector('#pfa'+i).value=String(a)});xs['#pfgo'].onclick();
+    last().done('8642',pd());last().done('8642',pd());
+    if(toGrown!==3||PIN.check('8642')!=='ok'||PIN.check('4321')!=='wrong'||JSON.stringify(S)!==s0||JSON.parse(localStorage.getItem(KEY)||'{}').stars!==85)bad.push('Forgot PIN: no new PIN, or the progress changed');
+    return bad}
+    finally{PIN.pad=keep.pad;NAV.askQ=keep.askQ;UI.sheet=keep.sheet;fb=keep.fb;grown=keep.grown;home=keep.home;SFX.wrong=keep.wrong;PIN.put=keep.put;PLAY.sheet=keep.psheet}})()`);
+  return{problems:p.concat(r),note:'setup asks for the PIN twice before saving; Grown-ups and Unlock need it; a second setup keeps it; storage full goes on; old save upgraded; Forgot PIN keeps progress'};
+});
 run('game time from a grown-up: the bank, never below 0, the log and the report card, the Home line, behind the PIN, the save RC-1',()=>{
   const {R}=askApp(),p=[],fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
   const g=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
