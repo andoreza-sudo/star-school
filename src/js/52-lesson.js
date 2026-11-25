@@ -606,7 +606,7 @@ const LS = {
      ${rec.pass || PT.sec ? `<div class="ls-win">${rec.pass ? LS.jobPic(st.id, 'ls-jp') + UI.stars(rec.stars, 3, 34) : ''}${PT.sec ? `<div class="ls-tk" id="lstk" aria-hidden="true">${ico('ticket', 28)}<span>+${fmtT(PT.sec)}</span></div>` : ''}</div>` : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       ${gt}${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES[p][rec.next].t)}!</span></li>` : ''}</ul>
-     <div class="ls-acts">${rec.pass ? UI.btn('Practice', {kind: getSt(p, rec.ni) ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass && getSt(p, rec.ni) ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
+     <div class="ls-acts">${rec.pass || lsTried(st.id) && unlocked(p, rec.ni) && !lsGate(p, rec.ni) ? UI.btn('Practice', {kind: getSt(p, rec.ni) ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'}) : UI.btn('Learn again', {kind: 'primary', size: 'lg', icon: 'replay', id: 'lsagain'})}${UI.btn('Map', {kind: rec.pass && getSt(p, rec.ni) ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
     LS.mood('cheer', rec.pass ? 'jump' : '');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
@@ -742,11 +742,24 @@ const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == '
    out (null), never said with a hole; tools/test.js checks every drafted line fills. lsW(lines, k, sl): line k (round the list), filled. */
 function lsFill(t, sl) {
   let ok = true;
-  const o = String(t).replace(/\{(\w+)\}/g, (m, k) => (k == 'name' ? lsName() : k == 'pet' ? petN() : sl && sl[k] != null ? String(sl[k]) : (ok = false, m)));
-  return ok ? o : null;
+  const o = String(t).replace(/\{(\w+)\}/g, (m, k) => (k == 'name' ? lsName() : k == 'pet' ? petN() : sl && sl[k] != null ? (String(sl[k]) === '1' ? LS_ONE : String(sl[k])) : (ok = false, m)));
+  return ok ? lsOne(o) : null;
 }
+/* WORDS-MATH W24 (the owner's approval of 2026-11-24): the reviewed lines stay as written; a slot filled with 1 says the singular of
+   the counting noun after it ("Put in 1 counter with me.", "It has 1 hundred, 1 ten and 1 one.", "They are worth 1 cent."), and
+   "1 row of 2 makes 2." Count nouns only (LS_ONES): a verb after a slot ("{word} ends with", "The {a} floats") is never touched,
+   nor a number that is not from a slot. LS_ONE marks a slot filled with 1 until the line is done. */
+const LS_ONE = '\u00011\u0001';
+const LS_ONES = {apples: 'apple', bags: 'bag', bars: 'bar', blocks: 'block', boards: 'board', boxes: 'box', cents: 'cent', coins: 'coin', copies: 'copy',
+  counters: 'counter', cubes: 'cube', degrees: 'degree', dots: 'dot', gaps: 'gap', gems: 'gem', grams: 'gram', groups: 'group', hundreds: 'hundred',
+  inches: 'inch', feet: 'foot', layers: 'layer', leaves: 'leaf', lines: 'line', logs: 'log', minutes: 'minute', nuts: 'nut', ones: 'one', parts: 'part', pieces: 'piece',
+  rocks: 'rock', rows: 'row', sections: 'section', squares: 'square', stars: 'star', steps: 'step', stones: 'stone', tens: 'ten', toys: 'toy', windows: 'window',
+  jumps: 'jump', wholes: 'whole', halves: 'half', thirds: 'third', fourths: 'fourth', fifths: 'fifth', sixths: 'sixth', eighths: 'eighth', tenths: 'tenth', twelfths: 'twelfth', hundredths: 'hundredth'};
+const lsOne = t => (t.indexOf(LS_ONE) < 0 ? t : t
+  .replace(/\u00011\u0001 ([a-z]+)\b/g, (m, w) => (LS_ONES[w] ? LS_ONE + ' ' + LS_ONES[w] : m))
+  .replace(/(\u00011\u0001 (?:row|group) of \S+ )make\b/g, '$1makes').replace(/\u0001/g, ''));
 const lsW = (a, k, sl) => { a = [].concat(a || []); const t = a.length ? lsFill(a[k % a.length], sl) : null; return t ? [t] : []; };
 // an answer as the pet says it: a time as words, cents with their unit
 const LS_SIGN = {'<': 'is less than', '>': 'is greater than', '=': 'is equal to'};
 const lsSayV = (q, v) => (q.vsay ? q.vsay(String(v)) : q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
-  : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? v + ' cents' : String(v));
+  : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? qN(v, 'cent') : String(v));

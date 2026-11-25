@@ -26,7 +26,7 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
 // code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
-// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
+// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
@@ -34,7 +34,9 @@ const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB
 // lesson sentence of every grade in the pet's recorded voice (audio/teach): 4.5 -> 8.5 MB, warn raised in proportion 4.0 -> 7.55 MB
 // REC-2 owner decision 2026-11-24 (9.0 MB): "yes record the last two groups too" (the warm-up lines, the Explore lines of grade 3 and up):
 // 8.5 -> 9.0 MB, warn raised in proportion 7.55 -> 7.995 MB
-const AUDIO_WARN=7995000,AUDIO_FAIL=9000000,AUDIO_FILE_FAIL=40000;
+// owner decision 2026-11-24 (D2): the Spanish sort chips and the wrong forms the Spanish lessons read aloud are recorded too (about 128
+// short files): 9.0 -> 9.5 MB, warn raised in proportion 7.995 -> 8.439 MB
+const AUDIO_WARN=8439000,AUDIO_FAIL=9500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -105,7 +107,7 @@ const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku 
   'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
   'word search and unscramble P3-15','Block Builder goals G-BB3'];
 const TEST_S={'sky hop G-04b':451,'game moves and bosses G-MOVES':50,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
-  'math review fixes R-01m':18,'robot path P3-13':12,'block builder G-01':8};
+  'math review fixes R-01m':18,'math audit fixes AUDIT-MATH':45,'math words WORDS-MATH':30,'robot path P3-13':12,'block builder G-01':8};
 const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
   if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
   const m=a.slice(8).match(/^(\d+)\/(\d+)$/);
@@ -120,7 +122,12 @@ const run=(name,fn)=>{
   const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
     return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
-  try{const r=fn();
+  // each check starts from the same localStorage: many checks swap the stub's getItem / setItem for their own store (or replace
+  // global.localStorage) and never put it back, so the next check's app started from the last check's save (P3-17 left a 5th grader,
+  // whose grown-up pet broke P4-07; Volcano Lab P2-11 did the same to P4-06). Put the object and its methods back after the check.
+  const LS0=global.localStorage,LSM={getItem:LS0.getItem,setItem:LS0.setItem,removeItem:LS0.removeItem};
+  const lsBack=()=>{global.localStorage=LS0;for(const k in LSM){if(LSM[k]===undefined)delete LS0[k];else LS0[k]=LSM[k]}};
+  try{const r=(()=>{try{return fn()}finally{lsBack()}})();
     if(r&&typeof r.then=='function'){const i=results.length;results.push(put(['check did not finish'],''));
       PENDING.push(r.then(x=>{results[i]=put(x.problems||[],x.note||'')},e=>{results[i]=put(['check crashed: '+(e&&e.stack||e)],'')}));return}
     problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
@@ -2020,9 +2027,10 @@ run('ABC Beach (P2-15): letters, middle vowels, digraphs, syllables; 3,000 sampl
   // data sizes and word lists
   if(SYLP.length!==40)bad.push('SYLP has '+SYLP.length+', want 40');
   const sw=SYLW.reduce((a,l)=>a+l.length,0);
-  if(sw!==60)bad.push('SYLW has '+sw+', want 60');
+  // AUDIT-READ: 59, not 60: "family" was removed (it has two claps or three, depending on the speaker; the R-01 reading review asked for it)
+  if(sw!==59)bad.push('SYLW has '+sw+', want 59');
   for(const w of new Set([...SYLP.map(x=>x[0]),...SYLW.flat(),...DIGR.map(x=>x[0]),...CVCM.map(x=>x[0])]))if(BAD.test(w))bad.push('BAD word '+w);
-  if(new Set(SYLW.flat()).size!==60)bad.push('SYLW has a repeated word');
+  if(new Set(SYLW.flat()).size!==59)bad.push('SYLW has a repeated word');
   if(new Set(SYLP.map(x=>x[0])).size!==40)bad.push('SYLP has a repeated word');
   for(const L of ABCO)if(!LETW[L])bad.push('no word for letter '+L);
   if(ABCO.length!==26||new Set(ABCO).size!==26)bad.push('ABCO is not the 26 letters');
@@ -2740,7 +2748,7 @@ run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 sample
         if(q.kind=='num'){
           const [n,d]=q.ans.split('/').map(Number);
           if(![2,3,4,6,8].includes(d)||n<1||n>=d||parts(q.html)!==d||shaded(q.html)!==n||!/^frac \\d+\\/\\d+ (bar|circle)$/.test(q.label))bad.push(w+': bad shaded '+q.label);
-          if(q.pad!=='frac'||q.eq)bad.push(w+': pad');
+          if(q.pad!=='frac'||q.eq!=='value')bad.push(w+': pad'); // AUDIT-MATH M5: frac 2 takes any equal fraction (eq 'value'); it took the one form only before
         }else{
           const [n,d]=q.ans.split('/').map(Number),vs=q.choices.map(c=>c.v);
           if(q.choices.length!==3||vs.includes(undefined))bad.push(w+': 3 pictures needed');
@@ -3406,8 +3414,8 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
        if(q.kind=='choice'){
          const most=/most\?$/.test(q.say);f[most?'most':'least']=(f[most?'most':'least']||0)+1;
          want=nm[v.indexOf(most?Math.max(...v):Math.min(...v))];
-       }else if(m=P(q.say,/^How many more (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
-       else if(m=P(q.say,/^How many (\w+) and (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
+       }else if(m=P(q.say,/^How many more chose (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
+       else if(m=P(q.say,/^How many chose (\w+) or (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
        else if(m=P(q.say,/^How many (\w+)\?$/)){f.count=(f.count||0)+1;want=v[low.indexOf(m[0])]}
        else{b('data1 say '+q.say);continue}
        if(String(want)!==q.ans||Number.isNaN(want))b('data1 '+q.say+' -> '+q.ans+', want '+want);
@@ -3946,8 +3954,8 @@ run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers 
        let m;
        if(m=ask.match(/^How many (\w+)\?$/)){f.count++;if(q.ans!==String(v[low(m[1])]))b('data2 count '+q.label)}
        else if(m=ask.match(/^Which has the (most|least)\?$/)){f[m[1]]++;const w=m[1]=='most'?Math.max(...v):Math.min(...v);if(q.ans!==nm[v.indexOf(w)])b('data2 '+m[1]+' '+q.label)}
-       else if(m=ask.match(/^How many more (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
-       else if(m=ask.match(/^How many (\w+) and (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
+       else if(m=ask.match(/^How many more chose (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
+       else if(m=ask.match(/^How many chose (\w+) or (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
        else if(ask=='How many in all?'){f.all++;if(q.ans!==String(v.reduce((a,x)=>a+x,0)))b('data2 all '+q.label)}
        else b('data2 question '+ask);
        if(q.kind=='choice'&&q.choices.length!==4)b('data2 choices');
@@ -5385,7 +5393,10 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
       for(const it of L){
         const all=[it.a,...it.d].map(x=>x.toLowerCase());
         if(new Set(all).size!==all.length)bad(w2+it.q+': a choice repeats');
-        if(it.d.length!==3)bad(w2+it.q+': needs 4 choices');
+        // AUDIT-READ: "Which kind of language ..." has 3 choices where a second kind is also right and was taken out: "idiom" for the
+        // stock similes (as busy as a bee is a fixed saying too) and "metaphor" for an idiom of the form "X was a Y" (a piece of cake)
+        const k3=lv==8&&/^Which kind of language is /.test(it.q)&&(it.a=='simile'||(it.a=='idiom'&&/ (is|was|are|were) a /.test(it.q)));
+        if(it.d.length!==(k3?2:3))bad(w2+it.q+': needs '+(k3?3:4)+' choices');
         if((it.form||'')!==(Math.max(it.a.length,...it.d.map(x=>x.length))>8?'wide':''))bad(w2+it.q+': form '+it.form+' (wide only when a choice is over 8 letters)');
         if(!it.hint||it.hint.length<20)bad(w2+it.q+': hint missing');
         if(it.hint&&it.hint.toLowerCase().split(/[^a-z']+/).includes(it.a.toLowerCase()))bad(w2+it.q+': the hint gives the answer');
@@ -5397,16 +5408,17 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
       }
     }
     // level 6: one blank, the sound-alike word is a choice, and the pairs agree both ways
+    // (WORDS-READ W30: an answer that starts the sentence has capital choices, It's / Its, so the pairs are matched without case)
     {
-      const L=items.filter(i=>i.lv==6),ans=new Map();
+      const L=items.filter(i=>i.lv==6),ans=new Map(),lc=x=>x.toLowerCase(),has=(o,w)=>o.d.some(x=>lc(x)==lc(w));
       for(const it of L){
         if(it.q.split('___').length!==2)bad('level 6: '+it.q+': needs exactly one blank');
         if(star(it.q).length)bad('level 6: stars in '+it.q);
-        if(!ans.has(it.a))ans.set(it.a,[]);ans.get(it.a).push(it);
+        if(!ans.has(lc(it.a)))ans.set(lc(it.a),[]);ans.get(lc(it.a)).push(it);
       }
       if(ans.size<45)bad('level 6: only '+ans.size+' different answer words');
-      for(const it of L)if(!it.d.some(w=>ans.has(w)&&ans.get(w).some(o=>o.d.includes(it.a))))bad('level 6: '+it.q+': no sound-alike choice that points back at '+it.a);
-      const groups=new Set(L.map(i=>[i.a,...i.d.filter(w=>ans.has(w)&&ans.get(w).some(o=>o.d.includes(i.a)))].sort().join('/')));
+      for(const it of L)if(!it.d.some(w=>ans.has(lc(w))&&ans.get(lc(w)).some(o=>has(o,it.a))))bad('level 6: '+it.q+': no sound-alike choice that points back at '+it.a);
+      const groups=new Set(L.map(i=>[i.a,...i.d.filter(w=>ans.has(lc(w))&&ans.get(lc(w)).some(o=>has(o,i.a)))].map(lc).sort().join('/')));
       if(groups.size<30)bad('level 6: only '+groups.size+' homophone groups (needs 30)');
     }
     // level 7: the same bold word in the sentence and the question, 4 meanings, no meaning repeats the word
@@ -5421,7 +5433,9 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
       const L=items.filter(i=>i.lv==8),kinds=L.filter(i=>/^Which kind of language is /.test(i.q)),idi=L.filter(i=>/^What does ".+" mean\?$/.test(i.q));
       if(kinds.length+idi.length!==L.length)bad('level 8: item shape');
       for(const it of kinds){
-        if(JSON.stringify([it.a,...it.d].sort())!==JSON.stringify([...KINDS].sort()))bad('level 8: '+it.q+': wrong set of kinds');
+        // AUDIT-READ: the four kinds, less the one that is also right for this item (idiom for a stock simile, metaphor for "X was a Y")
+        const also=it.a=='simile'?'idiom':it.a=='idiom'&&/ (is|was|are|were) a /.test(it.q)?'metaphor':'';
+        if(JSON.stringify([it.a,...it.d].sort())!==JSON.stringify(KINDS.filter(k=>k!=also).sort()))bad('level 8: '+it.q+': wrong set of kinds');
         const p=it.q.match(/"(.+)"/)[1].toLowerCase(),clue=/\bas .+ as\b|\blike\b/.test(p);
         if((it.a==='simile')!==clue)bad('level 8: '+it.q+': a simile has like or as, and nothing else here does');
       }
@@ -5467,7 +5481,7 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
         if(q.kind!=='choice')bad(w2+q.label+': kind '+q.kind);
         const vs=q.choices.map(c=>c.v);
         if(new Set(vs).size!==vs.length||vs.filter(v=>v===q.ans).length!==1)bad(w2+q.label+': not exactly one right choice');
-        if(vs.length!==4)bad(w2+q.label+': '+vs.length+' choices');
+        if(vs.length!==1+BANK.vocab[q.bk.bi].d.length)bad(w2+q.label+': '+vs.length+' choices'); // AUDIT-READ: every choice of the item (4, or 3 for the kind items checked above)
         if(!q.say||!q.say.trim()||q.say.includes('*'))bad(w2+q.label+': say text');
         if(!q.hint||q.hint.k!=='text'||q.hint.s.length<20)bad(w2+q.label+': hint');
         if(!q.label||q.label.length>=60||q.label.includes('*'))bad(w2+'label '+q.label);
@@ -7074,8 +7088,9 @@ run('sudoku banks P3-02: format, givens agree with the solution, exactly one sol
   const inApp=eval(js+';PUZ.sudoku');
   const bank=vb.loadBank('d-puz-sudoku.js').sudoku;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.sudoku differs when loaded with the whole app');
-  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):''; // A11: banks are in the data file
-  if(!built.includes('PUZ.sudoku = {'))p.push(DATA_FILE+' has no sudoku bank (rebuild)');
+  // TRIM-START (v196): the puzzle banks moved from the data file to the bt part (only the puzzle types read them; off the start-up path)
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],built=fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):'';
+  if(!built.includes('PUZ.sudoku = {'))p.push(BTF+' has no sudoku bank (rebuild)');
   // every stored puzzle: format, givens count, valid solution, givens agree, symmetric 9x9, one solution, grade, no duplicates
   const v=vb.verifySudoku(bank);
   p.push(...v.problems);
@@ -8216,7 +8231,10 @@ run('keys: Enter or Space on an SVG button clicks it (UI.press)',()=>{
 run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why on choice items, K2.off gives the old draws',()=>{
   const r=eval(js+`;(()=>{const out={bad:[],rows:{},n:0,why:0,before:{},after:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
     const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],LV={sci_life:3,sci_earth:3,sci_phys:3,geo_world:2,geo_us:2,civ:2};
-    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:7,geo_us:8,civ:7}; // new items per stop (6 to 10)
+    // new items per stop (6 to 10). The v195 audit (AUD-DISC) removed three of them; the owner approved new words for each on 2026-11-24
+    // (docs/drafts/AUDIT-WORDS-READ.md W44, W45, W46), so they are back and the counts are the first ones again: geo_world 7, geo_us 8, civ 7
+    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:7,geo_us:8,civ:7};
+    const SORTS=()=>2;
     const GR={sci_life:['K-2','3-4','5-6'],sci_earth:['K-2','3-4','5-6'],sci_phys:['K-2','3-4','5-6'],geo_world:['K-2','3-4'],geo_us:['3-4','5-6'],civ:['K-2','5-6']};
     const keep={};
     for(const id of IDS){
@@ -8236,7 +8254,7 @@ run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why 
           const b=bankRebuild(q.bk);if(JSON.stringify(b)!==JSON.stringify(q))bad(w+'bankRebuild differs');
           K2.off=true;try{if(bankCan(it))bad(w+'drawn with K2.off')}finally{K2.off=false}}});
       for(let lv=1;lv<=LV[id];lv++){const m=mine.filter(it=>it.lv==lv);
-        if(m.filter(it=>it.form=='sort').length<2||m.filter(it=>it.form=='mark').length<1)bad(id+' level '+lv+': needs 2 sort and 1 mark items, has '+m.map(x=>x.form))}
+        if(m.filter(it=>it.form=='sort').length<SORTS(id,lv)||m.filter(it=>it.form=='mark').length<1)bad(id+' level '+lv+': needs '+SORTS(id,lv)+' sort and 1 mark items, has '+m.map(x=>x.form))}
       keep[id]=B.slice();
     }
     // why: [text, why] distractors on existing choice items. Their draws do not change (a plain copy builds the same question) and
@@ -9201,8 +9219,8 @@ run('mathdoku banks P3-04: format, Latin solution, cage targets, connected cages
   const bank=vb.loadBank('d-puz-mathdoku.js').mathdoku;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.mathdoku differs when loaded with the whole app');
   if(!eval(js+';PUZ.sudoku&&PUZ.sudoku.D'))p.push('PUZ.sudoku lost when the mathdoku bank loads');
-  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
-  if(!built.includes('PUZ.mathdoku = {'))p.push(DATA_FILE+' has no mathdoku bank (rebuild)');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],built=fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):''; // TRIM-START: in the bt part
+  if(!built.includes('PUZ.mathdoku = {'))p.push(BTF+' has no mathdoku bank (rebuild)');
   // every stored puzzle through verify-banks.js: format, sizes, Latin solution, cages cover the grid once, connected, band
   // operations and cage sizes, targets match the solution, single-cell limits, one solution, grade and score, sorted, no duplicates
   const v=vb.verifyMathdoku(bank);
@@ -9732,8 +9750,8 @@ run('logic grid banks P3-06: format, every clue true of the solution, exactly on
   const bank=vb.loadBank('d-puz-logic.js').logic;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.logic differs when loaded with the whole app');
   if(!eval(js+';PUZ.sudoku&&PUZ.sudoku.D&&PUZ.mathdoku&&PUZ.mathdoku.D'))p.push('PUZ.sudoku or PUZ.mathdoku lost when the logic bank loads');
-  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
-  if(!built.includes('PUZ.logic = {'))p.push(DATA_FILE+' has no logic bank (rebuild)');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],built=fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):''; // TRIM-START: in the bt part
+  if(!built.includes('PUZ.logic = {'))p.push(BTF+' has no logic bank (rebuild)');
   // every stored puzzle through verify-banks.js: format, band sizes and categories, clue kinds and indexes, sentence = render(),
   // one solution and no redundant clue (its counter), grade and score reproduce, band grade and chain limits, sorted, no duplicates
   const v=vb.verifyLogic(bank);
@@ -12335,7 +12353,9 @@ run('riddles, memory, copy cat P3-14',()=>{
   const r=eval(js+';const ALLOW_='+JSON.stringify(ALLOW)+';('+body.toString()+')()');
   const p=r.out,s=r.stat;
   for(const k of ["id: 'riddle'","id: 'memory'","id: 'copycat'",'const RDL','const MM','const CC'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
-  if(!DATA.includes('var RIDDLES')||!DATA.includes('var MEMW'))p.push(DATA_FILE+' has no riddles or memory words (rebuild)');
+  // TRIM-START (v196): RIDDLES and MEMW are built into the bt part with the puzzle types that read them, not the data file
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')],BTB=(fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):'');
+  if(!BTB.includes('var RIDDLES')||!BTB.includes('var MEMW')||DATA.includes('var RIDDLES')||DATA.includes('var MEMW'))p.push(BTF+' should hold the riddles and memory words, not '+DATA_FILE+' (rebuild)');
   const avg=s.n?s.ms/s.n:0;
   if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
   return{problems:p,note:s.rd+' riddle, '+s.mm+' memory and '+s.cc+' copy cat puzzles; riddle words per sentence '+JSON.stringify(s.words)+', pairs '+JSON.stringify(s.pairs)+
@@ -13464,7 +13484,8 @@ run('word search and unscramble P3-15',()=>{
   const r=eval(js+';('+body.toString()+')(HARVEST)');
   const p=r.out,s=r.stat;
   for(const k of ["id: 'wsearch'","id: 'scramble'",'const WS','const US'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
-  if(!DATAB.includes('var BTW'))p.push('BTW is not in '+DATA_FILE+' (rebuild)');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')]; // TRIM-START (v196): BTW is built into the bt part with the two puzzle types that read it, not the data file
+  if(!(fs.existsSync(path.join(ROOT,BTF))?fs.readFileSync(path.join(ROOT,BTF),'utf8'):'').includes('var BTW')||DATAB.includes('var BTW'))p.push('BTW is not in '+BTF+' (rebuild)');
   const ms=s.n?s.ms/s.n:0;
   if(ms>25)p.push('make() takes '+ms.toFixed(1)+' ms on average (limit 25 ms)');
   return{problems:p,note:s.per.wsearch+' word searches, '+s.per.scramble+' unscrambles; grid squares '+JSON.stringify(s.cells)+', words '+JSON.stringify(s.words)+
@@ -13584,7 +13605,9 @@ run('Spanish Las Frases P2-34',()=>{
         if(cl[i]==='V'&&(lo==='es'||lo==='son')){const subj=ws[i-1].toLowerCase(),plu=/^(zapatos|botas)$/.test(subj);if(plu!==(lo==='son'))bad(w+'es/son');}});}
     // ---- questions: 3000 seeded per skill and level through kindProblems
     let n=0;const hit={};
-    const leaks=q=>{const ht=new Set(toks(q.hint.s)),short=q.sk==='es_phrase'&&q.lv===1,
+    // W60 (owner, 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md): the approved es_art 2 plural hint gives "lápiz, lápices" as the example of
+    // z changing to c, so on the one "los lápices" question the hint holds the answer by the owner's choice; that word only is let through
+    const leaks=q=>{const ht=new Set(toks(q.hint.s).filter(t=>!(q.sk==='es_art'&&q.lv===2&&t==='lápices'))),short=q.sk==='es_phrase'&&q.lv===1,
       at=toks(q.kind==='order'?q.ans.join(' '):q.sk==='es_gusta'&&q.lv===1?String(q.ans).replace(/[+-]$/,''):String(q.ans)).filter(t=>t.length>=4||!short);
       return at.filter(t=>ht.has(t))};
     for(const[id,max]of Object.entries({es_phrase:2,es_art:2,es_ser:3,es_gusta:2,es_sent:2}))for(let lv=1;lv<=max;lv++){
@@ -14642,7 +14665,8 @@ run('Spanish review fixes R-01s',()=>{
     //      ear, in any Spanish skill and level; no two choices share a meaning (value) or a picture (the picture without its caption)
     const PAIRS=[[/\bsol\b|sunny/i,/calor|\bhot\b/i,'hace sol / hace calor'],[/niev|snow/i,/fr[ií]o|\bcold\b/i,'nieva / hace frío'],
       [/fresco|\bcool\b/i,/viento|windy/i,'hace fresco / hace viento'],[/feliz|happy/i,/tranquil|\bcalm\b/i,'feliz / tranquilo'],
-      [/feliz|happy/i,/emocionad|excited/i,'feliz / emocionado'],[/cami[oó]n/i,/autob[uú]s/i,'el camión / el autobús']];
+      [/feliz|happy/i,/emocionad|excited/i,'feliz / emocionado'],[/cami[oó]n/i,/autob[uú]s/i,'el camión / el autobús'],
+      [/llueve/i,/tormenta/i,'llueve / hay tormenta'],[/nublado/i,/tormenta/i,'está nublado / hay tormenta']]; // audit v195 (N1)
     const picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
     const clashes=q=>{const out=[];if(q.kind!=='choice')return out;
       const t=q.choices.map(c=>strip(c.l)+' | '+c.v);
@@ -14658,10 +14682,12 @@ run('Spanish review fixes R-01s',()=>{
       if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)bad(key+': not exactly one right answer')};
     for(const sk of ES)for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=N;s++){const q=genQ(sk,lv,s);info.q++;scan(q,sk+' L'+lv)}
     // the review's seeds, by name
-    for(const [sk,lv,s] of [['es_weather',2,19],['es_weather',2,38],['es_weather',1,38],['es_weather',2,13],['es_weather',1,13],['es_feel',1,41],['es_feel',1,2],['es_trans',1,40]]){
+    for(const [sk,lv,s] of [['es_weather',2,19],['es_weather',2,38],['es_weather',1,38],['es_weather',2,13],['es_weather',1,13],['es_feel',1,41],['es_feel',1,2],['es_trans',1,40],['es_weather',2,30],['es_weather',1,76],['es_weather',1,1]]){
       const q=genQ(sk,lv,s);if(clashes(q).length)bad('review seed '+sk+' '+lv+' '+s+' still offers '+clashes(q).join(', '))}
     // the confuse lists name real words; the weather pictures that are not enough alone carry their English
-    const CONF={weather:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],
+    // audit v195 (N1): the storm drawing (a dark cloud with rain and lightning) also shows rain and a cloud, so hay tormenta is never
+    // offered with llueve or está nublado: two pairs added to the weather list on purpose (the app's list and this table changed together)
+    const CONF={weather:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento'],['llueve','hay tormenta'],['está nublado','hay tormenta']],
       feel:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],trans:[['camión','autobús']]};
     for(const id in CONF){const u=U(id);
       if(JSON.stringify(u.confuse)!==JSON.stringify(CONF[id]))bad(id+': confuse list '+JSON.stringify(u.confuse));
@@ -14794,6 +14820,66 @@ run('Spanish review fixes R-01s',()=>{
   return{problems:uniq(errs),note:r.q+' questions scanned across every Spanish skill and level'};
 });
 
+// ---- Spanish audit v195 (docs/reviews/R-01-spanish.md Must 4 and 5, and the audit's N1, N2, N3, N7): no words changed, only what is offered
+// together and what a Pre-K or K child is asked. Seeded questions are untouched except where a fault was (weather with the storm, the two
+// story questions, the comida-or-colores sort with naranja or café), so the old-stops hashes above stay as they are.
+run('Spanish audit v195: storm pairs, gracias picture, naranja and café, lesson warm-up, Pre-K and K listen instead of read',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    const info={q:0},picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,''),g0=S.grade;
+    const UNITS=ES_UNITS.map(u=>'es_'+u.id).concat(['es_mix']);
+    // N1: the storm drawing is never offered with llueve or está nublado, at either level
+    for(let lv=1;lv<=2;lv++)for(let s=1;s<=3000;s++){const v=genQ('es_weather',lv,s).choices.map(c=>c.v);info.q++;
+      if(v.includes('hay tormenta')&&(v.includes('llueve')||v.includes('está nublado')))bad('es_weather L'+lv+' seed '+s+': '+v.join(' / '))}
+    // N2: at story level 2 (pictures) no wrong answer shows the Hola Plaza picture of a word the line says (🙏 is gracias)
+    const GP=SPN.greet.map(it=>[it[2],stNorm(it[0])]);
+    for(const D of ES_STORY.dialogues)for(const Q of D.qs){if(Q.t==='who')continue;const ln=' '+stNorm(D.lines[Q.line][1])+' ';
+      if(Q.d.length<3)bad(D.id+': fewer than 3 wrong answers');
+      for(const o of Q.d)for(const [p,w] of GP)if(o[2]===p&&Q.a[2]!==p&&ln.includes(' '+w+' '))bad(D.id+': the wrong answer '+o[0]+' shows the picture of "'+w+'", which the line says')}
+    // N3: naranja (also the fruit) and café (also coffee) are never sorted between comida and colores; both bins still get two words
+    let cc=0;
+    for(let s=1;s<=4000;s++){const q=genQ('es_mix',2,s);info.q++;if(q.kind!=='sort')continue;const b=q.bins.map(x=>x.v);
+      if(q.items.length!==4||b.some(x=>q.items.filter(c=>c.b===x).length!==2))bad('es_mix L2 seed '+s+': not two words a bin');
+      if(b.includes('comida')&&b.includes('colores')){cc++;if(q.items.some(c=>c.v==='naranja'||c.v==='café'))bad('es_mix L2 seed '+s+': '+q.items.map(c=>c.v).join(', ')+' into comida or colores')}}
+    if(cc<300)bad('es_mix L2: only '+cc+' comida-or-colores sorts seen');
+    // Must 5 and Must 4 for a Pre-K or K child; every other child, and every seeded question, is as before
+    const J=q=>JSON.stringify(q);
+    for(const g of [undefined,1,3]){S.grade=g;
+      for(const sk of UNITS)for(let k=0;k<20;k++){const q=genQ(sk,2);if(q.lv!==2)bad('grade '+g+': '+sk+' level 2 drawn as level '+q.lv)}}
+    S.grade=3;const ref={};for(const sk of UNITS)for(let lv=1;lv<=2;lv++)for(let s=1;s<=300;s++)ref[sk+lv+'.'+s]=J(genQ(sk,lv,s));
+    for(const g of [-1,0]){S.grade=g;
+      for(const sk of UNITS){
+        // a seeded question is the same question (review items, hashes); level 1 too, but for the days and months, whose pictures repeat
+        for(let s=1;s<=300;s++){if(J(genQ(sk,2,s))!==ref[sk+'2.'+s])bad('grade '+g+': '+sk+' level 2 seed '+s+' changed');
+          if(sk!=='es_days'&&sk!=='es_months'&&J(genQ(sk,1,s))!==ref[sk+'1.'+s])bad('grade '+g+': '+sk+' level 1 seed '+s+' changed')}
+        // a new "Read" question is a "Listen" one: said in Spanish by itself, picture answers, its level 1
+        // (the Big Review's sort stays: its words speak when tapped); it is the level 1 question of its seed and stays a question of its stop (q.lv 2)
+        let srt=0;
+        for(let k=0;k<150;k++){const q=genQ(sk,2);info.q++;
+          if(sk==='es_mix'&&q.kind==='sort'&&q.lv===2&&q.say&&q.items.every(c=>c.say&&c.lang==='es')){srt++;continue}
+          if(q.lv!==2||q.kind!=='choice'||q.lang!=='es'||q.auto!=='must'||!q.say||!q.choices.every(c=>c.h)||!/\(listen\)$/.test(q.label))bad('grade '+g+': a new '+sk+' level 2 question is not a listening one of its stop ('+q.label+')');
+          else if(J(Object.assign(genQ(sk,1,q.seed),{lv:2}))!==J(q))bad('grade '+g+': '+sk+': the listening question is not the level 1 question of its seed')}
+        if(sk==='es_mix'&&(srt<30||srt>120))bad('grade '+g+': es_mix level 2 gave '+srt+' sorts in 150');
+        if(SK[sk].max>2&&genQ(sk,3).lv!==3)bad('grade '+g+': '+sk+' level 3 moved')}
+      for(const [sk,lv] of [['es_art',2],['es_ser',2],['es_gusta',2],['es_phrase',2],['es_sent',2],['es_story',2]])if(genQ(sk,lv).lv!==lv)bad('grade '+g+': '+sk+' level '+lv+' moved (not a unit)');
+      // no listening question shows one picture twice (the calendars of the days and of the months), every word is still asked, one right answer
+      for(const sk of UNITS){const seen=new Set();
+        for(let s=1;s<=(sk==='es_days'||sk==='es_months'?3000:400);s++){const q=genQ(sk,1,s);info.q++;seen.add(q.ans);const ps=q.choices.map(picOf);
+          if(q.choices.length!==3||new Set(ps).size!==3)bad('grade '+g+': '+sk+' L1 seed '+s+': two choices share a picture');
+          if(q.choices.filter(c=>c.v===q.ans).length!==1)bad('grade '+g+': '+sk+' L1 seed '+s+': not one right answer')}
+        if(sk!=='es_mix'&&sk!=='es_big'&&sk!=='es_time'&&seen.size!==SPN[sk.slice(3)].length)bad('grade '+g+': '+sk+' L1 asks '+seen.size+' of its words')}}
+    S.grade=g0;
+    if(typeof esRead!=='function'||!/esRead\(q,lv\)/.test(String(genQ)))bad('genQ does not ask esRead for a new question');
+    return info};
+  const r=eval(js+';('+body.toString()+')()');
+  // N7: the warm-up of the El or La? lesson (words of Transport) never offers el camión with el autobús, and never one picture twice
+  const vmN=require('vm'),ctxN=require('./es-audio.js').loadApp(null),R=x=>vmN.runInContext(x,ctxN),w=R(`(()=>{const bad=[];for(const id of LS_B5.filter(x=>LESSONS[x].p=='es'&&LESSONS[x].warm))for(let s=1;s<=400;s++){const q=LESSONS[id].warm(mulberry32(s)),v=q.choices.map(c=>c.v);
+    if(v.length!==3||new Set(q.choices.map(c=>c.l)).size!==3||!v.includes(q.ans))bad.push(id+' warm-up seed '+s+': '+v.join(' / '));
+    if(v.includes('el camión')&&v.includes('el autobús'))bad.push(id+' warm-up seed '+s+' offers el camión with el autobús')}return bad.slice(0,10)})()`);
+  w.forEach(bad);
+  return{problems:uniq(errs),note:r.q+' questions; Pre-K and K: a new Read question of the units is a Listen one, no calendar twice'};
+});
+
 // ---- S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js): one step per Spanish stop round and one in Daily Review, between
 // questions (never a question: skip and no microphone never mark wrong or block), the lenient matcher, the "Say 5 Spanish words"
 // mission, old saves, tokens only, nothing stored or sent, no generator randomness used
@@ -14852,12 +14938,13 @@ run('Spanish speaking S-SPK',()=>{
         if(snap()!==s0)B(way+': the round or the save changed '+s0+' -> '+snap());
         if(way=='no-mic'){if(notes!==1)B('no microphone: '+notes+' notes (one, for the session)');G.spk=0;notes=0;spkHook();if(notes)B('no microphone: the note came twice')}}
       SPK.mic='yes';SPK.deny=0;SPK.note=0;
-      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 5
+      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 2
       {day().spk=0;for(let i=0;i<5;i++){G=G0({path:'es',node:1,sk:'es_food',lv:1});G.done=3;spkHook();spkEnd(true)}
        if(day().spk!==5)B('5 steps said: day().spk is '+day().spk);
-       const x={k:'speak',d:0};day().spk=4;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 4');
-       day().spk=5;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 5');
-       if(MIS.title(x)!=='Say 5 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
+       // owner decision 2026-11-24 (P5), a deliberate change: the mission is 2 words (it was 5: done at 5, "Say 5 Spanish words")
+       const x={k:'speak',d:0};day().spk=1;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 1');
+       day().spk=2;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 2');
+       if(MIS.title(x)!=='Say 2 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
        const sub=[{p:'math',i:0,s:null,n:0},{p:'es',i:0,s:null,n:0}],c=on=>({g:2,subs:sub,bt:false,spr:false,due:0,spk:on});let yes=0,no=0;
        for(let d=1;d<=60;d++){const k='2026-1-'+d,a=MIS.draw(k,'Ava',c(true));if(a.some(x=>x.k=='speak'))yes++;
          if(MIS.draw(k,'Ava',c(false)).some(x=>x.k=='speak'))no++;if(!MIS.valid(a))B('a draw with speak is not valid')}
@@ -14987,7 +15074,7 @@ run('Spanish speaking check S-SPK2',()=>{
   return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
     // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
     try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6,other2:false}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
-      const want={npos:236,nneg:230,voice:56,child:170,similar:25,other:4,silence:0};
+      const want={npos:288,nneg:282,voice:54,child:222,similar:39,other:3,silence:0}; // v196 (owner 2026-11-25): 128 new Spanish lines; the lessons' wrong forms make no voice pair (tools/spk-calib.js)
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
       if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
@@ -15276,6 +15363,64 @@ run('object art set C P4-15',()=>{
   const alone=eval(cat('js')+PARTS.map(x=>cat('js',x.stem)).join('')+';[picFor("lion","L"),picFor("apple","A")!=="A"]');
   if(alone[0]!=='L'||!alone[1])p.push('without the data file picFor must fall back to the emoji and set A must still draw');
   return{problems:out.bad.concat(p),note:'40 pictures, '+out.total+' bytes; '+out.asked+' picture words asked, '+out.shown+' drawings shown; '+out.esShown+' Spanish drawings shown'};
+});
+
+// ---- DRAW8: the eight reading picture words of the v196 word audit E1 (docs/drafts/AUDIT-WORDS-READ.md; drawings in src/data/d-art-d.js) ----
+// feet, torch, purse, dew, hawk, draw, seed and mail showed the wrong picture (one foot, a flashlight, the bag's handbag, the water
+// drop, an eagle, a pencil, a sprout, a mailbox); the owner asked for drawings. They follow the rules of the object art sets, differ
+// from every other drawing, show in the picture-word questions that ask for them, and the look-alikes keep their own pictures.
+run('object art DRAW8 E1: eight picture words drawn',()=>{
+  const p=[];
+  const NAMES='feet torch purse dew hawk draw seed mail'.split(' ');
+  const DSRC=fs.readFileSync(path.join(SRC,'data','d-art-d.js'),'utf8'),artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  if(/rnd\(|Math\.random|Date|function|=>/.test(DSRC.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('d-art-d.js must be plain data (no code, no randomness)');
+  const out=eval(js+`
+  const bad=[],N=${JSON.stringify(NAMES)},css=${JSON.stringify(artCss)};let total=0;
+  // 1. the rules of the object art sets (DESIGN_SYSTEM 6.5; the set C check)
+  for(const n of N){const d=ART[n];
+    if(!d){bad.push('no drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing');
+    if((d.match(/<[a-z]+/g)||[]).length>40)bad.push(n+': over 40 elements');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t);
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad.push(n+': attribute '+m[1]);
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour '+a);
+    for(const m of d.matchAll(/var\\(--(a-[a-z0-9]+)\\)/g))if(!css.includes('--'+m[1]+':var(--ill-'))bad.push(n+': role --'+m[1]+' is not in 21-art.css');
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity '+m[1]);
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform '+m[1]);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the grid');
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the grid');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+    // 2. not the same picture as any other drawing (purse is not bag, dew is not water, feet is not foot ...)
+    for(const k in ART)if(k!==n&&ART[k]===d)bad.push(n+': the same drawing as '+k)}
+  if(total>20000)bad.push('the eight are '+total+' bytes (limit 20000)');
+  // 3. every picture-word list entry of these words shows the drawing, and the picture-word questions that ask for one draw it
+  const L=[CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR,SYLP].flat(),asked=new Set();
+  for(const n of N)if(!L.some(x=>x[0]===n))bad.push(n+': no longer a picture word');
+  for(const x of L)if(N.includes(x[0])&&picFor(x[0],x[1])!==picArt(x[0]))bad.push(x[0]+': the picture word shows '+x[1]);
+  for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=200;s++){
+    const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:(q.after||q.ans);
+    if(!N.includes(w)||!String(q.html).includes('class="emo"'))continue;
+    asked.add(w);
+    if(!q.html.includes(picArt(w)))bad.push(sk+lv+' seed '+s+': '+w+' shows no drawing')}
+  // 4. where else the words are pictures: Discover's feet is the pair; the logic grids' hobby draw is drawing; the look-alikes keep theirs
+  if(DISC_PIC.feet[0]!=='feet')bad.push('Discover: feet does not show the pair of feet');
+  if(!/<svg/.test(picFor('draw',PUZ.logic.cats.hobby.pics.draw)))bad.push('logic: the hobby draw shows no drawing');
+  const es=ES_UNITS.flatMap(u=>u.items).find(it=>it[0]==='pie');
+  if(!es||es[4]!=='foot')bad.push('Spanish: el pie (one foot) must keep the foot drawing');
+  for(const [w,e] of [['bag','👜'],['mailbox','📬'],['eagle','🦅'],['seedling','🌱']])if(picFor(w,e)!==e)bad.push(w+' now shows a drawing: it keeps its own picture');
+  for(const w of ['foot','water','pencil','leaf','paper','bird'])if(!ART[w])bad.push('the drawing of '+w+' is gone');
+  ({bad,total,asked:[...asked].sort()});`);
+  // 5. where they live: the data file, not index.html (start-up is index.html + gen + gen2 + data: performance P6-03 has the budget)
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!DATAC.includes('DRAW8, the v196 word audit E1'))p.push('the DRAW8 drawings are not in '+DATA_FILE+' (rebuild)');
+  if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('DRAW8, the v196 word audit E1'))p.push('the DRAW8 drawings must not be in index.html');
+  if(out.asked.length<NAMES.length)p.push('only '+out.asked.join(', ')+' were asked in the picture-word sample');
+  return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes; asked in the sample: '+out.asked.join(' ')};
 });
 
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
@@ -16582,6 +16727,157 @@ run('math review fixes R-01m',()=>{
   return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
 });
 
+// ---- AUDIT-MATH: the math audit's fixes that change no words (story 4, the pv2 lesson, equal fractions, find the mistake, and
+// the small ones: rectangle and square, shapes that can be drawn, GCF stories, money under a dollar, the even/odd boxes) ----
+run('math audit fixes AUDIT-MATH',()=>{
+  const body=()=>{
+    const bad=[],add=m=>{if(bad.length<60)bad.push(m)},note={};
+    S.name='Ava';S.buddy='Ben';
+    const strip=x=>String(x||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+    const gcd=(a,b)=>b?gcd(b,a%b):a;
+    // M1. story 4 "fewer": the other child always has at least 1 (seeds 134 and 431 gave 15 with 18 and 17 fewer)
+    {let n=0;for(let s=1;s<=20000;s++){const q=genQ('story',4,s),m=/has (\d+) .*? has (\d+) fewer than .* together\?$/.exec(q.say);if(!m)continue;n++;
+      if(+m[2]>=+m[1])add('story 4 seed '+s+': '+q.say);else if(String(2*m[1]-m[2])!==q.ans)add('story 4 seed '+s+': answer '+q.ans)}
+     if(n<3000)add('story 4: only '+n+' "fewer" stories in 20,000 seeds');note.fewer=n}
+    // M2. the pv2 lesson's "what is the 5 worth?": the digit is in the number once, and its value is the answer
+    {let n=0;for(let s=1;s<=4000;s++){const q=LESSONS.pv2.q(2,mulberry32(s)),m=/^In (\d+), what is the (\d) worth\?$/.exec(q.say);if(!m){add('pv2 lesson seed '+s+': '+q.say);continue}n++;
+      const at=m[1].indexOf(m[2]);if(m[1].split(m[2]).length!=2)add('pv2 lesson seed '+s+': '+q.say);else if(String(m[2]*Math.pow(10,m[1].length-1-at))!==q.ans)add('pv2 lesson seed '+s+': answer '+q.ans+' for '+q.say);
+      if(!strip(q.html).startsWith(m[1]))add('pv2 lesson seed '+s+': shows '+strip(q.html))}
+     note.pv2=n}
+    // M5. "what fraction is shaded?": any equal fraction is right (frac 2 and the frac2 and frac3 lessons); a different one is not;
+    // "simplest form" (frac 7) still wants its one form
+    {let un=0;const chk=(q,w)=>{const m=/^(\d+)\/(\d+)$/.exec(q.ans);if(!m||q.kind!='num'||q.pad!='frac'){add(w+': not a typed fraction: '+q.ans);return}
+        const n=+m[1],d=+m[2],g=gcd(n,d),same=v=>KIND.num.same(q,v);if(g>1)un++;
+        if(!same(q.ans)||!same((n/g)+'/'+(d/g))||!same((2*n)+'/'+(2*d)))add(w+': an equal fraction of '+q.ans+' is marked wrong');
+        if(same((n+1)+'/'+d)||same(n+'/'+(d+1))||same(d+'/'+n)&&n!=d)add(w+': a different fraction is taken for '+q.ans);
+        if(kindProblems(q).length)add(w+': '+kindProblems(q).join('; '))};
+     for(let s=1;s<=3000;s++){const q=genQ('frac',2,s);if(q.kind=='num')chk(q,'frac 2 seed '+s)}
+     for(const id of ['frac2','frac3'])for(let s=1;s<=1500;s++)for(const st of [1,2])chk(LESSONS[id].q(st,mulberry32(s)),id+' lesson stage '+st+' seed '+s);
+     if(!un)add('frac: no answer that is not in simplest form was checked');note.unsimplified=un;
+     for(let s=1;s<=1000;s++){const q=genQ('frac',7,s),m=/^Write (\d+) over (\d+) in simplest form\.$/.exec(q.say);if(m&&KIND.num.same(q,m[1]+'/'+m[2]))add('frac 7 seed '+s+': the fraction as given is taken as its simplest form')}}
+    // M3. find the mistake. face(line): the arithmetic written on a line is true, false, or there is none (null); written here on its own
+    const fr=x=>/^\d+\/\d+$/.test(x)?x.split('/').map(Number):[+x,1];
+    const val=e=>{const t=e.trim().split(/\s+/);if(t.length%2==0||t.some((x,i)=>i%2?!'+−×÷'.includes(x)||x.length!=1:!/^\d+(\.\d+)?$|^\d+\/\d+$/.test(x)))return null;
+      const a=[fr(t[0])];for(let i=1;i<t.length;i+=2){const y=fr(t[i+1]),x=a[a.length-1];if(t[i]=='×')a[a.length-1]=[x[0]*y[0],x[1]*y[1]];else if(t[i]=='÷')a[a.length-1]=[x[0]*y[1],x[1]*y[0]];else a.push(t[i],y)}
+      let v=a[0];for(let i=1;i<a.length;i+=2){const y=a[i+1];v=a[i]=='+'?[v[0]*y[1]+y[0]*v[1],v[1]*y[1]]:[v[0]*y[1]-y[0]*v[1],v[1]*y[1]]}return v[0]/v[1]};
+    const face=line=>{const t=String(line).replace(/^[^:=]*:\s*/,'').replace(/^So /,'');let m=/^Write ([\d.]+) as ([\d.]+)$/.exec(t),res=null;if(m)return Math.abs(m[1]-m[2])<1e-9;
+      for(const e of t.split(' and ')){const p=e.split(' = ');if(p.length!=2)continue;let ok;
+        if((m=/^(\d+) ÷ (\d+)$/.exec(p[0].trim()))&&/^\d+( R\d+)?$/.test(p[1].trim())){const k=/^(\d+)(?: R(\d+))?$/.exec(p[1].trim());ok=Math.floor(m[1]/m[2])==+k[1]&&m[1]%m[2]==+(k[2]||0)}
+        else{const a=val(p[0]),b=val(p[1]);if(a==null||b==null)continue;ok=Math.abs(a-b)<1e-9}
+        if(!ok)return false;res=true}
+      return res};
+    {const by={},stops=[];for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)if(skArea(id,lv)=='math'&&!skLvEmpty(id,lv))stops.push([id,lv]);
+     let alt=0,noalt=0;
+     for(const [id,lv] of stops)for(let s=1;s<=1200;s++){const q=genQ(id,lv,s);if(q.kind!='tap'||!/^fix: /.test(q.label))continue;const w=id+' '+lv+' seed '+s;by[id]=(by[id]||0)+1;
+       const L=[...q.html.matchAll(/data-v="(\d+)"[^>]*>(?:<b[^>]*>\d+<\/b>)?<span>([\s\S]*?)<\/span><\/div>/g)].map(m=>strip(m[2]).replace(/&lt;/g,'<').replace(/&gt;/g,'>')),a=+q.ans,last=L.length-1;
+       if(L.length<3||!(a>=0&&a<=last)){add(w+': '+L.length+' lines, answer '+q.ans);continue}
+       const f=L.map(face),tap=v=>KIND.tap.same(q,String(v));
+       if(f[a]===true)add(w+': the keyed line is true as written: '+L[a]);
+       L.forEach((t,j)=>{if(j!=a&&j!=last&&f[j]===false)add(w+': a second step is false as written: '+t)});
+       if(!f.includes(false)&&f[a]!==null)add(w+': no line is wrong: '+L.join(' / '));
+       if(!tap(a))add(w+': the keyed step is not taken');
+       L.forEach((t,j)=>{if(j==a)return;const want=j==last&&f[j]===false;if(tap(j)!==want)add(w+': a tap on "'+t+'" is '+(want?'refused':'taken as right'))});
+       if(a!=last&&f[last]===false)alt++;else noalt++;
+       if(kindProblems(q).length)add(w+': '+kindProblems(q).join('; '));
+       const sm=/^Step (\d+)\. It should say: /.exec(q.ansSay||'');if(!sm||+sm[1]!=a+1)add(w+': spoken answer '+q.ansSay)}
+     // the worked example whose every line was right (74 − 49 with the ones flipped: 9 − 4 = 5) is a plain question or another mistake now
+     for(const [id,lv,s] of [['sub',4,55],['sub',7,444],['sub',8,9],['sub',6,198]]){const q=genQ(id,lv,s);if(q.kind=='tap'&&/ flip /.test(q.label))add(id+' '+lv+' seed '+s+': still the flipped digits: '+q.label)}
+     for(const id of ['big','sub','mbig','dbig','dec','fop','ooo','alg'])if(!(by[id]>=150))add('find the mistake: only '+(by[id]||0)+' items for '+id);
+     if(!alt||!noalt)add('find the mistake: closing lines taken '+alt+', not taken '+noalt);note.fix=Object.values(by).reduce((x,y)=>x+y,0);note.soTaken=alt}
+    // the small ones
+    for(let s=1;s<=4000;s++){const q=genQ('shape',1,s);if(q.ans=='rectangle'&&q.choices.some(c=>c.v=='square'))add('shape 1 seed '+s+': a square beside "Tap the rectangle"');
+      if(q.choices.length!=3||new Set(q.choices.map(c=>c.v)).size!=3)add('shape 1 seed '+s+': choices '+q.choices.map(c=>c.v))}
+    for(let s=1;s<=1500;s++)for(const st of [1,2]){const q=LESSONS.shape1.q(st,mulberry32(s));if(q.kind=='choice'&&q.ans=='rectangle'&&q.choices.some(c=>c.v=='square'))add('shape1 lesson seed '+s+': a square beside "Tap the rectangle"');
+      if(q.kind=='choice'&&(new Set(q.choices.map(c=>c.v)).size!=q.choices.length||q.choices.length!=(st==1?3:4)))add('shape1 lesson seed '+s+': choices '+q.choices.map(c=>c.v))}
+    {let n=0;for(let s=1;s<=8000;s++){const q=genQ('geo',1,s),m=/has sides of ([\d, ]+) /.exec(q.say);if(!m)continue;n++;const v=m[1].split(', ').map(Number),t=v.reduce((x,y)=>x+y,0);
+      if(2*Math.max(...v)>=t)add('geo 1 seed '+s+': no such shape: '+q.say);if(String(t)!==q.ans)add('geo 1 seed '+s+': answer '+q.ans)}note.polygons=n}
+    {let n=0;for(let s=1;s<=6000;s++){const q=genQ('fact',3,s);if(/gcf-w/.test(q.label)){n++;if(q.ans=='1')add('fact 3 seed '+s+': '+q.say)}}if(n<800)add('fact 3: only '+n+' GCF stories');note.gcfStories=n}
+    for(const [id,lv] of [['story',9],['ratio',2]])for(let s=1;s<=6000;s++){const q=genQ(id,lv,s);if(/\b0 dollars/.test(q.say)||/\$0\.\d/.test(strip(q.html)))add(id+' '+lv+' seed '+s+': '+q.say)}
+    for(const lv of [1,2])for(let s=1;s<=300;s++){const q=genQ('eo',lv,s);if(q.kind=='sort'&&q.bins.some(b=>b.say!==b.l))add('eo '+lv+' seed '+s+': a box without its spoken word')}
+    return{bad,note};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
+});
+
+// ---- WORDS-MATH: the Math rows of docs/drafts/AUDIT-WORDS-READ.md the owner approved on 2026-11-24 (W18-W28, W69-W71, E6-E8) ----
+run('math words WORDS-MATH',()=>{
+  const body=()=>{
+    const bad=[],add=m=>{if(bad.length<60&&!bad.some(x=>x.replace(/\d+/g,'#')===m.replace(/\d+/g,'#')))bad.push(m)},note={};
+    S.name='Ava';S.buddy='Ben';
+    const strip=x=>String(x||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();
+    const eq=(a,b,w)=>{if(a!==b)add(w+': "'+a+'", want "'+b+'"')};
+    // a 1 with a plural counting noun after it (a number such as 3.1 or 21 is not a 1)
+    const ONE=/(?:^|[^\d.,\/:$−\-–×])(?<!point )1 (?:small |more )?(counters|rows|groups|tenths|hundredths|twelfths|ninths|sevenths|sixths|fifths|fourths|thirds|halves|steps|tens|hundreds|ones|parts|squares|columns|coins|cents|marks|floors|degrees|meters|dots|boxes|cubes|blocks|gaps|jumps|wholes|minutes|rocks|stones|apples|copies|layers|bags)\b/;
+    const hintT=h=>!h?[]:[h.s,h.w,strip(h.html),...(h.steps||[]).flatMap(x=>[strip(x.html),x.say])];
+    const texts=q=>[q.say,strip(q.html),q.after,q.ansSay,...hintT(q.hint),...Object.values(q.why||{}),...Object.values(q.whySay||{}),...(q.choices||[]).map(c=>strip(c.l))].filter(Boolean).map(String);
+    // W21, W22: practice questions, with the spoken answer and the feedback on a wrong answer
+    {const stops=[];for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)if(skArea(id,lv)=='math'&&!skLvEmpty(id,lv))stops.push([id,lv]);let n=0;
+     for(const [id,lv] of stops)for(let s=1;s<=700;s++){const q=genQ(id,lv,s);n++;for(const t of texts(q)){const m=ONE.exec(t);if(m)add(id+' '+lv+' seed '+s+': '+t.slice(Math.max(0,m.index-30),m.index+50))}}
+     note.questions=n;
+     eq(genQ('tenf',1,23).say,'Make 1. Tap the ten frame to put in 1 counter.','tenf 1 seed 23');eq(strip(genQ('tenf',1,23).html),'1 Make 1. Tap to put in 1 counter.','tenf 1 seed 23 shown');
+     eq(genQ('tenf',2,7).say,'There is 1 counter. Put in more counters to make 10.','tenf 2 seed 7');
+     eq(genQ('mfact',1,12).ansSay,'1 row of 6','mfact 1 seed 12');eq(genQ('dec',1,24).ansSay,'1 tenth','dec 1 seed 24');
+     eq(genQ('int',2,13).hint.s,'−1 is 1 step from 0. Its opposite is 1 step from 0 on the other side.','int 2 seed 13');
+     eq(Object.values(genQ('pv',1,46).why)[0],'10 is 1 ten. The 4 goes in the ones place.','pv 1 seed 46');
+     eq(Object.values(k2WhyAdd({label:'190 + 15 = ?'})||{})[0],'9 tens + 1 ten is 10 tens. Write the 0 and carry 1 hundred.','W22');
+     eq(Object.values(k2WhyAdd({label:'180 + 75 = ?'})||{})[0],'8 + 7 tens is 15 tens. Write the 5 and carry 1 hundred.','W22: no 1, as before')}
+    // W23, W24: lesson questions, their lines, the pet's answer; the filler's rule
+    eq(lsFill('Put in {n} counters with me.',{n:1}),'Put in 1 counter with me.','lsFill');eq(lsFill('Put in {n} counters with me.',{n:2}),'Put in 2 counters with me.','lsFill 2');
+    eq(lsFill('The path needs {n} rocks. Put them in the frame.',{n:1}),'The path needs 1 rock. Put them in the frame.','lsFill rocks');
+    eq(lsFill('It has {top} hundreds, {tens} tens and {ones} ones.',{top:1,tens:1,ones:1}),'It has 1 hundred, 1 ten and 1 one.','lsFill places');
+    eq(lsFill('{a} rows of {b} make {sum}.',{a:1,b:2,sum:2}),'1 row of 2 makes 2.','lsFill rows');eq(lsFill('{a} rows of {b} make {sum}.',{a:3,b:1,sum:3}),'3 rows of 1 make 3.','lsFill rows of 1');
+    eq(lsFill('You chose {n} coins.',{n:1})+' '+lsFill('They are worth {value} cents.',{value:1}),'You chose 1 coin. They are worth 1 cent.','lsFill coins');
+    eq(lsFill('{a} wholes and {b} fourths.',{a:1,b:4}),'1 whole and 4 fourths.','lsFill wholes');eq(lsFill('That is {n} steps from zero.',{n:1}),'That is 1 step from zero.','lsFill steps');
+    eq(lsFill('{word} ends with {ans}.',{word:1,ans:'t'}),'1 ends with t.','lsFill: a verb is left alone');eq(lsFill('The {a} floats. The {b} sinks.',{a:1,b:1}),'The 1 floats. The 1 sinks.','lsFill: verbs');
+    eq(lsFill('1 counters and {n} counters',{n:2}),'1 counters and 2 counters','lsFill: only a slot');eq(lsFill('{n} counters',{n:11}),'11 counters','lsFill 11');
+    if(/\u0001/.test(lsFill('{a} and {b}',{a:1,b:1})))add('lsFill leaves its mark in the line');
+    {let n=0;const ids=Object.keys(LESSONS).filter(k=>(LESSONS[k].p||'math')=='math'&&skArea(LESSONS[k].sk,LESSONS[k].lv)=='math');
+     for(const id of ids){const L=LESSONS[id];for(let s=1;s<=250;s++){const r=mulberry32(s*31+7);for(const st of [0,1,2]){let q;try{q=L.q(st,r)}catch(e){add(id+': q threw');continue}n++;
+       const ts=texts(q);if(L.w&&q.sl)for(const b of ['together','show','check'])for(const t of [].concat(L.w.beats[b]||[])){const f=lsFill(t,Object.assign({ans:lsSayV(q,q.ans)},q.sl));if(f)ts.push(f)}
+       if(q.cents)ts.push(lsSayV(q,'1'));
+       for(const t of ts){const m=ONE.exec(t);if(m)add(id+' lesson stage '+st+' seed '+(s*31+7)+': '+t.slice(Math.max(0,m.index-30),m.index+50))}}}}
+     note.lessonQuestions=n;
+     // Name it and Explore on a build of 1: the reviewed lines, filled
+     for(const [id,v,want] of [['arr1','1×2','1 row of 2 makes 2.'],['coins1',[0,1],'Your coins make 1 cent.']]){const e=LESSONS[id].exp(mulberry32(1)),re=e.react(v);if(!re.lines.includes(want))add(id+' Explore: '+re.lines.join(' / '));
+       const nm=LESSONS[id].name(Object.assign({},re.ctx),mulberry32(1)).lines.join(' ');const m=ONE.exec(nm);if(m)add(id+' Name it: '+nm)}}
+    // W18: the rounding lessons' hint for a number exactly halfway; the others keep theirs
+    {let half=0,rest=0;for(const id of ['round1','round2','round3','round4'])for(let s=1;s<=1500;s++)for(const st of [0,1,2]){const q=LESSONS[id].q(st,mulberry32(s)),h=q.hint&&q.hint.s||'',m=/^([\d.]+) is between ([\d.]+) and ([\d.]+)\. (.*)$/.exec(h);if(!m)continue;
+       const mid=(+m[2]+ +m[3])/2,isH=Math.abs(m[1]-mid)<1e-9,k=Math.round(mid*1000)/1000;
+       if(isH){half++;if(m[4]!=='Halfway is '+k+'. Halfway or more? Round up. Less than halfway? Round down.')add(id+' lesson seed '+s+': '+h)}
+       else{rest++;if(m[4]!=='Which one is it nearer to? Halfway is '+k+'.')add(id+' lesson seed '+s+': '+h)}}
+     if(!half||!rest)add('rounding lessons: halfway '+half+', others '+rest);note.halfway=half;
+     eq(LESSONS.round1.q(1,mulberry32((()=>{for(let s=1;s<5000;s++){if(/^Round 55 /.test(LESSONS.round1.q(1,mulberry32(s)).say))return s}return 1})())).hint.s,'55 is between 50 and 60. Halfway is 55. Halfway or more? Round up. Less than halfway? Round down.','W18')}
+    // W19, W20, W25-W28
+    {let quiz=0;for(let s=1;s<=2000;s++){const q=genQ('data',5,s),t=q.say+' '+strip(q.html);if(/number of quiz scores/.test(t))add('data 5 seed '+s+': '+q.say);if(/It shows that friend's quiz score\./.test(q.say)){quiz++;if(!/It shows that friend's quiz score\./.test(strip(q.html)))add('data 5 seed '+s+': shown '+strip(q.html))}
+       if(/It shows the number of (books read|goals|pets)\./.test(q.say)===/quiz/.test(q.say)&&/Each dot/.test(q.say))add('data 5 seed '+s+': '+q.say)}if(!quiz)add('data 5: no quiz score plot');note.quizPlots=quiz}
+    {let n=0;for(let s=1;s<=1500;s++){const q=genQ('fop',5,s);for(const st of (q.hint.steps||[])){if(/Mixed number to fraction/.test(st.say)){n++;if(!/^Mixed number to fraction: \d+ and \d+ over \d+ is \d+ wholes? of /.test(st.say))add('fop 5 seed '+s+': '+st.say);if(/ and \d+\/\d+ is/.test(strip(st.html)))add('fop 5 seed '+s+': the shown step changed: '+strip(st.html))}}}if(!n)add('fop 5: no mixed number hint');note.mixedHints=n}
+    for(const lv of [1,2])for(let s=1;s<=1500;s++){const q=genQ('data',lv,s);if(/^How many more (?!chose )/.test(q.say)||/^How many (?!chose |more |in all)\S+ (and|or) .* in all\?$/.test(q.say)||/^How many chose .* and .* in all/.test(q.say))add('data '+lv+' seed '+s+': '+q.say);if(/^How many/.test(q.say)&&!strip(q.html).includes(q.say))add('data '+lv+' seed '+s+': shown differs from spoken')}
+    eq(genQ('data',1,5).say,'How many more chose tag than slides?','data 1 seed 5');eq(genQ('data',1,11).say,'How many chose ball or slides in all?','data 1 seed 11');
+    {let n=0;for(let s=1;s<=3000;s++){const q=genQ('data',4,s),m=/How many \w+ are (.+) long\?$/.exec(q.say);if(!m)continue;const fr=/(half|halves|fourths?|eighths?)/.test(m[1]);
+       if(fr){n++;if(!/^(\d+|one) (half|halves|fourths?|eighths?) of (an inch|a yard|a foot)$/.test(m[1]))add('data 4 seed '+s+': '+q.say);if(!/\d\/\d of (an inch|a yard|a foot) long\?/.test(strip(q.html)))add('data 4 seed '+s+': shown '+strip(q.html).slice(-60))}
+       else if(!/^\d+ (inch|inches|yards?|foot|feet)$/.test(m[1]))add('data 4 seed '+s+': '+q.say)}if(!n)add('data 4: no fraction length');note.fractionLengths=n}
+    for(let s=1;s<=2000;s++){const q=genQ('geo',3,s);if(/square (in|cm|ft|m)\b/.test(q.say))add('geo 3 seed '+s+': '+q.say)}
+    eq(genQ('geo',3,8).say,'A rectangle has an area of 45 square inches. One side is 5 inches. How long is the other side?','geo 3 seed 8');
+    for(let s=1;s<=3000;s++){const q=genQ('story',9,s),t=hintT(q.hint).join(' ');if(/\$\d+\.\d(?!\d)/.test(t))add('story 9 seed '+s+': '+t.slice(0,160))}
+    if(!hintT(genQ('story',9,95).hint).join(' ').includes('70 × 75 ÷ 100 = $52.50.'))add('story 9 seed 95: '+hintT(genQ('story',9,95).hint).join(' ').slice(0,200));
+    // W69, W70, W71
+    for(let s=1;s<=400;s++){const a=genQ('eo',1,s),b=genQ('eo',2,s);if(a.kind=='choice'&&(!/^Is \d+ even or odd\? Even is on the left\.$/.test(a.say)||a.choices[0].v!=='even'||a.choices.length!=2))add('eo 1 seed '+s+': '+a.say);
+      if(b.kind=='choice'&&!/^Is \d+ even or odd\?$/.test(b.say))add('eo 2 seed '+s+': '+b.say)}
+    eq(skyMoneySay(65),'65 cents','W70');eq(skyMoneySay(1),'1 cent','W70 1');eq(skyMoneySay(100),'1 dollar','W70 100');eq(skyMoneySay(165),'1 dollar and 65 cents','W70 165');eq(skyMoneySay(250),'2 dollars and 50 cents','W70 250');
+    eq(galMoneyWords('It costs $0.65 more than $2.50.'),'It costs 65 cents more than 2 dollars and 50 cents.','W70 words');
+    {let n=0;for(let s=1;s<=600;s++){const q=LESSONS.story8.q(0,mulberry32(s));n++;if(!/ Shade (\d+|one) \w+ of the bar\.$/.test(q.say)||/How many/.test(q.say))add('story8 lesson seed '+s+': '+q.say);
+       const k=LESSONS.story8.q(2,mulberry32(s));if(!/How many \w+\?$/.test(k.say))add('story8 lesson stage 2 seed '+s+': '+k.say)}note.story8=n}
+    // E6, E7, E8
+    for(let s=1;s<=4000;s++){const q=genQ('shape',2,s),vs=q.choices.map(c=>c.v);if(vs.length!=4||new Set(vs).size!=4)add('shape 2 seed '+s+': '+vs);
+      if(q.ans=='oval'&&vs.includes('circle'))add('shape 2 seed '+s+': a circle beside the oval');if(q.ans=='trapezoid'&&vs.some(v=>['rectangle','square','rhombus'].includes(v)))add('shape 2 seed '+s+': '+vs+' beside the trapezoid')}
+    {let fa=0;for(let s=1;s<=6000;s++){const q=genQ('sort',3,s),l=q.label;if(/food/.test(l)&&/animals/.test(l)){fa++;if(/\bfish\b/.test(l))add('sort 3 seed '+s+': '+l)}}if(fa<500)add('sort 3: only '+fa+' food and animals questions');note.foodAnimals=fa}
+    return{bad,note};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
+});
+
 // ---- R-01r: reading review fixes (docs/reviews/R-01-reading.md, must items 1-6 and the small should items) ----
 // No offensive word is written here: the blocklist is hashes only (src/data/d-kidsafe.js) and the self-test words are ROT13 below.
 run('reading review fixes R-01r',()=>{
@@ -16748,12 +17044,19 @@ run('reading review fixes R-01r',()=>{
     for(const v of 'aeiou')if(!((SEEN[v]||0)/tot>.15))bad('sound3: '+v+' in '+Math.round(100*(SEEN[v]||0)/tot)+'% of questions');
     note.vowels=[...'aeiou'].map(v=>v+' '+Math.round(100*(SEEN[v]||0)/tot)+'%').join(', ');
     // 10. the reading levels this chunk did not touch ask exactly the same questions as before (v135, seeds 1-150, emoji fallback)
-    const OLD=('abc1:9908fd49446a abc2:4c19dd144a3b abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:8965b72e2fd0 sound2:07324c8dc100 comp1:1fb0940c60e3 '+
-      'comp2:acfa177fed10 comp3:b70aa1dffd71 comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c4031e7def5a info3:25ad998d9e5b '+
-      'info4:8edd1307198b sight2:37ed72d3dc40 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
+    // AUDIT-READ (the v195 reading audit) changed five of these on purpose, and their hashes were set again: syl2 (the word "family"
+    // removed), sound2 (s and k are no longer offered beside x), sight2 (our and are are no longer offered together), vocab3 (the wrong
+    // choice that was the right two words turned round is now two parts of another compound) and vocab8 (a second kind that also
+    // fits is not offered). WORDS-READ (2026-11-24, the owner's approved wording) set four again, each checked to differ from the old
+    // questions only by that wording: abc2 (W34, the little-letter hint "Little p and big P are for pig."), comp3 (W63 "She plugged in a
+    // longer cord.", W64 "sorry and embarrassed"), info1 (W12 "Most penguins live in cold places.") and vocab1 (W9 furry for loud,
+    // W61 dive for swim, E2 no old man beside "the opposite of old"). The other 29 are the v135 hashes.
+    const OLD=('abc1:9908fd49446a abc2:1b630dba155c abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:b97686b48f5c sound2:b69941486ec1 comp1:1fb0940c60e3 '+
+      'comp2:acfa177fed10 comp3:1152d58029da comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c3c35d9c1753 info3:25ad998d9e5b '+
+      'info4:8edd1307198b sight2:5833688bee63 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
       'sent5:04c90646fac0 spell1:35ddedc8fd46 spell4:201a12f0db2d spell5:e6a4a11ef010 gram1:51ea83d72579 gram3:2ee838affdca gram5:98e3569be110 '+
-      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
-      'vocab8:e9c52e884e42 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
+      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:d3e03636c01b vocab2:305b1d815e94 vocab3:0ab31b6d0199 vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
+      'vocab8:99776c775830 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{for(const [k,h] of OLD){const [,id,lv]=k.match(/^([a-z]+)(\d+)$/),a=[];
       for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(id,+lv,s)));
@@ -16764,6 +17067,70 @@ run('reading review fixes R-01r',()=>{
   };
   eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.scan+'; middle vowels '+note.vowels+'; '+note.same+' untouched levels unchanged by seed'};
+});
+
+// ---- AUDIT-READ: the reading audit of v195 (no word changes): no question with two right answers among the ones it found ----
+// Last Sounds never offers s (or k) beside x: fox, box and six end in the sound of s too. Read & Match never shows a look-alike picture
+// (PICSAME) or the can under a sentence with the word can. Compound Words never offers the right two words turned round. Figurative
+// Language never offers a second kind that also fits. Count the Claps has no "family" (two or three claps). The lessons follow the
+// same rules, and no picture sort has two bins that sound the same (ee / ea).
+run('reading audit fixes AUDIT-READ',()=>{
+  const p=[],bad=m=>p.push(m),note={};
+  const body=()=>{
+    const N=4000;let nx=0,ns=0;
+    if(typeof picSame!='function'){bad('picSame (20-words.js) is missing');return}
+    for(let s=1;s<=N;s++){
+      let q=genQ('sound',2,s);
+      if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);
+        if(vs.length!=3||new Set(vs).size!=3)bad('sound 2 seed '+s+': '+vs.length+' choices');
+        if(q.ans=='x'){nx++;if(vs.includes('s')||vs.includes('k'))bad('sound 2 seed '+s+': '+vs.join(' ')+' offered for a word that ends in x')}
+        if(q.ans=='s'&&vs.includes('x'))bad('sound 2 seed '+s+': x offered for a word that ends in s')}
+      else if(q.kind=='sort'){const b=q.bins.map(x=>x.v).sort().join('');if(b=='sx'||b=='kx')bad('sound 2 seed '+s+': a sort with the bins '+b)}
+      for(const lv of [1,2]){q=genQ('sent',lv,s);const vs=q.choices.map(c=>c.v);ns++;
+        if(vs.length!=3||new Set(vs).size!=3||!vs.includes(q.ans))bad('sent '+lv+' seed '+s+': choices '+vs.join(' '));
+        for(const v of vs)if(picSame(q.ans,v))bad('sent '+lv+' seed '+s+': the picture of '+v+' beside the answer '+q.ans);
+        if(q.ans!='can'&&vs.includes('can')&&/\bcan\b/i.test(q.after))bad('sent '+lv+' seed '+s+': the can picture under "'+q.after+'"');
+        if(q.say.indexOf(vs.slice(0,-1).join(', ')+' or '+vs[vs.length-1]+'.')<0)bad('sent '+lv+' seed '+s+': the spoken names do not match the pictures')}
+      q=genQ('syl',2,s);if(/\bfamily\b/.test(q.say+' '+(q.items||[]).map(c=>c.v).join(' ')))bad('syl 2 seed '+s+': family');
+      q=genQ('sight',2,s);if(['our','are'].includes(q.ans)&&q.choices.some(c=>c.v!=q.ans&&['our','are'].includes(c.v)))bad('sight 2 seed '+s+': our and are together');
+    }
+    if(!nx)bad('no x word was drawn in sound 2 (the check proves nothing)');
+    if(!picSame('cup','mug')||!picSame('ant','bug')||picSame('cup','cup')||picSame('cat','dog'))bad('picSame does not know its pairs');
+    if(SYLW.flat().includes('family'))bad('SYLW still has family');
+    // bank items
+    const V=BANK.vocab,comp=V.filter(it=>it.lv==3&&/^Which two words make /.test(it.q));
+    if(comp.length<40)bad('compound items not found');
+    for(const it of comp){const ch=[it.a,...it.d];
+      if(ch.length!=4||new Set(ch).size!=4)bad('compound "'+it.q+'": choices '+ch.join(' | '));
+      for(const d of it.d)if(d.split(' + ').sort().join()==it.a.split(' + ').sort().join())bad('compound "'+it.q+'": the wrong choice '+d+' is the right two words')}
+    const fig=V.filter(it=>it.lv==8&&/^Which kind of language is /.test(it.q));
+    if(fig.length<30)bad('figurative kind items not found');
+    for(const it of fig){
+      if(it.d.length<2||it.d.includes(it.a))bad('figurative "'+it.q+'": choices '+it.d.join(' | '));
+      if(it.a=='simile'&&it.d.includes('idiom'))bad('figurative "'+it.q+'": idiom offered for a stock simile');
+      if(it.a=='idiom'&&/ (is|was|are|were) a /.test(it.q)&&it.d.includes('metaphor'))bad('figurative "'+it.q+'": metaphor offered for "X was a Y"')}
+    if(!fig.some(it=>it.a=='idiom'&&/piece of cake/.test(it.q)))bad('the piece of cake item was not found');
+    // lessons (tools/test.js evaluates every source, so the lesson parts are loaded)
+    let nl=0;
+    if(typeof LESSONS!='undefined'&&LESSONS.sound2&&LESSONS.build4){
+      for(let s=1;s<=1500;s++){
+        for(const st of [0,1,2,3]){const q=LESSONS.sound2.q(st,mulberry32(s*104729+7)),vs=(q.choices||[]).map(c=>String(c.v)).concat(q.tiles||[]),m=/ends with (\w)\?/.exec(q.say);nl++;
+          if(m){if((m[1]=='s'&&vs.some(v=>v.endsWith('x')))||(m[1]=='x'&&vs.some(v=>v.endsWith('s'))))bad('lesson sound2 stage '+st+': "'+q.say+'"');
+            if(new Set(vs).size!=(st==3?4:3))bad('lesson sound2 stage '+st+': '+vs.length+' pictures')}
+          else if(q.sl&&q.sl.word&&q.sl.word.endsWith('x')&&vs.includes('s'))bad('lesson sound2 stage '+st+': s offered for '+q.sl.word)}
+        for(const id of ['sound2','pic4','build4']){const q=LESSONS[id].exp(mulberry32(s*31)).q,b=(q.bins||[]).map(x=>x.v).sort().join('/');
+          if(b=='ea/ee'||b=='s/x')bad('lesson '+id+' Explore: a picture sort with the bins '+b+' (they sound the same)')}
+        for(const id of ['pic1','sent1','pic2','sent2'])for(const st of [2,3]){const q=LESSONS[id].q(st,mulberry32(s*104729+7));if(q.kind!='choice')continue;
+          const vs=q.choices.map(c=>String(c.v));nl++;
+          if(new Set(vs).size!=(st==3?4:3))bad('lesson '+id+' stage '+st+': '+vs.join(' '));
+          for(const v of vs)if(picSame(q.ans,v))bad('lesson '+id+' stage '+st+': the picture of '+v+' beside the answer '+q.ans)}
+        for(const st of [1,2,3]){const q=LESSONS.syl2.q(st,mulberry32(s*104729+7));if(/\bfamily\b/.test(q.say))bad('lesson syl2: family')}
+      }
+    }else bad('the lessons sound2 and build4 are not loaded');
+    note.n=N+' seeds ('+nx+' words ending in x, '+ns+' Read & Match), '+comp.length+' compound and '+fig.length+' figurative items, '+nl+' lesson questions';
+  };
+  eval(js+';('+body.toString()+')()');
+  return{problems:uniq(p).slice(0,60),note:note.n||''};
 });
 
 // ---- G-01: Block Builder made easy to use by touch (src/js/60-blocks.js, src/css/60-game-blocks.css; R-02 section 3) ----
@@ -17697,7 +18064,7 @@ run('Art Studio gallery and packs G-ART2',()=>{
   for(const [id,n] of CB_PICS){const d=cbData(id);if(d.G.length!==256||d.G.some(k=>!CB_COL[k]))bad(id+': not 256 squares of known colours');if(d.keys.length<3||d.keys.length>8)bad(id+': '+d.keys.length+' colours')}
   CB_PICS.slice(12).forEach(([id])=>{if(!ART_ALL.includes('px:'+id))bad('new pixel picture '+id+' is in no pack')});
   // 2. pixel squares at least 32 px on a phone (380 x 780) and a tablet (1024 x 600), whatever the palette
-  for(const [W,H] of [[380,780],[360,640],[1024,600],[800,1280]])for(const n of [3,6,8]){const c=pxCell(W,H,n);if(c<32)bad('pixel squares '+c+' px at '+W+'x'+H);}
+  for(const [W,H] of [[380,780],[360,640],[1024,600],[800,1280]])for(const n of [3,6,8]){const c=pxCell(W,H,n);if(c<40)bad('pixel squares '+c+' px at '+W+'x'+H);} // audit v195 (R-03 T2): 40 px at the least (was 32)
   r.notes.push('squares '+pxCell(380,780,6)+' px at 380x780, '+pxCell(1024,600,6)+' at 1024x600');
   // 3. compact data: fills, pixel bits and neon strokes come back exactly
   const regs=mandala(17),f={};regs.forEach((x,i)=>{if(i%3==0)f[i]=['c:#f97316','k:#3b82f6','s:#facc15','r:#22c55e','m:#a855f7','g:#ef4444'][i%6]});
@@ -18415,11 +18782,174 @@ run('Discover review fixes R-01d',()=>{
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{const a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ('sci_phys',3,s)));
       const h=require('crypto').createHash('md5').update(a.join('\n')).digest('hex').slice(0,12);
-      if(h!=='d7726a821099')bad('sci_phys 3 changed by seed ('+h+'), but R-01d does not touch it')}
+      // AUD-DISC-W (W37, approved 2026-11-24): one wrong answer of one sci_phys 3 item changed ("the same" to "steadier" in "the ___ the
+      // pull of gravity between them"), so the hash is the new one (it was d7726a821099 from v139 to v196)
+      if(h!=='d38801d3cfd5')bad('sci_phys 3 changed by seed ('+h+'), but only W37 touched it since v139')}
     finally{Object.assign(ART,artKeep)}
   };
   eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.pics+' Nature Trail items with picture answers; longest-answer share '+(note.long||[]).join(', ')};
+});
+
+// ---- AUD-DISC: the Discover audit at v195 (the R-01 Musts checked again in the live code, and a fresh sweep) ----
+// 1. Nature Trail (K-2) can be played without reading: every item of the five K-2 stops, of every form, is spoken. A choice item
+//    reads its choices in the order shown; a sort chip, a match word (both sides) and an order tile say their words when tapped; a
+//    mark item reads its sentence after the prompt, each word says itself when picked and no tap answers at once (Check does).
+//    Every hint is read aloud. (KINDS2, v171, had added match, order and mark items that only a reader could do: 25% of a stop.)
+// 2. No Discover item, hint or why teaches evolution (the owner's content rule), and the items the audit removed stay removed.
+// 3. A Southwest state never offers "West" as a wrong region.
+run('Discover audit AUD-DISC: K-2 items of every form are spoken, no evolution item, removed items stay out, Southwest without West',()=>{
+  const p=[],note={};
+  const body=function(){
+    const bad=m=>{if(p.length<60)p.push(m)};
+    const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],K2S=['sci_life','sci_earth','sci_phys','geo_world','civ'];
+    const txt=x=>String(x).replace(/<[^>]*>/g,'').trim();
+    // 1. spoken
+    const n={};
+    for(const id of K2S)BANK[id].forEach((it,bi)=>{
+      if(it.lv!==1)return;
+      const form=it.form||'choice',w=id+' "'+it.q+'" ('+form+'): ';
+      n[form]=(n[form]||0)+1;
+      if(it.aloud!==true)bad(w+'is not a read-aloud item');
+      for(let s=1;s<=3;s++){
+        const q=genBank(id,1,{bi,s}),html=KIND[q.kind].render(q);
+        if(!q.say)bad(w+'no spoken prompt');
+        if(!q.hint||q.hint.k!=='text'||q.hint.w!==q.hint.s||!q.hint.s)bad(w+'the hint is not read aloud');
+        const says=[...html.matchAll(/data-say="([^"]*)"/g)].map(m=>m[1]);
+        const need=(cs,what)=>{for(const c of cs){if(!c.say||!says.includes(esc(c.say)))bad(w+what+' "'+txt(c.l)+'" does not say itself');
+          else if(c.say!==txt(c.al||c.l)&&c.say!==c.v)bad(w+what+' says "'+c.say+'" but shows "'+txt(c.l)+'"')}};
+        if(q.kind=='choice'){let at=0;for(const c of q.choices){const i=q.say.indexOf(String(c.v),at);if(i<0)bad(w+'"'+c.v+'" is not read in the order shown: '+q.say);else at=i+String(c.v).length}}
+        else if(q.kind=='sort')need(q.items,'chip');
+        else if(q.kind=='match'){if(!q.speak)bad(w+'q.speak is not set');need(q.items,'left word');need(q.opts,'right word')}
+        else if(q.kind=='order'){if(!q.speak)bad(w+'q.speak is not set');need(q.items,'tile')}
+        else if(q.kind=='mark'){
+          if(!q.speak||q.one)bad(w+'a tap answers at once, so a word cannot be heard first');
+          if(!q.say.endsWith(it.sent))bad(w+'the sentence is not read: '+q.say);
+          if(says.length!==q.words.length||q.words.some((x,i)=>says[i]!==esc(k2MarkWord(x))))bad(w+'a word does not say itself');
+          if(!/id="mcheck"/.test(html))bad(w+'no Check button');
+          if(!KIND.mark.same(q,q.ans)||KIND.mark.same(q,['0'])&&q.ans.join()!=='0')bad(w+'the answer check');
+        }
+        else bad(w+'a kind this check does not know: '+q.kind);
+        for(const x of kindProblems(q))bad(w+x);
+        if(JSON.stringify(bankRebuild(q.bk))!==JSON.stringify(q))bad(w+'bankRebuild differs');
+      }
+    });
+    note.n=n;
+    for(const f of ['choice','sort','match','order','mark'])if(!n[f])bad('no K-2 '+f+' item was checked');
+    // the items of the older grades are as before: no speak flag, a mark with one answer is still one tap
+    for(const id of IDS)BANK[id].forEach((it,bi)=>{if(it.aloud||!it.form)return;const q=genBank(id,it.lv,{bi,s:1});
+      if(q.speak||/data-say=/.test(KIND[q.kind].render(q))&&q.kind!=='sort')bad(id+' "'+it.q+'": an item that is not read aloud speaks');
+      if(q.kind=='mark'&&q.one!==(q.ans.length==1))bad(id+' "'+it.q+'": one')});
+    // a tap says the word for Pre-K to 1st grade only (k2SayChip), and never for a button without a word
+    const said=[],say0=say,g0=S.grade;
+    try{say=t=>{said.push(t)};
+      for(const [g,want] of [[-1,1],[0,1],[1,1],[2,0],[5,0]]){S.grade=g;said.length=0;k2SayChip({dataset:{say:'hen'}});k2SayChip({dataset:{}});
+        if(said.length!==want||want&&said[0]!=='hen')bad('grade '+g+': a tapped word is said '+said.length+' times, expected '+want)}}
+    finally{say=say0;S.grade=g0}
+    // 2. evolution, and the removed items
+    const all=IDS.flatMap(id=>BANK[id].map(it=>({id,it})));
+    const text=it=>[it.q,it.a,it.sent,it.hint,...(it.d||[]).flat(),...Object.keys(it.bins||{}),...Object.values(it.bins||{}).flat(),...(it.pairs||[]).flat(),...(it.order||[])].filter(x=>x!=null).join(' | ');
+    const EVO=/\bevolution|\bevolv|natural selection|ancestor|descend|over (many|the) generations|millions? of years|billions? of years|survival of the fittest/i;
+    for(const x of all)if(EVO.test(text(x.it)))bad(x.id+': evolution content: '+x.it.q);
+    for(const k in DISC_HINT)if(EVO.test(DISC_HINT[k]))bad('hint '+k+': evolution content');
+    const gone=[[/Over many generations/,'the natural selection row'],[/Africa or Antarctica/,'penguins and seals sorted to Antarctica only'],
+      [/A bill becomes law after the vote/,'a bill "becomes law after the vote"'],[/capital is Washington, D\.C\./,'the Washington, D.C. mark item (D.C. was marked wrong)']];
+    for(const [re,what] of gone)if(all.some(x=>re.test(text(x.it))))bad('back in the bank: '+what);
+    const bins=(id,re)=>{const it=BANK[id].find(x=>re.test(x.q));return it&&it.bins?Object.values(it.bins).flat():['(item missing)']};
+    // the whale is back in this sort (W42, approved 2026-11-24) with a hint that no longer asks about breathing under water
+    if(/breathe/.test((BANK.sci_life.find(x=>/in water or on land/.test(x.q))||{hint:'breathe'}).hint))bad('the water or land hint asks if the animal can breathe under water (a whale cannot)');
+    if(bins('sci_earth',/in the day or at night/).includes('moon'))bad('the moon is sorted to night only');
+    for(const [id,re] of [['geo_world',/hot place or cold place/],['geo_world',/hot climate or cold climate/]])if(bins(id,re).includes('desert'))bad('"desert" is sorted as hot: '+re);
+    let it=BANK.sci_life.find(x=>/^A bear sleeps through the cold winter/.test(x.q));
+    if(!it||it.a!=='hibernation'||it.d.flat().includes('adaptation')||it.d.length<2)bad('hibernation item: "adaptation" is a wrong answer (hibernation is one)');
+    it=BANK.sci_earth.find(x=>/^When can we see stars/.test(x.q));
+    if(!it||it.d.flat().includes('at noon')||it.d.length<2)bad('stars item: "at noon" is a wrong answer (the sun is a star)');
+    // 3. regions
+    const reg=BANK.geo_us.filter(x=>x.topic==='regions'&&!x.form);
+    note.sw=reg.filter(x=>x.a==='Southwest').length;
+    if(note.sw<3)bad('fewer than 3 Southwest region items');
+    for(const x of reg){if(x.a==='Southwest'&&x.d.flat().includes('West'))bad(x.q+': offers West');
+      if(x.d.length!==3||new Set([x.a,...x.d]).size!==4)bad(x.q+': choices '+x.d)}
+  };
+  eval(js+';('+body.toString()+')()');
+  return{problems:uniq(p),note:'K-2 items spoken: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+'; '+note.sw+' Southwest items without West'};
+});
+
+// ---- AUD-DISC-W: the Discover words the owner approved on 2026-11-24 (docs/drafts/AUDIT-WORDS-READ.md, W1-W6, W36, W37, W42-W59, D4) ----
+// Every old text is gone from the app's source and every approved text is there; the three items that came back have the approved
+// words; the five drafted hints (W59) are their items' own hints and do not name the answer; the rock and the coin are drawn by the
+// rules of the object art sets, the pebble shows the rock, and the float or sink lesson draws both.
+run('Discover words AUD-DISC-W: approved texts in, old texts out, items back, W59 hints, rock and coin drawn',()=>{
+  const p=[];
+  const srcAll=['data','js'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).filter(f=>f.endsWith('.js')&&f!=='d-teach-audio.js').map(f=>fs.readFileSync(path.join(SRC,d,f),'utf8'))).join('\n').replace(/\\'/g,"'");
+  const OLD=['Rubber is a good insulator','Think about the rubber on a cord','ice, fire and rock','A compass rose shows north','Only frozen things melt','Light things like leaves',
+    'sun, moon and snow','driver licenses',';the stars|',';a comet;','stronger;the same;heavier','breathe and swim under the water','A bill becomes law after the vote',
+    'capital is Washington, D.C.','Africa or Antarctica','Egg, chick, hen.','Put the day in order: morning','Put them in order: ice, water, steam','biggest: room, house, town',
+    'Very few diamonds exist','Three branches keep any one group','The lower 48 United States','but the capital is not','Water has three forms',"'has no air'",
+    'Can you get the old stuff back','Would you want to touch it, or to hold it','about a few ___','all around it is an ___','salty water is an ___','path called an ___',
+    'simple machine called an ___','flow easily is an ___','plants and animals is an ___','where it lives is an ___','Constitution is called an ___'];
+  const NEW=['An insulator blocks electricity.','It is the opposite of a conductor.','Match each one to how it feels: ice, fire and pillow.','A compass shows north, south, east and west.',
+    'Oops. Frozen things melt in the sun. These ones stay.','Match each one to when you see it: sun, stars and snow.',"gives driver's licenses",'Mars;Jupiter;stars|','Sun;comet;Venus|',
+    'stronger;steadier;heavier','Does it swim in the water all day?','A bill is a plan for a new law.',"Our nation's capital is Washington.'",'Where do they live: Africa or the Arctic?',
+    'One place is hot and one is covered in ice.','migration;camouflage;germination',"'Put them in order: how does a hen grow up?'","'Put the day in order.'","'Heat it up! Put them in order.'",
+    "'Put them in order from smallest to biggest.'",'Very few of a rare stamp exist and many people want one. Its price is ___.','Each branch can limit the power of the others. This idea is called ___.',
+    'The lower 48 states have ___ main time zones.','Los Angeles is the biggest city, but it is not the capital.','Anchorage is the biggest city, but it is not the capital.',
+    'Sort the forms of water: ice, liquid or gas?',"'has craters'",'Is it still the same stuff? Then it is a physical change.','Would it burn you, or make you shiver?',
+    "Earth's plates move slowly, a few ___ each year.",'Land with water all around it is called ___.','Land that has water all around it is called ___.','A very big body of salty water is called ___.',
+    'in a path called ___.','simple machine called ___.','flow easily is called ___.','plants and animals is called ___.','where it lives is called ___.','Constitution is called ___.'];
+  for(const x of OLD)if(srcAll.includes(x))p.push('the old text is still in src: '+x);
+  for(const x of NEW)if(!srcAll.includes(x))p.push('the approved text is not in src: '+x);
+  const body=function(){
+    const bad=m=>p.push(m);
+    const item=(id,re)=>BANK[id].find(x=>re.test(x.q))||{q:'(missing '+re+')',hint:'',bins:{},pairs:[],d:[]};
+    // items and chips that came back, and the changed pairs
+    let it=item('geo_world',/Africa or the Arctic/);
+    if(JSON.stringify(it.bins)!=='{"Africa":["giraffe","lion","zebra"],"the Arctic":["polar bear","walrus"]}'||it.lv!==1||!it.aloud)bad('W46: '+JSON.stringify(it.bins));
+    it=item('geo_us',/our nation's capital\.$/);if(it.form!=='mark'||it.a!=='Washington'||it.sent!=="Our nation's capital is Washington.")bad('W45: '+it.sent);
+    it=item('civ',/^Tap the word for a proposed law/);if(it.form!=='mark'||it.a!=='bill'||it.sent!=='A bill is a plan for a new law.')bad('W44: '+it.sent);
+    it=item('sci_life',/in water or on land/);if(!Object.values(it.bins).flat().includes('whale')||!it.cp||!it.cp.whale)bad('W42: the whale is not back with its picture');
+    it=item('geo_world',/hot place or cold place/);if(JSON.stringify(it.bins['hot place'])!=='["the Sahara","rain forest"]')bad('W43 K-2: '+JSON.stringify(it.bins));
+    it=item('geo_world',/hot climate or cold climate/);if(JSON.stringify(it.bins.hot)!=='["the Sahara","rain forest","savanna"]')bad('W43 3-4: '+JSON.stringify(it.bins));
+    it=item('sci_phys',/how it feels/);if(JSON.stringify(it.pairs)!=='[["ice","cold"],["fire","hot"],["pillow","soft"]]')bad('W2: '+JSON.stringify(it.pairs));
+    it=item('sci_earth',/when you see it/);if(JSON.stringify(it.pairs)!=='[["sun","day"],["stars","night"],["snow","winter"]]')bad('W6: '+JSON.stringify(it.pairs));
+    it=item('sci_phys',/material that blocks electricity/);
+    if(it.a!=='insulator'||/rubber/i.test(it.sent+it.hint))bad('W1: '+it.sent+' / '+it.hint);
+    else{const q=genBank('sci_phys',2,{bi:BANK.sci_phys.indexOf(it),s:1});if(q.words.filter(w=>/insulator/i.test(w)).length!==1||!q.one)bad('W1: the sentence must have the answer once')}
+    it=item('sci_phys',/^Sort them: floats or sinks/);if(it.hint!=='Light for its size floats. Heavy for its size sinks.')bad('W5: '+it.hint);
+    // W48: an order prompt no longer lists its tiles in the right order
+    for(const id of ['sci_life','sci_earth','sci_phys','geo_world','civ'])for(const x of BANK[id])if(x.form==='order'&&x.lv===1&&x.q.toLowerCase().includes(x.order.join(', ').toLowerCase()))bad('W48: the prompt gives the order: '+x.q);
+    // W54: no Discover choice stem ends "an ___." with one choice only that starts with a vowel sound (the four the pattern does not fit are known)
+    const KEEP=[/^Tissues that work together form an/,/^The heart is an example of an/,/make up an ___\.$/,/stands for an ___\.$/];
+    for(const id of ['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'])for(const x of BANK[id])if(!x.form&&/\ban ___\.$/.test(x.q)&&!KEEP.some(re=>re.test(x.q)))bad('W54: still "an ___": '+x.q);
+    // W59: the five drafted hints
+    const H=[['sci_life',/^A cactus grows/],['sci_life',/^A water lily grows/],['geo_us',/^Lake Michigan is the only/],['geo_us',/^Which is the biggest of the Great Lakes/],['geo_us',/^Mauna Loa and Kilauea/]];
+    note.hints=[];
+    for(const [id,re] of H){it=item(id,re);note.hints.push(it.hint);
+      if(!it.hint||it.hint===DISC_HINT[it.topic])bad('W59: '+it.q+' still has the topic hint');
+      if(it.hint.length>100)bad('W59: a hint over 100 letters: '+it.hint);
+      for(const w of String(it.a).split(' '))if(w.length>3&&new RegExp('\\b'+w+'\\b','i').test(it.hint))bad('W59: the hint names the answer: '+it.hint)}
+    // D4: rock and coin, by the rules of the object art sets (the set C check); the pebble shows the rock; the lesson draws both
+    for(const n of ['rock','coin']){const d=ART[n];
+      if(!d){bad('D4: no drawing: '+n);continue}
+      if(d.length>2500)bad(n+': '+d.length+' bytes (limit 2500)');
+      if((d.match(/<[^>]*\/>/g)||[]).join('')!==d)bad(n+': every element must be self-closing');
+      if((d.match(/<[a-z]+/g)||[]).length>40)bad(n+': over 40 elements');
+      for(const t of d.match(/<\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad(n+': element '+t);
+      for(const m of d.matchAll(/\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad(n+': attribute '+m[1]);
+      for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\(--a-[a-z0-9]+\))"$/.test(a))bad(n+': colour '+a);
+      for(const m of d.matchAll(/var\(--(a-[a-z0-9]+)\)/g))if(!artCss.includes('--'+m[1]+':var(--ill-'))bad(n+': role --'+m[1]+' is not in 21-art.css');
+      for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\(-?[\d.]+ -?[\d.]+ -?[\d.]+\)$/.test(m[1]))bad(n+': transform '+m[1]);
+      for(const m of d.matchAll(/\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\d.]+/g)||[])if(+v<0||+v>64||/\.\d{2}/.test(v))bad(n+': path number '+v);
+      for(const m of d.matchAll(/\s(cx|cy|x|y)="(-?[\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad(n+': '+m[1]+' '+m[2]);
+      if(!/<svg/.test(picFor(n,'x')))bad(n+': picFor does not draw it')}
+    if(DISC_PIC['a pebble'][0]!=='rock'||DISC_PIC['a rock'][0]!=='rock')bad('D4: the pebble and the rock must show the rock drawing');
+    for(const x of BANK.sci_life)if(x.cp&&x.cp['a pebble']&&x.cp['a rock'])bad('D4: one item shows the rock twice: '+x.q);
+  };
+  const note={},artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  eval(js+';('+body.toString()+')()');
+  const bench=fs.readFileSync(path.join(SRC,'js','52s-bench5s.js'),'utf8');
+  if(!bench.includes("coin: ['coin', 'coin', '🪙']")||!bench.includes("rock: ['rock', 'rock', '🪨']"))p.push('D4: the float or sink lesson does not draw the rock and the coin');
+  return{problems:uniq(p),note:OLD.length+' old texts gone, '+NEW.length+' approved texts in; W59 hints: '+(note.hints||[]).join(' | ')};
 });
 
 // ---- R-01b: Brain Teasers and practice review fixes (docs/reviews/R-01-brain-teasers.md, docs/reviews/R-01-practice.md: the must
@@ -18538,7 +19068,9 @@ run('Brain Teasers and practice fixes R-01b',()=>{
      S.maps.math.add1=1;if(!FLU.on()||!FLU.set('add10').ok()||FLU.set('add20').ok())res.push('Adding to 10 passed: '+FLU.on()+' '+FLU.set('add20').ok());
      load(null);S.grade=1;S.maps.math.add2=1;if(!FLU.set('add10').ok()||!FLU.set('add20').ok())res.push('a later adding stop does not open the sets');
      load(null);S.grade=2;(S.skip=S.skip||{})[NODES.math[ni('math','add',1)].wid]=1;if(!FLU.on())res.push('a skipped Number Meadow does not open Adding to 10');
-     load(null);delete S.grade;S.maps.math.add1=1;if(!FLU.on())res.push('a save with no grade that passed Adding to 10');
+     // audit v195 (n8), a deliberate change: a save with no grade is a Kindergartner everywhere else (gradeOf() is 0), so it shows no
+     // Fact Sprint either (R-01b had kept the stop rule alone for it: this line expected FLU.on() to be true)
+     load(null);delete S.grade;S.maps.math.add1=1;if(FLU.on())res.push('a save with no grade (a Kindergartner, gradeOf() 0) shows Fact Sprint');
      if(res.length)add('Fact Sprint gating: '+res.join('; '));
      note.push('Fact Sprint: Pre-K and K never (tile, sprint mission); grade 1 up once Adding to 10 or a later adding stop is passed')}
     // Should 6: Pre-K and K missions: "Play 2 rounds today" in place of "Get a perfect round"
@@ -19786,6 +20318,23 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       const F=${JSON.stringify(K2_FIX)};
       for(const id in F.labels){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);for(const [s,l] of F.labels[id]){const g=genQ(sk,+lv,s).label;if(g!==l)bad(id+' seed '+s+': '+g+', v169 '+l)}}
       // K2.off: every switched stop asks exactly the v169 questions (the new format draw is the last one, so the old draws are unchanged)
+      // AUD-DISC (the v195 audit) changed four of these stops' choice items on purpose, so their four hashes in tools/lib/kinds2-seeds.json
+      // are the new ones; every other hash is the v169 one. sci_life2: the wrong answer "adaptation" left the hibernation item (hibernation
+      // is an adaptation). sci_life3: the natural selection row was removed (no evolution content). sci_earth1: the wrong answer "at noon"
+      // left "When can we see stars in the sky?" (the sun is a star). geo_us1: a Southwest state no longer offers West as a wrong region.
+      // AUD-DISC-W (the words the owner approved on 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md) changed choice items of nine stops, so
+      // their hashes are new again: sci_life1 (W59: a hint each for the cactus and the water lily), sci_life2 (W47 "germination", W54
+      // "called ___" twice), sci_earth1 (W54 twice), sci_earth2 (W37 "stars", W54 "a path called ___"), sci_earth3 (W37 "comet", W58
+      // "a few ___"), sci_phys2 (W54 twice), sci_phys3 (W37 "steadier"), geo_us2 (W51 "The lower 48 states", W59 three hints; set again when the biggest Great Lake hint was redrafted so it does not give the
+      // answer away), civ2 (W49
+      // the rare stamp, W50 "Each branch can limit", W54 "is called ___"). geo_world1 has W54 too, but it is not a pinned stop.
+      // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
+      // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits; words-spanish set es_art2 again:
+      // W60, owner 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md, adds "and z changes to c: lápiz, lápices" to its plural hint)
+      // (WORDS-READ W10, approved 2026-11-24, set gram8 again: slower / softer / quicker / louder became slowness / softness / quickness /
+      // loudness, which also makes those four questions "wide" (a choice over 7 letters); checked to be the only difference)
+      // (WORDS-MATH, approved 2026-11-24, set two more: sort3 (E8: no fish in a food and animals sort; with sgCat as before it gives the v169
+      // hash 1b1f327c30ec) and eo1 (W69: the K question says "Even is on the left."; without that sentence it gives the v169 hash 9eb0a73c72a3))
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
@@ -19932,7 +20481,7 @@ const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',rou
   tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
   coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'04c0ad9c8b15',
   time3:'cf0a72347296',time4:'bff67461efdd',time5:'6ec67e6555e1',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
-  mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'1cc20152a9de',geo2:'e96d9e5b3d06'};
+  mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'d26b15de7a3c',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
 // question valid, K2.off gives the af3d449 questions, and the review round trip (seed path)
 const k2BC=(kind,plan,exempt,extra,off)=>eval(js+`;(()=>{const out={bad:[],rows:[],n:0,rt:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
@@ -19960,6 +20509,7 @@ const k2BC=(kind,plan,exempt,extra,off)=>eval(js+`;(()=>{const out={bad:[],rows:
       if(tn/400>.65&&!EX.includes(id))bad(id+': '+top+' is '+Math.round(tn/4)+'% (over 65%)');
       out.rows.push(id+' '+Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+Math.round(v/4)+'%').join(' '))}
     // K2.off: the stops ask exactly the af3d449 questions (the format draw is the last one and is skipped)
+    // AUDIT-MATH M5: frac2's hash is new (was 1cc20152a9de): its typed questions gained eq 'value' (any equal fraction is right), nothing else
     K2.off=true;
     try{for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++){const q=genQ(sk,+lv,s);a.push(JSON.stringify(q));if(q.kind==KIND_)bad(id+': a '+KIND_+' question with K2.off')}
       const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==OFF[id])bad(id+' with K2.off is not the af3d449 stop ('+h+')')}}
@@ -20069,9 +20619,15 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
         if(q.ansSay.slice(0,6)!=='Step '+(+q.ans+1))bad(id+': ansSay names another step: '+q.label);
         if(/undefined|NaN|Infinity/.test(q.html+q.say+q.ansSay))bad(id+': '+q.label);
         if((q.say+' '+q.html.replace(/<[^>]*>/g,' ')).split(/[^A-Za-z]+/).some(x=>BAD.test(x.toLowerCase())))bad(id+': a word is not kid-safe')}}
-    // one family by hand: 38 + 47, the carry forgotten in the tens (seeded, so the mistake is the same each run)
-    {let q=null;for(let s=1;s<=2000&&!q;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'38 + 47 = ?',hint:{k:'text',s:'x'}});if(t&&/carry 2$/.test(t.label))q=t}
-     if(!q||q.ans!=='1'||!/Tens: 3 \\+ 4 = 7</.test(q.html)||!/Ones: 8 \\+ 7 = 15</.test(q.html)||!/So 38 \\+ 47 = 75</.test(q.html)||!/plus 1 is 8/.test(q.ansSay))bad('38 + 47 carry: '+(q&&q.html))}
+    // one family by hand: 38 + 47 (seeded, so the mistake is the same each run).
+    // AUDIT-MATH M3: this sample was the carry forgotten in the tens ("Tens: 3 + 4 = 7", "So 38 + 47 = 75"). That line is true arithmetic
+    // as written and the only false line was the closing one, so the forgotten carry is not asked any more (nor a forgotten trade, the
+    // flipped digits, the added bottoms, + before ×). The sample is a slip in the ones now: the tens go on from the right carry, the
+    // closing line carries the mistake forward and a tap on it is right too (q.alt).
+    {let q=null,carry=0;for(let s=1;s<=2000;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'38 + 47 = ?',hint:{k:'text',s:'x'}});if(t&&/carry/.test(t.label))carry++;if(t&&!q&&/up 1$/.test(t.label))q=t}
+     if(carry)bad('38 + 47: the forgotten carry is asked ('+carry+' of 2000)');
+     if(!q||q.ans!=='0'||!/Ones: 8 \\+ 7 = 16</.test(q.html)||!/Tens: 3 \\+ 4 \\+ 1 = 8</.test(q.html)||!/So 38 \\+ 47 = 86</.test(q.html)||!/8 plus 7 is 15/.test(q.ansSay)||JSON.stringify(q.alt)!=='["2"]'
+       ||!KIND.tap.same(q,'0')||!KIND.tap.same(q,'2')||KIND.tap.same(q,'1'))bad('38 + 47 ones up: '+(q&&q.html+' '+JSON.stringify(q.alt)))}
     // a mistake that does not change a step is never offered: 31 + 25 has no carry
     {const L=[];for(let s=1;s<=200;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'31 + 25 = ?',hint:{k:'text',s:'x'}});if(t)L.push(t.label)}
      if(L.some(l=>/carry/.test(l))||!L.length)bad('31 + 25: a carry mistake with no carry')}
@@ -21740,7 +22296,7 @@ run('teach: every Spanish noun of the lessons has the article and gender of the 
     const rec=[...right].filter(f=>!ES_AUDIO.lines[esKey(f)]),wrec=[...wrong].filter(f=>ES_AUDIO.lines[esKey(f)]);
     if(rec.length)bad.push('right forms with no Spanish recording: '+rec.join(', '));
     return{bad:[...new Set(bad)].slice(0,40),n,right:right.size,wrong:wrong.size,brk:[...new Set(brk)].sort(),wrec:wrec.length}})()`);
-  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered (said by the tablet\'s Spanish voice: not recorded); the last-letter rule breaks for '+r.brk.join(', ')};
+  return{problems:r.bad,note:r.n+' questions; '+r.right+' right forms (each a units word with its article, all recorded), '+r.wrong+' wrong forms offered ('+r.wrec+' of them recorded: tools/es-audio.js collects them, owner decision 2026-11-24 (D2)); the last-letter rule breaks for '+r.brk.join(', ')};
 });
 run('teach: simulated children on Spanish and Discover lessons, Check me always wrong when forced, fresh items on resume TEACH-5S',()=>{
   // the TEACH-1 children on the 12 batch 5s lessons (Spanish as a Kindergartner and, for the tone, a 5th grader; Discover as a Kindergartner): the learner
@@ -22652,6 +23208,21 @@ run('play PLAY-01: free sample (5 stops of the grade\'s start world), Play mode,
   })()`);
   return r.then(x=>({problems:uniq(x.bad),note:x.notes.join('; ')}));
 });
+// ---- sample fix (Fable's cheap-tablet, new-family rehearsal of the Play app's free sample): Find my level led into a locked world, so the
+// free sample does not offer it (Home's card, Grown-ups' row); unlocked and on the web it is as before. The map and the round end are in
+// tools/smoke.js PLAY-02 (Test out, the unlock after the 5th stop, "You unlocked the next stop!").
+run('play sample fix: no Find my level in the free sample (Home card, Grown-ups row); unlocked and on the web unchanged',()=>{
+  const body=function(){const bad=[],B=m=>bad.push(m),keep=[PLAY.on,PLAY.own];
+    try{for(const g of [0,1,3,5]){loadSave(null);migrate();S.grade=g;S.name='Ava';PLACE_HIDE=false;
+      PLAY.on=true;PLAY.own=false;
+      if(placeAsk()||placeBanner()||placeGrownHTML())B('grade '+g+': the free sample offers Find my level');
+      PLAY.own=true;if(!placeAsk()||!placeBanner()||!/data-place="math"/.test(placeGrownHTML()))B('grade '+g+': unlocked, Find my level is not offered');
+      PLAY.on=false;PLAY.own=false;if(!placeAsk()||!/data-place="math"/.test(placeGrownHTML()))B('grade '+g+': the web version does not offer Find my level')}
+    }finally{PLAY.on=keep[0];PLAY.own=keep[1]}
+    return bad};
+  const bad=eval(js+';('+body.toString()+')()');
+  return{problems:bad,note:'grades K, 1, 3, 5: free sample none; unlocked and web: the Home card and the Grown-ups row'};
+});
 // ---- HINT-01: a hint for each common mistake in every Practice question (src/js/39m-mist.js, words in src/js/39n-hintw.js) ----
 // The app works out what each known mistake would answer for a Practice question (hmPredict) and, when a child's wrong first try is
 // one of those, shows that mistake's approved line above the generic hint (hmHint, called by check() in 50-round.js). Simulated
@@ -23281,25 +23852,28 @@ run('service worker: a page open waits 3 s for the network, then the cached page
     done2(page);await tick();await tick();if(d.resp!==page)p.push('no cache: the network page did not come');
     return{problems:p,note:'slow (late page not cached), fast, offline, first visit'}})();
 });
-run('service worker: install waits for the code only; the recordings are cached after activation, one that fails (503) is skipped and filled on a later open v194',()=>{
+run('service worker: install waits for the code only; the recordings are cached after activation, one that fails (503) is skipped and filled on a later open v194; 10 at a time, after the lines the page asks for (sample fix)',()=>{
   // v194 fix2 (Fable's confirming review): install was all-or-nothing over the code AND about 2,400 recordings, so one 503 left no service
   // worker at all and every open started again from zero. Now: install = the code list F; the page asks (a message 'audio') once it is
   // up, and on later opens; the worker fetches the recordings A does not hold, AB at a time, each on its own; a failure is skipped.
+  // sample fix (Fable's cheap-tablet rehearsal): AB is 10, not 40 (on a slow line 40 at a time made the first lesson's voice late), and a batch
+  // waits while a recording the page asked for is on its way or the page speaks ('hush'): steps 8 and 9. The rest is unchanged.
   const vm=require('vm'),src=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8'),p=[];
   const F=JSON.parse(((src.match(/const F=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"')),AF=JSON.parse(((src.match(/const AF=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"'));
-  if(!/const AB=40;/.test(src))p.push('sw.js: the recordings are not fetched 40 at a time');
+  if(!/const AB=10,HUSH_MS=\d+;/.test(src))p.push('sw.js: the recordings are not fetched 10 at a time (sample fix)');
   if(AF.length<1000)p.push('sw.js lists only '+AF.length+' recordings');
   const tick=async(n=40)=>{for(let i=0;i<n;i++)await new Promise(r=>setImmediate(r))};
   // a stand-in browser: CacheStorage (cache name -> Map url -> response), fetch with one recording failing (503) while `down` has it
-  const store=new Map(),down=new Set(),fetched=[];let live=0,peak=0;
+  const store=new Map(),down=new Set(),fetched=[];let live=0,peak=0,skew=0,gateU=null,gate=null;
   const norm=u=>new URL(typeof u=='string'?u:u.url,'http://x/').href;
   const mkCache=n=>{if(!store.has(n))store.set(n,new Map());const m=store.get(n);return{
     addAll:async rs=>{const got=[];for(const r of rs){const x=await sb.fetch(r);if(!x.ok)throw new TypeError('addAll: '+x.status);got.push([norm(r),x])}for(const [u,x] of got)m.set(u,x)},
     put:async(r,x)=>{m.set(norm(r),x)},match:async r=>m.get(norm(r)),keys:async()=>[...m.keys()].map(url=>({url})),delete:async r=>m.delete(norm(r.url||r))}};
   const sb={self:{location:'http://x/',clients:{claim:async()=>{}},addEventListener:(t,f)=>{H[t]=f},skipWaiting(){}},URL,Promise,Set,Map,console,setTimeout,clearTimeout,
     caches:{open:async n=>mkCache(n),keys:async()=>[...store.keys()],delete:async n=>store.delete(n),match:async r=>{for(const m of store.values())if(m.has(norm(r)))return m.get(norm(r))}},
-    fetch:async r=>{const u=norm(r);fetched.push(u);live++;peak=Math.max(peak,live);await tick(2);live--;return down.has(u)?{ok:false,status:503}:{ok:true,status:200,u,clone(){return this}}},
-    Request:function(u){this.url=u},Response:{error:()=>'ERROR'}};
+    fetch:async r=>{const u=norm(r);fetched.push(u);live++;peak=Math.max(peak,live);await tick(2);if(u===gateU)await gate;live--;return down.has(u)?{ok:false,status:503}:{ok:true,status:200,u,clone(){return this}}},
+    Request:function(u){this.url=u},Response:{error:()=>'ERROR'},Date:{now:()=>Date.now()+skew}};
+  sb.setTimeout=f=>{setImmediate(f);return 0}; // sample fix: the fill's wait (quiet) polls; time is moved by skew (this file's own setTimeout is a no-op)
   const H={};vm.runInNewContext(src,sb);
   const ev=(t,data)=>{const w=[];H[t]({data,waitUntil:pr=>w.push(pr)});return Promise.all(w)};
   const A=[...store.keys()],aUrl=u=>norm(u),inA=()=>store.get('starschool-audio')||new Map(),cname=src.match(/const C='([^']+)'/)[1];
@@ -23312,10 +23886,10 @@ run('service worker: install waits for the code only; the recordings are cached 
     if(!store.has(cname)||store.get(cname).size!==F.length)p.push('install did not cache the code list: '+(store.get(cname)||new Map()).size+' of '+F.length);
     // 2. activate: nothing is fetched yet (the recordings never compete with the first paint)
     const n0=fetched.length;await ev('activate');if(fetched.length!==n0)p.push('activate fetched '+(fetched.length-n0)+' files');
-    // 3. the page asks: every recording but the failing one is cached, 40 at a time at most; the 503 is not cached
+    // 3. the page asks: every recording but the failing one is cached, 10 at a time at most (sample fix; was 40); the 503 is not cached
     await ev('message','audio');
     if(inA().size!==AF.length-1||inA().has(bad))p.push('after the first fill: '+inA().size+' of '+AF.length+' recordings, the 503 one '+(inA().has(bad)?'cached':'not cached'));
-    if(peak>40)p.push('up to '+peak+' fetches at once (want at most 40)');
+    if(peak>10)p.push('up to '+peak+' fetches at once (want at most 10)');
     // 4. the next open: only the missing one is fetched, and now it is cached
     down.clear();const n1=fetched.length;await ev('message','audio');
     if(fetched.length-n1!==1||fetched[n1]!==bad||!inA().has(bad)||inA().size!==AF.length)p.push('a later open did not fetch just the missing recording: '+(fetched.length-n1)+' fetches, '+inA().size+' of '+AF.length);
@@ -23331,12 +23905,22 @@ run('service worker: install waits for the code only; the recordings are cached 
     // 7. a recording fetched on demand (not cached yet) goes to A, not the release cache
     inA().delete(bad);let put=null;H.fetch({request:{method:'GET',url:bad,mode:'no-cors',headers:{get:()=>null},destination:'audio'},respondWith:pr=>{put=pr},waitUntil(){}});
     await put;await tick();if(!inA().has(bad))p.push('a recording fetched on demand did not go to the audio cache');
+    // 8. sample fix: while the page speaks ('hush') the fill fetches nothing; it goes on once the hold is over
+    inA().delete(bad);const n8=fetched.length;await ev('message','hush');const f8=ev('message','audio');await tick();await tick();
+    if(fetched.length!==n8)p.push('the fill fetched '+(fetched.length-n8)+' while the page speaks (hush)');
+    skew+=60000;await f8;if(fetched.length-n8!==1||!inA().has(bad))p.push('the fill did not go on after the hush: '+(fetched.length-n8)+' fetches');
+    // 9. sample fix: a recording the page asked for, still on its way, comes first: the fill starts its batch only after it
+    const want=norm(AF.find(u=>/\/audio\/en\//.test(u)));inA().delete(bad);inA().delete(want);gateU=want;let go;gate=new Promise(r=>{go=r});
+    let p9=null;H.fetch({request:{method:'GET',url:want,mode:'no-cors',headers:{get:()=>null},destination:'audio'},respondWith:pr=>{p9=pr},waitUntil(){}});
+    await tick();const n9=fetched.length;const f9=ev('message','audio');await tick();await tick();
+    if(fetched.length!==n9)p.push('the fill fetched '+fetched.slice(n9).length+' while a recording the page asked for was on its way');
+    go();await p9;await f9;if(!inA().has(want)||!inA().has(bad))p.push('after the asked-for recording: the fill did not finish ('+inA().size+' of '+AF.length+')');gateU=null;
     // the page asks after it is up and on later opens; the host serves the recordings as immutable (their names are content hashes)
     const app=fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8');
     if(!/postMessage\('audio'\)/.test(app)||!/requestIdleCallback/.test(app)||!/visibilitychange[^\n]*swAudio\(\)/.test(app))p.push('90-app.js does not ask the worker for the recordings after the start (idle) and on later opens');
     const vj=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')),ar=(vj.headers||[]).find(h=>h.source==='/audio/(.*)\\.ogg');
     if(!ar||!ar.headers.some(h=>h.key==='Cache-Control'&&h.value==='public, max-age=31536000, immutable'))p.push('vercel.json does not serve /audio/*.ogg as immutable');
-    return{problems:p,note:'install: '+F.length+' code files; '+AF.length+' recordings after activation, one 503 skipped and filled on the next open; at most '+peak+' fetches at once'}})();
+    return{problems:p,note:'install: '+F.length+' code files; '+AF.length+' recordings after activation, one 503 skipped and filled on the next open; at most '+peak+' fetches at once; the fill waits while the page speaks and for a line it asked for'}})();
 });
 
 run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under the old question, change, forgot, Start over keeps it, no backup carries it, every way in RC-1',()=>{
@@ -23405,6 +23989,64 @@ run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under 
       return bad})}
     finally{PIN.pad=keep.pad;NAV.askQ=keep.askQ;UI.sheet=keep.sheet;fb=keep.fb;grown=keep.grown;SFX.wrong=keep.wrong;Date.now=D0}})()`);
   return Promise.resolve(r).then(b=>({problems:p.concat(b),note:'hash, waits 1-5-15-30-60, first time, change, forgot, Start over, backups'}));
+});
+// PIN-SETUP (owner decision 2026-11-25): the grown-up chooses the Grown-ups PIN in first setup, not later at the first Grown-ups entry
+run('grown-ups PIN in first setup: setup asks for it twice before saving, the gate needs it, an old save without one is not locked out, Forgot PIN keeps progress PIN-SETUP',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),store={};
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const ctx=E.loadApp(null,{localStorage:ls,setInterval(){},clearInterval(){},location:{protocol:'file:',reload(){}}}),R=x=>vm.runInContext(x,ctx);
+  // setup() really runs: $ reads a document whose elements are plain objects, made on first use
+  const els={},mk=q=>els[q]||(els[q]={value:'',textContent:'',innerHTML:'',placeholder:'',dataset:{},style:{},
+    classList:{toggle(){},add(){},remove(){},contains:()=>false},setAttribute(){},getAttribute:()=>null,focus(){},querySelector:()=>mk(q+' *'),
+    querySelectorAll:()=>[],addEventListener(){},appendChild(){},remove(){}});
+  ctx.document={querySelector:mk,querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk('new'),body:mk('body'),documentElement:mk('html')};
+  ctx.__st=store;ctx.__els=els;
+  const p=[],src=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  if(!/suPin\(\(\) => \{ S\.name = n;/.test(src('46-home.js')))p.push("setup's Let's go! saves the child before the PIN is chosen");
+  const r=R(`(()=>{const bad=[];const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,home,wrong:SFX.wrong,put:PIN.put,psheet:PLAY.sheet};
+    try{
+    PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toHome=0,toGrown=0;home=()=>{toHome++};grown=()=>{toGrown++};
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    const q=x=>document.querySelector(x),go=nm=>{loadSave(null);setup();q('#nm').value=nm;q('#pn').value='Rex';q('#go').onclick()};
+    // 1. a new tablet: Let's go! asks for the PIN before anything is saved; no name: no PIN asked
+    for(const k in __st)delete __st[k];
+    loadSave(null);setup();q('#nm').value='';q('#go').onclick();if(pads.length||toHome)bad.push('no name: the PIN was asked or setup went on');
+    go('Mia');
+    if(pads.length!==1||last().title!=='Choose a Grown-ups PIN'||!/grown-up/i.test(last().line)||last().forgot)bad.push('setup did not ask a grown-up to choose a PIN: '+JSON.stringify(pads.map(x=>x.title)));
+    if(toHome||S.name||PIN.has())bad.push('setup went on or saved before the PIN was chosen');
+    // typed differently twice: nothing saved, asked again; Cancel (the pad closes, nothing typed) stays on setup
+    last().done('1357',pd());last().done('1358',pd());
+    if(PIN.has()||toHome||S.name||pads.length!==3||!/match/.test(last().line))bad.push('setup saved a PIN typed differently twice');
+    last().done('1357',pd());last().done('1357',pd());
+    if(!PIN.has()||toHome!==1||S.name!=='Mia'||S.petName!=='Rex'||PIN.check('1357')!=='ok')bad.push('the PIN typed twice: not saved, or setup did not go on');
+    // 2. the gate needs it: Grown-ups, the Unlock sheet (purchases); no old question; a wrong PIN stays out
+    let asked=0;NAV.askQ=()=>{asked++};pads.length=0;NAV.quiz();
+    if(asked||pads.length!==1||!pads[0].forgot)bad.push('Grown-ups: not the PIN pad with Forgot PIN?');
+    pads[0].done('9999',pd());if(toGrown)bad.push('a wrong PIN opened Grown-ups');
+    pads[0].done('1357',pd());if(toGrown!==1)bad.push('the right PIN did not open Grown-ups');
+    let sheet=0;PLAY.sheet=()=>{sheet++};pads.length=0;PLAY.grown(()=>{});
+    if(asked||pads.length!==1)bad.push('the Unlock sheet is not behind the PIN');
+    pads[0].done('2468',pd());if(sheet)bad.push('a wrong PIN opened the Unlock sheet');pads[0].done('1357',pd());if(sheet!==1)bad.push('the right PIN did not open the Unlock sheet');
+    // 3. another child's setup on this tablet (or Start over): the PIN is kept and not asked again
+    pads.length=0;go('Leo');if(pads.length||toHome!==2||S.name!=='Leo'||PIN.check('1357')!=='ok')bad.push('a second setup asked for the PIN again or changed it');
+    // 4. storage full: the PIN cannot be saved, setup still goes on (nobody is stuck); the old question guards Grown-ups later
+    for(const k in __st)delete __st[k];PIN.put=()=>false;pads.length=0;go('Zoe');last().done('1111',pd());last().done('1111',pd());PIN.put=keep.put;
+    if(toHome!==3||S.name!=='Zoe'||PIN.has())bad.push('storage full: setup did not go on');
+    // 5. an old save with progress and no PIN: the old question once, then choose a PIN, then Grown-ups; progress untouched
+    for(const k in __st)delete __st[k];loadSave(null);S.name='Ava';S.stars=85;S.coins=64;save();const s0=JSON.stringify(S);
+    let ok=null;NAV.askQ=t=>{asked++;ok=t};pads.length=0;NAV.quiz();
+    if(asked!==1||pads.length)bad.push('an old save without a PIN: not the old question first');
+    ok();if(pads.length!==1||pads[0].title!=='Choose a Grown-ups PIN')bad.push('an old save: after the question, no PIN to choose');
+    last().done('4321',pd());last().done('4321',pd());
+    if(toGrown!==2||!PIN.has()||JSON.stringify(S)!==s0)bad.push('an old save: not into Grown-ups with a new PIN and the same progress');
+    // 6. Forgot PIN?: the three products, then a new PIN; the progress is the same, the old PIN no longer works
+    const xs={};UI.sheet=h=>{const s={h,close(){},el:{querySelector:q=>xs[q]||(xs[q]={value:'',textContent:'',disabled:false})}};return s};
+    pads.length=0;const f=PIN.forgot(()=>toGrown++);f.ans.forEach((a,i)=>{f.el.querySelector('#pfa'+i).value=String(a)});xs['#pfgo'].onclick();
+    last().done('8642',pd());last().done('8642',pd());
+    if(toGrown!==3||PIN.check('8642')!=='ok'||PIN.check('4321')!=='wrong'||JSON.stringify(S)!==s0||JSON.parse(localStorage.getItem(KEY)||'{}').stars!==85)bad.push('Forgot PIN: no new PIN, or the progress changed');
+    return bad}
+    finally{PIN.pad=keep.pad;NAV.askQ=keep.askQ;UI.sheet=keep.sheet;fb=keep.fb;grown=keep.grown;home=keep.home;SFX.wrong=keep.wrong;PIN.put=keep.put;PLAY.sheet=keep.psheet}})()`);
+  return{problems:p.concat(r),note:'setup asks for the PIN twice before saving; Grown-ups and Unlock need it; a second setup keeps it; storage full goes on; old save upgraded; Forgot PIN keeps progress'};
 });
 run('game time from a grown-up: the bank, never below 0, the log and the report card, the Home line, behind the PIN, the save RC-1',()=>{
   const {R}=askApp(),p=[],fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
@@ -23477,6 +24119,193 @@ run('picture passwords: the hash, right and wrong, the wait, Grown-up help behin
       KPW.off('p1');if(PRF.pwOn('p1')||'pw' in JSON.parse(__st[PRF.IDX]))bad.push('turn off');
       return bad})}finally{Date.now=D0}})()`);
   return Promise.resolve(r).then(b=>({problems:p.concat(b),note:'hash, order, 1-minute wait, help, Start over, backups, delete, one child, off by default'}));
+});
+
+// ---- AUD-BT: the Brain Teasers audit fixes (pattern sizes M-1 / S-4, robot hint M-2, maze hint M-3, word lists S-6 / S-7, hint reasons S-1 / S-2 / S-3) ----
+run('brain teasers audit fixes AUD-BT',()=>{
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)},note=[];
+    const day=d=>'2026-'+(1+d%12)+'-'+(1+(d*3)%28);
+    // the scale the app draws a tile's shapes at, read from its own SVG
+    const drawn=(it,t)=>+PAT.tile(t,PAT.flatOf(it)).match(/scale\(([\d.]+)\)/)[1];
+    // M-1: "Which one does not belong?": size and count never vary together, and no other tile is the odd one by drawn size
+    {let n=0,bySize=0;
+     for(const b of 'AB')for(let lv=1;lv<=12;lv++)for(let d=0;d<60;d++){
+       const p=BT.make('pattern',b,lv,{day:day(d),salt:d});
+       p.items.forEach((it,i)=>{if(it.k!='odd')return;n++;const w='pattern '+b+lv+' '+day(d)+' salt '+d+' item '+(i+1);
+         const zs=new Set(it.ch.map(t=>t.z)).size,ns=new Set(it.ch.map(t=>t.n)).size;
+         if(zs>1&&ns>1)bad(w+': size and count both vary');
+         const k=it.ch.map(t=>drawn(it,t));
+         for(let j=0;j<4;j++){if(j==it.a)continue;const o=k.filter((_,x)=>x!=j);
+           if(Math.max(...o)/Math.min(...o)<=1.12&&Math.min(...o.map(x=>Math.max(x,k[j])/Math.min(x,k[j])))>=1.3)bad(w+': tile '+(j+1)+' is the odd one by drawn size, the answer is tile '+(it.a+1)+' '+JSON.stringify(k))}
+         if(it.at[0]=='z'){bySize++;const o=k.filter((_,x)=>x!=it.a);if(Math.max(...o)-Math.min(...o)>0.001||Math.abs(k[it.a]-o[0])<0.1)bad(w+': odd by size, drawn '+JSON.stringify(k))}})}
+     // the audit's two examples, as they are made now
+     for(const [lv,dd,sl] of [[9,'2026-11-7',58],[10,'2026-7-19',6]]){const it=BT.make('pattern','A',lv,{day:dd,salt:sl}).items[1];
+       if(new Set(it.ch.map(t=>t.z)).size>1&&new Set(it.ch.map(t=>t.n)).size>1)bad('pattern A'+lv+' '+dd+' salt '+sl+' still mixes size and count')}
+     note.push(n+' odd-one-out items ('+bySize+' by size): size and count never together')}
+    // S-4: where an item's rule changes size and count, a bigger size is always drawn bigger (matrices, rows, 2 x 2)
+    {let n=0;
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<30;d++){
+       const p=BT.make('pattern',b,lv,{day:day(d),salt:d});
+       p.items.forEach((it,i)=>{if(!it.at||!it.at.includes('z')||!it.at.includes('n')||it.k=='odd')return;n++;
+         if(!PAT.flatOf(it))bad('pattern '+b+lv+': an item with size and count is not drawn flat');
+         const ts=it.show.concat(it.ch);
+         for(const x of ts)for(const y of ts)if(x.z>y.z&&!(drawn(it,x)-drawn(it,y)>0.02))bad('pattern '+b+lv+' '+day(d)+' salt '+d+' item '+(i+1)+': '+PAT.say(x)+' is not drawn bigger than '+PAT.say(y))})}
+     if(PAT.flatOf({at:['s','z'],show:[],ch:[]})||PAT.flatOf({at:['n'],show:[],ch:[]})||PAT.flatOf({at:['z','n'],show:[{n:1},{n:3}],ch:[{n:2}]})!==PAT.SCALE[3])bad('flatOf');
+     if(!/scale\(1\.08\)/.test(PAT.tile({s:0,c:0,z:2,n:1,r:0})))bad('a single big shape no longer fills its tile in other items');
+     note.push(n+' items with size and count drawn in size order')}
+    // M-2: Robot Path with the function (D10-12): a main strip that holds every slot, then hint 3 again and again, ends in a program that wins
+    {let n=0;
+     for(const lv of [10,11,12])for(let d=0;d<20;d++)for(const toks of [['fw'],['fw','tl','fw','tr'],['tr','fw']]){
+       const p=BT.make('robot','D',lv,{day:day(d),salt:d}),w='robot D'+lv+' '+day(d)+' salt '+d+' filled with '+toks.join(' ');
+       if(p.kit!='f'){bad(w+': no function kit');continue}
+       let st=RB.fresh(),k=0;
+       while(RB.count(st)<p.slots){const o=RB.add(p,st,toks[k++%toks.length]);if(!o)break;st=o}
+       if(RB.count(st)!==p.slots){bad(w+': could not fill the strip');continue}
+       n++;let ok=false;
+       for(let g=0;g<60;g++){const dv=RB.diverge(p,st);if(dv.kind=='works'){ok=true;break}
+         const o=RB.applyHint(p,st,dv);if(!o){bad(w+': the hint does nothing at main ['+st.m.join(' ')+'] function ['+st.f.join(' ')+'] ('+JSON.stringify({kind:dv.kind,s:dv.s,i:dv.i,want:dv.want})+')');break}
+         if(RB.count(o)>p.slots||!RB.okProg(p,o.m,o.f))bad(w+': the hint made a program that does not fit');st=o}
+       if(ok&&RB.run(p,st).out!='win')bad(w+': the hinted program does not win')}
+     // bands without a function are as before: a block that does not fit and has nothing after it is still refused
+     const pc=BT.make('robot','C',6,{day:'2026-1-1'});let sc=RB.fresh();while(RB.count(sc)<pc.slots){const o=RB.add(pc,sc,'fw');if(!o)break;sc=o}
+     for(let g=0;g<60;g++){const dv=RB.diverge(pc,sc);if(dv.kind=='works')break;const o=RB.applyHint(pc,sc,dv);if(!o){bad('robot C6: the hint does nothing on a full strip');break}sc=o}
+     note.push(n+' full strips hinted to a win')}
+    // S-6: the runs the audit found in Word Search grids are on the rude list, and no grid reads one in any of the 8 directions
+    {const rot=s=>s.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+     const MORE=rot('nefr nahf nany encr tnl ubzb pbba fcvp qlxr shp spx avcf chor gneq ahqr yhfg juber ovgpu anmv cravf').split(' '),RUDE=BTW.rude.split(' ');
+     for(const w of MORE)if(!RUDE.includes(w))bad('the rude list misses '+rot(w)+' (ROT13)');
+     const D8=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];let n=0;
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<25;d++){
+       const p=BT.make('wsearch',b,lv,{day:day(d),salt:d}),N=p.n;n++;
+       for(const w of MORE)for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(p.g[r*N+c]!=w[0])continue;
+         for(const [dr,dc] of D8){let k=1;for(;k<w.length;k++){const rr=r+dr*k,cc=c+dc*k;if(rr<0||cc<0||rr>=N||cc>=N||p.g[rr*N+cc]!=w[k])break}
+           if(k==w.length)bad('word search '+b+lv+' '+day(d)+' salt '+d+' reads '+rot(w)+' (ROT13) at row '+(r+1)+', column '+(c+1))}}}
+     for(const b of 'BCD')if(WS.pool(b).length<100)bad('word search pool '+b+' has only '+WS.pool(b).length+' words');
+     note.push(n+' word searches free of '+MORE.length+' more runs')}
+    // S-7: no Unscramble word has a real anagram, and the tiles never start as a real word
+    {const REAL=['taco','hissed','appraised'],key=w=>[...w].sort().join('');let n=0;
+     for(const w of REAL)if(!BTW.more.split(' ').includes(w))bad('BTW.more misses '+w);
+     for(const b of 'BCD'){const P=US.pool(b).map(x=>x.w);
+       for(const w of ['coat','dishes','disappear'])if(P.includes(w))bad('unscramble '+b+' still uses '+w);
+       for(const w of P)for(const r of REAL)if(key(w)==key(r))bad('unscramble '+b+': '+w+' has the anagram '+r);
+       const need={B:30,C:28,D:70}[b];if(P.length<need)bad('unscramble pool '+b+' has only '+P.length+' words');
+       for(let lv=1;lv<=12;lv++)for(let d=0;d<40;d++){n++;
+         for(const it of BT.make('scramble',b,lv,{day:day(d),salt:d}).items){
+           if(it.s==it.w||key(it.s)!=key(it.w))bad('unscramble '+b+lv+': tiles '+it.s+' for '+it.w);
+           if(REAL.includes(it.s)||(US.dict()[key(it.s)]&&US.dict()[key(it.s)].has(it.s)))bad('unscramble '+b+lv+' '+day(d)+': the tiles start as the word '+it.s)}}}
+     note.push(n+' unscrambles never start on a word')}
+    // S-1: Sudoku band D hard: a hint that names one step (locked candidates, a pair) is followed by a single that this one step gives
+    {let told=0,plain=0;
+     for(let lv=9;lv<=12;lv++)for(let d=0;d<12;d++){
+       const p=BT.make('sudoku','D',lv,{day:day(d),salt:d}),st=SD.fresh(p),N=9,G=SD.geo(9,3,3);
+       for(let i=0;i<81;i++){const s=SD.nextStep(p,st);if(!s)break;
+         if(s.kind=='guess')bad('sudoku D'+lv+': the hints had to guess');
+         if(s.kind=='steps'){plain++;if(s.say2!='This one takes two steps. Look at its row, its column and its box.'||s.say1!='Try this square.')bad('sudoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='locked'||s.kind=='pair'){told++;const b=SD.vals(p,st);
+           const cs=b.map((v,c)=>{if(v)return null;const o=new Set([1,2,3,4,5,6,7,8,9]);for(const q of G.peers[c])o.delete(b[q]);return o});
+           if(s.kind=='locked'){const v=+s.say2.match(/an? (\d)/)[1],hk=s.say2.match(/of that (row|column|box)/)[1],a0=G.at[s.also[0]];
+             const B=hk=='row'?G.rows[a0.r]:hk=='column'?G.cols[a0.c]:G.boxes[a0.b];
+             if(!s.also.every(c=>B.includes(c)))bad('sudoku: the marked squares are not in that '+hk);
+             // the premise: in the hint's house the number has no other place than the marked squares
+             if(s.house.some(c=>cs[c]&&cs[c].has(v)&&!s.also.includes(c)))bad('sudoku D'+lv+': "'+s.say2+'" but the number has another place in that house');
+             for(const c of B)if(cs[c]&&!s.also.includes(c))cs[c].delete(v);
+           }else{const m=s.say2.match(/only be (\d) and (\d)/);
+             if(!s.also.every(c=>cs[c]&&cs[c].size==2&&cs[c].has(+m[1])&&cs[c].has(+m[2])))bad('sudoku: the marked squares are not a pair');
+             for(const c of s.house)if(cs[c]&&!s.also.includes(c)){cs[c].delete(+m[1]);cs[c].delete(+m[2])}}
+           const a=G.at[s.cell],naked=cs[s.cell].size==1&&cs[s.cell].has(s.v);
+           const hidden=[G.rows[a.r],G.cols[a.c],G.boxes[a.b]].some(h=>h.filter(c=>cs[c]&&cs[c].has(s.v)).length==1&&!h.some(c=>b[c]==s.v));
+           if(!(naked||hidden))bad('sudoku D'+lv+' '+day(d)+' salt '+d+': "'+s.say2+'" does not follow from that one step');
+           if(/Now only/.test(s.say2)&&!naked)bad('sudoku D'+lv+': "Now only ... fits here" but the square has other numbers left')}
+         SD.fill(p,st,s.cell)}
+       if(!SD.won(p,st))bad('sudoku D'+lv+': the hints do not finish')}
+     if(!told)bad('no sudoku hint named a step (the check is not looking at any)');
+     note.push('sudoku: '+told+' one-step hints hold, '+plain+' plain')}
+    // S-2: MathDoku: the same for "Every way to make ... puts a v in the marked squares" (one number) and pairs
+    {let told=0,plain=0;
+     for(const [b,lvs] of [['C',[9,10,11,12]],['D',[5,6,7,8,9,10,11,12]]])for(const lv of lvs)for(let d=0;d<10;d++){
+       const p=BT.make('mdoku',b,lv,{day:day(d),salt:d}),st=MD.fresh(p),n=p.n;
+       for(let i=0;i<n*n;i++){const s=MD.nextStep(p,st);if(!s)break;
+         if(s.kind=='guess')bad('mathdoku '+b+lv+': the hints had to guess');
+         if(s.kind=='steps'){plain++;if(s.say2!='This one takes two steps. Look at its row, its column and its cage.'||s.say1!='Try this square.')bad('mathdoku: the plain hint has other words: '+s.say2)}
+         if(s.kind=='inline'||s.kind=='pair'){told++;const bd=MD.vals(p,st),row=/of this row|of the row/.test(s.say2),a0=s.also[0];
+           const line=[];for(let c=0;c<n*n;c++)if(row?Math.floor(c/n)==Math.floor(a0/n):c%n==a0%n)line.push(c);
+           if(!s.also.every(c=>line.includes(c)))bad('mathdoku: the marked squares are not in that line');
+           const vs=s.kind=='pair'?s.say2.match(/only be (\d) and (\d)/).slice(1).map(Number):[+s.say2.match(/can be (\d)\. Now/)[1]];
+           const el=new Array(n*n).fill(0);for(const c of line)if(!s.also.includes(c)&&!bd[c])for(const v of vs)el[c]|=1<<(v-1);
+           const an=MD.analyse(p,bd,el),bit=1<<(s.v-1),naked=an.cand[s.cell]==bit;
+           const hid=f=>{let k=0;for(let c=0;c<n*n;c++)if(f(c)&&!bd[c]&&an.cand[c]&bit)k++;return k==1};
+           if(!(naked||hid(c=>Math.floor(c/n)==Math.floor(s.cell/n))||hid(c=>c%n==s.cell%n)))bad('mathdoku '+b+lv+' '+day(d)+' salt '+d+': "'+s.say2+'" does not follow from that one step')}
+         MD.fill(p,st,s.cell)}
+       if(!MD.won(p,st))bad('mathdoku '+b+lv+': the hints do not finish')}
+     if(!told)bad('no mathdoku hint named a step (the check is not looking at any)');
+     note.push('mathdoku: '+told+' one-step hints hold, '+plain+' plain')}
+    // S-3: tricky pyramids (D10-12): the brick to guess is one where a guess that is too big makes the bricks above too big
+    {let tricky=0,right=0;
+     for(const lv of [10,11,12])for(let d=0;d<60;d++){
+       const p=BT.make('pyramid','D',lv,{day:day(d),salt:d}),st={done:[]};
+       for(let g=0;g<40;g++){const h2=BTN.PYR.hint(p,st,2);if(!h2)break;
+         if(/^Guess a number/.test(h2.say)){tricky++;const way=BTN.PYR.guessWay(p,BTN.PYR.known(p,st),h2.mark[0]);if(way==1)right++;
+           // the test's own try: the right number + 1 for that brick, worked through the triples, must make some known brick too big
+           if(way==1){const T=BTN.PYR.triples(p.n),kn=BTN.PYR.known(p,st),v=p.v.map((x,k)=>kn[k]?x:null);v[h2.mark[0]]=p.v[h2.mark[0]]+1;let big=0,small=0;
+             for(let more=true;more;){more=false;for(const [t,a,b] of T){const k=(v[t]!=null)+(v[a]!=null)+(v[b]!=null);
+               if(k==2){more=true;if(v[t]==null)v[t]=v[a]+v[b];else if(v[a]==null)v[a]=v[t]-v[b];else v[b]=v[t]-v[a]}}}
+             for(const [t,a,b] of T)if(v[t]!=null&&v[a]!=null&&v[b]!=null){if(v[a]+v[b]>v[t])big++;else if(v[a]+v[b]<v[t])small++}
+             if(!big||small)bad('pyramid D'+lv+' '+day(d)+' salt '+d+': a guess 1 too big does not come out too big ('+big+' / '+small+')')}}
+         st.done.push(BTN.PYR.hint(p,st,3).fill)}}
+     if(!tricky)bad('no tricky pyramid met');
+     if(right<tricky*0.98)bad('pyramid: only '+right+' of '+tricky+' guess hints point the right way');
+     note.push('pyramid: '+right+' of '+tricky+' guess hints the right way')}
+    // WORDS (owner-approved 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md): the Brain Teaser rows as they read now
+    {// D1: no mild word in a grid unless it lies inside one listed word
+     const MILD=WS.MILD,D8=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];let n=0,inside=0;
+     for(const w of ['die','fat','god','hate','dead','bum','dumb'])if(!MILD.includes(w))bad('WS.MILD misses '+w);
+     for(const w of MILD)if(BTW.rude.split(' ').includes(w))bad(w+' is in both lists');
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<25;d++){
+       const p=BT.make('wsearch',b,lv,{day:day(d),salt:d}),N=p.n;n++;
+       const own=p.w.map(x=>{const o=new Set();for(let k=0;k<x.t.length;k++)o.add((x.r+D8[x.d][0]*k)*N+x.c+D8[x.d][1]*k);return o});
+       for(const w of MILD)for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(p.g[r*N+c]!=w[0])continue;
+         for(const [dr,dc] of D8){const cs=[r*N+c];let k=1;for(;k<w.length;k++){const rr=r+dr*k,cc=c+dc*k;if(rr<0||cc<0||rr>=N||cc>=N||p.g[rr*N+cc]!=w[k])break;cs.push(rr*N+cc)}
+           if(k<w.length)continue;
+           if(own.some(o=>cs.every(i=>o.has(i))))inside++;else bad('word search '+b+lv+' '+day(d)+' salt '+d+' reads "'+w+'" at row '+(r+1)+', column '+(c+1))}}}
+     if(!inside)bad('no listed word holds a mild run any more (the mild list must not take spelling words out of the pool)');
+     note.push(n+' word searches free of '+MILD.length+' mild words ('+inside+' inside a listed word)')}
+    {const all=JSON.stringify(RIDDLES);
+     for(const w of ['colour','grey','metre','seven colors','ball of fire','alphabet order'])if(all.includes(w))bad('riddles still say "'+w+'"');
+     for(const w of ['I have many colors. What am I?','It is a big, hot ball of glowing gas far away.','whose letters are in alphabetical order','It is a colorful arch.','big and gray','10 meters high'])if(!all.includes(w))bad('riddles miss "'+w+'"');
+     if(RDL.said({pic:true},'dice')!=='a die'||RDL.said({pic:true},'egg')!=='an egg'||RDL.nameOf('dice')!=='dice')bad('W41: '+RDL.said({pic:true},'dice'));
+     // W38, W67, W68: Logic Grid
+     const seen=new Set();
+     for(const b of 'BCD')for(let lv=1;lv<=12;lv++)for(let d=0;d<6;d++){const p=BT.make('logic',b,lv,{day:day(d),salt:d}),st=LG.fresh(p);
+       for(let i=0;i<300&&!LG.won(p,st);i++){const s=LG.nextStep(p,st);for(const t of [s.say1,s.say2,s.say3]){seen.add(t.replace(/\b[A-Z][a-z]+\b/g,'N'));
+         if(/ (and|for) (paint|draw|read|swim|skate)[.:]/.test(t))bad('logic: a bare verb names a square: '+t);
+         if(/, or /.test(t))bad('logic: a comma before "or": '+t);if(/colour/i.test(t))bad('logic: '+t)}
+         LG.place(p,st,s.cell,s.v)}}
+     if(![...seen].some(t=>/ and (painting|drawing|reading|swimming|skating)\.$/.test(t)))bad('logic: no hint names a square with an -ing word');
+     if(![...seen].some(t=>/number \d, number \d or number \d|\d, \d or \d/.test(t)))bad('logic: no three-item list met');
+     if(PUZ.logic.cats.colour.label!=='Color')bad('Logic Grid label '+PUZ.logic.cats.colour.label);
+     // W15
+     let w15=0;for(let d=0;d<40;d++){const p=BT.make('pyramid','D',11,{day:day(d),salt:d}),st={done:[]};
+       for(let g=0;g<40;g++){const h=BTN.PYR.hint(p,st,2);if(!h)break;if(/^Guess/.test(h.say)){w15++;
+         if(h.say!=='Guess a number for the glowing brick and work out the other bricks. If a brick does not match, try another number.')bad('W15: '+h.say)}st.done.push(BTN.PYR.hint(p,st,3).fill)}}
+     if(!w15)bad('W15: no guess hint met');
+     note.push('approved words: riddles, logic ('+seen.size+' hint forms), pyramid ('+w15+')')}
+    return{out,note};
+  };
+  const r=eval(js+';('+body.toString()+')()'),p=r.out;
+  // W13, W14, W40 (screen code): the approved sentences are the ones in the source, each under its condition
+  {const cb=fs.readFileSync(path.join(SRC,'js','84-bt-cubes.js'),'utf8'),rb=fs.readFileSync(path.join(SRC,'js','81-bt-robot.js'),'utf8'),tz=fs.readFileSync(path.join(SRC,'js','74-teasers.js'),'utf8');
+   if(!cb.includes("(it.hid ? `Not ${typed}. Some cubes are hiding. Count again!` : `Not ${typed}. Count again!`)"))p.push('W13: the cubes line');
+   if(!rb.includes("bump: edge ? 'Bump! The robot hit the edge. Change the amber arrow.' : `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`"))p.push('W14: the robot line');
+   if(!tz.includes("' And ' + (o.badges[1] ? 'new badges: ' : 'a new badge: ')"))p.push('W40: the badge line')}
+  // M-3 (the screen itself is in smoke P3-08): hint 1 rings the target cell and draws no arrow beside the bear
+  const src=n=>fs.readFileSync(path.join(SRC,'js',n),'utf8'),rd=n=>fs.readFileSync(path.join(SRC,n),'utf8');
+  const mz=src('75-bt-maze.js');
+  if(!/arrow\.classList\.add\('ring'\)/.test(mz)||!/arrow\.style\.left = cx\(tg\.c\) \+ 'px'/.test(mz)||/arrow\.innerHTML = ico\(/.test(mz))p.push('maze hint 1 does not ring the target (75-bt-maze.js)');
+  if(!/\.mz-arrow\.ring\{/.test(rd('css/49-bt-maze.css')))p.push('.mz-arrow.ring is not styled');
+  // S-8: the board shrinks to the choices' picture size
+  if(!/board\.style\.width = Math\.floor\(board\.getBoundingClientRect\(\)\.width \* cw \/ w\) \+ 'px'/.test(src('76-bt-pattern.js')))p.push('pattern board no longer shrinks to the choice size (S-8)');
+  return{problems:p,note:r.note.join('; ')};
 });
 
 // ---- report ----
@@ -23747,6 +24576,168 @@ run('online voice RENAME-2: a non-local voice never hears a child name, a local 
   {const ctx=E.loadApp(null,{window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>net,speak(){},cancel(){}}});
     const shown=vm.runInContext("S.name='Maya';const L='Hi Maya!';ttsSay(L,null,false);L",ctx);if(shown!=='Hi Maya!')p.push('the line itself changed: '+shown)}
   return{problems:p,note:cases.length+' lines'};
+});
+
+// ---- audit v195 (Fable's practice audit, 2026-11-24): the fixes that change no word a child sees or hears. Each part runs the real
+// code on fake elements (the app loaded as the other checks load it) and failed on v195 as it was. ----
+run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-first time, speak mission, Fact Race and Sprint by grade, check-in as a round, pixel squares, review slots, practice after 3 lesson tries v195',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={};
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(doc,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx);
+  try{
+  R(`var __off=0;{const D0=Date;Date=class extends D0{constructor(...a){if(a.length)super(...a);else super(D0.now()+__off)}static now(){return D0.now()+__off}}}
+   say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   var __asked=[];renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q);__asked.push(q)};
+   function __step(g){if(g.done<g.n){g.q=makeQ();g.retry=false;g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;SPK.mic='?';SPK.deny=0}
+   // plays the round in G to its end: model(q, g) -> right on the first try? (a second try is wrong too; a retry at the end is right); sec: seconds a question is on screen
+   function __play(model,sec){const g=G;let n=0;while(g.__pend&&n++<80){const ok=g.retry||model(g.q,g);__off+=(sec||3)*1000;G.qt=Date.now()-3000;
+       if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}finish();return g}
+   var __chest={},__card=null;document.querySelector=s=>s=='#chest'?__chest:__fk;RW.done=function(o){__card=o;return''};
+   function __end(){__card=null;__chest.onclick();return __card.sc+' out of '+__card.n+': '+__card.line}`);
+  // 1. Fact Race: the gauge follows the clock and the last five seconds tick (the R-01b note had commented both out)
+  {const r=JSON.parse(R(`(()=>{__fresh(2);let iv=null,bars=[],ticks=0,ended=0;setInterval=f=>{iv=f;return 1};const b0=GFX.bar,e0=GFX.endCard;GFX.bar=(el,v)=>{bars.push(v)};SFX.tick=()=>{ticks++};GFX.endCard=()=>{ended++;return __fk};
+     race('math');for(let i=0;i<60;i++)iv();GFX.bar=b0;GFX.endCard=e0;setInterval=()=>0;return JSON.stringify({n:bars.length,first:bars[0],at30:bars[29],ticks,ended})})()`));
+   if(r.n<59||Math.abs(r.first-59/60)>1e-9||Math.abs(r.at30-.5)>1e-9)p.push('Fact Race: the gauge does not follow the clock '+JSON.stringify(r));
+   if(r.ticks!==5||r.ended!==1)p.push('Fact Race: '+r.ticks+' ticks in the last five seconds (want 5), '+r.ended+' end cards')}
+  // 2. a lesson mix-in gets no mistake hint (its label is another question's): the same wrong answers that get one without the mark
+  {const r=JSON.parse(R(`(()=>{__fresh(1);let made=0,with_=0,now=0,tip=0;
+     for(const id of ['add1','add2','miss2','mfact4','dfact2']){const i=NODES.math.findIndex(n=>nid(n)===id),nd=NODES.math[i];S.know={[id]:{s:2}};const kind=genQ(nd.sk,nd.lv,1).kind;
+       for(let t=0;t<30;t++){const q=lsMix(nd.sk,nd.lv,kind);if(!q)continue;made++;G=newG({path:'math',node:i,sk:nd.sk,lv:nd.lv});G.q=q;G.tries=1;
+         for(let v=0;v<=40;v++){if(String(v)===String(q.ans))continue;q.lsx=0;const a=hmHint(q,String(v));q.lsx=1;const b=hmHint(q,String(v));if(a){with_++;if(b)now++;
+           const g=askGenHint(q),t2=askTip({q,v:String(v)});if(t2&&t2!==g)tip++}}}}
+     return JSON.stringify({made,with_,now,tip})})()`));
+   if(r.made<50||r.with_<50)p.push('mix-in hints: the check found too few cases '+JSON.stringify(r));
+   if(r.now)p.push('mix-in hints: '+r.now+' of '+r.with_+' wrong answers to a lesson mix-in still get a mistake hint from the borrowed label');
+   if(r.tip)p.push('mix-in hints: "Why did I get that wrong?" gave a mistake line for a mix-in '+r.tip+' times')}
+  // 3. the end card's line goes by the share right; a beaten boss shows the questions it took. Deliberate change: 6 of 6 (Pre-K) said
+  //    "Good job! Keep practicing!", a 2 of 2 review "Nice try! ...", a boss beaten in 7 "7 out of 10". Rounds of 10 read as before.
+  {const rows=JSON.parse(R(`(()=>{const o=[],all=()=>true,st=(g,p,sk,lv,m)=>{__fresh(g);S.unlockAll=true;const i=NODES[p].findIndex(n=>n.sk==sk&&n.lv==lv);start(p,i);__play(m);return __end()};
+     o.push(st(-1,'math','pk_count',1,all));o.push(st(0,'math','pk_count',3,all));o.push(st(2,'math','big',3,all));
+     let k=0;o.push(st(2,'math','big',3,(q,g)=>g.done<7));o.push(st(2,'math','big',3,(q,g)=>g.done<5));o.push(st(2,'math','big',3,(q,g)=>g.done<4&&false||g.done>=6));
+     __fresh(2);S.unlockAll=true;{const n=NODES.math[WR.math[6][1]];G=newG({path:'math',node:WR.math[6][1],sk:'boss',boss:{e:'',name:n.boss[1]},hp:7,pool:worldPool('math',n.wi,10)});next();__play(all);o.push(__end())}
+     __fresh(2);S.unlockAll=true;{const n=NODES.math[WR.math[6][1]];G=newG({path:'math',node:WR.math[6][1],sk:'boss',boss:{e:'',name:n.boss[1]},hp:7,pool:worldPool('math',n.wi,10)});next();__play(()=>false);o.push(__end())}
+     __fresh(2);S.rev=[1,2].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1}));startReview();const n=G.n;__play(all);o.push(n+'|'+__end());
+     return JSON.stringify(o)})()`));
+   const want=['6 out of 6: You are a superstar!','8 out of 8: You are a superstar!','10 out of 10: You are a superstar!','7 out of 10: Fantastic work!','5 out of 10: Good job! Keep practicing!',
+     '4 out of 10: Nice try! Practice makes you stronger!','7 out of 7: You are a superstar!','0 out of 10: Nice try! Practice makes you stronger!','2|2 out of 2: You are a superstar!'];
+   want.forEach((w,i)=>{if(rows[i]!==w)p.push('end card '+(i+1)+': "'+rows[i]+'", want "'+w+'"')})}
+  // 4. learn first: the time on a question that ends revealed counts (the question is not counted); every answer wrong logged 0 s
+  {const r=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;ptCfg().need=2;const i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);start('math',i);const g=G;let n=0;
+     while(g.done<g.n&&n++<40){__off+=20000;check(__NO,__fk);if(!G.lock)check(__NO,__fk);g.__pend=false;__step(g)}
+     const e=ACT.entry(today())||{sec:0,q:0};return JSON.stringify({sec:e.sec,q:e.q,locked:ptGate().locked})})()`));
+   if(r.sec<180||r.q!==0||r.locked)p.push('learn first: 10 questions of 20 s, every answer wrong: '+JSON.stringify(r)+' (want about 200 s logged, 0 questions, the Game Room open after 2 minutes)')}
+  // 5. "Say 5 Spanish words" with no microphone or a blocked one: a finished Spanish round does it; with a microphone only the count does
+  {const r=JSON.parse(R(`(()=>{__fresh(2);const x={k:'speak',d:0},es={k:'round',p:'es',mix:false,test:false},o={};
+     SPK.mic='yes';SPK.deny=0;o.micOk=MIS.hit(x,es);SPK.deny=1;o.blocked=MIS.hit(x,es);o.blockedMath=MIS.hit(x,{k:'round',p:'math'});o.blockedMix=MIS.hit(x,{k:'round',p:'es',mix:true});
+     o.drawnBlocked=MIS.ctx().spk;SPK.deny=0;SPK.mic='no';o.none=MIS.hit(x,es);SPK.mic='yes';o.drawnOk=MIS.ctx().spk;day().spk=SPK.GOAL;o.said=MIS.hit(x,{k:'round',p:'math'});return JSON.stringify(o)})()`));
+   if(JSON.stringify(r)!==JSON.stringify({micOk:false,blocked:true,blockedMath:false,blockedMix:false,drawnBlocked:false,none:true,drawnOk:true,said:true}))p.push('speak mission: '+JSON.stringify(r))}
+  // 6. Fact Race from grade 1 (Home tile, Learn card), and a save with no grade is a Kindergartner for both timed drills
+  {const r=JSON.parse(R(`(()=>{const o={};for(const g of GRADES){__fresh(g);setSt('math',NODES.math.findIndex(n=>n.sk=='add'&&n.lv==1),3);const h=hmActs();o[g]=[/id="race"/.test(h),/hm-acts n3/.test(h),raceOn(),FLU.on(),(h.match(/class="hm-act"/g)||[]).length]}
+     __fresh(1);delete S.grade;setSt('math',NODES.math.findIndex(n=>n.sk=='add'&&n.lv==1),3);o.none=[/id="race"/.test(hmActs()),raceOn(),FLU.on()];return JSON.stringify(o)})()`));
+   for(const g of [-1,0])if(JSON.stringify(r[g])!=='[false,true,false,false,3]')p.push('grade '+g+': Fact Race or Fact Sprint shows '+JSON.stringify(r[g]));
+   for(const g of [1,2,3,4,5,6])if(JSON.stringify(r[g])!=='[true,false,true,true,4]')p.push('grade '+g+': Fact Race or Fact Sprint missing '+JSON.stringify(r[g]));
+   if(JSON.stringify(r.none)!=='[false,false,false]')p.push('a save with no grade shows a timed drill '+JSON.stringify(r.none))}
+  // 7. a check-in is a round of the day: the day's rounds, the streak's day, the "round" mission of its subject
+  {const r=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);setSt(p,i,2);S.mast={big3:{n:14,p:.9,ms:4000,d:1,last:1}};
+     day().m=[{k:'round',p:'math',d:0},{k:'mix',d:0},{k:'perfect',p:'math',d:0}];const r0=day().r,s0=STRK.info().count,st0=Object.keys(S.stickers||{}).reduce((a,k)=>a+S.stickers[k],0);
+     const rd=CHK.ready(p,i);CHK.start(p,i);const g=G;let n=0;while(g.done<g.n&&n++<10){check(__OK,__fk);g.__pend=false;__step(g)}finish();
+     return JSON.stringify({rd,r:day().r-r0,streak:STRK.info().count-s0,days:STRK.get().days[today()]|0,m:day().m.map(x=>x.d).join(''),badge:CHK.has('big3'),stk:Object.keys(S.stickers||{}).reduce((a,k)=>a+S.stickers[k],0)-st0})})()`));
+   if(JSON.stringify(r)!==JSON.stringify({rd:true,r:1,streak:1,days:1,m:'101',badge:true,stk:2}))p.push('check-in as a round: '+JSON.stringify(r)+' (want 1 round, the streak day, the round and perfect missions done with a sticker each, the mix mission not)')}
+  // 8. pixel art squares: 40 px at the least on every screen (R-03 T2 asked for 40; they were 32)
+  {const r=JSON.parse(R(`JSON.stringify([[380,780],[780,380],[600,960],[1024,600],[1024,552],[320,568]].map(([w,h])=>[4,8].map(n=>pxCell(w,h,n))))`));
+   if(Math.min(...r.flat())<40)p.push('pixel squares under 40 px: '+JSON.stringify(r))}
+  // 9. review slots come before adaptation: a challenge round with items of the path due asks one at questions 6 and 8 (it asked none
+  //    after question 4: here items of another stop of the path, so questions 4 and 8), the other questions after the fifth stay
+  //    Challenge questions; with nothing due the round is as before
+  {const r=JSON.parse(R(`(()=>{const go=due=>{__fresh(2);S.unlockAll=true;const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);
+       S.rev=due?[1,2,3,4,5,6].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1})):[];__asked=[];start(p,i);const g=__play(()=>true);
+       return{mode:g.mode,tags:__asked.slice(0,10).map(q=>q.review?'r':mastTag(q)||'-').join(''),left:REV.get().filter(x=>x.box==0).length,stars:getSt(p,i)}};
+     return JSON.stringify([go(true),go(false)])})()`));
+   if(r[0].mode!=='challenge'||r[0].tags.replace(/ch/g,'c')!=='---r-ccrcc')p.push('review slots in a challenge round: '+JSON.stringify(r[0])+' (want a review question of the path at questions 4 and 8)');
+   if(r[0].left!==4||r[0].stars!==3)p.push('review slots: '+r[0].left+' of 6 items still in box 0 after a perfect round (want 4: two were asked), stars '+r[0].stars);
+   if(r[1].mode!=='challenge'||r[1].tags.replace(/ch/g,'c')!=='-----ccccc')p.push('nothing due: the challenge round changed: '+JSON.stringify(r[1]))}
+  // 10. owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run to its end three times without passing Show opens its
+  //     practice stop. The stop is not passed (Practice still has to be), the stop after it stays shut, a lesson left part way is no try.
+  {const r=JSON.parse(R(`(()=>{const K=${TEACH_KIDS};__fresh(1);const p='math',i=NODES.math.findIndex(n=>nid(n)=='add2'),id='add2',o={gate:[],n:[]};
+     const snap=()=>{o.gate.push(lsGate(p,i));o.n.push((S.know&&S.know[id]||{}).n|0)};snap();
+     {const st=LS.make(id,{seed:5,day:100,proof:true,learn:true});LS.keep(st);snap();delete S.les} // opened and left: not a try
+     let runs=0;for(let s=1;runs<3&&s<40;s++){const c=K.kid(0,0,mulberry32(s*7+1)),x=K.run(id,c,s*11,{proof:true,learn:true});if(x.st.post.length==2&&x.st.post.every(Boolean))continue;LS.finish(x.st);runs++;snap()}
+     o.learned=lsLearned(id);o.tried=lsTried(id);o.passed=passed(p,i);o.open=unlocked(p,i);o.next=unlocked(p,i+1);o.nextGate=lsGate(p,i+1);
+     S.know.add2.n=2;o.two=lsGate(p,i);delete S.know.add2.n;o.none=lsGate(p,i);return JSON.stringify(o)})()`));
+   if(JSON.stringify(r)!==JSON.stringify({gate:[true,true,true,true,false],n:[0,0,1,2,3],learned:false,tried:true,passed:false,open:true,next:false,nextGate:false,two:true,none:true}))p.push('practice after 3 lesson tries: '+JSON.stringify(r))}
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // the source: the note that swallowed the gauge is on its own line
+  if(!/RC\.left--;GFX\.bar\(\$\('#rbar'\),RC\.left\/60\);if\(RC\.left<=5&&RC\.left>0\)SFX\.tick\(\);/.test(fs.readFileSync(path.join(SRC,'js','54-race.js'),'utf8')))p.push('54-race.js: the clock line does not update the gauge and tick');
+  return{problems:p,note:'the race gauge over 60 ticks; mix-in hints on 5 stops; 9 end cards; learn-first with every answer wrong; the speak mission; 8 grades and a save with no grade; a check-in; 6 screens; review slots; the lesson gate after 0 to 3 tries'};
+});
+
+// ---- owner decisions 2026-11-24 on the practice audit's open points (docs/drafts/AUDIT-WORDS-READ.md, P1-P6; "approve all with
+// fable's recommendations"). P3 is "keep as is" (a Challenge miss never costs stars): the existing P1-08 checks cover it. ----
+run('practice owner decisions P1-P6: the boss only says Try again, short rounds round up, review pay by size, 2 Spanish words, a check-in pays game time',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={},rd=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  let appH='';const app=new Proxy(function(){},{get:(t,k)=>k==='innerHTML'?appH:fk[k],set:(t,k,v)=>{if(k==='innerHTML')appH=String(v);return true},apply:()=>fk}); // #app: keeps what view() draws
+  Object.assign(doc,{querySelector:s=>s=='#app'?app:fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  ctx.__app=app;
+  const R=x=>vm.runInContext(x,ctx);
+  try{
+  R(`say=()=>{};burst=()=>{};anim=()=>{};var __fb=[],__pet=[];fb=t=>{__fb.push(t)};petSay=t=>{__pet.push(t)};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q)};
+   function __step(g){if(g.done<g.n){g.q=makeQ();g.retry=false;g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;SPK.mic='?';SPK.deny=0}
+   // a round with its first 'right' questions right and the rest wrong twice (20 s a question, so no Challenge or hint-first mode gets in the way of the count)
+   function __play(right){const g=G;let n=0,k=0;while(g.__pend&&n++<80){const ok=g.retry||k++<right;G.qt=Date.now()-20000;if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}finish();return g}`);
+  // P1: a missed boss question: the boss says "Try again!" and nothing else (it could say "Ha ha! Missed me!" or "Hee hee!")
+  {const said=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;const o=new Set();for(let t=0;t<40;t++){const bi=WR.math[6][1],n=NODES.math[bi];G=newG({path:'math',node:bi,sk:'boss',boss:{e:'',name:n.boss[1]},hp:7,pool:worldPool('math',n.wi,10)});next();__pet=[];check(__NO,__fk);__pet.forEach(x=>o.add(x))}return JSON.stringify([...o])})()`));
+   if(JSON.stringify(said)!=='["Try again!"]')p.push('P1: the boss says '+JSON.stringify(said)+' on a miss');
+   if(/Missed me|Hee hee/.test(rd('50-round.js')))p.push('P1: a laughing boss line is still in 50-round.js')}
+  // P2: the right answers a round needs, rounded up: pass and 2 stars by round length; one miss always passes; 10 as before
+  {const r=JSON.parse(R(`JSON.stringify([2,3,4,5,6,8,10].map(n=>[n,starNeed(n,.7),starNeed(n,.8)]))`));
+   if(JSON.stringify(r)!==JSON.stringify([[2,1,1],[3,2,2],[4,3,3],[5,4,4],[6,5,5],[8,6,7],[10,7,8]]))p.push('P2: [length, pass, 2 stars] '+JSON.stringify(r));
+   // whole rounds: Pre-K (6), K (8), tracing (5), a round of 10: stars for each number right
+   const rows=JSON.parse(R(`(()=>{const o={},go=(g,pth,sk,lv)=>{const out=[];let n=0;for(let k=0;k<=12;k++){__fresh(g);S.unlockAll=true;const i=NODES[pth].findIndex(x=>x.sk==sk&&x.lv==lv);start(pth,i);n=G.n;if(k>n)break;__play(k);out.push(getSt(pth,i))}return n+':'+out.join('')};
+     o.prek=go(-1,'math','pk_count',1);o.k=go(0,'math','pk_count',3);o.trace=go(-1,'read','trace',2);o.g2=go(2,'math','big',3);return JSON.stringify(o)})()`));
+   const want={prek:'6:0000023',k:'8:000000123',trace:'5:000023',g2:'10:00000001223'};
+   for(const k in want)if(rows[k]!==want[k])p.push('P2: '+k+' stars by right answers '+rows[k]+', want '+want[k]+' (length:stars for 0, 1, 2 ... right)');
+   // the tip under a round that did not pass names the new number
+   const tip=R(`(()=>{__fresh(-1);S.unlockAll=true;const i=NODES.math.findIndex(x=>x.sk=='pk_count'&&x.lv==1);var chest={};const q0=document.querySelector;document.querySelector=s=>s=='#chest'?chest:q0(s);let card=null;const d0=RW.done;RW.done=o=>{card=o;return''};start('math',i);__play(4);chest.onclick();RW.done=d0;document.querySelector=q0;return card.tip})()`);
+   if(tip!=='Get 5 right to open the next stop. You can do it!')p.push('P2: a Pre-K round with 4 of 6 says "'+tip+'"')}
+  // P4: Daily Review pays in proportion to its questions (10 = a full round; 1 question paid a full round)
+  {const r=JSON.parse(R(`JSON.stringify([1,2,5,10].map(n=>{__fresh(2);const c=ptCalc({mix:true,daily:true,path:null},n,n,0,0,false,false,null,null);return[n,c.lines[0][0],c.sec]}))`));
+   if(JSON.stringify(r)!==JSON.stringify([[1,18,30],[2,36,30],[5,90,90],[10,180,180]]))p.push('P4: Daily Review [questions, "Daily review done" seconds, paid] '+JSON.stringify(r))}
+  // P5: the speak mission is 2 words, with the approved lines
+  {const r=JSON.parse(R(`(()=>{__fresh(2);const x={k:'speak',d:0},o={goal:SPK.GOAL,title:MIS.title(x),hit:[]};SPK.mic='yes';for(let k=0;k<3;k++){o.hit.push(MIS.hit(x,{k:'round',p:'math'}));__fb=[];SPK.done=null;spkEnd(true);o['fb'+(k+1)]=__fb[0]}return JSON.stringify(o)})()`));
+   if(JSON.stringify(r)!==JSON.stringify({goal:2,title:'Say 2 Spanish words',hit:[false,false,true],fb1:'¡Muy bien!',fb2:'¡Muy bien! 2 Spanish words said today!',fb3:'¡Muy bien!'}))p.push('P5: '+JSON.stringify(r));
+   if(/5 Spanish words/.test(rd('50-say.js').replace(/\/\*[\s\S]*?\*\//g,'')+rd('55-missions.js').replace(/\/\*[\s\S]*?\*\//g,'')))p.push('P5: "5 Spanish words" is still in the code')}
+  // P6: a check-in pays game time as a round of its stop does, into the bank, with the existing line; less for the same stop again today
+  {const r=JSON.parse(R(`(()=>{const o=[],go=(sc,st,again)=>{if(!again){__fresh(2);S.unlockAll=true}const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);setSt(p,i,st);delete S.chk;const b0=pt().bank;
+       G=newG({path:p,node:i,sk:'big',lv:3,chk:true,kh:[]});G.n=CHK.Q;G.done=CHK.Q;G.score=sc;__app.innerHTML='';finish();const h=__app.innerHTML,m=/id="ckgt"[\\s\\S]*?<div class="rw-et">([\\s\\S]*?)<\\/div>/.exec(h);
+       o.push([sc,st,pt().bank-b0,m?m[1].replace(/<[^>]+>/g,''):''])};
+     go(5,2);go(4,2);go(2,2);go(5,3);go(5,2);go(5,2,true);go(5,2,true);return JSON.stringify(o)})()`));
+   const want=[[5,2,240,'+4:00 You earned game time!'],[4,2,180,'+3:00 You earned game time!'],[2,2,60,'+1:00 You earned game time!'],[5,3,120,'+2:00 You earned game time!'],
+     [5,2,240,'+4:00 You earned game time!'],[5,2,150,'+2:30 You earned game time!'],[5,2,90,'+1:30 You earned game time!']];
+   if(JSON.stringify(r)!==JSON.stringify(want))p.push('P6: [right, the stop\'s stars, bank gain, the card\'s line] '+JSON.stringify(r));
+   // the same pay as ptCalc gives a round of that stop with that score and no new pass
+   const same=R(`(()=>{__fresh(2);const nd=NODES.math.find(n=>n.sk=='big'&&n.lv==3);return ptCalc({path:'math'},5,5,0,2,false,false,nd,null).sec})()`);
+   if(same!==240)p.push('P6: ptCalc for a 5 of 5 round of the stop is '+same+' s')}
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note:'40 boss misses; pass and 2 stars for 7 round lengths, whole rounds of 6, 8, 5 and 10; reviews of 1, 2, 5 and 10; the speak mission said 3 times; 7 check-ins'};
 });
 
 Promise.all(PENDING).then(()=>{

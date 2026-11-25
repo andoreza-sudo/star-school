@@ -21,7 +21,7 @@ const RDL = (() => {
   const art = w => THE.includes(w) ? 'the ' : NONE.includes(w) ? '' : /^[aeiou]/.test(nameOf(w)) ? 'an ' : 'a ';
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   // the answer said in words: "a cow", "an egg", "the sun", "a piano", "63"
-  const said = (p, c) => p.pic ? art(c) + nameOf(c) : c;
+  const said = (p, c) => p.pic ? (c == 'dice' ? 'a die' : art(c) + nameOf(c)) : c; // W41: one of them is "a die"
   const ASK = { A: 'Listen to the riddle. Tap the answer.', B: 'Read the riddle. Tap the answer.' };
 
   function shuffle(a, rnd) {

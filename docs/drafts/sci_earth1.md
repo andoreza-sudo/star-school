@@ -33,7 +33,7 @@ Show:
   - Help the park ranger plan for a hot sunny day.
 Reasons the pet gives when it is caught:
   dSun: Oops. The sun warms things more than the shade does.
-  dAll: Oops. Only frozen things melt in the sun. The rest stay.
+  dAll: Oops. Frozen things melt in the sun. These ones stay.
 Tonight's question: Ask {name}: where would ice melt first, in the sun or the shade?
 About 3.2 minutes.
 ```
@@ -93,7 +93,7 @@ The first draft's lines were read one by one. Changes:
    "Oops. The sun warms things more than the shade does."
   ],
   "dAll": [
-   "Oops. Only frozen things melt in the sun. The rest stay."
+   "Oops. Frozen things melt in the sun. These ones stay."
   ]
  },
  "home": "Ask {name}: where would ice melt first, in the sun or the shade?"

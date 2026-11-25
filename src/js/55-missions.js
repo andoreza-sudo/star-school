@@ -10,7 +10,7 @@
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
      mix      one Mixed Practice round
-     speak    say 5 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
+     speak    say 2 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
               can play Spanish, speaking practice is on and the tablet may have a microphone (ctx.spk). Done at the next finish().
    "round" is always one of the three; the other two are drawn from what is left. Finishing a mission gives a sticker, once (it is
    marked done first). All three together give the old mission bonus once a day: 5 stars, 5 coins and a sticker (S.day.done).
@@ -71,7 +71,7 @@ const MIS = {
     try { due = dueItems().length; } catch (e) {}
     const subs = MIS.subjects();
     let spk = false; // S-SPK: speaking practice on, a Spanish stop to play, and a microphone not ruled out
-    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no'; } catch (e) {}
+    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no' && !SPK.deny; } catch (e) {}
     return { g, subs, bt, spr, due, spk };
   },
   // Pure: three missions [{k, p?, d:0}] for a day key, a child name and a ctx
@@ -128,7 +128,11 @@ const MIS = {
   count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
   // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect, n (rounds today)} | {k:'sprint'} | {k:'teaser'}
   hit(x, ev) {
-    if (x.k == 'speak') return (day().spk | 0) >= SPK.GOAL; // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
+    if (x.k == 'speak') { // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
+      if ((day().spk | 0) >= SPK.GOAL) return true;
+      // audit v195: no microphone, or it is blocked (known after the draw): no "Say it!" step runs, so a Spanish round does it
+      return (SPK.mic == 'no' || !!SPK.deny) && ev.k == 'round' && ev.p == 'es' && !ev.mix && !ev.test;
+    }
     if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
     if (ev.k != 'round') return false;
     if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;

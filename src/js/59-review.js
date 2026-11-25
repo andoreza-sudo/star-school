@@ -151,6 +151,8 @@ function revQ(it){
   // R-01s: the first Spanish units gained el / la ("pato (read)" is now "el pato (read)"): a Spanish item rebuilt from its seed whose
   // label differs only by that article is the same question, and the item takes the new label (so a new miss finds it)
   if(q&&/^es_/.test(it.sk)&&revLabel(q.label)!==it.label&&revNoArt(revLabel(q.label))===revNoArt(it.label))it.label=revLabel(q.label);
+  // review v196: a Pre-K / K "Listen" question was the level 1 question of its level 2 seed (esRead in genQ); rebuild it the same way
+  if(q&&it.lv==2&&/^es_/.test(it.sk)&&/ \(listen\)$/.test(it.label)&&revLabel(q.label)!==it.label){try{const t=genQ(it.sk,1,it.seed);if(revLabel(t.label)===it.label)q=t}catch(e){}}
   if(!q||revLabel(q.label)!==it.label||!revFact(it,q)){
     q=null;
     for(let t=0;t<8&&(!q||revLabel(q.label)===it.label);t++)q=genQ(it.sk,it.lv);

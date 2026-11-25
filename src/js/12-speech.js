@@ -32,10 +32,11 @@ const esHas=t=>!!esFiles(t);
 function speakBusy(){if(ESA.cur||ESA.q.length||ESA.tts>0)return true;try{return !!(speechSynthesis.speaking||speechSynthesis.pending)}catch(e){return false}}
 // stop everything: the speech engine, the recording, and what was queued (say without q, and the Say it! microphone)
 function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
-  if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
+  if(ESA.au){ESA.au.onended=ESA.au.onerror=null;ESA.au._vis=0;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
-function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
+function esaPlay(it){if(typeof document!="undefined"&&document.hidden){ESA.q.unshift(it);return} // review v196: a line due while the app is hidden waits for it (sfxVis pumps)
+  const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;swHush(); // sample fix: the worker's audio fill waits while the app speaks (90-app.js)
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
   const M=it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
@@ -120,7 +121,8 @@ function kidNames(){const o=new Set();const add=n=>{n=String(n||'').trim();if(n)
   try{if(typeof PRF!='undefined'&&PRF.ids)for(const id of PRF.ids)add(PRF.info(id).name)}catch(e){}return[...o].sort((a,b)=>b.length-a.length)}
 function noNames(t,names=kidNames()){let s=String(t);for(const n of names){const re=new RegExp('(?<![\\p{L}\\p{N}])'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','giu');
   if(s.trim().replace(re,'').replace(/[\s!?.,]/g,'')===''&&re.test(s))return'';s=s.replace(re,'friend')}return s}
-function ttsSay(t,btn,es,slow,cheer){
+// review v196: as esaPlay, the tablet's voice waits while the app is hidden
+function ttsSay(t,btn,es,slow,cheer){if(typeof document!="undefined"&&document.hidden){ESA.q.unshift({s:[t,btn,es,slow,cheer]});return}
   try{const v=pickVoice(es);if(!v||v.localService===false){t=noNames(t);if(!t.trim()){if(btn)btn.classList.remove('talking');esaPump();return}} // RENAME-2: an online voice never hears a child's name
   const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   if(v)u.voice=v;
@@ -128,7 +130,7 @@ function ttsSay(t,btn,es,slow,cheer){
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
-  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll()}catch(e){if(btn)noVoice(btn)}}
+  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),

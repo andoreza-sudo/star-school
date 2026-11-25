@@ -59,7 +59,7 @@ The launch plan with budget and marketing is the Claude Docs artifact "Star Scho
 - Content: no magic or spells themes, no evolution themes (dragons OK), nothing offensive.
 - Agents never edit hashes, thresholds, KNOWN lists, fixtures or expected values just to pass. A design change that changes an
   expected value is listed with its reason. Budget changes need the owner (start-up 2.5 MB, index.html 1,000,000 bytes, code
-  precache 15 MB, audio 9.0 MB, teacher lines 1500: REC-2, owner decision 2026-11-24 (9.0 MB)).
+  precache 15 MB, audio 9.5 MB, teacher lines 1500: REC-2, owner decision 2026-11-24 (9.0 MB); audio 9.5 MB: owner decision 2026-11-24 (D2)).
 - Kill only processes whose working directory is your own worktree; never `pkill node`.
 - A command blocked by a permission or safety check is reported, not re-sent another way.
 - Push releases only to the session's own `claude/…` branch (this session: `claude/beautiful-rubin-1urk3d`); release by PR to
@@ -98,7 +98,8 @@ Open the app twice so the update installs. Then:
 
 ## 6. Known open items (not blockers)
 
-- Start-up is about 2.49 MB of the 2.5 MB budget: the next feature needs code moved to a lazy part first.
+- Start-up is about 2.38 MB of the 2.5 MB budget (TRIM-START, v196: the Brain Teaser data moved from data.<VER>.js into the lazy part bt,
+  2.51 -> 2.38 MB); bt is about 722 KB of its 800 KB fail limit, so the next big move needs another part.
 - Map "longest task" is a little over its 200 ms soft line on a 6x-throttled CPU.
 - British spellings outside lesson text (riddles, Block Builder, "tyres", "favourite", "metres", "Practise") are listed in
   PROGRESS "Ideas and issues".

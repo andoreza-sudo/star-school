@@ -68,7 +68,7 @@ If you walk toward the place where the Sun sets, you are walking ___.|west|east;
 On a map, the top is north. Which way is the bottom of the map?|south|east;west;north|mapwords
 A very tall landform with a peak is a ___.|mountain|valley;island;lake|landforms
 A low area of land between mountains or hills is a ___.|valley|mountain;island;desert|landforms
-Land that has water all around it is an ___.|island|valley;mountain;plain|landforms
+Land that has water all around it is called ___.|island|valley;mountain;plain|landforms
 A big flat area of land is a ___.|plain|mountain;island;volcano|landforms
 A hill is ___ than a mountain.|smaller|taller;wetter;wider|landforms
 A large area of very dry land with little rain is a ___.|desert|island;beach;volcano|landforms
@@ -337,7 +337,8 @@ const DISC_TOUCH = ['AZ CO', 'NM UT', 'IL MI', 'MI MN', 'NY RI', 'MD DC'];
   // regions: five regions, 41 states whose region books agree on (R-01d: Nevada and Utah are "-": many maps put them in the Southwest)
   ST.forEach((s, i) => {
     if (s.reg === '-') return;
-    const others = REGS.filter(r => r !== s.reg), ds = [];
+    // AUD-DISC: never "West" as a wrong answer for a Southwest state (the Census map puts Arizona and New Mexico in the West)
+    const others = REGS.filter(r => r !== s.reg && !(s.reg === 'SW' && r === 'W')), ds = [];
     for (let k = 0; ds.length < 3; k++) ds.push(NAME[others[(i + k) % others.length]]);
     rows.push(`Which region of the United States is ${s.n} in?|${NAME[s.reg]}|${[...new Set(ds)].join(';')}|regions`);
   });
@@ -376,8 +377,8 @@ The White House is in ___.|Washington, D.C.|New York City;Boston;Philadelphia|la
 Crater Lake, the deepest lake in the United States, is in ___.|Oregon|Washington;Idaho;Nevada|landmarks
 Mount St. Helens is a volcano in ___.|Washington|Oregon;Idaho;Montana|landmarks
 Death Valley, one of the hottest places on Earth, is mostly in ___.|California|Arizona;Nevada;Texas|landmarks
-Lake Michigan is the only Great Lake entirely inside the ___.|United States|Canada;Mexico;Alaska|landmarks
-Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks
+Lake Michigan is the only Great Lake entirely inside the ___.|United States|Canada;Mexico;Alaska|landmarks||The other four Great Lakes are shared with the country to the north. This one is not.
+Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks||It is the one farthest north. Minnesota is on its shore.
 Cape Canaveral, where rockets are launched, is in ___.|Florida|Texas;California;Alaska|landmarks
 The Mississippi River flows into the ___.|Gulf of Mexico, also called Gulf of America|Atlantic Ocean, near New York;Pacific Ocean, near California;Great Lakes, near Canada|rivers
 The Mississippi River flows mostly from north to ___.|south|east;west;north|rivers
@@ -402,8 +403,8 @@ Which is the tallest mountain in the United States?|Denali, also called Mount Mc
 The long mountain chain down the western side of North America, with peaks over 14,000 feet, is the ___.|Rocky Mountains|Appalachians;Ozarks;Alps|mountains
 The ___ Mountains are in the northeast of the United States and include Mount Washington.|White|Rocky;Sierra;Cascade|mountains
 Mount Whitney, the highest peak in the lower 48 states, is in the ___ mountains.|Sierra Nevada|Appalachian;Ozark;Catskill|mountains
-Mauna Loa and Kilauea are volcanoes in ___.|Hawaii|Alaska;Oregon;Florida|mountains
-The lower 48 United States have ___ main time zones.|four|two;three;six|timezones
+Mauna Loa and Kilauea are volcanoes in ___.|Hawaii|Alaska;Oregon;Florida|mountains||This state is a chain of islands in the Pacific Ocean. Volcanoes made them.
+The lower 48 states have ___ main time zones.|four|two;three;six|timezones
 Which is the easternmost main time zone of the lower 48 states?|Eastern|Pacific;Central;Mountain|timezones
 When it is noon in New York (Eastern), it is ___ in Chicago (Central).|11 a.m.|1 p.m.;noon;10 a.m.|timezones
 When it is 3 p.m. in Eastern Time, it is ___ in Pacific Time.|noon|6 p.m.;2 p.m.;1 p.m.|timezones
@@ -500,7 +501,7 @@ Which branch carries out and enforces the laws?|executive|legislative;judicial;s
 Congress has two parts, the Senate and the ___.|House of Representatives|Supreme Court;Cabinet;White House|branches
 How many senators does each state have?|two|one;three;fifty|branches
 The highest court in the United States is the ___.|Supreme Court|Senate;Cabinet;Court of Appeals|branches
-Three branches keep any one group from having too much power. This idea is called ___.|checks and balances|majority rule;free trade;taxes|branches
+Each branch can limit the power of the others. This idea is called ___.|checks and balances|majority rule;free trade;taxes|branches
 A President can say no to a bill by using a ___.|veto|vote;verdict;visa|branches
 A proposed law is called a ___.|bill|ballot;budget;bond|branches
 The leader of a state government is a ___.|governor|mayor;state senator;judge|branches
@@ -510,7 +511,7 @@ In a republic, the people choose ___ to make decisions for them.|representatives
 Congress meets in the Capitol building in ___.|Washington, D.C.|New York City;Philadelphia, Pennsylvania;Boston|branches
 The Constitution is the ___ of the United States.|supreme law of the land|oldest song;first map;flag|constitution
 The first words of the Constitution are "We the ___."|People|Kings;States only;Judges|constitution
-A change added to the Constitution is called an ___.|amendment|invention;election;island|constitution
+A change added to the Constitution is called ___.|amendment|invention;election;island|constitution
 The first ten amendments are called the ___.|Bill of Rights|Declaration of Independence;Pledge;Preamble|constitution
 The Bill of Rights protects the rights of ___.|the people|only the President;only judges;only soldiers|constitution
 The Constitution was written in the year ___.|1787|1492;1620;1865|constitution
@@ -562,7 +563,7 @@ More people want umbrellas on a rainy day. The demand ___.|goes up|goes down;sta
 A price is the amount of money you pay for ___.|a good or service|a vote;a law;a river|supply
 Competition between businesses often leads to ___.|lower prices and better goods|higher prices and fewer choices;no choices;empty stores|supply
 A market is any place where buyers and ___ meet.|sellers|judges;voters;firefighters|supply
-Very few diamonds exist and many people want them. Their price is ___.|high|low;zero;always the same|supply
+Very few of a rare stamp exist and many people want one. Its price is ___.|high|low;zero;always the same|supply
 A shop has too many winter coats left in spring. It may ___ the price to sell them.|lower|raise;triple;hide|supply
 Which would make the price of gas go up?|less gas being supplied|more gas being made;fewer drivers;a new gas well opening nearby|supply
 `, '5-6'));

@@ -103,7 +103,26 @@ const BTN = (() => {
       }
       return added;
     },
-    // the first brick that can be worked out now from the known ones, as {at, from: [x, y], how: 'add' | 'sub'} or null
+    // A guess g for brick k: every brick that then follows is a + c * g. Where a triple is known three ways, the two bricks under
+    // it less the brick above is A + C * g, and it is 0 for the right guess. Returns 1 when every such check has C > 0 (a guess
+    // that is too big makes the bricks above come out too big), -1 when every one has C < 0, 0 when they differ or nothing checks.
+    guessWay(p, known, k) {
+      const T = PYR.triples(p.n), A = p.v.map((x, i) => known[i] ? [x, 0] : null);
+      A[k] = [0, 1];
+      for (let more = true; more;) {
+        more = false;
+        for (const [t, a, b] of T) {
+          if ((A[t] ? 1 : 0) + (A[a] ? 1 : 0) + (A[b] ? 1 : 0) != 2) continue;
+          if (!A[t]) A[t] = [A[a][0] + A[b][0], A[a][1] + A[b][1]];
+          else if (!A[a]) A[a] = [A[t][0] - A[b][0], A[t][1] - A[b][1]];
+          else A[b] = [A[t][0] - A[a][0], A[t][1] - A[a][1]];
+          more = true;
+        }
+      }
+      let up = 0, down = 0;
+      for (const [t, a, b] of T) if (A[t] && A[a] && A[b]) { const c = A[a][1] + A[b][1] - A[t][1]; if (c > 0) up++; else if (c < 0) down++; }
+      return up && !down ? 1 : down && !up ? -1 : 0;
+    },
     nextStep(p, known) {
       for (const [t, a, b] of PYR.triples(p.n)) {
         if (!known[t] && known[a] && known[b]) return { at: t, from: [a, b], how: 'add' };
@@ -160,19 +179,25 @@ const BTN = (() => {
         return { say, mark: [s.at, x, y], fill: s.at };
       }
       // tricky: no brick follows from two others. The brick to try is the one that lets the most bricks follow.
-      let at = -1, most = -1;
+      // AUD-BT S-3: tier 2 says "If the bricks above come out too big, guess smaller", so the brick to try is one for which that
+      // is true: every brick that can be checked against a known one comes out too big when the guess is too big (PYR.guessWay).
+      // Among those, the one that lets the most bricks follow. (It was the most bricks alone, and for 4 tricky pyramids in 10 a
+      // bigger guess made the bricks above smaller.) When no brick is like that, the old choice stands.
+      let at = -1, most = -1, okAt = -1, okMost = -1;
       for (const k of PYR.hidden(p)) {
         if (known[k]) continue;
         const kn = known.slice();
         kn[k] = true;
         const got = PYR.spread(p.n, p.v, kn);
         if (got > most) { most = got; at = k; }
+        if (got > okMost && PYR.guessWay(p, known, k) == 1) { okMost = got; okAt = k; }
       }
+      if (okAt >= 0) at = okAt;
       if (tier == 1) {
         return { say: 'A tricky one! No brick follows from two others yet. Start with the glowing brick.', mark: [at], fill: null };
       }
-      if (tier == 2) return { say: 'Guess a number for the glowing brick and work up the pyramid. If the bricks above come out too big, '
-        + 'guess smaller.', mark: [at], fill: null };
+      if (tier == 2) return { say: 'Guess a number for the glowing brick and work out the other bricks. If a brick does not match, '
+        + 'try another number.', mark: [at], fill: null };
       return { say: `This brick is ${p.v[at]}.`, mark: [at], fill: at };
     },
     // the bricks to fill, in an order a child could find them (used by tests and the smoke bot): [[brick, value], ...]

@@ -102,13 +102,13 @@ function ls3bSt8(id, t, g, idea, home) {
       `A rope is ${T} meters long. ${who} uses ${F} of it. How many meters?`][f];
     const ans = n * u, bug = {unitOnly: [u], fracTop: [T * n]}, hint = {k: 'text', s: `One ${FC_NAMES[d]} of ${T} is ${T} ÷ ${d} = ${u}. Then ${n} of them.`};
     if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d, whole: 1}, eq: 'value', ans: F, sl: {}, bug: {}, hint,
-      html: ls3bStory(S) + lsCap(`Shade ${F} of the bar.`), say: S.replace(F, Fs), ansSay: Fs});
+      html: ls3bStory(S) + lsCap(`Shade ${F} of the bar.`), say: S.replace(F, Fs).replace(/ How many [a-z]+\?$/, ` Shade ${Fs} of the bar.`), ansSay: Fs}); // WORDS-MATH W71: the voice gives the task on the screen
     return lsDq(D, Math.min(st, 2), {kind: 'num', ans, sl: {}, bug, hint, html: ls3bStory(S) + (st == 1 ? `<div class="pkq">${ls3bFracTape(T, d, n)}</div>` : '') + SLOT, say: S.replace(F, Fs)});
   };
   D.warm = ls3bFrWarm(D);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d: 4, whole: 1}, eq: 'value', goal: 'some', ans: '1/4', sl: {n: 20}, demo: '3/4',
     html: lsEq(20) + lsCap('This bar is 20, cut into fourths. Shade any parts.'), say: 'This bar is 20, cut into fourths. Shade any parts you like.'}), nudge: 'Shade a part or more, then check.',
-  react: v => { const a = Math.round(k2Val(v) * 4); return {ctx: {n: 20, a, sum: 5 * a}, lines: [`${a} fourths of 20 is ${5 * a}.`]}; }});
+  react: v => { const a = Math.round(k2Val(v) * 4); return {ctx: {n: 20, a, sum: 5 * a}, lines: [`${qN(a, 'fourth')} of 20 is ${5 * a}.`]}; }});
   D.name = c => ({html: `<div class="pkq">${VIZ.fracBar(c.a, 4, {w: 240})}</div>` + lsEq(`${ls3Fr(c.a, 4)} of ${c.n} = ${c.sum}`), sl: c});
   return D;
 }
@@ -496,7 +496,7 @@ function ls3bFop4(id, t, g, idea, home) {
   D.warm = ls3bFrWarm(D);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'mixb', m: {d: 4, target: '1 1/4'}, goal: 'moved', eq: 'value', ans: '1 1/4', raw: 1, sl: {}, demo: [2, 3],
     html: lsCap('Make any mixed number with bars.'), say: 'Make any mixed number with whole bars and fourths.'}), nudge: 'Change the bars, then check.',
-  react: v => { const [a, b] = Array.isArray(v) ? v : [2, 3]; return {ctx: {a, b}, lines: [b >= 4 ? `${a} wholes and ${b} fourths. Four fourths could make one more whole.` : `You made ${a} and ${ls3Frs(b, 4)}.`]}; }});
+  react: v => { const [a, b] = Array.isArray(v) ? v : [2, 3]; return {ctx: {a, b}, lines: [b >= 4 ? `${qN(a, 'whole')} and ${b} fourths. Four fourths could make one more whole.` : `You made ${a} and ${ls3Frs(b, 4)}.`]}; }});
   D.name = c => ({html: `<div class="pkq">${ls3bMixBars(c.a, c.b, 4)}</div>` + lsEq(`${c.a} ${fcFr(c.b, 4)}`), sl: c});
   return D;
 }

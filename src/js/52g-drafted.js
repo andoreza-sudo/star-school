@@ -235,7 +235,7 @@ function lsPvStop(id, t, kind, bugs) {
   D.q = (st, r) => {
     if (kind == 'tens') { // Tens & Hundreds: add whole tens, or whole hundreds
       const u = r() < .5 ? 10 : 100, x = lsRi(r, 1, 8), y = lsRi(r, 1, 9 - x), a = x * u, b = y * u, c = a + b, sl = {n: c, a, b}, ab = [a, b, '+'], bug = {ten: [x + y]};
-      const hint = {k: 'text', s: `${x} ${u == 10 ? 'tens' : 'hundreds'} and ${y} more ${u == 10 ? 'tens' : 'hundreds'}.`};
+      const hint = {k: 'text', s: `${qN(x, u == 10 ? 'ten' : 'hundred')} and ${y} more ${qW(y, u == 10 ? 'ten' : 'hundred')}.`}; // WORDS-MATH W23: "1 hundred and 3 more hundreds."
       if (st == 0) return b10(0, c, {ab, sl, bug, hint, html: lsEq(`${a} + ${b}`) + lsCap('Make the answer with blocks.'), say: `${a} plus ${b}. Make the answer with blocks.`});
       if (st == 1) return lsDq(D, 1, {kind: 'num', ans: c, ab, sl, bug, hint, html: `<div class="pkq">${VIZ.base10(a)} ${VIZ.base10(b)}</div>` + lsEq(`${a} + ${b} = ${SLOT}`), say: `${a} plus ${b} equals what?`});
       return lsDq(D, 2, {kind: 'num', ans: c, ab, sl, bug, hint, html: lsEq(`${a} + ${b} = ${SLOT}`), say: `${a} plus ${b} equals what?`});
@@ -255,8 +255,13 @@ function lsPvStop(id, t, kind, bugs) {
       return lsPick(D.sk, D.lv, st, ans, html, `Is ${a} greater than, less than, or equal to ${b}?`, [['<'], ['='], ['>']], {sl, hint, pk: false, bug: {small: [ans == '>' ? '<' : '>']},
         after: `${a} is ${ans == '>' ? 'greater than' : 'less than'} ${b}`});
     }
-    const n = lsRi(r, 102, 989), [h, te, o] = lsDigits(n, 3), sl = {n, a: h * 100, b: te * 10};
-    const hint = {k: 'html', html: `<div class="pkhint">${VIZ.base10(n)}<div>${h} hundreds, ${te} tens and ${o} ones.</div></div>`, w: 'Flats are hundreds, rods are tens, cubes are ones.'};
+    // AUDIT-MATH M2: "what is the 2 worth?" needs its digit once in the number (not 922): the symbols item of Place Value to 999 draws
+    // again until the hundreds digit, and the tens digit when it is not 0, each appear once (every other draw is as before)
+    const one = x => { const ds = lsDigits(x, 3); return ds.filter(y => y == ds[0]).length == 1 && (!ds[1] || ds.filter(y => y == ds[1]).length == 1); };
+    let n = lsRi(r, 102, 989);
+    if (st == 2 && kind != 'exp') while (!one(n)) n = lsRi(r, 102, 989);
+    const [h, te, o] = lsDigits(n, 3), sl = {n, a: h * 100, b: te * 10};
+    const hint = {k: 'html', html: `<div class="pkhint">${VIZ.base10(n)}<div>${qN(h, 'hundred')}, ${qN(te, 'ten')} and ${qN(o, 'one')}.</div></div>`, w: 'Flats are hundreds, rods are tens, cubes are ones.'};
     if (st == 0) return b10(0, n, {sl, hint, html: kind == 'exp' ? lsEq(`${h * 100} + ${te * 10} + ${o}`) + lsCap('Make it with blocks.') : lsEq(n) + lsCap(`Make ${n} with blocks.`),
       say: kind == 'exp' ? `${h * 100} plus ${te * 10} plus ${o}. Make it with blocks.` : `Make ${n} with blocks.`, bug: {swap: [h * 100 + o * 10 + te].filter(x => x != n)}});
     if (st == 1) return lsDq(D, 1, {kind: 'num', ans: n, sl, hint, html: `<div class="pkq">${VIZ.base10(n)}</div>${SLOT}`, say: 'How many in all? Count the hundreds, the tens, then the ones.'});
@@ -318,7 +323,7 @@ Show: two prices to find the change for, no help, inside a job in the world (slo
 // Explore on the purse: any coins (the state, so the count of coins is the child's own)
 const lsCoinExp = (D, T) => ({q: lsDq(D, 0, {kind: 'make', model: 'coins', m: {types: T}, eq: 'value', ans: T[0], goal: 'moved', raw: 1, sl: {},
   html: lsCap('Put in any coins you like!'), say: 'Put any coins you like in the purse.'}), nudge: 'Tap a coin to put it in the purse.',
-react: v => { const s = Array.isArray(v) ? v : mmGreedy(T, +v), x = K2MM.coins.val({m: {types: T}}, s); return {ctx: {value: x, n: mmSum(s)}, lines: [`Your coins make ${x} cents.`]}; }});
+react: v => { const s = Array.isArray(v) ? v : mmGreedy(T, +v), x = K2MM.coins.val({m: {types: T}}, s); return {ctx: {value: x, n: mmSum(s)}, lines: [`Your coins make ${qN(x, 'cent')}.`]}; }});
 function lsCoinStop(id, t, types, max) {
   const D = lsSk(id, {t, test: 1, petSt: 1, bugs: ['count'], brief: LS_BRIEF_COIN, slots: {remember: ['k'], explore: [], name: ['value', 'n'], together: [['value'], ['n'], ['n']], check: ['ans'], show: ['n']}});
   const coinsOf = r => { for (;;) { const cs = Array.from({length: lsRi(r, 3, 6)}, () => types[Math.floor(r() * types.length)]).sort((a, b) => b - a), v = cs.reduce((a, b) => a + b, 0);
@@ -384,7 +389,7 @@ function lsGrpStop(id, t, kind) {
   D.exp = () => ({q: arr ? lsDq(D, 0, {kind: 'make', model: 'array', m: {r: 2, c: 3}, eq: 'exact', ans: 6, goal: 'any', sl: {}, demo: '3×4', html: lsCap('Make any array you like!'), say: 'Make any rows of dots you like.'})
     : lsDq(D, 0, {kind: 'make', model: 'groups', m: {g: 2, n: 2, target: 4}, goal: 'eqgrp', eq: 'value', ans: 4, sl: {}, html: lsCap('Make equal groups!'), say: 'Make some equal groups, any way you like.'}),
   nudge: arr ? 'Set the rows, then check.' : 'Make two or more groups, two or more in each.',
-  react: v => { const [a, b] = Array.isArray(v) ? v : /×/.test(v) ? String(v).split('×').map(Number) : [2, 3]; return {ctx: {a, b, sum: a * b}, lines: [`${a} ${arr ? 'rows' : 'groups'} of ${b} make ${a * b}.`]}; }});
+  react: v => { const [a, b] = Array.isArray(v) ? v : /×/.test(v) ? String(v).split('×').map(Number) : [2, 3]; return {ctx: {a, b, sum: a * b}, lines: [`${qN(a, arr ? 'row' : 'group')} of ${b} ${a == 1 ? 'makes' : 'make'} ${a * b}.`]}; }});
   D.name = c => ({html: `<div class="pkq">${arr ? VIZ.array(c.a, c.b) : lsGroupsSvg(c.a, c.b)}</div>` + lsEq(`${Array(c.a).fill(c.b).join(' + ')} = ${c.sum}`), sl: c});
   return D;
 }

@@ -319,12 +319,12 @@ different|My sister and I are different.
 beautiful|The garden is beautiful in spring.
 favorite|Blue is my favorite color.
 interesting|That was an interesting book.
-vegetable|Carrot is a vegetable.
+vegetable|A carrot is a vegetable.
 library|I borrowed a book from the library.
 knowledge|Reading books adds to your knowledge.
 government|The government makes the laws.
 neighbor|My neighbor waves from her porch.
-exercise|We do exercise every morning.
+exercise|We exercise every morning.
 important|It is important to drink water.
 probably|It will probably rain today.
 surprise|The party was a big surprise.
@@ -358,7 +358,7 @@ committee|The committee voted on the plan.
 address|Write your address on the envelope.
 success|Hard work leads to success.
 across|The bridge goes across the river.
-tomorrow|We will visit grandma tomorrow.
+tomorrow|We will visit Grandma tomorrow.
 paragraph|Each paragraph has a main idea.
 conscience|Her conscience told her to tell the truth.
 disappear|The sun will disappear behind the clouds.

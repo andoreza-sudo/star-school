@@ -48,7 +48,11 @@ function cases(ctx, opt = {}) {
   const g = {};
   for (const k of keys) (g[norm(k)] = g[norm(k)] || []).push(k);
   const out = [];
-  for (const k of Object.keys(g).sort()) for (const a of g[k]) for (const b of g[k]) if (a !== b && L[a][1] !== L[b][1]) out.push({ kind: 'voice', tgt: a, say: b, mod: 'as is', want: 1 });
+  // owner decision 2026-11-25 (S-SPK2): the lessons' wrong forms ("el camisa", tools/es-audio.js D2) are read aloud but no child is
+  // asked to say one, so they make no "another speaker" pair (the app judges a child only against the exact line asked)
+  const wrong = new Set();
+  try { for (const id of R("LS_B5.filter(x=>LESSONS[x].p=='es')")) for (const [it] of R(`ls6Nouns(LS_DRAFTED[${JSON.stringify(id)}].units)`)) wrong.add(R('esKey')((it[3] == 'el' ? 'la' : 'el') + ' ' + it[0])); } catch (e) { }
+  for (const k of Object.keys(g).sort()) for (const a of g[k]) for (const b of g[k]) if (a !== b && L[a][1] !== L[b][1] && !wrong.has(a) && !wrong.has(b)) out.push({ kind: 'voice', tgt: a, say: b, mod: 'as is', want: 1 });
   for (const t of targets) {
     out.push({ kind: 'child', tgt: t, say: t, mod: 'up', want: 1 });
     out.push({ kind: 'child', tgt: t, say: t, mod: 'down', want: 1 });

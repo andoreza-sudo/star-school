@@ -11,6 +11,9 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
    every file is in (the worker skips the ones it has; one that failed is tried again the next time) */
 const swAudio=()=>{try{navigator.serviceWorker.ready.then(x=>{if(x.active)x.active.postMessage('audio')}).catch(()=>{})}catch(e){}},
   swAudioLater=()=>setTimeout(()=>(window.requestIdleCallback||(f=>f()))(swAudio,{timeout:5000}),3000);
+// sample fix (Fable): while the app speaks the worker holds its audio fill (sw.js 'hush'; sent at most every 2 s)
+let swHushT=0;
+function swHush(){const n=Date.now();if(n-swHushT<2000)return;swHushT=n;try{const c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(c)c.postMessage('hush')}catch(e){}}
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{swAudioLater();navigator.serviceWorker.addEventListener('controllerchange',swAudioLater);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){r.update().catch(()=>{});swAudio()}})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,

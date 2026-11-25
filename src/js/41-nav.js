@@ -188,7 +188,7 @@ function learnHub() {
   }).join('');
   const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
-    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) +
+    (raceOn() ? GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) : '') +
     (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('map', 24)}</span><span>Learn</span></div>${UI.chip('star', S.stars, { aria: 'Stars' })}</div>
   <div class="scroll gx-list lh"><p class="gx-lead">Pick what to learn!</p><div class="games">${cards}</div>
@@ -198,6 +198,21 @@ function learnHub() {
   $$('.lh-path').forEach(b => b.onclick = () => { SFX.whoosh(); NAV.mapFrom = 'learn'; pathMap(b.dataset.p); });
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
   if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
-  $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
+  if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
+/* sample fix (Fable): the Android back gesture. The Play app (a TWA) closes when back finds no history, so away from Home one history
+   entry stands in front: back takes it and does the screen's own way back (the open sheet, Back, the house's "Go Home?", an end card's
+   Home, the bar's Home), then it is put back. On Home, "Who is playing?" and the name screen there is none: back leaves the app. */
+const NAVB={skip:0,
+  act(){const m=UI.modal.top();if(m)return m._esc||(()=>{}); // a card with no way back of its own stays
+    if(document.getElementById('hs'))return null;
+    const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
+  on:()=>!!(history.state&&history.state.navb),
+  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
+    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
+  pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
+if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
+  try{if(NAVB.on())history.replaceState(null,'')}catch(e){} // a reload (an update, Start over) kept the last page's entry: going back to it would load the app again
+  const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
+  mo.observe(document.body,{childList:true});if(a)mo.observe(a,{childList:true})}

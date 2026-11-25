@@ -8,6 +8,8 @@
    word reads exactly once in the grid in any of the 8 directions (its own place), and no word of the rude list (BTW.rude,
    d-words-bt.js) reads anywhere in any direction; a filler square in a bad run is drawn again until both hold. Words that hold a
    rude run, palindromes, and words that hold another listed word (or its reverse) are never put in one grid.
+   D1 (owner, 2026-11-24): no mild word (MILD below) reads anywhere either, unless the run lies wholly inside one listed word
+   (father, died, dog read backwards): such a word stays in the pool. The list lives here, not in d-words-bt.js, so start-up is not larger.
    Play: drag across a word (touch or mouse; the line snaps to the 8 directions), or tap its first letter and then its last. Either
    end may come first. A found word gets a soft coloured band in the grid and is struck through with a tick in the list (never
    colour alone) and spoken. A line of 3 or more letters that is not a word counts one mistake (allow 3); shorter slips do not.
@@ -32,6 +34,8 @@ const WS = (() => {
   const tierOf = level => Math.min(2, Math.floor((Math.max(1, Math.min(12, level | 0 || 1)) - 1) / 4));
   const rev = w => [...w].reverse().join('');
   const rude = () => BTW.rude.split(' ');
+  // D1: mild words a grid must not spell by accident, in any direction
+  const MILD = 'die dead death hate fat god bum dumb ugly drug stab devil satan idiot stupid puke jerk perv'.split(' ');
   const cache = {};
   // the words a band can use (spelling words, a-z, no BAD, no rude run either way, no palindrome)
   function pool(band) {
@@ -100,6 +104,7 @@ const WS = (() => {
     placed.forEach(x => cellsOf(n, x.r, x.c, x.d, x.t.length).forEach(i => own.add(i)));
     for (let i = 0; i < n * n; i++) if (!g[i]) g[i] = FILL[Math.floor(rnd() * FILL.length)];
     const R = rude();
+    const owns = placed.map(x => new Set(cellsOf(n, x.r, x.c, x.d, x.t.length)));
     for (let t = 0; t < 400; t++) {
       const s = g.join('');
       let badRun = null;
@@ -108,6 +113,11 @@ const WS = (() => {
         if (f.length) { badRun = cellsOf(n, ...f[0], x.t.length); break; }
       }
       if (!badRun) for (const w of R) { const f = finds(s, n, w); if (f.length) { badRun = cellsOf(n, ...f[0], w.length); break; } }
+      // D1: a mild run that is not wholly inside one listed word is redrawn too
+      if (!badRun) for (const w of MILD) {
+        const f = finds(s, n, w).map(o => cellsOf(n, ...o, w.length)).filter(cs => !owns.some(o => cs.every(i => o.has(i))));
+        if (f.length) { badRun = f[0]; break; }
+      }
       if (!badRun) return true;
       const free = badRun.filter(i => !own.has(i));
       if (!free.length) return false;
@@ -366,7 +376,7 @@ const WS = (() => {
     };
   }
 
-  return { make, solve, mount, fit, fresh, match, line, finds, wcells, pool, hintWord, hintText, TIER, SRC, DIRS, tierOf, rev };
+  return { make, solve, mount, fit, fresh, match, line, finds, wcells, pool, hintWord, hintText, TIER, SRC, DIRS, tierOf, rev, MILD };
 })();
 
 BT.reg({

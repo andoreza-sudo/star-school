@@ -414,11 +414,19 @@ const RB = {
       else { L.splice(i, 1); put(i, w); }
     }
     // too many blocks now: the last block after i goes (the program was already wrong from i on)
+    // AUD-BT M-2: when this strip has no block after i (the block went into the function while the main strip holds every
+    // slot), the last block of the main strip goes instead: the hint only reaches the function once the main strip is right up
+    // to its Function block, so what is too many is at the end of the main strip. Before, the hint did nothing there.
     while (RB.count(o) > p.slots) {
       let j = L.length - 1;
       while (j > i && L[j] == 'en') j--;
-      if (j <= i) return null;
-      if (RB.isLoop(L[j])) unwrap(j); else L.splice(j, 1);
+      if (j > i) { if (RB.isLoop(L[j])) unwrap(j); else L.splice(j, 1); continue; }
+      if (dv.s != 'f') return null;
+      const M = o.m;
+      let k = M.length - 1;
+      while (k >= 0 && M[k] == 'en') k--;
+      if (k < 0) return null;
+      if (RB.isLoop(M[k])) { M.splice(RB.match(M, k), 1); M.splice(k, 1); } else M.splice(k, 1);
     }
     o.cs = dv.s;
     o.ci = Math.min(L.length, w == null ? i : i + 1);
@@ -782,8 +790,10 @@ RB.mount = (el, p, api) => {
     }
     st.miss++; // a failed run is one mistake
     bad = tr.at ? { s: tr.at.s, i: tr.at.i } : null;
+    // W14: a move off the board is "the edge" (bands A and B, the arrow kits; band A has no walls at all)
+    const bx = tr.c % p.n + RB.DX[tr.d], by = Math.floor(tr.c / p.n) + RB.DY[tr.d], edge = abs && (bx < 0 || by < 0 || bx >= p.n || by >= p.n);
     const words = {
-      bump: `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`,
+      bump: edge ? 'Bump! The robot hit the edge. Change the amber arrow.' : `Bump! The robot hit a wall. Change the amber ${abs ? 'arrow' : 'block'}.`,
       dizzy: 'The robot got dizzy: that loop went round and round. Change the amber block.',
       short: 'The robot stopped before the flag. Add more blocks, or change some.',
       gems: 'The robot is on the flag, but a gem is missing. Pick it up first.',

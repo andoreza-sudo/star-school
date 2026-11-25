@@ -22,7 +22,7 @@ PUZ.logic = {
     hobby: {label: 'Hobby', pics: {paint: '🎨', read: '📖', draw: '✏️', puzzle: '🧩'}},
     music: {label: 'Music', pics: {drum: '🥁', guitar: '🎸', trumpet: '🎺'}},
     ride: {label: 'Ride', pics: {bike: '🚲', bus: '🚌', train: '🚂', boat: '⛵', tractor: '🚜'}},
-    colour: {label: 'Colour'},
+    colour: {label: 'Color'},
     age: {label: 'Age', ordered: 1},
     house: {label: 'House', ordered: 1},
     race: {label: 'Race', ordered: 1},

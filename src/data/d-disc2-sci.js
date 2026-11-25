@@ -63,7 +63,7 @@ An animal that is hunted by another animal is called ___.|prey|a predator;a prod
 Mushrooms and some bacteria break down dead plants and animals. They are ___.|decomposers|producers;predators;herbivores|foodchain|mushroom,🍄
 An animal that eats only plants is a ___.|herbivore|carnivore;omnivore;decomposer|foodchain
 An animal that eats only other animals is a ___.|carnivore|herbivore;omnivore;producer|foodchain
-An animal that eats both plants and animals is an ___.|omnivore|herbivore;carnivore;decomposer|foodchain
+An animal that eats both plants and animals is called ___.|omnivore|herbivore;carnivore;decomposer|foodchain
 An arrow in a food chain shows where the ___ goes.|energy|rain;wind;sound|foodchain||The arrow points from the food to the eater. Think about what the eater gets from the food that lets it run, grow and play.
 Almost every food chain starts with energy from the ___.|Sun|soil;wind;rain|foodchain
 A snake that eats mice is the ___ of the mice.|predator|producer;decomposer;prey|foodchain
@@ -75,9 +75,9 @@ A giraffe's long neck helps it ___.|reach leaves high in trees|swim fast;dig hol
 A stick insect looks like a twig. This helps it ___.|hide from hungry animals|sing loudly;swim fast;dig holes|adapt
 A duck's webbed feet help it ___.|swim|climb trees;dig holes;run fast|adapt|duck,🦆
 The shape of a bird's beak depends on ___.|the food it eats|its color;its age;the weather|adapt
-A body part or habit that helps a living thing survive where it lives is an ___.|adaptation|invention;accident;illness|adapt
+A body part or habit that helps a living thing survive where it lives is called ___.|adaptation|invention;accident;illness|adapt
 Birds that fly far away for the winter to find food and warmth are ___.|migrating|hibernating;camouflaging;hatching|adapt
-A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage;adaptation|adapt
+A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage;germination|adapt
 A camel's wide, flat feet help it walk on ___.|sand|ice;tree branches;a wall|adapt
 Which animal has thick white fur that helps it hide and stay warm in snow?|an Arctic fox|a camel;a lizard;a toucan|adapt
 A thick waxy coat on a leaf helps a plant ___.|keep its water in|catch more snow;sing;move|adapt
@@ -174,7 +174,6 @@ Can a scar from a cut be passed on to a child?|no|yes;always;only if the scar is
 Identical twins have almost exactly the same ___.|genes|friends;clothes;memories|traits
 Which of these did a lion cub get from its parents?|its golden fur|a scar from a fight;a trick it was taught;a name|traits
 Members of one kind of animal are not all exactly alike. This is called ___.|variation|migration;adaptation;extinction|traits
-Over many generations, traits that help living things survive become ___.|more common|less common;impossible;harmless|traits
 `));
 
 BANK.sci_earth.push(...discRows(2, `
@@ -223,7 +222,7 @@ The changing shape of the Moon that we see in the sky is called the Moon's ___.|
 When we can see the whole round face of the Moon lit up, it is a ___ Moon.|full|new;crescent;quarter|moonphase
 When we cannot see the Moon's lit side at all, it is a ___ Moon.|new|full;half;crescent|moonphase
 About how long does the Moon take to go through all its phases?|one month|one day;one week;one year|moonphase
-The Moon travels around the ___.|Earth|Mars;Jupiter;the stars|moonphase
+The Moon travels around the ___.|Earth|Mars;Jupiter;stars|moonphase
 A Moon that looks like a thin curved slice is a ___ Moon.|crescent|full;new;round|moonphase
 Why does the Moon seem to change shape over a month?|more or less of its sunlit side faces Earth|Earth's shadow covers part of it;the Moon grows and then shrinks;clouds hide part of it|moonphase
 After a new Moon, the lit part we see gets bigger each night. This is called ___.|waxing|waning;falling;shrinking|moonphase
@@ -240,14 +239,14 @@ Which planet comes right after Earth, going away from the Sun?|Mars|Venus;Jupite
 Which planet is the farthest from the Sun?|Neptune|Uranus;Saturn;Jupiter|planets
 Pluto is now called a ___ planet.|dwarf|giant;gas;rocky|planets
 Our Sun is a ___.|star|planet;moon;comet|planets
-A planet travels around the Sun in a path called an ___.|orbit|equator;horizon;axis|planets
+A planet travels around the Sun in a path called ___.|orbit|equator;horizon;axis|planets
 How many planets are in our solar system?|eight|seven;nine;ten|planets
 Which planet is the hottest, with thick clouds that trap heat?|Venus|Mercury;Mars;Neptune|planets
 `));
 
 BANK.sci_earth.push(...discRows(3, `
 Earth's outer shell is broken into huge slabs called ___ plates.|tectonic|crystal;desert;ocean|plates
-Earth's plates move slowly, about a few ___ each year.|centimeters|kilometers;meters;miles|plates
+Earth's plates move slowly, a few ___ each year.|centimeters|kilometers;meters;miles|plates
 Earthquakes happen most often where plates ___.|meet and rub or push|stay far from edges;disappear;stop for good|plates
 Mountains can form where two plates push together. This is a ___ boundary.|convergent|divergent;transform;central|plates
 Where plates pull apart, the boundary is called ___.|divergent|convergent;transform;central|plates
@@ -312,7 +311,7 @@ Earth's axis is tilted about ___ degrees.|23|90;45;10|rotrev
 When it is summer in the Northern Hemisphere, it is ___ in the Southern Hemisphere.|winter|summer;autumn;spring|rotrev
 Earth spins in one direction, so the Sun seems to rise in the ___.|east|west;north;south|rotrev
 A year is about 365 and a quarter days, so every four years we add a ___.|leap day|extra week;moon day;second summer|rotrev
-A solar eclipse happens when the ___ passes between Earth and the Sun.|Moon|Sun;a comet;Venus|rotrev
+A solar eclipse happens when the ___ passes between Earth and the Sun.|Moon|Sun;comet;Venus|rotrev
 A lunar eclipse happens when Earth is between the Sun and the ___.|Moon|stars;Mars;Venus|rotrev
 Summer days are longer because Earth's tilt points your half of the world ___ the Sun.|toward|away from;sideways to;behind|rotrev
 Near the equator, day and night are about the same length ___.|all year|in winter only;in summer only;never|rotrev
@@ -353,7 +352,7 @@ A ball rolling across grass slows down and stops mostly because of ___.|friction
 If the forces on an object are balanced, the object ___.|does not change how it is moving|speeds up;gets heavier;turns magnetic|forces
 A bigger push makes a ball go ___.|faster and farther|slower;nowhere;backward|forces
 Wheels on a wagon make it easier to move because they ___.|cut down friction|add weight;make it magnetic;make it stick|forces
-A ramp is a kind of simple machine called an ___.|inclined plane|lever;pulley;wheel and axle|machines
+A ramp is a kind of simple machine called ___.|inclined plane|lever;pulley;wheel and axle|machines
 A seesaw is a ___.|lever|ramp;pulley;wedge|machines
 A knife blade works as a ___.|wedge|screw;pulley;wheel and axle|machines
 A flagpole uses a rope and a wheel called a ___.|pulley|lever;wedge;screw|machines
@@ -384,7 +383,7 @@ A complete path that electricity can flow around is a ___.|circuit|battery;switc
 A circuit has to be ___ for a bulb to light.|closed|open;broken;empty|circuits
 A switch turns a circuit off by making a ___ in it.|gap|bulb;battery;wire|circuits
 Which material lets electricity flow through it?|copper wire|rubber;plastic;wood|circuits
-A material that does NOT let electricity flow easily is an ___.|insulator|conductor;battery;wire|circuits
+A material that does NOT let electricity flow easily is called ___.|insulator|conductor;battery;wire|circuits
 A material that lets electricity flow easily is a ___.|conductor|insulator;shadow;spring|circuits
 The plastic around a wire keeps us safe because plastic is a good ___.|insulator|conductor;battery;magnet|circuits
 Which would NOT carry electricity in a circuit?|a rubber band|a metal paper clip;a copper wire;a steel key|circuits
@@ -432,7 +431,7 @@ Weight is a measure of the pull of ___ on an object.|gravity|friction;magnetism;
 Gravity pulls objects ___.|toward the center of Earth|away from Earth;sideways;upward|gravity
 A feather and a hammer dropped together on the airless Moon will ___.|land at the same time|float upward;fall very slowly;land at different times|gravity
 The more mass an object has, the ___ its gravity.|stronger|weaker;shorter;colder|gravity
-The farther apart two objects are, the ___ the pull of gravity between them.|weaker|stronger;the same;heavier|gravity
+The farther apart two objects are, the ___ the pull of gravity between them.|weaker|stronger;steadier;heavier|gravity
 What keeps the Moon traveling around Earth?|gravity|friction;magnetism;wind|gravity
 The Sun's gravity keeps the planets ___.|in their orbits|still;from spinning;frozen|gravity
 Weight is measured in units called ___.|newtons|meters;liters;seconds|gravity

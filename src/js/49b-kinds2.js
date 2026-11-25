@@ -133,6 +133,8 @@ KIND.sort = {
     if (st.sortSel == null) { // nothing picked yet: the tray glows to show where to start
       const t = $('.stray');
       if (t) k2Shake(t);
+      // AUDIT-MATH: a box with a word of its own (bin.say: "Even", "Odd") says it for children who do not read yet (Pre-K to 1st)
+      if (q.bins[b] && q.bins[b].say && gradeCfg().auto !== 'tap') say(q.bins[b].say);
       return;
     }
     st.sortAt[st.sortSel] = b;
@@ -299,8 +301,11 @@ addEventListener('resize', () => {
 });
 
 // ---- mark: tap word(s) in a sentence ----
+const k2MarkWord = w => String(w).replace(/[^\p{L}\p{N}'’-]/gu, ''); // a word of the sentence without its comma or full stop
 KIND.mark = {
-  render: q => `<div class="mkw">${q.words.map((w, i) => `<button class="mkt" data-i="${i}"${q.one ? '' : ' aria-pressed="false"'}>`
+  // AUD-DISC: q.speak (a read-aloud bank item): a word says itself when it is picked (k2SayChip: Pre-K to 1st grade)
+  render: q => `<div class="mkw">${q.words.map((w, i) => `<button class="mkt" data-i="${i}"${q.one ? '' : ' aria-pressed="false"'}`
+    + `${q.speak ? ` data-say="${esc(k2MarkWord(w))}"` : ''}>`
     + `<span class="mkx">${esc(w)}</span>${k2Marks()}</button>`).join('')}</div>`
     + (q.one ? '' : UI.btn('Check', {kind: 'primary', icon: 'check', id: 'mcheck', cls: 'mgo', off: true})),
   bind(q, st, submit) {
@@ -312,7 +317,7 @@ KIND.mark = {
       if (st.lock || b.disabled || st.mkOk.includes(i)) return;
       if (q.one) return submit([String(i)], b);
       const at = st.mkSel.indexOf(i);
-      if (at < 0) st.mkSel.push(i);
+      if (at < 0) { st.mkSel.push(i); k2SayChip(b); }
       else st.mkSel.splice(at, 1);
       SFX.pop(2);
       K.draw(q, st);
@@ -363,7 +368,7 @@ KIND.mark = {
     const go = $('#mcheck');
     if (go) go.disabled = true;
   },
-  spoken: q => q.ansSay || q.ans.map(i => String(q.words[+i]).replace(/[^\p{L}\p{N}'’-]/gu, '')).join(', '),
+  spoken: q => q.ansSay || q.ans.map(i => k2MarkWord(q.words[+i])).join(', '),
   validate(q) {
     const p = [];
     if (!Array.isArray(q.words) || q.words.length < 2) return ['mark: needs at least 2 words'];
@@ -386,8 +391,10 @@ KIND.mark = {
 function k2MarkItem(it, pic) {
   const words = String(it.sent).trim().split(/\s+/), as = Array.isArray(it.a) ? it.a : [it.a];
   const idx = as.map(a => words.findIndex(w => bankWords(w).includes(a)));
-  return {kind: 'mark', words, one: as.length == 1, ans: kindSort(idx.map(String)), ansSay: as.join(', '),
-    html: `${pic || ''}<div class="bq">${esc(it.q)}</div>`};
+  // AUD-DISC: a read-aloud item (it.aloud, Discover K-2) is never "one tap answers": a tap picks a word and says it, Check answers,
+  // so a child who cannot read yet can hear every word first (the prompt reads the sentence too: bankBuild)
+  return Object.assign({kind: 'mark', words, one: as.length == 1 && !it.aloud, ans: kindSort(idx.map(String)), ansSay: as.join(', '),
+    html: `${pic || ''}<div class="bq">${esc(it.q)}</div>`}, it.aloud ? {speak: true} : {});
 }
 const k2BankQ = (it, pic) => `${pic || ''}<div class="bq">${bankTxt(it.q)}</div>`;
 BANKF.tap = (it, id, pic) => k2MarkItem(it, pic);
@@ -395,14 +402,16 @@ BANKF.mark = BANKF.tap;
 BANKF.multi = (it, id, pic) => ({kind: 'multi', ans: kindSort(it.a), choices: shuffle([...it.a, ...it.d]).map(x => ({v: x, l: x})),
   html: k2BankQ(it, pic)});
 BANKF.order = (it, id, pic) => {
-  let items = shuffle(it.order.map(x => ({v: x, l: x})));
+  // AUD-DISC: a read-aloud item (it.aloud, Discover K-2): each tile says its words when tapped, so a non-reader can do it
+  let items = shuffle(it.order.map(x => (it.aloud ? {v: x, l: x, say: x} : {v: x, l: x})));
   if (items.every((x, i) => x.v === it.order[i])) items = [...items.slice(1), items[0]]; // never shown already in order
-  return {kind: 'order', items, ans: [...it.order], html: k2BankQ(it, pic), ansSay: it.order.join(', ')};
+  return Object.assign({kind: 'order', items, ans: [...it.order], html: k2BankQ(it, pic), ansSay: it.order.join(', ')}, it.aloud ? {speak: true} : {});
 };
 BANKF.match = (it, id, pic) => {
-  const items = it.pairs.map((p, i) => ({v: String(i), l: p[0]}));
-  return {kind: 'match', items, opts: shuffle(it.pairs.map((p, i) => ({v: String(i), l: p[1]}))),
-    ans: items.map(c => c.v).sort().join('|'), html: k2BankQ(it, pic)};
+  const side = k => it.pairs.map((p, i) => (it.aloud ? {v: String(i), l: p[k], say: p[k]} : {v: String(i), l: p[k]})); // AUD-DISC: as BANKF.order
+  const items = side(0);
+  return Object.assign({kind: 'match', items, opts: shuffle(side(1)),
+    ans: items.map(c => c.v).sort().join('|'), html: k2BankQ(it, pic)}, it.aloud ? {speak: true} : {});
 };
 // bins {name: [item, ...]}: the names are the bins (shown with a capital), the items are shuffled into the tray; cp {item: [art, emoji]}
 // draws an item as a picture with its word under it
@@ -413,7 +422,9 @@ BANKF.sort = (it, id, pic) => {
     if (it.cp && it.cp[w]) Object.assign(c, {h: true, al: w, l: `<span class="pcap">${picFor(it.cp[w][0], it.cp[w][1])}<small>${esc(w)}</small></span>`});
     return c;
   })));
-  return {kind: 'sort', bins: names.map(n => ({v: n, l: k2Cap(n)})), items, ans: items.map(c => c.b).join('|'), html: k2BankQ(it, pic)};
+  // sents (WORDS-READ W8): the sentences the words come from, shown under the question
+  const sents = (it.sents || []).map(s => `<div class="bsent">${esc(s)}</div>`).join('');
+  return {kind: 'sort', bins: names.map(n => ({v: n, l: k2Cap(n)})), items, ans: items.map(c => c.b).join('|'), html: k2BankQ(it, pic) + sents};
 };
 // forms drawn by share (genBank): their own draw comes after the usual item choice, with these shares unless BANKMIX says otherwise
 const BANKNEW = ['sort', 'mark', 'order', 'match', 'multi'];
@@ -477,7 +488,7 @@ function k2SortSize() {
 function k2SortKinds() {
   const [c1, c2] = k2Take(Object.keys(SG_CATS), 2), its = [];
   const bins = [c1, c2].map(c => {
-    const xs = k2Take(SG_CATS[c], 3);
+    const xs = k2Take(sgCat(c, c == c1 ? c2 : c1), 3); // E8
     xs.slice(0, 2).forEach(x => its.push({v: x[0], b: c, h: true, say: x[0], al: x[0], l: k2Pic(x[0], x[1])}));
     return {v: c, h: true, al: k2Cap(c), l: `${k2Pic(xs[2][0], xs[2][1], 'k2bp')}<span>${k2Cap(c)}</span>`};
   });
@@ -491,7 +502,8 @@ function k2Sound(q0, lv) {
   const pool = (lv == 1 ? CVC.concat(BLEND.filter(x => !/^(sh|ch|th|wh)/.test(x[0]))) : CVC).filter(x => !['ten', 'six'].includes(x[0]));
   const key = x => lv == 1 ? x[0][0] : x[0].slice(-1), ch = String(q0.ans), fw = pool.find(x => x[0] == q0.after);
   if (!fw || key(fw) != ch) return null;
-  const others = [...new Set(pool.map(key))].filter(c => c != ch && !(ch == 'c' && c == 'k') && !(ch == 'k' && c == 'c')
+  const sx = (a, b) => a + b == 'sx' || a + b == 'xs' || a + b == 'kx' || a + b == 'xk'; // AUDIT-READ: fox ends in the sound of s too (x is /ks/)
+  const others = [...new Set(pool.map(key))].filter(c => c != ch && !(ch == 'c' && c == 'k') && !(ch == 'k' && c == 'c') && !sx(ch, c)
     && pool.filter(x => key(x) == c).length >= 2);
   const c2 = pick(others), its = [fw, ...k2Take(pool.filter(x => key(x) == ch && x !== fw), 1), ...k2Take(pool.filter(x => key(x) == c2), 2)];
   const items = shuffle(its.map(x => ({v: x[0], b: key(x), h: true, say: x[0], al: x[0], l: k2Pic(x[0], x[1])})));
@@ -522,7 +534,7 @@ function k2EO(q0, lv) {
   do ns = [n, ...k2Take(Array.from({length: hi - lo + 1}, (_, i) => lo + i), lv == 1 ? 3 : 4, [n])];
   while (ns.every(x => x % 2) || ns.every(x => x % 2 == 0));
   const items = shuffle(ns).map(x => ({v: x, l: String(x), b: x % 2 ? 'odd' : 'even'}));
-  const bins = [{v: 'even', l: 'Even'}, {v: 'odd', l: 'Odd'}];
+  const bins = [{v: 'even', l: 'Even', say: 'Even'}, {v: 'odd', l: 'Odd', say: 'Odd'}]; // AUDIT-MATH: a box says its word when a young child taps it
   return k2Sort({bins, items, html: '<div class="sub">Sort the numbers: even or odd?</div>', say: 'Sort the numbers: even or odd?',
     hint: lv == 1 ? 'Can you share that many into pairs with none left over? Then it is even.' : 'Look at the last digit. 0, 2, 4, 6 and 8 are even.',
     speak: lv == 1, label: k2Lab(bins, items)});
@@ -686,19 +698,23 @@ function k2Gusta(q0) {
 }
 // es_mix 2: two of animales, comida and colores (Spanish is open from Pre-K: 2 bins, 4 words); the fact's word is one of them when it is
 // from those units, and then keeps its review label
-const K2ESU = [['animal', 'animales', 'animals'], ['food', 'comida', 'food'], ['color', 'colores', 'colors']];
+const K2ESU = [['animal', 'animales', 'animals', 'an animal'], ['food', 'comida', 'food', 'a food'], ['color', 'colores', 'colors', 'a color']];
+const K2ESAMB = ['naranja', 'café'];
 function k2EsMix(q0) {
   const f = String(q0.ans), fu = K2ESU.find(u => SPN[u[0]].some(it => esFull(it) == f));
-  const U = fu ? [fu, pick(K2ESU.filter(u => u !== fu))] : k2Take(K2ESU, 2), its = fu ? [[f, fu[1]]] : [];
+  let U = fu ? [fu, pick(K2ESU.filter(u => u !== fu))] : k2Take(K2ESU, 2);
+  // audit v195 (N3): naranja is also the fruit and café is coffee: never sorted between comida and colores (other draws unchanged)
+  if (fu && K2ESAMB.includes(f) && U[1][0] == 'food') U = [fu, K2ESU[0]];
+  const its = fu ? [[f, fu[1]]] : [], noAmb = U.some(u => u[0] == 'food');
   for (const u of U) while (its.filter(x => x[1] == u[1]).length < 2) {
     const x = esFull(pick(SPN[u[0]]));
-    if (!its.some(y => y[0] == x)) its.push([x, u[1]]);
+    if (!its.some(y => y[0] == x) && !(noAmb && K2ESAMB.includes(x))) its.push([x, u[1]]);
   }
   const items = shuffle(its).map(([x, b]) => ({v: x, l: x, b, say: x, lang: 'es'}));
   const bins = U.map(u => ({v: u[1], l: u[1]}));
   return k2Sort({bins, items, html: `<div class="sub">${esc(k2Cap(U[0][1]))} or ${esc(U[1][1])}?</div>`,
     say: `Sort the Spanish words: ${U[0][1]}, ${U[0][2]}, or ${U[1][1]}, ${U[1][2]}.`,
-    binSay: Object.fromEntries(U.map(u => [u[1], u[2]])), hint: `Say each word. Is it one of the ${U[0][2]}, or one of the ${U[1][2]}?`,
+    binSay: Object.fromEntries(U.map(u => [u[1], u[2]])), hint: `Say each word. Is it ${U[0][3]}, or ${U[1][3]}?`,
     label: fu && k2Fact(q0.label) ? q0.label : k2Lab(bins, items)});
 }
 
@@ -1235,7 +1251,7 @@ function k2IntOpp(q0) {
     ans: -n, start: 0, label: m && m[1] == 'opp' && +m[2] == n ? q0.label : 'int2 opp ' + n,
     html: `${k2Sub('The dot is')}<div class="eq">${k2Num(n)}</div>${k2Sub('Put the pin on its opposite.')}`,
     say: `The dot is ${k2SayNum(n)}. Put the pin on its opposite: the same distance from 0, on the other side.`, ansSay: k2SayNum(-n),
-    hint: `${k2Num(n)} is ${Math.abs(n)} steps from 0. Its opposite is ${Math.abs(n)} steps from 0 on the other side.`});
+    hint: `${k2Num(n)} is ${qN(Math.abs(n), 'step')} from 0. Its opposite is ${qN(Math.abs(n), 'step')} from 0 on the other side.`});
 }
 
 // a make question
@@ -1248,13 +1264,13 @@ function k2Frame(q0, lv) {
     const n = +m[1], t = n > 10 ? 20 : 10;
     if (!n) return null;
     return k2Make(q0, {model: 'frame', m: {total: t}, ans: n, ansSay: String(n), speak: true,
-      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${n} counters.`)}`, say: `Make ${n}. Tap the ten frame to put in ${n} counters.`,
+      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${qN(n, 'counter')}.`)}`, say: `Make ${n}. Tap the ten frame to put in ${qN(n, 'counter')}.`,
       hint: n > 5 ? 'Fill the top row first: that is 5. Then count on.' : 'Count as you tap: 1, 2, 3 ...'});
   }
   if ((m = /^(\d+) and \? make 10$/.exec(l))) {
     const f = +m[1];
     return k2Make(q0, {model: 'frame', m: {total: 10, fixed: f}, ans: 10 - f, ansSay: `${f} and ${10 - f} make 10`, speak: true,
-      html: pkTxt(`There are ${f}. Put in more to make 10.`), say: `There are ${f} counters. Put in more counters to make 10.`, hint: 'Fill every empty box. Count how many you put in.'});
+      html: pkTxt(`There are ${f}. Put in more to make 10.`), say: `There ${f == 1 ? 'is' : 'are'} ${qN(f, 'counter')}. Put in more counters to make 10.`, hint: 'Fill every empty box. Count how many you put in.'});
   }
   if ((m = /^10 and (\d+)$/.exec(l)) || (m = /^10 \+ \? = (\d+)$/.exec(l))) {
     const add = m[0].includes('?') ? +m[1] - 10 : +m[1], tot = 10 + add;
@@ -1316,7 +1332,7 @@ function k2Array(q0) {
   const r = +m[1], c = +m[2];
   if (r < 1 || r > 10 || c < 1 || c > 10 || r * c == 1) return null;
   const fact = /^\d+ × \d+ = \?$/.test(q0.label), keep = String(r * c) === String(q0.ans);
-  return k2Make(q0, {model: 'array', m: {r, c}, ans: r * c, ansSay: `${r} rows of ${c}`, label: keep ? q0.label : `array ${r} rows of ${c}`,
+  return k2Make(q0, {model: 'array', m: {r, c}, ans: r * c, ansSay: `${qN(r, 'row')} of ${c}`, label: keep ? q0.label : `array ${r} rows of ${c}`,
     html: (fact ? `<div class="eq">${r} × ${c}</div>` : '') + k2Sub(`Make an array: ${r} row${r == 1 ? '' : 's'} of ${c}.`),
     say: `${fact ? `${r} times ${c}. ` : ''}Make an array with ${r} row${r == 1 ? '' : 's'} of ${c}.`,
     hint: 'Rows go across. Set the number of rows, then how many dots in each row.'});
@@ -1362,7 +1378,7 @@ function k2DecShade(q0) {
     keep = false;
   }
   const k = Math.round(v * 10), vs = '0.' + k;
-  return k2Make(q0, {model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: keep ? q0.ans : vs, ansSay: `${k} tenths`, label: keep ? q0.label : `dec1 shade ${vs}`,
+  return k2Make(q0, {model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: keep ? q0.ans : vs, ansSay: qN(k, 'tenth'), label: keep ? q0.label : `dec1 shade ${vs}`,
     html: `${k2Sub('The 10 squares are 1 whole. Shade')}<div class="eq">${vs}</div>`, say: `The 10 squares make 1 whole. Shade ${k2SayNum(v)}.`,
     hint: 'Each square is one tenth. The digit after the point says how many to shade.'});
 }
@@ -1373,23 +1389,83 @@ function k2DecShade(q0) {
 // equations) go on from the wrong number, so every later step is right for what was written and only one step is wrong. The steps
 // before the mistake are the right ones (checked here), the answer is the wrong step's index, and the spoken answer reads the right step.
 // tap gets the same() the newer kinds have: the engine's own comparison (the tapped data-v is the answer)
-if (!KIND.tap.same) KIND.tap.same = (q, v) => String(v) === String(q.ans);
+// AUDIT-MATH M3: q.alt lists other taps that are right too: the closing "So ..." line of a worked example, when the mistake before it
+// makes that line false as written (So 46 − 29 = 27). The keyed step stays q.ans: it is the one marked and read out.
+if (!KIND.tap.same) KIND.tap.same = (q, v) => String(v) === String(q.ans) || (Array.isArray(q.alt) && q.alt.map(String).includes(String(v)));
 const K2WHO = ['Sam', 'Mia', 'Leo', 'Ana', 'Kai', 'Zoe', 'Ben', 'Ivy'];
 const K2PL = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
 const k2Speak = t => String(t).replace(/(\d) R(\d)/g, '$1 remainder $2').replace(/×/g, 'times').replace(/÷/g, 'divided by').replace(/\+/g, 'plus')
   .replace(/−/g, 'minus').replace(/=/g, 'is').replace(/:/g, ',').replace(/\s+/g, ' ').trim();
 const k2Gcd = (x, y) => (y ? k2Gcd(y, x % y) : x);
 // f: {prob (the problem as printed), lab (its short form for the label), build(mis) -> [step text] or null, muts [[i, kind], ...], hint}
+// k2FixFace(line): is the arithmetic written on a worked line true (true), false (false), or is there none to check (null)? It reads the
+// "a op b [op c] = v [R r]" statements after the line's label ("Ones:", "So"), whole numbers, decimals and fractions (a/b), "Write 9
+// as 9.00", and several joined by "and"; a line with a letter in its sums (an equation step) or with no "=" gives null.
+function k2FixFace(line) {
+  const t = String(line).replace(/^[^:=]*:\s*/, '').replace(/^So /, '');
+  let m = /^Write ([\d.]+) as ([\d.]+)$/.exec(t), res = null;
+  if (m) return Math.abs(+m[1] - +m[2]) < 1e-9;
+  const side = s => {
+    const rm = /^(.*) R(\d+)$/.exec(s.trim()), toks = (rm ? rm[1] : s).trim().split(/\s+/), out = [];
+    for (const x of toks) {
+      if (/^\d+\/\d+$/.test(x)) out.push(x.split('/').map(Number));
+      else if (/^\d+(\.\d+)?$/.test(x)) out.push([+x, 1]);
+      else if ('+−×÷'.includes(x) && x.length == 1) out.push(x);
+      else return null;
+    }
+    if (!out.length || out.length % 2 == 0 || out.some((x, j) => (j % 2 ? typeof x != 'string' : typeof x == 'string'))) return null;
+    return {toks: out, r: rm ? +rm[2] : null};
+  };
+  const val = T => { // fractions [n, d]: × and ÷ first, then + and −
+    const a = [T[0]];
+    for (let j = 1; j < T.length; j += 2) {
+      const y = T[j + 1], x = a[a.length - 1];
+      if (T[j] == '×') a[a.length - 1] = [x[0] * y[0], x[1] * y[1]];
+      else if (T[j] == '÷') a[a.length - 1] = [x[0] * y[1], x[1] * y[0]];
+      else a.push(T[j], y);
+    }
+    let v = a[0];
+    for (let j = 1; j < a.length; j += 2) v = a[j] == '+' ? [v[0] * a[j + 1][1] + a[j + 1][0] * v[1], v[1] * a[j + 1][1]] : [v[0] * a[j + 1][1] - a[j + 1][0] * v[1], v[1] * a[j + 1][1]];
+    return v;
+  };
+  for (const e of t.split(' and ')) {
+    const p = e.split(' = ');
+    if (p.length != 2) continue;
+    const L = side(p[0]), R2 = side(p[1]);
+    if (!L || !R2 || R2.toks.length != 1) continue;
+    let ok;
+    if (R2.r != null || (L.toks.length == 3 && L.toks[1] == '÷' && L.toks[0][1] == 1 && L.toks[2][1] == 1 && Number.isInteger(L.toks[0][0]) && Number.isInteger(L.toks[2][0]) && L.toks[0][0] % L.toks[2][0])) {
+      // a division with a remainder (or one that needs it): whole quotient and remainder both as written
+      if (!(L.toks.length == 3 && L.toks[1] == '÷')) continue;
+      const x = L.toks[0][0], d = L.toks[2][0];
+      ok = Math.floor(x / d) === R2.toks[0][0] && x % d === (R2.r || 0);
+    } else {
+      const a = val(L.toks), b = R2.toks[0];
+      ok = Math.abs(a[0] * b[1] - b[0] * a[1]) < 1e-9 * Math.abs(a[1] * b[1]);
+    }
+    if (!ok) return false;
+    res = true;
+  }
+  return res;
+}
 function k2FixQ(q0, f) {
   const ok = f.build(null);
   if (!ok || ok.length < 3 || ok.length > 5) return null;
+  // AUDIT-MATH M3: what a child can check on the line alone. A mistake is kept only when (1) its own line is not true arithmetic as
+  // written (a forgotten carry shows "2 + 4 = 6", which is true: not asked), (2) no other step line is false as written, and (3) the
+  // worked answer is not the right one all the same. The last line may carry the mistake forward ("So 46 − 29 = 27"): that is the
+  // design, and when it is false as written a tap on it counts as right too (q.alt).
+  const last = ok.length - 1;
   const cands = f.muts.filter(([i, k]) => {
     const b = f.build({i, k});
-    return b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]);
+    if (!(b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]))) return false;
+    if (k2FixFace(b[i]) === true || (i != last && b[last] === ok[last])) return false;
+    return b.every((t, j) => j == i || j == last || k2FixFace(t) !== false);
   });
   if (!cands.length) return null;
   const [i, k] = pick(cands), lines = f.build({i, k}), who = pick(K2WHO);
-  return k2New(q0, {q: {kind: 'tap', ans: String(i)}, label: `fix: ${f.lab} ${k} ${i + 1}`,
+  const alt = i != last && k2FixFace(lines[last]) === false ? {alt: [String(last)]} : {};
+  return k2New(q0, {q: Object.assign({kind: 'tap', ans: String(i)}, alt), label: `fix: ${f.lab} ${k} ${i + 1}`,
     html: k2Sub(`${who} worked it out. One step has a mistake. Tap it.`) + `<div class="eq">${esc(f.prob)}</div><div class="fxs">`
       + lines.map((t, j) => `<div class="tp fxl" data-v="${j}"><b class="fxn" aria-hidden="true">${j + 1}</b><span>${esc(t)}</span></div>`).join('') + '</div>',
     say: `${who} worked out ${k2Speak(f.prob)}. One step has a mistake. Find it and tap it.`,
@@ -1798,7 +1874,7 @@ function k2WhyAdd(q) {
     if (!first && s >= 10) first = [n - 1 - j, +a[j], +b[j], s];
   }
   if (!first || first[0] > 2) return null;
-  const [p, x, y, s] = first, t = p ? `${x} + ${y} ${K2P1[p]}s is ${s} ${K2P1[p]}s. Write the ${s % 10} and carry 1 ${K2P1[p + 1]}.`
+  const [p, x, y, s] = first, t = p ? `${x == 1 || y == 1 ? `${qN(x, K2P1[p])} + ${qN(y, K2P1[p])}` : `${x} + ${y} ${K2P1[p]}s`} is ${s} ${K2P1[p]}s. Write the ${s % 10} and carry 1 ${K2P1[p + 1]}.`
     : `${x} + ${y} is ${s}. Write the ${s % 10} and carry the 1 ten.`;
   return {[String(+nc)]: t, [String(+both)]: t};
 }
@@ -1814,7 +1890,7 @@ function k2WhyPv(q) {
   if ((m = /^pv tens in (\d)(\d)$/.exec(l))) return {[m[2]]: `The ${m[2]} is in the ones place. The tens digit is on the left.`, [m[1] + '0']: `${m[1]}0 is what the tens are worth. How many tens is that?`};
   if ((m = /^pv picture (\d) tens (\d) ones$/.exec(l))) return {[String(+(m[2] + m[1]))]: 'Tens come first: write the tens digit, then the ones.', [String(+m[1] + +m[2])]: 'Each rod is 10. Count the rods by 10s: 10, 20, 30 ...'};
   if ((m = /^pv picture (\d)(\d)(\d)$/.exec(l))) return {[String(+m[1] + +m[2] + +m[3])]: 'Each flat is 100 and each rod is 10. Count by 100s, then 10s, then 1s.'};
-  if ((m = /^(\d)0 \+ (\d) = \?$/.exec(l))) return {[`${m[1]}0${m[2]}`]: `${m[1]}0 is ${m[1]} tens. The ${m[2]} goes in the ones place.`};
+  if ((m = /^(\d)0 \+ (\d) = \?$/.exec(l))) return {[`${m[1]}0${m[2]}`]: `${m[1]}0 is ${qN(m[1], 'ten')}. The ${m[2]} goes in the ones place.`};
   if ((m = /^value of (\d) in (\d+)$/.exec(l))) {
     const p = m[2].length - 1 - m[2].indexOf(m[1]), val = +m[1] * 10 ** p, w = {};
     for (const c of q.choices) if (c.v !== q.ans) w[c.v] = c.v === m[1] ? `That ${m[1]} sits in the ${K2P1[p]}s place, so it is worth ${val}.` : 'Count the places from the right: ones, tens, hundreds.';

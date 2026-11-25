@@ -26,13 +26,15 @@ function ls4Sound(id, t, key, pool, o) {
   // letters to offer beside the right one: the contrast words' first, then others (never c with k, never the same letter twice)
   const others = (w, n, r) => {
     const c = LS4_KEY[key](w), from = ls4Wrong(w, key).map(x => x[at(w)]), pool2 = key == 'mid' ? [...LS4_V] : [...'bdfghlmnprstw'];
-    const o2 = [...new Set(from.concat(ls4Shuf(r, pool2)))].filter(x => x !== c && !(c == 'c' && x == 'k') && !(c == 'k' && x == 'c'));
+    const o2 = [...new Set(from.concat(ls4Shuf(r, pool2)))].filter(x => x !== c && !(c == 'c' && x == 'k') && !(c == 'k' && x == 'c')
+      && !(key == 'last' && ls4Same('last', c, x))); // AUDIT-READ: never s beside x (fox ends in the sound of s too)
     return o2.slice(0, n);
   };
   const pics = (w, n, r) => {
     const c = LS4_KEY[key](w), alt = ls4Shuf(r, okL().filter(x => LS4_KEY[key](x) !== c && !(c == 'c' && LS4_KEY[key](x) == 'k')));
     const out = [];
-    for (const x of alt) if (out.length < n - 1 && !out.some(y => LS4_KEY[key](y) == LS4_KEY[key](x))) out.push(x);
+    // AUDIT-READ: skipped after the shuffle (every other draw keeps its seed): a word that ends in the same sound (bus beside fox)
+    for (const x of alt) if (out.length < n - 1 && !out.some(y => LS4_KEY[key](y) == LS4_KEY[key](x)) && !(key == 'last' && ls4Same('last', c, LS4_KEY[key](x)))) out.push(x);
     return out;
   };
   D.q = (st, r) => {
@@ -85,12 +87,13 @@ function ls4Word(id, t, g, pool, key, bugs, show, o) {
   // the pictures to offer beside w: drawn words that differ from it by one of the lesson's codes first, then other drawn words of the lesson
   const picsFor = (w, n, r) => {
     const near = ls4Shuf(r, Object.keys(ART).filter(x => x !== w && bugs.includes(ls4Code(w, x)))), rest = ls4Shuf(r, okL().filter(x => x !== w && !near.includes(x)));
-    return near.concat(rest).slice(0, n - 1);
+    return near.concat(rest).filter(x => !picSame(w, x)).slice(0, n - 1); // AUDIT-READ: never a look-alike picture (cap and hat, box and gift)
   };
   const bugOf = (w, xs) => { const b = {}; for (const x of xs) { const c = ls4Code(w, x); if (c) (b[c] = b[c] || []).push(x); } return b; };
-  const sentence = (w, r) => ls4Pick(r, LS4_T[g >= 1 ? 1 : 0]).replace('{a}', (typeof SENT_ART != 'undefined' && SENT_ART[w]) || art(w)).replace('{w}', w);
+  // WORDS-READ (E3): the road sentence only for animals and road vehicles, and never "hand" as the word of a sentence (genSent's rules)
+  const sentence = (w, r) => ((T, t) => (typeof sentTpl == 'function' ? sentTpl(T, t, w) : t))(LS4_T[g >= 1 ? 1 : 0], ls4Pick(r, LS4_T[g >= 1 ? 1 : 0])).replace('{a}', (typeof SENT_ART != 'undefined' && SENT_ART[w]) || art(w)).replace('{w}', w);
   D.q = (st, r) => {
-    const w = ls4Pick(r, good()), cs = ls4Shuf(r, coded(w)), sl = {word: w}, hint = {k: 'text', s: `Say it slowly: ${w}. One sound at a time.`};
+    const w = ls4Pick(r, st == 3 && show != 'build' ? good().filter(x => x != 'hand') : good()), cs = ls4Shuf(r, coded(w)), sl = {word: w}, hint = {k: 'text', s: `Say it slowly: ${w}. One sound at a time.`};
     if (st == 0 || st == 3 && show == 'build') {
       const extra = [...new Set([...cs.join('')].filter(c => !w.includes(c)))].slice(0, 1), more = ls4Shuf(r, [...'bdfgmnprst'].filter(c => !w.includes(c) && !extra.includes(c))).slice(0, 2 - extra.length);
       return ls4Q(D, st == 3 ? 2 : 0, {kind: 'build', word: w, tiles: ls4Shuf(r, [...w].concat(extra, more)), ans: w, sl, hint, bug: bugOf(w, cs),
@@ -200,7 +203,7 @@ function ls4More(id, t, o) {
   return D;
 }
 // shapes
-const LS4_SHP = ['circle', 'square', 'triangle', 'rectangle', 'star', 'diamond'], LS4_SHLOOK = {square: ['rectangle', 'diamond'], rectangle: ['square'], diamond: ['square'], circle: [], triangle: ['diamond'], star: []};
+const LS4_SHP = ['circle', 'square', 'triangle', 'rectangle', 'star', 'diamond'], LS4_SHLOOK = {square: ['rectangle', 'diamond'], rectangle: [], diamond: ['square'], circle: [], triangle: ['diamond'], star: []};
 function ls4Shape(id, t, o) {
   const D = ls4(id, t, 'math', -1, Object.assign({bugs: ['look'], petSt: 2, claim: 'This is the {ans}!',
     fam: 'shape', slots: ls4Sl([], [], ['a', 'b'], [], [])}, o));
@@ -211,7 +214,7 @@ function ls4Shape(id, t, o) {
   D.q = (st, r) => {
     if (st == 0) return sortQ(r, 0);
     const k = st == 1 ? 3 : 4, ans = ls4Pick(r, st == 1 ? LS4_SHP : ['square', 'rectangle', 'diamond', 'triangle']), lk = LS4_SHLOOK[ans].filter(x => x !== ans);
-    const sh = [ans].concat(lk.slice(0, k == 4 ? 2 : 1), ls4Shuf(r, LS4_SHP.filter(x => x !== ans && !lk.includes(x)))).slice(0, k), all = ls4Shuf(r, sh), cs = ls4Shuf(r, PK.cols());
+    const sh = [ans].concat(lk.slice(0, k == 4 ? 2 : 1), ls4Shuf(r, LS4_SHP.filter(x => x !== ans && !lk.includes(x) && !(ans == 'rectangle' && x == 'square')))).slice(0, k), all = ls4Shuf(r, sh), cs = ls4Shuf(r, PK.cols());
     return ls4Q(D, Math.min(st, 2), {kind: 'choice', cls: `pics pk${k}`, ans, auto: 'must', choices: all.map((s, i) => ({v: s, l: PK.shp(s, cs[i % cs.length]) + `<span class="a11y-h">${s}</span>`, h: true})), sl: {},
       bug: {look: lk.filter(x => sh.includes(x))}, html: `<div class="pkq">${pkEar()}</div>` + lsAsk(`Tap the ${ans}.`), say: `Tap the ${ans}.`,
       hint: {k: 'html', html: `<div class="pkhint">${ans == 'circle' || ans == 'star' ? PK.shp(ans, 1) : PK.sides(ans)}</div>`, w: {circle: 'A circle is round.', square: 'A square has four sides, all the same.',

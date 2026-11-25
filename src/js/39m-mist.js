@@ -816,6 +816,7 @@ function hmLeaks(q, line) {
    Challenge question (as the why), never in a check-in (check() does not ask), never with lessons off (TEACH.off: the app as it was).
    G.hm keeps the code shown (tools/smoke.js reads it). */
 function hmHint(q, v) {
+  if (q && q.lsx) return ''; // audit v195: a lesson mix-in (lsMix) has another question's label
   if (typeof HINTW == 'undefined' || !q || typeof G == 'undefined' || !G || (typeof TEACH != 'undefined' && TEACH.off) || twoWay(q)) return '';
   if (G.why && G.why.q === q || typeof mastTag == 'function' && mastTag(q) == 'ch') return '';
   const m = hmMatch(q, v), t = m && HINTW[m.c];

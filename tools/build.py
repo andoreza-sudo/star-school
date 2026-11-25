@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # (BRAND, v193: the icons are copied from docs/brand/icons/, drawn by tools/brand-icons.js; the build no longer needs Pillow)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v195'
+VER = 'v196'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -167,7 +167,7 @@ write_words(ROOT)  # TEACH-2b: the reviewed words, before the parts are read (TE
 PARTS = [
     ('gen', r'(23-viz|30-gen-math|30p-pers|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|45-placement|50-say|50-say-cmp|50-say-corner|57-fluency|80-grown|81-backup|82-report|88-online|89-play)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note); PLAY-01: the Play app's unlock screens and purchase; MERGE-186 (ROOM 2): placement (Find my level), Say it! with its sound check and listening corner, and Fact Sprint, called only from screens after start-up (their CSS stays in index.html)
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2|51b-checkin)\.js|(37b-kinds-c|51b-checkin)\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds; CHECK-IN: check-ins and stop badges
-    ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
+    ('bt', r'\d+-bt-[\w-]+\.(js|css)|d-(puz-[a-z]+|riddles|memory|words-bt)\.js'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays); TRIM-START (v196): and the src/data files only those types read (PUZ, RIDDLES, MEMW, BTW, 130 KB, read only inside functions), off the start-up path
     ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub|59b-fx)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
     ('rally', r'(63-game-race|63b-rally-gl)\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2; GL-02: its 3D look (on games' GLX)
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
@@ -289,15 +289,20 @@ self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName)),isA=r=>/\
  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C&&k!==A).map(k=>caches.open(k).then(o=>o.keys().then(rs=>Promise.all(rs.filter(isA).map(r=>o.match(r).then(x=>x&&caches.open(A).then(a=>a.put(r,x)))))))
   .catch(()=>{}).then(()=>caches.delete(k)))))
  .then(()=>caches.open(A)).then(c=>c.keys().then(ks=>Promise.all(ks.filter(r=>!keep.has(aName(r.url))).map(r=>c.delete(r))))).then(()=>self.clients.claim()))});
-const AB=40;let filling=null;
+// sample fix (Fable's cheap-tablet rehearsal): on a slow connection 40 at a time kept the line a child needs now waiting behind the
+// fill. Now AB at a time (10), and a batch starts only when no recording asked for by the page is on its way (dem: on-demand fetches)
+// and the page is not speaking (a message 'hush' holds the fill for HUSH_MS; the page sends it as each recorded line starts, 90-app.js)
+const AB=10,HUSH_MS=8000;let filling=null,dem=0,hushT=0;
+const quiet=async()=>{while(dem>0||Date.now()<hushT)await new Promise(r=>setTimeout(r,250))};
+const onDemand=r=>{dem++;const f=fetch(r),d=()=>{dem--};f.then(d,d);return f};
 const fillAudio=()=>filling||(filling=caches.open(A).then(async c=>{const have=new Set((await c.keys()).map(r=>aName(r.url))),todo=AF.filter(u=>!have.has(aName(u)));let got=0;
- for(let i=0;i<todo.length;i+=AB)await Promise.all(todo.slice(i,i+AB).map(u=>fetch(u).then(r=>r.ok?c.put(u,r).then(()=>{got++}):0).catch(()=>0)));
+ for(let i=0;i<todo.length;i+=AB){await quiet();await Promise.all(todo.slice(i,i+AB).map(u=>fetch(u).then(r=>r.ok?c.put(u,r).then(()=>{got++}):0).catch(()=>0)))}
  return{todo:todo.length,got}}).finally(()=>{filling=null}));
-self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio())});
+self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio());if(e.data==='hush')hushT=Date.now()+HUSH_MS});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
  if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
-  return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
+  return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):onDemand(e.request)));return}
  if(e.request.mode==='navigate'&&!/\\/(index\\.html)?$/.test(new URL(e.request.url).pathname)){const net=fetch(e.request),own=()=>caches.match(e.request,{ignoreSearch:true});e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},t=setTimeout(()=>own().then(fin),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);own().then(r=>fin(r||Response.error()))})}));return}
@@ -306,7 +311,7 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},old=()=>caches.match('./index.html');
    const t=setTimeout(()=>old().then(r=>{if(r)late=1;fin(r)}),NAV_MS);
    net.then(r=>{clearTimeout(t);fin(r)},()=>{clearTimeout(t);old().then(r=>fin(r||Response.error()))})}));return}
- e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(/\\/audio\\//.test(e.request.url)?A:C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
+ e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||(/\\/audio\\//.test(e.request.url)?onDemand:fetch)(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(/\\/audio\\//.test(e.request.url)?A:C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
 """)
 
 # The information page's project (owner decision 2026-11-20: whistlestoplearning.com is a static info page, site/landing.html; the app is on

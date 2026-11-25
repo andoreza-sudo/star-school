@@ -46,8 +46,18 @@ function setup() {
   $('#go').onclick = () => {
     const n = $('#nm').value.trim();
     if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
-    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.chime(); home(true);
+    const pn = $('#pn').value.trim();
+    suPin(() => { S.name = n; S.pet = pet; S.petName = pn; setGrade(grade); SFX.chime(); home(true); });
   };
+}
+// PIN-SETUP (owner decision 2026-11-25): a tablet with no Grown-ups PIN gets one in first setup. A grown-up chooses it and types it
+// again (PIN.choose, 41b-pin.js) before anything is saved; Cancel stays on setup. A tablet that has one (another child, Start over)
+// is not asked. If the gate part cannot load, setup goes on and the old question guards the first Grown-ups entry (PIN.gate)
+const SU_PIN = 'A grown-up picks 4 numbers. The PIN keeps children out of the settings.';
+function suPin(fin) {
+  const ask = () => typeof PIN == 'undefined' || PIN.has() ? fin() : PIN.choose(fin, 'Choose a Grown-ups PIN', SU_PIN);
+  if (typeof PIN != 'undefined') return ask();
+  return partLoad('gate').then(ok => { if (!ok) logErr('the gate part did not load: setup went on without a PIN'); ask(); });
 }
 
 /* ---------- Home (P4-08; DESIGN_SYSTEM.md 9 row 2; styles in src/css/46-home.css) ----------
@@ -303,7 +313,8 @@ function hmActs() {
   const cr = careTick(), needs = Math.min(cr.food, cr.clean, cr.fun) < 30;
   const a = (id, icon, cls, label, extra = '') =>
     `<button class="hm-act" id="${id}"><span class="hm-ai ${cls}">${ico(icon, 30)}${extra}</span><span>${label}</span></button>`;
-  return `<div class="hm-acts">${a('race', 'bolt', 't-race', 'Fact Race')}` +
+  const rc = raceOn(); // audit v195: from grade 1
+  return `<div class="hm-acts${rc ? '' : ' n3'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}` +
     a('care', 'paw', 't-care', 'Pet Care', needs ? `<i class="hm-need" aria-label="Your pet would like a visit">!</i>` : '') +
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
 }
@@ -336,7 +347,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -384,6 +395,7 @@ function worldStrip(p){
 }
 function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].worlds,W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];
   const sel=Math.min(Math.max(MAPW[p]|0,0),ws.length-1),w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);MAPW[p]=sel;
+  const fw=PLAY.locked()?PLAY.freeW(p):-1,pe=fw>=0&&WR[p][fw][1]>=WR[p][fw][0]+PLAY.FREE_STOPS?WR[p][fw][0]+PLAY.FREE_STOPS:-1; // sample fix: the Play app's free sample ends before stop pe (its 6th)
   const st=$('#wstrip');if(st){ // the world strip is rebuilt only when what it shows changes; picking a world just moves the highlight
     const ms=MAPW[p];MAPW[p]=-1;const sh=worldStrip(p);MAPW[p]=ms; // its markup with no world picked is the key
     if(st.dataset.k!==p+'|'+sh){st.dataset.k=p+'|'+sh;st.innerHTML=sh;$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))}
@@ -392,15 +404,16 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
-  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=!PLAY.locked()&&worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
-    for(let i=a;i<=b;i++){if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
+    for(let i=a;i<=b;i++){if(i==pe){bands+=PLAY.bandHTML(y);y+=100} // sample fix: the grown-ups' unlock right after the sample's 5th stop
+      if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest||pl]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W,allDone?-1:cur);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}${i==pe?' pl-end':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}${i==pe?`<i class="pl-es">${ico('star',18)}</i>`:''}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur&&!q[3]),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}

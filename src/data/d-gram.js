@@ -254,8 +254,8 @@ GR(8,'adverbs','An adverb tells how, when or where an action happens. Many end i
  ['Tap the adverb.','The cat sleeps quietly.','quietly'],['Tap the adverb.','Mom drives carefully.','carefully'],
  ['Tap the adverb.','He jumped happily.','happily']]),
 GR(8,'adverbs','Does the blank tell how the action is done? A word that describes an action usually ends in -ly.','choice',[
- ['The turtle moves ___.','slowly','slow','slower'],['He spoke ___ to the baby.','softly','soft','softer'],
- ['She ran ___ to school.','quickly','quick','quicker'],['The band played ___.','loudly','loud','louder'],
+ ['The turtle moves ___.','slowly','slow','slowness'],['He spoke ___ to the baby.','softly','soft','softness'],
+ ['She ran ___ to school.','quickly','quick','quickness'],['The band played ___.','loudly','loud','loudness'],
  ['Please walk ___.','carefully','careful','care'],['We waited ___ for the bus.','patiently','patient','patience']]),
 GR(8,'prepositions','A preposition shows where something is or when it happens, and it comes before a noun. Ask: where, or when?','tap',[
  ['Tap the preposition.','Cats sleep under beds.','under'],['Tap the preposition.','Birds fly over us.','over'],
@@ -348,10 +348,12 @@ GR(9,'clear pronouns','A pronoun must point to one clear noun. If it could mean 
 BANK.gram.push(...[].concat((()=>{
   // level 2: the words of the level 2 sentences, two sentences a question; a sentence's noun, verb and adjective come from its tap items
   const S={};
-  for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{})[it.topic]=it.a.toLowerCase();
+  for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{sent:it.sent})[it.topic]=it.a.toLowerCase();
   const rows=Object.values(S).filter(r=>r.noun&&r.verb&&r.adjective),out=[];
   for(let i=0;i+1<rows.length;i+=2){const a=rows[i],b=rows[i+1],one=i%4?'adjective':'verb';
-    out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',
+    // WORDS-READ W8: the two source sentences are shown and read (hugs alone could be a noun)
+    out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',sents:[a.sent,b.sent],
+      say:'Sort the words: noun, verb or adjective? '+a.sent+' '+b.sent,
       hint:'A noun names a person, place or thing. A verb is an action. An adjective describes a noun.',
       bins:{noun:[a.noun,b.noun],verb:one=='verb'?[a.verb]:[a.verb,b.verb],adjective:one=='adjective'?[a.adjective]:[a.adjective,b.adjective]}})}
   return out})(),
@@ -392,7 +394,7 @@ GR(7,'commas','A comma goes after yes or oh no, after a name you are talking to,
   ['Tap the word that needs a comma after it.','Yes I would like some milk.','Yes'],
   ['Tap the word that needs a comma after it.','Ben can you help me?','Ben'],
   ['Tap the word that needs a comma after it.','We were tired so we went home.','tired'],
-  ['Tap the word that needs a comma after it.','Oh no I lost my hat!','no'],
+  ['Tap the word that needs a comma after it.','Wow I lost my hat!','Wow'],
   ['Tap the word that needs a comma after it.','Mom I finished my homework.','Mom']]),
 [['I packed socks shirts and shoes.',['socks','shirts']],['We saw cows pigs and goats.',['cows','pigs']],
   ['Bring a pencil a ruler and glue.',['pencil','ruler']]].map(([sent,a])=>({lv:7,topic:'commas',sent,a,

@@ -1059,6 +1059,10 @@ async function scanOne(browser, name, s, [w, h]) {
     await p.evaluate(pageSignal);
     await s.run(p);
     await p.waitForTimeout(300);
+    // the screen-in (#app fades in from opacity 0): on a busy machine its first frame can come late, and a scan while #app is still
+    // under opacity .05 sees every element as hidden (no targets, "0 h1 headings"). Scan once it has finished (or after 10 s anyway).
+    await p.waitForFunction(() => { const a = document.querySelector('#app');
+      return !a || !a.getAnimations().some(x => (x.playState == 'running' || x.pending) && x.effect && x.effect.target === a); }, null, { timeout: 10000 }).catch(() => {});
     const r = await p.evaluate(pageScan, { adult: !!s.adult, main: s.main || '', allow: ALLOW, v: VERBOSE });
     fails.push(...r.fails);
     if (VERBOSE) for (const i of r.info) console.log('    ' + tag + ' ' + i);

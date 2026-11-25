@@ -44,8 +44,11 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
 // KINDS2: every question asked goes on G.kh (its kind), whatever its source; the stop's own questions come from pickQ (49b-kinds2.js)
 function makeQ(){const q=makeQ1();if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
 function makeQ1(){if(G.pool)return G.pool.shift();
-  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
+  // audit v195: the review slot comes before adaptation (challenge and support rounds took the slots after question 5); the mode is
+  // still decided first, so the slot's question shows as the mode says. Nothing due: the round is unchanged.
+  if(mastOn(G)&&G.done>=MAST.AT&&G.mode===undefined)G.mode=mastMode(G.fr||[],gradeOf());
   {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
+  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
@@ -161,13 +164,14 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
-  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?'Try again!':pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
     ASK_LM={q,v,k:SKEY}; // ASK-01: the last mistake, for "Why did I get that wrong?" (39r-ask.js; this session only, never saved)
     G.hm='';let mh='';try{mh=typeof hmHint=='function'?hmHint(q,v):''}catch(e){} // HINT-01 (v182: guarded, a lazy part): this mistake's hint (39m-mist.js) above the generic one, once its words are approved
     $('#hint').innerHTML=mh+hintHTML(q);fit();hintIn();
     K.retry(q,G,()=>{$('#hint').innerHTML=mh+hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
+  actQEnd(false,true); // audit v195: a revealed question's time is learning time too ("Learn first"); the question is not counted
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture
   if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
   qProg();
@@ -188,17 +192,21 @@ const stkDoubles=()=>STK.reduce((a,s)=>a+stkDup(s),0);
 function stkSwap(t){if(!STK.includes(t)||stkN(t)||stkDoubles()<SWAP_COST)return null;
   let k=SWAP_COST;for(const s of STK){while(k&&stkDup(s)){S.stickers[s]--;k--}}
   S.stickers[t]=1;S.stkDry=0;save();return{s:t,isNew:true}}
+// P2 (owner 2026-11-24): right answers for share f of n, rounded up (5/6, 6/8, 4/5; 10 as before); one miss always passes
+const starNeed=(n,f)=>Math.min(Math.max(1,n-1),Math.ceil(n*f-1e-9));
 function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // CHECK-IN: its own end card (51b-checkin.js)
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
+  const n1=!!p&&ni>=0&&ni+1<NODES[p].length,was1=n1&&unlocked(p,ni+1); // sample fix: was the next stop open before this round?
   const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
   if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=starNeed(n,.8)?2:ss>=starNeed(n,.7)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
+  const unl=newPass&&n1&&!was1&&unlocked(p,ni+1); // sample fix: a stop really opened (not at the free sample's end, the map's end, or one open already)
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
   d.r++;const stk=streakTick();
@@ -206,7 +214,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   mi.won.forEach(w=>prizes.push(w.st));
   const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
-  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
+  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass&&!(n1&&PLAY.lockedS(p,ni+1)),testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
@@ -218,12 +226,14 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
     const low=!g.mix&&!g.test&&stars==0;
-    const line=sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    // audit v195: the line goes by the share right (6 of 6 said "Keep practicing"); a beaten boss shows the questions it took
+    const shown=g.boss&&g.won&&g.asked>0?g.asked:n,sh=k=>sc*10>=k*shown;
+    const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const need=starNeed(n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
-    f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
+    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
@@ -234,7 +244,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(newPass?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))},t);
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
@@ -242,7 +252,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',`+${coins} coins for the pet shop!`),null]];
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
-    if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
+    if(unl&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
     const ck=!g.mix&&!g.boss&&!g.test&&typeof CHK!='undefined'&&CHK.ready(p,ni);if(ck)M('medal',CHK.offerHTML(),'chime','win'); // CHECK-IN: the stop is ready for one
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}

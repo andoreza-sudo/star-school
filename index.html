@@ -2381,6 +2381,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 
 /* ---- secondary actions: icon tiles ---- */
 .hm-acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s-3);margin-top:var(--s-5)}
+.hm-acts.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hm-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2);min-width:0;min-height:108px;
   padding:var(--s-3) var(--s-1);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;
   font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center;overflow-wrap:normal;cursor:pointer;
@@ -3043,6 +3044,10 @@ html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:non
 .pl-msg,.sheet .pl-msg{min-height:1.45em;margin:var(--s-2) 0;color:var(--ink);font-weight:700}
 .pl-btns .btn{min-height:var(--tap)}
 .pl-sh .pl-btns{margin-bottom:var(--s-2)}
+/* sample fix: the free sample's last lock (its 6th stop), in the unlock's star colours */
+.btn.node.lock.pl-end{background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}
+.pl-es{position:absolute;right:-6px;top:-6px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--star);color:var(--ink)}
+.btn.node .pl-es .ic{width:18px;height:18px}
 </style>
 </head>
 <body>
@@ -3058,7 +3063,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v195'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v195 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v196'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v196 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3286,7 +3291,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v195'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v196'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3805,7 +3810,7 @@ const stkN=s=>(S.stickers[s]||0)+(s=='\u{1F420}'?(S.stickers['\u{1F984}']||0):0)
 let AC,MG;
 const MG_V=.8; // master level; ducked to MG_V * .3 under the voice
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=MG_V;MG.connect(AC.destination)}catch(e){}}
-  if(AC&&AC.state=='suspended')AC.resume();return AC}
+  if(AC&&AC.state=='suspended'&&!document.hidden)AC.resume();return AC} // sample fix: never wakes the sound while the app is hidden (sfxVis)
 let FXG=null; // while an effect is being built: {g: its gain node, end: when it stops}
 const FXON=[]; // effects still sounding, oldest first
 // a note: frequency f (Hz), length d (s), start t (s from now), wave type, peak level vol, optional slide to frequency `slide`
@@ -3868,6 +3873,12 @@ function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0
   musT=setInterval(()=>{if(!AC||AC.state!='running')return;
     if(i%8==0)synth(NOTE(bass[(i/8|0)%4]),1.2,0,'sine',.05);
     if(i%2==0&&Math.random()<.8)synth(NOTE(pick(sc)),.35,0,'triangle',.035);i++},260)}
+// sample fix (Fable): music, game sounds (all through AC) and a playing recording pause while the app is hidden, and go on after
+function sfxVis(){const h=document.hidden,a=typeof ESA!='undefined'&&ESA.au;
+  try{const p=AC&&(h?AC.suspend():AC.resume());if(p&&p.catch)p.catch(()=>{})}catch(e){}
+  try{if(a&&h&&!a.paused){a.pause();a._vis=1}else if(a&&!h&&a._vis){a._vis=0;a.play().catch(()=>{})}}catch(e){}
+  if(!h&&typeof esaPump=='function')esaPump()} // review v196: lines that came due while hidden play now
+document.addEventListener('visibilitychange',sfxVis);addEventListener('pagehide',()=>{try{if(AC)AC.suspend()}catch(e){}});addEventListener('pageshow',sfxVis);
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
@@ -3903,10 +3914,11 @@ const esHas=t=>!!esFiles(t);
 function speakBusy(){if(ESA.cur||ESA.q.length||ESA.tts>0)return true;try{return !!(speechSynthesis.speaking||speechSynthesis.pending)}catch(e){return false}}
 // stop everything: the speech engine, the recording, and what was queued (say without q, and the Say it! microphone)
 function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
-  if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
+  if(ESA.au){ESA.au.onended=ESA.au.onerror=null;ESA.au._vis=0;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
-function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
+function esaPlay(it){if(typeof document!="undefined"&&document.hidden){ESA.q.unshift(it);return} // review v196: a line due while the app is hidden waits for it (sfxVis pumps)
+  const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;swHush(); // sample fix: the worker's audio fill waits while the app speaks (90-app.js)
   a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
   const M=it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
@@ -3991,7 +4003,8 @@ function kidNames(){const o=new Set();const add=n=>{n=String(n||'').trim();if(n)
   try{if(typeof PRF!='undefined'&&PRF.ids)for(const id of PRF.ids)add(PRF.info(id).name)}catch(e){}return[...o].sort((a,b)=>b.length-a.length)}
 function noNames(t,names=kidNames()){let s=String(t);for(const n of names){const re=new RegExp('(?<![\\p{L}\\p{N}])'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','giu');
   if(s.trim().replace(re,'').replace(/[\s!?.,]/g,'')===''&&re.test(s))return'';s=s.replace(re,'friend')}return s}
-function ttsSay(t,btn,es,slow,cheer){
+// review v196: as esaPlay, the tablet's voice waits while the app is hidden
+function ttsSay(t,btn,es,slow,cheer){if(typeof document!="undefined"&&document.hidden){ESA.q.unshift({s:[t,btn,es,slow,cheer]});return}
   try{const v=pickVoice(es);if(!v||v.localService===false){t=noNames(t);if(!t.trim()){if(btn)btn.classList.remove('talking');esaPump();return}} // RENAME-2: an online voice never hears a child's name
   const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   if(v)u.voice=v;
@@ -3999,7 +4012,7 @@ function ttsSay(t,btn,es,slow,cheer){
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
-  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll()}catch(e){if(btn)noVoice(btn)}}
+  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
@@ -6662,11 +6675,12 @@ const SYLP=[['cat','🐱',1],['dog','🐶',1],['sun','☀️',1],['bus','🚌',1
   ['guitar','🎸',2],['trumpet','🎺',2],['balloon','🎈',2],['dragon','🐉',2],['castle','🏰',2],['pumpkin','🎃',2],
   ['banana','🍌',3],['elephant','🐘',3],['butterfly','🦋',3],['octopus','🐙',3],['strawberry','🍓',3],['ladybug','🐞',3],['crocodile','🐊',3],['volcano','🌋',3],
   ['sunflower','🌻',3],['bicycle','🚲',3],['dinosaur','🦖',3],['triangle','🔺',3]];
-// Syllable words for syl 2 (60, printed, no picture), by number of syllables (index 0 = one syllable).
+// Syllable words for syl 2 (59, printed, no picture), by number of syllables (index 0 = one syllable).
+// AUDIT-READ: "family" is gone (fam-ly or fam-i-ly: two claps or three, so no key was fair).
 const SYLW=[
   'cat jump stop black train house light plant spoon bread smile thumb'.split(' '),
   'tiger apple window happy monkey pencil garden rabbit table circle summer winter finger basket pillow button yellow market'.split(' '),
-  'banana elephant umbrella bicycle family computer dinosaur tomato potato animal butterfly beautiful yesterday remember strawberry kangaroo marshmallow vitamin'.split(' '),
+  'banana elephant umbrella bicycle computer dinosaur tomato potato animal butterfly beautiful yesterday remember strawberry kangaroo marshmallow vitamin'.split(' '),
   'alligator watermelon caterpillar dictionary helicopter motorcycle celebration elevator invitation category refrigerate generation'.split(' ')];
 
 /* ---------- P2-18 phonics 1st-2nd (CURRICULUM E-phon) ---------- */
@@ -6676,7 +6690,7 @@ DOL.push(
 'about better bring carry clean cut done draw drink eight fall far full got grow hold hot hurt if keep kind laugh light long much myself never only own pick seven shall show six small start ten today together try warm'.split(' '));
 // pic 5 / build 5: r-controlled vowels. [word, emoji, the r-vowel]. Wrong choices swap the r-vowel (bird / bard / burd).
 const RVW=[['car','🚗','ar'],['star','⭐','ar'],['yarn','🧶','ar'],['shark','🦈','ar'],['scarf','🧣','ar'],['cart','🛒','ar'],['dart','🎯','ar'],
-  ['horse','🐴','or'],['corn','🌽','or'],['torch','🔦','or'],['forest','🌲','or'],['sword','⚔️','or'],
+  ['horse','🐴','or'],['corn','🌽','or'],['torch','🔦','or'],['storm','⚡','or'],['sword','⚔️','or'],
   ['hammer','🔨','er'],['monster','👾','er'],['flower','🌸','er'],['water','💧','er'],['tower','🗼','er'],
   ['bird','🐦','ir'],['girl','👧','ir'],['circle','⚪','ir'],['birthday','🎉','ir'],
   ['turtle','🐢','ur'],['purse','👜','ur'],['church','⛪','ur']];
@@ -6808,7 +6822,12 @@ bowl:bow howl blow`.split('\n').map(r=>{const [w,d]=r.split(':');return [w,d.spl
 const SAMESOUND=['to two too','for four','right write','there their','no know','eight ate','by buy','red read','new knew','our hour','one won',
   'blue blew','be bee','see sea','so sew','some sum','here hear','would wood','whole hole','its it\'s','your you\'re',
   'not knot','i eye','made maid','wait weight','been bin','sun son','tail tale','mail male','road rode','rain rein','feet feat',
-  'meet meat','week weak','pair pear','flour flower','night knight','dear deer','where wear'].map(g=>g.split(' '));
+  'meet meat','week weak','pair pear','flour flower','night knight','dear deer','where wear','our are'].map(g=>g.split(' '));
+// AUDIT-READ: picture words whose pictures a child could take for each other (the drawn cup has a handle like the mug, an ant is a bug,
+// the gift is a box, a cap is a hat, a glass of milk is a cup to a small child). A question whose answer is one of a pair never offers
+// the picture of the other (Read & Match, the lessons' "tap the picture" items).
+const PICSAME=['cup mug','cup milk','bug ant','box gift','cap hat'].map(g=>g.split(' '));
+const picSame=(a,b)=>a!==b&&PICSAME.some(g=>g.includes(a)&&g.includes(b));
 const sameSound=w=>{const k=String(w).toLowerCase();return SAMESOUND.filter(g=>g.includes(k)).flat().filter(x=>x!==k)};
 
 // The blocklist itself lives in src/data/d-kidsafe.js as hashes only (KIDSAFE). ksHash is cyrb53 (public domain), in base 36.
@@ -6917,10 +6936,14 @@ function enPlural(w){const m=/^(.*?)([a-z]+)$/i.exec(String(w));if(!m)return w;c
 /* genQ(sk,lv,seed): build one question of skill sk, level lv, from a seed (uint32; random when omitted). Same (sk,lv,seed) gives the same question.
    The question is stamped with q.sk, q.lv, q.seed. RNG is always restored, even if the generator throws. */
 function genQ(sk,lv,seed){
-  if(seed==null)seed=Math.floor(Math.random()*4294967296);
+  const fresh=seed==null;if(fresh)seed=Math.floor(Math.random()*4294967296);
   seed=seed>>>0;
   const prev=RNG;RNG=mulberry32(seed);
-  try{const q=SK[sk].gen(lv);q.sk=sk;q.lv=lv;q.seed=seed;return q}
+  try{let q=SK[sk].gen(lv);
+    // audit v195: Pre-K and K get the "Listen" question of the same seed for a new Spanish "Read" one (esRead, 34-gen-es.js); it
+    // stays a question of its stop (q.lv), so the round, mastery and the challenge rules see the stop they asked for
+    if(fresh&&typeof esRead=='function'&&esRead(q,lv)){RNG=mulberry32(seed);q=SK[sk].gen(1)}
+    q.sk=sk;q.lv=lv;q.seed=seed;return q}
   finally{RNG=prev}}
 
 const SK={
@@ -7078,7 +7101,7 @@ let ASK_ON = 8;
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
 const view=h=>{music(false);calmApply();if(typeof NAV!='undefined'){if(NAV.gwK)NAV.gwK=0;else NAV.gwT=0} // RC-2: a child screen ends the grown-up session
   if(typeof NAV!='undefined'&&NAV.held){NAV.held=false;if(typeof GH!='undefined')GH.held=false} // NAV-01: a Go Home? sheet the new screen removed
-  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();if(typeof JFX!='undefined')JFX.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
+  stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof bbStop=='function')bbStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();if(typeof JFX!='undefined')JFX.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a);if(typeof SWU!='undefined'&&SWU.due===1)setTimeout(SWU.try,0);if(typeof NAV!='undefined'&&a.querySelector&&a.querySelector('.gh-top:not(.gh-play)'))NAV.bar('games')}; // NAV-01: a game's menus (its top bar without .gh-play) get the picture bar with Games lit; P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -7272,7 +7295,7 @@ function learnHub() {
   }).join('');
   const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
-    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) +
+    (raceOn() ? GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) : '') +
     (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('map', 24)}</span><span>Learn</span></div>${UI.chip('star', S.stars, { aria: 'Stars' })}</div>
   <div class="scroll gx-list lh"><p class="gx-lead">Pick what to learn!</p><div class="games">${cards}</div>
@@ -7282,9 +7305,24 @@ function learnHub() {
   $$('.lh-path').forEach(b => b.onclick = () => { SFX.whoosh(); NAV.mapFrom = 'learn'; pathMap(b.dataset.p); });
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
   if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
-  $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
+  if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
+/* sample fix (Fable): the Android back gesture. The Play app (a TWA) closes when back finds no history, so away from Home one history
+   entry stands in front: back takes it and does the screen's own way back (the open sheet, Back, the house's "Go Home?", an end card's
+   Home, the bar's Home), then it is put back. On Home, "Who is playing?" and the name screen there is none: back leaves the app. */
+const NAVB={skip:0,
+  act(){const m=UI.modal.top();if(m)return m._esc||(()=>{}); // a card with no way back of its own stays
+    if(document.getElementById('hs'))return null;
+    const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
+  on:()=>!!(history.state&&history.state.navb),
+  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
+    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
+  pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
+if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
+  try{if(NAVB.on())history.replaceState(null,'')}catch(e){} // a reload (an update, Start over) kept the last page's entry: going back to it would load the app again
+  const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
+  mo.observe(document.body,{childList:true});if(a)mo.observe(a,{childList:true})}
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
@@ -7470,7 +7508,7 @@ const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent firs
      lsStopAt(p, i)      stop i of map p has a lesson stop for this child: lessons on (TEACH.off off), a lesson, the child's band
                          (as planToday, 52b-know.js: Pre-K to 2nd below 3rd grade, 3rd to 6th from 3rd grade; a Pre-K world's
                          lessons for a Pre-K child only)
-     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a stop open before lessons were stops
+     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a lesson run LS_TRIES times (lsTried), a stop open before lessons were stops
                          (S.lsOpen, migration 6 in 00-core.js), a skipped world (placement or Test out proved it), a stop with a later
                          stop of its world passed, "Unlock every stop", or a stop the path has not reached (that one is locked anyway)
      lsOpen(p, i)        loads the lesson's parts and opens its start card (LS.open, 52-lesson.js), only if the screen the child tapped
@@ -7495,11 +7533,15 @@ const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
 function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return p == 'es' || (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
 function lsStopAt(p, i) { const n = NODES[p] && NODES[p][i]; return !!(n && !TEACH.off && LS_STOPS[p] && LS_STOPS[p].has(nid(n)) && lsBand(p, i)); }
 const lsLearned = id => !!(S.know && S.know[id] && S.know[id].s >= 2);
+/* Owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run LS_TRIES times without passing Show opens its practice stop
+   (Practice still has to be passed). S.know[id].n counts lessons run to their end (LS.finish); one left part way is no try. */
+const LS_TRIES = 3;
+const lsTried = id => !!(S.know && S.know[id] && S.know[id].n >= LS_TRIES);
 const LS_PASS = {}; // fix179: stops whose lesson could not load, open for this session (not saved: the next start tries the lesson again)
 function lsGate(p, i) {
   if (!lsStopAt(p, i) || S.unlockAll || passed(p, i) || !unlocked(p, i)) return false;
   const id = nid(NODES[p][i]);
-  return !lsLearned(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
+  return !lsLearned(id) && !lsTried(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
 }
 // the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35 (grade 6: and teach6), Spanish and Discover in teaches
 const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'es' || p == 'disc' ? ['teachrd', 'teaches'] : p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'].concat(lsWorldG(p, i) > 5 ? ['teach6'] : []) : []);
@@ -7957,8 +7999,18 @@ function setup() {
   $('#go').onclick = () => {
     const n = $('#nm').value.trim();
     if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
-    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.chime(); home(true);
+    const pn = $('#pn').value.trim();
+    suPin(() => { S.name = n; S.pet = pet; S.petName = pn; setGrade(grade); SFX.chime(); home(true); });
   };
+}
+// PIN-SETUP (owner decision 2026-11-25): a tablet with no Grown-ups PIN gets one in first setup. A grown-up chooses it and types it
+// again (PIN.choose, 41b-pin.js) before anything is saved; Cancel stays on setup. A tablet that has one (another child, Start over)
+// is not asked. If the gate part cannot load, setup goes on and the old question guards the first Grown-ups entry (PIN.gate)
+const SU_PIN = 'A grown-up picks 4 numbers. The PIN keeps children out of the settings.';
+function suPin(fin) {
+  const ask = () => typeof PIN == 'undefined' || PIN.has() ? fin() : PIN.choose(fin, 'Choose a Grown-ups PIN', SU_PIN);
+  if (typeof PIN != 'undefined') return ask();
+  return partLoad('gate').then(ok => { if (!ok) logErr('the gate part did not load: setup went on without a PIN'); ask(); });
 }
 
 /* ---------- Home (P4-08; DESIGN_SYSTEM.md 9 row 2; styles in src/css/46-home.css) ----------
@@ -8214,7 +8266,8 @@ function hmActs() {
   const cr = careTick(), needs = Math.min(cr.food, cr.clean, cr.fun) < 30;
   const a = (id, icon, cls, label, extra = '') =>
     `<button class="hm-act" id="${id}"><span class="hm-ai ${cls}">${ico(icon, 30)}${extra}</span><span>${label}</span></button>`;
-  return `<div class="hm-acts">${a('race', 'bolt', 't-race', 'Fact Race')}` +
+  const rc = raceOn(); // audit v195: from grade 1
+  return `<div class="hm-acts${rc ? '' : ' n3'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}` +
     a('care', 'paw', 't-care', 'Pet Care', needs ? `<i class="hm-need" aria-label="Your pet would like a visit">!</i>` : '') +
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
 }
@@ -8237,7 +8290,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v195)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v196)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8247,7 +8300,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -8295,6 +8348,7 @@ function worldStrip(p){
 }
 function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].worlds,W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];
   const sel=Math.min(Math.max(MAPW[p]|0,0),ws.length-1),w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);MAPW[p]=sel;
+  const fw=PLAY.locked()?PLAY.freeW(p):-1,pe=fw>=0&&WR[p][fw][1]>=WR[p][fw][0]+PLAY.FREE_STOPS?WR[p][fw][0]+PLAY.FREE_STOPS:-1; // sample fix: the Play app's free sample ends before stop pe (its 6th)
   const st=$('#wstrip');if(st){ // the world strip is rebuilt only when what it shows changes; picking a world just moves the highlight
     const ms=MAPW[p];MAPW[p]=-1;const sh=worldStrip(p);MAPW[p]=ms; // its markup with no world picked is the key
     if(st.dataset.k!==p+'|'+sh){st.dataset.k=p+'|'+sh;st.innerHTML=sh;$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))}
@@ -8303,15 +8357,16 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
-  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=!PLAY.locked()&&worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
-    for(let i=a;i<=b;i++){if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
+    for(let i=a;i<=b;i++){if(i==pe){bands+=PLAY.bandHTML(y);y+=100} // sample fix: the grown-ups' unlock right after the sample's 5th stop
+      if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest||pl]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W,allDone?-1:cur);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}${i==pe?' pl-end':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}${i==pe?`<i class="pl-es">${ico('star',18)}</i>`:''}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur&&!q[3]),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
@@ -9384,7 +9439,8 @@ const KIND={
   //        A wrong pair submits '!' (a miss for the engine: first one retries, second one reveals); matched pairs stay.
   match:{
     render:q=>{
-      const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`;
+      // AUD-DISC: q.speak (a read-aloud bank item): every word says itself when tapped (k2SayChip: Pre-K to 1st grade)
+      const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}"${q.speak&&c.say?` data-say="${esc(c.say)}"`:''}>${c.h?c.l:esc(c.l)}</button>`;
       return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
@@ -9395,6 +9451,7 @@ const KIND={
       const btn=(s,i)=>$(`.mb[data-s="${s}"][data-i="${i}"]`);
       $$('.mb').forEach(b=>b.onclick=()=>{
         if(st.lock||b.classList.contains('done'))return;
+        if(b.dataset.say&&typeof k2SayChip=='function')k2SayChip(b);
         const s=b.dataset.s,i=+b.dataset.i,sel=st.mSel;
         if(!sel||sel.s==s){
           if(sel)btn(sel.s,sel.i).classList.remove('sel');
@@ -9629,13 +9686,14 @@ const KIND={
   order:{
     render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}`
       +`${q.end?`<span class="oend" aria-hidden="true">${esc(q.end)}</span>`:''}</div>`
-      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
+      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}"${q.speak&&t.say?` data-say="${esc(t.say)}"`:''}>${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
     bind(q,st,submit){
       const K=KIND.order;
       st.ord=[];
       $$('.ot').forEach(b=>b.onclick=()=>{
         const i=+b.dataset.i;
         if(st.lock||st.ord.includes(i)||st.ord.length>=q.ans.length)return;
+        if(b.dataset.say&&typeof k2SayChip=='function')k2SayChip(b);
         st.ord.push(i);
         SFX.pop(st.ord.length);
         K.draw(q,st);
@@ -9806,8 +9864,11 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
 // KINDS2: every question asked goes on G.kh (its kind), whatever its source; the stop's own questions come from pickQ (49b-kinds2.js)
 function makeQ(){const q=makeQ1();if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
 function makeQ1(){if(G.pool)return G.pool.shift();
-  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
+  // audit v195: the review slot comes before adaptation (challenge and support rounds took the slots after question 5); the mode is
+  // still decided first, so the slot's question shows as the mode says. Nothing due: the round is unchanged.
+  if(mastOn(G)&&G.done>=MAST.AT&&G.mode===undefined)G.mode=mastMode(G.fr||[],gradeOf());
   {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
+  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
@@ -9923,13 +9984,14 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
-  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?'Try again!':pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);
     ASK_LM={q,v,k:SKEY}; // ASK-01: the last mistake, for "Why did I get that wrong?" (39r-ask.js; this session only, never saved)
     G.hm='';let mh='';try{mh=typeof hmHint=='function'?hmHint(q,v):''}catch(e){} // HINT-01 (v182: guarded, a lazy part): this mistake's hint (39m-mist.js) above the generic one, once its words are approved
     $('#hint').innerHTML=mh+hintHTML(q);fit();hintIn();
     K.retry(q,G,()=>{$('#hint').innerHTML=mh+hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
+  actQEnd(false,true); // audit v195: a revealed question's time is learning time too ("Learn first"); the question is not counted
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture
   if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
   qProg();
@@ -9950,17 +10012,21 @@ const stkDoubles=()=>STK.reduce((a,s)=>a+stkDup(s),0);
 function stkSwap(t){if(!STK.includes(t)||stkN(t)||stkDoubles()<SWAP_COST)return null;
   let k=SWAP_COST;for(const s of STK){while(k&&stkDup(s)){S.stickers[s]--;k--}}
   S.stickers[t]=1;S.stkDry=0;save();return{s:t,isNew:true}}
+// P2 (owner 2026-11-24): right answers for share f of n, rounded up (5/6, 6/8, 4/5; 10 as before); one miss always passes
+const starNeed=(n,f)=>Math.min(Math.max(1,n-1),Math.ceil(n*f-1e-9));
 function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // CHECK-IN: its own end card (51b-checkin.js)
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
+  const n1=!!p&&ni>=0&&ni+1<NODES[p].length,was1=n1&&unlocked(p,ni+1); // sample fix: was the next stop open before this round?
   const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
   if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=starNeed(n,.8)?2:ss>=starNeed(n,.7)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
+  const unl=newPass&&n1&&!was1&&unlocked(p,ni+1); // sample fix: a stop really opened (not at the free sample's end, the map's end, or one open already)
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
   d.r++;const stk=streakTick();
@@ -9968,7 +10034,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   mi.won.forEach(w=>prizes.push(w.st));
   const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
-  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
+  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass&&!(n1&&PLAY.lockedS(p,ni+1)),testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
@@ -9980,12 +10046,14 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
     const low=!g.mix&&!g.test&&stars==0;
-    const line=sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    // audit v195: the line goes by the share right (6 of 6 said "Keep practicing"); a beaten boss shows the questions it took
+    const shown=g.boss&&g.won&&g.asked>0?g.asked:n,sh=k=>sc*10>=k*shown;
+    const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const need=starNeed(n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
-    f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
+    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
@@ -9996,7 +10064,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(newPass?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))},t);
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
@@ -10004,7 +10072,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',`+${coins} coins for the pet shop!`),null]];
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
-    if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
+    if(unl&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
     const ck=!g.mix&&!g.boss&&!g.test&&typeof CHK!='undefined'&&CHK.ready(p,ni);if(ck)M('medal',CHK.offerHTML(),'chime','win'); // CHECK-IN: the stop is ready for one
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
@@ -10364,6 +10432,8 @@ const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i))
 const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀','Sight Words','Hear it, tap it!'],es:['🌮','Spanish Words','Escucha y toca!']};
 // P4-18: drawn race badges and colours (the emoji in RACES stay as data)
 const RACE_GX={math:['path-math','math'],sight:['eye','read'],es:['path-es','es']};
+// audit v195: a timed race of written sums is for grade 1 up, as Fact Sprint (FLU.on): no Home tile or Learn card for Pre-K and K
+const raceOn=()=>gradeOf()>=1;
 function raceMenu(){S.race=S.race||{};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Fact Race</span></div></div>
   <div class="scroll gx-list"><p class="gx-lead">How many can you get in 60 seconds? Beat your best score!</p>
@@ -10395,7 +10465,8 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);UI.setChip($('#rsc'),RC.score);if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
-  RC.iv=setInterval(()=>{if(!RC||document.hidden||RC.held)return;RC.left--; // R-01b: the clock stops while the app is hidden, like Fact Sprint'sGFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
+  // R-01b: the clock stops while the app is hidden. (audit v195: this note sat inside the next line and cut off its gauge and tick)
+  RC.iv=setInterval(()=>{if(!RC||document.hidden||RC.held)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const ps=ptRace(cat,sc),coins=raceCoins(sc,rec,ps);S.coins+=coins;if(ps)ptEarn(ps);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.chime();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
@@ -10416,7 +10487,7 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
      mix      one Mixed Practice round
-     speak    say 5 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
+     speak    say 2 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
               can play Spanish, speaking practice is on and the tablet may have a microphone (ctx.spk). Done at the next finish().
    "round" is always one of the three; the other two are drawn from what is left. Finishing a mission gives a sticker, once (it is
    marked done first). All three together give the old mission bonus once a day: 5 stars, 5 coins and a sticker (S.day.done).
@@ -10477,7 +10548,7 @@ const MIS = {
     try { due = dueItems().length; } catch (e) {}
     const subs = MIS.subjects();
     let spk = false; // S-SPK: speaking practice on, a Spanish stop to play, and a microphone not ruled out
-    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no'; } catch (e) {}
+    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no' && !SPK.deny; } catch (e) {}
     return { g, subs, bt, spr, due, spk };
   },
   // Pure: three missions [{k, p?, d:0}] for a day key, a child name and a ctx
@@ -10534,7 +10605,11 @@ const MIS = {
   count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
   // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect, n (rounds today)} | {k:'sprint'} | {k:'teaser'}
   hit(x, ev) {
-    if (x.k == 'speak') return (day().spk | 0) >= SPK.GOAL; // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
+    if (x.k == 'speak') { // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
+      if ((day().spk | 0) >= SPK.GOAL) return true;
+      // audit v195: no microphone, or it is blocked (known after the draw): no "Say it!" step runs, so a Spanish round does it
+      return (SPK.mic == 'no' || !!SPK.deny) && ev.k == 'round' && ev.p == 'es' && !ev.mix && !ev.test;
+    }
     if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
     if (ev.k != 'round') return false;
     if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;
@@ -10853,7 +10928,7 @@ function ptBT(b,mis){const L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v
 function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission);if(g.bt)return ptBT(g.bt,mis);
   const per=ptCfg().per*60,L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v,l])}};
   if(g.test){add(testOk?per+60:60,testOk?'Tested out!':'Good try')}
-  else if(g.mix&&g.daily){add(per,'Daily review done');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)} // the first one of the day pays a full round
+  else if(g.mix&&g.daily){add(Math.round(per*Math.min(1,n/REVIEW_N)),'Daily review done');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)} // P4 (owner): by size, 10 = a full round
   else if(g.mix){add(Math.round(per*.6),'Practice round');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)}
   else{const acc=sc/n,mast=prev>=3&&!g.boss;
     if(mast)add(60,'Already mastered this one');
@@ -11055,6 +11130,8 @@ function revQ(it){
   // R-01s: the first Spanish units gained el / la ("pato (read)" is now "el pato (read)"): a Spanish item rebuilt from its seed whose
   // label differs only by that article is the same question, and the item takes the new label (so a new miss finds it)
   if(q&&/^es_/.test(it.sk)&&revLabel(q.label)!==it.label&&revNoArt(revLabel(q.label))===revNoArt(it.label))it.label=revLabel(q.label);
+  // review v196: a Pre-K / K "Listen" question was the level 1 question of its level 2 seed (esRead in genQ); rebuild it the same way
+  if(q&&it.lv==2&&/^es_/.test(it.sk)&&/ \(listen\)$/.test(it.label)&&revLabel(q.label)!==it.label){try{const t=genQ(it.sk,1,it.seed);if(revLabel(t.label)===it.label)q=t}catch(e){}}
   if(!q||revLabel(q.label)!==it.label||!revFact(it,q)){
     q=null;
     for(let t=0;t<8&&(!q||revLabel(q.label)===it.label);t++)q=genQ(it.sk,it.lv);
@@ -11238,7 +11315,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v195'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v196'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11795,7 +11872,7 @@ const BT = {
     document.body.appendChild(card);
     (o.stars == 3 ? SFX.fanfare : SFX.chime)();
     RW.burst(card.querySelector('.rw-card'), o.stars == 3 ? 30 : 16);
-    if (S.voice) say((o.stars == 3 ? 'Perfect!' : 'You solved it!') + (nb ? ' And a new badge: ' + BT.badgeNames(o.badges) + '!' : ''));
+    if (S.voice) say((o.stars == 3 ? 'Perfect!' : 'You solved it!') + (nb ? ' And ' + (o.badges[1] ? 'new badges: ' : 'a new badge: ') + BT.badgeNames(o.badges) + '!' : ''));
     if (o.grew) setTimeout(() => { if (card.isConnected) growShow(o.before); }, 1200);
     const go = f => () => { card.remove(); f(); };
     if ($('#btnext')) $('#btnext').onclick = go(() => BT.start(run.id, run.band, next));
@@ -11818,6 +11895,9 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
    every file is in (the worker skips the ones it has; one that failed is tried again the next time) */
 const swAudio=()=>{try{navigator.serviceWorker.ready.then(x=>{if(x.active)x.active.postMessage('audio')}).catch(()=>{})}catch(e){}},
   swAudioLater=()=>setTimeout(()=>(window.requestIdleCallback||(f=>f()))(swAudio,{timeout:5000}),3000);
+// sample fix (Fable): while the app speaks the worker holds its audio fill (sw.js 'hush'; sent at most every 2 s)
+let swHushT=0;
+function swHush(){const n=Date.now();if(n-swHushT<2000)return;swHushT=n;try{const c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(c)c.postMessage('hush')}catch(e){}}
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{swAudioLater();navigator.serviceWorker.addEventListener('controllerchange',swAudioLater);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){r.update().catch(()=>{});swAudio()}})}).catch(()=>{});
 /* RC-1: a new release's service worker took over (controllerchange). The page reloads into it only on a hub screen (Home, a map,
@@ -11863,12 +11943,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v195');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v196');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v195')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v195)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v196')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v196)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo('', true, false)}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11890,15 +11970,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v195';
+  return !!f && f[1] === 'v196';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v195') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v196') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v195.js';
+    s.src = stem + '.v196.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11923,9 +12003,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v195.js"></script>
-<script src="gen2.v195.js"></script>
-<script src="data.v195.js"></script>
+<script src="gen.v196.js"></script>
+<script src="gen2.v196.js"></script>
+<script src="data.v196.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

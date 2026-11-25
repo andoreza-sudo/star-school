@@ -119,7 +119,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
 | `39b-steps.js` | P2-08 | Step-hint builders (`stepsAdd`, `stepsSub`, `stepsMul`, `stepsDiv`, `stepsEquivFrac`, `stepsCommonDen`, `stepsStory`) and prompt layouts `ST.vert`, `ST.ldiv`; the renderer is in `39-hints.js`, CSS in `src/css/39-steps.css` |
-| `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Built into `data.<VER>.js` (A11, section 3.3), which loads after all code, so code may read them only inside functions (at run time), never while the script is first loading |
+| `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Built into `data.<VER>.js` (A11, section 3.3), which loads after all code, so code may read them only inside functions (at run time), never while the script is first loading. TRIM-START (v196): the Brain Teaser data (`d-puz-*`, `d-riddles`, `d-memory`, `d-words-bt`: `PUZ`, `RIDDLES`, `MEMW`, `BTW`, read only by the `NN-bt-*.js` types) is built into the lazy part `bt` instead, after its code |
 | `45-placement.js`, `47-trace.js`, `49-kinds.js`, `51-mastery.js`, `57-fluency.js`, `59-review.js` | P1, P2, P5 | Engines |
 | `51b-checkin.js`, `src/css/51b-checkin.css` | CHECK-IN | Mastery check-ins and stop badges (`CHK.*`; gen2 file): when one is offered, the 5-question check-in, the badge card, the map medal and Check-in button, the badge shelf; save `S.chk` (default `{}` in `migrate()`); hooks in 50-round.js, 46-home.js, 41-nav.js and the report card |
 | `74-teasers.js`, `NN-bt-*.js` | P3 | Brain Teasers: the framework (index.html) and one file per puzzle type (built into `bt.<VER>.js`, section 3.3) |
@@ -169,7 +169,7 @@ hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js
                   LAZY: a Practice round loads it as it starts (hintsWarm in 50-round.js, from newG); check() shows the generic hint until it is in
                   (PERS-01: the story themes 39p-pers.js, 39q-persw.js; ASK-01: the Ask the pet menu 39r-ask.js and its reviewed words 39s-askw.js,
                   loaded by the Ask button beside the pet; 39t-askon.js, the count of reviewed questions, stays in index.html)
-data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
+data.<VER>.js     src/data/*.js in filename order (not the ones a part takes: d-teach-audio.js, teach12; the Brain Teaser data, bt), then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
                   (install waits for these only); ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es, en, teach
                   *.ogg AFTER activation (v194 fix2): the page posts 'audio' when idle after the start and on later opens; the worker
@@ -189,7 +189,9 @@ gen, gen2, then data; the LAZY parts bt, games, rally, games2, games3 follow on 
 
 The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regular expression on whole file names in `src/js` and
 `src/css`. A matching file goes into `<stem>.<VER>.js` (in filename order) instead of into index.html:
-- `bt`: every `src/js/NN-bt-*.js` and `src/css/NN-bt-*.css`. The framework `74-teasers.js` and `48-teasers.css` stay in index.html
+- `bt`: every `src/js/NN-bt-*.js` and `src/css/NN-bt-*.css`, and (TRIM-START, v196) the data only they read, `src/data/d-puz-*.js`,
+  `d-riddles.js`, `d-memory.js` and `d-words-bt.js` (130 KB off the start-up path; code outside bt must not read `PUZ`, `RIDDLES`,
+  `MEMW` or `BTW`, or must guard with `typeof`). The framework `74-teasers.js` and `48-teasers.css` stay in index.html
   (Home needs `BT.list()` for its card, and `view()` calls `BT.stop()`). P6-03: bt is LAZY; each type's name, icon, bands, allow and
   rules are in `BT.CAT` (74-teasers.js), so Home, the hub, the level strip, badges and the Puzzle of the Day work before bt loads; a
   type's file registers only `id`, `make`, `mount` and `solve` (a new type adds its line to `BT.CAT`; the check "performance P6-03"
@@ -246,7 +248,7 @@ How it fits together:
   **precached** (every built file, the LAZY parts too) fail 4.5 MB (R-03 raised it from 3.6 MB for the game updates; the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`, G-01b to 3.6 MB for the Block Builder journey; with the
   games on demand, 3.0 MB holds again for what loads at start; ES-AUDIO raised it to 3.4 MB for the recordings' 28 KB manifest in the data file).
   ES-AUDIO: **audio** (`audio/es/*.ogg`, the recorded Spanish, and since EN-PRAISE `audio/en/*.ogg`, the recorded encouragement) is its
-  own budget: warn 7.995 MB / fail 9.0 MB in all (EN-PRAISE raised it from 2.5 / 3.0 MB to 4.0 / 4.5 MB; REC-ALL, owner decision 2026-11-24, to
+  own budget: warn 8.439 MB / fail 9.5 MB in all (owner decision 2026-11-24 (D2): from 7.995 / 9.0 MB, for the Spanish sort chips and the wrong forms the Spanish lessons read aloud; EN-PRAISE raised it from 2.5 / 3.0 MB to 4.0 / 4.5 MB; REC-ALL, owner decision 2026-11-24, to
   7.55 / 8.5 MB for every lesson line in the pet's recorded voice; REC-2, owner decision 2026-11-24 (9.0 MB), to 7.995 / 9.0 MB for the warm-up
   lines and the Explore lines of grade 3 and up), 40 KB a file
   (`AUDIO_*` in tools/test.js). It never counts toward the start-up bytes: say() fetches a file the first time its line is said (from the

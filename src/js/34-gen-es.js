@@ -12,8 +12,15 @@ const esSpellable=it=>/^[a-zñáéíóúü]{1,12}$/.test(it[0]);
 const esCap=(u,it)=>!!u&&(u.cap===1||Array.isArray(u.cap)&&u.cap.includes(it[0]));
 const esClash=(u,a,b)=>!!(u&&u.confuse&&u.confuse.some(p=>p.includes(a[0])&&p.includes(b[0])));
 // two wrong items for `it`: neither clashes with it or with the other (a unit with no confuse list draws exactly as before R-01s)
-function esWrong(u,it,pool){const out=[];
-  for(const x of shuffle(pool.filter(x=>x!==it&&!esClash(u,it,x)))){if(out.length==2)break;if(!out.some(y=>esClash(u,x,y)))out.push(x)}
+// Audit v195 (R-01 Spanish Must 4, 5): a Pre-K or K child (a chosen grade; a save with no grade draws as before) cannot read yet.
+// esRead: a NEW unit "Read" question (level 2: three written words, nothing said) is drawn again as the "Listen" question of the same
+// seed (genQ asks only when it makes up the seed: seeded questions and test hashes stay; the Big
+// Review's sort stays). esSame: for that child no two listening choices show one picture (calendars)
+const esLittle=()=>S.grade===-1||S.grade===0;
+const esRead=(q,lv)=>lv==2&&esLittle()&&q.kind=='choice'&&q.lang=='es'&&!q.say&&/ \(read\)$/.test(q.label);
+const esSame=(a,b)=>a[2]==b[2]&&(a[4]||'')==(b[4]||'');
+function esWrong(u,it,pool,pic){const out=[],no=(a,b)=>esClash(u,a,b)||pic&&esSame(a,b);
+  for(const x of shuffle(pool.filter(x=>x!==it&&!no(it,x)))){if(out.length==2)break;if(!out.some(y=>no(x,y)))out.push(x)}
   return out}
 const esSay=it=>it[5]||esFull(it);
 function genEs(set,lv){const sn=set=='mix'?pick(ES_UNITS.filter(u=>u.mix).map(u=>u.id)):set,un=ES_UNITS.find(u=>u.id==sn),items=SPN[sn],
@@ -23,7 +30,7 @@ function genEs(set,lv){const sn=set=='mix'?pick(ES_UNITS.filter(u=>u.mix).map(u=
       html:`<div class="emo">${picHTML(w,false)}</div><div class="sub">Spell it in Spanish: ${a?esc(a)+' … ':''}<b>${esc(w[1])}</b></div>`
         +`<div class="lslots">${[...w[0]].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`,
       hint:{k:'say',lang:'es',w:w[0],s:`It has ${[...w[0]].length} letters and starts with “${w[0][0]}”.`},label:`${w[0]} (spell)`}}
-  const it=pick(pool),f=esFull(it),sy=esSay(it),opts=shuffle([it,...esWrong(un,it,pool)]);
+  const it=pick(pool),f=esFull(it),sy=esSay(it),opts=shuffle([it,...esWrong(un,it,pool,lv==1&&esLittle())]);
   // R-01s hints never give the answer: level 1 replays the word slowly (no English meaning, which the captions would match);
   // level 2 reads the three choices aloud (the child still has to know which one names the picture), no first letter
   if(lv==1)return{kind:'choice',cls:'pics',lang:'es',html:`<button class="btn hear" data-sayes="${esc(sy)}">🔊</button><div class="sub">Tap the picture for “${esc(f)}”</div>`,
@@ -59,7 +66,7 @@ function genEsArt(lv){const N=ES_GRAM.nouns,regular=N.filter(n=>/[oa]$/.test(n[0
     return{kind:'choice',cls:'wide',say:`More than one ${n[1]}! How do you say the ${enPlural(n[1])}?`,after:right,afterLang:'es',
       html:`<div class="emo">${picFor('',n[2])}${picFor('',n[2])}</div>${gSub(`More than one! How do you say “the ${esc(enPlural(n[1]))}”?`)}`,
       ans:right,choices:opts.map(x=>({l:x,v:x})),
-      hint:{k:'text',s:'Many things: change the ending (a vowel at the end takes -s, a consonant takes -es), and use the small word that goes with boy words or girl words.'},label:`${right} (plural)`}}
+      hint:{k:'text',s:'Many things: change the ending (a vowel at the end takes -s, a consonant takes -es, and z changes to c: lápiz, lápices), and use the small word that goes with boy words or girl words.'},label:`${right} (plural)`}}
   const n=pick(regular),a=lv==2?(n[3]=='el'?'un':'una'):n[3],ch=lv==2?['un','una']:['el','la'],
     hint=(/o$/.test(n[0])?'This word ends in -o. Words that end in -o are usually “boy” words (masculine).':'This word ends in -a. Words that end in -a are usually “girl” words (feminine).')
       +(lv==2?' The word for “a” has a boy form and a girl form too.':'');

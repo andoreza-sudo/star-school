@@ -268,6 +268,19 @@ async function pinIn(pg, pin = '2580') {
   } else await padH(pg, /PIN/);
   await pinType(pg, pin);
 }
+// PIN-SETUP (owner decision 2026-11-25): Let's go! on setup. A tablet with no Grown-ups PIN asks the grown-up to choose one and
+// type it again, by the pad's own buttons, before setup goes on. True when it asked (a tablet with a PIN goes straight on)
+async function setupGo(pg, pin = '2580') {
+  await pg.click('#go');
+  await pg.waitForFunction(() => !!document.querySelector('.sheet-bg.on #pnpad') || !document.querySelector('#app .su'), null, { timeout: 10000 });
+  if (!(await pg.$('.sheet-bg.on #pnpad'))) return false;
+  await padH(pg, /^Choose a Grown-ups PIN/);
+  await pinType(pg, pin);
+  await padH(pg, /^Type it again/);
+  await pinType(pg, pin);
+  await pg.waitForFunction(() => !document.querySelector('#app .su'), null, { timeout: 10000 });
+  return true;
+}
 
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
 
@@ -465,7 +478,7 @@ async function main() {
     if (seg('core')) {
       if (!(await page.$('#nm'))) fail('fresh save should show the setup screen');
       await page.fill('#nm', 'Smoke');
-      await page.click('#go');
+      if (!(await setupGo(page))) fail('PIN-SETUP: first setup did not ask the grown-up to choose a PIN');
       await page.waitForSelector('.game[data-p]');
       step('setup done, home shown');
       const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Whistlestop (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
@@ -771,18 +784,18 @@ async function main() {
       const g = await d.page.evaluate(() => {
         const src = [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src'));
         const vq = genQ('vocab', 1, 4242);
-        const pz = PUZ.sudoku.A.easy[0].split('|');
+        const pz = typeof PUZ == 'undefined' ? null : PUZ.sudoku.A.easy[0].split('|'); // TRIM-START (v196): the puzzle banks come with bt
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
         return { src, files: appFiles(), lazy: LAZY_PARTS, btIn: partReady('bt') || typeof MZ != 'undefined', dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
-          pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
+          pz: pz ? pz.length + ':' + pz[0].length + ':' + pz[1].length : 'later', ix, bt: BT.list().map(t => t.id).join(),
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
       if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
-        || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
+        || g.spell !== 'function' || !g.vq || g.pz !== 'later' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
       // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css), in before bt's (the same change as test.js P6-02)
@@ -795,7 +808,7 @@ async function main() {
       const words = await d.page.evaluate(() => document.querySelectorAll('.bctx-p .w').length);
       if (words < 20) fail('A11: reading passage did not open (' + words + ' words)');
       else step('A11: ' + files.join(', ') + ' loaded over file:// (' + g.vocab + ' vocabulary items, ' + g.comp + '+' + g.info + ' passages, '
-        + 'sudoku bank), a vocabulary question built, a passage opened (' + words + ' words)');
+        + 'no puzzle banks until bt), a vocabulary question built, a passage opened (' + words + ' words)');
 
       // A11c: the question generators are in gen/gen2 part files now: the first lesson of each subject opens a real question
       for (const area of ['math', 'read', 'es', 'disc']) {
@@ -826,6 +839,10 @@ async function main() {
         } catch (e) { fail('A11b: ' + id + ' puzzle did not open from the hub: ' + e.message.split('\n')[0]); }
         await d.page.evaluate(() => { BT.stop(); home(); });
       }
+      // TRIM-START (v196): the puzzle banks (PUZ, RIDDLES, MEMW, BTW) are built into bt now, so they are in once the hub loaded it
+      const pzb = await d.page.evaluate(() => { if (typeof PUZ == 'undefined') return 'none'; const z = PUZ.sudoku.A.easy[0].split('|');
+        return z.length + ':' + z[0].length + ':' + z[1].length + ':' + [typeof RIDDLES, typeof MEMW, typeof BTW].join(); });
+      if (pzb !== '3:16:16:object,object,object') fail('A11b: the puzzle banks did not come with ' + btF + ': ' + pzb);
       // A11b: the Game Room (games.<VER>.js) opens and lists the games; P6-02: it loads games and games2 (code and <style>) on the way
       await d.page.evaluate(() => gameRoom());
       await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
@@ -1039,7 +1056,7 @@ async function main() {
       if (gr.n !== 8 || gr.sel !== '0' || gr.min < 48) fail('setup grade buttons: ' + JSON.stringify(gr));
       await gp.fill('#nm', 'Tiny');
       await gp.click('.gr[data-g="-1"]');
-      await gp.click('#go');
+      await setupGo(gp);
       await gp.waitForSelector('.game[data-p]');
       if ((await gp.evaluate(() => S.grade)) !== -1) fail('Pre-K tap on setup not saved');
       await gp.click('.game[data-p="math"]');
@@ -1105,7 +1122,7 @@ async function main() {
       const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const pp = pa.page;
       await pp.fill('#nm', 'Placer');
-      await pp.click('#go');
+      await setupGo(pp);
       await pp.waitForSelector('#plcard [data-place="math"]');
       const card = await pp.evaluate(() => [...document.querySelectorAll('#plcard .btn')].map(b => [b.offsetWidth, b.offsetHeight]));
       if (card.length !== 3 || card.some(([w, h]) => w < 48 || h < 48)) fail('placement card buttons: ' + JSON.stringify(card));
@@ -1189,13 +1206,16 @@ async function main() {
         return i;
       });
       await mp.waitForSelector('#prompt');
-      let missed = 0, tags = 0, tagH = 99;
+      // audit v195 (n5): a due review item now takes its slot (questions 6 and 8) before a Challenge question, so the questions after
+      // the fifth are Challenge questions except the review ones (revs, at most 2); before, a challenge round asked no review after question 4
+      let missed = 0, tags = 0, tagH = 99, revs = 0, lastRev = null;
       for (let guard = 0; guard < 60; guard++) {
         const st = await mp.evaluate(() => document.querySelector('#fin') ? { fin: 1 } : G && G.q && !G.lock
-          ? { tag: mastTag(G.q), tries: G.tries, kind: G.q.kind, h: (document.querySelector('.mtag') || {}).offsetHeight || 0 } : null);
+          ? { tag: mastTag(G.q), tries: G.tries, kind: G.q.kind, h: (document.querySelector('.mtag') || {}).offsetHeight || 0, rev: !G.retry && G.done >= 5 && !!G.q.review, done: G.done } : null);
         if (st && st.fin) break;
         if (!st) { await mp.waitForTimeout(150); continue; }
         await mp.evaluate(() => { window.__q = G.q; });
+        if (st.rev && st.done !== lastRev) { revs++; lastRev = st.done; }
         if (st.tag === 'ch' && st.tries === 0) {
           tags++;
           tagH = Math.min(tagH, st.h);
@@ -1222,9 +1242,9 @@ async function main() {
       await mp.waitForSelector('#chest', { timeout: 5000 });
       const res = await mp.evaluate(i => ({ mode: G.mode, score: G.score, n: G.n, forgive: G.forgive || 0, st: getSt('math', i),
         rec: S.mast && S.mast.eo1, saved: !!JSON.parse(localStorage.getItem(KEY)).mast }), mi);
-      if (res.mode !== 'challenge' || tags !== res.n - 5 || tagH < 20 || !missed || res.forgive !== missed || res.score !== res.n - missed || res.st !== 3)
-        fail('challenge round: ' + JSON.stringify({ ...res, tags, tagH, missed }));
-      else step(`challenge: questions 6-${res.n} came from the harder stop with the tag, ${missed} of them missed once, ${res.score}/${res.n} still gave 3 stars`);
+      if (res.mode !== 'challenge' || tags !== res.n - 5 - revs || revs > 2 || tagH < 20 || !missed || res.forgive !== missed || res.score !== res.n - missed || res.st !== 3)
+        fail('challenge round: ' + JSON.stringify({ ...res, tags, revs, tagH, missed }));
+      else step(`challenge: questions 6-${res.n} came from the harder stop with the tag (${revs} review question${revs == 1 ? '' : 's'} in the slots), ${missed} of them missed once, ${res.score}/${res.n} still gave 3 stars`);
       if (!res.rec || res.rec.n < 4 || !res.saved) fail('mastery record for eo1 not saved: ' + JSON.stringify(res.rec));
       // support: five wrong first tries, then the 6th question shows its hint before any answer
       const sp = await mp.evaluate(i => {
@@ -1430,7 +1450,7 @@ async function main() {
       const pp = pa.page;
       await pp.fill('#nm', 'Beach');
       await pp.click('.gr[data-g="-1"]');
-      await pp.click('#go');
+      await setupGo(pp);
       await pp.waitForSelector('.game[data-p]');
       await pp.click('.game[data-p="read"]');
       await lsLearnCur(pp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1467,7 +1487,7 @@ async function main() {
       const ka = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const kp = ka.page;
       await kp.fill('#nm', 'Kay');
-      await kp.click('#go');
+      await setupGo(kp);
       await kp.waitForSelector('.game[data-p]');
       await kp.click('.game[data-p="read"]');
       await lsLearnCur(kp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1489,7 +1509,7 @@ async function main() {
       const tp = ta.page;
       await tp.fill('#nm', 'Tiny');
       await tp.click('.gr[data-g="-1"]');
-      await tp.click('#go');
+      await setupGo(tp);
       await tp.waitForSelector('.game[data-p="math"]');
       await tp.click('.game[data-p="math"]');
       await lsLearnCur(tp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1713,7 +1733,7 @@ async function main() {
       const sp = sg.page;
       await sp.fill('#nm', 'Garden');
       await sp.click('.gr[data-g="0"]');
-      await sp.click('#go');
+      await setupGo(sp);
       await sp.waitForSelector('.game[data-p="math"]');
       await sp.click('.game[data-p="math"]');
       await lsLearnCur(sp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1793,7 +1813,7 @@ async function main() {
       const cp = ca.page;
       await cp.fill('#nm', 'Tower');
       await cp.click('.gr[data-g="1"]');
-      await cp.click('#go');
+      await setupGo(cp);
       await cp.waitForSelector('.game[data-p="math"]');
       await cp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_candy').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Candy Canyon finished
       await cp.click('.game[data-p="math"]');
@@ -1976,7 +1996,7 @@ async function main() {
       const bp = ba.page;
       await bp.fill('#nm', 'Bay');
       await bp.click('.gr[data-g="2"]');
-      await bp.click('#go');
+      await setupGo(bp);
       await bp.waitForSelector('.game[data-p="math"]');
       await bp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_space').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Space Station finished
       await bp.click('.game[data-p="math"]');
@@ -2698,7 +2718,7 @@ async function main() {
       const sp = sa.page;
       await sp.fill('#nm', 'Sent');
       await sp.click('.gr[data-g="2"]');
-      await sp.click('#go');
+      await setupGo(sp);
       await sp.waitForSelector('.game[data-p="read"]');
       const where = await sp.evaluate(() => {
         const ids = PATHS.read.worlds.map(w => w.id), at = id => NODES.read.map(nid).indexOf(id);
@@ -3261,7 +3281,7 @@ async function main() {
       await k2Old(dp); // KINDS2: dec 2 and ang 1 mix in sort questions; this checks each stop's pad, choices, picture and step hint
       await dp.fill('#nm', 'Desert');
       await dp.click('.gr[data-g="4"]');
-      await dp.click('#go');
+      await setupGo(dp);
       await dp.waitForSelector('.game[data-p="math"]');
       // Factor Factory (the other 4th grade world) comes first on the map: this child has finished it, so the map opens on the desert
       await dp.evaluate(() => {
@@ -3895,6 +3915,11 @@ async function main() {
         await pg.click('#bthint');
         const h1 = await pg.evaluate(() => ({ on: !document.querySelector('.mz-arrow').hidden, d: document.querySelector('.mz-arrow').dataset.d, msg: document.querySelector('.mz-msg').textContent }));
         if (!h1.on || !h1.d || !/ is /.test(h1.msg)) bad.push('hint 1: ' + JSON.stringify(h1));
+        // AUD-BT M-3: hint 1 rings the thing itself (the flag here, or the next star or key); it is not an arrow beside the bear
+        const ring = await pg.evaluate(() => { const a = document.querySelector('.mz-arrow'), r = a.getBoundingClientRect(), p = MZ.cur.p, o = MZ.decode(p.o);
+          const st = S.bt.cur.state, tg = MZ.target(p, MZ.route(p, o, MZ.cur.head(), st ? st.m : 0), st ? st.m : 0).c, q = MZ.cur.at(tg);
+          return { ring: a.classList.contains('ring'), svg: !!a.querySelector('svg'), c: +a.dataset.c, tg, dx: Math.round(r.left + r.width / 2 - q.x), dy: Math.round(r.top + r.height / 2 - q.y), w: a.offsetWidth }; }); // offsetWidth: the ring pulses, its box does not
+        if (!ring.ring || ring.svg || ring.c !== ring.tg || Math.abs(ring.dx) > 2 || Math.abs(ring.dy) > 2 || ring.w < 44) bad.push('hint 1 does not ring the target: ' + JSON.stringify(ring));
         await vwait(pg, 11500);
         await pg.click('#bthint');
         s = await now();
@@ -4011,7 +4036,7 @@ async function main() {
       const cp = cc.page;
       await cp.fill('#nm', 'Caves');
       await cp.click('.gr[data-g="5"]');
-      await cp.click('#go');
+      await setupGo(cp);
       await cp.waitForSelector('.game[data-p="math"]');
       // worlds before the caves (Volcano Lab sits there after merge) are finished first, so the map meets the caves without an unlock switch
       await cp.evaluate(() => {
@@ -4285,7 +4310,7 @@ async function main() {
         await pg.waitForSelector(`.petopt[data-p="${k}"] .pet-svg.pet-k-${k}`);
         await pg.click(`.petopt[data-p="${k}"]`);
         await pg.fill('#nm', 'Ava');
-        await pg.click('#go');
+        await setupGo(pg);
         await pg.waitForSelector('#pet .pet-svg');
         const sp = await pg.evaluate(() => S.pet);
         if (sp !== k) bad.push(k + ': setup saved pet ' + sp);
@@ -4486,7 +4511,7 @@ async function main() {
       const sp = sc.page;
       await sp.fill('#nm', 'Sky');
       await sp.click('.gr[data-g="6"]');
-      await sp.click('#go');
+      await setupGo(sp);
       await sp.waitForSelector('.game[data-p="math"]');
       // every world before Sky City is finished first, so the map meets it without an unlock switch (Galaxy Core, after it, is not needed)
       await sp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
@@ -5079,7 +5104,7 @@ async function main() {
       const gp = gc.page;
       await gp.fill('#nm', 'Gala');
       await gp.click('.gr[data-g="6"]');
-      await gp.click('#go');
+      await setupGo(gp);
       await gp.waitForSelector('.game[data-p="math"]');
       // every world before Galaxy Core is finished first (Sky City too), so the map meets it without an unlock switch; no "last world" is assumed
       await gp.evaluate(() => {
@@ -5435,10 +5460,11 @@ async function main() {
           await P.mmTap(pg, pr[1]);
           if (await pg.evaluate(pr => pr.filter(i => document.querySelector(`.mm-c[data-i="${i}"]`).classList.contains('got')).length, pr) !== 2) bad.push('memory: a pair is not shown as found');
           const mBefore = await pg.evaluate(() => JSON.stringify(S.bt.cur.state.m));
-          await hintNow(pg, false);
-          const h1 = await pg.evaluate(() => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent }));
-          await hintNow(pg, true);
-          const h2 = await pg.evaluate(() => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent }));
+          // CHK-FAST: a peek shows for 1.7 s of app time (about 210 ms real at 8x), so the read runs on the page's clock, 300 ms after the tap
+          const mmPeek = () => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent });
+          const [h1] = await actRead(pg, () => pg.click('#bthint'), [[300, mmPeek]]);
+          await vwait(pg, 11500);
+          const [h2] = await actRead(pg, () => pg.click('#bthint'), [[300, mmPeek]]);
           if (h1.peek !== 1 || h1.hints !== 1 || h1.m !== mBefore || h2.peek !== 2 || h2.hints !== 2 || h2.m !== mBefore || h1.msg === h2.msg) bad.push('memory hints 1-2: ' + JSON.stringify([h1, h2]));
           await chk('memory hint 2');
           await vwait(pg, 2500);
@@ -5579,7 +5605,7 @@ async function main() {
       const cp = cx.page;
       await k2Old(cp); // KINDS2: a review question in these rounds can come from a stop that mixes in sort (Gran Repaso es_mix 2); every question is checked as a choice
       await cp.fill('#nm', 'Casa');
-      await cp.click('#go');
+      await setupGo(cp);
       await cp.waitForSelector('.game[data-p="es"]');
       await cp.evaluate(() => {
         for (let i = 0; i < WR.es[2][1] + 1; i++) setSt('es', i, 3);
@@ -7162,7 +7188,7 @@ async function main() {
           gr: document.querySelector('.gr.sel').dataset.g, go: document.querySelector('#go').getBoundingClientRect().height }));
         if (st.ok !== 3 || st.sel !== 'ocean' || st.gr !== '2' || st.go < 56) bad.push(tag + ' setup steps: ' + JSON.stringify(st));
         await chk(sp, 'setup filled in');
-        await sp.click('#go');
+        if (!(await setupGo(sp))) bad.push(tag + ' PIN-SETUP: setup did not ask the grown-up to choose a PIN');
         await sp.waitForSelector('.game[data-p]');
         const saved = await sp.evaluate(() => ({ n: S.name, p: S.pet, pn: S.petName, g: S.grade }));
         if (saved.n !== 'Mia' || saved.p !== 'ocean' || saved.pn !== 'Bubbles' || saved.g !== 2) bad.push(tag + ' setup saved ' + JSON.stringify(saved));
@@ -9998,7 +10024,7 @@ async function main() {
     // G-ART2 Art Studio by real touch (CDP touch events), midway save with 20 min of game time and two Neon pictures in the old
     //    separate store, the real clock. At 380x780 and 1024x600: Home -> Game Room -> Coloring opens on the picture packs (next goal,
     //    today's picture, packs; the two Neon pictures are in the gallery with a heart, the old store untouched); the first pack picture
-    //    (Kitty, pixel art) has squares of 32 px or more and a tap colours a square; Pause -> Quit back to the packs; a mandala coloured by
+    //    (Kitty, pixel art) has squares of 40 px or more (32 until the v195 audit, R-03 T2) and a tap colours a square; Pause -> Quit back to the packs; a mandala coloured by
     //    taps, Done -> the end card with the framed picture -> My gallery shows it first -> its big view opens and closes; a Neon drawing
     //    drawn with one finger -> Done -> kept as strokes. Every button 48 px or more (Done 64), no emoji in the menus and tools, no
     //    sideways scroll.
@@ -10059,7 +10085,7 @@ async function main() {
           const px = await pg.evaluate(() => { const r = document.querySelector('#cbc').getBoundingClientRect(), v = document.querySelector('#pxv').getBoundingClientRect(), d = cbData('cat');
             const i = d.num.findIndex((n, j) => n == 1 && r.left + (j % 16 + .5) * r.width / 16 > v.left + 4 && r.left + (j % 16 + .5) * r.width / 16 < v.right - 4 && r.top + ((j / 16 | 0) + .5) * r.width / 16 < v.bottom - 4);
             return { sq: r.width / 16, i, pt: [r.left + (i % 16 + .5) * r.width / 16, r.top + ((i / 16 | 0) + .5) * r.width / 16], in: v.right <= innerWidth + 1 }; });
-          if (px.sq < 32 || px.i < 0 || !px.in) bad.push(at + 'pixel squares: ' + JSON.stringify(px));
+          if (px.sq < 40 || px.i < 0 || !px.in) bad.push(at + 'pixel squares: ' + JSON.stringify(px));
           const c0 = await pg.evaluate(() => document.querySelector('#cbc').dataset.n);
           await tap(px.pt);
           await pg.waitForTimeout(200);
@@ -10134,7 +10160,7 @@ async function main() {
       }
       if (bad.length) fail('G-ART2 Art Studio:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
       else step('G-ART2 Art Studio by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): packs menu with the next goal and today\'s picture, ' +
-        'old Neon pictures moved into the gallery (old store untouched); pixel art with 32 px+ squares coloured by a tap; a mandala coloured by taps, Done -> framed end card -> ' +
+        'old Neon pictures moved into the gallery (old store untouched); pixel art with 40 px+ squares coloured by a tap; a mandala coloured by taps, Done -> framed end card -> ' +
         'My gallery shows it first and its big view; a Neon drawing kept as strokes; 48 px targets (Done 64), no emoji, no sideways scroll');
     }
 
@@ -10485,6 +10511,63 @@ async function main() {
       await shot('frogs-hint');
       notes.push('frogs question ' + s.bq + ' px with the hint open');
       await k2Old(dp, false);
+      // AUD-DISC (the v195 audit): the Nature Trail items that are not a choice can be done without reading, by a Kindergartner, with
+      // real taps. A mark item reads its sentence, a tapped word says itself and nothing answers before Check; every match word and
+      // every order tile says itself when tapped. A 2nd grader's taps say nothing (words are spoken on a tap for Pre-K to 1st grade).
+      const showItem = (id, re) => dp.evaluate(([id, re]) => {
+        const bi = BANK[id].findIndex(it => it.lv === 1 && new RegExp(re).test(it.q));
+        G.q = genBank(id, 1, { bi, s: 3 });
+        G.q.sk = id; G.tries = 0; G.lock = false;
+        window.__said = [];
+        renderQ();
+        return { kind: G.q.kind, say: G.q.say };
+      }, [id, re]);
+      const said = () => dp.evaluate(() => window.__said.slice());
+      const locked = () => dp.evaluate(() => !!G.lock);
+      await dp.waitForTimeout(900);
+      let it = await showItem('sci_life', 'what covers a bird');
+      await dp.waitForTimeout(700);
+      if (it.kind !== 'mark' || !(await said()).some(t => /covers a bird\. A bird has soft feathers\.$/.test(t))) bad.push('K-2 mark: the sentence is not read: ' + JSON.stringify([it, await said()]));
+      await dp.click('.mkt[data-i="0"]');
+      if ((await said()).pop() !== 'A' || await locked() || !(await dp.evaluate(() => document.querySelector('.mkt[data-i="0"]').getAttribute('aria-pressed') === 'true'))) bad.push('K-2 mark: a tapped word is not said, or the tap answered: ' + JSON.stringify(await said()));
+      await dp.click('.mkt[data-i="0"]');
+      await dp.click('.mkt[data-i="4"]');
+      if ((await said()).pop() !== 'feathers' || await locked()) bad.push('K-2 mark: "feathers" is not said: ' + JSON.stringify(await said()));
+      await shot('k2-mark');
+      await dp.click('#mcheck');
+      if (!(await locked()) || !(await dp.evaluate(() => document.querySelector('.mkt[data-i="4"]').classList.contains('right')))) bad.push('K-2 mark: Check with the right word did not answer');
+      await dp.waitForTimeout(900);
+      it = await showItem('sci_phys', 'how it feels');
+      const mt = await dp.evaluate(() => ({ L: G.q.items.map(c => c.l), R: G.q.opts.map(c => c.l), pair: G.q.items.map(c => G.q.opts.findIndex(o => o.v === c.v)) }));
+      for (let i = 0; i < mt.R.length; i++) { await dp.click(`.mb[data-s="R"][data-i="${i}"]`); if ((await said()).pop() !== mt.R[i]) bad.push('K-2 match: "' + mt.R[i] + '" is not said'); }
+      if (await locked() || (await dp.evaluate(() => G.tries)) !== 0) bad.push('K-2 match: hearing the words on one side counted as an answer');
+      await dp.click('.mb.sel'); // put the last one down again
+      for (let i = 0; i < mt.L.length; i++) {
+        await dp.click(`.mb[data-s="L"][data-i="${i}"]`);
+        if ((await said()).pop() !== mt.L[i]) bad.push('K-2 match: "' + mt.L[i] + '" is not said');
+        if (i === 0) await shot('k2-match');
+        await dp.click(`.mb[data-s="R"][data-i="${mt.pair[i]}"]`);
+      }
+      if (it.kind !== 'match' || !(await locked())) bad.push('K-2 match: every pair made, but not answered');
+      await dp.waitForTimeout(900);
+      it = await showItem('civ', 'Crossing the street');
+      const od = await dp.evaluate(() => ({ l: G.q.items.map(c => c.l), go: G.q.ans.map(a => G.q.items.findIndex(c => c.v === a)) }));
+      const wrongFirst = od.go[od.go.length - 1];
+      await dp.click(`.ot[data-i="${wrongFirst}"]`);
+      if ((await said()).pop() !== od.l[wrongFirst] || await locked()) bad.push('K-2 order: a tapped tile is not said: ' + JSON.stringify(await said()));
+      await dp.click('.os[data-s="0"]'); // take it back
+      await shot('k2-order');
+      for (const i of od.go) { await dp.click(`.ot[data-i="${i}"]`); if ((await said()).pop() !== od.l[i]) bad.push('K-2 order: "' + od.l[i] + '" is not said'); }
+      if (it.kind !== 'order' || !(await locked())) bad.push('K-2 order: the right order did not answer');
+      await dp.waitForTimeout(900);
+      await dp.evaluate(() => { S.grade = 2; });
+      await showItem('sci_phys', 'how it feels');
+      await dp.waitForTimeout(700);
+      await dp.evaluate(() => { window.__said = []; });
+      await dp.click('.mb[data-s="R"][data-i="0"]');
+      if ((await said()).length) bad.push('2nd grade: a tapped match word is said: ' + JSON.stringify(await said()));
+      await dp.evaluate(() => { S.grade = 0; });
+      notes.push('K-2 mark, match and order: every word says itself on a tap, the mark sentence is read, Check answers');
       if (bad.length) fail('R-01d Discover review fixes:\n  ' + bad.join('\n  '));
       else step('R-01d at 380x780: ' + notes.join('; ') + '; 48 px buttons, no sideways scroll');
       network.push(...dx.network);
@@ -10570,7 +10653,7 @@ async function main() {
           const pet2 = await pg.evaluate(p => Object.keys(PETS).find(k => k !== p), ava0.pet);
           await pg.click(`.petopt[data-p="${pet2}"]`);
           await pg.click('.gr[data-g="0"]');
-          await pg.click('#go');
+          if (await setupGo(pg)) bad.push(tag + ' PIN-SETUP: a second child\'s setup asked for the Grown-ups PIN again');
           await pg.waitForSelector('#gear');
           const ben0 = await kid();
           if (ben0.id !== 'p2' || ben0.name !== 'Ben' || ben0.stars !== 0 || ben0.pet !== pet2 || ben0.n !== 2) bad.push(tag + ' Ben after setup: ' + JSON.stringify(ben0));
@@ -10674,7 +10757,7 @@ async function main() {
             if (!saved) {
               if (!(await pg.$('#nm'))) throw new Error('empty storage did not show the setup screen');
               await pg.fill('#nm', 'Fresh');
-              await pg.click('#go');
+              await setupGo(pg);
             }
             await pg.waitForSelector('.game[data-p]', { timeout: 10000 });
             const home = await pg.evaluate(() => ({ stars: S.stars, name: S.name, chip: (document.querySelector('#starc') || {}).textContent || '', ver: (document.querySelector('.hm-ver') || {}).textContent || '' }));
@@ -14991,6 +15074,177 @@ async function main() {
         'reinstall is restored as the sheet opens; every Game Room game opens; normal Chrome with ?src=play and the web version lock nothing; no console errors, no network requests');
     }
     // end PLAY-01
+    // PLAY-02 (sample fix, Fable's cheap-tablet, new-family rehearsal of the Play app's free sample): a new family's first Home has no
+    // "Find my level" (its result was a locked world); the map has no Test out in the free sample (it spent the sample in two minutes);
+    // the grown-ups' unlock (its own words, behind the grown-up question, no price) stands right after the 5th stop and the 6th stop's
+    // lock is the sample's end; a round says "You unlocked the next stop!" only when a stop opened; unlocked, the map is as before.
+    // Also: music, game sound and a recording pause while the app is hidden and go on after (visibilitychange, pagehide); the Android
+    // back gesture (history) goes up one screen, answers a round's house with "Go Home?", and leaves the app only from Home
+    if (seg('PLAY-02')) {
+      const bad = [], notes = [], { INDEX_URL } = require('./lib/browser');
+      const mock = () => { const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [] };
+        window.getDigitalGoodsService = async m => m === 'https://play.google.com/billing' ? svc : null; };
+      const PRICE = /[$€£]|\d[.,]\d\d/;
+      // 1. a new family in the free sample: the first Home has no Find my level card
+      {
+        const ta = await openApp(browser, { fixture: 'fresh', width: 380, height: 780, url: INDEX_URL + '?src=play', init: [mock, ''] });
+        const pg = ta.page, at = 'PLAY-02 new family: ';
+        try {
+          await pg.waitForFunction(() => PLAY.on, null, { timeout: 5000 });
+          await pg.fill('#nm', 'Sam');
+          await setupGo(pg);
+          await pg.waitForSelector('#hs', { timeout: 10000 });
+          await vwait(pg, 600);
+          const h = await pg.evaluate(() => ({ card: !!document.querySelector('#plcard,[data-place]'), locked: PLAY.locked(), grade: gradeOf() }));
+          if (h.card || !h.locked) bad.push(at + 'Home offers Find my level in the free sample: ' + JSON.stringify(h));
+          else notes.push('no Find my level on a new family\'s first Home');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h, url: INDEX_URL + '?src=play', init: [mock, ''] });
+        const pg = ta.page, at = 'PLAY-02 ' + w + 'x' + h + ' ';
+        try {
+          await pg.waitForFunction(() => PLAY.on, null, { timeout: 5000 });
+          // 2. the map in the free sample (a Kindergarten child, Shape Garden): no Test out; the unlock after the 5th stop; the 6th is the end
+          const mapAt = () => pg.evaluate(() => {
+            const wi = PATHS.math.worlds.findIndex(x => x.id == 'm_shape'), a = WR.math[wi][0], top = e => e ? parseFloat(e.style.top) : NaN;
+            pathMap('math', wi);
+            const n5 = document.querySelector(`.node[data-n="${a + 4}"]`), n6 = document.querySelector(`.node[data-n="${a + 5}"]`);
+            const bands = [...document.querySelectorAll('.plgu.pl-band')].map(top);
+            return { a, wi, test: document.querySelectorAll('.tobtn').length, t5: top(n5), t6: top(n6), bands,
+              end: !!n6 && n6.classList.contains('pl-end') && n6.classList.contains('lock') && !!n6.querySelector('.pl-es'),
+              ends: document.querySelectorAll('.pl-end').length, label: n6 && n6.getAttribute('aria-label') };
+          });
+          await pg.evaluate(() => { S.grade = 0; const wi = PATHS.math.worlds.findIndex(x => x.id == 'm_shape'), a = WR.math[wi][0]; for (let j = a; j < a + 5; j++) setSt('math', j, 0); save(); });
+          const m = await mapAt();
+          const after5 = m.bands.filter(t => t > m.t5 + 36 && t + 48 < m.t6 - 36);
+          if (m.test) bad.push(at + 'Test out in the free sample (' + m.test + ')');
+          if (after5.length !== 1) bad.push(at + 'the grown-ups\' unlock is not right after the 5th stop: ' + JSON.stringify(m));
+          if (!m.end || m.ends !== 1 || !/locked/.test(m.label || '')) bad.push(at + 'the 6th stop is not the sample\'s end lock: ' + JSON.stringify(m));
+          const bandSel = '.plgu.pl-band';
+          const bi = await pg.evaluate(([t5, t6]) => { const bs = [...document.querySelectorAll('.plgu.pl-band')], i = bs.findIndex(b => { const t = parseFloat(b.style.top); return t > t5 && t < t6; });
+            const b = bs[i]; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            return { i, txt: b.textContent, w: r.width, h: r.height, in: r.left >= 0 && r.right <= vw }; }, [m.t5, m.t6]);
+          if (bi.txt !== 'Grown-ups: unlock everything' || bi.w < 47.5 || bi.h < 47.5 || !bi.in) bad.push(at + 'the unlock button by the 5th stop: ' + JSON.stringify(bi));
+          await vwait(pg, 300);
+          await pg.screenshot({ path: require('path').join(__dirname, 'out', 'play', `play-sample-end-${w}x${h}.png`) }).catch(() => {});
+          await pg.locator(bandSel).nth(bi.i).click();
+          await pg.waitForSelector('.sheet-bg.on #gwans, .sheet-bg.on #pnpad', { timeout: 5000 });
+          const g = await pg.evaluate(() => ({ t: document.querySelector('.sheet-bg.on').textContent, sheet: !!document.querySelector('#plsheet') }));
+          if (PRICE.test(g.t) || g.sheet) bad.push(at + 'the unlock by the 5th stop skipped the grown-up question or showed a price: ' + JSON.stringify(g));
+          await pg.keyboard.press('Escape');
+          await pg.waitForFunction(() => !document.querySelector('.sheet-bg.on'), null, { timeout: 5000 }).catch(() => bad.push(at + 'the grown-up question did not close'));
+          // unlocked: Test out is back, no sample end, no unlock button
+          await pg.evaluate(() => { PLAY.own = true; });
+          const u = await mapAt();
+          if (!u.test || u.ends || u.bands.length) bad.push(at + 'unlocked, the map changed: ' + JSON.stringify(u));
+          await pg.evaluate(() => { PLAY.own = false; });
+          // 3. the round end: passing the 4th stop opens the 5th and says so; passing the 5th (the sample's last) opens nothing and says nothing of it
+          const endOf = k => pg.evaluate(k => {
+            const wi = PATHS.math.worlds.findIndex(x => x.id == 'm_shape'), a = WR.math[wi][0];
+            for (let j = a; j < a + 5; j++) setSt('math', j, j < a + k ? 2 : 0);
+            S.voice = true; save(); window.__said = [];
+            if (!window.__say0) { window.__say0 = say; say = (t, ...r) => { window.__said.push(String(t)); return window.__say0(t, ...r); }; }
+            start('math', a + k); G.score = G.n; G.done = G.n; finish();
+          }, k);
+          const read = () => pg.evaluate(() => ({ said: window.__said.join(' | '), fin: (document.querySelector('#fin') || document.body).textContent }));
+          for (const [k, opens] of [[3, true], [4, false]]) {
+            await endOf(k);
+            await pg.click('#chest');
+            await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+            await vwait(pg, 6000);
+            const r = await read();
+            const says = /You unlocked the next stop!/.test(r.said), shows = /Next stop unlocked/.test(r.fin), paid = /New stop unlocked/.test(r.fin);
+            if (!/You got 10 stars!|You got \d+ stars!/.test(r.said)) bad.push(at + 'stop ' + (k + 1) + ': the round end said nothing: ' + JSON.stringify(r.said));
+            if (says !== opens || shows !== opens || paid !== opens) bad.push(at + 'stop ' + (k + 1) + ' (' + (opens ? 'opens the next' : 'the sample\'s last') + '): said ' + says + ', shown ' + shows + ', paid ' + paid + ': ' + r.said);
+          }
+          notes.push(w + 'x' + h);
+          // 4. the app hidden: music and game sound pause (the audio clock stops; a sound asked for meanwhile does not wake it), a recording too; back: on again
+          if (w == 380) {
+            await pg.evaluate(() => home());
+            const v = await pg.evaluate(async () => {
+              const o = {}, hid = v => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => v }); document.dispatchEvent(new Event('visibilitychange')); };
+              const wait = () => new Promise(r => setTimeout(r, 400));
+              S.sound = true; S.music = true; ac(); await AC.resume(); music(true); await wait(); o.run0 = AC.state;
+              const au = { paused: false, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); } }, keep = ESA.au; ESA.au = au;
+              hid(true); await wait(); SFX.pop(); tone(440, .1); await wait(); o.hidden = AC.state; o.auHidden = au.paused;
+              hid(false); await wait(); o.back = AC.state; o.auBack = au.paused;
+              dispatchEvent(new Event('pagehide')); await wait(); o.pagehide = AC.state; dispatchEvent(new Event('pageshow')); await wait(); o.pageshow = AC.state;
+              ESA.au = keep; delete document.hidden; music(false); return o;
+            });
+            if (v.run0 !== 'running' || v.hidden !== 'suspended' || !v.auHidden || v.back !== 'running' || v.auBack || v.pagehide !== 'suspended' || v.pageshow !== 'running')
+              bad.push(at + 'sound while the app is hidden: ' + JSON.stringify(v));
+            else notes.push('music, game sound and a recording pause while hidden and go on after');
+            // 5. back (the Android gesture walks the history in the Play app): up one screen; a round asks "Go Home?"; leaves only from Home
+            const st = () => pg.evaluate(() => ({ navb: !!(history.state && history.state.navb), home: !!document.querySelector('#hs'), learn: !!document.querySelector('.lh'),
+              map: !!document.querySelector('#map'), ask: !!document.querySelector('.sheet-bg.on #gquit'), round: !!document.querySelector('.play.qs'), live: !!G && !G.dead }));
+            const back = async () => { await pg.evaluate(() => history.back()); await vwait(pg, 1200); return st(); };
+            await vwait(pg, 600);
+            const s0 = await st();
+            await pg.click('#navbar [data-nav="learn"]'); await pg.waitForSelector('.lh'); await vwait(pg, 400);
+            const s1 = await st();
+            await pg.click('.lh-path[data-p="math"]'); await pg.waitForSelector('#map'); await vwait(pg, 400);
+            const s2 = await st(), s3 = await back(), s4 = await back();
+            if (s0.navb || !s0.home || !s1.navb || !s2.navb || !s3.learn || !s3.navb || !s4.home || s4.navb) bad.push(at + 'back up one screen: ' + JSON.stringify([s0, s1, s2, s3, s4]));
+            await pg.evaluate(() => { pathMap('math'); const i = curNode('math'); start('math', i); });
+            await pg.waitForSelector('.play.qs'); await vwait(pg, 600);
+            const r1 = await back(), r2 = await back();
+            if (!r1.ask || !r1.live || r2.ask || !r2.round || !r2.live || !r2.navb) bad.push(at + 'back in a round: ' + JSON.stringify([r1, r2]));
+            else notes.push('back goes up one screen, asks Go Home? in a round and leaves only from Home');
+          }
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('PLAY-02 the free sample (sample fix):\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('PLAY-02 (sample fix): ' + notes.join('; ') + ': in the free sample no Find my level and no Test out, the grown-ups\' unlock (behind the question, no price) ' +
+        'right after the 5th stop and the 6th stop drawn as the sample\'s end; "You unlocked the next stop!" (said, shown and paid) only when a stop opens; unlocked, the map is as before; no console errors, no network requests');
+    }
+    // end PLAY-02
+    // BB-GL (sample fix): Block Builder gives its WebGL context back when the child leaves the game (view() calls bbStop, as 60-gl.js end()
+    // does for the other games) and makes a new one when they come back: in and out 4 times, the 3D look draws every time, and at Home no
+    // WebGL context is left alive (the page's getContext is watched from the start)
+    if (seg('BB-GL')) {
+      const bad = [], at = 'BB-GL ';
+      const watch = () => { const g0 = HTMLCanvasElement.prototype.getContext; window.__gl = [];
+        HTMLCanvasElement.prototype.getContext = function (t, o) { const c = g0.call(this, t, o); if (c && /webgl/.test(t) && !window.__gl.includes(c)) window.__gl.push(c); return c; }; };
+      const ga = await openApp(browser, { fixture: 'midway', width: 1024, height: 600, speed: 1, init: [watch, ''] });
+      const pg = ga.page, rounds = [];
+      try {
+        await pg.evaluate(() => { S.pt = { bank: 3000, day: today(), used: 0 }; if (S.bb) delete S.bb.gl; save(); home(); });
+        for (let k = 0; k < 4; k++) {
+          await pg.click('#groom');
+          await pg.waitForSelector('#gbb', { timeout: 20000 });
+          await pg.click('#gbb');
+          await pg.waitForSelector('.bb-menu [data-w="0"]', { timeout: 10000 });
+          await pg.click('[data-w="0"]');
+          await pg.waitForSelector('#bbc');
+          await pg.waitForTimeout(900);
+          const f0 = await pg.evaluate(() => BB.api.frame());
+          await pg.waitForTimeout(400);
+          const g = await pg.evaluate(f0 => ({ look: BB.look, more: BB.api.frame() > f0, live: window.__gl.filter(c => !c.isContextLost()).length }), f0);
+          await pg.click('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit', { timeout: 5000 });
+          await pg.click('#gquit');
+          await pg.waitForSelector('#hs', { timeout: 10000 });
+          await pg.waitForTimeout(300);
+          const h = await pg.evaluate(() => ({ live: window.__gl.filter(c => !c.isContextLost()).length, made: window.__gl.length, bb: !!(BB && BB.gl) }));
+          rounds.push([g.look, g.more, g.live, h.live, h.made]);
+          if (g.look !== '3d' || !g.more || g.live !== 1) bad.push(at + 'entry ' + (k + 1) + ': the 3D look is not drawing: ' + JSON.stringify(g));
+          if (h.live || h.bb) bad.push(at + 'after leaving ' + (k + 1) + ' time(s), Home has ' + h.live + ' live WebGL context(s) of ' + h.made + (h.bb ? ', BB still holds one' : ''));
+        }
+      } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+      for (const e of ga.errors) bad.push(at + e);
+      for (const u of ga.network) bad.push(at + 'network request: ' + u);
+      await ga.ctx.close();
+      if (bad.length) fail('BB-GL Block Builder\'s WebGL context:\n  ' + [...new Set(bad)].slice(0, 20).join('\n  '));
+      else step('BB-GL (sample fix): Block Builder in and out 4 times: the 3D look draws each time with one live WebGL context; at Home none is left alive ' + JSON.stringify(rounds) + '; no console errors, no network requests');
+    }
+    // end BB-GL
     // HINT-01 (docs/ROADMAP.md 10d): a hint for each common mistake in Practice. In a real round at 380x780 and 600x960: a math question
     // (5747 + 9829 style, answered as if the child forgot to carry; 2-digit sums have their own why sentences, KINDS2-D) and a reading question (a picture word, the wrong first sound) show the
     // mistake's line above the generic hint, with the question's numbers filled in, once its line is approved (HINTW: the owner approved
@@ -15390,7 +15644,7 @@ async function main() {
         try {
           await pg.fill('#nm', 'Sam');
           await pg.click(`.gr[data-g="${g}"]`);
-          await pg.click('#go');
+          await setupGo(pg);
           await pg.waitForSelector('.game[data-p]');
           for (const p of ['math', 'read', 'es', 'disc']) {
             await pg.evaluate(() => home());
@@ -15575,7 +15829,7 @@ async function main() {
           if (z.stars !== 0 || z.name !== '' || z.kept !== s0.stars || !z.pin) bad.push('after Erase everything: ' + JSON.stringify(z));
           await pg.fill('#nm', 'Leo');
           await pg.click('.gr[data-g="1"]');
-          await pg.click('#go');
+          if (await setupGo(pg, '1212')) bad.push('PIN-SETUP: setup after Start over asked for a new Grown-ups PIN');
           await pg.waitForSelector('.game[data-p]');
           await gear();
           await pinIn(pg, '1212'); // the PIN of before Start over: no question
@@ -15624,6 +15878,53 @@ async function main() {
       else step('RC1-GATE: the Grown-ups PIN at 380x780, 360x740 and 1024x600: the old question then choosing a PIN (a mismatch refused), the pad (48 px, ' +
         'dots, never the PIN), a wrong PIN, Change PIN, a 1-minute wait after 5 wrong, Forgot PIN? (15-minute wait, then a new PIN); Erase ' +
         'and Delete behind the PIN, the PIN kept through Start over, Undo erase once');
+    }
+
+    // PIN-SETUP (owner decision 2026-11-25): a new tablet's first setup asks the grown-up to choose the Grown-ups PIN before anything
+    // is saved: Cancel stays on setup, a mismatch is refused, then Home; the first tap on Grown-ups asks for that PIN (no old question)
+    if (seg('PIN-SETUP')) {
+      const bad = [], app = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 }), pg = app.page;
+      const st = () => pg.evaluate(() => ({ name: S.name, saved: JSON.parse(localStorage.getItem(KEY) || '{}').name || '', pin: !!localStorage.getItem(KEY + '-pin') }));
+      const line = () => pg.evaluate(() => document.querySelector('.sheet-bg.on #pnmsg').textContent);
+      try {
+        await pg.fill('#nm', 'Mia');
+        await pg.click('#go');
+        await padH(pg, /^Choose a Grown-ups PIN$/);
+        if (!/^A grown-up picks 4 numbers\./.test(await line()) || await pg.$('.sheet-bg.on #pnforgot')) bad.push('the setup pad: ' + await line());
+        const s1 = await st();
+        if (s1.name || s1.saved || s1.pin) bad.push('saved before the PIN was chosen: ' + JSON.stringify(s1));
+        await pg.click('.sheet-bg.on #pnno');
+        await pg.waitForSelector('.sheet-bg', { state: 'detached' });
+        const s2 = await st();
+        if (!(await pg.$('#app .su #nm')) || await pg.inputValue('#nm') !== 'Mia' || s2.name || s2.pin) bad.push('Cancel left setup or saved: ' + JSON.stringify(s2));
+        await pg.click('#go');
+        await padH(pg, /^Choose a Grown-ups PIN$/);
+        await pinType(pg, '1357');
+        await padH(pg, /^Type it again$/);
+        await pinType(pg, '1358');
+        await padH(pg, /^Choose a Grown-ups PIN$/);
+        if (!/didn't match/.test(await line()) || (await st()).pin) bad.push('a mismatch was not refused: ' + await line());
+        await pinType(pg, '2468');
+        await padH(pg, /^Type it again$/);
+        await pinType(pg, '2468');
+        await pg.waitForSelector('.game[data-p]', { timeout: 10000 });
+        const s3 = await st();
+        if (s3.name !== 'Mia' || s3.saved !== 'Mia' || !s3.pin) bad.push('after the PIN: ' + JSON.stringify(s3));
+        await pg.click('#gear');
+        await pg.waitForSelector('.sheet-bg.on #gwans, .sheet-bg.on #pnpad', { timeout: 10000 });
+        if (await pg.$('.sheet-bg.on #gwans')) bad.push('Grown-ups asked the old question after setup chose a PIN');
+        await padH(pg, /^Grown-ups PIN$/);
+        await pinType(pg, '9999');
+        await pg.waitForFunction(() => /not the PIN/.test(document.querySelector('.sheet-bg.on #pnmsg').textContent), null, { timeout: 5000 });
+        if (await pg.$('.gw-card')) bad.push('a wrong PIN opened Grown-ups');
+        await pinType(pg, '2468');
+        await pg.waitForSelector('.gw-card', { timeout: 5000 });
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('PIN-SETUP ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('PIN-SETUP the Grown-ups PIN in first setup:\n  ' + bad.join('\n  '));
+      else step('PIN-SETUP: first setup asks for the Grown-ups PIN before saving (Cancel stays on setup, a mismatch refused), then Grown-ups asks for that PIN, not the old question');
     }
 
     // RC1-SAVE (v188): the tablet's storage is full (every localStorage write throws): a save fails, Home shows one banner for a grown-up,

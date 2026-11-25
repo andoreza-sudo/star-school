@@ -39,7 +39,7 @@ function ls3Fact(id, t, g, pick, k, idea, home) {
     return lsDq(D, 2, {kind: 'num', ans: c, sl, bug, hint, html: lsEq(`${a} × ${b} = ${SLOT}`), say: `${a} times ${b} equals what?`});
   };
   D.warm = r => lsSeqQ(D, 0, k * lsRi(r, 1, 5), k);
-  D.exp = ls3ArrExp(D, 'Make any array you like. Set the rows, then how many in each row.', (a, b) => ({ctx: {a, b, sum: a * b}, lines: [`${a} rows of ${b} make ${a * b}.`]}));
+  D.exp = ls3ArrExp(D, 'Make any array you like. Set the rows, then how many in each row.', (a, b) => ({ctx: {a, b, sum: a * b}, lines: [`${qN(a, 'row')} of ${b} ${a == 1 ? 'makes' : 'make'} ${a * b}.`]}));
   D.name = c => ({html: `<div class="pkq">${VIZ.array(c.a, c.b)}</div>` + lsEq(`${c.a} × ${c.b} = ${c.sum}`), sl: c});
   return D;
 }
@@ -75,7 +75,7 @@ function ls3Div(id, t, g, pick, idea, home, fct) {
     const n = [12, 16, 18, 20, 24][Math.floor(r() * 5)];
     return {q: lsDq(D, 0, {kind: 'make', model: 'array', m: {r: n / ls3Rows(n), c: ls3Rows(n), n, big: 1}, eq: 'exact', ans: n, goal: 'arrN', raw: 1, sl: {n}, demo: [2, n / 2],
       html: lsEq(n) + lsCap(`Make ${n} dots in equal rows, any way.`), say: `Make ${n} dots in equal rows, any way you like.`}), nudge: `Make exactly ${n} dots, more than one row.`,
-    react: v => { const [a, b] = Array.isArray(v) ? v : /×/.test(v) ? String(v).split('×').map(Number) : [2, n / 2]; return {ctx: {n, a, b}, lines: [`${a} rows of ${b} make ${n}.`]}; }};
+    react: v => { const [a, b] = Array.isArray(v) ? v : /×/.test(v) ? String(v).split('×').map(Number) : [2, n / 2]; return {ctx: {n, a, b}, lines: [`${qN(a, 'row')} of ${b} ${a == 1 ? 'makes' : 'make'} ${n}.`]}; }};
   };
   D.name = c => ({html: `<div class="pkq">${VIZ.array(c.a, c.b)}</div>` + lsEq(fct ? `${c.n} = ${c.a} × ${c.b}` : `${c.n} ÷ ${c.b} = ${c.a}`), sl: c});
   return D;
@@ -105,7 +105,7 @@ function ls3Prime(id, t, g, idea, home) {
   D.warm = ls3WarmFact(D, 3, 9);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'array', m: {r: 4, c: 6, n: 24, big: 1}, eq: 'exact', ans: 24, goal: 'arrN', raw: 1, sl: {n: 24}, demo: [4, 6],
     html: lsEq(24) + lsCap('Make 24 in equal rows, any way.'), say: 'Make 24 dots in equal rows, any way you like.'}), nudge: 'Make exactly 24 dots, more than one row.',
-  react: v => { const [a, b] = Array.isArray(v) ? v : [4, 6]; return {ctx: {n: 24, a, b}, lines: [`${a} rows of ${b} make 24.`]}; }});
+  react: v => { const [a, b] = Array.isArray(v) ? v : [4, 6]; return {ctx: {n: 24, a, b}, lines: [`${qN(a, 'row')} of ${b} ${a == 1 ? 'makes' : 'make'} 24.`]}; }});
   D.name = c => ({html: `<div class="pkq">${VIZ.array(c.a, c.b)}</div>` + lsEq(`${c.n} = ${c.a} × ${c.b}`), sl: c});
   return D;
 }
@@ -392,7 +392,9 @@ function ls3Round(id, t, g, kind, idea, home) {
   const line = ({lo, hi, n}) => ({min: lo, max: hi, step: k2Clean(U / 10), labels: [lo, k2Clean(lo + U / 2), hi], marks: [n]});
   D.q = (st, r) => {
     const x = pick(r), {n, lo, hi, a} = x, sl = {n}, bug = {trunc: [lo], rup: [hi]}, o = {sl, bug, vsay: say, pad: kind == 'dec' ? 'dec' : null, eq: 'value',
-      hint: {k: 'text', s: `${n} is between ${lo} and ${hi}. Which one is it nearer to? Halfway is ${k2Clean(lo + U / 2)}.`}};
+      // WORDS-MATH W18: a number exactly halfway is nearer to neither: its hint ends with the practice hint's rule
+      hint: {k: 'text', s: Math.abs(n - lo - U / 2) < 1e-9 ? `${n} is between ${lo} and ${hi}. Halfway is ${k2Clean(lo + U / 2)}. Halfway or more? Round up. Less than halfway? Round down.`
+        : `${n} is between ${lo} and ${hi}. Which one is it nearer to? Halfway is ${k2Clean(lo + U / 2)}.`}};
     const ask = `Round ${n} to the nearest ${W}.`;
     if (st == 0) { const snap = k2Clean(U / 10), k = Math.min(9, Math.max(1, Math.round((n - lo) / snap)));
       return lsLine(D.sk, D.lv, 0, a, line(x), lsCap(ask) + lsCap('Slide the pin to the rounded number.'), `${ask} Slide the pin to the rounded number.`, {sl, bug, vsay: say, hint: o.hint, pk: false, start: String(k2Clean(lo + k * snap)), snap, ansSay: say(a)}); }
@@ -435,15 +437,15 @@ function ls3FName(id, t, g, line, idea, home) {
       : lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d, whole: 1}, ans, eq: 'value', ansSay: ls3Frs(n, d), sl, bug: {}, hint,
         html: lsCap('Shade') + lsEq(ls3Fr(n, d)) + lsCap('of the bar.'), say: `Tap the parts to shade ${ls3Frs(n, d)} of the bar.`});
     if (st == 1) return ls3FQ(D, 1, ans, `<div class="pkq">${line ? VIZ.numLine(Object.assign({}, L, {marks: [n / d]})) : VIZ.fracBar(n, d)}</div>` + lsCap(line ? 'What fraction is marked?' : 'What fraction is shaded?') + lsEq(SLOT_FRAC),
-      line ? 'What fraction does the dot show?' : 'What fraction of the bar is shaded?', {sl, bug, hint});
+      line ? 'What fraction does the dot show?' : 'What fraction of the bar is shaded?', {sl, bug, hint, eq: 'value'}); // AUDIT-MATH M5: an equal fraction is right
     const j = `${n} jump${n > 1 ? 's' : ''}`;
     return ls3FQ(D, 2, ans, lsCap(line ? `The line from 0 to 1 has ${d} equal jumps. The dot is ${j} from 0.` : `${n} of ${d} equal parts are shaded.`) + lsEq(SLOT_FRAC),
-      line ? `${d} equal jumps from 0 to 1. What fraction is ${j} from 0?` : `${n} of ${d} equal parts are shaded. What fraction is that?`, {sl, bug, hint});
+      line ? `${d} equal jumps from 0 to 1. What fraction is ${j} from 0?` : `${n} of ${d} equal parts are shaded. What fraction is that?`, {sl, bug, hint, eq: 'value'});
   };
   D.warm = ls3WarmFact(D, 2, 5);
   D.exp = () => line ? {q: lsLine(D.sk, D.lv, 0, '0.25', {min: 0, max: 1, step: 1 / 4, den: 4, labels: [0, 1]}, lsCap('Put the pin anywhere on the line.'), 'Put the pin anywhere on the line.',
     {pk: false, goal: 'pin', start: '0.5', snap: 1 / 4, sl: {bottom: 4}, demo: '0.75'}), nudge: 'Slide the pin, then check.',
-  react: v => { const n = Math.round(k2Val(v) * 4); return {ctx: {top: n, bottom: 4}, lines: [`You put it ${n} jumps from 0.`]}; }}
+  react: v => { const n = Math.round(k2Val(v) * 4); return {ctx: {top: n, bottom: 4}, lines: [`You put it ${qN(n, 'jump')} from 0.`]}; }}
     : {q: lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'bar', d: 6, whole: 1}, ans: '2/6', eq: 'value', goal: 'some', sl: {}, demo: '2/6',
       html: lsCap('Shade any parts you like.'), say: 'Tap the bar to shade any parts you like.'}), nudge: 'Shade a part or more, then check.',
     react: v => { const n = Math.round(k2Val(v) * 6); return {ctx: {top: n, bottom: 6}, lines: [`You shaded ${n} of the 6 parts.`]}; }};
@@ -551,9 +553,9 @@ function ls3Fop(id, t, g, kind, bugs, idea, home) {
     if (kind == 'like') { const n = op == '+' ? a + c : a - c; ans = `${n}/${d}`; bug = {addBot: op == '+' ? [`${n}/${2 * d}`] : [], slip: [`${n + 1}/${d}`, `${n - 1}/${d}`].filter(v => !/^0\/|^-/.test(v))};
       pic = ls3Bars([a, c], [d, d], {lab: true}); hint = {k: 'text', s: 'Same-size parts: the bottom stays. Work with the tops.'};
       s0q = {kind: 'make', model: 'parts', m: {shape: 'bar', d, whole: 1}, ans, eq: 'value', s0: op == '−' ? Array.from({length: d}, (_, i) => +(i < a)) : null,
-        html: lsEq(e) + lsCap(op == '+' ? `Shade ${a} parts, then ${c} more.` : `${a} parts are shaded. Clear ${c}.`), say: op == '+' ? `${se}. Shade ${a} parts, then ${c} more.` : `${se}. Clear ${c} of the shaded parts.`}; }
+        html: lsEq(e) + lsCap(op == '+' ? `Shade ${qN(a, 'part')}, then ${c} more.` : `${qN(a, 'part')} ${a == 1 ? 'is' : 'are'} shaded. Clear ${c}.`), say: op == '+' ? `${se}. Shade ${qN(a, 'part')}, then ${c} more.` : `${se}. Clear ${c} of the shaded parts.`}; }
     else if (kind == 'whole') { ans = `${a * c}/${d}`; bug = {mulBot: [`${a * c}/${a * d}`], slip: [`${a * c + 1}/${d}`]};
-      pic = `<div class="ls-copies">${Array.from({length: a}, () => VIZ.fracBar(c, d, {w: 150})).join('')}</div>`; hint = {k: 'text', s: `${a} copies of ${c} parts: count all the shaded parts. The part size stays.`};
+      pic = `<div class="ls-copies">${Array.from({length: a}, () => VIZ.fracBar(c, d, {w: 150})).join('')}</div>`; hint = {k: 'text', s: `${a} copies of ${qN(c, 'part')}: count all the shaded parts. The part size stays.`};
       s0q = {kind: 'num', ans: a * c, html: `<div class="pkq">${pic}</div>` + lsEq(e) + lsCap(`How many ${FC_NAMES[d]}s are shaded in all?`) + SLOT, say: `${se}. How many ${FC_NAMES[d]}s are shaded in all?`}; }
     else if (kind == 'unlike') { const L = x.L, A = a * L / b, C = c * L / d; ans = `${A + C}/${L}`; bug = {addBot: [`${a + c}/${b + d}`], renameTop: A != a ? [`${a + C}/${L}`] : [], slip: [`${A + C + 1}/${L}`]};
       pic = ls3Bars([A, C], [L, L], {lab: true}); hint = {k: 'text', s: `Make both bottoms ${L}. Then add the tops.`};
@@ -561,8 +563,8 @@ function ls3Fop(id, t, g, kind, bugs, idea, home) {
         html: lsEq(e) + lsCap(`First, shade ${ls3Frs(a, b)} on a bar cut into ${L} parts.`), say: `${se}. First, shade the bottom bar to match ${ls3Frs(a, b)}.`}; }
     else { ans = `${a * c}/${b * d}`; bug = {mixAdd: [`${a * d + c * b}/${b * d}`], topOnly: [`${a * c}/${d}`, `${a * c}/${b}`]};
       const on = Array.from({length: b * d}, (_, i) => +(Math.floor(i / d) < a && i % d < c)); pic = VIZ.areaGrid(d, b, {on}); hint = {k: 'text', s: `Shade ${a} of the ${b} rows and ${c} of the ${d} columns. Count where they meet.`};
-      s0q = {kind: 'make', model: 'parts', m: {shape: 'grid', w: d, h: b, rect: [c, a]}, ans: a * c, eq: 'value', html: lsEq(e) + lsCap(`Shade ${a} rows and ${c} columns where they meet.`),
-        say: `${se}. Shade a rectangle ${c} squares long and ${a} rows high.`}; }
+      s0q = {kind: 'make', model: 'parts', m: {shape: 'grid', w: d, h: b, rect: [c, a]}, ans: a * c, eq: 'value', html: lsEq(e) + lsCap(`Shade ${qN(a, 'row')} and ${qN(c, 'column')} where they meet.`),
+        say: `${se}. Shade a rectangle ${qN(c, 'square')} long and ${qN(a, 'row')} high.`}; }
     if (st == 0) return lsDq(D, 0, Object.assign({sl, bug: {}, hint}, s0q));
     return ls3FQ(D, st, ans, (st == 1 ? `<div class="pkq">${pic}</div>` : '') + lsEq(`${e} = ${SLOT_FRAC}`), `${se} equals what?`, {sl, bug, hint, eq: 'value'});
   };
@@ -606,13 +608,13 @@ function ls3DTen(id, t, g, idea, home) {
     slots: {remember: [], explore: [], name: ['n'], together: [], check: ['ans'], show: []}});
   D.q = (st, r) => {
     const k = lsRi(r, 1, 9), hint = {k: 'text', s: 'Tenths sit right after the point. Hundredths sit next.'};
-    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: `0.${k}`, eq: 'value', sl: {}, hint, ansSay: `${k} tenths`,
+    if (st == 0) return lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: `0.${k}`, eq: 'value', sl: {}, hint, ansSay: qN(k, 'tenth'),
       html: lsCap('The ten squares are one whole. Shade') + lsEq(`0.${k}`), say: `The ten squares make one whole. Shade ${k2SayNum(k / 10)}.`});
     if (st == 1) return ls3DQ(D, 1, `0.${k}`, `<div class="pkq">${VIZ.fracBar(k, 10)}</div>` + lsCap('The bar is one whole. What decimal is shaded?') + SLOT, 'The bar is one whole. What decimal is shaded?',
       {sl: {}, hint, bug: {dzero: [`0.0${k}`], given: [k]}});
-    if (r() < .5) return ls3DQ(D, 2, `0.${k}`, lsEq(`${ls3Fr(k, 10)} = ${SLOT}`), `${k} tenths as a decimal is what?`, {sl: {}, hint, bug: {dzero: [`0.0${k}`], given: [k]}});
+    if (r() < .5) return ls3DQ(D, 2, `0.${k}`, lsEq(`${ls3Fr(k, 10)} = ${SLOT}`), `${qN(k, 'tenth')} as a decimal is what?`, {sl: {}, hint, bug: {dzero: [`0.0${k}`], given: [k]}});
     const j = lsRi(r, 1, 9);
-    return ls3DQ(D, 2, `0.0${j}`, lsEq(`${ls3Fr(j, 100)} = ${SLOT}`), `${j} hundredths as a decimal is what?`, {sl: {}, hint, bug: {dzero: [`0.${j}`], given: [j]}});
+    return ls3DQ(D, 2, `0.0${j}`, lsEq(`${ls3Fr(j, 100)} = ${SLOT}`), `${qN(j, 'hundredth')} as a decimal is what?`, {sl: {}, hint, bug: {dzero: [`0.${j}`], given: [j]}});
   };
   D.warm = r => { const d = lsRi(r, 3, 6), n = lsRi(r, 1, d - 1); return ls3FQ(D, 0, `${n}/${d}`, `<div class="pkq">${VIZ.fracBar(n, d)}</div>` + lsCap('What fraction is shaded?') + lsEq(SLOT_FRAC),
     'What fraction of the bar is shaded?', {sl: {}, hint: {k: 'text', s: 'All the parts on the bottom, the shaded parts on top.'}}); };
@@ -732,11 +734,11 @@ function ls3Geo(id, t, g, kind, bugs, idea, home) {
   D.warm = ls3WarmFact(D, 2, 9);
   D.exp = kind == 'area' ? () => ({q: lsDq(D, 0, {kind: 'make', model: 'parts', m: {shape: 'grid', w: 6, h: 4}, ans: 6, eq: 'value', goal: 'some', sl: {}, demo: '8',
     html: lsCap('Shade any squares you like.'), say: 'Tap the grid to shade any squares you like.'}), nudge: 'Shade a square or more, then check.',
-  react: v => { const n = Math.round(k2Val(v)); return {ctx: {a: n, b: 1, sum: n}, lines: [`You shaded ${n} squares.`]}; }})
+  react: v => { const n = Math.round(k2Val(v)); return {ctx: {a: n, b: 1, sum: n}, lines: [`You shaded ${qN(n, 'square')}.`]}; }})
     : ls3ArrExp(D, kind == 'per' ? 'Make any rectangle of dots you like.' : 'Make one layer of cubes, any size you like.',
-      (a, b) => ({ctx: {a, b, sum: kind == 'per' ? 2 * a + 2 * b : a * b}, lines: [kind == 'per' ? `Around ${a} by ${b} is ${2 * a + 2 * b}.` : `One layer of ${a} by ${b} is ${a * b} cubes.`]}));
+      (a, b) => ({ctx: {a, b, sum: kind == 'per' ? 2 * a + 2 * b : a * b}, lines: [kind == 'per' ? `Around ${a} by ${b} is ${2 * a + 2 * b}.` : `One layer of ${a} by ${b} is ${qN(a * b, 'cube')}.`]}));
   D.name = c => (kind == 'per' ? {html: `<div class="pkq">${VIZ.rectSides(c.b, c.a, {w: c.b, h: c.a}, {all: 1})}</div>` + lsEq(`${c.b} + ${c.a} + ${c.b} + ${c.a} = ${c.sum}`), sl: c}
-    : kind == 'area' ? {html: `<div class="pkq">${VIZ.areaGrid(6, 4, {n: Math.min(24, c.sum)})}</div>` + lsEq(`${c.sum} squares`), sl: c}
+    : kind == 'area' ? {html: `<div class="pkq">${VIZ.areaGrid(6, 4, {n: Math.min(24, c.sum)})}</div>` + lsEq(qN(c.sum, 'square')), sl: c}
       : {html: `<div class="pkq">${VIZ.solid([{l: c.b, h: 2}], {w: c.a})}</div>` + lsEq(`${c.a} × ${c.b} = ${c.sum}`), sl: c});
   return D;
 }
@@ -790,7 +792,7 @@ function ls3Time(id, t, g, idea, home) {
         {hm: [h, m], sl: {}, hint, pk: false, bug: {minute: ch.filter(x => x != ans)}, vsay: v => mmTimeSay(...String(v).split(':').map(Number)), after: `It is ${mmTimeSay(h, m)}.`});
     }
     return lsDq(D, 2, {kind: 'num', ans: m, sl: {}, hint, bug: {minute: [m + 5, m - 5].filter(x => x > 0 && x < 60), given: [k, e].filter(x => x > 0)},
-      html: lsCap(`The long hand is ${e} small mark${e > 1 ? 's' : ''} past the ${k || 12}. What minute is it?`) + SLOT, say: `The long hand is ${e} small marks past the ${k || 12}. What minute is it?`});
+      html: lsCap(`The long hand is ${e} small mark${e > 1 ? 's' : ''} past the ${k || 12}. What minute is it?`) + SLOT, say: `The long hand is ${e} small mark${e > 1 ? 's' : ''} past the ${k || 12}. What minute is it?`});
   };
   D.warm = lsWarmHour(D);
   D.exp = () => ({q: lsDq(D, 0, {kind: 'make', model: 'hands', m: {one: true}, eq: 'exact', ans: '3:00', goal: 'moved', sl: {}, demo: '3:17',

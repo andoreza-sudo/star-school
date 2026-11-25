@@ -260,7 +260,11 @@ const PAT = (() => {
 
     // ---- odd one out ----
     function odd(X, noise) {
-      const ys = shuf(['s', 'z', 'n'].filter(k => k != X)).slice(0, noise);
+      // AUD-BT M-1: size and count never vary together in one item. A picture's drawn size depends on its count (one shape fills
+      // the tile, two are half as wide each), so "1 small" and "2 big" look the same size and a single big shape looks like the odd
+      // one out. Odd by size: no count noise; odd by count: no size noise; odd by shape: at most one of the two as noise.
+      const ys = shuf(['s', 'z', 'n'].filter(k => k != X && !(X == 'z' && k == 'n') && !(X == 'n' && k == 'z'))).slice(0, noise);
+      if (ys.includes('z') && ys.includes('n')) ys.pop();
       const t0 = { s: R(0, 5), z: 2, n: 1, r: 0 };
       if (X == 'z' || ys.includes('z')) { t0.z = R(0, 2); t0.n = pick([1, 2]); }
       if (X == 'n' || ys.includes('n')) t0.n = R(1, 3);
@@ -517,8 +521,14 @@ const PAT = (() => {
       `<path class="pt-sb" transform="translate(-3 -3)${rot} scale(.86)" d="${s.d}"/>` +
       `<path class="pt-sg" transform="translate(-3 -3)${rot} scale(.86)" d="${s.g}"/></g>`;
   }
-  function tile(t) {
-    const k = SCALE[t.n] * ZF[t.z];
+  // AUD-BT S-4: an item whose rule changes both the size and the count (a matrix with "the shapes get bigger" and 1, 2, 3 shapes
+  // in a row) is drawn "flat": every shape at one scale for its size, whatever the count, so big is always drawn bigger than
+  // medium and the hint's words are true on screen. Other items keep a single shape filling its tile.
+  // flatOf(item): 0, or the one scale of the item's pictures (that of the largest count among its pictures and choices)
+  const flatOf = it => !!it && Array.isArray(it.at) && it.at.includes('z') && it.at.includes('n')
+    ? Math.min(...(it.show || []).concat(it.ch || []).map(t => SCALE[t.n])) : 0;
+  function tile(t, flat) {
+    const k = (flat || SCALE[t.n]) * ZF[t.z];
     return `<svg class="pt-t" viewBox="0 0 100 100" aria-hidden="true"><g class="pt-c${t.c}">` +
       SPOT[t.n].map(([x, y]) => copy(t, x, y, k)).join('') + '</g></svg>';
   }
@@ -527,7 +537,7 @@ const PAT = (() => {
   function mount(el, p, api) {
     let st = api.loadState() || { i: 0, miss: 0, h: 0, x: [], g: [] }, busy = 0, alive = true;
     const N = p.items.length;
-    const face = (it, c) => it.k == 'num' ? `<b class="pt-nm">${c}</b>` : tile(c);
+    const face = (it, c) => it.k == 'num' ? `<b class="pt-nm">${c}</b>` : tile(c, flatOf(it));
     const cell = (inner, cls) => `<span class="pt-cell${cls ? ' ' + cls : ''}">${inner}</span>`;
     const qbox = '<span class="pt-cell pt-q" aria-label="The missing one"><b>?</b></span>';
     function board(it) {
@@ -536,10 +546,10 @@ const PAT = (() => {
       if (it.k == 'seq') {
         const n = it.show.length + 1;
         return `<div class="pt-board pt-row${n > 6 ? ' pt-wrap' : ''}" style="--n:${n};--n2:${Math.ceil(n / 2)}" role="img" aria-label="A row of pictures">` +
-          it.show.map(t => cell(tile(t))).join('') + qbox + '</div>';
+          it.show.map(t => cell(tile(t, flatOf(it)))).join('') + qbox + '</div>';
       }
       const w = it.k == 'mat' ? 3 : 2;
-      return `<div class="pt-board pt-grid g${w}" role="img" aria-label="${w} by ${w} pictures">${it.show.map(t => cell(tile(t))).join('')}${qbox}</div>`;
+      return `<div class="pt-board pt-grid g${w}" role="img" aria-label="${w} by ${w} pictures">${it.show.map(t => cell(tile(t, flatOf(it)))).join('')}${qbox}</div>`;
     }
     function draw() {
       const it = p.items[st.i];
@@ -562,8 +572,21 @@ const PAT = (() => {
     function rowScale() {
       const box = el.querySelector('.pt'), t = el.querySelector('.pt-board .pt-t');
       if (!box || !t) return;
-      const w = t.getBoundingClientRect().width;
+      const board = el.querySelector('.pt-board');
+      board.style.width = '';
+      let w = t.getBoundingClientRect().width;
       if (w > 0) box.style.setProperty('--pt-ts', (Math.round(w * 10) / 10) + 'px');
+      // AUD-BT S-8: where a choice button has no room for a picture of the board's size (the 2 x 2 board on a phone: 90 px
+      // pictures, four choices in a row with room for 70 px), the board is made smaller until its pictures are the size of the
+      // choices' pictures, so sizes are still compared like with like
+      const c = el.querySelector('.pt-ch .pt-t');
+      for (let i = 0; i < 4 && c && w > 0; i++) {
+        const cw = c.getBoundingClientRect().width;
+        if (!(cw > 0) || cw >= w - 0.3) break;
+        board.style.width = Math.floor(board.getBoundingClientRect().width * cw / w) + 'px';
+        w = t.getBoundingClientRect().width;
+        box.style.setProperty('--pt-ts', (Math.round(w * 10) / 10) + 'px');
+      }
     }
     let rz = 0;
     const onResize = () => { clearTimeout(rz); rz = setTimeout(() => { if (alive) rowScale(); }, 80); };
@@ -624,7 +647,7 @@ const PAT = (() => {
     };
   }
 
-  return { make, solve, mount, hintText, tile, say, seqNext, numNext, unique, SHAPES, COLS };
+  return { make, solve, mount, hintText, tile, flatOf, say, seqNext, numNext, unique, SHAPES, COLS, SCALE, ZF };
 })();
 
 BT.reg({

@@ -30,16 +30,37 @@ const DISC_HINT = {
   solid: 'Imagine spilling it on the floor. Does it spread out, or does it stay in one piece?',
 };
 
+/* D4 (the v196 word approvals, option 2): a rock and a coin, drawn (they were emoji that an old tablet shows as an empty box; the float
+   or sink lesson asks a young child to know them by sight). Same rules as the object art sets (DESIGN_SYSTEM 6.5; d-art-c.js). A
+   pebble shows the rock. tools/test.js "Discover words AUD-DISC-W" checks them. */
+Object.assign(ART, {
+  rock:
+    '<ellipse cx="32" cy="55.5" rx="24" ry="2.6" fill="var(--a-k)" opacity="0.1"/>' +
+    '<path fill="var(--a-e3)" d="M8 44Q6 32 16 24Q22 12 36 12Q50 12 55 26Q60 36 57 46Q54 54 40 54H20Q10 54 8 44Z"/>' +
+    '<path fill="var(--a-e2)" d="M8 43Q6.5 32 16 24.5Q22 13 35.5 13Q48.5 13 53.5 26Q58 35.5 55.5 44.5Q52.5 52 39.5 52H20Q10 52 8 43Z"/>' +
+    '<path fill="var(--a-e)" d="M9 41Q8 32 17 25Q23 14 35 14Q46 14 50 25Q53 33 48 40Q42 47 28 47Q12 48 9 41Z"/>' +
+    '<path fill="var(--a-e1)" opacity="0.9" d="M18 26Q24 16 34 16Q40 16 43 20Q34 20 28 25Q22 30 20 36Q15 32 18 26Z"/>' +
+    '<path fill="none" stroke="var(--a-e3)" stroke-width="1.6" opacity="0.6" d="M40 24L44 32L41 38M27 40L31 44"/>' +
+    '<ellipse cx="24" cy="22" rx="3.4" ry="1.6" fill="var(--a-w)" opacity="0.8" transform="rotate(-40 24 22)"/>',
+  coin:
+    '<ellipse cx="32" cy="58" rx="18" ry="2.4" fill="var(--a-k)" opacity="0.1"/><circle cx="33" cy="33" r="23" fill="var(--a-y3)"/>' +
+    '<circle cx="32" cy="32" r="23" fill="var(--a-y2)"/><circle cx="31.6" cy="31.6" r="21.4" fill="var(--a-y)"/>' +
+    '<circle cx="32" cy="32" r="15" fill="none" stroke="var(--a-y2)" stroke-width="2.4"/>' +
+    '<path fill="var(--a-y2)" d="M32 22L34.9 28.5L42 29.3L36.7 34.1L38.2 41L32 37.5L25.8 41L27.3 34.1L22 29.3L29.1 28.5Z"/>' +
+    '<path fill="none" stroke="var(--a-y1)" stroke-width="2.6" opacity="0.9" d="M14 26Q18 15 29 12.4"/>' +
+    '<ellipse cx="21" cy="19" rx="3.6" ry="1.6" fill="var(--a-w)" opacity="0.8" transform="rotate(-40 21 19)"/>',
+});
+
 // Grade band of each level (CURRICULUM 6: Lv 1 is K-2, Lv 2 is 3-4, Lv 3 is 5-6). Every item carries it as `grade`.
 const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
 
 /* R-01d: picture answers for Nature Trail (K-2). A K-2 item whose every choice is in this list shows the choices as pictures (bank
    field cp), each with its word under it. Only things a child would name from the picture: no baby animals drawn as grown-ups, no
    actions, no places. Art names are ART drawings where one exists (src/js/16-art-a.js, d-art-b.js, d-art-c.js); the emoji is the
-   fallback and is in tools/emoji-allow.txt. */
+   fallback and is in tools/emoji-allow.txt. DRAW8 (E1): feet shows the pair of feet (d-art-d.js), no longer one foot. */
 const DISC_PIC = {
   'a tree': ['tree', '🌳'], 'a rock': ['rock', '🪨'], 'a chair': ['chair', '🪑'], 'a ball': ['ball', '⚽'], 'a daisy': ['daisy', '🌼'],
-  'a brick': ['brick', '🧱'], 'a cup': ['cup', '🥤'], 'a shoe': ['shoes', '👟'], 'a goldfish': ['goldfish', '🐠'], 'a pebble': ['pebble', '🪨'],
+  'a brick': ['brick', '🧱'], 'a cup': ['cup', '🥤'], 'a shoe': ['shoes', '👟'], 'a goldfish': ['goldfish', '🐠'], 'a pebble': ['rock', '🪨'],
   'a book': ['book', '📖'], 'a toy boat': ['boat', '⛵'], 'a bird': ['bird', '🐦'], 'a flower': ['flower', '🌷'], 'a fish': ['fish', '🐟'],
   'a spoon': ['spoon', '🥄'], 'a frog': ['frog', '🐸'], 'a bee': ['bee', '🐝'], 'a toy robot': ['robot', '🤖'], 'a duck': ['duck', '🦆'],
   'a tulip': ['tulip', '🌷'], 'a bicycle': ['bike', '🚲'], 'a horse': ['horse', '🐴'], 'a rose': ['rose', '🌹'], 'a hen': ['hen', '🐔'],
@@ -48,7 +69,7 @@ const DISC_PIC = {
   hen: ['hen', '🐔'], frog: ['frog', '🐸'], fish: ['fish', '🐟'], duck: ['duck', '🦆'], snake: ['snake', '🐍'], 'a cat': ['cat', '🐱'],
   'a bear': ['bear', '🐻'], 'a sheep': ['sheep', '🐑'], 'a cow': ['cow', '🐄'], 'a pig': ['pig', '🐷'], 'a dog': ['dog', '🐶'],
   'a whale': ['whale', '🐳'], 'water': ['water', '💧'], 'a toy': ['teddy', '🧸'], 'a bed': ['bed', '🛏️'], 'shoes': ['shoes', '👟'],
-  'ears': ['ear', '👂'], 'eyes': ['eyes', '👀'], 'nose': ['nose', '👃'], 'hands': ['hand', '✋'], 'feet': ['foot', '🦶'],
+  'ears': ['ear', '👂'], 'eyes': ['eyes', '👀'], 'nose': ['nose', '👃'], 'hands': ['hand', '✋'], 'feet': ['feet', '🦶'],
   'sunny': ['sun', '☀️'], 'snowy': ['snowflake', '❄️'], 'rainy': ['rain', '🌧️'], 'windy': ['wind', '💨'], 'cloudy': ['cloud', '☁️'],
   'rain': ['rain', '🌧️'], 'wind': ['wind', '💨'], 'snow': ['snowflake', '❄️'], 'an owl': ['owl', '🦉'], 'a robin': ['bird', '🐦'],
   'a butterfly': ['butterfly', '🦋'], 'the moon': ['moon', '🌙'], 'the sun': ['sun', '☀️'], 'a rainbow': ['rainbow', '🌈'], 'sun': ['sun', '☀️'],
@@ -138,8 +159,8 @@ Where does a rabbit make its home?|in a burrow|in a hive;in a pond;in a treetop|
 Which animal lives in a forest?|a deer|a shark;a camel;a penguin|habitat
 A polar bear lives in a place that is ___.|cold and icy|hot and sandy;warm and wet|habitat
 A shark lives in the ___.|ocean|desert;forest;barn|habitat
-A cactus grows in the ___.|desert|ocean;pond;snow|habitat
-A water lily grows in a ___.|pond|desert;cave;sandbox|habitat
+A cactus grows in the ___.|desert|ocean;pond;snow|habitat||A cactus can go a long time with no rain. Think of a hot place with lots of sand.
+A water lily grows in a ___.|pond|desert;cave;sandbox|habitat||A water lily floats, with its roots in the mud. Think of still water where frogs live.
 Which part of a plant is under the ground?|roots|flowers;leaves;fruit|plants
 Which part of a plant takes in water from the soil?|roots|leaves;flower;seed|plants
 Which part of a plant holds it up tall?|stem|flower;seed;leaf|plants
@@ -207,7 +228,7 @@ Which season comes after fall?|winter|spring;summer|seasons
 We build snowmen in the ___.|winter|summer;spring|seasons
 Swimming at the beach is most fun in the ___.|summer|winter;fall|seasons
 Mittens, hot cocoa and a snowman. Which season is it?|winter|summer;spring;fall|seasons
-When can we see stars in the sky?|at night|at noon;at breakfast;at recess|daynight
+When can we see stars in the sky?|at night|at breakfast;at recess|daynight
 The sun rises in the ___.|morning|evening;night|daynight
 The sun sets in the ___.|evening|morning;noon|daynight
 Which part of the day is dark?|night|noon;morning;afternoon|daynight
@@ -229,9 +250,9 @@ The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
 The sun gives our world ___.|light and heat|rain and snow;wind and clouds;rocks and sand|sunmoon
 What is the moon mostly made of?|rock|ice;clouds;fire|sunmoon||Look at photos of the moon: the ground is gray, bumpy and dusty.
 Most of the Earth is covered by ___.|water|land;sand|landwater
-A very big body of salty water is an ___.|ocean|pond;puddle;river|landwater
+A very big body of salty water is called ___.|ocean|pond;puddle;river|landwater
 Water that flows along in a long line is a ___.|river|hill;pond;beach|landwater
-Land with water all around it is an ___.|island|lake;valley;beach|landwater
+Land with water all around it is called ___.|island|lake;valley;beach|landwater
 A big body of water with land all around it is a ___.|lake|island;hill;beach|landwater
 A very tall, rocky piece of land is a ___.|mountain|valley;pond;beach|landwater
 The low land between mountains is a ___.|valley|island;mountain;lake|landwater
