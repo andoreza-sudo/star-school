@@ -121,8 +121,8 @@ function kidNames(){const o=new Set();const add=n=>{n=String(n||'').trim();if(n)
   try{if(typeof PRF!='undefined'&&PRF.ids)for(const id of PRF.ids)add(PRF.info(id).name)}catch(e){}return[...o].sort((a,b)=>b.length-a.length)}
 function noNames(t,names=kidNames()){let s=String(t);for(const n of names){const re=new RegExp('(?<![\\p{L}\\p{N}])'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','giu');
   if(s.trim().replace(re,'').replace(/[\s!?.,]/g,'')===''&&re.test(s))return'';s=s.replace(re,'friend')}return s}
-function ttsSay(t,btn,es,slow,cheer){
-  if(typeof document!="undefined"&&document.hidden){ESA.q.unshift({s:[t,btn,es,slow,cheer]});return} // review v196: as esaPlay, the tablet's voice waits too
+// review v196: as esaPlay, the tablet's voice waits while the app is hidden
+function ttsSay(t,btn,es,slow,cheer){if(typeof document!="undefined"&&document.hidden){ESA.q.unshift({s:[t,btn,es,slow,cheer]});return}
   try{const v=pickVoice(es);if(!v||v.localService===false){t=noNames(t);if(!t.trim()){if(btn)btn.classList.remove('talking');esaPump();return}} // RENAME-2: an online voice never hears a child's name
   const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   if(v)u.voice=v;
