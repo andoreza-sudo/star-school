@@ -209,7 +209,7 @@ const NAVB={skip:0,
     if(document.getElementById('hs'))return null;
     const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
   on:()=>!!(history.state&&history.state.navb),
-  sync(){if(typeof SWU!='undefined'&&SWU.due===2)return; // RC-1: Home is reloading into an update: a history step would stop it
+  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
     try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
   pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
 if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
