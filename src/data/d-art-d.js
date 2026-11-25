@@ -2,7 +2,7 @@
    docs/drafts/AUDIT-WORDS-READ.md row E1: these picture words showed the wrong picture (an emoji fallback): feet one foot, torch a
    flashlight, purse the bag's handbag, dew the drop of water, hawk an eagle, draw a pencil, seed a sprout, mail a mailbox. The owner
    asked for drawings (forest was already swapped to storm). Each one is drawn so it cannot be taken for its neighbour:
-   feet a pair of bare feet; torch a wooden stick with a wrapped head and a flame (no magic); purse a little clasp purse with two
+   feet a pair of bare feet; torch a wooden stick with a wrapped head and a flame; purse a little clasp purse with two
    knobs and a strap (bag keeps its handbag); dew round drops on blades of grass (water is one big drop, leaf one leaf); hawk perched
    on a branch, brown with a pale streaked chest and a red-brown tail (the eagle has a white head and spread wings); draw a crayon
    drawing a red line on a sheet of paper (pencil is the pencil alone); seed five striped seeds, no sprout; mail an envelope with a
