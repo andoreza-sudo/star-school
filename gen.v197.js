@@ -2965,6 +2965,8 @@ const esSpellable=it=>/^[a-zñáéíóúü]{1,12}$/.test(it[0]);
 // R-01s: a unit's cap is 1 (the English under every picture) or a list of the words whose picture alone is not enough (weather: hot,
 // cold, cool); confuse lists pairs of words that are never offered together (two right answers by picture or by ear: hace sol / hace
 // calor, nieva / hace frío, hace fresco / hace viento, feliz / tranquilo, feliz / emocionado)
+// DAYS-D3 (owner 2026-11-25): a month's hint teaches how its picture's ring of dots reads (not enero's: R-01s, no English meaning)
+const esRing=it=>/^month-/.test(it[4]||'')&&it[0]!='enero'?' January is the first dot after the top.':'';
 const esCap=(u,it)=>!!u&&(u.cap===1||Array.isArray(u.cap)&&u.cap.includes(it[0]));
 const esClash=(u,a,b)=>!!(u&&u.confuse&&u.confuse.some(p=>p.includes(a[0])&&p.includes(b[0])));
 // two wrong items for `it`: neither clashes with it or with the other (a unit with no confuse list draws exactly as before R-01s)
@@ -2991,11 +2993,11 @@ function genEs(set,lv){const sn=set=='mix'?pick(ES_UNITS.filter(u=>u.mix).map(u=
   // level 2 reads the three choices aloud (the child still has to know which one names the picture), no first letter
   if(lv==1)return{kind:'choice',cls:'pics',lang:'es',html:`<button class="btn hear" data-sayes="${esc(sy)}">🔊</button><div class="sub">Tap the picture for “${esc(f)}”</div>`,
     say:sy,auto:'must',ans:f,choices:opts.map(x=>({l:picHTML(x,esCap(un,x)),v:esFull(x),h:1})),after:f,afterLang:'es',
-    hint:{k:'say',lang:'es',w:sy,slow:.75,s:`Listen again, slowly: “${f}”. Which picture is it?`},label:`${f} (listen)`};
+    hint:{k:'say',lang:'es',w:sy,slow:.75,s:`Listen again, slowly: “${f}”. Which picture is it?`+esRing(it)},label:`${f} (listen)`};
   const wide=opts.some(x=>/ \/ /.test(x[0])); // R-01s: "sorprendido / sorprendida" needs a whole row
   return{kind:'choice',...(wide?{cls:'wide'}:{}),lang:'es',html:`<div class="emo">${picHTML(it,esCap(un,it))}</div><div class="sub">How do you say it in Spanish?</div>`,ans:f,
     choices:opts.map(x=>({l:esFull(x),v:esFull(x)})),after:f,afterLang:'es',
-    hint:{k:'say',lang:'es',w:opts.map(esSay).join('. '),s:'Say each word out loud. Which word names the picture?'},label:`${f} (read)`}}
+    hint:{k:'say',lang:'es',w:opts.map(esSay).join('. '),s:'Say each word out loud. Which word names the picture?'+esRing(it)},label:`${f} (read)`}}
 /* ---------- P2-34 phrases and grammar (CURRICULUM S-gram): es_phrase, es_art, es_ser, es_gusta, es_sent ----------
    Data: ES_GRAM in src/data/d-es-gram.js (that file makes the five skills). Every question has one right answer:
    a phrase has one meaning; a noun has one article; a subject fixes the verb form; a noun is one or many; a sentence has one order
