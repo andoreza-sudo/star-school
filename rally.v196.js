@@ -3516,6 +3516,10 @@ function rgFrame(R) {
   if (G.k > kg) { gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); O.lt.first = kg / 7; O.lt.n = (G.k - kg) / 7; GLX.draw(X, G.gm, VP, O.lt); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); }
   // ---- sprites, far to near, against the ground's depth (a hill top or a wall hides what is behind it) ----
   gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND);
+  // RL-BLINK: many phones give WebGL a 16-bit depth buffer, where a rival standing 4 units in front of the road behind it (and
+  // its shadow 3 units over the road) round to the road's own depth and flicker frame to frame; a few steps of offset toward the
+  // camera keep them in front (still far less than a hill top, which hides what is behind it as before)
+  gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-1, -8);
   const tn = G.T, sp = T.spAt, prA = T.pr;
   // the cars by row, as the 2D look sorts them (the ghost too): cr row, cd distance; the player is index 7
   const cars = st.cars, nc = cars.length, cr = G.cr, cdv = G.cd;
@@ -3611,6 +3615,7 @@ function rgFrame(R) {
   }
   if (!meOK) { rgFlush(G, VP, tex); rgMe(G, R, sh); }
   rgFlush(G, VP, tex);
+  gl.disable(gl.POLYGON_OFFSET_FILL);
   gl.disable(gl.BLEND); gl.depthMask(true); gl.depthFunc(gl.LEQUAL);
   G.frames++;
   return true;
