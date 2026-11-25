@@ -206,7 +206,7 @@ never in a check-in, and not when Grown-ups has lessons off.
 
 ### Picture Graphs (data)
 
-- **diff** (level 1): "How many more apples than grapes?" Answer given: 14
+- **diff** (level 1): "How many more chose apples than grapes?" Answer given: 14
   Hint: "How many more? Find the difference, not the total." (reviewed)
 - **rmax** (level 5): "Pets at home: 9, 19, 5, 17, 1, 14, 19. What is the range?" Answer given: 19
   Hint: "The range is the biggest take away the smallest." (reviewed)

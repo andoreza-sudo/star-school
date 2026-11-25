@@ -3407,8 +3407,8 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
        if(q.kind=='choice'){
          const most=/most\?$/.test(q.say);f[most?'most':'least']=(f[most?'most':'least']||0)+1;
          want=nm[v.indexOf(most?Math.max(...v):Math.min(...v))];
-       }else if(m=P(q.say,/^How many more (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
-       else if(m=P(q.say,/^How many (\w+) and (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
+       }else if(m=P(q.say,/^How many more chose (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
+       else if(m=P(q.say,/^How many chose (\w+) or (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
        else if(m=P(q.say,/^How many (\w+)\?$/)){f.count=(f.count||0)+1;want=v[low.indexOf(m[0])]}
        else{b('data1 say '+q.say);continue}
        if(String(want)!==q.ans||Number.isNaN(want))b('data1 '+q.say+' -> '+q.ans+', want '+want);
@@ -3947,8 +3947,8 @@ run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers 
        let m;
        if(m=ask.match(/^How many (\w+)\?$/)){f.count++;if(q.ans!==String(v[low(m[1])]))b('data2 count '+q.label)}
        else if(m=ask.match(/^Which has the (most|least)\?$/)){f[m[1]]++;const w=m[1]=='most'?Math.max(...v):Math.min(...v);if(q.ans!==nm[v.indexOf(w)])b('data2 '+m[1]+' '+q.label)}
-       else if(m=ask.match(/^How many more (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
-       else if(m=ask.match(/^How many (\w+) and (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
+       else if(m=ask.match(/^How many more chose (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
+       else if(m=ask.match(/^How many chose (\w+) or (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
        else if(ask=='How many in all?'){f.all++;if(q.ans!==String(v.reduce((a,x)=>a+x,0)))b('data2 all '+q.label)}
        else b('data2 question '+ask);
        if(q.kind=='choice'&&q.choices.length!==4)b('data2 choices');
@@ -20169,6 +20169,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // left "When can we see stars in the sky?" (the sun is a star). geo_us1: a Southwest state no longer offers West as a wrong region.
       // (AUDIT-READ set three of these hashes again in tools/lib/kinds2-seeds.json, for content it removed on purpose: syl2 lost the word
       // "family", sound2 no longer offers s or k beside x, vocab8 no longer offers a second kind that also fits)
+      // (WORDS-MATH, approved 2026-11-24, set two more: sort3 (E8: no fish in a food and animals sort; with sgCat as before it gives the v169
+      // hash 1b1f327c30ec) and eo1 (W69: the K question says "Even is on the left."; without that sentence it gives the v169 hash 9eb0a73c72a3))
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
