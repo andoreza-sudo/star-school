@@ -958,7 +958,7 @@ function genBig(lv){let a,b,s;
   else{const a1=R(2,9),b1=R(10-a1,9),a2=R(1,7),b2=R(1,8-a2);a=a2*10+a1;b=b2*10+b1;s=`Ones first: ${a1} + ${b1} = ${a1+b1}. Write ${(a1+b1)%10}, carry the 1 to the tens!`}
   return mathQ(a,'+',b,a+b,'c',true,{hint:{k:'text',s}})}
 function genEO(lv){const n=lv==1?R(0,20):R(21,99);
-  return{kind:'choice',html:`<div>${n}</div><div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`,ans:n%2?'odd':'even',
+  return{kind:'choice',html:`<div>${n}</div><div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`+(lv==1?' Even is on the left.':''),ans:n%2?'odd':'even',
     choices:[{l:'Even',v:'even'},{l:'Odd',v:'odd'}],hint:{k:'pairs',n},label:`${n} even/odd`}}
 function genCnt(lv){let step,start;
   if(lv==1){step=pick([1,10]);start=step==1?R(0,25):10*R(0,5)}
@@ -1423,6 +1423,8 @@ function genSgShape2() {
   const ans = pick(['hexagon', 'rhombus', 'trapezoid', 'oval']);
   let pool = ['hexagon', 'rhombus', 'trapezoid', 'oval', 'circle', 'square', 'triangle', 'rectangle'].filter(n => n != ans);
   if (ans == 'rhombus') pool = pool.filter(n => n != 'square'); // a square is a rhombus too
+  if (ans == 'oval') pool = pool.filter(n => n != 'circle'); // E6
+  if (ans == 'trapezoid') pool = pool.filter(n => !['rectangle', 'square', 'rhombus'].includes(n)); // E7
   const names = shuffle([ans, ...shuffle(pool).slice(0, 3)]), w = SG_FACT[ans];
   return pkQ({
     kind: 'choice', cls: 'pics pk4', ans, auto: 'must', choices: names.map(n => ({ l: sgShp(n), v: n, h: true })),
@@ -1505,8 +1507,10 @@ const SG_CATS = {
   vehicles: [['car', '🚗'], ['bus', '🚌'], ['bike', '🚲'], ['ship', '🚢'], ['plane', '✈'], ['train', '🚂'], ['truck', '🚚'], ['boat', '⛵']],
   clothes: [['hat', '🧢'], ['coat', '🧥'], ['socks', '🧦'], ['shirt', '👔'], ['boots', '👢']],
 };
+const sgCat = (c, other) => (c == 'animals' && other == 'food' ? SG_CATS[c].filter(x => x[0] != 'fish') : SG_CATS[c]);
 function genSgSort() {
-  const [c1, c2] = shuffle(Object.keys(SG_CATS)).slice(0, 2), three = shuffle(SG_CATS[c1]).slice(0, 3), odd = pick(SG_CATS[c2]);
+  // E8: no fish in a food and animals sort
+  const [c1, c2] = shuffle(Object.keys(SG_CATS)).slice(0, 2), three = shuffle(sgCat(c1, c2)).slice(0, 3), odd = pick(sgCat(c2, c1));
   const all = shuffle([...three.map(x => ({ x, odd: false })), { x: odd, odd: true }]), w = `Three of these are ${c1}.`;
   return pkQ({
     kind: 'choice', cls: 'pics pk4', ans: String(all.findIndex(a => a.odd)),
@@ -1780,10 +1784,10 @@ function genData1() {
   const j = pick([0, 1, 2].filter(x => x != i));
   if (form == 'more') {
     const [hi, lo] = vals[i] > vals[j] ? [i, j] : [j, i];
-    return num(`How many more ${lc(hi)} than ${lc(lo)}?`, vals[hi] - vals[lo], `data more ${names[hi]} than ${names[lo]}: ${gist}`,
+    return num(`How many more chose ${lc(hi)} than ${lc(lo)}?`, vals[hi] - vals[lo], `data more ${names[hi]} than ${names[lo]}: ${gist}`,
       'Count each row, then find the difference.');
   }
-  return num(`How many ${lc(i)} and ${lc(j)} in all?`, vals[i] + vals[j], `data total ${names[i]} ${names[j]}: ${gist}`, 'Count each row, then add the two numbers.');
+  return num(`How many chose ${lc(i)} or ${lc(j)} in all?`, vals[i] + vals[j], `data total ${names[i]} ${names[j]}: ${gist}`, 'Count each row, then add the two numbers.');
 }
 
 // shape 4: sides, corners and "which shape has 4 sides?". Levels 2-3 are K (P2-02) and ask the Pre-K shape question until it ships.
@@ -1988,9 +1992,9 @@ function genBayData2() {
   const j = pick([0, 1, 2, 3].filter(x => x != i));
   if (form == 'more') {
     const [hi, lo] = vals[i] > vals[j] ? [i, j] : [j, i];
-    return num(`How many more ${lc(hi)} than ${lc(lo)}?`, vals[hi] - vals[lo], `bar more ${names[hi]} than ${names[lo]}: ${gist}`, 'Read both bars, then find the difference.');
+    return num(`How many more chose ${lc(hi)} than ${lc(lo)}?`, vals[hi] - vals[lo], `bar more ${names[hi]} than ${names[lo]}: ${gist}`, 'Read both bars, then find the difference.');
   }
-  return num(`How many ${lc(i)} and ${lc(j)} in all?`, vals[i] + vals[j], `bar two ${names[i]} ${names[j]}: ${gist}`, 'Read both bars, then add the two numbers.');
+  return num(`How many chose ${lc(i)} or ${lc(j)} in all?`, vals[i] + vals[j], `bar two ${names[i]} ${names[j]}: ${gist}`, 'Read both bars, then add the two numbers.');
 }
 
 // arr 1: array of dots, r and c in 2-5, with "3 rows of 4" shown; how many in all?

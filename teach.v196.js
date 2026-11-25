@@ -745,14 +745,27 @@ const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == '
    out (null), never said with a hole; tools/test.js checks every drafted line fills. lsW(lines, k, sl): line k (round the list), filled. */
 function lsFill(t, sl) {
   let ok = true;
-  const o = String(t).replace(/\{(\w+)\}/g, (m, k) => (k == 'name' ? lsName() : k == 'pet' ? petN() : sl && sl[k] != null ? String(sl[k]) : (ok = false, m)));
-  return ok ? o : null;
+  const o = String(t).replace(/\{(\w+)\}/g, (m, k) => (k == 'name' ? lsName() : k == 'pet' ? petN() : sl && sl[k] != null ? (String(sl[k]) === '1' ? LS_ONE : String(sl[k])) : (ok = false, m)));
+  return ok ? lsOne(o) : null;
 }
+/* WORDS-MATH W24 (the owner's approval of 2026-11-24): the reviewed lines stay as written; a slot filled with 1 says the singular of
+   the counting noun after it ("Put in 1 counter with me.", "It has 1 hundred, 1 ten and 1 one.", "They are worth 1 cent."), and
+   "1 row of 2 makes 2." Count nouns only (LS_ONES): a verb after a slot ("{word} ends with", "The {a} floats") is never touched,
+   nor a number that is not from a slot. LS_ONE marks a slot filled with 1 until the line is done. */
+const LS_ONE = '\u00011\u0001';
+const LS_ONES = {apples: 'apple', bags: 'bag', bars: 'bar', blocks: 'block', boards: 'board', boxes: 'box', cents: 'cent', coins: 'coin', copies: 'copy',
+  counters: 'counter', cubes: 'cube', degrees: 'degree', dots: 'dot', gaps: 'gap', gems: 'gem', grams: 'gram', groups: 'group', hundreds: 'hundred',
+  inches: 'inch', feet: 'foot', layers: 'layer', leaves: 'leaf', lines: 'line', logs: 'log', minutes: 'minute', nuts: 'nut', ones: 'one', parts: 'part', pieces: 'piece',
+  rocks: 'rock', rows: 'row', sections: 'section', squares: 'square', stars: 'star', steps: 'step', stones: 'stone', tens: 'ten', toys: 'toy', windows: 'window',
+  jumps: 'jump', wholes: 'whole', halves: 'half', thirds: 'third', fourths: 'fourth', fifths: 'fifth', sixths: 'sixth', eighths: 'eighth', tenths: 'tenth', twelfths: 'twelfth', hundredths: 'hundredth'};
+const lsOne = t => (t.indexOf(LS_ONE) < 0 ? t : t
+  .replace(/\u00011\u0001 ([a-z]+)\b/g, (m, w) => (LS_ONES[w] ? LS_ONE + ' ' + LS_ONES[w] : m))
+  .replace(/(\u00011\u0001 (?:row|group) of \S+ )make\b/g, '$1makes').replace(/\u0001/g, ''));
 const lsW = (a, k, sl) => { a = [].concat(a || []); const t = a.length ? lsFill(a[k % a.length], sl) : null; return t ? [t] : []; };
 // an answer as the pet says it: a time as words, cents with their unit
 const LS_SIGN = {'<': 'is less than', '>': 'is greater than', '=': 'is equal to'};
 const lsSayV = (q, v) => (q.vsay ? q.vsay(String(v)) : q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
-  : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? v + ' cents' : String(v));
+  : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? qN(v, 'cent') : String(v));
 /* ---------- TEACH-1: what the tutor knows, the plan, the before-and-after measure (part teach) ----------
    Saved data (all of it stays on the tablet; a backup file carries it like the rest of S):
      S.know[nid] = {s, n, lv, b, box, due, d, k}   the learner record of one lesson stop (TEACH-PLAN-2 system C, batch 1 size)
@@ -1157,7 +1170,7 @@ const LESSONS = {
     q(st, r) {
       const f = lsRi(r, 1, 9), hint = lsFrameHint(f, 10, {}, 'Count the empty boxes.');
       if (st == 0) return lsFrame('tenf', 2, 0, 10 - f, 10, {fixed: f, html: lsAsk(`There are ${f}. Fill it to make 10.`),
-        say: `There are ${f} counters. Put in more to make 10.`, hint, bug: {given: [f]}});
+        say: `There ${f == 1 ? 'is' : 'are'} ${qN(f, 'counter')}. Put in more to make 10.`, hint, bug: {given: [f]}});
       if (st == 1) return lsNum('tenf', 2, 1, 10 - f, `<div class="pkq">${VIZ.tenFrame(f, 10)}</div>${SLOT}`, 'How many more to make ten?', {hint, bug: {given: [f]}});
       return lsNum('tenf', 2, 2, 10 - f, lsEq(`${f} + ${SLOT} = 10`), `${f} and how many make ten?`, {hint, bug: {given: [f], op: [10 + f]}});
     },
