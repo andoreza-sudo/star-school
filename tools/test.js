@@ -107,7 +107,7 @@ const TEST_TIMED=['patterns P3-09','number puzzles P3-10','mazes P3-08','sudoku 
   'riddles, memory, copy cat P3-14','tangrams P3-11','robot path P3-13','spatial P3-16','tangram pack and Shape Fit P3-12',
   'word search and unscramble P3-15','Block Builder goals G-BB3'];
 const TEST_S={'sky hop G-04b':451,'game moves and bosses G-MOVES':50,'story themes: the same math with and without interests, every story level, many seeds PERS-01':25,'spatial P3-16':53,'reading review fixes R-01r':53,'Star Rally 2 G-02b':36,'game feel: assist dial G-FEEL1':22,
-  'math review fixes R-01m':18,'math audit fixes AUDIT-MATH':45,'robot path P3-13':12,'block builder G-01':8};
+  'math review fixes R-01m':18,'math audit fixes AUDIT-MATH':45,'math words WORDS-MATH':30,'robot path P3-13':12,'block builder G-01':8};
 const SHARD=(()=>{const a=process.argv.find(x=>x.startsWith('--shard='));if(!a)return null;
   if(a==='--shard=t')return{i:'t',n:1,timed:true,other:0};
   const m=a.slice(8).match(/^(\d+)\/(\d+)$/);
@@ -3409,8 +3409,8 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
        if(q.kind=='choice'){
          const most=/most\?$/.test(q.say);f[most?'most':'least']=(f[most?'most':'least']||0)+1;
          want=nm[v.indexOf(most?Math.max(...v):Math.min(...v))];
-       }else if(m=P(q.say,/^How many more (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
-       else if(m=P(q.say,/^How many (\w+) and (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
+       }else if(m=P(q.say,/^How many more chose (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
+       else if(m=P(q.say,/^How many chose (\w+) or (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
        else if(m=P(q.say,/^How many (\w+)\?$/)){f.count=(f.count||0)+1;want=v[low.indexOf(m[0])]}
        else{b('data1 say '+q.say);continue}
        if(String(want)!==q.ans||Number.isNaN(want))b('data1 '+q.say+' -> '+q.ans+', want '+want);
@@ -3949,8 +3949,8 @@ run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers 
        let m;
        if(m=ask.match(/^How many (\w+)\?$/)){f.count++;if(q.ans!==String(v[low(m[1])]))b('data2 count '+q.label)}
        else if(m=ask.match(/^Which has the (most|least)\?$/)){f[m[1]]++;const w=m[1]=='most'?Math.max(...v):Math.min(...v);if(q.ans!==nm[v.indexOf(w)])b('data2 '+m[1]+' '+q.label)}
-       else if(m=ask.match(/^How many more (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
-       else if(m=ask.match(/^How many (\w+) and (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
+       else if(m=ask.match(/^How many more chose (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
+       else if(m=ask.match(/^How many chose (\w+) or (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
        else if(ask=='How many in all?'){f.all++;if(q.ans!==String(v.reduce((a,x)=>a+x,0)))b('data2 all '+q.label)}
        else b('data2 question '+ask);
        if(q.kind=='choice'&&q.choices.length!==4)b('data2 choices');
@@ -16737,6 +16737,84 @@ run('math audit fixes AUDIT-MATH',()=>{
   return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
 });
 
+// ---- WORDS-MATH: the Math rows of docs/drafts/AUDIT-WORDS-READ.md the owner approved on 2026-11-24 (W18-W28, W69-W71, E6-E8) ----
+run('math words WORDS-MATH',()=>{
+  const body=()=>{
+    const bad=[],add=m=>{if(bad.length<60&&!bad.some(x=>x.replace(/\d+/g,'#')===m.replace(/\d+/g,'#')))bad.push(m)},note={};
+    S.name='Ava';S.buddy='Ben';
+    const strip=x=>String(x||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();
+    const eq=(a,b,w)=>{if(a!==b)add(w+': "'+a+'", want "'+b+'"')};
+    // a 1 with a plural counting noun after it (a number such as 3.1 or 21 is not a 1)
+    const ONE=/(?:^|[^\d.,\/:$−\-–×])(?<!point )1 (?:small |more )?(counters|rows|groups|tenths|hundredths|twelfths|ninths|sevenths|sixths|fifths|fourths|thirds|halves|steps|tens|hundreds|ones|parts|squares|columns|coins|cents|marks|floors|degrees|meters|dots|boxes|cubes|blocks|gaps|jumps|wholes|minutes|rocks|stones|apples|copies|layers|bags)\b/;
+    const hintT=h=>!h?[]:[h.s,h.w,strip(h.html),...(h.steps||[]).flatMap(x=>[strip(x.html),x.say])];
+    const texts=q=>[q.say,strip(q.html),q.after,q.ansSay,...hintT(q.hint),...Object.values(q.why||{}),...Object.values(q.whySay||{}),...(q.choices||[]).map(c=>strip(c.l))].filter(Boolean).map(String);
+    // W21, W22: practice questions, with the spoken answer and the feedback on a wrong answer
+    {const stops=[];for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)if(skArea(id,lv)=='math'&&!skLvEmpty(id,lv))stops.push([id,lv]);let n=0;
+     for(const [id,lv] of stops)for(let s=1;s<=700;s++){const q=genQ(id,lv,s);n++;for(const t of texts(q)){const m=ONE.exec(t);if(m)add(id+' '+lv+' seed '+s+': '+t.slice(Math.max(0,m.index-30),m.index+50))}}
+     note.questions=n;
+     eq(genQ('tenf',1,23).say,'Make 1. Tap the ten frame to put in 1 counter.','tenf 1 seed 23');eq(strip(genQ('tenf',1,23).html),'1 Make 1. Tap to put in 1 counter.','tenf 1 seed 23 shown');
+     eq(genQ('tenf',2,7).say,'There is 1 counter. Put in more counters to make 10.','tenf 2 seed 7');
+     eq(genQ('mfact',1,12).ansSay,'1 row of 6','mfact 1 seed 12');eq(genQ('dec',1,24).ansSay,'1 tenth','dec 1 seed 24');
+     eq(genQ('int',2,13).hint.s,'−1 is 1 step from 0. Its opposite is 1 step from 0 on the other side.','int 2 seed 13');
+     eq(Object.values(genQ('pv',1,46).why)[0],'10 is 1 ten. The 4 goes in the ones place.','pv 1 seed 46');
+     eq(Object.values(k2WhyAdd({label:'190 + 15 = ?'})||{})[0],'9 tens + 1 ten is 10 tens. Write the 0 and carry 1 hundred.','W22');
+     eq(Object.values(k2WhyAdd({label:'180 + 75 = ?'})||{})[0],'8 + 7 tens is 15 tens. Write the 5 and carry 1 hundred.','W22: no 1, as before')}
+    // W23, W24: lesson questions, their lines, the pet's answer; the filler's rule
+    eq(lsFill('Put in {n} counters with me.',{n:1}),'Put in 1 counter with me.','lsFill');eq(lsFill('Put in {n} counters with me.',{n:2}),'Put in 2 counters with me.','lsFill 2');
+    eq(lsFill('The path needs {n} rocks. Put them in the frame.',{n:1}),'The path needs 1 rock. Put them in the frame.','lsFill rocks');
+    eq(lsFill('It has {top} hundreds, {tens} tens and {ones} ones.',{top:1,tens:1,ones:1}),'It has 1 hundred, 1 ten and 1 one.','lsFill places');
+    eq(lsFill('{a} rows of {b} make {sum}.',{a:1,b:2,sum:2}),'1 row of 2 makes 2.','lsFill rows');eq(lsFill('{a} rows of {b} make {sum}.',{a:3,b:1,sum:3}),'3 rows of 1 make 3.','lsFill rows of 1');
+    eq(lsFill('You chose {n} coins.',{n:1})+' '+lsFill('They are worth {value} cents.',{value:1}),'You chose 1 coin. They are worth 1 cent.','lsFill coins');
+    eq(lsFill('{a} wholes and {b} fourths.',{a:1,b:4}),'1 whole and 4 fourths.','lsFill wholes');eq(lsFill('That is {n} steps from zero.',{n:1}),'That is 1 step from zero.','lsFill steps');
+    eq(lsFill('{word} ends with {ans}.',{word:1,ans:'t'}),'1 ends with t.','lsFill: a verb is left alone');eq(lsFill('The {a} floats. The {b} sinks.',{a:1,b:1}),'The 1 floats. The 1 sinks.','lsFill: verbs');
+    eq(lsFill('1 counters and {n} counters',{n:2}),'1 counters and 2 counters','lsFill: only a slot');eq(lsFill('{n} counters',{n:11}),'11 counters','lsFill 11');
+    if(/\u0001/.test(lsFill('{a} and {b}',{a:1,b:1})))add('lsFill leaves its mark in the line');
+    {let n=0;const ids=Object.keys(LESSONS).filter(k=>(LESSONS[k].p||'math')=='math'&&skArea(LESSONS[k].sk,LESSONS[k].lv)=='math');
+     for(const id of ids){const L=LESSONS[id];for(let s=1;s<=250;s++){const r=mulberry32(s*31+7);for(const st of [0,1,2]){let q;try{q=L.q(st,r)}catch(e){add(id+': q threw');continue}n++;
+       const ts=texts(q);if(L.w&&q.sl)for(const b of ['together','show','check'])for(const t of [].concat(L.w.beats[b]||[])){const f=lsFill(t,Object.assign({ans:lsSayV(q,q.ans)},q.sl));if(f)ts.push(f)}
+       if(q.cents)ts.push(lsSayV(q,'1'));
+       for(const t of ts){const m=ONE.exec(t);if(m)add(id+' lesson stage '+st+' seed '+(s*31+7)+': '+t.slice(Math.max(0,m.index-30),m.index+50))}}}}
+     note.lessonQuestions=n;
+     // Name it and Explore on a build of 1: the reviewed lines, filled
+     for(const [id,v,want] of [['arr1','1×2','1 row of 2 makes 2.'],['coins1',[0,1],'Your coins make 1 cent.']]){const e=LESSONS[id].exp(mulberry32(1)),re=e.react(v);if(!re.lines.includes(want))add(id+' Explore: '+re.lines.join(' / '));
+       const nm=LESSONS[id].name(Object.assign({},re.ctx),mulberry32(1)).lines.join(' ');const m=ONE.exec(nm);if(m)add(id+' Name it: '+nm)}}
+    // W18: the rounding lessons' hint for a number exactly halfway; the others keep theirs
+    {let half=0,rest=0;for(const id of ['round1','round2','round3','round4'])for(let s=1;s<=1500;s++)for(const st of [0,1,2]){const q=LESSONS[id].q(st,mulberry32(s)),h=q.hint&&q.hint.s||'',m=/^([\d.]+) is between ([\d.]+) and ([\d.]+)\. (.*)$/.exec(h);if(!m)continue;
+       const mid=(+m[2]+ +m[3])/2,isH=Math.abs(m[1]-mid)<1e-9,k=Math.round(mid*1000)/1000;
+       if(isH){half++;if(m[4]!=='Halfway is '+k+'. Halfway or more? Round up. Less than halfway? Round down.')add(id+' lesson seed '+s+': '+h)}
+       else{rest++;if(m[4]!=='Which one is it nearer to? Halfway is '+k+'.')add(id+' lesson seed '+s+': '+h)}}
+     if(!half||!rest)add('rounding lessons: halfway '+half+', others '+rest);note.halfway=half;
+     eq(LESSONS.round1.q(1,mulberry32((()=>{for(let s=1;s<5000;s++){if(/^Round 55 /.test(LESSONS.round1.q(1,mulberry32(s)).say))return s}return 1})())).hint.s,'55 is between 50 and 60. Halfway is 55. Halfway or more? Round up. Less than halfway? Round down.','W18')}
+    // W19, W20, W25-W28
+    {let quiz=0;for(let s=1;s<=2000;s++){const q=genQ('data',5,s),t=q.say+' '+strip(q.html);if(/number of quiz scores/.test(t))add('data 5 seed '+s+': '+q.say);if(/It shows that friend's quiz score\./.test(q.say)){quiz++;if(!/It shows that friend's quiz score\./.test(strip(q.html)))add('data 5 seed '+s+': shown '+strip(q.html))}
+       if(/It shows the number of (books read|goals|pets)\./.test(q.say)===/quiz/.test(q.say)&&/Each dot/.test(q.say))add('data 5 seed '+s+': '+q.say)}if(!quiz)add('data 5: no quiz score plot');note.quizPlots=quiz}
+    {let n=0;for(let s=1;s<=1500;s++){const q=genQ('fop',5,s);for(const st of (q.hint.steps||[])){if(/Mixed number to fraction/.test(st.say)){n++;if(!/^Mixed number to fraction: \d+ and \d+ over \d+ is \d+ wholes? of /.test(st.say))add('fop 5 seed '+s+': '+st.say);if(/ and \d+\/\d+ is/.test(strip(st.html)))add('fop 5 seed '+s+': the shown step changed: '+strip(st.html))}}}if(!n)add('fop 5: no mixed number hint');note.mixedHints=n}
+    for(const lv of [1,2])for(let s=1;s<=1500;s++){const q=genQ('data',lv,s);if(/^How many more (?!chose )/.test(q.say)||/^How many (?!chose |more |in all)\S+ (and|or) .* in all\?$/.test(q.say)||/^How many chose .* and .* in all/.test(q.say))add('data '+lv+' seed '+s+': '+q.say);if(/^How many/.test(q.say)&&!strip(q.html).includes(q.say))add('data '+lv+' seed '+s+': shown differs from spoken')}
+    eq(genQ('data',1,5).say,'How many more chose tag than slides?','data 1 seed 5');eq(genQ('data',1,11).say,'How many chose ball or slides in all?','data 1 seed 11');
+    {let n=0;for(let s=1;s<=3000;s++){const q=genQ('data',4,s),m=/How many \w+ are (.+) long\?$/.exec(q.say);if(!m)continue;const fr=/(half|halves|fourths?|eighths?)/.test(m[1]);
+       if(fr){n++;if(!/^(\d+|one) (half|halves|fourths?|eighths?) of (an inch|a yard|a foot)$/.test(m[1]))add('data 4 seed '+s+': '+q.say);if(!/\d\/\d of (an inch|a yard|a foot) long\?/.test(strip(q.html)))add('data 4 seed '+s+': shown '+strip(q.html).slice(-60))}
+       else if(!/^\d+ (inch|inches|yards?|foot|feet)$/.test(m[1]))add('data 4 seed '+s+': '+q.say)}if(!n)add('data 4: no fraction length');note.fractionLengths=n}
+    for(let s=1;s<=2000;s++){const q=genQ('geo',3,s);if(/square (in|cm|ft|m)\b/.test(q.say))add('geo 3 seed '+s+': '+q.say)}
+    eq(genQ('geo',3,8).say,'A rectangle has an area of 45 square inches. One side is 5 inches. How long is the other side?','geo 3 seed 8');
+    for(let s=1;s<=3000;s++){const q=genQ('story',9,s),t=hintT(q.hint).join(' ');if(/\$\d+\.\d(?!\d)/.test(t))add('story 9 seed '+s+': '+t.slice(0,160))}
+    if(!hintT(genQ('story',9,95).hint).join(' ').includes('70 × 75 ÷ 100 = $52.50.'))add('story 9 seed 95: '+hintT(genQ('story',9,95).hint).join(' ').slice(0,200));
+    // W69, W70, W71
+    for(let s=1;s<=400;s++){const a=genQ('eo',1,s),b=genQ('eo',2,s);if(a.kind=='choice'&&(!/^Is \d+ even or odd\? Even is on the left\.$/.test(a.say)||a.choices[0].v!=='even'||a.choices.length!=2))add('eo 1 seed '+s+': '+a.say);
+      if(b.kind=='choice'&&!/^Is \d+ even or odd\?$/.test(b.say))add('eo 2 seed '+s+': '+b.say)}
+    eq(skyMoneySay(65),'65 cents','W70');eq(skyMoneySay(1),'1 cent','W70 1');eq(skyMoneySay(100),'1 dollar','W70 100');eq(skyMoneySay(165),'1 dollar and 65 cents','W70 165');eq(skyMoneySay(250),'2 dollars and 50 cents','W70 250');
+    eq(galMoneyWords('It costs $0.65 more than $2.50.'),'It costs 65 cents more than 2 dollars and 50 cents.','W70 words');
+    {let n=0;for(let s=1;s<=600;s++){const q=LESSONS.story8.q(0,mulberry32(s));n++;if(!/ Shade (\d+|one) \w+ of the bar\.$/.test(q.say)||/How many/.test(q.say))add('story8 lesson seed '+s+': '+q.say);
+       const k=LESSONS.story8.q(2,mulberry32(s));if(!/How many \w+\?$/.test(k.say))add('story8 lesson stage 2 seed '+s+': '+k.say)}note.story8=n}
+    // E6, E7, E8
+    for(let s=1;s<=4000;s++){const q=genQ('shape',2,s),vs=q.choices.map(c=>c.v);if(vs.length!=4||new Set(vs).size!=4)add('shape 2 seed '+s+': '+vs);
+      if(q.ans=='oval'&&vs.includes('circle'))add('shape 2 seed '+s+': a circle beside the oval');if(q.ans=='trapezoid'&&vs.some(v=>['rectangle','square','rhombus'].includes(v)))add('shape 2 seed '+s+': '+vs+' beside the trapezoid')}
+    {let fa=0;for(let s=1;s<=6000;s++){const q=genQ('sort',3,s),l=q.label;if(/food/.test(l)&&/animals/.test(l)){fa++;if(/\bfish\b/.test(l))add('sort 3 seed '+s+': '+l)}}if(fa<500)add('sort 3: only '+fa+' food and animals questions');note.foodAnimals=fa}
+    return{bad,note};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
+});
+
 // ---- R-01r: reading review fixes (docs/reviews/R-01-reading.md, must items 1-6 and the small should items) ----
 // No offensive word is written here: the blocklist is hashes only (src/data/d-kidsafe.js) and the self-test words are ROT13 below.
 run('reading review fixes R-01r',()=>{
@@ -20192,6 +20270,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // W60, owner 2026-11-24, docs/drafts/AUDIT-WORDS-READ.md, adds "and z changes to c: lápiz, lápices" to its plural hint)
       // (WORDS-READ W10, approved 2026-11-24, set gram8 again: slower / softer / quicker / louder became slowness / softness / quickness /
       // loudness, which also makes those four questions "wide" (a choice over 7 letters); checked to be the only difference)
+      // (WORDS-MATH, approved 2026-11-24, set two more: sort3 (E8: no fish in a food and animals sort; with sgCat as before it gives the v169
+      // hash 1b1f327c30ec) and eo1 (W69: the K question says "Even is on the left."; without that sentence it gives the v169 hash 9eb0a73c72a3))
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}

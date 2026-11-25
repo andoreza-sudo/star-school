@@ -97,7 +97,7 @@ const LESSONS = {
     q(st, r) {
       const f = lsRi(r, 1, 9), hint = lsFrameHint(f, 10, {}, 'Count the empty boxes.');
       if (st == 0) return lsFrame('tenf', 2, 0, 10 - f, 10, {fixed: f, html: lsAsk(`There are ${f}. Fill it to make 10.`),
-        say: `There are ${f} counters. Put in more to make 10.`, hint, bug: {given: [f]}});
+        say: `There ${f == 1 ? 'is' : 'are'} ${qN(f, 'counter')}. Put in more to make 10.`, hint, bug: {given: [f]}});
       if (st == 1) return lsNum('tenf', 2, 1, 10 - f, `<div class="pkq">${VIZ.tenFrame(f, 10)}</div>${SLOT}`, 'How many more to make ten?', {hint, bug: {given: [f]}});
       return lsNum('tenf', 2, 2, 10 - f, lsEq(`${f} + ${SLOT} = 10`), `${f} and how many make ten?`, {hint, bug: {given: [f], op: [10 + f]}});
     },

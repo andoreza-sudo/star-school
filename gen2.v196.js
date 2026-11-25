@@ -526,7 +526,7 @@ function dsGeo3() {
   if (f < .35) { // area and one side
     const l = R(2, 12), w = R(2, 12), A = l * w;
     return {kind: 'num', html: `${VIZ.rectSides(l, w, {w: l, h: '?'}, {unit})}<div class="sub">The area is ${A} ${FF_SQ[unit]}. How long is the missing side?</div><div class="eq">${SLOT} ${unit}</div>`,
-      say: `A rectangle has an area of ${A} ${FF_SQ[unit]}. One side is ${l} ${U}. How long is the other side?`, ans: String(w),
+      say: `A rectangle has an area of ${A} square ${U}. One side is ${l} ${U}. How long is the other side?`, ans: String(w),
       hint: dsHint([['', 'Area:', `Area = length × width. So ${l} × ? = ${A}.`], ['', 'Think:', `${l} times what number makes ${A}? Use division: ${A} ÷ ${l} = ?`]]),
       label: `geo3 area ${A} side ${l} ${unit}`};
   }
@@ -1042,7 +1042,7 @@ function vlOooVal(s) {
    Every label holds the numbers of its question, so tools/test.js can rebuild the right answer from the label. */
 
 // a step hint from [picture, head, text] rows; plain text only (fractions as 3/8), the last row has a "?"
-const ccHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text]) => ST.step(pic || '', head, text, null))});
+const ccHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text, say]) => ST.step(pic || '', head, text, null, say))}); // say: W20
 // put one text step in front of a step hint made by stepsAdd, stepsSub ...
 const ccLead = (h, text) => {h.steps.unshift({html: `<p class="hsc">${esc(text)}</p>`, say: text}); return h};
 const ccGcd = (a, b) => (b ? ccGcd(b, a % b) : a);
@@ -1154,7 +1154,8 @@ function ccFop5() {
   return {kind: 'num', pad: 'frac', eq: 'value',
     html: `<div class="sub">Multiply. Write the answer as a fraction.</div><div class="eq">${fcFr(a, b)} × ${W} ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
     say: `${fcSay(a, b)} times ${W} and ${fcSay(c, d)}. Write the answer as a fraction.`, ans: ccFr(n, b * d),
-    hint: ccHint([['', 'Mixed number to fraction:', `${W} ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`],
+    hint: ccHint([['', 'Mixed number to fraction:', `${W} ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`,
+      ST.spk(`Mixed number to fraction: ${W} and ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`)],
       ['', 'Multiply:', `${a}/${b} × ${top}/${d}. Tops: ${a} × ${top} = ? Bottoms: ${b} × ${d} = ?`],
       ['', 'Simplest form:', 'Does one number go into both the top and the bottom? Divide to make the fraction as small as it can be. What is left?']]),
     label: `fop5 ${a}/${b} x ${W} ${c}/${d}`};
@@ -1342,6 +1343,7 @@ const CC_LP = [['leaf', 'leaves', 'inches'], ['ribbon', 'ribbons', 'yards'], ['w
 // an amount k/den as html (whole numbers stay whole; the rest are written like the labels of the line plot) and as speech
 const ccPl = d => (d == 2 ? 'halves' : FC_NAMES[d] + 's'); // halves, thirds, fourths
 const CC_SING = {inches: 'inch', yards: 'yard', feet: 'foot'};
+const ccAn = unit => (unit == 'inches' ? 'an inch' : 'a ' + CC_SING[unit]); // W26
 const ccAmt = (k, den) => (k % den ? fcFr(k, den) : String(k / den));
 const ccAmtSay = (k, den) => (k % den ? fcSay(k, den) : String(k / den));
 function ccData4() {
@@ -1364,8 +1366,8 @@ function ccData4() {
   const tag = `d=${den}: ${ks.join(' ')}`;
   if (type == 'count') {
     const c = ks.filter(k => k == v).length;
-    return {kind: 'num', max: 2, html: `${plot}${head}<div class="sub">How many ${plural} are ${v % den ? v + '/' + den : v / den} ${v <= den ? CC_SING[unit] : unit} long?</div><div class="eq">${SLOT}</div>`,
-      say: `Each dot shows the length of one ${noun} in ${unit}. How many ${plural} are ${ccAmtSay(v, den)} ${v <= den ? CC_SING[unit] : unit} long?`, ans: String(c),
+    return {kind: 'num', max: 2, html: `${plot}${head}<div class="sub">How many ${plural} are ${v % den ? v + '/' + den + ' of ' + ccAn(unit) : v / den + ' ' + (v <= den ? CC_SING[unit] : unit)} long?</div><div class="eq">${SLOT}</div>`,
+      say: `Each dot shows the length of one ${noun} in ${unit}. How many ${plural} are ${ccAmtSay(v, den)} ${v % den ? 'of ' + ccAn(unit) : v <= den ? CC_SING[unit] : unit} long?`, ans: String(c),
       hint: ccHint([['', 'Find the mark:', `Find ${v % den ? v + '/' + den : v / den} on the number line under the dots.`],
         ['', 'Count the dots:', 'How many dots are stacked above that mark?']]),
       label: `data4 count k=${v} ${tag}`};
@@ -1532,7 +1534,7 @@ const skySpeak = s => ST.spk(s.replace(/−(\d)/g, 'negative $1'));
 // a step hint from [picture, head, text] rows; plain text only, the last row has a "?"
 const skyHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text]) => ST.step(pic || '', head, text, null, skySpeak((head ? head + ' ' : '') + text)))});
 const skyMoney = c => '$' + (c % 100 ? (c / 100).toFixed(2) : String(c / 100)); // cents -> $7.50, $12
-const skyMoneySay = c => `${Math.floor(c / 100)} dollar${Math.floor(c / 100) == 1 ? '' : 's'}` + (c % 100 ? ` and ${c % 100} cents` : '');
+const skyMoneySay = c => (c > 0 && c < 100 ? qN(c, 'cent') : `${Math.floor(c / 100)} dollar${Math.floor(c / 100) == 1 ? '' : 's'}` + (c % 100 ? ` and ${c % 100} cents` : '')); // W70
 const skyDec = c => { const s = String(c).padStart(3, '0'), w = s.slice(0, -2), f = s.slice(-2).replace(/0+$/, ''); return f ? `${w}.${f}` : w; }; // hundredths as a whole number -> 7.5, 12
 const skyPairs = [[['red', 'red'], ['blue', 'blue']], [['cat', 'cats'], ['dog', 'dogs']], [['boy', 'boys'], ['girl', 'girls']], [['apple', 'apples'], ['pear', 'pears']], [['pen', 'pens'], ['pencil', 'pencils']], [['circle', 'circles'], ['square', 'squares']]];
 const skyCnt = (n, w) => `${n} ${n == 1 ? w[0] : w[1]}`; // 1 cat, 3 cats
@@ -1717,7 +1719,7 @@ function skyRatio4() {
     return {kind: 'num', pad: 'dec', eq: 'value', max: 3,
       html: `<div class="sub">Write the percent as a decimal.</div><div class="eq">${c}% = ${SLOT}</div>`,
       say: `Write ${c} percent as a decimal.`, ans: skyDec(c),
-      hint: skyHint([['', 'Out of 100:', `${c}% means ${c} out of 100, or ${c}/100.`], ['', 'Hundredths:', `${c} hundredths is written with two places after the point. What decimal is it?`]]),
+      hint: skyHint([['', 'Out of 100:', `${c}% means ${c} out of 100, or ${c}/100.`], ['', 'Hundredths:', `${qN(c, 'hundredth')} is written with two places after the point. What decimal is it?`]]),
       label: `ratio4 pd ${c}`};
   }
   const [n, d] = skyProper(false), pc = skyPctOf(n, d), red = skyFr(n, d);
@@ -1890,9 +1892,11 @@ const galSpeak = s => s.replace(/\^2/g, ' squared').replace(/\^3/g, ' cubed').re
 // a string with $12.50 in it, spoken: "12 dollars and 50 cents"
 const galMoneyWords = s => s.replace(/\$(\d+)(?:\.(\d\d?))?/g, (m, d, c) => {
   const cents = c ? +(c.length == 1 ? c + '0' : c) : 0;
+  if (+d == 0 && cents) return qN(cents, 'cent');
   return `${d} dollar${d == '1' ? '' : 's'}` + (cents ? ` and ${cents} cents` : '');
 });
 const galNum = v => (Number.isInteger(v) ? String(v) : v.toFixed(1)); // 31.5, 40
+const galCash = v => (Number.isInteger(v) ? String(v) : v.toFixed(2)); // W28
 
 /* ---- ooo 2: exponents and parentheses ---- */
 // a power: a square (base 2-12) or, in 30% of them, a cube (base 2-5)
@@ -2268,9 +2272,10 @@ function galData5() {
   vals.forEach(v => { cnt[v] = (cnt[v] || 0) + 1 });
   const mode = +Object.keys(cnt).find(k => cnt[k] == Math.max(...Object.values(cnt))), lo = sorted[0], hi = sorted[n - 1];
   const list = vals.join(', ');
-  const head = plot ? `${VIZ.linePlot(vals, {min: 0, max: 10, w: 290})}<div class="sub">Each dot is one of ${n} friends. It shows the number of ${ctx[1]}.</div>`
+  const shows = ctx[2] == 'score' ? "It shows that friend's quiz score." : `It shows the number of ${ctx[1]}.`; // W19
+  const head = plot ? `${VIZ.linePlot(vals, {min: 0, max: 10, w: 290})}<div class="sub">Each dot is one of ${n} friends. ${shows}</div>`
     : `<div class="sub">${ctx[0]}:</div><div class="eq" style="font-size:.9em">${list}</div>`;
-  const says = plot ? `Each dot is one of ${n} friends. It shows the number of ${ctx[1]}.` : `${ctx[0]}: ${list}.`;
+  const says = plot ? `Each dot is one of ${n} friends. ${shows}` : `${ctx[0]}: ${list}.`;
   const hints = {
     mean: skyHint([['', 'Mean means fair share:', 'To find the mean, add all the numbers, then divide by how many numbers there are.'],
       ['', 'Add:', `${vals.join(' + ')} = ${sum}.`], ['', 'Divide:', `There are ${n} numbers. ${sum} ÷ ${n} = ?`]]),
@@ -2345,7 +2350,7 @@ function galStory9() {
       const text = `A jacket costs $${P}. It is on sale for ${pct}% off. What is the sale price?`;
       return story(text, {pad: 'dec', eq: 'value', html: html(text, `$ ${SLOT}`), ans: galNum(P - disc), max: 4,
         hint: skyHint([['', 'Percent off:', `${pct}% off means you take away ${pct}% of the price.`],
-          ['', 'The discount:', `${pct}% of $${P} is ${P} × ${pct} ÷ 100 = $${galNum(disc)}.`], ['', 'Subtract:', `$${P} − $${galNum(disc)} = ?`]]),
+          ['', 'The discount:', `${pct}% of $${P} is ${P} × ${pct} ÷ 100 = $${galCash(disc)}.`], ['', 'Subtract:', `$${P} − $${galCash(disc)} = ?`]]),
         label: `story9 pct sale ${pct} ${P}`});
     }
     const text = `${who}'s meal costs $${P}. ${who} leaves a ${pct}% tip. How much is the tip, in dollars?`;
@@ -3992,7 +3997,7 @@ function k2SortSize() {
 function k2SortKinds() {
   const [c1, c2] = k2Take(Object.keys(SG_CATS), 2), its = [];
   const bins = [c1, c2].map(c => {
-    const xs = k2Take(SG_CATS[c], 3);
+    const xs = k2Take(sgCat(c, c == c1 ? c2 : c1), 3); // E8
     xs.slice(0, 2).forEach(x => its.push({v: x[0], b: c, h: true, say: x[0], al: x[0], l: k2Pic(x[0], x[1])}));
     return {v: c, h: true, al: k2Cap(c), l: `${k2Pic(xs[2][0], xs[2][1], 'k2bp')}<span>${k2Cap(c)}</span>`};
   });
@@ -4755,7 +4760,7 @@ function k2IntOpp(q0) {
     ans: -n, start: 0, label: m && m[1] == 'opp' && +m[2] == n ? q0.label : 'int2 opp ' + n,
     html: `${k2Sub('The dot is')}<div class="eq">${k2Num(n)}</div>${k2Sub('Put the pin on its opposite.')}`,
     say: `The dot is ${k2SayNum(n)}. Put the pin on its opposite: the same distance from 0, on the other side.`, ansSay: k2SayNum(-n),
-    hint: `${k2Num(n)} is ${Math.abs(n)} steps from 0. Its opposite is ${Math.abs(n)} steps from 0 on the other side.`});
+    hint: `${k2Num(n)} is ${qN(Math.abs(n), 'step')} from 0. Its opposite is ${qN(Math.abs(n), 'step')} from 0 on the other side.`});
 }
 
 // a make question
@@ -4768,13 +4773,13 @@ function k2Frame(q0, lv) {
     const n = +m[1], t = n > 10 ? 20 : 10;
     if (!n) return null;
     return k2Make(q0, {model: 'frame', m: {total: t}, ans: n, ansSay: String(n), speak: true,
-      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${n} counters.`)}`, say: `Make ${n}. Tap the ten frame to put in ${n} counters.`,
+      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${qN(n, 'counter')}.`)}`, say: `Make ${n}. Tap the ten frame to put in ${qN(n, 'counter')}.`,
       hint: n > 5 ? 'Fill the top row first: that is 5. Then count on.' : 'Count as you tap: 1, 2, 3 ...'});
   }
   if ((m = /^(\d+) and \? make 10$/.exec(l))) {
     const f = +m[1];
     return k2Make(q0, {model: 'frame', m: {total: 10, fixed: f}, ans: 10 - f, ansSay: `${f} and ${10 - f} make 10`, speak: true,
-      html: pkTxt(`There are ${f}. Put in more to make 10.`), say: `There are ${f} counters. Put in more counters to make 10.`, hint: 'Fill every empty box. Count how many you put in.'});
+      html: pkTxt(`There are ${f}. Put in more to make 10.`), say: `There ${f == 1 ? 'is' : 'are'} ${qN(f, 'counter')}. Put in more counters to make 10.`, hint: 'Fill every empty box. Count how many you put in.'});
   }
   if ((m = /^10 and (\d+)$/.exec(l)) || (m = /^10 \+ \? = (\d+)$/.exec(l))) {
     const add = m[0].includes('?') ? +m[1] - 10 : +m[1], tot = 10 + add;
@@ -4836,7 +4841,7 @@ function k2Array(q0) {
   const r = +m[1], c = +m[2];
   if (r < 1 || r > 10 || c < 1 || c > 10 || r * c == 1) return null;
   const fact = /^\d+ × \d+ = \?$/.test(q0.label), keep = String(r * c) === String(q0.ans);
-  return k2Make(q0, {model: 'array', m: {r, c}, ans: r * c, ansSay: `${r} rows of ${c}`, label: keep ? q0.label : `array ${r} rows of ${c}`,
+  return k2Make(q0, {model: 'array', m: {r, c}, ans: r * c, ansSay: `${qN(r, 'row')} of ${c}`, label: keep ? q0.label : `array ${r} rows of ${c}`,
     html: (fact ? `<div class="eq">${r} × ${c}</div>` : '') + k2Sub(`Make an array: ${r} row${r == 1 ? '' : 's'} of ${c}.`),
     say: `${fact ? `${r} times ${c}. ` : ''}Make an array with ${r} row${r == 1 ? '' : 's'} of ${c}.`,
     hint: 'Rows go across. Set the number of rows, then how many dots in each row.'});
@@ -4882,7 +4887,7 @@ function k2DecShade(q0) {
     keep = false;
   }
   const k = Math.round(v * 10), vs = '0.' + k;
-  return k2Make(q0, {model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: keep ? q0.ans : vs, ansSay: `${k} tenths`, label: keep ? q0.label : `dec1 shade ${vs}`,
+  return k2Make(q0, {model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: keep ? q0.ans : vs, ansSay: qN(k, 'tenth'), label: keep ? q0.label : `dec1 shade ${vs}`,
     html: `${k2Sub('The 10 squares are 1 whole. Shade')}<div class="eq">${vs}</div>`, say: `The 10 squares make 1 whole. Shade ${k2SayNum(v)}.`,
     hint: 'Each square is one tenth. The digit after the point says how many to shade.'});
 }
@@ -5378,7 +5383,7 @@ function k2WhyAdd(q) {
     if (!first && s >= 10) first = [n - 1 - j, +a[j], +b[j], s];
   }
   if (!first || first[0] > 2) return null;
-  const [p, x, y, s] = first, t = p ? `${x} + ${y} ${K2P1[p]}s is ${s} ${K2P1[p]}s. Write the ${s % 10} and carry 1 ${K2P1[p + 1]}.`
+  const [p, x, y, s] = first, t = p ? `${x == 1 || y == 1 ? `${qN(x, K2P1[p])} + ${qN(y, K2P1[p])}` : `${x} + ${y} ${K2P1[p]}s`} is ${s} ${K2P1[p]}s. Write the ${s % 10} and carry 1 ${K2P1[p + 1]}.`
     : `${x} + ${y} is ${s}. Write the ${s % 10} and carry the 1 ten.`;
   return {[String(+nc)]: t, [String(+both)]: t};
 }
@@ -5394,7 +5399,7 @@ function k2WhyPv(q) {
   if ((m = /^pv tens in (\d)(\d)$/.exec(l))) return {[m[2]]: `The ${m[2]} is in the ones place. The tens digit is on the left.`, [m[1] + '0']: `${m[1]}0 is what the tens are worth. How many tens is that?`};
   if ((m = /^pv picture (\d) tens (\d) ones$/.exec(l))) return {[String(+(m[2] + m[1]))]: 'Tens come first: write the tens digit, then the ones.', [String(+m[1] + +m[2])]: 'Each rod is 10. Count the rods by 10s: 10, 20, 30 ...'};
   if ((m = /^pv picture (\d)(\d)(\d)$/.exec(l))) return {[String(+m[1] + +m[2] + +m[3])]: 'Each flat is 100 and each rod is 10. Count by 100s, then 10s, then 1s.'};
-  if ((m = /^(\d)0 \+ (\d) = \?$/.exec(l))) return {[`${m[1]}0${m[2]}`]: `${m[1]}0 is ${m[1]} tens. The ${m[2]} goes in the ones place.`};
+  if ((m = /^(\d)0 \+ (\d) = \?$/.exec(l))) return {[`${m[1]}0${m[2]}`]: `${m[1]}0 is ${qN(m[1], 'ten')}. The ${m[2]} goes in the ones place.`};
   if ((m = /^value of (\d) in (\d+)$/.exec(l))) {
     const p = m[2].length - 1 - m[2].indexOf(m[1]), val = +m[1] * 10 ** p, w = {};
     for (const c of q.choices) if (c.v !== q.ans) w[c.v] = c.v === m[1] ? `That ${m[1]} sits in the ${K2P1[p]}s place, so it is worth ${val}.` : 'Count the places from the right: ones, tens, hundreds.';
