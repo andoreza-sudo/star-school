@@ -76,6 +76,7 @@ function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0
 // sample fix (Fable): music, game sounds (all through AC) and a playing recording pause while the app is hidden, and go on after
 function sfxVis(){const h=document.hidden,a=typeof ESA!='undefined'&&ESA.au;
   try{const p=AC&&(h?AC.suspend():AC.resume());if(p&&p.catch)p.catch(()=>{})}catch(e){}
-  try{if(a&&h&&!a.paused){a.pause();a._vis=1}else if(a&&!h&&a._vis){a._vis=0;a.play().catch(()=>{})}}catch(e){}}
+  try{if(a&&h&&!a.paused){a.pause();a._vis=1}else if(a&&!h&&a._vis){a._vis=0;a.play().catch(()=>{})}}catch(e){}
+  if(!h&&typeof esaPump=='function')esaPump()} // review v196: lines that came due while hidden play now
 document.addEventListener('visibilitychange',sfxVis);addEventListener('pagehide',()=>{try{if(AC)AC.suspend()}catch(e){}});addEventListener('pageshow',sfxVis);
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
