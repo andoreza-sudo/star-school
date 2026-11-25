@@ -122,7 +122,12 @@ const run=(name,fn)=>{
   const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
     return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
-  try{const r=fn();
+  // each check starts from the same localStorage: many checks swap the stub's getItem / setItem for their own store (or replace
+  // global.localStorage) and never put it back, so the next check's app started from the last check's save (P3-17 left a 5th grader,
+  // whose grown-up pet broke P4-07; Volcano Lab P2-11 did the same to P4-06). Put the object and its methods back after the check.
+  const LS0=global.localStorage,LSM={getItem:LS0.getItem,setItem:LS0.setItem,removeItem:LS0.removeItem};
+  const lsBack=()=>{global.localStorage=LS0;for(const k in LSM){if(LSM[k]===undefined)delete LS0[k];else LS0[k]=LSM[k]}};
+  try{const r=(()=>{try{return fn()}finally{lsBack()}})();
     if(r&&typeof r.then=='function'){const i=results.length;results.push(put(['check did not finish'],''));
       PENDING.push(r.then(x=>{results[i]=put(x.problems||[],x.note||'')},e=>{results[i]=put(['check crashed: '+(e&&e.stack||e)],'')}));return}
     problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
