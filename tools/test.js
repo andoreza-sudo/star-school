@@ -13009,11 +13009,13 @@ run('Puzzle of the Day and badges P3-17',()=>{
   for(const [,n,body] of css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g))
     for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
   if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('48-teasers.css uses filter');
-  const RD=Date;
+  // the fake clock and the test's own localStorage are put back after (a save left behind with grade 3 made a later check draw
+  // the older pet: P4-07's petSVG reads the grade)
+  const RD=Date,LS=global.localStorage;
   let r;
   try{r=eval(js+`
   (()=>{const store={};
-  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+  global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
   const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
   const bad=[],eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(m+': '+JSON.stringify(a)+' != '+JSON.stringify(b))};
   // a clock the test can move: NOW is noon of a day
@@ -13141,7 +13143,7 @@ run('Puzzle of the Day and badges P3-17',()=>{
     for(const m of h.matchAll(/var\\(--([a-z0-9-]+)/g))if(!/^(ill-[a-z]+(-[123])?|drop)$/.test(m[1]))bad.push('medal token --'+m[1]);
     if(!/^(n\\d+|day\\d+|first\\.[a-z0-9]+|all\\.[a-z0-9]+\\.[ABCD])$/.test(x.id))bad.push('badge id '+x.id);}
   if(new Set(BT.badgeList(true).map(x=>x.id)).size!==BT.badgeList(true).length)bad.push('badge ids repeat');
-  return bad;})();`)}finally{globalThis.Date=RD}
+  return bad;})();`)}finally{globalThis.Date=RD;global.localStorage=LS}
   return{problems:[...new Set(p.concat(r))],note:'daily pick over 7 grades x 40 days, pay once, badges, streak, old saves, damaged values, '+fixtures.length+' fixtures, quit rule'};
 });
 
@@ -13729,7 +13731,12 @@ run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits ev
   const FIX=fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')).sort();
   const raws=FIX.map(n=>[n,fs.readFileSync(path.join(__dirname,'fixtures',n),'utf8')]);
   globalThis.__p407raws=raws;
-  const o=eval(js+`;(()=>{
+  // its own empty save: the drawings below are the little one's (grade 0); an earlier check's leftover save (grade 3+) would
+  // draw the older pet, whose head comes before the right arm
+  const LS=global.localStorage;
+  global.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
+  let o;
+  try{o=eval(js+`;(()=>{
   const r={items:[],art:{},again:{},emb:{},name:{},fit:[],pets:{},html:{},fix:{},kinds:Object.keys(PETS)};
   // every item the shop sells or a boss gives: [id, slot]
   r.items=SHOP.hat.map(h=>[h[0],'hat']).concat(SHOP.toy.map(t=>[t[0],'toy']),BPRIZE.map(b=>[b,'hat']));
@@ -13776,7 +13783,7 @@ run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits ev
   }finally{global.document=D;shopTab='hat';shopSel=null}
   r.src={shop:String(shop),shopTap:String(shopTap),shopWear:String(shopWear),shopBuy:String(shopBuy),shopPic:String(shopPic),book:String(book),
     stageHTML:String(stageHTML)};
-  return r})()`);
+  return r})()`)}finally{global.localStorage=LS}
   const ROLE=m=>new RegExp('--'+m+':var\\(--ill-').test(artCss);
   const PICT=/\p{Extended_Pictographic}/u;
   // 1. every item has a drawing that follows the illustration rules (DESIGN_SYSTEM 6.4 / 6.5)
