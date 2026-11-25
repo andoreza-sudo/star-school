@@ -3,8 +3,9 @@
    It belongs to the tablet, not a child: its own key PIN.KEY (like the Play unlock), so Start over keeps it and no backup carries it.
    Only a salted hash is kept: {v: 1, s: salt, h: hash, n: wrong PINs in a row, k: lockouts so far, t: locked until (ms),
    f: Forgot PIN waits until (ms)}.
-     No PIN yet (a new tablet, or one updated from before v188): the old times-table question (NAV.askQ) guards that first entry,
-     then the grown-up chooses a PIN and types it twice.
+     A new tablet: the grown-up chooses the PIN in first setup (suPin, 46-home.js; PIN-SETUP, owner decision 2026-11-25).
+     No PIN yet (a save from before that, or setup could not load this part): the old times-table question (NAV.askQ) guards that
+     first entry, then the grown-up chooses a PIN and types it twice. Nobody is locked out and no progress changes.
      5 wrong PINs in a row: wait 1, 5, 15, 30, then 60 minutes; never for good, and Forgot PIN? stays on the pad.
      Forgot PIN?: three 2-digit x 2-digit multiplications, typed, all right; a miss waits 15 minutes. Then a new PIN; nothing else
      changes. The owner's recovery design: a speed bump, not security (Google Play's own purchase check still guards payments).

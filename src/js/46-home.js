@@ -46,8 +46,18 @@ function setup() {
   $('#go').onclick = () => {
     const n = $('#nm').value.trim();
     if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
-    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.chime(); home(true);
+    const pn = $('#pn').value.trim();
+    suPin(() => { S.name = n; S.pet = pet; S.petName = pn; setGrade(grade); SFX.chime(); home(true); });
   };
+}
+// PIN-SETUP (owner decision 2026-11-25): a tablet with no Grown-ups PIN gets one in first setup. A grown-up chooses it and types it
+// again (PIN.choose, 41b-pin.js) before anything is saved; Cancel stays on setup. A tablet that has one (another child, Start over)
+// is not asked. If the gate part cannot load, setup goes on and the old question guards the first Grown-ups entry (PIN.gate)
+const SU_PIN = 'A grown-up picks 4 numbers. The PIN keeps children out of the settings.';
+function suPin(fin) {
+  const ask = () => typeof PIN == 'undefined' || PIN.has() ? fin() : PIN.choose(fin, 'Choose a Grown-ups PIN', SU_PIN);
+  if (typeof PIN != 'undefined') return ask();
+  return partLoad('gate').then(ok => { if (!ok) logErr('the gate part did not load: setup went on without a PIN'); ask(); });
 }
 
 /* ---------- Home (P4-08; DESIGN_SYSTEM.md 9 row 2; styles in src/css/46-home.css) ----------

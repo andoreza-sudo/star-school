@@ -268,6 +268,19 @@ async function pinIn(pg, pin = '2580') {
   } else await padH(pg, /PIN/);
   await pinType(pg, pin);
 }
+// PIN-SETUP (owner decision 2026-11-25): Let's go! on setup. A tablet with no Grown-ups PIN asks the grown-up to choose one and
+// type it again, by the pad's own buttons, before setup goes on. True when it asked (a tablet with a PIN goes straight on)
+async function setupGo(pg, pin = '2580') {
+  await pg.click('#go');
+  await pg.waitForFunction(() => !!document.querySelector('.sheet-bg.on #pnpad') || !document.querySelector('#app .su'), null, { timeout: 10000 });
+  if (!(await pg.$('.sheet-bg.on #pnpad'))) return false;
+  await padH(pg, /^Choose a Grown-ups PIN/);
+  await pinType(pg, pin);
+  await padH(pg, /^Type it again/);
+  await pinType(pg, pin);
+  await pg.waitForFunction(() => !document.querySelector('#app .su'), null, { timeout: 10000 });
+  return true;
+}
 
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
 
@@ -465,7 +478,7 @@ async function main() {
     if (seg('core')) {
       if (!(await page.$('#nm'))) fail('fresh save should show the setup screen');
       await page.fill('#nm', 'Smoke');
-      await page.click('#go');
+      if (!(await setupGo(page))) fail('PIN-SETUP: first setup did not ask the grown-up to choose a PIN');
       await page.waitForSelector('.game[data-p]');
       step('setup done, home shown');
       const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Whistlestop (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
@@ -1043,7 +1056,7 @@ async function main() {
       if (gr.n !== 8 || gr.sel !== '0' || gr.min < 48) fail('setup grade buttons: ' + JSON.stringify(gr));
       await gp.fill('#nm', 'Tiny');
       await gp.click('.gr[data-g="-1"]');
-      await gp.click('#go');
+      await setupGo(gp);
       await gp.waitForSelector('.game[data-p]');
       if ((await gp.evaluate(() => S.grade)) !== -1) fail('Pre-K tap on setup not saved');
       await gp.click('.game[data-p="math"]');
@@ -1109,7 +1122,7 @@ async function main() {
       const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const pp = pa.page;
       await pp.fill('#nm', 'Placer');
-      await pp.click('#go');
+      await setupGo(pp);
       await pp.waitForSelector('#plcard [data-place="math"]');
       const card = await pp.evaluate(() => [...document.querySelectorAll('#plcard .btn')].map(b => [b.offsetWidth, b.offsetHeight]));
       if (card.length !== 3 || card.some(([w, h]) => w < 48 || h < 48)) fail('placement card buttons: ' + JSON.stringify(card));
@@ -1437,7 +1450,7 @@ async function main() {
       const pp = pa.page;
       await pp.fill('#nm', 'Beach');
       await pp.click('.gr[data-g="-1"]');
-      await pp.click('#go');
+      await setupGo(pp);
       await pp.waitForSelector('.game[data-p]');
       await pp.click('.game[data-p="read"]');
       await lsLearnCur(pp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1474,7 +1487,7 @@ async function main() {
       const ka = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const kp = ka.page;
       await kp.fill('#nm', 'Kay');
-      await kp.click('#go');
+      await setupGo(kp);
       await kp.waitForSelector('.game[data-p]');
       await kp.click('.game[data-p="read"]');
       await lsLearnCur(kp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1496,7 +1509,7 @@ async function main() {
       const tp = ta.page;
       await tp.fill('#nm', 'Tiny');
       await tp.click('.gr[data-g="-1"]');
-      await tp.click('#go');
+      await setupGo(tp);
       await tp.waitForSelector('.game[data-p="math"]');
       await tp.click('.game[data-p="math"]');
       await lsLearnCur(tp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1720,7 +1733,7 @@ async function main() {
       const sp = sg.page;
       await sp.fill('#nm', 'Garden');
       await sp.click('.gr[data-g="0"]');
-      await sp.click('#go');
+      await setupGo(sp);
       await sp.waitForSelector('.game[data-p="math"]');
       await sp.click('.game[data-p="math"]');
       await lsLearnCur(sp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
@@ -1800,7 +1813,7 @@ async function main() {
       const cp = ca.page;
       await cp.fill('#nm', 'Tower');
       await cp.click('.gr[data-g="1"]');
-      await cp.click('#go');
+      await setupGo(cp);
       await cp.waitForSelector('.game[data-p="math"]');
       await cp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_candy').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Candy Canyon finished
       await cp.click('.game[data-p="math"]');
@@ -1983,7 +1996,7 @@ async function main() {
       const bp = ba.page;
       await bp.fill('#nm', 'Bay');
       await bp.click('.gr[data-g="2"]');
-      await bp.click('#go');
+      await setupGo(bp);
       await bp.waitForSelector('.game[data-p="math"]');
       await bp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_space').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Space Station finished
       await bp.click('.game[data-p="math"]');
@@ -2705,7 +2718,7 @@ async function main() {
       const sp = sa.page;
       await sp.fill('#nm', 'Sent');
       await sp.click('.gr[data-g="2"]');
-      await sp.click('#go');
+      await setupGo(sp);
       await sp.waitForSelector('.game[data-p="read"]');
       const where = await sp.evaluate(() => {
         const ids = PATHS.read.worlds.map(w => w.id), at = id => NODES.read.map(nid).indexOf(id);
@@ -3268,7 +3281,7 @@ async function main() {
       await k2Old(dp); // KINDS2: dec 2 and ang 1 mix in sort questions; this checks each stop's pad, choices, picture and step hint
       await dp.fill('#nm', 'Desert');
       await dp.click('.gr[data-g="4"]');
-      await dp.click('#go');
+      await setupGo(dp);
       await dp.waitForSelector('.game[data-p="math"]');
       // Factor Factory (the other 4th grade world) comes first on the map: this child has finished it, so the map opens on the desert
       await dp.evaluate(() => {
@@ -4023,7 +4036,7 @@ async function main() {
       const cp = cc.page;
       await cp.fill('#nm', 'Caves');
       await cp.click('.gr[data-g="5"]');
-      await cp.click('#go');
+      await setupGo(cp);
       await cp.waitForSelector('.game[data-p="math"]');
       // worlds before the caves (Volcano Lab sits there after merge) are finished first, so the map meets the caves without an unlock switch
       await cp.evaluate(() => {
@@ -4297,7 +4310,7 @@ async function main() {
         await pg.waitForSelector(`.petopt[data-p="${k}"] .pet-svg.pet-k-${k}`);
         await pg.click(`.petopt[data-p="${k}"]`);
         await pg.fill('#nm', 'Ava');
-        await pg.click('#go');
+        await setupGo(pg);
         await pg.waitForSelector('#pet .pet-svg');
         const sp = await pg.evaluate(() => S.pet);
         if (sp !== k) bad.push(k + ': setup saved pet ' + sp);
@@ -4498,7 +4511,7 @@ async function main() {
       const sp = sc.page;
       await sp.fill('#nm', 'Sky');
       await sp.click('.gr[data-g="6"]');
-      await sp.click('#go');
+      await setupGo(sp);
       await sp.waitForSelector('.game[data-p="math"]');
       // every world before Sky City is finished first, so the map meets it without an unlock switch (Galaxy Core, after it, is not needed)
       await sp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
@@ -5091,7 +5104,7 @@ async function main() {
       const gp = gc.page;
       await gp.fill('#nm', 'Gala');
       await gp.click('.gr[data-g="6"]');
-      await gp.click('#go');
+      await setupGo(gp);
       await gp.waitForSelector('.game[data-p="math"]');
       // every world before Galaxy Core is finished first (Sky City too), so the map meets it without an unlock switch; no "last world" is assumed
       await gp.evaluate(() => {
@@ -5592,7 +5605,7 @@ async function main() {
       const cp = cx.page;
       await k2Old(cp); // KINDS2: a review question in these rounds can come from a stop that mixes in sort (Gran Repaso es_mix 2); every question is checked as a choice
       await cp.fill('#nm', 'Casa');
-      await cp.click('#go');
+      await setupGo(cp);
       await cp.waitForSelector('.game[data-p="es"]');
       await cp.evaluate(() => {
         for (let i = 0; i < WR.es[2][1] + 1; i++) setSt('es', i, 3);
@@ -7175,7 +7188,7 @@ async function main() {
           gr: document.querySelector('.gr.sel').dataset.g, go: document.querySelector('#go').getBoundingClientRect().height }));
         if (st.ok !== 3 || st.sel !== 'ocean' || st.gr !== '2' || st.go < 56) bad.push(tag + ' setup steps: ' + JSON.stringify(st));
         await chk(sp, 'setup filled in');
-        await sp.click('#go');
+        if (!(await setupGo(sp))) bad.push(tag + ' PIN-SETUP: setup did not ask the grown-up to choose a PIN');
         await sp.waitForSelector('.game[data-p]');
         const saved = await sp.evaluate(() => ({ n: S.name, p: S.pet, pn: S.petName, g: S.grade }));
         if (saved.n !== 'Mia' || saved.p !== 'ocean' || saved.pn !== 'Bubbles' || saved.g !== 2) bad.push(tag + ' setup saved ' + JSON.stringify(saved));
@@ -10640,7 +10653,7 @@ async function main() {
           const pet2 = await pg.evaluate(p => Object.keys(PETS).find(k => k !== p), ava0.pet);
           await pg.click(`.petopt[data-p="${pet2}"]`);
           await pg.click('.gr[data-g="0"]');
-          await pg.click('#go');
+          if (await setupGo(pg)) bad.push(tag + ' PIN-SETUP: a second child\'s setup asked for the Grown-ups PIN again');
           await pg.waitForSelector('#gear');
           const ben0 = await kid();
           if (ben0.id !== 'p2' || ben0.name !== 'Ben' || ben0.stars !== 0 || ben0.pet !== pet2 || ben0.n !== 2) bad.push(tag + ' Ben after setup: ' + JSON.stringify(ben0));
@@ -10744,7 +10757,7 @@ async function main() {
             if (!saved) {
               if (!(await pg.$('#nm'))) throw new Error('empty storage did not show the setup screen');
               await pg.fill('#nm', 'Fresh');
-              await pg.click('#go');
+              await setupGo(pg);
             }
             await pg.waitForSelector('.game[data-p]', { timeout: 10000 });
             const home = await pg.evaluate(() => ({ stars: S.stars, name: S.name, chip: (document.querySelector('#starc') || {}).textContent || '', ver: (document.querySelector('.hm-ver') || {}).textContent || '' }));
@@ -15079,7 +15092,7 @@ async function main() {
         try {
           await pg.waitForFunction(() => PLAY.on, null, { timeout: 5000 });
           await pg.fill('#nm', 'Sam');
-          await pg.click('#go');
+          await setupGo(pg);
           await pg.waitForSelector('#hs', { timeout: 10000 });
           await vwait(pg, 600);
           const h = await pg.evaluate(() => ({ card: !!document.querySelector('#plcard,[data-place]'), locked: PLAY.locked(), grade: gradeOf() }));
@@ -15631,7 +15644,7 @@ async function main() {
         try {
           await pg.fill('#nm', 'Sam');
           await pg.click(`.gr[data-g="${g}"]`);
-          await pg.click('#go');
+          await setupGo(pg);
           await pg.waitForSelector('.game[data-p]');
           for (const p of ['math', 'read', 'es', 'disc']) {
             await pg.evaluate(() => home());
@@ -15816,7 +15829,7 @@ async function main() {
           if (z.stars !== 0 || z.name !== '' || z.kept !== s0.stars || !z.pin) bad.push('after Erase everything: ' + JSON.stringify(z));
           await pg.fill('#nm', 'Leo');
           await pg.click('.gr[data-g="1"]');
-          await pg.click('#go');
+          if (await setupGo(pg, '1212')) bad.push('PIN-SETUP: setup after Start over asked for a new Grown-ups PIN');
           await pg.waitForSelector('.game[data-p]');
           await gear();
           await pinIn(pg, '1212'); // the PIN of before Start over: no question
@@ -15865,6 +15878,53 @@ async function main() {
       else step('RC1-GATE: the Grown-ups PIN at 380x780, 360x740 and 1024x600: the old question then choosing a PIN (a mismatch refused), the pad (48 px, ' +
         'dots, never the PIN), a wrong PIN, Change PIN, a 1-minute wait after 5 wrong, Forgot PIN? (15-minute wait, then a new PIN); Erase ' +
         'and Delete behind the PIN, the PIN kept through Start over, Undo erase once');
+    }
+
+    // PIN-SETUP (owner decision 2026-11-25): a new tablet's first setup asks the grown-up to choose the Grown-ups PIN before anything
+    // is saved: Cancel stays on setup, a mismatch is refused, then Home; the first tap on Grown-ups asks for that PIN (no old question)
+    if (seg('PIN-SETUP')) {
+      const bad = [], app = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 }), pg = app.page;
+      const st = () => pg.evaluate(() => ({ name: S.name, saved: JSON.parse(localStorage.getItem(KEY) || '{}').name || '', pin: !!localStorage.getItem(KEY + '-pin') }));
+      const line = () => pg.evaluate(() => document.querySelector('.sheet-bg.on #pnmsg').textContent);
+      try {
+        await pg.fill('#nm', 'Mia');
+        await pg.click('#go');
+        await padH(pg, /^Choose a Grown-ups PIN$/);
+        if (!/^A grown-up picks 4 numbers\./.test(await line()) || await pg.$('.sheet-bg.on #pnforgot')) bad.push('the setup pad: ' + await line());
+        const s1 = await st();
+        if (s1.name || s1.saved || s1.pin) bad.push('saved before the PIN was chosen: ' + JSON.stringify(s1));
+        await pg.click('.sheet-bg.on #pnno');
+        await pg.waitForSelector('.sheet-bg', { state: 'detached' });
+        const s2 = await st();
+        if (!(await pg.$('#app .su #nm')) || await pg.inputValue('#nm') !== 'Mia' || s2.name || s2.pin) bad.push('Cancel left setup or saved: ' + JSON.stringify(s2));
+        await pg.click('#go');
+        await padH(pg, /^Choose a Grown-ups PIN$/);
+        await pinType(pg, '1357');
+        await padH(pg, /^Type it again$/);
+        await pinType(pg, '1358');
+        await padH(pg, /^Choose a Grown-ups PIN$/);
+        if (!/didn't match/.test(await line()) || (await st()).pin) bad.push('a mismatch was not refused: ' + await line());
+        await pinType(pg, '2468');
+        await padH(pg, /^Type it again$/);
+        await pinType(pg, '2468');
+        await pg.waitForSelector('.game[data-p]', { timeout: 10000 });
+        const s3 = await st();
+        if (s3.name !== 'Mia' || s3.saved !== 'Mia' || !s3.pin) bad.push('after the PIN: ' + JSON.stringify(s3));
+        await pg.click('#gear');
+        await pg.waitForSelector('.sheet-bg.on #gwans, .sheet-bg.on #pnpad', { timeout: 10000 });
+        if (await pg.$('.sheet-bg.on #gwans')) bad.push('Grown-ups asked the old question after setup chose a PIN');
+        await padH(pg, /^Grown-ups PIN$/);
+        await pinType(pg, '9999');
+        await pg.waitForFunction(() => /not the PIN/.test(document.querySelector('.sheet-bg.on #pnmsg').textContent), null, { timeout: 5000 });
+        if (await pg.$('.gw-card')) bad.push('a wrong PIN opened Grown-ups');
+        await pinType(pg, '2468');
+        await pg.waitForSelector('.gw-card', { timeout: 5000 });
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...app.network);
+      for (const e of app.errors) fail('PIN-SETUP ' + e);
+      await app.ctx.close();
+      if (bad.length) fail('PIN-SETUP the Grown-ups PIN in first setup:\n  ' + bad.join('\n  '));
+      else step('PIN-SETUP: first setup asks for the Grown-ups PIN before saving (Cancel stays on setup, a mismatch refused), then Grown-ups asks for that PIN, not the old question');
     }
 
     // RC1-SAVE (v188): the tablet's storage is full (every localStorage write throws): a save fails, Home shows one banner for a grown-up,
