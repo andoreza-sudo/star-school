@@ -15365,6 +15365,64 @@ run('object art set C P4-15',()=>{
   return{problems:out.bad.concat(p),note:'40 pictures, '+out.total+' bytes; '+out.asked+' picture words asked, '+out.shown+' drawings shown; '+out.esShown+' Spanish drawings shown'};
 });
 
+// ---- DRAW8: the eight reading picture words of the v196 word audit E1 (docs/drafts/AUDIT-WORDS-READ.md; drawings in src/data/d-art-d.js) ----
+// feet, torch, purse, dew, hawk, draw, seed and mail showed the wrong picture (one foot, a flashlight, the bag's handbag, the water
+// drop, an eagle, a pencil, a sprout, a mailbox); the owner asked for drawings. They follow the rules of the object art sets, differ
+// from every other drawing, show in the picture-word questions that ask for them, and the look-alikes keep their own pictures.
+run('object art DRAW8 E1: eight picture words drawn',()=>{
+  const p=[];
+  const NAMES='feet torch purse dew hawk draw seed mail'.split(' ');
+  const DSRC=fs.readFileSync(path.join(SRC,'data','d-art-d.js'),'utf8'),artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  if(/rnd\(|Math\.random|Date|function|=>/.test(DSRC.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('d-art-d.js must be plain data (no code, no randomness)');
+  const out=eval(js+`
+  const bad=[],N=${JSON.stringify(NAMES)},css=${JSON.stringify(artCss)};let total=0;
+  // 1. the rules of the object art sets (DESIGN_SYSTEM 6.5; the set C check)
+  for(const n of N){const d=ART[n];
+    if(!d){bad.push('no drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing');
+    if((d.match(/<[a-z]+/g)||[]).length>40)bad.push(n+': over 40 elements');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t);
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad.push(n+': attribute '+m[1]);
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour '+a);
+    for(const m of d.matchAll(/var\\(--(a-[a-z0-9]+)\\)/g))if(!css.includes('--'+m[1]+':var(--ill-'))bad.push(n+': role --'+m[1]+' is not in 21-art.css');
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity '+m[1]);
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform '+m[1]);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the grid');
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the grid');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+    // 2. not the same picture as any other drawing (purse is not bag, dew is not water, feet is not foot ...)
+    for(const k in ART)if(k!==n&&ART[k]===d)bad.push(n+': the same drawing as '+k)}
+  if(total>20000)bad.push('the eight are '+total+' bytes (limit 20000)');
+  // 3. every picture-word list entry of these words shows the drawing, and the picture-word questions that ask for one draw it
+  const L=[CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR,SYLP].flat(),asked=new Set();
+  for(const n of N)if(!L.some(x=>x[0]===n))bad.push(n+': no longer a picture word');
+  for(const x of L)if(N.includes(x[0])&&picFor(x[0],x[1])!==picArt(x[0]))bad.push(x[0]+': the picture word shows '+x[1]);
+  for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=200;s++){
+    const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:(q.after||q.ans);
+    if(!N.includes(w)||!String(q.html).includes('class="emo"'))continue;
+    asked.add(w);
+    if(!q.html.includes(picArt(w)))bad.push(sk+lv+' seed '+s+': '+w+' shows no drawing')}
+  // 4. where else the words are pictures: Discover's feet is the pair; the logic grids' hobby draw is drawing; the look-alikes keep theirs
+  if(DISC_PIC.feet[0]!=='feet')bad.push('Discover: feet does not show the pair of feet');
+  if(!/<svg/.test(picFor('draw',PUZ.logic.cats.hobby.pics.draw)))bad.push('logic: the hobby draw shows no drawing');
+  const es=ES_UNITS.flatMap(u=>u.items).find(it=>it[0]==='pie');
+  if(!es||es[4]!=='foot')bad.push('Spanish: el pie (one foot) must keep the foot drawing');
+  for(const [w,e] of [['bag','👜'],['mailbox','📬'],['eagle','🦅'],['seedling','🌱']])if(picFor(w,e)!==e)bad.push(w+' now shows a drawing: it keeps its own picture');
+  for(const w of ['foot','water','pencil','leaf','paper','bird'])if(!ART[w])bad.push('the drawing of '+w+' is gone');
+  ({bad,total,asked:[...asked].sort()});`);
+  // 5. where they live: the data file, not index.html (start-up is index.html + gen + gen2 + data: performance P6-03 has the budget)
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!DATAC.includes('DRAW8, the v196 word audit E1'))p.push('the DRAW8 drawings are not in '+DATA_FILE+' (rebuild)');
+  if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('DRAW8, the v196 word audit E1'))p.push('the DRAW8 drawings must not be in index.html');
+  if(out.asked.length<NAMES.length)p.push('only '+out.asked.join(', ')+' were asked in the picture-word sample');
+  return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes; asked in the sample: '+out.asked.join(' ')};
+});
+
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
   const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
   const css=fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');

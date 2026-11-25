@@ -57,7 +57,7 @@ const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
 /* R-01d: picture answers for Nature Trail (K-2). A K-2 item whose every choice is in this list shows the choices as pictures (bank
    field cp), each with its word under it. Only things a child would name from the picture: no baby animals drawn as grown-ups, no
    actions, no places. Art names are ART drawings where one exists (src/js/16-art-a.js, d-art-b.js, d-art-c.js); the emoji is the
-   fallback and is in tools/emoji-allow.txt. */
+   fallback and is in tools/emoji-allow.txt. DRAW8 (E1): feet shows the pair of feet (d-art-d.js), no longer one foot. */
 const DISC_PIC = {
   'a tree': ['tree', '🌳'], 'a rock': ['rock', '🪨'], 'a chair': ['chair', '🪑'], 'a ball': ['ball', '⚽'], 'a daisy': ['daisy', '🌼'],
   'a brick': ['brick', '🧱'], 'a cup': ['cup', '🥤'], 'a shoe': ['shoes', '👟'], 'a goldfish': ['goldfish', '🐠'], 'a pebble': ['rock', '🪨'],
@@ -69,7 +69,7 @@ const DISC_PIC = {
   hen: ['hen', '🐔'], frog: ['frog', '🐸'], fish: ['fish', '🐟'], duck: ['duck', '🦆'], snake: ['snake', '🐍'], 'a cat': ['cat', '🐱'],
   'a bear': ['bear', '🐻'], 'a sheep': ['sheep', '🐑'], 'a cow': ['cow', '🐄'], 'a pig': ['pig', '🐷'], 'a dog': ['dog', '🐶'],
   'a whale': ['whale', '🐳'], 'water': ['water', '💧'], 'a toy': ['teddy', '🧸'], 'a bed': ['bed', '🛏️'], 'shoes': ['shoes', '👟'],
-  'ears': ['ear', '👂'], 'eyes': ['eyes', '👀'], 'nose': ['nose', '👃'], 'hands': ['hand', '✋'], 'feet': ['foot', '🦶'],
+  'ears': ['ear', '👂'], 'eyes': ['eyes', '👀'], 'nose': ['nose', '👃'], 'hands': ['hand', '✋'], 'feet': ['feet', '🦶'],
   'sunny': ['sun', '☀️'], 'snowy': ['snowflake', '❄️'], 'rainy': ['rain', '🌧️'], 'windy': ['wind', '💨'], 'cloudy': ['cloud', '☁️'],
   'rain': ['rain', '🌧️'], 'wind': ['wind', '💨'], 'snow': ['snowflake', '❄️'], 'an owl': ['owl', '🦉'], 'a robin': ['bird', '🐦'],
   'a butterfly': ['butterfly', '🦋'], 'the moon': ['moon', '🌙'], 'the sun': ['sun', '☀️'], 'a rainbow': ['rainbow', '🌈'], 'sun': ['sun', '☀️'],
