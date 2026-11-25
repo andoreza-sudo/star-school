@@ -5447,10 +5447,11 @@ async function main() {
           await P.mmTap(pg, pr[1]);
           if (await pg.evaluate(pr => pr.filter(i => document.querySelector(`.mm-c[data-i="${i}"]`).classList.contains('got')).length, pr) !== 2) bad.push('memory: a pair is not shown as found');
           const mBefore = await pg.evaluate(() => JSON.stringify(S.bt.cur.state.m));
-          await hintNow(pg, false);
-          const h1 = await pg.evaluate(() => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent }));
-          await hintNow(pg, true);
-          const h2 = await pg.evaluate(() => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent }));
+          // CHK-FAST: a peek shows for 1.7 s of app time (about 210 ms real at 8x), so the read runs on the page's clock, 300 ms after the tap
+          const mmPeek = () => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent });
+          const [h1] = await actRead(pg, () => pg.click('#bthint'), [[300, mmPeek]]);
+          await vwait(pg, 11500);
+          const [h2] = await actRead(pg, () => pg.click('#bthint'), [[300, mmPeek]]);
           if (h1.peek !== 1 || h1.hints !== 1 || h1.m !== mBefore || h2.peek !== 2 || h2.hints !== 2 || h2.m !== mBefore || h1.msg === h2.msg) bad.push('memory hints 1-2: ' + JSON.stringify([h1, h2]));
           await chk('memory hint 2');
           await vwait(pg, 2500);
