@@ -3996,7 +3996,7 @@ function fluEnd(r) {
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
    #ula, #lson (TEACH-2), #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK), #fps, #hc3d (GL-01),
    #gw-lis, #lis-dl, #gw-corner, [data-keep], [data-lcp], [data-lcs], #lc-del (S-SPK2, 50-say-corner.js),
-   #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
+   #fb-mail, #fb-play (FEEDBACK-4), #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
    P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
    erases only the child who is playing (their place stays, with a fresh save) and recorded clips get the child's id prefix.
    ROOM: this file, 81-backup.js, 82-report.js and 88-online.js build into gen.<VER>.js (PARTS in tools/build.py), loaded at start
@@ -4038,6 +4038,20 @@ function aboutCard(){
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Whistlestop. No other fonts, libraries or outside files are used.</p>
     <p class="gw-sub ab-lic-line" id="ab-tts">The recorded voices were made with AI text-to-speech (xAI).</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
+}
+/* FEEDBACK-4 (BEST-APP roadmap 4): Tell us what you think, in Grown-ups only (behind the PIN), near the bottom after About. An e-mail
+   link whose subject carries only the release and the build (VER): never the child's name, grade or progress (a child's data never
+   leaves the tablet). In the Play app (PLAY.on) also the app's Play page, so a grown-up can review it; the web version shows the e-mail
+   only. Plain links, no network call: the Play page opens outside the app like the privacy policy (target _blank, rel noopener: the TWA
+   hands an address outside its own site to Chrome or the Play Store); the mailto is handed to the e-mail app and the app stays where
+   it is. No child screen ever asks for a rating. Words: docs/drafts/FEEDBACK-READ.md (pending owner approval). */
+const FB_MAIL='hello@whistlestoplearning.com',FB_PLAY='https://play.google.com/store/apps/details?id='+PLAY.PKG;
+function feedbackSubject(){return`Whistlestop feedback (${RELEASE}, build ${BUILD})`}
+function feedbackCard(){
+  return GW.card('gw-tell','heart','Tell us what you think',
+    `<p class="gw-bkrow"><a class="btn soft sm" id="fb-mail" href="mailto:${FB_MAIL}?subject=${encodeURIComponent(feedbackSubject())}">${ico('edit')}<span>Email us</span></a>`+
+    (PLAY.on?`<a class="btn soft sm" id="fb-play" href="${FB_PLAY}" target="_blank" rel="noopener">${ico('star')}<span>Review on Google Play</span></a>`:'')+`</p>`,
+    {sub:`Ideas, problems or a kind word: write to ${FB_MAIL}.`});
 }
 // G-FEEL1: 4x4 Hill Climb driving help (S.garage.as: 'auto' or 0-3; src/js/62-hill.js, which loads with the Game Room). Read here
 // without the game's code and without changing the save: an old Easy driving switch on is Most help, off is No help, never set is Auto.
@@ -4126,6 +4140,7 @@ function grown(){let armed=false;
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
   ${BAK.card()}
   ${aboutCard()}
+  ${feedbackCard()}
   ${GW.card('gw-pin','lock','Grown-ups PIN',`<p class="gw-p">The PIN keeps children out of the settings.</p>${UI.btn('Change PIN',{size:'sm',icon:'edit',id:'pn-change'})}`)}
   ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:(PRF.many()?'Erases '+esc(S.name||'this child')+"'s progress, pet, stars, coins and voice recordings. The other children are kept.":'Erases all progress, the pet, stars, coins and voice recordings on this tablet.')+' This cannot be undone, so save a backup first if you may want it back.'})}
   </div></div>`);

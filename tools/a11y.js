@@ -287,6 +287,12 @@ const SCREENS = {
     adult: true,
     run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForTimeout(300); },
   },
+  // FEEDBACK-4: Tell us what you think in Grown-ups: Email us on the web; Email us and Review on Google Play in the Play app
+  'grown-feedback': { adult: true, run: ev(() => { grown(); document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }); }) },
+  'grown-feedback-play': {
+    adult: true,
+    run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }); }); await p.waitForTimeout(300); },
+  },
   // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
   'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
   // PERS-01: the Story themes picker (every interest draft's words as if the owner had approved them, one picked) and its card in Grown-ups

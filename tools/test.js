@@ -24832,6 +24832,65 @@ run('practice owner decisions P1-P6: the boss only says Try again, short rounds 
   return{problems:p,note:'40 boss misses; pass and 2 stars for 7 round lengths, whole rounds of 6, 8, 5 and 10; reviews of 1, 2, 5 and 10; the speak mission said 3 times; 7 check-ins'};
 });
 
+// ---- FEEDBACK-4 (BEST-APP roadmap 4): Tell us what you think, in Grown-ups only (80-grown.js feedbackCard) ----
+// 1. the card is drawn only by grown() (behind the PIN), after About; nothing else in src builds it or links the e-mail or the Play page;
+// 2. the mailto is the address with a subject of the release and the build only, whatever the child's save holds (no name, grade or
+//    progress); 3. the Play page only in Play mode (PLAY.on), opened outside the app like the privacy policy; the web shows the e-mail only;
+// 4. no rating prompt anywhere a child goes (no "rate us", review flow or store link outside the card); 5. its words are in the read-through.
+run('FEEDBACK-4: Tell us what you think in Grown-ups only, a mailto with no child data, the Play page only in Play mode, no rating prompt for a child',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const code=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/<!--[\s\S]*?-->/g,'').replace(/(^|[^:'"\\])\/\/.*$/gm,'$1');
+  const gr=rd('js/80-grown.js'),fa=gr.indexOf('function feedbackCard(){'),fz=gr.indexOf('\n}\n',fa);
+  const ga=gr.indexOf('function grown(){'),gz=gr.indexOf('\nfunction ',ga+1),gbody=gr.slice(ga,gz<0?gr.length:gz);
+  if(fa<0||fz<0)p.push('80-grown.js has no feedbackCard()');
+  // 1. Grown-ups only, near the bottom: after About, before the PIN and Start over cards
+  if(!/\$\{aboutCard\(\)\}\n  \$\{feedbackCard\(\)\}\n  \$\{GW\.card\('gw-pin'/.test(gbody))p.push('grown() must show feedbackCard() right after About, before Grown-ups PIN');
+  const files=[['shell.html',path.join(SRC,'shell.html')],...['js','css','data'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,path.join(SRC,d,n)]))];
+  const RATE=/\brate (us|this app|the app|whistlestop)\b|\brating prompt|\b(leave|write) (us )?a review\b|\breview (us|whistlestop|on google play)\b|play\.google\.com\/store|market:\/\/|requestReview|ReviewManager|launchReviewFlow|\bmailto:|hello@whistlestoplearning|feedbackCard\(|\bFB_(MAIL|PLAY)\b/i;
+  let calls=0;
+  for(const [n,f] of files){
+    let c=code(fs.readFileSync(f,'utf8'));
+    if(n==='js/80-grown.js'){const a=c.indexOf('const FB_MAIL='),b=c.indexOf('\n}\n',c.indexOf('function feedbackCard(){'));
+      calls=(c.slice(c.indexOf('function grown(){')).match(/feedbackCard\(\)/g)||[]).length;
+      if(a<0||b<0){p.push('80-grown.js: the card\'s code is not where the check expects it');continue}
+      c=c.slice(0,a)+c.slice(b)} // the card itself; its one call in grown() is counted above
+    c.split('\n').forEach((l,i)=>{if(RATE.test(l)&&!(n==='js/80-grown.js'&&/^  \$\{feedbackCard\(\)\}$/.test(l)))p.push(n+':'+(i+1)+' asks for a rating or links the e-mail or the store outside Grown-ups: '+l.trim().slice(0,100))});
+  }
+  if(calls!==1)p.push('feedbackCard() is called '+calls+' times in grown(), want 1');
+  // 2. and 3. drawn as a grown-up sees it, from a save full of a child's details
+  const r=eval(js+`
+  (()=>{const o={};S.name='Zorbalina';S.petName='Fluffernut';S.buddy='Quentavius';S.stars=4321;S.coins=987;S.grade=3;S.best=17;
+    PLAY.on=false;o.web=feedbackCard();PLAY.on=true;o.play=feedbackCard();PLAY.on=false;o.subj=feedbackSubject();o.rel=RELEASE;o.build=BUILD;o.pkg=PLAY.PKG;
+    o.grade=gradeSpoken(3);return o})()`);
+  const want='mailto:hello@whistlestoplearning.com?subject='+encodeURIComponent('Whistlestop feedback ('+r.rel+', build '+r.build+')');
+  const href=(h,id)=>{const m=new RegExp('<a [^>]*id="'+id+'"[^>]*>').exec(h);return m?m[0]:''},hv=a=>(/href="([^"]*)"/.exec(a)||[])[1]||'';
+  if(!/^Whistlestop feedback \(\d+\.\d+\.\d+, build (v\d+|__VER__)\)$/.test(r.subj))p.push('the subject is "'+r.subj+'"');
+  for(const [k,h] of [['web',r.web],['play',r.play]]){
+    const m=href(h,'fb-mail'),u=hv(m),txt=h.replace(/<[^>]*>/g,' ');
+    if(u!==want)p.push(k+': the e-mail link is '+u+', want '+want);
+    if(/target=/.test(m))p.push(k+': the mailto opens a new window (it goes to the e-mail app; a new window would be left empty)');
+    const all=decodeURIComponent(u)+' '+txt;
+    for(const s of ['Zorbalina','Fluffernut','Quentavius','4321','987',r.grade,'grade'])if(all.includes(s))p.push(k+': the card or its e-mail carries the child\'s '+s);
+    if(!/<section class="gw-card" id="gw-tell">/.test(h)||!txt.includes('Tell us what you think'))p.push(k+': not the gw-tell card');
+    if(/#[0-9a-fA-F]{3,8}\b|style=|[\u{1F300}-\u{1FAFF}]/u.test(h))p.push(k+': a raw colour, an inline style or an emoji');
+    if(/fetch\(|XMLHttpRequest|sendBeacon|<img|<script|onclick/.test(h))p.push(k+': more than plain links');
+  }
+  if(/fb-play|play\.google/.test(r.web))p.push('the web version shows the Play page');
+  const pl=href(r.play,'fb-play');
+  if(hv(pl)!=='https://play.google.com/store/apps/details?id=com.whistlestoplearning.app'||r.pkg!=='com.whistlestoplearning.app')p.push('Play mode: the Play link is '+(hv(pl)||'missing'));
+  if(!/target="_blank"/.test(pl)||!/rel="noopener"/.test(pl))p.push('the Play link does not open outside the app as the privacy policy does (target _blank, rel noopener)');
+  if(!/class="btn soft sm"/.test(href(r.web,'fb-mail'))||!/class="btn soft sm"/.test(pl))p.push('the links are not the 48 px soft buttons About uses');
+  // the card's code reads nothing of the child's save
+  const fsrc=code(gr.slice(gr.indexOf('const FB_MAIL='),fz));
+  if(/\bS\.|\bS\[|PRF\.|gradeOf|gradeSpoken|NODES|\bP\(|localStorage|SKEY|petN\(/.test(fsrc))p.push('the card\'s code reads the child\'s save');
+  // 5. every new sentence is in the read-through, marked pending owner approval
+  let doc='';try{doc=fs.readFileSync(path.join(ROOT,'docs','drafts','FEEDBACK-READ.md'),'utf8')}catch(e){p.push('docs/drafts/FEEDBACK-READ.md is missing')}
+  if(doc){if(!/pending owner approval/i.test(doc)||!/\| *Where *\| *Proposed text *\| *Why *\|/i.test(doc))p.push('FEEDBACK-READ.md: no where / proposed text / why table marked pending owner approval');
+    for(const s of ['Tell us what you think','Ideas, problems or a kind word: write to hello@whistlestoplearning.com.','Email us','Review on Google Play','Whistlestop feedback (1.0.0, build v'])
+      if(!doc.includes(s))p.push('FEEDBACK-READ.md does not list "'+s+'"')}
+  return{problems:p,note:'web: e-mail only; Play: e-mail and the Play page; '+files.length+' src files scanned for a rating prompt'};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){

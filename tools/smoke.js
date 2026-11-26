@@ -16375,6 +16375,63 @@ async function main() {
         'grown-up session; a child screen ends it; Empty bank logged through ptGift; the learn-first hint; the Forgot PIN note once; Grown-ups is no update hub');
     }
 
+    // FEEDBACK-4 (BEST-APP roadmap 4): Tell us what you think. Home (a child's screen) has no feedback card, e-mail or store link; the
+    // gear and the PIN open Grown-ups, where the card sits after About: the web version shows Email us only, the Play app (?src=play with a
+    // mocked Google Play billing) also Review on Google Play, opened outside the app (target _blank, rel noopener). The mailto carries the
+    // release and the build only, never the child's name. 48 px targets, inside the screen, no sideways scroll, at 380x780 and 1024x600.
+    // Nothing is tapped through (the links leave the app), so no network request. Screenshots: tools/out/feedback/.
+    if (seg('FEEDBACK-4')) {
+      const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'feedback'), { INDEX_URL } = require('./lib/browser');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const build = (require('fs').readFileSync(P_.join(__dirname, 'build.py'), 'utf8').match(/^VER = '(v\d+)'/m) || [])[1];
+      const mail = 'mailto:hello@whistlestoplearning.com?subject=' + encodeURIComponent('Whistlestop feedback (1.0.0, build ' + build + ')');
+      const PLAYURL = 'https://play.google.com/store/apps/details?id=com.whistlestoplearning.app';
+      const mock = () => { const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [] };
+        window.getDigitalGoodsService = async m => m === 'https://play.google.com/billing' ? svc : null; };
+      for (const mode of ['web', 'play']) for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = 'FEEDBACK-4 ' + mode + ' ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, mode == 'play' ? { fixture: 'midway', width: w, height: h, url: INDEX_URL + '?src=play', init: [mock, ''] } : { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        try {
+          if (mode == 'play') await pg.waitForFunction(() => PLAY.on, null, { timeout: 5000 });
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          const kid = await pg.evaluate(() => ({ card: !!document.querySelector('#gw-tell'), links: [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')).filter(u => /^mailto:|play\.google/.test(u)),
+            words: /rate us|review on google play|tell us what you think/i.test(document.body.innerText) }));
+          if (kid.card || kid.links.length || kid.words) bad.push(at + 'Home (a child\'s screen) shows feedback or a rating: ' + JSON.stringify(kid));
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#gw-tell', { timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }));
+          await vwait(pg, 300);
+          const c = await pg.evaluate(() => {
+            const card = document.querySelector('#gw-tell'), vw = document.documentElement.clientWidth, r = card.getBoundingClientRect();
+            const ids = [...document.querySelectorAll('.gw > .gw-cols > *')].map(e => e.id);
+            const ln = a => { if (!a) return null; const b = a.getBoundingClientRect(); return { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'),
+              w: b.width, h: b.height, inside: b.left >= -1 && b.right <= vw + 1, text: a.textContent.trim() }; };
+            return { name: S.name, text: card.textContent, mail: ln(card.querySelector('#fb-mail')), play: ln(card.querySelector('#fb-play')),
+              inside: r.left >= -1 && r.right <= vw + 1, wide: document.documentElement.scrollWidth - vw, order: ids.slice(ids.indexOf('gw-about')), visible: r.height > 0 && r.top < innerHeight && r.bottom > 0 };
+          });
+          if (!/^Tell us what you think/.test(c.text.trim())) bad.push(at + 'the card says "' + c.text.trim().slice(0, 60) + '"');
+          if (c.order.join() !== 'gw-about,gw-tell,gw-pin,gw-reset') bad.push(at + 'the cards after About are ' + c.order.join());
+          if (!c.mail || c.mail.href !== mail || c.mail.target || c.mail.text !== 'Email us') bad.push(at + 'the e-mail link: ' + JSON.stringify(c.mail) + ', want ' + mail);
+          if (c.name && (decodeURIComponent((c.mail || {}).href || '') + c.text).includes(c.name)) bad.push(at + 'the card or its e-mail carries the child\'s name ' + c.name);
+          if (mode == 'web' && c.play) bad.push(at + 'the web version shows the Play link');
+          if (mode == 'play' && (!c.play || c.play.href !== PLAYURL || c.play.target !== '_blank' || !/noopener/.test(c.play.rel || '') || c.play.text !== 'Review on Google Play'))
+            bad.push(at + 'the Play link: ' + JSON.stringify(c.play));
+          for (const l of [c.mail, c.play]) if (l && (l.w < 47.5 || l.h < 47.5 || !l.inside)) bad.push(at + l.text + ' is ' + Math.round(l.w) + 'x' + Math.round(l.h) + (l.inside ? '' : ', off the screen'));
+          if (!c.inside || c.wide > 0 || !c.visible) bad.push(at + 'the card is off the screen or the page scrolls sideways by ' + c.wide + ' px');
+          await pg.screenshot({ path: P_.join(shots, `feedback-${mode}-${w}x${h}.png`) }).catch(() => {});
+          notes.push(mode + ' ' + w + 'x' + h + (c.play ? ' (e-mail and Play)' : ' (e-mail only)'));
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('FEEDBACK-4 Tell us what you think:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('FEEDBACK-4: Home has no feedback card, e-mail or rating; the gear and the PIN open Grown-ups with Tell us what you think after About (' +
+        notes.join(', ') + '); the mailto carries only the release and ' + build + '; the Play link opens outside the app; 48 px targets, no sideways scroll, no network requests');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
