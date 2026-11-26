@@ -16354,7 +16354,10 @@ async function main() {
       const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
       require('fs').mkdirSync(shots, { recursive: true });
       for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
-        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, at = w + 'x' + h + ' ';
+        // http: the child switch and Grown-up help reload the page with a changed save; over file:// headless Chrome sometimes started
+        // the reloaded page with empty storage on a busy machine (check.sh v197: "the right pictures did not open Ben", then no Who is
+        // playing? button: the fixture alone, one child), see openApp in tools/lib/browser.js
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true, http: true }), pg = app.page, at = w + 'x' + h + ' ';
         const gridLook = () => pg.evaluate(() => {
           const g = document.querySelector('.sheet-bg.on .kp'), o = [];
           if (!g) return ['no grid'];
@@ -16372,9 +16375,10 @@ async function main() {
           const b = await (await pg.$('#who')).boundingBox();
           await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
           await pg.mouse.down();
+          // held until "Who is playing?" opens (the app's 1 s timer), as a child holds it: a fixed 1.3 s of virtual time let go only
+          // about 40 ms of real time after the timer was due, and on a busy CPU the timer ran late, so the release cancelled it
           await vwait(pg, 1300);
-          await pg.mouse.up();
-          await pg.waitForSelector('.pf-kid');
+          await pg.waitForSelector('.pf-kid', { timeout: 15000 }).finally(() => pg.mouse.up());
         };
         try {
           const nm = await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false);

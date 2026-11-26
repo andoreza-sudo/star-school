@@ -69,16 +69,39 @@ async function launch() {
   });
 }
 
+// http: the built files served on 127.0.0.1 by this process (one server, started on first use, port chosen by the system).
+// Steps that reload the page with a changed save use it (RC1-KIDS: a child switch). Over file:// headless Chrome sometimes starts the
+// reloaded page with empty storage on a busy machine: a plain page that only counts its reloads in localStorage read 0 again in about
+// 1 reload of 30 with 8 runs side by side (localStorage, sometimes sessionStorage too), and never over http (0 of 1,464); the app
+// itself is served over https. The page is the same app; only the origin differs.
+let httpBase = null;
+function httpServe() {
+  if (httpBase) return httpBase;
+  const http = require('http');
+  const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
+  const srv = http.createServer((req, res) => {
+    const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+    if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    fs.createReadStream(f).pipe(res);
+  });
+  httpBase = new Promise(r => srv.listen(0, '127.0.0.1', () => { srv.unref(); r('http://127.0.0.1:' + srv.address().port + '/'); }));
+  return httpBase;
+}
+
 // Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height, url (default: the built index.html),
-//   scale (device pixels per css pixel, default 1), lazy (true: do not load the on-demand bt part, P6-03), init ([fn, arg], PLAY-01) }
+//   scale (device pixels per css pixel, default 1), lazy (true: do not load the on-demand bt part, P6-03), init ([fn, arg], PLAY-01),
+//   http (true: the built index.html from httpServe(), with service workers blocked so no update reload or cache comes in) }
 // Returns { ctx, page, errors, network }. errors: console errors + uncaught exceptions.
 // network: any http(s) request the app tried to make (must stay empty, the app is offline).
 async function openApp(browser, opts = {}) {
   const [w, h] = [opts.width || SIZES[0][0], opts.height || SIZES[0][1]];
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: opts.scale || 1 });
+  const base = opts.http ? await httpServe() : null;
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: opts.scale || 1, ...(base ? { serviceWorkers: 'block' } : {}) });
   const errors = [];
   const network = [];
   await ctx.route(/^(https?|wss?|ftp):/, route => {
+    if (base && route.request().url().startsWith(base)) return route.continue(); // opts.http: the app's own files
     network.push(route.request().url());
     route.abort();
   });
@@ -104,7 +127,7 @@ async function openApp(browser, opts = {}) {
   const page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   page.on('pageerror', e => errors.push('exception: ' + e.message));
-  await page.goto(opts.url || INDEX_URL);
+  await page.goto(opts.url || (base ? base + 'index.html' : INDEX_URL));
   await page.waitForSelector('#app *', { timeout: 10000 });
   await page.waitForTimeout(300);
   // P6-03: the app loads the Brain Teaser code (bt.<VER>.js) on demand (BT.start; the hub starts it early). Steps that drive BT.start,
