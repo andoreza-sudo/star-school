@@ -16683,6 +16683,105 @@ async function main() {
         notes.join(', ') + '); the mailto carries only the release and ' + build + '; the Play link opens outside the app; 48 px targets, no sideways scroll, no network requests');
     }
 
+    // PARENT-11 (BEST-APP roadmap 11): the Parent corner on the report card, behind the PIN. The gear and the PIN open Grown-ups and the
+    // report card: before approval (PARENT_ON 0, as built) there is no corner; with the gate flipped on in the page (PARENT_ON = 1, as a
+    // reviewed read-through builds it) the corner is the first card, with the week's summary and two dinner questions; Make a certificate
+    // opens the certificate. Print media: only the certificate is shown, inside the page, its contents inside its frame, and the PDF the
+    // tablet's print would make is one page. At 380x780 and 1024x600; Home (the child's side) never shows any of it; no network requests.
+    if (seg('PARENT-11')) {
+      const bad = [], notes = [], P_ = require('path'), FS_ = require('fs'), shots = P_.join(__dirname, 'out', 'parent11');
+      FS_.mkdirSync(shots, { recursive: true });
+      for (const [w, h, shotOnly] of [[380, 780], [1024, 600], [1123, 794, true]]) {
+        const at = 'PARENT-11 ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        try {
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          await pg.evaluate(async () => {
+            await partLoad('gate'); PIN.set('2580');
+            const n = STRK.idx(today()), k = d => STRK.key(n - d);
+            S.name = 'Ava'; S.grade = 3;
+            S.log = [{ d: k(0), sec: 600, rounds: 2, q: 20, ok: 18, by: { math: 420, read: 180 } }, { d: k(2), sec: 300, rounds: 1, q: 10, ok: 8, by: { math: 300 } }];
+            S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, frac2: { n: 12, p: .8, ms: 6000, d: 2, last: n - 1, md: -1 }, sight1: { n: 25, p: .92, ms: 4000, d: 4, last: n - 1, md: n - 6 } };
+            S.maps.math.add1 = 3; S.maps.math.frac2 = 2; S.maps.read.sight1 = 3;
+            S.lm = [['add1', n - 3, 1, 2, 2, 2, 0]]; S.know = { add1: { s: 2 } };
+            save(); home();
+          });
+          const kid = await pg.evaluate(() => ({ pc: !!document.querySelector('[id^="pc-"],[class*="pc-"],#rp-parent'), words: /Parent corner|questions for dinner|Certificate of Learning/i.test(document.body.innerText) }));
+          if (kid.pc || kid.words) bad.push(at + 'Home (a child\'s screen) shows the Parent corner: ' + JSON.stringify(kid));
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#rp-open', { timeout: 10000 });
+          await pg.click('#rp-open');
+          await pg.waitForSelector('#rp-weeks', { timeout: 10000 });
+          const off = await pg.evaluate(() => ({ on: PARENT_ON, corner: !!document.querySelector('#rp-parent'), n: document.querySelectorAll('.rp-card').length, ls: !!document.querySelector('#rp-teach') }));
+          if (off.on !== 0 || off.corner || off.n !== (off.ls ? 8 : 7)) bad.push(at + 'before approval: ' + JSON.stringify(off)); // 7 cards and the lessons' card (the save has a lesson)
+          await pg.click('#back');
+          await pg.waitForSelector('#rp-open', { timeout: 10000 });
+          await pg.evaluate(() => { PARENT_ON = 1; });
+          await pg.click('#rp-open');
+          await pg.waitForSelector('#rp-parent', { timeout: 10000 });
+          await vwait(pg, 300);
+          const c = await pg.evaluate(() => {
+            const sc = document.querySelector('.rp-scroll'), card = document.querySelector('#rp-parent'), b = document.querySelector('#pc-cert'), vw = document.documentElement.clientWidth;
+            return { first: document.querySelector('.rp-card') === card, n: document.querySelectorAll('.rp-card').length, text: card.innerText, dq: [...card.querySelectorAll('.pc-dq li')].map(l => l.dataset.g),
+              over: sc.scrollWidth - sc.clientWidth, wide: document.documentElement.scrollWidth - vw, btn: b ? [b.offsetWidth, b.offsetHeight] : null };
+          });
+          if (!c.first || c.n !== off.n + 1) bad.push(at + 'the corner is not the first of ' + (off.n + 1) + ' cards: ' + JSON.stringify({ first: c.first, n: c.n }));
+          if (!/^Parent corner/.test(c.text.trim()) || !/This week Ava learned/.test(c.text) || !/Stops passed: Adding to 10/.test(c.text) || !/Two questions for dinner/.test(c.text) || /undefined|NaN|\{\w+\}/.test(c.text))
+            bad.push(at + 'the corner says: ' + c.text.slice(0, 300));
+          if (c.dq.length !== 2 || !c.dq.every(g => ['add', 'frac', 'spell'].includes(g))) bad.push(at + 'the dinner questions are from ' + c.dq.join());
+          if (c.over > 0 || c.wide > 0) bad.push(at + 'the report card scrolls sideways by ' + Math.max(c.over, c.wide) + ' px');
+          if (!c.btn || c.btn[0] < 48 || c.btn[1] < 48) bad.push(at + 'Make a certificate is ' + JSON.stringify(c.btn));
+          await pg.evaluate(() => document.querySelector('#pc-cert').scrollIntoView({ block: 'center' }));
+          await pg.click('#pc-cert');
+          await pg.waitForSelector('#pc-sheet', { timeout: 10000 });
+          await vwait(pg, 300);
+          const s = await pg.evaluate(() => {
+            const sh = document.querySelector('#pc-sheet'), r = sh.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            return { text: sh.innerText, inside: r.left >= -1 && r.right <= vw + 1, wide: document.documentElement.scrollWidth - vw, logo: !!sh.querySelector('.wl-mk'),
+              btns: [...document.querySelectorAll('.top .btn')].map(b => Math.min(b.offsetWidth, b.offsetHeight)) };
+          });
+          if (!/Certificate of Learning/.test(s.text) || !/\bAva\b/.test(s.text) || !/Passed \d+ stops? in Math/.test(s.text) || !/Passed \d+ stops? in Reading/.test(s.text) || !/June 15, 2026/.test(s.text) || !s.logo)
+            bad.push(at + 'the certificate says: ' + s.text.replace(/\s+/g, ' ').slice(0, 300));
+          if (!s.inside || s.wide > 0) bad.push(at + 'the certificate is off the screen or scrolls sideways by ' + s.wide + ' px');
+          if (s.btns.some(x => x < 48)) bad.push(at + 'the top buttons are ' + s.btns.join(', ') + ' px');
+          // print media: only the certificate, on one page
+          await pg.emulateMedia({ media: 'print' });
+          await vwait(pg, 200);
+          const pr = await pg.evaluate(() => {
+            const sh = document.querySelector('#pc-sheet'), inn = sh.querySelector('.pc-in'), r = sh.getBoundingClientRect(), vw = document.documentElement.clientWidth, shown = [];
+            for (const e of document.body.querySelectorAll('*')) {
+              if (sh.contains(e) || e.contains(sh) || ['SCRIPT', 'STYLE', 'LINK', 'TEMPLATE'].includes(e.tagName)) continue;
+              const b = e.getBoundingClientRect(), cs = getComputedStyle(e);
+              if (b.width > 0 && b.height > 0 && cs.visibility != 'hidden' && cs.display != 'none' && (e.innerText || '').trim()) shown.push((e.id || e.className || e.tagName) + ': ' + (e.innerText || '').trim().slice(0, 30));
+            }
+            const kids = [...inn.children].map(k => k.getBoundingClientRect());
+            return { shown: shown.slice(0, 5), inside: r.left >= -1 && r.right <= vw + 1, fit: kids.every(k => k.bottom <= inn.getBoundingClientRect().bottom + 1 && k.right <= inn.getBoundingClientRect().right + 1),
+              h: Math.round(r.height), w: Math.round(r.width) };
+          });
+          if (pr.shown.length) bad.push(at + 'print shows more than the certificate: ' + pr.shown.join(' | '));
+          if (!pr.inside || !pr.fit) bad.push(at + 'print: the certificate or its contents do not fit (' + pr.w + 'x' + pr.h + ')');
+          await pg.screenshot({ path: P_.join(shots, `cert-print-${w}x${h}.png`), fullPage: true }).catch(() => {});
+          if (!shotOnly) {
+            const pdf = await pg.pdf({ preferCSSPageSize: true, printBackground: true });
+            const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page(?!s)/g) || []).length;
+            if (pages !== 1) bad.push(at + 'the printed certificate is ' + pages + ' pages');
+            await pg.emulateMedia({ media: 'screen' });
+            await pg.click('#back');
+            await pg.waitForSelector('#rp-parent', { timeout: 10000 });
+            notes.push(w + 'x' + h + ' (print ' + pr.w + 'x' + pr.h + ' px, ' + pages + ' page)');
+          }
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('PARENT-11 Parent corner:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('PARENT-11: Home shows nothing of it; the gear and the PIN open Grown-ups; the report card has no corner before approval and, with the gate flipped on, the corner first (the week, 2 dinner questions, Make a certificate); the certificate prints alone on one page (' +
+        notes.join(', ') + '); no sideways scroll, 48 px buttons, no network requests');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

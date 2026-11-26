@@ -292,6 +292,11 @@ const SCREENS = {
     adult: true,
     run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForTimeout(300); },
   },
+  // PARENT-11: the Parent corner on the report card (its words as if the owner had approved them: PARENT_ON = 1) with a week of play,
+  // and the certificate it opens
+  'parent-corner': { adult: true, run: async p => { await p.evaluate(async () => { await partLoad('gate'); parentWeek(); PARENT_ON = 1; report();
+    document.querySelector('#rp-parent').scrollIntoView(); }); await p.waitForTimeout(500); } },
+  'parent-cert': { adult: true, run: async p => { await p.evaluate(async () => { await partLoad('gate'); parentWeek(); PARENT_ON = 1; PC.cert(); }); await p.waitForTimeout(500); } },
   // FEEDBACK-4: Tell us what you think in Grown-ups: Email us on the web; Email us and Review on Google Play in the Play app
   'grown-feedback': { adult: true, run: ev(() => { grown(); document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }); }) },
   'grown-feedback-play': {
@@ -681,6 +686,12 @@ function pageInit() {
       tenf3: { s: 3, n: 1, lv: [[1, 1], [0, 0], [1, 1]], b: {}, box: 1, due: d + 5, d: d - 8, last: d - 3, k: d - 3 },
       add4: { s: 1, n: 2, lv: [[1, 2], [0, 2], [0, 1]], b: { op: 3 }, box: 0, due: 0, w: [['op', 'add4 3', d], ['op', 'add4 4', d], ['op', 'add4 4', d]] } };
     S.lm = [['tenf2', d - 1, 1, 2, 2, 2, 0], ['add4', d, 0, 2, 1, 2, 0]]; S.tq = 'Ask them: "How many more make 10?"'; save(); };
+  // PARENT-11: a week of play for the Parent corner: two math stops passed this week, a reading stop mastered, a lesson. No S.log (the
+  // minutes line): with one, the report card's 14-day chart below the corner is drawn, and its 12-unit SVG labels measure 11 px at 380
+  // wide (the chart's own, as on any report card with minutes; the screen "report" has no log either)
+  window.parentWeek = () => { const n = STRK.idx(today()); S.name = 'Ava'; S.grade = 3;
+    S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, frac2: { n: 12, p: .8, ms: 6000, d: 2, last: n - 1, md: -1 }, sight1: { n: 25, p: .92, ms: 4000, d: 4, last: n - 1, md: n - 6 } };
+    S.maps.math.add1 = 3; S.maps.math.frac2 = 2; S.maps.read.sight1 = 3; S.lm = [['add1', n - 3, 1, 2, 2, 2, 0]]; S.know = { add1: { s: 2 } }; save(); };
   A.say = (t) => { A.said.push({ t: String(t || ''), at: A.now() }); };
   // CHECK-IN: make a passed math stop (skill sk, level 1; add by default) ready for a check-in; returns its index on the math map
   window.chkReady = (sk = 'add') => { const i = NODES.math.findIndex(n => n.sk == sk && n.lv == 1), k = nid(NODES.math[i]); S.maps.math[k] = Math.max(1, S.maps.math[k] || 0);

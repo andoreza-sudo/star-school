@@ -25236,6 +25236,166 @@ run('SPACED-9: spaced check-ins for learned and skipped stops: the schedule, the
   return{problems:p,note};
 });
 
+// ---- PARENT-11 (BEST-APP roadmap 11): the Parent corner of the report card (src/js/41d-parent.js, part gate; docs/drafts/PARENT11-READ.md).
+// 1. the parts: the corner, its words and the certificate in the lazy part gate; only PARENT_ON (82a-parenton.js) in index.html;
+// 2. the approval gate: PARENT_ON is 1 exactly when the read-through's status line says "reviewed <name> <date>"; the words check holds
+//    on the tree and on a copy whose status line is flipped (the one-line flip), with no name, or with the file left behind;
+// 3. the words: every sentence of PCW and every dinner question is in the read-through's where / proposed text / why table; 2 to 4
+//    questions per group, every skill on a map has a group, no question twice, no banned theme;
+// 4. in the app: nothing before approval (PARENT_ON 0: the 7 sections of the report card, none of the corner's words); after the flip
+//    the corner is the first card; the summary from fixture saves (midway, maxed) with a week of records: exactly the stops passed and
+//    played in the last 7 days, the lessons, the skills that got stronger, the minutes; the dinner questions come from the groups of the
+//    week's skills (the bigger group first, the child's grade, the same all week); the certificate has the name and the right counts;
+//    the save is never changed or saved; 5. no network: the corner's code and CSS reach nothing outside the tablet.
+run('PARENT-11: Parent corner: the week\'s summary from fixture saves, dinner questions from the week\'s skills, the approval gate, the certificate, no network',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),cpx=require('child_process'),os=require('os');
+  const DOC='docs/drafts/PARENT11-READ.md',src=rd('src/js/41d-parent.js'),css=rd('src/css/41d-parent.css');
+  // 1. the parts
+  for(const f of ['41d-parent.js','41d-parent.css'])if(partOf(f)!=='gate')p.push(f+' is not in the part gate');
+  if(partOf('82a-parenton.js'))p.push('82a-parenton.js (PARENT_ON) is not in index.html');
+  const W=Function(src.replace(/const PC = \{[\s\S]*$/,'')+';return {PCW,PCQ}')(),{PCW,PCQ}=W;
+  const gf=PART_FILES[PARTS.findIndex(x=>x.stem==='gate')],ih=rd('index.html');
+  if(!rd(gf).includes('const PCQ')||!rd(gf).includes('.pc-sheet'))p.push(gf+' does not carry the corner and its CSS');
+  for(const f of ['index.html',...START_FILES])if(rd(f).includes('const PCQ')||rd(f).includes(PCQ[0].q[0][0]))p.push(f+' (start-up) carries the dinner questions');
+  if(!/let PARENT_ON = [01];/.test(ih))p.push('index.html has no PARENT_ON');
+  // 2. the gate
+  const doc=rd(DOC),st=(doc.match(/^status: (.*)$/m)||[])[1]||'',rev=/^reviewed\b/.test(st),on=Function(rd('src/js/82a-parenton.js')+';return PARENT_ON')();
+  if(!rev&&st!=='unreviewed')p.push(DOC+': the status line is "'+st+'" (unreviewed, or reviewed <name> <date>)');
+  if(rev&&!revNamed(DOC))p.push(DOC+': reviewed, but its status line names no reviewer and date');
+  if(on!==(rev?1:0))p.push('PARENT_ON is '+on+' with the read-through '+(rev?'reviewed':'not reviewed'));
+  if(!rev&&!/pending owner approval/i.test(doc))p.push(DOC+' is not marked pending owner approval');
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'parent-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),"/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n");
+  const pon=n=>rd('src/js/82a-parenton.js').replace(/let PARENT_ON = [01];/,'let PARENT_ON = '+n+';');
+  const chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(line,n)=>{fs.writeFileSync(path.join(tmp,DOC),doc.replace(/^status: .*$/m,line));fs.writeFileSync(path.join(tmp,'src/js/82a-parenton.js'),pon(n))};
+  put('status: unreviewed',0);if(chk()!==0)p.push('the words check refuses PARENT_ON 0 for an unreviewed read-through');
+  put('status: unreviewed',1);if(chk()!==1)p.push('the words check passes PARENT_ON 1 for an unreviewed read-through');
+  put('status: reviewed 2026-11-26',1);if(chk()!==1)p.push('the words check passes PARENT_ON 1 for a status line with no reviewer');
+  put('status: reviewed Test Owner 2026-11-26',0);if(chk()!==1)p.push('the words check passes PARENT_ON 0 for a reviewed read-through (the flip did not turn it on)');
+  put('status: reviewed Test Owner 2026-11-26',1);if(chk()!==0)p.push('the words check refuses PARENT_ON 1 for a reviewed read-through');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  if(!/^status: (un)?reviewed/m.test(doc)||(doc.match(/^status:/gm)||[]).length!==1)p.push(DOC+' needs exactly one status line (the one-line flip)');
+  // 3. the words: in the table, the bank's shape, banned themes
+  const rows=doc.split('\n').filter(l=>/^\| .+ \| .+ \| .+ \|$/.test(l)).map(l=>l.split(' | ')[1]);
+  if(!/\| *Where *\| *Proposed text *\| *Why *\|/.test(doc))p.push(DOC+': no where / proposed text / why table');
+  for(const k in PCW)if(!rows.includes(PCW[k]))p.push(DOC+' does not list PCW.'+k+' "'+PCW[k]+'"');
+  const qs=PCQ.flatMap(g=>g.q.map(q=>q[0]));
+  for(const q of qs)if(!rows.includes(q))p.push(DOC+' does not list the dinner question "'+q+'"');
+  if(new Set(qs).size!==qs.length)p.push('a dinner question is in the bank twice');
+  if(rows.length!==Object.keys(PCW).length+qs.length+2)p.push(DOC+' has '+(rows.length-2)+' rows, the code '+(Object.keys(PCW).length+qs.length)+' sentences');
+  for(const g of PCQ){if(g.q.length<2||g.q.length>4)p.push('dinner group '+g.id+' has '+g.q.length+' questions (2 to 4)');
+    for(const [q,a,b] of g.q)if(!(a>=-1&&b<=6&&a<=b)||!/[?.]$/.test(q)||q.length>130)p.push(g.id+': "'+q+'" grades '+a+' to '+b);}
+  if(/magic|evolution|spell(s|ing)? (a|the) |homework|screen|tablet|app\b/i.test(qs.join(' ')))p.push('a dinner question names a banned theme, homework or a screen');
+  // 5. no network, tokens only
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|import\(|navigator\.share|localStorage|\bsave\(|new Image/.test(src))p.push('41d-parent.js reaches outside the tablet or writes the save');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|url\(/.test(css)||/#[0-9a-fA-F]{6}\b|rgba?\(/.test(src))p.push('the corner has a colour that is not a token, or loads a file');
+  if(!/@media print/.test(css)||!/body:has\(\.pc-cv\)>:not\(#app\)\{display:none!important\}/.test(css)||!/page:pccert/.test(css))p.push('41d-parent.css: no print rules that print the certificate alone');
+  // 4. in the app
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(fx){
+    const bad=[],store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    let saves=0;const sv=save;save=()=>{saves++};
+    const load=raw=>{if(saves)bad.push('the corner saved '+saves+' times');for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate();saves=0};
+    const now=STRK.idx(today()),txt=h=>h.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ');
+    const secs=h=>h.split('<section').length-1,PW=Object.values(PCW);
+    try{
+      // a. before approval: the report card as it was, none of the corner's words; after the flip: the corner is the first card
+      for(const n of ['fresh','midway','maxed']){
+        load(fx[n]);S.name='Ava';PARENT_ON=0;const h0=REP.html(REP.data());
+        if(secs(h0)!==7||/rp-parent|pc-/.test(h0)||PW.some(w=>w.length>8&&!/\{/.test(w)&&h0.includes(w)))bad.push(n+': the corner shows before approval');
+        PARENT_ON=1;const before=JSON.stringify(S),h1=REP.html(REP.data());
+        if(secs(h1)!==8||h1.indexOf('id="rp-parent"')<0||h1.indexOf('id="rp-parent"')>h1.indexOf('id="rp-weeks"')||!h1.includes(PCW.h))bad.push(n+': after the flip the corner is not the first card');
+        if(JSON.stringify(S)!==before)bad.push(n+': drawing the corner changed the save');
+        if(/\bundefined\b|\bNaN\b|\[object |\{\w+\}/.test(txt(h1)))bad.push(n+': bad text in the corner: '+(txt(h1).match(/\bundefined\b|\bNaN\b|\[object |\{\w+\}/)||[])[0]);
+      }
+      PARENT_ON=1;
+      // b. a fresh child: kind empty states, no questions, no certificate yet
+      load(null);S.name='Ava';let d=PC.data(),h=PC.html(d);
+      if(d.passed.length||d.dinner.length||d.passedAll||!h.includes(PCW.none)||!h.includes(PCW.dNone)||!h.includes(PC.fill(PCW.cNone,{name:'Ava'}))||h.includes('pc-cert'))bad.push('fresh: '+txt(h).slice(0,300));
+      // c. midway with a week of records: two math stops played and passed this week (add1 today, frac2 two days ago), one played
+      //    and not passed (sub2), one passed but last played 7 days ago (cnt1: not this week), a lesson this week and one older, a
+      //    stop mastered this week, a badge won this week and one won 9 days ago
+      load(fx.midway);S.name='Ava';S.grade=3;
+      S.maps.math.add1=3;S.maps.math.frac2=2;S.maps.math.cnt1=3;delete S.maps.math.sub2;
+      S.mast={add1:{n:30,p:.95,ms:5000,d:3,last:now,md:now-2},frac2:{n:12,p:.8,ms:6000,d:2,last:now-2,md:-1},sub2:{n:8,p:.5,ms:6000,d:1,last:now-1,md:-1},
+        cnt1:{n:20,p:.9,ms:5000,d:4,last:now-7,md:now-20},pv1:{n:14,p:.8,d:3,last:now-30,md:-1}};
+      S.chk={frac2:{n:1,best:5,last:now-2,at:12,b:now-2},pv1:{n:1,best:4,last:now-9,at:12,b:now-9}};
+      S.lm=[['pv1',now-12,1,2,2,2,0],['add1',now-3,1,2,2,2,0],['zzz9',now,1,2,2,2,0],['add1',now-1,2,2,2,2,0]];S.know={add1:{s:2},pv1:{s:3},cnt1:{s:0}};
+      S.log=[{d:STRK.key(now),sec:600,rounds:2,q:20,ok:18,by:{math:600}},{d:STRK.key(now-2),sec:330,rounds:1,q:10,ok:8,by:{math:330}},{d:STRK.key(now-8),sec:900,rounds:3,q:30,ok:30,by:{read:900}}];
+      const before=JSON.stringify(S);d=PC.data();h=PC.html(d);
+      const ids=a=>a.map(x=>x.id).join();
+      if(ids(d.passed)!=='add1,frac2')bad.push('midway: passed this week '+ids(d.passed)+', want add1,frac2');
+      if(ids(d.worked)!=='add1,sub2,frac2')bad.push('midway: played this week '+ids(d.worked));
+      if(ids(d.lessons)!=='add1')bad.push('midway: lessons this week '+ids(d.lessons));
+      if(ids(d.stronger)!=='add1,frac2')bad.push('midway: stronger this week '+ids(d.stronger)+', want add1 (mastered) and frac2 (badge)');
+      if(d.cur.sec!==930||d.cur.active!==2)bad.push('midway: this week '+JSON.stringify(d.cur));
+      const nm=t=>NODES.math.find(n=>nid(n)==t).t;
+      for(const t of [PC.fill(PCW.time,{min:PC.fill(PCW.min,{n:16}),days:2}),PC.fill(PCW.passed,{list:'<b>'+nm('add1')+'</b> and <b>'+nm('frac2')+'</b>'}),
+        PC.fill(PCW.lessons,{pet:esc(petN()),list:'<b>'+nm('add1')+'</b>'}),PC.fill(PCW.stronger,{list:'<b>'+nm('add1')+'</b> and <b>'+nm('frac2')+'</b>'})])
+        if(!h.includes(t))bad.push('midway: the summary misses "'+t+'"');
+      if(h.includes(nm('cnt1'))&&!d.dinner.some(x=>x.t==nm('cnt1')))bad.push('midway: a stop of 7 days ago is in the summary');
+      // the dinner questions: add (add1, sub2) has 2 stops this week, frac (frac2) 1: one each, add first, grade 3 ones
+      const G=id=>PCQ.find(g=>g.id==id),inG=(id,q)=>G(id).q.some(x=>x[0]==q&&3>=x[1]&&3<=x[2]);
+      if(d.dinner.length!==2||d.dinner[0].g!=='add'||d.dinner[1].g!=='frac'||!inG('add',d.dinner[0].q)||!inG('frac',d.dinner[1].q))bad.push('midway: dinner '+JSON.stringify(d.dinner));
+      if(!d.dinner.every(x=>h.includes(esc(x.q))))bad.push('midway: the dinner questions are not on the card');
+      if(JSON.stringify(S)!==before)bad.push('midway: the corner changed the save');
+      // the certificate: the name and the counts (every stop passed so far, per subject; lessons taught; stops mastered)
+      const c=PC.certHTML(d),pa=REP.data().paths;
+      if(!c.includes('>Ava<')||!c.includes(d.date)||!/^[A-Z][a-z]+ \d{1,2}, \d{4}$/.test(d.date)||!c.includes('wl-mk'))bad.push('midway certificate: name, date or logo '+txt(c).slice(0,200));
+      for(const o of pa){const want=o.done?PC.fill(o.done==1?PCW.cStop1:PCW.cStops,{n:o.done,area:o.label}):'';
+        if(want&&!c.includes(want))bad.push('midway certificate: no "'+want+'"');if(!want&&c.includes(o.label+'<'))bad.push('midway certificate: '+o.label+' with nothing passed');}
+      if(!c.includes(PC.fill(PCW.cLessons,{n:2,pet:petN()}))||!c.includes(PC.fill(PCW.cMast,{n:2})))bad.push('midway certificate: lessons (2 taught) or mastered (2: add1 and cnt1): '+txt(c));
+      // d. only one group this week: two questions of it; the same all week (6 more days), another pick the next week
+      load(fx.maxed);S.name='Mo';S.grade=4;
+      const one=(sk,lv,last)=>{S.mast={[sk+lv]:{n:10,p:.8,ms:5000,d:1,last,md:-1}};return PC.data()};
+      S.mast={};let q=one('frac',6,now).dinner;
+      if(q.length!==2||q[0].g!=='frac'||q[1].g!=='frac'||q[0].q===q[1].q||!q.every(x=>inG4('frac',x.q)))bad.push('maxed: one group, dinner '+JSON.stringify(q));
+      function inG4(id,s){return G(id).q.some(x=>x[0]==s&&4>=x[1]&&4<=x[2])}
+      // e. every group: a week with only its first stop gives its questions; the week's pick is stable and rotates
+      let rot=0;
+      for(const g of PCQ){
+        const st=Object.keys(NODES).flatMap(pp=>NODES[pp].filter(n=>n.sk!='boss'&&PC.group(pp,n.sk)===g).map(n=>({pp,n})))[0];
+        if(!st){bad.push('dinner group '+g.id+' has no stop on any map');continue}
+        S.grade=Math.max(-1,Math.min(6,PATHS[st.pp].worlds[st.n.wi].g));if(S.grade<0&&!GRADES.includes(-1))S.grade=0;
+        const picks=new Set();
+        for(let k=0;k<21;k++){S.mast={[nid(st.n)]:{n:10,p:.8,ms:5000,d:1,last:now+k,md:-1}};const dd=PC.data(now+k).dinner;
+          if(!dd.length||dd.some(x=>x.g!==g.id||!g.q.some(y=>y[0]==x.q)||x.t!==st.n.t))bad.push(g.id+': day '+k+' dinner '+JSON.stringify(dd));
+          picks.add(dd.map(x=>x.q).join('|'));
+          if(Math.floor((now+k)/7)===Math.floor((now+k-1)/7)&&k&&!picks.has(prev))bad.push(g.id+': the pick changed within a week');var prev=dd.map(x=>x.q).join('|');}
+        const fit=g.q.filter(x=>S.grade>=x[1]&&S.grade<=x[2]).length;
+        if((picks.size>1)!==(fit>1))bad.push(g.id+': '+picks.size+' different picks in 3 weeks with '+fit+' questions for grade '+S.grade);
+        if(picks.size>1)rot++;
+      }
+      // every skill on a map has a dinner group, and each group's skills are real
+      for(const pp in NODES)for(const n of NODES[pp])if(n.sk!='boss'){const g=PC.group(pp,n.sk),wg=PATHS[pp].byLevel?null:PATHS[pp].worlds[n.wi].g;
+        if(!g)bad.push('no dinner group for '+pp+':'+n.sk);else if(wg!==null&&!g.q.some(x=>wg>=x[1]&&wg<=x[2]))bad.push('dinner group '+g.id+' has no question for grade '+wg+' ('+n.t+')')}
+      for(const g of PCQ)for(const s of g.sk.split(' ').filter(Boolean))if(!SK[s.split(':').pop()])bad.push(g.id+': '+s+' is not a skill');
+      // f. maxed: the certificate counts every passed stop per subject; a blank line for a child with no name; a name is escaped
+      load(fx.maxed);S.name='';d=PC.data();
+      const pm=REP.data().paths;for(const o of pm){const a=d.areas.find(x=>x.p==o.p);if(!a||a.n!==o.done)bad.push('maxed: '+o.p+' '+(a&&a.n)+' passed, the report card says '+o.done)}
+      if(!PC.certHTML(d).includes('pc-blank'))bad.push('a certificate with no name has no blank line');
+      S.name='<img src=x onerror=alert(1)>';d=PC.data();if(PC.certHTML(d).includes('<img')||PC.html(d).includes('<img'))bad.push('the name is not escaped');
+      // g. damaged records never throw
+      S.mast={add1:null,sub1:{n:'x',last:'y'}};S.lm=[null,5,['add1','x'],{}];S.chk=7;S.know=[];S.log='x';
+      try{PC.html(PC.data());PC.certHTML(PC.data())}catch(e){bad.push('damaged records: '+e.message)}
+      if(saves)bad.push('the corner saved '+saves+' times');
+    }catch(e){bad.push('threw: '+(e&&e.stack||e).toString().split('\n').slice(0,3).join(' | '))}
+    save=sv;PARENT_ON=0;
+    return bad;
+  };
+  const r=eval(js+';('+body.toString()+')('+JSON.stringify({fresh:fx('fresh'),midway:fx('midway'),maxed:fx('maxed')})+')');
+  p.push(...r);
+  // the report card loads the part when it is not in, and binds the button; the certificate prints through needOnline, offline too
+  const rep=fs.readFileSync(path.join(SRC,'js','82-report.js'),'utf8');
+  if(!/if \(PARENT_ON && m\) \{if \(typeof PC != 'undefined'\) PC\.bind\(\); else partLoad\('gate'\)/.test(rep))p.push('report() does not load the part gate for the corner');
+  if(!/needOnline\(\(\) => \{try \{window\.print\(\)\} catch \(e\) \{\}\}, \{block: false\}\)/.test(src))p.push('the certificate does not print through needOnline (block: false)');
+  const per={};for(const g of PCQ)per[g.p]=(per[g.p]||0)+g.q.length;
+  return{problems:p,note:'status '+st+' (PARENT_ON '+on+'); '+PCQ.reduce((t,g)=>t+g.q.length,0)+' dinner questions in '+PCQ.length+' groups ('+Object.entries(per).map(e=>e.join(' ')).join(', ')+'), '+Object.keys(PCW).length+' other sentences'};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){

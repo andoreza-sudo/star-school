@@ -270,12 +270,16 @@ const REP = {
     return `<div class="rp-str">${ico('flame', 28, 'rp-fl')}<div><b>${s.count ? d(s.count) + ' in a row' : 'No streak right now'}</b>`
       + `<div class="small">${s.count ? (s.doneToday ? 'Played today.' : 'Not played yet today.') : 'A new one starts with the next round.'} Best so far: ${s.best ? d(s.best) : 'none yet'}.</div></div></div>`;
   },
+  parent(sec) {
+    try {return sec('rp-parent', 'heart', esc(PCW.h), PC.html(PC.data()))} catch (e) {logErr('parent corner: ' + e.message); return ''}
+  },
   html(m) {
     const nm = m.name ? esc(m.name) : 'your child';
     // P4-12: each section is a Grown-ups card with an icon header (styles in 48-setup-grown-care.css)
     const sec = (id, icon, h, body) => `<section class="gw-card rp-card" id="${id}"><h2 class="rp-h2 gw-h"><span class="gw-hi">${ico(icon, 24)}</span>`
       + `<span>${h}</span></h2>${body}</section>`;
     return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Whistlestop</div></div>`
+      + (PARENT_ON && typeof PC != 'undefined' ? REP.parent(sec) : '') // PARENT-11: the Parent corner (41d-parent.js, part gate), once the owner approved its words
       + sec('rp-weeks', 'calendar', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
       + sec('rp-level', 'map', 'Where ' + nm + ' is working', REP.level(m))
       + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m) + (typeof CHK != 'undefined' ? `<div id="rp-badges"><h3 class="rp-h3">${ico('medal', 22)} Badges and mastery by stop</h3>${REP.badges(m)}</div>` : ''))
@@ -298,6 +302,8 @@ function report() {
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => NAV.gwBack();
+  // PARENT-11: the Parent corner comes with the part gate (the Grown-ups PIN loads it): load it if it is not in yet, then draw again
+  if (PARENT_ON && m) {if (typeof PC != 'undefined') PC.bind(); else partLoad('gate').then(ok => {if (ok && typeof PC != 'undefined' && $('.rp-scroll')) report()})}
   // TEACH-2: the lessons' card comes with the teach part: load it when the save has lessons, then draw again
   if (m && m.ls) LSREP.bind(m, () => report());
   else if (S.know && Object.keys(S.know).length && !partReady('teach')) partLoad('teach').then(ok => {if (ok && $('.rp-scroll')) report()});
