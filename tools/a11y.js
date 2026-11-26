@@ -89,19 +89,28 @@ async function answerAct(p) {
   return [wrong, right];
 }
 const qScreen = fn => ({ run: ev(fn), act: answerAct });
-// CHECK-IN: a check-in question (add 1, typed) answered wrong: the answer shows and the round moves on (one try, no hint); the next one right
+// CHECK-IN: a check-in question (add 1) answered wrong: the answer shows and the round moves on (one try, no hint); the next one right.
+// A check-in mixes the stop's kinds (CHK.qs, pickQ), and TAP-10 turns some add 1 questions into make questions (a frame to fill): a
+// typed question is answered on the number keys, a KINDS2 one (make, line, sort, mark) by its own controls (k2Wrong, k2Right)
+const K2KINDS = ['sort', 'mark', 'line', 'make'];
 async function chkAct(p) {
   const key = d => p.click(`.k[data-k="${d}"]`);
   await p.evaluate(() => { window.__a11y.mark('wrong'); window.__q = G.q; });
-  for (const d of await p.evaluate(() => String(+G.q.ans + 1))) await key(d);
-  await key('go');
+  if (K2KINDS.includes(await p.evaluate(() => G.q.kind))) await k2Wrong(p);
+  else {
+    for (const d of await p.evaluate(() => String(+G.q.ans + 1))) await key(d);
+    await key('go');
+  }
   await p.waitForTimeout(250);
   const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
   await p.waitForFunction(() => G && G.q !== window.__q && !G.lock, null, { timeout: 8000 });
   await p.waitForTimeout(500);
   await p.evaluate(() => { window.__a11y.mark('right'); });
-  for (const d of await p.evaluate(() => String(G.q.ans))) await key(d);
-  await key('go');
+  if (K2KINDS.includes(await p.evaluate(() => G.q.kind))) await k2Right(p);
+  else {
+    for (const d of await p.evaluate(() => String(G.q.ans))) await key(d);
+    await key('go');
+  }
   await p.waitForTimeout(250);
   const right = await p.evaluate(() => window.__a11y.signal('right'));
   await p.waitForTimeout(900);
@@ -151,6 +160,14 @@ async function k2Act(p) {
   const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
   await p.waitForTimeout(900);
   await p.evaluate(() => { window.__a11y.mark('right'); });
+  await k2Right(p);
+  await p.waitForTimeout(250);
+  const right = await p.evaluate(() => window.__a11y.signal('right'));
+  await p.waitForTimeout(900);
+  return [wrong, right];
+}
+// the right answer to the KINDS2 question on screen (after a wrong try: what is already right stays)
+async function k2Right(p) {
   const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, ans: G.q.kind == 'mark' ? G.q.ans.map(Number) : null,
     plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null }));
   if (q.kind === 'line' || q.kind === 'make') await k2LineMake(p, false);
@@ -165,10 +182,6 @@ async function k2Act(p) {
     for (const i of q.ans) if (!(await p.$(`.mkt[data-i="${i}"].right`))) await p.click(`.mkt[data-i="${i}"]`);
     if (!q.one) await p.click('#mcheck');
   }
-  await p.waitForTimeout(250);
-  const right = await p.evaluate(() => window.__a11y.signal('right'));
-  await p.waitForTimeout(900);
-  return [wrong, right];
 }
 // a two-question round of the first generated questions of that kind at a stop (real sort or mark questions); the second one keeps a
 // question screen (with its Hear it button) after the first is answered
