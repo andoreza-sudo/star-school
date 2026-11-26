@@ -1,0 +1,115 @@
+/* ---------- STORIES-7 (BEST-APP roadmap 7): the decodable mini-stories (part teachrd) ----------
+   DRAFTED, pending owner approval: docs/drafts/STORIES7-READ.md has every story, its words and its questions, and the status line
+   that turns the stories on (STORY7_ON, 42c-story7on.js, built by tools/build.py). Until then no child sees any of this.
+   ST7.stages  the phonics stages in reading-map order: id (tools/decode.js STAGES) and the stop the stage follows (its Stories stop
+               on the map stands right after it)
+   ST7.list    the stories: id, st (stage), t (title), pic (a drawing of ART: 16-art-a.js, src/data/d-art-*.js), s (3 to 6 short
+               sentences), q (1 or 2 picture questions: [question, the right picture, [two other pictures]])
+   Every word of every title and sentence uses only the letter-sound patterns taught up to its stage, or a sight word of a Sight Words
+   stop before it on the map: tools/decode.js checks this, and tools/test.js STORIES-7 runs it on every story.
+   None of the themes the parent ruled out (CONTENT-01), no brands, no real characters. The answer of a question is a word of its story; the other two
+   pictures are not in the story, so exactly one choice is right. */
+const ST7 = {
+  stages: [
+    {id: 'cvc', stop: 'pic1'},
+    {id: 'blend', stop: 'pic2'},
+    {id: 'digraph', stop: 'sound4'},
+    {id: 'silente', stop: 'pic3'},
+    {id: 'team', stop: 'pic4'},
+    {id: 'rvowel', stop: 'pic5'},
+    {id: 'team2', stop: 'pic6'},
+  ],
+  list: [
+    // Letter Meadow (K), after Picture Words: short vowels, one consonant each side
+    {id: 'cvc-1', st: 'cvc', t: 'Pig in the Mud', pic: 'pig', s: ['Pig is in the mud.', 'Pig can sit in the mud.', 'Pig can dig in the mud.', 'A cat ran up.', '“Not me!” said the cat.'],
+      q: [['Who is in the mud?', 'pig', ['dog', 'hen']], ['Who ran up?', 'cat', ['duck', 'cow']]]},
+    {id: 'cvc-2', st: 'cvc', t: 'The Big Red Bus', pic: 'bus', s: ['Gus has a big red bus.', 'A cat gets on.', 'A dog gets on.', 'A big pig gets on.', 'The bus can not go!'],
+      q: [['What does Gus have?', 'bus', ['car', 'truck']], ['Who gets on last?', 'pig', ['cow', 'duck']]]},
+    {id: 'cvc-3', st: 'cvc', t: 'Hen and the Egg', pic: 'hen', s: ['Hen has an egg.', 'Hen sits and sits.', 'Tap, tap, tap!', 'Up pops a little hen.', 'Hen hugs the little hen.'],
+      q: [['What does Hen sit on?', 'egg', ['ball', 'hat']]]},
+    {id: 'cvc-4', st: 'cvc', t: 'Max the Fox', pic: 'fox', s: ['Max is a fox.', 'Max has a big red hat.', 'Max sets the hat on a cat.', 'Max sets the hat on a pig.', 'It is a hat for a fox!'],
+      q: [['Who is Max?', 'fox', ['dog', 'cow']], ['What does Max have?', 'hat', ['cup', 'sock']]]},
+    {id: 'cvc-5', st: 'cvc', t: 'The Bug and the Rug', pic: 'bug', s: ['A red bug sat on a rug.', 'A big dog sat on the rug.', 'Run, bug, run!', 'The bug hid in a cup.', 'The dog can not see it.'],
+      q: [['Where did the bug hide?', 'cup', ['box', 'hat']], ['Who sat on the rug too?', 'dog', ['cat', 'pig']]]},
+    {id: 'cvc-6', st: 'cvc', t: 'Fun in the Sun', pic: 'sun', s: ['The sun is up.', 'Kim and Dad sit in the sun.', 'Dad has a hat on.', 'Kim has a hat on.', 'The dog has a hat on!', 'Kim, Dad and the dog nap.'],
+      q: [['What is up in the sky?', 'sun', ['moon', 'star']], ['Who has a hat on too?', 'dog', ['cat', 'hen']]]},
+    // Candy Canyon (1st), after Blends: fr, st, nd, mp ..., ng and nk
+    {id: 'blend-1', st: 'blend', t: 'Frog on a Log', pic: 'frog', s: ['A frog sits on a log.', 'A crab swims past.', '“Can you jump?” the frog asks.', '“Not me!” the crab yells.', 'The frog jumps into the pond.', 'Plop!'],
+      q: [['Who sits on the log?', 'frog', ['fish', 'bird']], ['Who swims past?', 'crab', ['duck', 'turtle']]]},
+    {id: 'blend-2', st: 'blend', t: 'The Crab Band', pic: 'crab', s: ['Brad the crab has a red drum.', 'Bam! Bam! Bam!', 'A frog hops up.', 'A bug hops up.', 'They all clap and stomp.', 'It is a crab band!'],
+      q: [['What does Brad have?', 'drum', ['bell', 'guitar']], ['Who is Brad?', 'crab', ['fish', 'turtle']]]},
+    {id: 'blend-3', st: 'blend', t: 'A Gift for Gran', pic: 'gift', s: ['Fran has a gift for Gran.', 'The gift is in a big box.', 'Is it a mug?', 'Gran lifts the lid.', 'It is a drum!', 'Bam, bam, bam!'],
+      q: [['What is in the box?', 'drum', ['bell', 'ball']]]},
+    {id: 'blend-4', st: 'blend', t: 'The Wet Tent', pic: 'tent', s: ['Brent and Dad set up a tent.', 'They get in the tent.', 'Drip, drop, drip!', 'The tent gets wet.', 'Brent and Dad still grin.', 'It is fun to camp!'],
+      q: [['Where do Brent and Dad sit?', 'tent', ['house', 'car']]]},
+    {id: 'blend-5', st: 'blend', t: 'Glen Can Do It', pic: 'hand', s: ['Glen can do a handstand.', 'His legs go up.', 'His hands go flat.', 'Glen spins.', 'Flop!', 'Glen lands on the grass and grins.'],
+      q: [['What goes flat on the grass?', 'hand', ['foot', 'ear']]]},
+    {id: 'blend-6', st: 'blend', t: 'Spill!', pic: 'milk', s: ['Stef has milk in a cup.', 'The cat jumps up on the desk.', 'Spill!', 'The milk drips on the rug.', 'The cat drinks it up fast.', 'Stef grins at the cat.'],
+      q: [['What does Stef have in the cup?', 'milk', ['water', 'apple']], ['Who drinks it up?', 'cat', ['dog', 'fish']]]},
+    // Candy Canyon (1st), after Letter Teams: sh ch th wh ck
+    {id: 'digraph-1', st: 'digraph', t: 'The Fish Wish', pic: 'fish', s: ['Seth has a fish.', 'The fish is in a dish.', 'The fish looks at the big pond.', '“I wish I had a pond,” said the fish.', 'Seth and Mom let it swim in the pond.', 'Splash!'],
+      q: [['What does Seth have?', 'fish', ['bird', 'cat']], ['What is the fish in at the start?', 'dish', ['cup', 'box']]]},
+    {id: 'digraph-2', st: 'digraph', t: 'Chip the Chick', pic: 'chick', s: ['Chip is a little chick.', 'Chip pecks at a bug.', 'Chip pecks at a nut.', 'Chip pecks at Dad’s sock!', '“Stop that, Chip!” said Dad.'],
+      q: [['Who is Chip?', 'chick', ['duck', 'owl']], ['What does Chip peck on Dad?', 'sock', ['shoes', 'hat']]]},
+    {id: 'digraph-3', st: 'digraph', t: 'Josh and the Ship', pic: 'ship', s: ['Josh has a red ship.', 'The ship is in the tub.', 'Josh adds a shell.', 'The shell sits on the ship.', 'Then the ship tips!', 'Splash!'],
+      q: [['What sits on the ship?', 'shell', ['fish', 'ball']], ['Where is the ship?', 'tub', ['bed', 'box']]]},
+    {id: 'digraph-4', st: 'digraph', t: 'Thump in the Shed', pic: 'duck', s: ['Thump! Thud!', 'What is in the shed?', 'Beth and Chad check.', 'It is not a moth.', 'It is a duck with a drum!'],
+      q: [['What is in the shed?', 'duck', ['cat', 'horse']], ['What does the duck have?', 'drum', ['bell', 'ball']]]},
+    {id: 'digraph-5', st: 'digraph', t: 'No Bun for Whit', pic: 'dog', s: ['Whit packs a bun for lunch.', 'He sits on a bench.', 'His dog sniffs the bun.', 'Munch, munch!', 'No bun for Whit!'],
+      q: [['Who gets the bun?', 'dog', ['cat', 'bird']]]},
+    {id: 'digraph-6', st: 'digraph', t: 'The Thin Moth', pic: 'lamp', s: ['A thin moth sits on a lamp.', 'Click!', 'The lamp is on.', 'The moth spins and spins.', 'Click!', 'The lamp is off, and the moth can rest.'],
+      q: [['What does the moth sit on?', 'lamp', ['chair', 'door']]]},
+    // Ocean Reef (1st), after Silent E
+    {id: 'silente-1', st: 'silente', t: 'Kate and the Kite', pic: 'kite', s: ['Kate has a red kite.', 'Kate and Mike run up a hill.', 'The kite rises up, up, up!', 'Then it dives.', 'It lands on Mike’s nose!', 'Mike smiles.'],
+      q: [['What does Kate have?', 'kite', ['balloon', 'ball']], ['Where does the kite land?', 'nose', ['hand', 'foot']]]},
+    {id: 'silente-2', st: 'silente', t: 'A Cake for Mom', pic: 'cake', s: ['Jake bakes a cake for Mom.', 'He puts grapes on top.', 'The dog wakes up.', 'It sniffs the cake.', 'Then it takes a bite!', 'Jake has to bake a new cake.'],
+      q: [['What does Jake put on top?', 'grapes', ['banana', 'strawberry']], ['Who takes a bite?', 'dog', ['cat', 'mouse']]]},
+    {id: 'silente-3', st: 'silente', t: 'Pete Rides His Bike', pic: 'bike', s: ['Pete rides his bike to the lake.', 'He rides past a cat on a gate.', 'The cat smiles at Pete.', 'Pete smiles at the cat.', 'Then Pete rides home fast!'],
+      q: [['What does Pete ride?', 'bike', ['car', 'bus']], ['Who smiles at Pete?', 'cat', ['dog', 'horse']]]},
+    {id: 'silente-4', st: 'silente', t: 'Duke and the Bone', pic: 'bone', s: ['Rose has a dog.', 'His name is Duke.', 'Duke hides his bone in a hole.', 'Then he can not find it!', 'Rose and Duke dig and dig.', 'At last, there it is!'],
+      q: [['What does Duke hide?', 'bone', ['ball', 'sock']]]},
+    {id: 'silente-5', st: 'silente', t: 'Dave and the Plane', pic: 'plane', s: ['Dave has a white plane.', 'Zip!', 'It glides up and up.', 'Then it glides down.', 'It lands on a cake at the picnic!', 'Mom and Dave smile at the plane.'],
+      q: [['What does Dave have?', 'plane', ['car', 'rocket']], ['Where does the plane land?', 'cake', ['hat', 'box']]]},
+    {id: 'silente-6', st: 'silente', t: 'The Dice Game', pic: 'dice', s: ['Lin and Gabe play a game with dice.', 'Lin tosses five and five.', 'Gabe tosses six and six!', '“I win!” yells Gabe.', 'Lin smiles.', '“Let us play again!”'],
+      q: [['What do Lin and Gabe play with?', 'dice', ['ball', 'crayon']]]},
+    // Space Station (2nd), after Vowel Teams: ai ay ee ea oa
+    {id: 'team-1', st: 'team', t: 'The Sheep in the Boat', pic: 'boat', s: ['A sheep gets in a boat.', 'The boat floats on the sea.', 'A big wave rocks the boat.', 'The sheep keeps eating oats.', 'What a brave sheep!'],
+      q: [['Who is in the boat?', 'sheep', ['cow', 'horse']], ['What is the sheep in?', 'boat', ['car', 'train']]]},
+    {id: 'team-2', st: 'team', t: 'A Wet Day', pic: 'coat', s: ['It rains and rains.', 'Gail has a red coat.', 'Dean has a green coat.', 'They jump and splash in the rain.', 'Then the sun peeks out.', 'What a fun day!'],
+      q: [['What does Gail have on?', 'coat', ['shirt', 'dress']], ['What peeks out?', 'sun', ['moon', 'cloud']]]},
+    {id: 'team-3', st: 'team', t: 'Bea the Bee', pic: 'bee', s: ['Bea the bee sleeps on a leaf.', 'The leaf is in a tree.', 'Then the leaf drops.', 'Bea wakes up on a sheep!', 'The sheep eats the leaf.', 'Bea zips away.'],
+      q: [['What does Bea sleep on?', 'leaf', ['flower', 'apple']], ['Where does Bea wake up?', 'sheep', ['cow', 'horse']]]},
+    {id: 'team-4', st: 'team', t: 'Jay and the Train', pic: 'train', s: ['Jay and Dad wait for the train.', 'Here it is!', 'They get on and sit in a seat.', 'The train speeds past green trees.', 'Jay waves at a sheep.', 'The sheep just eats.'],
+      q: [['What do Jay and Dad ride?', 'train', ['bus', 'plane']], ['Who does Jay wave at?', 'sheep', ['cow', 'horse']]]},
+    {id: 'team-5', st: 'team', t: 'Ray and the Soap', pic: 'soap', s: ['Ray has mud on his feet.', 'Mom hands him the soap.', 'Scrub, scrub, scrub!', 'The soap slips and sails into the pail.', 'Splash!', 'Now Ray has clean feet.'],
+      q: [['What slips?', 'soap', ['shoes', 'cup']], ['What has mud on it?', 'feet', ['nose', 'ear']]]},
+    {id: 'team-6', st: 'team', t: 'A Goat on the Road', pic: 'road', s: ['Neal and Gran go on a road trip.', 'They eat peanuts and sing.', 'Then a goat sits on the road!', 'Beep, beep!', 'The goat just sits.', 'So Neal and Gran eat peanuts and wait.'],
+      q: [['Where does the goat sit?', 'road', ['beach', 'school']]]},
+    // Space Station (2nd), after Bossy R: ar or er ir ur
+    {id: 'rvowel-1', st: 'rvowel', t: 'A Star for Bart', pic: 'star', s: ['Bart sits in the yard after dark.', 'He looks up and sees the first star.', 'Bart makes a wish for a pet shark.', 'The next day, Mom gets him a fish.', 'It is a start!'],
+      q: [['What does Bart see?', 'star', ['moon', 'sun']], ['What does Mom get Bart?', 'fish', ['dog', 'turtle']]]},
+    {id: 'rvowel-2', st: 'rvowel', t: 'Fern the Bird', pic: 'bird', s: ['Fern is a bird.', 'She has a nest in a birch tree.', 'Fern chirps to her three chicks.', 'The chicks chirp back.', 'Chirp, chirp, chirp!', 'It is a bird song.'],
+      q: [['Who is Fern?', 'bird', ['butterfly', 'bee']], ['Where is the nest?', 'tree', ['house', 'car']]]},
+    {id: 'rvowel-3', st: 'rvowel', t: 'Corn on the Farm', pic: 'storm', s: ['Norm has a farm with lots of corn.', 'Then a storm starts.', 'Norm runs to the barn.', 'Thunder!', 'The corn gets lots of rain.', 'Now the corn is up to Norm’s chin!'],
+      q: [['What comes to the farm?', 'storm', ['snowman', 'rainbow']]]},
+    {id: 'rvowel-4', st: 'rvowel', t: 'The Jam Star', pic: 'shirt', s: ['Kirk has a shirt with a star on it.', 'At lunch, he drips jam on the shirt.', 'Kirk and Mom scrub and scrub.', 'The jam spot is still there.', 'So Mom turns it into a jam star.', 'Now Kirk has two stars!'],
+      q: [['What does Kirk drip jam on?', 'shirt', ['pants', 'hat']], ['What is on the shirt?', 'star', ['moon', 'sun']]]},
+    {id: 'rvowel-5', st: 'rvowel', t: 'The Car Race', pic: 'car', s: ['Mark and Herb have a car race.', 'Herb’s car is fast.', 'Mark’s car is faster.', 'Then Mark’s car tips over!', 'Herb stops his car to help him.', 'They cross the line side by side.'],
+      q: [['What do Mark and Herb race?', 'car', ['bike', 'train']]]},
+    {id: 'rvowel-6', st: 'rvowel', t: 'The Fort', pic: 'torch', s: ['Barb and Kurt make a fort.', 'They hang a sheet on top.', 'They tell jokes by a torch.', 'Then the dog barks and jumps in!', 'The fort tips over.', 'Barb, Kurt and the dog are in a heap.'],
+      q: [['What is in the fort?', 'torch', ['lamp', 'crayon']], ['Who jumps in?', 'dog', ['cat', 'rabbit']]]},
+    // Word Workshop (2nd), after Vowel Teams 2: oo ou ow oi oy aw ew
+    {id: 'team2-1', st: 'team2', t: 'Brook and the Moon', pic: 'moon', s: ['Brook looks out at the moon.', 'It is big and round.', 'She holds up her spoon.', '“I will scoop up the moon!”', 'Brook and Mom laugh and laugh.'],
+      q: [['What does Brook hold up?', 'spoon', ['cup', 'pencil']], ['What does Brook look at?', 'moon', ['sun', 'star']]]},
+    {id: 'team2-2', st: 'team2', t: 'A Mouse in the House', pic: 'mouse', s: ['A brown mouse lives in our house.', 'One day it sneaks out of its hole.', 'It finds a crust of toast on the couch.', '“Wow!” it shouts.', '“A feast!”', 'Then it sees the cat and zooms home!'],
+      q: [['Who lives in the house?', 'mouse', ['rabbit', 'bird']], ['Who does the mouse see?', 'cat', ['dog', 'owl']]]},
+    {id: 'team2-3', st: 'team2', t: 'The Cow and the Owl', pic: 'owl', s: ['A cow and an owl live on a farm.', 'The cow eats grass all day.', 'The owl sleeps all day.', 'When the moon comes up, the owl hoots and hoots.', 'The cow can not sleep!', 'So now the cow naps in the day, too.'],
+      q: [['Who hoots?', 'owl', ['duck', 'frog']], ['Who naps in the day now?', 'cow', ['horse', 'sheep']]]},
+    {id: 'team2-4', st: 'team2', t: 'The Toy Boat', pic: 'boat', s: ['Roy has a toy boat.', 'He sails it on the pool.', 'Oops, the boat floats away!', 'Then his dog jumps in with a splash.', 'The dog swims and brings the boat back to Roy.', 'What a good dog!'],
+      q: [['What does Roy have?', 'boat', ['car', 'kite']], ['Who brings the boat back?', 'dog', ['cat', 'duck']]]},
+    {id: 'team2-5', st: 'team2', t: 'Drew Draws', pic: 'crayon', s: ['Drew likes to draw.', 'He draws a crown.', 'He draws a clown with a red nose.', 'Then he draws a cow that jumps over the moon!', 'Gran tapes them up in her room.'],
+      q: [['What does Drew like to do?', 'draw', ['guitar', 'ball']], ['What jumps over the moon?', 'cow', ['sheep', 'horse']]]},
+    {id: 'team2-6', st: 'team2', t: 'Scout and the Hawk', pic: 'dog', s: ['Scout is a brown hound.', 'He digs a bone out of the ground.', 'Then a hawk swoops down and grabs it!', 'Scout howls and howls.', 'The hawk drops the bone.', 'Scout has his bone back.'],
+      q: [['Who grabs the bone?', 'hawk', ['cat', 'frog']], ['What does Scout dig up?', 'bone', ['ball', 'shoes']]]},
+  ],
+};

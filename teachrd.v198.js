@@ -1,6 +1,6 @@
-/* Whistlestop teachrd v198. BUILT by tools/build.py from 52k-teach4.css, 52q-teach5r.css, 52k-words4.js, 52l-bench4.js, 52m-lessons4.js, 52p-lessons4b.js, 52q-bench5r.js, 52r-lessons5r.js: never edit by hand.
+/* Whistlestop teachrd v198. BUILT by tools/build.py from 52k-teach4.css, 52q-teach5r.css, 52x-story7.css, 52k-words4.js, 52l-bench4.js, 52m-lessons4.js, 52p-lessons4b.js, 52q-bench5r.js, 52r-lessons5r.js, 52w-story7d.js, 52x-story7.js: never edit by hand.
    index.html v198 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v198.js. */
-(function(){var s=document.createElement('style');s.id='css-teachrd';s.textContent="/* TEACH-4: the reading and Pre-K lessons (52l-bench4.js, 52m-lessons4.js, part teachrd): the reading map's colours on the lesson screen,\n   the letter big on the card, word boxes with a letter missing, the pet's letters in Check me, pictures with their words. Tokens only. */\n.ls-top.s-read .ls-pip.on{background:var(--read);color:var(--surface)}\n.ls-top.s-read .ls-pip.now{background:var(--read-tint);color:var(--read-shade);box-shadow:inset 0 0 0 3px var(--read)}\n.ls4-pic{display:inline-flex;align-items:center;justify-content:center;line-height:1}\n.ls4-pic .art{display:block}\n.ls4-big{font-size:var(--fs-7);font-weight:700;line-height:1.1;color:var(--ink);background:var(--read-tint);border-radius:var(--r-card);padding:0 var(--s-4);min-width:1.6em;text-align:center}\n.ls4-row{display:flex;gap:var(--s-4);justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-top:var(--s-2)}\n.ls4-m{font-size:clamp(48px,14vmin,88px)}\n.ls4-nw{display:flex;flex-direction:column;align-items:center;gap:var(--s-1)}\n.ls4-wd{font-size:var(--fs-5);font-weight:700;color:var(--ink);letter-spacing:.04em}\n.ls4-wd b{color:var(--read-shade);text-decoration:underline;text-underline-offset:.15em}\n.ls4-gap{align-items:flex-end}\n.ls4-l{font-size:calc(clamp(36px,9vmin,72px)*var(--k));font-weight:700;line-height:1.35;color:var(--ink)}\n.ls.ls4-f{color:var(--ink);font-weight:700}\n.ls-pw.ls4-pw .ls,.ls4-gap .ls.ls4-f{background:var(--star-tint)}\n.ls4-pick{margin-top:var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center}\n.ls4-pk{display:inline-flex;align-items:center;justify-content:center;min-width:64px;min-height:64px;padding:var(--s-1);font-size:clamp(32px,6vh,52px);font-weight:700;color:var(--ink);\n  background:var(--surface-2);border-radius:var(--r-card)}\n.ls4-pk.on{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n.ls4-pk .pks,.ls4-pk .art{width:1em;height:1em}\n.ls4-word{font-size:var(--fs-7);font-weight:700;color:var(--ink);letter-spacing:.06em;line-height:1.2}\n.ls4-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.35;max-width:22em}\n.choices.ls4-words{grid-template-columns:1fr}\n.choices.ls4-words .ch{font-size:var(--fs-6);font-weight:700;letter-spacing:.06em}\n.ls4-plate{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;max-width:100%;font-size:clamp(24px,6vmin,40px);line-height:1}\n.ls4-plate .pko{display:inline-flex}\n.choices.ls4-plates .ch{font-size:inherit;padding:var(--s-2)}\n.ls4-bl{display:block;font-size:var(--fs-2);font-weight:700;color:var(--ink)}\n.sbl .ls4-pic{font-size:36px}\n.ls4-strip{display:flex;gap:var(--s-1);justify-content:center;font-size:var(--fs-5);font-weight:700;color:var(--ink-2);margin-bottom:var(--s-1)}\n.ls4-strip span{min-width:1.3em;text-align:center;background:var(--surface-2);border-radius:var(--r-chip)}\n.ls4-strip .ls4-q{color:var(--read-shade);background:var(--read-tint)}\n.ls4-claps{font-size:var(--fs-6);display:flex;align-items:center;justify-content:center;gap:var(--s-2)}\n.ls4-claps .ic{width:.8em;height:.8em}\n@media (max-width:420px){.ls4-big{font-size:var(--fs-6)}.ls4-word{font-size:var(--fs-6)}.ls4-sent{font-size:var(--fs-4)}}\n/* READ-SHAPES (v184): the models of the K-2 reading lesson shapes (52q-bench5r.js, part teachrd): word cards, the flash card, claps, the\n   dictation ear, the story card, opposite pairs, the sentence fixer, word tiles. Tokens only; every button 48 px or more. */\n.ls5-cards{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;max-width:100%}\n.ls5-card{display:inline-flex;align-items:center;justify-content:center;min-width:72px;min-height:72px;padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-card);\n  background:var(--read);color:var(--surface);font:inherit;font-size:var(--fs-5);font-weight:700;letter-spacing:.04em;box-shadow:var(--shadow)}\nbutton.ls5-card{cursor:pointer}\n.ls5-card.up{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 3px var(--read)}\n.ls5-card.ls5-big{font-size:var(--fs-7);min-width:120px;min-height:96px}\n.ls5-card.ls5-no{opacity:.75}\n.ls5-bk .ic{width:30px;height:30px}\n.ls5-pair{display:flex;gap:var(--s-4);justify-content:center;align-items:center;flex-wrap:wrap}\n.ls5-fl{display:flex;gap:var(--s-3);align-items:center;justify-content:center}\n.ls5-flash{display:inline-block;opacity:1}\n.ls5-flash.go{animation:ls5f 2.6s ease-in forwards}\n@keyframes ls5f{0%,70%{opacity:1}100%{opacity:0}}\n@media (prefers-reduced-motion:reduce){.ls5-flash.go{animation:none}}\n.mmb.ls5-again,.mmb.ls5-say{min-width:48px;min-height:48px}\n.mmb.ls5-ear{min-width:64px;min-height:64px;background:var(--read-tint);color:var(--read-shade)}\n.ls5-dict{display:flex;justify-content:center;margin:var(--s-1) 0}\n.ls5-claps{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:center;min-height:48px;color:var(--read-shade)}\n.ls5-cl{display:inline-flex}\n.ls5-cl0{display:inline-block;width:48px;height:4px;border-radius:2px;background:var(--line)}\n.ls5-cn{font-size:var(--fs-4);font-weight:700;color:var(--ink);text-align:center}\n.ls5-cbs{display:flex;gap:var(--s-3);justify-content:center}\n.mmb.ls5-clapb{min-width:120px;min-height:64px;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;background:var(--read);color:var(--surface)}\n.ls5-story{display:flex;flex-direction:column;gap:var(--s-1);max-width:30em;margin:0 auto;text-align:left}\n.ls5-sl{display:flex;align-items:center;gap:var(--s-2);background:var(--surface-2);border-radius:var(--r-card);padding:var(--s-1) var(--s-2)}\n.ls5-st{flex:1;font-size:var(--fs-4);font-weight:700;color:var(--ink);line-height:1.3}\n.ls5-sp{display:inline-flex;gap:var(--s-1);font-size:clamp(32px,8vmin,48px)}\n.ls5-pr{display:flex;align-items:center;justify-content:center;gap:var(--s-3);flex-wrap:wrap}\n.ls5-ar{display:inline-flex;align-items:center;font-size:var(--fs-6);font-weight:700;color:var(--read-shade)}\n.ls5-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.4;text-align:center}\n.ls5-c1{display:inline-block;min-width:.7em;border-radius:var(--r-chip);background:var(--surface-2)}\n.ls5-c1.on{background:var(--star-tint);color:var(--read-shade)}\n.ls5-mk{display:inline-block;min-width:.8em;color:var(--ink-2);text-align:center}\n.ls5-mk.on{color:var(--read-shade);background:var(--star-tint);border-radius:var(--r-chip)}\n.ls5-sents2{display:flex;flex-direction:column;gap:var(--s-2)}\n.ls5-fix{display:flex;gap:var(--s-3);justify-content:center}\n.mmb.ls5-fb{min-width:64px;min-height:56px;font-size:var(--fs-5);font-weight:700}\n.choices.ls5-sents{grid-template-columns:1fr}\n.choices.ls5-sents .ch{font-size:var(--fs-4);font-weight:700;justify-content:flex-start;text-align:left}\n.ls5-tiles{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:flex-end;font-size:var(--fs-5);font-weight:700}\n.ls5-tile{background:var(--surface-2);border-radius:var(--r-chip);padding:0 var(--s-2);color:var(--ink)}\n.ls5-tag{font-size:var(--fs-2);font-weight:700;color:var(--read-shade);background:var(--read-tint);border-radius:var(--r-chip);padding:0 var(--s-2)}\n.ls5-two{display:flex;gap:var(--s-2);justify-content:center}\n.lslots.ls5-nb .ls{background:var(--surface-2)}\n@media (max-width:420px){.ls5-card.ls5-big{font-size:var(--fs-6)}.ls5-st{font-size:var(--fs-3)}.ls5-sent{font-size:var(--fs-4)}.ls5-card{min-width:64px;min-height:64px;font-size:var(--fs-4)}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+(function(){var s=document.createElement('style');s.id='css-teachrd';s.textContent="/* TEACH-4: the reading and Pre-K lessons (52l-bench4.js, 52m-lessons4.js, part teachrd): the reading map's colours on the lesson screen,\n   the letter big on the card, word boxes with a letter missing, the pet's letters in Check me, pictures with their words. Tokens only. */\n.ls-top.s-read .ls-pip.on{background:var(--read);color:var(--surface)}\n.ls-top.s-read .ls-pip.now{background:var(--read-tint);color:var(--read-shade);box-shadow:inset 0 0 0 3px var(--read)}\n.ls4-pic{display:inline-flex;align-items:center;justify-content:center;line-height:1}\n.ls4-pic .art{display:block}\n.ls4-big{font-size:var(--fs-7);font-weight:700;line-height:1.1;color:var(--ink);background:var(--read-tint);border-radius:var(--r-card);padding:0 var(--s-4);min-width:1.6em;text-align:center}\n.ls4-row{display:flex;gap:var(--s-4);justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-top:var(--s-2)}\n.ls4-m{font-size:clamp(48px,14vmin,88px)}\n.ls4-nw{display:flex;flex-direction:column;align-items:center;gap:var(--s-1)}\n.ls4-wd{font-size:var(--fs-5);font-weight:700;color:var(--ink);letter-spacing:.04em}\n.ls4-wd b{color:var(--read-shade);text-decoration:underline;text-underline-offset:.15em}\n.ls4-gap{align-items:flex-end}\n.ls4-l{font-size:calc(clamp(36px,9vmin,72px)*var(--k));font-weight:700;line-height:1.35;color:var(--ink)}\n.ls.ls4-f{color:var(--ink);font-weight:700}\n.ls-pw.ls4-pw .ls,.ls4-gap .ls.ls4-f{background:var(--star-tint)}\n.ls4-pick{margin-top:var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center}\n.ls4-pk{display:inline-flex;align-items:center;justify-content:center;min-width:64px;min-height:64px;padding:var(--s-1);font-size:clamp(32px,6vh,52px);font-weight:700;color:var(--ink);\n  background:var(--surface-2);border-radius:var(--r-card)}\n.ls4-pk.on{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n.ls4-pk .pks,.ls4-pk .art{width:1em;height:1em}\n.ls4-word{font-size:var(--fs-7);font-weight:700;color:var(--ink);letter-spacing:.06em;line-height:1.2}\n.ls4-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.35;max-width:22em}\n.choices.ls4-words{grid-template-columns:1fr}\n.choices.ls4-words .ch{font-size:var(--fs-6);font-weight:700;letter-spacing:.06em}\n.ls4-plate{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;max-width:100%;font-size:clamp(24px,6vmin,40px);line-height:1}\n.ls4-plate .pko{display:inline-flex}\n.choices.ls4-plates .ch{font-size:inherit;padding:var(--s-2)}\n.ls4-bl{display:block;font-size:var(--fs-2);font-weight:700;color:var(--ink)}\n.sbl .ls4-pic{font-size:36px}\n.ls4-strip{display:flex;gap:var(--s-1);justify-content:center;font-size:var(--fs-5);font-weight:700;color:var(--ink-2);margin-bottom:var(--s-1)}\n.ls4-strip span{min-width:1.3em;text-align:center;background:var(--surface-2);border-radius:var(--r-chip)}\n.ls4-strip .ls4-q{color:var(--read-shade);background:var(--read-tint)}\n.ls4-claps{font-size:var(--fs-6);display:flex;align-items:center;justify-content:center;gap:var(--s-2)}\n.ls4-claps .ic{width:.8em;height:.8em}\n@media (max-width:420px){.ls4-big{font-size:var(--fs-6)}.ls4-word{font-size:var(--fs-6)}.ls4-sent{font-size:var(--fs-4)}}\n/* READ-SHAPES (v184): the models of the K-2 reading lesson shapes (52q-bench5r.js, part teachrd): word cards, the flash card, claps, the\n   dictation ear, the story card, opposite pairs, the sentence fixer, word tiles. Tokens only; every button 48 px or more. */\n.ls5-cards{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;max-width:100%}\n.ls5-card{display:inline-flex;align-items:center;justify-content:center;min-width:72px;min-height:72px;padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-card);\n  background:var(--read);color:var(--surface);font:inherit;font-size:var(--fs-5);font-weight:700;letter-spacing:.04em;box-shadow:var(--shadow)}\nbutton.ls5-card{cursor:pointer}\n.ls5-card.up{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 3px var(--read)}\n.ls5-card.ls5-big{font-size:var(--fs-7);min-width:120px;min-height:96px}\n.ls5-card.ls5-no{opacity:.75}\n.ls5-bk .ic{width:30px;height:30px}\n.ls5-pair{display:flex;gap:var(--s-4);justify-content:center;align-items:center;flex-wrap:wrap}\n.ls5-fl{display:flex;gap:var(--s-3);align-items:center;justify-content:center}\n.ls5-flash{display:inline-block;opacity:1}\n.ls5-flash.go{animation:ls5f 2.6s ease-in forwards}\n@keyframes ls5f{0%,70%{opacity:1}100%{opacity:0}}\n@media (prefers-reduced-motion:reduce){.ls5-flash.go{animation:none}}\n.mmb.ls5-again,.mmb.ls5-say{min-width:48px;min-height:48px}\n.mmb.ls5-ear{min-width:64px;min-height:64px;background:var(--read-tint);color:var(--read-shade)}\n.ls5-dict{display:flex;justify-content:center;margin:var(--s-1) 0}\n.ls5-claps{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:center;min-height:48px;color:var(--read-shade)}\n.ls5-cl{display:inline-flex}\n.ls5-cl0{display:inline-block;width:48px;height:4px;border-radius:2px;background:var(--line)}\n.ls5-cn{font-size:var(--fs-4);font-weight:700;color:var(--ink);text-align:center}\n.ls5-cbs{display:flex;gap:var(--s-3);justify-content:center}\n.mmb.ls5-clapb{min-width:120px;min-height:64px;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;background:var(--read);color:var(--surface)}\n.ls5-story{display:flex;flex-direction:column;gap:var(--s-1);max-width:30em;margin:0 auto;text-align:left}\n.ls5-sl{display:flex;align-items:center;gap:var(--s-2);background:var(--surface-2);border-radius:var(--r-card);padding:var(--s-1) var(--s-2)}\n.ls5-st{flex:1;font-size:var(--fs-4);font-weight:700;color:var(--ink);line-height:1.3}\n.ls5-sp{display:inline-flex;gap:var(--s-1);font-size:clamp(32px,8vmin,48px)}\n.ls5-pr{display:flex;align-items:center;justify-content:center;gap:var(--s-3);flex-wrap:wrap}\n.ls5-ar{display:inline-flex;align-items:center;font-size:var(--fs-6);font-weight:700;color:var(--read-shade)}\n.ls5-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.4;text-align:center}\n.ls5-c1{display:inline-block;min-width:.7em;border-radius:var(--r-chip);background:var(--surface-2)}\n.ls5-c1.on{background:var(--star-tint);color:var(--read-shade)}\n.ls5-mk{display:inline-block;min-width:.8em;color:var(--ink-2);text-align:center}\n.ls5-mk.on{color:var(--read-shade);background:var(--star-tint);border-radius:var(--r-chip)}\n.ls5-sents2{display:flex;flex-direction:column;gap:var(--s-2)}\n.ls5-fix{display:flex;gap:var(--s-3);justify-content:center}\n.mmb.ls5-fb{min-width:64px;min-height:56px;font-size:var(--fs-5);font-weight:700}\n.choices.ls5-sents{grid-template-columns:1fr}\n.choices.ls5-sents .ch{font-size:var(--fs-4);font-weight:700;justify-content:flex-start;text-align:left}\n.ls5-tiles{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:flex-end;font-size:var(--fs-5);font-weight:700}\n.ls5-tile{background:var(--surface-2);border-radius:var(--r-chip);padding:0 var(--s-2);color:var(--ink)}\n.ls5-tag{font-size:var(--fs-2);font-weight:700;color:var(--read-shade);background:var(--read-tint);border-radius:var(--r-chip);padding:0 var(--s-2)}\n.ls5-two{display:flex;gap:var(--s-2);justify-content:center}\n.lslots.ls5-nb .ls{background:var(--surface-2)}\n@media (max-width:420px){.ls5-card.ls5-big{font-size:var(--fs-6)}.ls5-st{font-size:var(--fs-3)}.ls5-sent{font-size:var(--fs-4)}.ls5-card{min-width:64px;min-height:64px;font-size:var(--fs-4)}}\n/* STORIES-7: the story reader (52x-story7.js, part teachrd). Tokens only. Every word is a 48 px button (a tap says it); the word\n   being read is lit (.st7-on: a thick ring and a tint, no movement, so reduced motion and Calm mode need nothing more). Phone: the\n   picture over the words; wide and low (1024x600): the picture beside them. */\n.st7-shelf,.st7-story,.st7-quiz,.st7-end{padding:var(--s-3) var(--s-4) var(--s-6)}\n.st7-tip{margin:var(--s-2) auto var(--s-3);max-width:44em;text-align:center;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}\n.st7-sg{margin:0 auto var(--s-4);max-width:60em}\n.st7-sh{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-2);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--read-shade)}\n.st7-sh .ic{flex:none;color:var(--read)}\n.st7-sg.lock .st7-sh{color:var(--ink-2)}\n.st7-sg.lock .st7-sh .ic{color:var(--ink-3)}\n.st7-lk{margin:0;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}\n.st7-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-2)}\n.btn.st7-card{flex-direction:column;justify-content:center;gap:var(--s-1);min-height:120px;padding:var(--s-2);text-align:center;font-size:var(--fs-3);line-height:var(--lh-3)}\n.st7-cp{display:block;width:64px;height:64px}\n.st7-page{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto;max-width:60em}\n.st7-pic{width:112px;height:112px;flex:none}\n.st7-pic .art{display:block;width:100%;height:100%}\n.st7-body{width:100%}\n.st7-t,.st7-txt{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--s-1);margin:0}\n.st7-t{justify-content:center;margin-bottom:var(--s-2)}\n.st7-w{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:48px;padding:0 var(--s-1);border:0;border-radius:var(--r-chip);\n  background:transparent;color:var(--ink);font:inherit;font-family:var(--font-body);font-size:var(--fs-5);line-height:var(--lh-5);cursor:pointer}\n.st7-t .st7-w{font-family:var(--font-display);color:var(--read-shade);font-weight:700}\n.st7-w:focus-visible{outline:3px solid var(--brand);outline-offset:2px}\n.st7-w.st7-on{background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star-shade)}\n.st7-w.st7-past{color:var(--ink)}\n.st7-youmode .st7-w{box-shadow:inset 0 -3px 0 var(--read-tint)}\n.st7-youmode .st7-w.st7-heard{background:var(--read-tint);color:var(--ink)}\n.st7-act{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2);margin:0 auto}\n.st7-act .btn{min-height:var(--tap)}\n.st7-hide{display:none!important}\n.st7-qn{margin:0 0 var(--s-2);text-align:center;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}\n.st7-qp{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-2);margin:0 auto var(--s-4);max-width:40em}\n.st7-qt{margin:0;font-size:var(--fs-5);line-height:var(--lh-5);text-align:center;color:var(--ink)}\n.st7-quiz .inp{max-width:40em;margin:0 auto}\n.choices.st7-ch .ch{min-height:96px}\n.st7-end{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center}\n.st7-big{margin:0;font-family:var(--font-display);font-size:var(--fs-5);line-height:var(--lh-5);color:var(--read-shade)}\n@media (min-width:700px) and (max-height:700px){\n  .st7-page{flex-direction:row;align-items:flex-start}\n  .st7-pic{width:150px;height:150px}\n  .st7-t{justify-content:flex-start}\n  .st7-story{padding-top:var(--s-2)}\n  .st7-tip{margin:var(--s-2) auto}\n}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-4: the words of the drafted lessons the owner has reviewed (part teachrd) ----------
    BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft4, 52m-lessons4.js):
    never edit by hand. A draft that is not reviewed is never here, so its lesson is not live with its words (it runs on its hand-written fallback words). */
@@ -1418,5 +1418,360 @@ lsDraft4('vocab2', ls5Pairs('vocab2', 'Synonyms', 2, true, {idea: 'Some words me
   home: 'Ask {name} for another word for "happy".'}));
 lsDraft4('gram3', ls5Plural('gram3', 'Plurals', 2, {idea: 'More than one: add s, or es after x, s, sh, ch.', fb: 'Most words add s. Words like {a} add e and s.',
   home: 'Ask {name}: "One box, two what? One cat, two what?"'}));
+/* ---------- STORIES-7 (BEST-APP roadmap 7): the decodable mini-stories (part teachrd) ----------
+   DRAFTED, pending owner approval: docs/drafts/STORIES7-READ.md has every story, its words and its questions, and the status line
+   that turns the stories on (STORY7_ON, 42c-story7on.js, built by tools/build.py). Until then no child sees any of this.
+   ST7.stages  the phonics stages in reading-map order: id (tools/decode.js STAGES) and the stop the stage follows (its Stories stop
+               on the map stands right after it)
+   ST7.list    the stories: id, st (stage), t (title), pic (a drawing of ART: 16-art-a.js, src/data/d-art-*.js), s (3 to 6 short
+               sentences), q (1 or 2 picture questions: [question, the right picture, [two other pictures]])
+   Every word of every title and sentence uses only the letter-sound patterns taught up to its stage, or a sight word of a Sight Words
+   stop before it on the map: tools/decode.js checks this, and tools/test.js STORIES-7 runs it on every story.
+   None of the themes the parent ruled out (CONTENT-01), no brands, no real characters. The answer of a question is a word of its story; the other two
+   pictures are not in the story, so exactly one choice is right. */
+const ST7 = {
+  stages: [
+    {id: 'cvc', stop: 'pic1'},
+    {id: 'blend', stop: 'pic2'},
+    {id: 'digraph', stop: 'sound4'},
+    {id: 'silente', stop: 'pic3'},
+    {id: 'team', stop: 'pic4'},
+    {id: 'rvowel', stop: 'pic5'},
+    {id: 'team2', stop: 'pic6'},
+  ],
+  list: [
+    // Letter Meadow (K), after Picture Words: short vowels, one consonant each side
+    {id: 'cvc-1', st: 'cvc', t: 'Pig in the Mud', pic: 'pig', s: ['Pig is in the mud.', 'Pig can sit in the mud.', 'Pig can dig in the mud.', 'A cat ran up.', '“Not me!” said the cat.'],
+      q: [['Who is in the mud?', 'pig', ['dog', 'hen']], ['Who ran up?', 'cat', ['duck', 'cow']]]},
+    {id: 'cvc-2', st: 'cvc', t: 'The Big Red Bus', pic: 'bus', s: ['Gus has a big red bus.', 'A cat gets on.', 'A dog gets on.', 'A big pig gets on.', 'The bus can not go!'],
+      q: [['What does Gus have?', 'bus', ['car', 'truck']], ['Who gets on last?', 'pig', ['cow', 'duck']]]},
+    {id: 'cvc-3', st: 'cvc', t: 'Hen and the Egg', pic: 'hen', s: ['Hen has an egg.', 'Hen sits and sits.', 'Tap, tap, tap!', 'Up pops a little hen.', 'Hen hugs the little hen.'],
+      q: [['What does Hen sit on?', 'egg', ['ball', 'hat']]]},
+    {id: 'cvc-4', st: 'cvc', t: 'Max the Fox', pic: 'fox', s: ['Max is a fox.', 'Max has a big red hat.', 'Max sets the hat on a cat.', 'Max sets the hat on a pig.', 'It is a hat for a fox!'],
+      q: [['Who is Max?', 'fox', ['dog', 'cow']], ['What does Max have?', 'hat', ['cup', 'sock']]]},
+    {id: 'cvc-5', st: 'cvc', t: 'The Bug and the Rug', pic: 'bug', s: ['A red bug sat on a rug.', 'A big dog sat on the rug.', 'Run, bug, run!', 'The bug hid in a cup.', 'The dog can not see it.'],
+      q: [['Where did the bug hide?', 'cup', ['box', 'hat']], ['Who sat on the rug too?', 'dog', ['cat', 'pig']]]},
+    {id: 'cvc-6', st: 'cvc', t: 'Fun in the Sun', pic: 'sun', s: ['The sun is up.', 'Kim and Dad sit in the sun.', 'Dad has a hat on.', 'Kim has a hat on.', 'The dog has a hat on!', 'Kim, Dad and the dog nap.'],
+      q: [['What is up in the sky?', 'sun', ['moon', 'star']], ['Who has a hat on too?', 'dog', ['cat', 'hen']]]},
+    // Candy Canyon (1st), after Blends: fr, st, nd, mp ..., ng and nk
+    {id: 'blend-1', st: 'blend', t: 'Frog on a Log', pic: 'frog', s: ['A frog sits on a log.', 'A crab swims past.', '“Can you jump?” the frog asks.', '“Not me!” the crab yells.', 'The frog jumps into the pond.', 'Plop!'],
+      q: [['Who sits on the log?', 'frog', ['fish', 'bird']], ['Who swims past?', 'crab', ['duck', 'turtle']]]},
+    {id: 'blend-2', st: 'blend', t: 'The Crab Band', pic: 'crab', s: ['Brad the crab has a red drum.', 'Bam! Bam! Bam!', 'A frog hops up.', 'A bug hops up.', 'They all clap and stomp.', 'It is a crab band!'],
+      q: [['What does Brad have?', 'drum', ['bell', 'guitar']], ['Who is Brad?', 'crab', ['fish', 'turtle']]]},
+    {id: 'blend-3', st: 'blend', t: 'A Gift for Gran', pic: 'gift', s: ['Fran has a gift for Gran.', 'The gift is in a big box.', 'Is it a mug?', 'Gran lifts the lid.', 'It is a drum!', 'Bam, bam, bam!'],
+      q: [['What is in the box?', 'drum', ['bell', 'ball']]]},
+    {id: 'blend-4', st: 'blend', t: 'The Wet Tent', pic: 'tent', s: ['Brent and Dad set up a tent.', 'They get in the tent.', 'Drip, drop, drip!', 'The tent gets wet.', 'Brent and Dad still grin.', 'It is fun to camp!'],
+      q: [['Where do Brent and Dad sit?', 'tent', ['house', 'car']]]},
+    {id: 'blend-5', st: 'blend', t: 'Glen Can Do It', pic: 'hand', s: ['Glen can do a handstand.', 'His legs go up.', 'His hands go flat.', 'Glen spins.', 'Flop!', 'Glen lands on the grass and grins.'],
+      q: [['What goes flat on the grass?', 'hand', ['foot', 'ear']]]},
+    {id: 'blend-6', st: 'blend', t: 'Spill!', pic: 'milk', s: ['Stef has milk in a cup.', 'The cat jumps up on the desk.', 'Spill!', 'The milk drips on the rug.', 'The cat drinks it up fast.', 'Stef grins at the cat.'],
+      q: [['What does Stef have in the cup?', 'milk', ['water', 'apple']], ['Who drinks it up?', 'cat', ['dog', 'fish']]]},
+    // Candy Canyon (1st), after Letter Teams: sh ch th wh ck
+    {id: 'digraph-1', st: 'digraph', t: 'The Fish Wish', pic: 'fish', s: ['Seth has a fish.', 'The fish is in a dish.', 'The fish looks at the big pond.', '“I wish I had a pond,” said the fish.', 'Seth and Mom let it swim in the pond.', 'Splash!'],
+      q: [['What does Seth have?', 'fish', ['bird', 'cat']], ['What is the fish in at the start?', 'dish', ['cup', 'box']]]},
+    {id: 'digraph-2', st: 'digraph', t: 'Chip the Chick', pic: 'chick', s: ['Chip is a little chick.', 'Chip pecks at a bug.', 'Chip pecks at a nut.', 'Chip pecks at Dad’s sock!', '“Stop that, Chip!” said Dad.'],
+      q: [['Who is Chip?', 'chick', ['duck', 'owl']], ['What does Chip peck on Dad?', 'sock', ['shoes', 'hat']]]},
+    {id: 'digraph-3', st: 'digraph', t: 'Josh and the Ship', pic: 'ship', s: ['Josh has a red ship.', 'The ship is in the tub.', 'Josh adds a shell.', 'The shell sits on the ship.', 'Then the ship tips!', 'Splash!'],
+      q: [['What sits on the ship?', 'shell', ['fish', 'ball']], ['Where is the ship?', 'tub', ['bed', 'box']]]},
+    {id: 'digraph-4', st: 'digraph', t: 'Thump in the Shed', pic: 'duck', s: ['Thump! Thud!', 'What is in the shed?', 'Beth and Chad check.', 'It is not a moth.', 'It is a duck with a drum!'],
+      q: [['What is in the shed?', 'duck', ['cat', 'horse']], ['What does the duck have?', 'drum', ['bell', 'ball']]]},
+    {id: 'digraph-5', st: 'digraph', t: 'No Bun for Whit', pic: 'dog', s: ['Whit packs a bun for lunch.', 'He sits on a bench.', 'His dog sniffs the bun.', 'Munch, munch!', 'No bun for Whit!'],
+      q: [['Who gets the bun?', 'dog', ['cat', 'bird']]]},
+    {id: 'digraph-6', st: 'digraph', t: 'The Thin Moth', pic: 'lamp', s: ['A thin moth sits on a lamp.', 'Click!', 'The lamp is on.', 'The moth spins and spins.', 'Click!', 'The lamp is off, and the moth can rest.'],
+      q: [['What does the moth sit on?', 'lamp', ['chair', 'door']]]},
+    // Ocean Reef (1st), after Silent E
+    {id: 'silente-1', st: 'silente', t: 'Kate and the Kite', pic: 'kite', s: ['Kate has a red kite.', 'Kate and Mike run up a hill.', 'The kite rises up, up, up!', 'Then it dives.', 'It lands on Mike’s nose!', 'Mike smiles.'],
+      q: [['What does Kate have?', 'kite', ['balloon', 'ball']], ['Where does the kite land?', 'nose', ['hand', 'foot']]]},
+    {id: 'silente-2', st: 'silente', t: 'A Cake for Mom', pic: 'cake', s: ['Jake bakes a cake for Mom.', 'He puts grapes on top.', 'The dog wakes up.', 'It sniffs the cake.', 'Then it takes a bite!', 'Jake has to bake a new cake.'],
+      q: [['What does Jake put on top?', 'grapes', ['banana', 'strawberry']], ['Who takes a bite?', 'dog', ['cat', 'mouse']]]},
+    {id: 'silente-3', st: 'silente', t: 'Pete Rides His Bike', pic: 'bike', s: ['Pete rides his bike to the lake.', 'He rides past a cat on a gate.', 'The cat smiles at Pete.', 'Pete smiles at the cat.', 'Then Pete rides home fast!'],
+      q: [['What does Pete ride?', 'bike', ['car', 'bus']], ['Who smiles at Pete?', 'cat', ['dog', 'horse']]]},
+    {id: 'silente-4', st: 'silente', t: 'Duke and the Bone', pic: 'bone', s: ['Rose has a dog.', 'His name is Duke.', 'Duke hides his bone in a hole.', 'Then he can not find it!', 'Rose and Duke dig and dig.', 'At last, there it is!'],
+      q: [['What does Duke hide?', 'bone', ['ball', 'sock']]]},
+    {id: 'silente-5', st: 'silente', t: 'Dave and the Plane', pic: 'plane', s: ['Dave has a white plane.', 'Zip!', 'It glides up and up.', 'Then it glides down.', 'It lands on a cake at the picnic!', 'Mom and Dave smile at the plane.'],
+      q: [['What does Dave have?', 'plane', ['car', 'rocket']], ['Where does the plane land?', 'cake', ['hat', 'box']]]},
+    {id: 'silente-6', st: 'silente', t: 'The Dice Game', pic: 'dice', s: ['Lin and Gabe play a game with dice.', 'Lin tosses five and five.', 'Gabe tosses six and six!', '“I win!” yells Gabe.', 'Lin smiles.', '“Let us play again!”'],
+      q: [['What do Lin and Gabe play with?', 'dice', ['ball', 'crayon']]]},
+    // Space Station (2nd), after Vowel Teams: ai ay ee ea oa
+    {id: 'team-1', st: 'team', t: 'The Sheep in the Boat', pic: 'boat', s: ['A sheep gets in a boat.', 'The boat floats on the sea.', 'A big wave rocks the boat.', 'The sheep keeps eating oats.', 'What a brave sheep!'],
+      q: [['Who is in the boat?', 'sheep', ['cow', 'horse']], ['What is the sheep in?', 'boat', ['car', 'train']]]},
+    {id: 'team-2', st: 'team', t: 'A Wet Day', pic: 'coat', s: ['It rains and rains.', 'Gail has a red coat.', 'Dean has a green coat.', 'They jump and splash in the rain.', 'Then the sun peeks out.', 'What a fun day!'],
+      q: [['What does Gail have on?', 'coat', ['shirt', 'dress']], ['What peeks out?', 'sun', ['moon', 'cloud']]]},
+    {id: 'team-3', st: 'team', t: 'Bea the Bee', pic: 'bee', s: ['Bea the bee sleeps on a leaf.', 'The leaf is in a tree.', 'Then the leaf drops.', 'Bea wakes up on a sheep!', 'The sheep eats the leaf.', 'Bea zips away.'],
+      q: [['What does Bea sleep on?', 'leaf', ['flower', 'apple']], ['Where does Bea wake up?', 'sheep', ['cow', 'horse']]]},
+    {id: 'team-4', st: 'team', t: 'Jay and the Train', pic: 'train', s: ['Jay and Dad wait for the train.', 'Here it is!', 'They get on and sit in a seat.', 'The train speeds past green trees.', 'Jay waves at a sheep.', 'The sheep just eats.'],
+      q: [['What do Jay and Dad ride?', 'train', ['bus', 'plane']], ['Who does Jay wave at?', 'sheep', ['cow', 'horse']]]},
+    {id: 'team-5', st: 'team', t: 'Ray and the Soap', pic: 'soap', s: ['Ray has mud on his feet.', 'Mom hands him the soap.', 'Scrub, scrub, scrub!', 'The soap slips and sails into the pail.', 'Splash!', 'Now Ray has clean feet.'],
+      q: [['What slips?', 'soap', ['shoes', 'cup']], ['What has mud on it?', 'feet', ['nose', 'ear']]]},
+    {id: 'team-6', st: 'team', t: 'A Goat on the Road', pic: 'road', s: ['Neal and Gran go on a road trip.', 'They eat peanuts and sing.', 'Then a goat sits on the road!', 'Beep, beep!', 'The goat just sits.', 'So Neal and Gran eat peanuts and wait.'],
+      q: [['Where does the goat sit?', 'road', ['beach', 'school']]]},
+    // Space Station (2nd), after Bossy R: ar or er ir ur
+    {id: 'rvowel-1', st: 'rvowel', t: 'A Star for Bart', pic: 'star', s: ['Bart sits in the yard after dark.', 'He looks up and sees the first star.', 'Bart makes a wish for a pet shark.', 'The next day, Mom gets him a fish.', 'It is a start!'],
+      q: [['What does Bart see?', 'star', ['moon', 'sun']], ['What does Mom get Bart?', 'fish', ['dog', 'turtle']]]},
+    {id: 'rvowel-2', st: 'rvowel', t: 'Fern the Bird', pic: 'bird', s: ['Fern is a bird.', 'She has a nest in a birch tree.', 'Fern chirps to her three chicks.', 'The chicks chirp back.', 'Chirp, chirp, chirp!', 'It is a bird song.'],
+      q: [['Who is Fern?', 'bird', ['butterfly', 'bee']], ['Where is the nest?', 'tree', ['house', 'car']]]},
+    {id: 'rvowel-3', st: 'rvowel', t: 'Corn on the Farm', pic: 'storm', s: ['Norm has a farm with lots of corn.', 'Then a storm starts.', 'Norm runs to the barn.', 'Thunder!', 'The corn gets lots of rain.', 'Now the corn is up to Norm’s chin!'],
+      q: [['What comes to the farm?', 'storm', ['snowman', 'rainbow']]]},
+    {id: 'rvowel-4', st: 'rvowel', t: 'The Jam Star', pic: 'shirt', s: ['Kirk has a shirt with a star on it.', 'At lunch, he drips jam on the shirt.', 'Kirk and Mom scrub and scrub.', 'The jam spot is still there.', 'So Mom turns it into a jam star.', 'Now Kirk has two stars!'],
+      q: [['What does Kirk drip jam on?', 'shirt', ['pants', 'hat']], ['What is on the shirt?', 'star', ['moon', 'sun']]]},
+    {id: 'rvowel-5', st: 'rvowel', t: 'The Car Race', pic: 'car', s: ['Mark and Herb have a car race.', 'Herb’s car is fast.', 'Mark’s car is faster.', 'Then Mark’s car tips over!', 'Herb stops his car to help him.', 'They cross the line side by side.'],
+      q: [['What do Mark and Herb race?', 'car', ['bike', 'train']]]},
+    {id: 'rvowel-6', st: 'rvowel', t: 'The Fort', pic: 'torch', s: ['Barb and Kurt make a fort.', 'They hang a sheet on top.', 'They tell jokes by a torch.', 'Then the dog barks and jumps in!', 'The fort tips over.', 'Barb, Kurt and the dog are in a heap.'],
+      q: [['What is in the fort?', 'torch', ['lamp', 'crayon']], ['Who jumps in?', 'dog', ['cat', 'rabbit']]]},
+    // Word Workshop (2nd), after Vowel Teams 2: oo ou ow oi oy aw ew
+    {id: 'team2-1', st: 'team2', t: 'Brook and the Moon', pic: 'moon', s: ['Brook looks out at the moon.', 'It is big and round.', 'She holds up her spoon.', '“I will scoop up the moon!”', 'Brook and Mom laugh and laugh.'],
+      q: [['What does Brook hold up?', 'spoon', ['cup', 'pencil']], ['What does Brook look at?', 'moon', ['sun', 'star']]]},
+    {id: 'team2-2', st: 'team2', t: 'A Mouse in the House', pic: 'mouse', s: ['A brown mouse lives in our house.', 'One day it sneaks out of its hole.', 'It finds a crust of toast on the couch.', '“Wow!” it shouts.', '“A feast!”', 'Then it sees the cat and zooms home!'],
+      q: [['Who lives in the house?', 'mouse', ['rabbit', 'bird']], ['Who does the mouse see?', 'cat', ['dog', 'owl']]]},
+    {id: 'team2-3', st: 'team2', t: 'The Cow and the Owl', pic: 'owl', s: ['A cow and an owl live on a farm.', 'The cow eats grass all day.', 'The owl sleeps all day.', 'When the moon comes up, the owl hoots and hoots.', 'The cow can not sleep!', 'So now the cow naps in the day, too.'],
+      q: [['Who hoots?', 'owl', ['duck', 'frog']], ['Who naps in the day now?', 'cow', ['horse', 'sheep']]]},
+    {id: 'team2-4', st: 'team2', t: 'The Toy Boat', pic: 'boat', s: ['Roy has a toy boat.', 'He sails it on the pool.', 'Oops, the boat floats away!', 'Then his dog jumps in with a splash.', 'The dog swims and brings the boat back to Roy.', 'What a good dog!'],
+      q: [['What does Roy have?', 'boat', ['car', 'kite']], ['Who brings the boat back?', 'dog', ['cat', 'duck']]]},
+    {id: 'team2-5', st: 'team2', t: 'Drew Draws', pic: 'crayon', s: ['Drew likes to draw.', 'He draws a crown.', 'He draws a clown with a red nose.', 'Then he draws a cow that jumps over the moon!', 'Gran tapes them up in her room.'],
+      q: [['What does Drew like to do?', 'draw', ['guitar', 'ball']], ['What jumps over the moon?', 'cow', ['sheep', 'horse']]]},
+    {id: 'team2-6', st: 'team2', t: 'Scout and the Hawk', pic: 'dog', s: ['Scout is a brown hound.', 'He digs a bone out of the ground.', 'Then a hawk swoops down and grabs it!', 'Scout howls and howls.', 'The hawk drops the bone.', 'Scout has his bone back.'],
+      q: [['Who grabs the bone?', 'hawk', ['cat', 'frog']], ['What does Scout dig up?', 'bone', ['ball', 'shoes']]]},
+  ],
+};
+/* ---------- STORIES-7 (BEST-APP roadmap 7): the story reader (part teachrd) ----------
+   Gated: STORY7_ON (42c-story7on.js, BUILT from docs/drafts/STORIES7-READ.md) is 0 until the owner approves the stories, their words
+   and these screens; with 0 the reading map draws no Stories stop (st7At, 42c-story7.js) and nothing here is ever opened.
+   Where a child meets it: a Stories stop on the reading map right after each phonics stop (Picture Words, Blends, Letter Teams,
+   Silent E, Vowel Teams, Bossy R, Vowel Teams 2; ST7.stages). It opens with that stop's practice (st7OpenAt) and leads to the shelf
+   (ST7.shelf), which lists every stage's stories, the open ones to tap.
+   One story (ST7.open):
+     Read to me      every word of the title and the story lights up while it is spoken (st7Play). The clock is a timing array,
+                     one [start, end] in ms per word (st7Plan): from the story's recording when it has one (ST7A[id].t, with the file
+                     ST7A[id].f in audio/story/: none yet, the owner decides on recordings), else estimated from the words, and then
+                     the tablet's voice says one word at a time on that clock (a word waits for the voice to finish, never longer
+                     than three times its time).
+     Now you read it the words stay still; a tap on a word says it (any time, in any mode); "I read it!" when done.
+     Questions       1 or 2 picture questions (KIND.choice, the round's choice buttons, 49-kinds.js): a wrong picture is marked and
+                     greyed, the child tries again; then the end card (Read it again, More stories).
+   Nothing is saved: no stars, no game time, no change to the map. ST7R.rate speeds the read-along clock (tools/smoke.js). */
+const ST7W = { // every sentence these screens show or say: proposed wording in docs/drafts/STORIES7-READ.md (tools/test.js STORIES-7)
+  shelf: 'Stories',
+  shelfTip: 'Pick a story. I read it to you, then you read it!',
+  locked: 'Opens with {stop}',
+  read: 'Read to me',
+  stop: 'Stop',
+  you: 'Now you read it',
+  done: 'I read it!',
+  tipStart: 'Tap Read to me. Each word lights up as I say it.',
+  tipRead: 'Look at each word as I say it.',
+  tipAfter: 'Now you read it!',
+  tipYou: 'Read the story. Tap a word if you need help.',
+  qn: 'Question {n} of {all}',
+  hear: 'Hear it',
+  right: 'Yes! That is right.',
+  wrong: 'Not that one. Look at the story again.',
+  end: 'You read {title}!',
+  again: 'Read it again',
+  more: 'More stories',
+};
+const ST7R = {rate: 1, gen: 0, mode: '', st: null, ws: null, plan: null, qi: 0};
+const st7F = (s, o) => String(s).replace(/\{(\w+)\}/g, (m, k) => (k in o ? o[k] : m));
+const st7Idx = stop => NODES.read.findIndex(n => nid(n) == stop);
+const st7Name = stop => { const i = st7Idx(stop); return i >= 0 ? NODES.read[i].t : stop; };
+const st7Ok = stop => { const i = st7Idx(stop); return i >= 0 && st7OpenAt(i); };
+const st7Get = id => ST7.list.find(s => s.id == id);
+// the words of a story, title first: {w: as shown, k: as said, s: -1 for the title or the sentence's index, end: last of its line}
+function st7Words(st) {
+  const out = [];
+  [st.t].concat(st.s).forEach((line, li) => {
+    const ts = line.split(/\s+/).filter(Boolean);
+    ts.forEach((w, j) => out.push({w, k: w.replace(/[^A-Za-z'’]/g, '').replace(/’/g, "'"), s: li - 1, end: j == ts.length - 1}));
+  });
+  return out;
+}
+// the read-along clock: [start, end] in ms for each word. A recording's own times when they fit its words, else an estimate:
+// 320 ms and 60 ms a letter per word, 140 ms between words, 500 ms after a sentence, 700 ms after the title
+function st7Plan(st) {
+  const ws = st7Words(st), rec = typeof ST7A != 'undefined' && ST7A[st.id];
+  if (rec && Array.isArray(rec.t) && rec.t.length == ws.length) return rec.t.map(x => [+x[0], +x[1]]);
+  let t = 0;
+  return ws.map(w => { const d = 320 + 60 * w.k.length, a = [t, t + d]; t += d + (w.end ? (w.s < 0 ? 700 : 500) : 140); return a; });
+}
+// the word lit at ms (for a recording's clock: its currentTime); -1 between words
+const st7Lit = (plan, ms) => plan.findIndex(x => ms >= x[0] && ms < x[1]);
+// the picture choices of question k of a story: always the same order for the same story (no random draw)
+function st7Q(st, k) {
+  const q = st.q[k], all = [q[1]].concat(q[2]), r = [...(st.id + k)].reduce((a, c) => a + c.charCodeAt(0), 0) % all.length;
+  const ch = all.slice(r).concat(all.slice(0, r));
+  return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: picFor(w), v: w, h: true, w}))};
+}
+const st7Btns = ws => ws.map((w, i) => `<button class="st7-w" data-i="${i}">${esc(w.w)}</button>`);
+
+ST7.shelf = function (stop) {
+  st7Halt();
+  const card = st => `<button class="btn st7-card" data-st="${esc(st.id)}"><span class="st7-cp" aria-hidden="true">${picArt(st.pic, 64)}</span><span>${esc(st.t)}</span></button>`;
+  const secs = ST7.stages.map(sg => {
+    const ok = st7Ok(sg.stop), list = ST7.list.filter(s => s.st == sg.id), nm = st7Name(sg.stop);
+    return `<section class="st7-sg${ok ? '' : ' lock'}" data-stop="${esc(sg.stop)}"><h2 class="st7-sh">${ico(ok ? 'skill-story' : 'lock', 28)}<span>${esc(nm)}</span></h2>`
+      + (ok ? `<div class="st7-grid">${list.map(card).join('')}</div>` : `<p class="st7-lk">${esc(st7F(ST7W.locked, {stop: nm}))}</p>`) + '</section>';
+  }).join('');
+  view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(ST7W.shelf)}</span></div></div>`
+    + `<div class="scroll st7-shelf" id="st7s"><p class="sub st7-tip">${esc(ST7W.shelfTip)}</p>${secs}</div>`);
+  $('#back').onclick = () => { SFX.click(); pathMap('read'); };
+  $$('.st7-card').forEach(b => b.onclick = () => { SFX.whoosh(); ST7.open(b.dataset.st); });
+  const sec = stop && $(`.st7-sg[data-stop="${stop}"]`);
+  if (sec && sec.scrollIntoView) sec.scrollIntoView({block: 'start'});
+  nrSay(ST7W.shelfTip, '#st7s');
+};
+
+ST7.open = function (id) {
+  const st = st7Get(id);
+  if (!st) return ST7.shelf();
+  st7Halt();
+  const ws = st7Words(st), b = st7Btns(ws), nt = st.t.split(/\s+/).filter(Boolean).length, sg = ST7.stages.find(x => x.id == st.st);
+  Object.assign(ST7R, {st, ws, plan: st7Plan(st), mode: ''});
+  view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(sg ? st7Name(sg.stop) : ST7W.shelf)}</span></div></div>`
+    + `<div class="scroll st7-story" id="st7"><div class="st7-page"><div class="st7-pic" aria-hidden="true">${picArt(st.pic, '100%')}</div>`
+    + `<div class="st7-body"><h2 class="st7-t">${b.slice(0, nt).join(' ')}</h2><p class="st7-txt">${b.slice(nt).join(' ')}</p></div></div>`
+    + `<p class="st7-tip" id="st7tip">${esc(ST7W.tipStart)}</p>`
+    + `<div class="st7-act">${UI.btn(ST7W.read, {kind: 'primary', size: 'lg', icon: 'speak', id: 'st7read'})}${UI.btn(ST7W.you, {size: 'lg', icon: 'eye', id: 'st7you'})}`
+    + `${UI.btn(ST7W.done, {kind: 'primary', size: 'lg', icon: 'check', id: 'st7done', cls: 'st7-hide'})}</div></div>`);
+  $('#back').onclick = () => { SFX.click(); ST7.shelf(sg && sg.stop); };
+  $('#st7read').onclick = () => st7Play();
+  $('#st7you').onclick = () => st7You();
+  $('#st7done').onclick = () => { st7Halt(); SFX.whoosh(); st7Quiz(0); };
+  $$('.st7-w').forEach(w => w.onclick = () => st7Tap(+w.dataset.i));
+  nrSay(ST7W.tipStart, '#st7');
+};
+function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) say(t); }
+function st7Light(i) {
+  for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
+  const e = $(`.st7-w[data-i="${i}"]`);
+  if (!e) return;
+  e.classList.add('st7-on');
+  for (const x of $$('.st7-w')) x.classList.toggle('st7-past', +x.dataset.i < i);
+  if (e.scrollIntoView) e.scrollIntoView({block: 'nearest'});
+}
+function st7Label(t) { const b = $('#st7read span'); if (b) b.textContent = t; }
+// stop the read-along (a new screen, Stop, Now you read it, a word tapped)
+function st7Halt(quiet) {
+  const was = ST7R.mode == 'play';
+  ST7R.gen++;
+  if (ST7R.au) { try { ST7R.au.pause(); } catch (e) {} ST7R.au = null; }
+  if (was) { try { hush(); } catch (e) {} }
+  if (ST7R.mode == 'play') ST7R.mode = '';
+  for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
+  for (const e of $$('.st7-w.st7-past')) e.classList.remove('st7-past');
+  st7Label(ST7W.read);
+  if (was && quiet === true) st7Tip(ST7W.tipStart);
+}
+// Read to me: one word at a time on the clock of st7Plan, the tablet's voice saying each word (a recording, when there is one)
+function st7Play() {
+  if (ST7R.mode == 'play') return st7Halt(true);
+  st7Halt();
+  const g = ST7R.gen, ws = ST7R.ws, plan = ST7R.plan, st = ST7R.st, rec = typeof ST7A != 'undefined' && ST7A[st.id];
+  ST7R.mode = 'play';
+  $('#st7').classList.remove('st7-youmode');
+  $('#st7done').classList.add('st7-hide');
+  st7Label(ST7W.stop);
+  st7Tip(ST7W.tipRead);
+  SFX.pop(1);
+  if (rec && rec.f && rec.t && rec.t.length == ws.length && typeof Audio != 'undefined') {
+    // a recording: the words follow its clock (built for the owner's later recordings: audio/story/<file>)
+    const a = ST7R.au = new Audio('audio/story/' + rec.f);
+    a.ontimeupdate = () => { if (g === ST7R.gen) { const k = st7Lit(plan, a.currentTime * 1000); if (k >= 0) st7Light(k); } };
+    a.onended = () => { if (g === ST7R.gen) st7End(); };
+    a.onerror = () => { if (g === ST7R.gen) { ST7R.au = null; st7Words1(g, 0); } };
+    a.play().catch(() => { if (g === ST7R.gen) { ST7R.au = null; st7Words1(g, 0); } });
+    return;
+  }
+  st7Words1(g, 0);
+}
+function st7Words1(g, i) {
+  const ws = ST7R.ws, plan = ST7R.plan, r = ST7R.rate || 1;
+  if (g !== ST7R.gen) return;
+  if (i >= ws.length) return st7End();
+  st7Light(i);
+  try { say(ws[i].k); } catch (e) {}
+  const d = (plan[i][1] - plan[i][0]) / r, gap = ((plan[i + 1] ? plan[i + 1][0] : plan[i][1]) - plan[i][1]) / r, tick = Math.max(10, Math.min(60, d / 4));
+  let el = 0;
+  const wait = () => {
+    if (g !== ST7R.gen) return;
+    el += tick;
+    let busy = false;
+    try { busy = speakBusy(); } catch (e) {}
+    if (el >= d && (!busy || el >= 3 * d)) setTimeout(() => st7Words1(g, i + 1), gap);
+    else setTimeout(wait, tick);
+  };
+  setTimeout(wait, tick);
+}
+function st7End() {
+  ST7R.gen++;
+  ST7R.mode = '';
+  st7Label(ST7W.read);
+  for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
+  for (const e of $$('.st7-w')) e.classList.add('st7-past');
+  st7Tip(ST7W.tipAfter, true);
+  bump('#st7you');
+}
+// Now you read it: the child reads; a tap on a word says it; I read it! at the end
+function st7You() {
+  st7Halt();
+  ST7R.mode = 'you';
+  for (const e of $$('.st7-w')) e.classList.remove('st7-past', 'st7-heard');
+  $('#st7').classList.add('st7-youmode');
+  const d = $('#st7done');
+  d.classList.remove('st7-hide');
+  SFX.pop(2);
+  st7Tip(ST7W.tipYou, true);
+  bump('#st7done');
+}
+function st7Tap(i) {
+  if (ST7R.mode == 'play') st7Halt(true);
+  const w = ST7R.ws && ST7R.ws[i], e = $(`.st7-w[data-i="${i}"]`);
+  if (!w || !e) return;
+  say(w.k);
+  e.classList.add('st7-heard');
+}
+// the picture questions, one at a time
+function st7Quiz(k) {
+  const st = ST7R.st;
+  if (!st) return ST7.shelf();
+  if (k >= st.q.length) return st7Fin();
+  ST7R.qi = k;
+  const q = st7Q(st, k);
+  view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(st.t)}</span></div></div>`
+    + `<div class="scroll st7-quiz" id="st7q"><p class="st7-qn">${esc(st7F(ST7W.qn, {n: k + 1, all: st.q.length}))}</p>`
+    + `<div class="st7-qp"><p class="st7-qt">${esc(q.say)}</p>${UI.btn(ST7W.hear, {size: 'sm', icon: 'speak', id: 'st7hear'})}</div>`
+    + `<div class="inp">${KIND.choice.render(q)}</div></div>`);
+  $$('#st7q .ch').forEach(b => b.setAttribute('aria-label', q.choices[+b.dataset.i].w));
+  $('#back').onclick = () => { SFX.click(); ST7.open(st.id); };
+  $('#st7hear').onclick = e => say(q.say, e.currentTarget);
+  let done = false;
+  KIND.choice.bind(q, {}, (v, el) => {
+    if (done || !el || el.disabled) return;
+    if (String(v) === String(q.ans)) {
+      done = true;
+      el.classList.add('right');
+      SFX.right(k);
+      fb(ST7W.right, 'good');
+      say(ST7W.right);
+      setTimeout(() => { if ($('#st7q')) st7Quiz(k + 1); }, 1300);
+    } else {
+      el.classList.add('wrong');
+      el.disabled = true;
+      SFX.wrong();
+      fb(ST7W.wrong, 'warn');
+      say(ST7W.wrong);
+    }
+  });
+  say(q.say);
+}
+function st7Fin() {
+  const st = ST7R.st, sg = ST7.stages.find(x => x.id == st.st), line = st7F(ST7W.end, {title: st.t});
+  view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(ST7W.shelf)}</span></div></div>`
+    + `<div class="scroll st7-end" id="st7e"><div class="st7-pic" aria-hidden="true">${picArt(st.pic, '100%')}</div><p class="st7-big">${esc(line)}</p>`
+    + `<div class="st7-act">${UI.btn(ST7W.again, {size: 'lg', icon: 'replay', id: 'st7again'})}${UI.btn(ST7W.more, {kind: 'primary', size: 'lg', icon: 'skill-story', id: 'st7more'})}</div></div>`);
+  $('#back').onclick = () => { SFX.click(); ST7.shelf(sg && sg.stop); };
+  $('#st7again').onclick = () => { SFX.whoosh(); ST7.open(st.id); };
+  $('#st7more').onclick = () => { SFX.whoosh(); ST7.shelf(sg && sg.stop); };
+  SFX.star();
+  say(line);
+}
 
 var TEACHRD_VER='v198'; // last line: the whole file ran (checked by dataReady() before the app starts)

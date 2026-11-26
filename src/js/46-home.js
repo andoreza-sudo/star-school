@@ -408,12 +408,12 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=!PLAY.locked()&&worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
     for(let i=a;i<=b;i++){if(i==pe){bands+=PLAY.bandHTML(y);y+=100} // sample fix: the grown-ups' unlock right after the sample's 5th stop
-      if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
+      if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106;if(st7At(p,i)){pts.push([W/2+Math.sin((i+.5)*1.15)*amp,y,i,2]);y+=106}} // STORIES-7: a Stories stop after a phonics stop (42c-story7.js); LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest||pl]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
-  const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W,allDone?-1:cur);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
+  const nodes=pts.map(([x,yy,i,ls])=>{if(ls==2)return st7NodeHTML(i,x,yy);if(ls)return lsNodeHTML(p,i,x,yy,W,allDone?-1:cur);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
     return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}${i==pe?' pl-end':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}${i==pe?`<i class="pl-es">${ico('star',18)}</i>`:''}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur&&!q[3]),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
@@ -423,7 +423,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   // G-PROPS: a learned lesson stop (lsLearned, 42b-lstop.js) passes job=true, and its world's job prop stands beside it (SCN.jobs)
   const tp=SCN.trailPts(pts),pet=cp?[cp[0]+side,cp[1]+18]:null;
   const scenes=wb.map(([wi,top,h,k0,k1,test])=>SCN.band(ws[wi],W,top,h,{test,trail:tp,pet,
-    stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls?[x,yy,'Learn with '+petN(),false,false,lsLearned(nid(N[i]))]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
+    stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls==2?[x,yy,'Stories',false,false,false]:ls?[x,yy,'Learn with '+petN(),false,false,lsLearned(nid(N[i]))]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
@@ -431,6 +431,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fbSay(`Learn it with ${petN()} first!`);return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
   $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}lsOpen(p,i)});
+  $$('.st7n').forEach(b=>b.onclick=()=>st7Go(+b.dataset.st7)); // STORIES-7
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)

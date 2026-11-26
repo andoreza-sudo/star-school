@@ -25599,6 +25599,177 @@ run('PARENT-11: Parent corner: the week\'s summary from fixture saves, dinner qu
   return{problems:p,note:'status '+st+' (PARENT_ON '+on+'); '+PCQ.reduce((t,g)=>t+g.q.length,0)+' dinner questions in '+PCQ.length+' groups ('+Object.entries(per).map(e=>e.join(' ')).join(', ')+'), '+Object.keys(PCW).length+' other sentences'};
 });
 
+// ---- STORIES-7 (BEST-APP roadmap 7): decodable mini-stories with read-along (src/js/52w-story7d.js, 52x-story7.js, part teachrd; the
+// Stories stop of the reading map, 42c-story7.js; the read-through docs/drafts/STORIES7-READ.md, its status line the gate STORY7_ON).
+// 1. the checker (tools/decode.js) is right about words it must pass and words it must refuse, at the right stage;
+// 2. every word of every title and sentence is decodable at its story's stage or a sight word taught before it on the reading map;
+//    6 to 8 stories per stage, 3 to 6 short sentences, each story practises its stage's pattern, a drawn picture, no banned theme;
+// 3. every word has its highlight span (a word button, data-i in order, the same text) and its [start, end] on the read-along clock;
+//    Read to me lights every word once, in order, on that clock, and says each word; a recording's word times replace the estimate;
+// 4. the questions: the answer is a word of the story, the two other pictures are not, all three are drawn, KIND.choice accepts it;
+//    a wrong tap does not move on, the right one does, the end card names the story;
+// 5. the gate: STORY7_ON is 1 exactly when the read-through is reviewed with a name and a date (the one-line flip, on a copy of the
+//    tree); off, no stop of any map has a Stories stop and only the map reaches the reader; the parts: index.html carries none of it;
+// 6. no network, tokens only; 7. determinism (the same plan, choices, lights and words every run); 8. the read-through shows exactly
+//    the app's stories, every sentence of the screens, and the audio estimate's counts.
+run('STORIES-7: decodable mini-stories, the checker, the read-along spans and clock, the questions, the gate, no network, determinism',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),D=require('./decode.js'),cpx=require('child_process'),os=require('os'),vm=require('vm');
+  const DOC='docs/drafts/STORIES7-READ.md',doc=rd(DOC),code=rd('src/js/52x-story7.js'),data=rd('src/js/52w-story7d.js'),css=rd('src/css/52x-story7.css'),hook=rd('src/js/42c-story7.js');
+  // 1. the checker
+  const want={cat:'cvc',cats:'cvc',egg:'cvc',hill:'cvc',gets:'cvc',"dad's":'cvc',frog:'blend',jumps:'blend',ring:'blend',picnic:'blend',rabbit:'blend',ship:'digraph',duck:'digraph',
+    that:'digraph',cake:'silente',ice:'silente',kite:'silente',rose:'silente',boat:'team',rain:'team',play:'team',eating:'team',cheese:'team',star:'rvowel',bird:'rvowel',horse:'rvowel',
+    moon:'team2',house:'team2',cow:'team2',draw:'team2',go:null,he:null,robot:null,lemon:null,was:null,ball:null,talk:null,cold:null,find:null,my:null,fire:null,more:null,
+    city:null,gem:null,page:null,baby:null,the:null,of:null,put:null,come:null,have:null,give:null,bread:null,want:null,work:null,sky:null,ear:null,hair:null,boxs:null};
+  for(const [w,e] of Object.entries(want)){const m=D.minStage(w),g=m<0?null:D.STAGES[m].id;if(g!==e)p.push('the checker: '+w+' decodes at '+g+', want '+e)}
+  // 2. the stories, in the app
+  const E=require('./es-audio.js'),T={now:0,q:[],seq:0};
+  const ctx=E.loadApp(null,{setTimeout:(f,ms)=>{T.q.push([T.now+(+ms||0),T.seq++,f]);return T.seq},clearTimeout(){},clearInterval(){},requestAnimationFrame:()=>0});
+  const R=x=>vm.runInContext(x,ctx);ctx.__T=T;
+  const tick=()=>{for(let g=0;g<200000&&T.q.length;g++){T.q.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const [t,,f]=T.q.shift();T.now=t;f()}};
+  R(`(()=>{const reg={},lit=[];globalThis.__lit=lit;globalThis.__said=[];globalThis.__sub=null;
+    const mk=sel=>({sel,dataset:{},style:{},innerHTML:'',textContent:'',disabled:false,classList:{s:new Set(),add(...c){c.forEach(x=>{this.s.add(x);if(x=='st7-on'){const m=/data-i="(\\d+)"/.exec(sel);if(m)lit.push([+m[1],__T.now])}})},
+      remove(...c){c.forEach(x=>this.s.delete(x))},toggle(){},contains(x){return this.s.has(x)}},setAttribute(){},removeAttribute(){},getAttribute(){return null},scrollIntoView(){},
+      querySelector:()=>null,querySelectorAll:()=>[],insertAdjacentHTML(){},addEventListener(){},getClientRects:()=>[],closest:()=>null});
+    globalThis.__reset=()=>{for(const k in reg)delete reg[k];lit.length=0;__said.length=0};
+    document.querySelector=s=>reg[s]||(reg[s]=mk(s));document.querySelectorAll=()=>[];globalThis.__reg=reg;
+    say=t=>{__said.push(String(t))};speakBusy=()=>false;nrSay=()=>false;fb=()=>{};S.sound=false;S.music=false;
+    const b0=KIND.choice.bind;KIND.choice.bind=(q,st,sub)=>{__sub=sub;return b0(q,st,sub)}})()`);
+  const ctxD={DOL:R('DOL'),readOrder:R('NODES.read.map(n=>nid(n))'),ST7:R('ST7')},ST=ctxD.ST7,ART=R('Object.keys(ART)');
+  if(JSON.stringify(ST.stages.map(s=>[s.id,s.stop]))!==JSON.stringify(D.STAGES.map(s=>[s.id,s.stop])))p.push('ST7.stages is not the checker\'s STAGES');
+  if(JSON.stringify(R('ST7_STOPS'))!==JSON.stringify(ST.stages.map(s=>s.stop)))p.push('ST7_STOPS (42c-story7.js) is not the stops of ST7.stages');
+  const at=ST.stages.map(s=>ctxD.readOrder.indexOf(s.stop));if(at.some(i=>i<0)||at.some((v,i)=>i&&v<=at[i-1]))p.push('a stage stop is not on the reading map, or not in map order: '+at);
+  const ids=new Set(),per={};let words=0;
+  for(const st of ST.list){
+    if(ids.has(st.id))p.push(st.id+' twice');ids.add(st.id);per[st.st]=(per[st.st]||0)+1;
+    if(!D.SI.hasOwnProperty(st.st))p.push(st.id+': unknown stage '+st.st);
+    const r=D.checkStory(st,ctxD);words+=r.words.length;
+    for(const b of r.bad)p.push(st.id+' "'+st.t+'": "'+b.w+'" is not decodable at '+st.st+' ('+b.why+')');
+    if(r.pattern.length<3)p.push(st.id+': only '+r.pattern.length+' words of its own pattern ('+r.pattern.join(', ')+')');
+    if(!(st.s.length>=3&&st.s.length<=6))p.push(st.id+': '+st.s.length+' sentences (3 to 6)');
+    for(const s of st.s.concat(st.t))if(s.split(/\s+/).length>10||!/^[“"]?[A-Z]/.test(s))p.push(st.id+': not a short sentence: '+s);
+    for(const s of st.s)if(!/[.!?][”"]?$/.test(s))p.push(st.id+': no end mark: '+s);
+    if(!ART.includes(st.pic))p.push(st.id+': no drawing '+st.pic);
+    if(/magic|spell(?!l)|evolution|wizard|witch/i.test([st.t,...st.s,...st.q.map(q=>q[0])].join(' ')))p.push(st.id+': a banned theme');
+  }
+  for(const s of D.STAGES)if(!(per[s.id]>=6&&per[s.id]<=8))p.push('stage '+s.id+' has '+(per[s.id]||0)+' stories (6 to 8)');
+  // 4. the questions
+  for(const st of ST.list){
+    const ws=new Set(D.storyWords(st).map(w=>w.replace(/'s$/,'')));
+    if(!(st.q.length>=1&&st.q.length<=2))p.push(st.id+': '+st.q.length+' questions');
+    st.q.forEach((q,k)=>{const [t,a,o]=q,all=[a,...o];
+      if(!/\?$/.test(t)||o.length!==2||new Set(all).size!==3)p.push(st.id+' q'+k+': '+JSON.stringify(q));
+      for(const w of all)if(!ART.includes(w))p.push(st.id+' q'+k+': no drawing for '+w);
+      if(!ws.has(a)&&!ws.has(a+'s'))p.push(st.id+' q'+k+': the answer '+a+' is not in the story');
+      for(const w of o)if(ws.has(w)||ws.has(w+'s'))p.push(st.id+' q'+k+': the wrong picture '+w+' is in the story, so two could be right');
+      const Q=JSON.parse(R(`JSON.stringify(st7Q(st7Get(${JSON.stringify(st.id)}),${k}))`));
+      const kp=R(`KIND.choice.validate(${JSON.stringify(Q)})`);if(kp.length)p.push(st.id+' q'+k+': '+kp.join('; '));
+      if(Q.ans!==a||Q.choices.filter(c=>c.v===a).length!==1||Q.choices.length!==3||Q.kind!=='choice'||!/pics/.test(Q.cls))p.push(st.id+' q'+k+': the choice question '+JSON.stringify(Q).slice(0,200));
+      if(R(`JSON.stringify(st7Q(st7Get(${JSON.stringify(st.id)}),${k}))`)!==JSON.stringify(Q))p.push(st.id+' q'+k+': the choices change order between runs');});
+  }
+  const pos=ST.list.flatMap(st=>st.q.map((q,k)=>R(`st7Q(st7Get(${JSON.stringify(st.id)}),${k}).choices.findIndex(c=>c.v==${JSON.stringify(q[1])})`)));
+  if([0,1,2].some(i=>pos.filter(x=>x===i).length<pos.length/6))p.push('the right picture is nearly always in the same place: '+[0,1,2].map(i=>pos.filter(x=>x===i).length));
+  // 3. spans and the clock; Read to me; Now you read it; the questions' flow (fake DOM and clock, STORY7_ON on)
+  R('STORY7_ON=1');
+  let trace='';
+  for(const st of ST.list){
+    const id=JSON.stringify(st.id);R('__reset()');T.q=[];T.now=0;R(`ST7.open(${id})`);tick();
+    const H=R(`__reg['#app'].innerHTML`),wsA=JSON.parse(R(`JSON.stringify(st7Words(st7Get(${id})))`)),plan=JSON.parse(R(`JSON.stringify(st7Plan(st7Get(${id})))`));
+    const spans=[...H.matchAll(/<button class="st7-w" data-i="(\d+)">([^<]*)<\/button>/g)].map(m=>[+m[1],m[2]]);
+    const toks=[st.t,...st.s].join(' ').split(/\s+/);
+    if(spans.length!==toks.length||spans.some((s,i)=>s[0]!==i||s[1]!==R(`esc(${JSON.stringify(toks[i])})`)))p.push(st.id+': '+spans.length+' word spans for '+toks.length+' words, or out of order');
+    if(wsA.length!==toks.length||plan.length!==toks.length)p.push(st.id+': '+plan.length+' times on the clock for '+toks.length+' words');
+    if(plan.some((x,i)=>!(x[1]>x[0])||i&&x[0]<plan[i-1][1]))p.push(st.id+': the clock overlaps or runs back');
+    if(plan.some((x,i)=>R(`st7Lit(${JSON.stringify(plan)},${(x[0]+x[1])/2})`)!==i))p.push(st.id+': st7Lit does not find a word at its own time');
+    if(!/class="st7-t"/.test(H)||!/id="st7read"/.test(H)||!/id="st7you"/.test(H)||!/id="st7done"[^>]*/.test(H)||!H.includes(R('ST7W.read'))||!H.includes(R('ST7W.you')))p.push(st.id+': the story screen misses a part');
+    // Read to me
+    R('__reset()');T.q=[];T.now=0;R('st7Play()');tick();
+    const lit=JSON.parse(R('JSON.stringify(__lit)')),said=JSON.parse(R('JSON.stringify(__said)'));
+    if(lit.map(x=>x[0]).join()!==toks.map((x,i)=>i).join())p.push(st.id+': Read to me lit '+lit.map(x=>x[0]).join(' ')+', not every word once in order');
+    if(lit.some((x,i)=>x[1]<plan[i][0]||x[1]>plan[i][0]+i*80+200))p.push(st.id+': a word lit off its time on the clock');
+    if(said.slice(0,toks.length).join('|')!==wsA.map(w=>w.k).join('|')||said[toks.length]!==R('ST7W.tipAfter'))p.push(st.id+': Read to me said '+said.slice(0,8).join('|'));
+    if(R('ST7R.mode')!=='')p.push(st.id+': still reading after the last word');
+    trace+=st.id+':'+lit.map(x=>x.join('@')).join(',')+';';
+    // Stop part way: no more words light
+    if(st.id==='cvc-1'){R('__reset()');T.q=[];T.now=0;R('st7Play()');for(let g=0;g<40&&T.q.length;g++){T.q.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const [t,,f]=T.q.shift();T.now=t;f()}
+      const n0=R('__lit.length');R('st7Play()');tick();if(R('__lit.length')!==n0||R('ST7R.mode')!=='')p.push('Stop does not stop the read-along');}
+    // Now you read it: a tap says the word; I read it! -> the questions; a wrong picture stays, the right one moves on; the end card
+    R('__reset()');R('st7You()');R('st7Tap(1)');
+    if(R('ST7R.mode')!=='you'||R('__said.join("|")')!==R('ST7W.tipYou')+'|'+wsA[1].k)p.push(st.id+': Now you read it: '+R('__said.join("|")'));
+    R('__reset()');T.q=[];R('st7Quiz(0)');
+    for(let k=0;k<st.q.length;k++){
+      const QH=R(`__reg['#app'].innerHTML`),q=st.q[k];
+      if(!QH.includes(R(`esc(${JSON.stringify(q[0])})`))||!QH.includes(R(`esc(st7F(ST7W.qn,{n:${k+1},all:${st.q.length}}))`))||(QH.match(/class="choice ch"/g)||[]).length!==3)p.push(st.id+' q'+k+': the question screen');
+      R(`__sub(${JSON.stringify(q[2][0])},{classList:{add(){}},disabled:false})`);tick();
+      if(R(`__reg['#app'].innerHTML`)!==QH)p.push(st.id+' q'+k+': a wrong picture moved on');
+      R(`__sub(${JSON.stringify(q[1])},{classList:{add(){}},disabled:false})`);tick();
+    }
+    const EH=R(`__reg['#app'].innerHTML`);
+    if(!EH.includes(R(`esc(st7F(ST7W.end,{title:${JSON.stringify(st.t)}}))`))||!/id="st7again"/.test(EH)||!/id="st7more"/.test(EH))p.push(st.id+': no end card after the questions');
+  }
+  // a recording's own word times replace the estimate (when they fit the words), and light the words on its clock
+  R(`globalThis.ST7A={'cvc-1':{f:'x.ogg',t:st7Words(st7Get('cvc-1')).map((w,i)=>[i*1000,i*1000+800])}}`);
+  if(R(`st7Plan(st7Get('cvc-1'))[3].join()`)!=='3000,3800'||R(`st7Lit(st7Plan(st7Get('cvc-1')),3500)`)!==3||R(`st7Lit(st7Plan(st7Get('cvc-1')),3900)`)!==-1)p.push('a recording\'s word times are not the clock');
+  R(`ST7A['cvc-1'].t.pop()`);if(R(`st7Plan(st7Get('cvc-1'))[3].join()`)==='3000,3800')p.push('a recording whose times do not fit its words is still used');
+  R('delete globalThis.ST7A');
+  // 7. determinism: the whole read-along again
+  let trace2='';
+  for(const st of ST.list){R('__reset()');T.q=[];T.now=0;R(`ST7.open(${JSON.stringify(st.id)})`);R('st7Play()');tick();trace2+=st.id+':'+JSON.parse(R('JSON.stringify(__lit)')).map(x=>x.join('@')).join(',')+';'}
+  if(trace!==trace2)p.push('determinism: the read-along lit other words or at other times the second time');
+  if(JSON.stringify(ST.list.map(s=>D.checkStory(s,ctxD)))!==JSON.stringify(ST.list.map(s=>D.checkStory(s,ctxD))))p.push('determinism: the checker');
+  // 5. the gate
+  const st=(doc.match(/^status: (.*)$/m)||[])[1]||'',rev=/^reviewed\b/.test(st),on=Function(rd('src/js/42c-story7on.js')+';return STORY7_ON')();
+  if((doc.match(/^status:/gm)||[]).length!==1)p.push(DOC+' needs exactly one status line (the one-line flip)');
+  if(!rev&&st!=='unreviewed')p.push(DOC+': the status line is "'+st+'"');
+  if(rev&&!revNamed(DOC))p.push(DOC+': reviewed, but its status line names no reviewer and date');
+  if(on!==(rev?1:0))p.push('STORY7_ON is '+on+' with the read-through '+(rev?'reviewed':'not reviewed'));
+  if(!rev&&!/pending owner approval/i.test(doc))p.push(DOC+' is not marked pending owner approval');
+  if(!rd('index.html').includes('let STORY7_ON = '+on+';'))p.push('index.html does not carry STORY7_ON = '+on);
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'story7-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),rd('src/js/52e-words.js').replace(/const LSW = \{[\s\S]*$/,'const LSW = {\n};\n'));
+  const son=n=>rd('src/js/42c-story7on.js').replace(/let STORY7_ON = [01];/,'let STORY7_ON = '+n+';');
+  const chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(line,n)=>{fs.writeFileSync(path.join(tmp,DOC),doc.replace(/^status: .*$/m,line));fs.writeFileSync(path.join(tmp,'src/js/42c-story7on.js'),son(n))};
+  put('status: unreviewed',0);if(chk()!==0)p.push('the words check refuses STORY7_ON 0 for an unreviewed read-through');
+  put('status: unreviewed',1);if(chk()!==1)p.push('the words check passes STORY7_ON 1 for an unreviewed read-through');
+  put('status: reviewed 2026-11-26',1);if(chk()!==1)p.push('the words check passes STORY7_ON 1 for a status line with no reviewer');
+  put('status: reviewed Test Owner 2026-11-26',0);if(chk()!==1)p.push('the words check passes STORY7_ON 0 for a reviewed read-through (the flip did not turn it on)');
+  put('status: reviewed Test Owner 2026-11-26',1);if(chk()!==0)p.push('the words check refuses STORY7_ON 1 for a reviewed read-through');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // off: no Stories stop on any map; on: exactly one after each stage stop
+  R('STORY7_ON=0');
+  for(const pp of R('Object.keys(NODES)'))if(R(`NODES.${pp}.some((n,i)=>st7At('${pp}',i))`))p.push('with the gate off, '+pp+' has a Stories stop');
+  R('STORY7_ON=1');
+  const onAt=R(`NODES.read.map((n,i)=>st7At('read',i)?nid(n):'').filter(Boolean).join()`);
+  if(onAt!==ST.stages.map(s=>s.stop).join())p.push('with the gate on, the Stories stops follow '+onAt);
+  if(R(`Object.keys(NODES).filter(pp=>pp!='read').some(pp=>NODES[pp].some((n,i)=>st7At(pp,i)))`))p.push('a Stories stop on a map other than reading');
+  const home=rd('src/js/46-home.js');
+  if(!/y\+=106;if\(st7At\(p,i\)\)\{pts\.push\(/.test(home)||!/if\(ls==2\)return st7NodeHTML/.test(home)||!/\$\$\('\.st7n'\)\.forEach\(b=>b\.onclick=\(\)=>st7Go/.test(home))p.push('drawMap (46-home.js) does not draw and bind the Stories stop through st7At');
+  for(const f of fs.readdirSync(path.join(SRC,'js')))if(!['42c-story7.js','46-home.js','52x-story7.js','52w-story7d.js'].includes(f)&&/\bST7\b|\bst7[A-Z]\w*\(|ST7R|ST7W/.test(fs.readFileSync(path.join(SRC,'js',f),'utf8')))p.push(f+' reaches the stories (only the map\'s Stories stop may)');
+  if(!/if \(!st7OpenAt\(i\)\)/.test(hook)||!/partsThen\(\['teach', 'teach12', 'teachrd'\], \(\) => ST7\.shelf/.test(hook))p.push('st7Go opens the shelf without the stop\'s rule or its parts');
+  // the parts
+  for(const f of ['52w-story7d.js','52x-story7.js','52x-story7.css'])if(partOf(f)!=='teachrd')p.push(f+' is not in the part teachrd');
+  for(const f of ['42c-story7.js','42c-story7on.js'])if(partOf(f))p.push(f+' is not in index.html');
+  for(const f of ['index.html',...START_FILES])if(/const ST7 = |ST7W|Pig in the Mud/.test(rd(f)))p.push(f+' (start-up) carries the stories or the reader');
+  const fr='teachrd.'+BUILD_VER+'.js';if(fs.existsSync(path.join(ROOT,fr))&&(!rd(fr).includes('const ST7 = ')||!rd(fr).includes('.st7-w{')))p.push(fr+' does not carry the stories, the reader and its CSS');
+  // 6. no network, tokens only
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|import\(|navigator\.share|localStorage|\bsave\(/.test(code+data+hook))p.push('the stories reach outside the tablet or write the save');
+  if((code.match(/new Audio\(([^)]*)\)/g)||[]).some(x=>!/^new Audio\('audio\/story\/' \+ rec\.f\)$/.test(x)))p.push('the reader plays a file that is not a local audio/story/ file');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(/.test(css+rd('src/css/46b-lstop.css').split('STORIES-7')[1])||/#[0-9a-fA-F]{6}\b|rgba?\(/.test(code+hook))p.push('a colour that is not a token, or a file loaded by the CSS');
+  if(!/min-width:48px;min-height:48px/.test(css)||!/\.st7-act \.btn\{min-height:var\(--tap\)\}/.test(css))p.push('a word or a button of the reader is under 48 px');
+  // 8. the read-through
+  const tb=(doc.match(/<!-- stories:begin -->([\s\S]*?)\n<!-- stories:end -->/)||[])[1];
+  if(tb!==D.docTables(ctxD))p.push(DOC+': the story tables are not what the app has (paste node tools/decode.js --doc between the markers)');
+  const rows=doc.split('\n').filter(l=>/^\| .+ \| .+ \| .+ \|$/.test(l)).map(l=>l.split(' | ')[1]);
+  const W=R('ST7W');for(const k in W)if(!rows.includes(W[k]))p.push(DOC+' does not list ST7W.'+k+' "'+W[k]+'"');
+  for(const t of ['Stories','Stories: {stop}','Getting the stories ready...'])if(!rows.includes(t))p.push(DOC+' does not list "'+t+'"');
+  if(!/'Stories: ' \+ NODES\.read\[i\]\.t/.test(hook)||!/>Stories<\/div>/.test(hook)||!/line: 'Getting the stories ready\.\.\.'/.test(hook))p.push('42c-story7.js: its words are not the ones in '+DOC);
+  const chars=ST.list.reduce((a,s)=>a+[s.t,...s.s].join(' ').length,0),nq=ST.list.reduce((a,s)=>a+s.q.length,0),qc=ST.list.reduce((a,s)=>a+s.q.reduce((b,q)=>b+q[0].length,0),0);
+  const fmt=n=>n.toLocaleString('en-US'),uw=new Set(ST.list.flatMap(s=>D.storyWords(s).map(w=>w.replace(/'s$/,'')))).size;
+  for(const s of [`The ${ST.list.length} stories`,`| ${fmt(chars)} |`,`The ${nq} questions`,`| ${fmt(qc)} |`,`(${uw} words)`,`${ST.list.length} stories: 6 for each of the 7 stages`])if(!doc.includes(s))p.push(DOC+': the audio estimate does not say "'+s+'"');
+  if(!/budget decision/.test(doc)||!/Nothing is recorded/.test(doc))p.push(DOC+': the audio plan does not say that recording needs a budget decision');
+  return{problems:p,note:`${ST.list.length} stories (${D.STAGES.map(s=>s.id+' '+(per[s.id]||0)).join(', ')}), ${words} words checked, ${nq} questions; status ${st} (STORY7_ON ${on})`};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){

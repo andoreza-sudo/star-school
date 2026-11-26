@@ -16793,6 +16793,95 @@ async function main() {
         notes.join(', ') + '); no sideways scroll, 48 px buttons, no network requests');
     }
 
+    if (seg('STORIES-7')) {
+      // STORIES-7 (BEST-APP roadmap 7): with the gate off the reading map has no Stories stop; with it on (as the owner's flip would):
+      // a Stories stop, the shelf, a story, Read to me lights every word once and in order, Now you read it with word taps and
+      // I read it!, the picture questions (a wrong picture first, then the right one), the end card. 48 px, no sideways scroll, at both sizes.
+      const bad = [], notes = [];
+      for (const [w, h] of [[360, 740], [1024, 600]]) {
+        const at = 'STORIES-7 ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        const fit = sel => pg.evaluate(sel => {
+          const vw = document.documentElement.clientWidth, small = [];
+          for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) small.push((b.id || b.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+          const sc = [...document.querySelectorAll('#app .scroll')].map(s => s.scrollWidth - s.clientWidth);
+          return { small: small.slice(0, 5), wide: Math.max(document.documentElement.scrollWidth - vw, ...sc, 0) };
+        }, sel);
+        const look = async (where, sel) => { const f = await fit(sel); if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', ')); if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px'); };
+        try {
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          // gate off (the build's STORY7_ON = 0): no Stories stop in any reading world
+          const off = await pg.evaluate(() => { S.unlockAll = true; pathMap('read', 0); let n = 0; for (let wi = 0; wi < PATHS.read.worlds.length; wi++) { MAPW.read = wi; drawMap('read'); n += document.querySelectorAll('.st7n').length; } return { on: STORY7_ON, n }; });
+          if (off.on !== 0 || off.n) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
+          // gate on: Letter Meadow's Stories stop, after Picture Words
+          await pg.evaluate(() => { STORY7_ON = 1; pathMap('read', 1); });
+          await pg.waitForSelector('.st7n:not(.lock)', { timeout: 10000 });
+          const stop = await pg.evaluate(() => { const b = document.querySelector('.st7n:not(.lock)'); b.scrollIntoView({ block: 'center' }); return b.getAttribute('aria-label'); });
+          if (stop !== 'Stories: Picture Words') bad.push(at + 'the first Stories stop is ' + stop);
+          await look('the map', '.st7n');
+          await pg.click('.st7n:not(.lock)');
+          await pg.waitForSelector('#st7s .st7-card', { timeout: 30000 });
+          await vwait(pg, 400);
+          const sh = await pg.evaluate(() => ({ secs: document.querySelectorAll('.st7-sg').length, cards: document.querySelectorAll('.st7-card').length, first: document.querySelector('.st7-sg .st7-card').textContent.trim() }));
+          if (sh.secs !== 7 || sh.cards < 6 || sh.first !== 'Pig in the Mud') bad.push(at + 'the shelf: ' + JSON.stringify(sh));
+          await look('the shelf', '#app button');
+          await pg.click('.st7-card[data-st="cvc-1"]');
+          await pg.waitForSelector('#st7 .st7-w', { timeout: 10000 });
+          await vwait(pg, 400);
+          await look('the story', '#app button');
+          // Read to me: record every word that lights, in order
+          const n = await pg.evaluate(() => {
+            ST7R.rate = 2; window.__st7 = [];
+            new MutationObserver(() => { const e = document.querySelector('.st7-w.st7-on'); if (e && window.__st7[window.__st7.length - 1] !== +e.dataset.i) window.__st7.push(+e.dataset.i); })
+              .observe(document.querySelector('#st7'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+            return document.querySelectorAll('.st7-w').length;
+          });
+          await pg.click('#st7read');
+          const lab = await pg.evaluate(() => document.querySelector('#st7read').textContent.trim());
+          if (lab !== 'Stop') bad.push(at + 'Read to me does not turn into Stop: ' + lab);
+          await pg.waitForFunction(() => ST7R.mode === '' && window.__st7.length > 0, null, { timeout: 120000 });
+          const lit = await pg.evaluate(() => ({ seq: window.__st7.join(), tip: document.querySelector('#st7tip').textContent, past: document.querySelectorAll('.st7-w.st7-past').length }));
+          if (lit.seq !== Array.from({ length: n }, (_, i) => i).join()) bad.push(at + 'Read to me lit ' + lit.seq + ' of ' + n + ' words');
+          if (lit.tip !== 'Now you read it!' || lit.past !== n) bad.push(at + 'after Read to me: ' + JSON.stringify({ tip: lit.tip, past: lit.past }));
+          // Now you read it: two word taps, then I read it!
+          await pg.click('#st7you');
+          await pg.click('.st7-w[data-i="4"]');
+          await pg.click('.st7-w[data-i="7"]');
+          const you = await pg.evaluate(() => ({ mode: ST7R.mode, heard: [...document.querySelectorAll('.st7-w.st7-heard')].map(e => +e.dataset.i).join(), done: getComputedStyle(document.querySelector('#st7done')).display !== 'none', tip: document.querySelector('#st7tip').textContent }));
+          if (you.mode !== 'you' || you.heard !== '4,7' || !you.done || !/Tap a word/.test(you.tip)) bad.push(at + 'Now you read it: ' + JSON.stringify(you));
+          await look('Now you read it', '#app button');
+          await pg.click('#st7done');
+          // the questions: a wrong picture, then the right one
+          for (let k = 0; k < 2; k++) {
+            await pg.waitForFunction(k => document.querySelector('#st7q') && ST7R.qi === k && !document.querySelector('#st7q .ch.right'), k, { timeout: 10000 });
+            await vwait(pg, 400);
+            await look('question ' + (k + 1), '#app button');
+            const q = await pg.evaluate(k => { const Q = st7Q(ST7R.st, k); return { r: Q.choices.findIndex(c => c.v === Q.ans), x: Q.choices.findIndex(c => c.v !== Q.ans), names: [...document.querySelectorAll('#st7q .ch')].map(b => b.getAttribute('aria-label')).join() }; }, k);
+            if (q.names.split(',').length !== 3 || q.names.includes('null')) bad.push(at + 'question ' + (k + 1) + ': the pictures have no names: ' + q.names);
+            await pg.click(`#st7q .ch[data-i="${q.x}"]`);
+            const wr = await pg.evaluate(x => ({ wrong: document.querySelector(`#st7q .ch[data-i="${x}"]`).classList.contains('wrong'), still: !!document.querySelector('#st7q') }), q.x);
+            if (!wr.wrong || !wr.still) bad.push(at + 'question ' + (k + 1) + ': a wrong picture: ' + JSON.stringify(wr));
+            await pg.click(`#st7q .ch[data-i="${q.r}"]`);
+          }
+          await pg.waitForSelector('#st7e', { timeout: 10000 });
+          await vwait(pg, 400);
+          const end = await pg.evaluate(() => document.querySelector('#st7e').innerText);
+          if (!/You read Pig in the Mud!/.test(end) || !/Read it again/.test(end) || !/More stories/.test(end)) bad.push(at + 'the end card says ' + end.replace(/\s+/g, ' '));
+          await look('the end card', '#app button');
+          await pg.click('#st7more');
+          await pg.waitForSelector('#st7s', { timeout: 10000 });
+          notes.push(w + 'x' + h + ' (' + n + ' words lit in order)');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('STORIES-7 decodable mini-stories:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('STORIES-7: the gate off draws no Stories stop; on: the Stories stop after Picture Words, the shelf, Read to me lights every word once in order, Now you read it with word taps and I read it!, two picture questions (a wrong picture stays), the end card (' +
+        notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

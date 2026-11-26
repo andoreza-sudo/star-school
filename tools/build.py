@@ -138,6 +138,18 @@ def parenton_js(root):
     return ('/* PARENT-11: BUILT by tools/build.py (never edit): 1 once docs/drafts/PARENT11-READ.md says "status: reviewed <name> <date>",\n'
             '   else 0: the report card draws no Parent corner (41d-parent.js, part gate). A let: tools/smoke.js sets it to try the corner. */\n'
             'let PARENT_ON = %d;\n' % parent_on(root))
+# STORIES-7 (BEST-APP roadmap 7): the decodable mini-stories and their reader (src/js/52w-story7d.js, 52x-story7.js, part teachrd) show
+# only once the owner has read them: docs/drafts/STORIES7-READ.md has one status line, "status: unreviewed" until then. Changing it to
+# "status: reviewed <name> <YYYY-MM-DD>" (the one-line flip) and building again writes src/js/42c-story7on.js with STORY7_ON = 1 (in
+# index.html); with 0 the reading map draws no Stories stop (42c-story7.js, 46-home.js). --words-only and --words-check cover it too.
+STORY7_FILE, STORY7_DOC = '42c-story7on.js', os.path.join('docs', 'drafts', 'STORIES7-READ.md')
+def story7_on(root):
+    f = os.path.join(root, STORY7_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def story7on_js(root):
+    return ('/* STORIES-7: BUILT by tools/build.py (never edit): 1 once docs/drafts/STORIES7-READ.md is reviewed, else 0 (no Stories stop) */\n'
+            'let STORY7_ON = %d;\n' % story7_on(root))
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
@@ -146,6 +158,7 @@ def write_words(root):
     open(os.path.join(root, 'src', 'js', ASK_FILE), 'w', encoding='utf-8', newline='').write(ask_js(root))
     open(os.path.join(root, 'src', 'js', ASKON_FILE), 'w', encoding='utf-8', newline='').write(askon_js(root))
     open(os.path.join(root, 'src', 'js', PARENT_FILE), 'w', encoding='utf-8', newline='').write(parenton_js(root))
+    open(os.path.join(root, 'src', 'js', STORY7_FILE), 'w', encoding='utf-8', newline='').write(story7on_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
@@ -156,7 +169,7 @@ if '--words-check' in sys.argv:
     _pf = os.path.join(_w, 'src', 'js', PERS_FILE)
     if os.path.isfile(_pf) and open(_pf, encoding='utf-8', newline='').read() != pers_js(_w):
         _bad.append(PERS_FILE)
-    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js)):
+    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js), (STORY7_FILE, story7on_js)):
         _af = os.path.join(_w, 'src', 'js', _f)
         if os.path.isfile(_af) and open(_af, encoding='utf-8', newline='').read() != _fn(_w):
             _bad.append(_f)
@@ -164,7 +177,7 @@ if '--words-check' in sys.argv:
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js and src/js/82a-parenton.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js, src/js/82a-parenton.js and src/js/42c-story7on.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -189,7 +202,7 @@ PARTS = [
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
     ('teach12', r'(52e-words|52f-bench|52g-drafted|d-teach-audio)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
-    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
+    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r|52w-story7d|52x-story7)\.js|(52k-teach4|52q-teach5r|52x-story7)\.css'),  # STORIES-7: the decodable mini-stories and their reader (52w, 52x; gated by STORY7_ON); READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s)\.js|52s-teach5s\.css'),  # TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
@@ -207,6 +220,7 @@ PARTS = [
 # v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
 # TEACH-6M: teach6 (the grade 6 math lessons), loaded after teach35 by the math map for a 5th grader up and by a grade 6 lesson stop (lsParts).
 # RC-1: gate (the Grown-ups PIN pad, the picture passwords), loaded by NAV.quiz, Grown-ups and the "Who is playing?" picker when asked for.
+# STORIES-7: teachrd also carries the decodable mini-stories and their reader; a Stories stop on the reading map loads it with teach and teach12.
 LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
