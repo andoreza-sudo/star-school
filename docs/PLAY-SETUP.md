@@ -196,8 +196,9 @@ itself; no timers, no repeated prompts, no "ask your parent" screens. Children w
 open only their own progress.
 
 **Reviewer note (App content > App access, "All or some functionality is restricted")**: "Settings and the one-time unlock are
-behind a parent PIN. On a fresh install: tap Grown-ups at the top of the home screen, answer the multiplication question, then choose
-any 4-digit PIN (for example 2580) and type it again. Use that PIN afterwards. No account or login is needed."
+behind a parent PIN chosen during first setup. On a fresh install: enter a name, then choose any 4-digit PIN (for example 2580)
+and type it again when asked. Use that PIN for Grown-ups afterwards. No account or login is needed." (v196: the PIN is chosen in
+first setup; an older save without one answers a times-table question once, then chooses a PIN.)
 
 **Data deletion (privacy policy)**: each child: Grown-ups > Start over, or Delete next to a child. Everything, including the PIN:
 clear the site's data (Chrome asks when uninstalling; or Chrome > Settings > Site settings > app.whistlestoplearning.com).
