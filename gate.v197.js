@@ -82,17 +82,17 @@ const PIN = {
     } });
   },
   // choose a PIN and type it again; then() runs once it is saved (or could not be: storage full never locks a grown-up out)
+  // SAMPLE-10MIN: one pad for both entries (p.next changes its words), so a grown-up typing the PIN twice at a normal pace (a tap
+  // every quarter second) loses no digit: a closing pad and a new one opening under the finger dropped the second entry's first digit
   choose(then, title, line) {
-    return PIN.pad({ title, line, done: (v, p) => {
-      p.close();
-      PIN.pad({ title: 'Type it again', line: 'Type the same 4 numbers again.', done: (w, q) => {
-        q.close();
-        if (w !== v) { SFX.wrong(); PIN.choose(then, title, "They didn't match. Choose a PIN again."); return; }
-        if (PIN.set(v)) fb('PIN saved', 'info');
-        else fb("The PIN could not be saved: the tablet's storage is full.", 'warn long', 3000);
-        then();
-      } });
+    const first = (v, p) => p.next({ title: 'Type it again', line: 'Type the same 4 numbers again.', done: (w, q) => {
+      if (w !== v) { SFX.wrong(); q.next({ title, line: "They didn't match. Choose a PIN again.", done: first }); return; }
+      q.close();
+      if (PIN.set(v)) fb('PIN saved', 'info');
+      else fb("The PIN could not be saved: the tablet's storage is full.", 'warn long', 3000);
+      then();
     } });
+    return PIN.pad({ title, line, done: first });
   },
   // Grown-ups: Change PIN needs the PIN in use
   change() { PIN.enter(() => PIN.choose(() => grown(), 'New PIN', 'Pick 4 new numbers.'), 'Your PIN now'); },
@@ -106,20 +106,28 @@ const PIN = {
     const s = UI.sheet(`<div class="pn" id="pnpad"><h2>${esc(o.title)}</h2><p class="pn-line" id="pnmsg" role="status">${esc(o.line)}</p>` +
       `<div class="pn-dots" id="pndots" role="img" aria-label="0 of 4 numbers typed">${'<i></i>'.repeat(PIN.LEN)}</div>` +
       `<div class="pn-keys">${keys}</div><div class="acts">${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'pnno' })}</div></div>`);
-    let v = '', busy = false;
+    let v = '', busy = false, early = [];
     const el = s.el, dots = () => {
       el.querySelectorAll('.pn-dots i').forEach((d, i) => d.classList.toggle('on', i < v.length));
       el.querySelector('#pndots').setAttribute('aria-label', v.length + ' of 4 numbers typed');
     };
-    const p = { close: s.close, msg: t => { el.querySelector('#pnmsg').textContent = t; }, clear: () => { v = ''; dots(); } };
+    const p = { close: s.close, msg: t => { el.querySelector('#pnmsg').textContent = t; }, clear: () => { v = ''; dots(); },
+      // SAMPLE-10MIN: the same pad asks again with new words (choose: "Type it again", a mismatch)
+      next: n => { o.done = n.done; el.querySelector('h2').textContent = n.title; p.msg(n.line); p.clear(); } };
     const push = d => {
-      if (busy || v.length >= PIN.LEN) return;
+      // SAMPLE-10MIN: a digit typed while the 4th dot shows is kept for the pad's next entry (it was lost)
+      if (busy) { if (early.length < PIN.LEN) early.push(d); return; }
+      if (v.length >= PIN.LEN) return;
       SFX.click();
       v += d;
       dots();
       if (v.length < PIN.LEN) return;
       busy = true;
-      setTimeout(() => { busy = false; const w = v; v = ''; o.done(w, p); dots(); }, 150); // the last dot shows first
+      setTimeout(() => {
+        busy = false; const w = v; v = ''; o.done(w, p); dots();
+        const e = early; early = [];
+        if (!s.el.parentNode._closing) e.forEach(push); // not after the pad closed (a right PIN, Cancel, the backdrop)
+      }, 150); // the last dot shows first
     };
     el.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => push(b.dataset.k); });
     el.querySelector('#pnback').onclick = () => { if (!busy) { v = v.slice(0, -1); dots(); } };

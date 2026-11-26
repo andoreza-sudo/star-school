@@ -24101,7 +24101,7 @@ run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under 
   const r=R(`(()=>{const bad=[];let now=1.8e12;const D0=Date.now;Date.now=()=>now;const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,wrong:SFX.wrong};
     try{
     PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toGrown=0;grown=()=>{toGrown++};
-    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){},next(n){pads.push(n)}}),last=()=>pads[pads.length-1];
     // 1. the hash: salted, slow, never the PIN itself; per tablet in PIN.KEY
     for(const k in __st)delete __st[k];
     if(PIN.has())bad.push('a PIN on an empty tablet');
@@ -24168,7 +24168,7 @@ run('grown-ups PIN in first setup: setup asks for it twice before saving, the ga
   const r=R(`(()=>{const bad=[];const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,home,wrong:SFX.wrong,put:PIN.put,psheet:PLAY.sheet};
     try{
     PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toHome=0,toGrown=0;home=()=>{toHome++};grown=()=>{toGrown++};
-    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){},next(n){pads.push(n)}}),last=()=>pads[pads.length-1];
     const q=x=>document.querySelector(x),go=nm=>{loadSave(null);setup();q('#nm').value=nm;q('#pn').value='Rex';q('#go').onclick()};
     // 1. a new tablet: Let's go! asks for the PIN before anything is saved; no name: no PIN asked
     for(const k in __st)delete __st[k];
