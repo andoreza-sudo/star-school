@@ -13437,6 +13437,94 @@ async function main() {
         'answer), on a rounding line and a real sub 4 question; no console errors, no network requests');
     }
 
+    // TAP-10 (BEST-APP roadmap 10, src/js/49c-tap10.js): the new model questions answered by real taps on the model, at 360x740 and
+    // 800x1280 on the midway save. Each converted stop (add 1-3, sub 1-2, miss 1-2 on the ten frame, big 2 with blocks, frac 5 shaded):
+    // its real make question, the fit (48 px targets, Check on screen, no sideways scroll), answered by taps on the frame's cells (an
+    // empty one puts a counter in, a filled one takes one out) or the bar's parts (the blocks by their steppers), right on the first try.
+    // Take away: the frame starts with the counters in; one too few taken is "Too many", the hint shows, the state stays; one more cell,
+    // right. By the keyboard: Tab to "Take one away", Enter, Tab to Check, Enter. No console errors, no network requests.
+    if (seg('TAP-10')) {
+      const bad = [], notes = [];
+      // the next tap on the model that brings the state to the answer (null: there): a frame cell, a part; else a control (makeStep)
+      const TAP = () => {
+        const q = G.q, s = G.mm, t = K2MM[q.model].ans(q);
+        if (q.model == 'frame') { const f = q.m.fixed || 0; return s[0] == t[0] ? null : `.mmv rect[data-c="${s[0] < t[0] ? f + s[0] : f + s[0] - 1}"]`; }
+        if (q.model == 'parts' && !document.querySelector('.mmv.mm-notap')) { const i = t.findIndex((x, j) => x !== s[j]); return i < 0 ? null : `.mmv [data-v="${i}"]`; }
+        return 'ctl';
+      };
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ka.page, at = 'TAP-10 ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), MK = '.inp .mmw';
+        const byTaps = async tag => {
+          let n = 0, ctl = 0;
+          for (let i = 0; i < 40; i++) {
+            let sel = await pg.evaluate(TAP);
+            if (sel === 'ctl') { sel = await pg.evaluate(`(${KSM.makeStep.toString()})(false)`); if (sel) ctl++; }
+            if (!sel) break;
+            await pg.click(sel);
+            n++;
+          }
+          if (!n) bad.push(at + tag + ': no taps');
+          return ctl;
+        };
+        try {
+          // 1. every converted stop: its real make question, right on the first try by taps on the model
+          for (const [sk, lv, model] of [['add', 1, 'frame'], ['sub', 1, 'frame'], ['miss', 1, 'frame'], ['add', 2, 'frame'], ['add', 3, 'frame'],
+            ['sub', 2, 'frame'], ['miss', 2, 'frame'], ['big', 2, 'b10'], ['frac', 5, 'parts']]) {
+            const tag = sk + lv;
+            await K.round(K.real(sk, lv, 'make'), MK);
+            const q0 = await pg.evaluate(() => ({ model: G.q.model, mm: G.mm.join(), from: G.q.m.from, counters: document.querySelectorAll('.mmv .viz circle').length, go: !document.querySelector('#mcheck').disabled }));
+            if (q0.model !== model || q0.go) bad.push(at + tag + ' fresh: ' + JSON.stringify(q0));
+            if (q0.from && (q0.mm !== String(q0.from) || q0.counters !== q0.from)) bad.push(at + tag + ': the take-away frame does not start full: ' + JSON.stringify(q0));
+            await K.fitOk(tag + ' fresh');
+            const ctl = await byTaps(tag);
+            if (model != 'b10' && ctl) bad.push(at + tag + ': ' + ctl + ' steps needed the buttons, not the model');
+            await K.fitOk(tag + ' at the answer');
+            const r = await K.at(() => pg.click('#mcheck'), 300, () => ({ right: !!document.querySelector('.mmw.right') }));
+            if (r.s !== 1 || !r.lock || !r.right) bad.push(at + tag + ' right first try: ' + JSON.stringify(r));
+            if (w === 360 && (tag == 'sub1' || tag == 'frac5')) await pg.screenshot({ path: `/tmp/tap10-smoke-${tag}.png` }).catch(() => {});
+            await K.settle(tag);
+          }
+          // 2. take away, one too few taken: "Too many", the hint, the state kept; one more filled cell tapped, right on the second try
+          await K.round(K.real('sub', 1, 'make'), MK);
+          const t0 = await pg.evaluate(() => ({ a: G.q.m.from, c: +G.q.ans }));
+          for (let k = t0.a - 1; k > t0.c; k--) await pg.click(`.mmv rect[data-c="${k}"]`);
+          const { mm1, ...m1 } = await K.at(() => pg.click('#mcheck'), 250, () => ({ mm1: G.mm.join() }));
+          if (!/Too many/.test(m1.toast) || !m1.hint || mm1 !== String(t0.c + 1) || m1.tries !== 1) bad.push(at + 'take away one too few: ' + JSON.stringify([m1, mm1, t0]));
+          await vwait(pg, 900);
+          await pg.click(`.mmv rect[data-c="${t0.c}"]`);
+          const m2 = await K.at(() => pg.click('#mcheck'), 300);
+          if (m2.s !== 0 || m2.done !== 1 || !m2.lock) bad.push(at + 'take away right on the second try: ' + JSON.stringify(m2));
+          await K.settle('take away second try');
+          // 3. keyboard: Tab to "Take one away", Enter until the answer, Tab to Check, Enter
+          await K.round(K.real('sub', 1, 'make'), MK);
+          const kb = await pg.evaluate(() => G.q.m.from - +G.q.ans);
+          let ok = await K.tabTo('.mmb[data-d="-1"]');
+          for (let k = 0; k < kb && ok; k++) await pg.keyboard.press('Enter');
+          ok = ok && await K.tabTo('#mcheck') && (await pg.keyboard.press('Enter'), true);
+          await vwait(pg, 300);
+          if (!ok || (await K.score()) !== 1) bad.push(at + 'take away by keyboard: ' + ok + ' ' + await pg.evaluate(() => G.mm.join()));
+          await K.settle('take away by keyboard');
+          // 4. the bot's answer() on a real question of each frame stop (as every other segment plays them)
+          for (const [sk, lv] of [['miss', 2], ['add', 1]]) {
+            await K.round(K.real(sk, lv, 'make'), MK);
+            await answer(pg);
+            await vwait(pg, 300);
+            if ((await K.score()) !== 1) bad.push(at + sk + lv + ' make: answer() did not get it right');
+            await K.settle(sk + lv + ' answer()');
+          }
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of ka.errors) bad.push(at + e);
+        for (const u of ka.network) bad.push(at + 'network request: ' + u);
+        notes.push(w + 'x' + h);
+        await ka.ctx.close();
+      }
+      if (bad.length) fail('TAP-10 touch the model:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TAP-10: touch the model at ' + notes.join(' and ') + ': real add 1-3, sub 1-2, miss 1-2 (ten frame by its cells), big 2 (blocks) and ' +
+        'frac 5 (shaded parts) make questions right by taps on the model, 48 px targets, Check on screen, no sideways scroll; take away one too few ' +
+        '(Too many, the hint, the state kept) then right; take away by the keyboard; answer() on miss 2 and add 1; no console errors, no network requests');
+    }
+
     // TEACH-1 "Sparky teaches" (src/js/52-lesson.js, 52b-know.js, 52c-scripts.js in the part teach; docs/TEACH-PLAN-2.md batch 1), at
     // 360x740 and 800x1280 on the midway save as a Kindergartner. The part is not loaded at start; the math map loads it and shows the
     // offer (a notebook by the stop the pet suggests: 48 px or more, on screen, covering no stop). Make Ten by its offer: the first
@@ -15169,7 +15257,7 @@ async function main() {
               const o = {}, hid = v => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => v }); document.dispatchEvent(new Event('visibilitychange')); };
               const wait = () => new Promise(r => setTimeout(r, 400));
               S.sound = true; S.music = true; ac(); await AC.resume(); music(true); await wait(); o.run0 = AC.state;
-              const au = { paused: false, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); } }, keep = ESA.au; ESA.au = au;
+              const au = { paused: false, dataset: {}, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); } }, keep = ESA.au; ESA.au = au;
               hid(true); await wait(); SFX.pop(); tone(440, .1); await wait(); o.hidden = AC.state; o.auHidden = au.paused;
               hid(false); await wait(); o.back = AC.state; o.auBack = au.paused;
               dispatchEvent(new Event('pagehide')); await wait(); o.pagehide = AC.state; dispatchEvent(new Event('pageshow')); await wait(); o.pageshow = AC.state;
@@ -15189,6 +15277,13 @@ async function main() {
             await pg.click('.lh-path[data-p="math"]'); await pg.waitForSelector('#map'); await vwait(pg, 400);
             const s2 = await st(), s3 = await back(), s4 = await back();
             if (s0.navb || !s0.home || !s1.navb || !s2.navb || !s3.learn || !s3.navb || !s4.home || s4.navb) bad.push(at + 'back up one screen: ' + JSON.stringify([s0, s1, s2, s3, s4]));
+            // the step back to Home is still on its way when the next screen change syncs again (two MutationObserver batches on a busy
+            // CPU): one step only (a second one left the app: about:blank here, the Play app closed; smoke shard 4 v197, P2-35)
+            await pg.click('#navbar [data-nav="learn"]'); await pg.waitForSelector('.lh'); await vwait(pg, 400);
+            const u0 = pg.url(), two = await pg.evaluate(() => { home(); NAVB.sync(); NAVB.sync(); return 'ok'; }).catch(e => e.message.split('\n')[0]);
+            await vwait(pg, 1200);
+            const s5 = await st().catch(e => ({ err: e.message.split('\n')[0] }));
+            if (two !== 'ok' || pg.url() !== u0 || !s5.home || s5.navb) bad.push(at + 'two syncs while a step back is on its way: ' + JSON.stringify({ two, url: pg.url(), s5 }));
             await pg.evaluate(() => { pathMap('math'); const i = curNode('math'); start('math', i); });
             await pg.waitForSelector('.play.qs'); await vwait(pg, 600);
             const r1 = await back(), r2 = await back();
@@ -15205,6 +15300,169 @@ async function main() {
         'right after the 5th stop and the 6th stop drawn as the sample\'s end; "You unlocked the next stop!" (said, shown and paid) only when a stop opens; unlocked, the map is as before; no console errors, no network requests');
     }
     // end PLAY-02
+    // SAMPLE-10MIN (BEST-APP roadmap item 3, docs/drafts/SAMPLE-REHEARSAL.md): a brand-new family in the Play app's free sample, by real
+    // taps only, at 380x780: first setup (name, 1st grade, the Grown-ups PIN chosen and typed again), Home, the top mission into the first
+    // lesson, every beat of it, Practice to the end, the chest (stickers, stars, game time: the win), Home, Games, the first game to a
+    // running stage. No dead ends: every tap leads on (a wait for the next screen fails the step), no lock is shown to the child on the
+    // way and no price or Google Play call happens before the grown-up check. Then the grown-up buys: Grown-ups asks the PIN, the card
+    // has no price, Unlock or restore asks the PIN again, and only then the sheet shows the price and Unlock opens Google Play.
+    if (seg('SAMPLE-10MIN')) {
+      const bad = [], { INDEX_URL } = require('./lib/browser'), PRICE = /[$€£]|\d[.,]\d\d/;
+      const mock = () => {
+        const L = window.__pl = { log: [] };
+        const svc = { getDetails: async ids => { L.log.push('details'); return ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })); },
+          listPurchases: async () => { L.log.push('list'); return []; } };
+        window.getDigitalGoodsService = async m => m === 'https://play.google.com/billing' ? svc : null;
+        window.PaymentRequest = class { constructor(m) { L.log.push('pr ' + m[0].data.sku); }
+          show() { L.log.push('show'); const e = new Error('cancel'); e.name = 'AbortError'; return Promise.reject(e); } };
+      };
+      const ta = await openApp(browser, { fixture: 'fresh', width: 380, height: 780, url: INDEX_URL + '?src=play', init: [mock, ''] });
+      const pg = ta.page, at = 'SAMPLE-10MIN ', marks = [];
+      let taps = 0, kidLock = 0;
+      // a tap through the UI; the child must never meet a lock sheet on this path
+      const tap = async (sel, o) => { taps++; await pg.click(sel, o); if (await pg.$('#plkid')) kidLock++; };
+      const mark = what => marks.push(what + ' (' + taps + ' taps)');
+      const paid = () => pg.evaluate(() => window.__pl.log.filter(x => x != 'list'));
+      try {
+        await pg.waitForFunction(() => PLAY.on && PLAY.locked(), null, { timeout: 5000 });
+        // 1. first setup: the name, 1st grade, Let's go! asks the grown-up to choose the PIN (pad taps)
+        await tap('#nm');
+        await pg.keyboard.type('Ava');
+        await tap('.gr[data-g="1"]');
+        await tap('#go');
+        await padH(pg, /^Choose a Grown-ups PIN/);
+        // the grown-up types the PIN and at once types it again, a tap every quarter second on the app's real clock (vspeed 1): no digit
+        // is lost between the two entries (SAMPLE-10MIN fix: the second pad used to open under the finger and drop the first digit)
+        await animsDone(pg); // the pad has slid in: its keys are where they stay
+        await pg.waitForTimeout(400);
+        const keys = await pg.evaluate(() => { const o = {}; for (const e of document.querySelectorAll('.sheet-bg.on .pn-k[data-k]')) { const r = e.getBoundingClientRect(); o[e.dataset.k] = [r.x + r.width / 2, r.y + r.height / 2]; } return o; });
+        await vspeed(pg, 1);
+        for (const d of '25802580') { taps++; await pg.mouse.click(keys[d][0], keys[d][1]); await pg.waitForTimeout(250); }
+        await pg.waitForSelector('#hs', { timeout: 10000 }).catch(async () => {
+          bad.push(at + 'the PIN typed twice at a tap every 250 ms did not reach Home: ' + JSON.stringify(await pg.evaluate(() => ({ h: (document.querySelector('.sheet-bg.on #pnpad h2') || {}).textContent,
+            dots: document.querySelectorAll('.sheet-bg.on .pn-dots i.on').length, msg: (document.querySelector('.sheet-bg.on #pnmsg') || {}).textContent }))));
+          for (const d of '2580') await tap(`.sheet-bg.on .pn-k[data-k="${d}"]`);
+          await padH(pg, /^Type it again/);
+          for (const d of '2580') await tap(`.sheet-bg.on .pn-k[data-k="${d}"]`);
+          await pg.waitForSelector('#hs', { timeout: 10000 });
+        });
+        await vspeed(pg);
+        if (!(await pg.evaluate(() => PIN.check('2580') === 'ok'))) bad.push(at + 'the PIN chosen in setup is not 2580');
+        mark('Home');
+        // 2. the top mission opens the first lesson's start card (a stop of the free sample)
+        await vwait(pg, 400);
+        await tap('.hm-mi >> nth=0');
+        await pg.waitForSelector('#lslearn', { timeout: 15000 });
+        await tap('#lslearn');
+        await pg.waitForSelector('#lsplay', { timeout: 10000 });
+        const st0 = await pg.evaluate(() => { const p = LS.st.L.p, i = NODES[p].findIndex(n => nid(n) === LS.st.id); return { p, id: LS.st.id, i, free: i >= 0 && PLAY.freeStop(p, i) }; });
+        if (!st0.free) bad.push(at + 'the first mission leads to a stop outside the free sample: ' + JSON.stringify(st0));
+        // 3. every beat of the lesson, answered right with the lesson's own controls
+        const wake = () => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const nextBtn = () => pg.evaluate(() => {
+          const q = LS.cur(LS.st).q, w0 = lsRight(q), cur = LS.u.mm.slice(), want = Array.isArray(w0) ? w0.map(Number) : cur.length > 1 ? cur.map((x, j) => Math.floor(+w0 / 10 ** (cur.length - 1 - j)) % (j ? 10 : Infinity)) : [Number(w0)]; // b10: a place a stepper
+          if (q.model == 'pickn') return null;
+          const i = cur.findIndex((x, j) => x != want[j]); if (i < 0) return null;
+          const d = want[i] - cur[i], s = [10, 5, 1].find(k => Math.abs(d) >= k && document.querySelector(`.mmb[data-i="${i}"][data-d="${Math.sign(d) * k}"]`)) || 1;
+          return `.mmb[data-i="${i}"][data-d="${Math.sign(d) * s}"]`;
+        });
+        const beats = [];
+        for (let n = 0; n < 60; n++) {
+          await wake();
+          const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+            return { b: LSB[LS.st.b], m: it.m, petOk: it.petOk, kind: q.kind, ans: q.ans, right: q.kind ? lsRight(q) : null, items: q.items && q.items.map(t => t.v),
+              choices: q.choices && q.choices.map(c => String(c.v)) }; });
+          if (!it) break;
+          if (!beats.includes(it.b)) beats.push(it.b);
+          const s0 = await pg.evaluate(() => LS.seq);
+          if (it.m == 'say') await tap('#lsnext');
+          else if (it.m == 'judge') await tap(it.petOk ? '#lsyes' : '#lsno');
+          else if (it.kind == 'num') { for (const ch of String(it.ans)) await tap(/\d/.test(ch) ? `.k[data-k="${ch}"]` : ch == '-' ? '.k[data-k="neg"]' : '.k[data-k="go"]'); await tap('.k[data-k="go"]'); }
+          else if (it.kind == 'choice') await tap(`.ch[data-i="${it.choices.indexOf(String(it.ans))}"]`);
+          else if (it.kind == 'order') { const used = []; for (const w of it.right) { const i = it.items.findIndex((v, j) => v == w && !used.includes(j)); used.push(i); await tap(`.ot[data-i="${i}"]`); } }
+          else if (it.kind == 'tap') await tap(`#prompt [data-v="${it.ans}"]`);
+          else if (it.kind == 'make') { for (let k = 0; k < 60; k++) { const s = await nextBtn(); if (!s) break; await tap(s); } await tap('#mcheck'); }
+          else if (it.kind == 'sort') { // each chip, then its bin (on the bin's name row), then Check
+            const plan = await pg.evaluate(() => { const q = LS.cur(LS.st).q; return q.items.map((c, i) => [i, q.bins.findIndex(b => String(b.v) === String(c.b))]); });
+            for (const [i, b] of plan) { await tap(`.schip[data-i="${i}"]`); await tap(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } }); }
+            await tap('#mcheck');
+          } else throw new Error('a lesson item the bot cannot answer: ' + JSON.stringify(it));
+          await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 });
+        }
+        await pg.waitForSelector('#lsprac', { timeout: 10000 });
+        if (!['exp', 'tog', 'chk', 'show'].every(b => beats.includes(b))) bad.push(at + 'the lesson\'s beats: ' + beats.join());
+        mark('lesson done (' + st0.p + ' ' + st0.id + ')');
+        // 4. Practice to the end, the chest: stickers, stars and game time (the win)
+        const s1 = await pg.evaluate(() => ({ stars: S.stars, pt: pt().bank }));
+        await tap('#lsprac');
+        await pg.waitForFunction(() => typeof G != 'undefined' && G && G.q, null, { timeout: 10000 });
+        for (let guard = 0; guard < 40; guard++) {
+          const state = await pg.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
+          if (state === 'fin') break;
+          if (state === 'none') { await pg.waitForTimeout(100); continue; }
+          await pg.evaluate(() => { window.__q = G.q; });
+          taps++; // answer() taps through the round's own controls (counted as one decision)
+          await answer(pg);
+          await pg.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 10000 });
+        }
+        await pg.waitForSelector('#chest', { timeout: 10000 });
+        await tap('#chest');
+        await pg.waitForSelector('#btns', { state: 'visible', timeout: 15000 });
+        const yay = await pg.waitForSelector('#yay', { timeout: 3000 }).catch(() => null);
+        if (yay) await tap('#yay');
+        const w = await pg.evaluate(() => ({ score: G.score, n: G.n, stk: document.querySelectorAll('#prz > *').length, stars: S.stars, pt: pt().bank }));
+        if (w.score !== w.n || !w.stk || w.stars <= s1.stars || w.pt <= s1.pt) bad.push(at + 'the win (stickers, stars, game time): ' + JSON.stringify([s1, w]));
+        mark('win');
+        // 5. Home, Games, the first game, its first stage running
+        await tap('#ehome');
+        await pg.waitForSelector('#hs', { timeout: 10000 });
+        await tap('.nb-games');
+        await pg.waitForSelector('.gh-card', { timeout: 20000 });
+        await tap('.gh-card >> nth=0');
+        await pg.waitForSelector('.hc-stg.cur', { timeout: 20000 });
+        await tap('.hc-stg.cur');
+        await pg.waitForSelector('#gpause', { timeout: 20000 });
+        await vwait(pg, 1500);
+        const gm = await pg.evaluate(() => ({ live: typeof HC != 'undefined' && !!HC && !HC.paused, used: pt().used }));
+        if (!gm.live) bad.push(at + 'the game did not start: ' + JSON.stringify(gm));
+        mark('game started');
+        if (kidLock) bad.push(at + 'a lock sheet was shown to the child on the way (' + kidLock + ')');
+        const pre = await paid();
+        if (pre.length) bad.push(at + 'Google Play was asked before any grown-up check: ' + pre.join());
+        // 6. the grown-up buys: the PIN for Grown-ups, no price on the card, the PIN again for Unlock or restore, then the sheet
+        await tap('#gpause');
+        await pg.waitForSelector('.sheet-bg.on #gquit, #hs', { timeout: 10000 });
+        if (await pg.$('.sheet-bg.on #gquit')) await tap('.sheet-bg.on #gquit');
+        await pg.waitForSelector('#hs', { timeout: 10000 });
+        await tap('#gear');
+        await padH(pg, /^Grown-ups PIN$/);
+        if (await pg.$('#gw-play') || (await paid()).length) bad.push(at + 'Grown-ups opened before the PIN');
+        for (const d of '2580') await tap(`.sheet-bg.on .pn-k[data-k="${d}"]`);
+        await pg.waitForSelector('#plgo', { timeout: 10000 });
+        const cd = await pg.evaluate(() => document.querySelector('#gw-play').textContent);
+        if (PRICE.test(cd) || (await paid()).length) bad.push(at + 'the Grown-ups card shows a price or asked Google Play: ' + cd.slice(0, 120));
+        await pg.evaluate(() => document.querySelector('#plgo').scrollIntoView({ block: 'center' }));
+        await tap('#plgo');
+        await padH(pg, /PIN/);
+        if (await pg.$('#plsheet') || (await paid()).length) bad.push(at + 'Unlock or restore did not ask the PIN first');
+        for (const d of '2580') await tap(`.sheet-bg.on .pn-k[data-k="${d}"]`);
+        await pg.waitForSelector('#plsheet', { timeout: 10000 });
+        await pg.waitForFunction(() => /9\.99/.test(document.querySelector('#plprice').textContent) && !document.querySelector('#plbuy').disabled, null, { timeout: 8000 })
+          .catch(() => bad.push(at + 'no price on the unlock sheet'));
+        await tap('#plbuy');
+        await pg.waitForFunction(() => window.__pl.log.includes('show'), null, { timeout: 5000 }).catch(() => bad.push(at + 'Unlock did not open Google Play'));
+        await pg.waitForFunction(() => /No payment was made/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 }).catch(() => bad.push(at + 'a cancelled payment said nothing'));
+        if (await pg.evaluate(() => PLAY.own)) bad.push(at + 'a cancelled payment unlocked');
+        mark('unlock sheet');
+      } catch (e) { bad.push(at + 'stuck after ' + (marks[marks.length - 1] || 'the start') + ': ' + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+      for (const e of ta.errors) bad.push(at + e);
+      for (const u of ta.network) bad.push(at + 'network request: ' + u);
+      await ta.ctx.close();
+      if (bad.length) fail('SAMPLE-10MIN a new family in the free sample:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('SAMPLE-10MIN: a new family in the free sample at 380x780, by taps: ' + marks.join(', ') + '; no dead end and no lock shown to the child; ' +
+        'Google Play is asked only after the grown-up PIN (Grown-ups, then Unlock or restore again), the price is on the sheet only; no console errors, no network requests');
+    }
+    // end SAMPLE-10MIN
     // BB-GL (sample fix): Block Builder gives its WebGL context back when the child leaves the game (view() calls bbStop, as 60-gl.js end()
     // does for the other games) and makes a new one when they come back: in and out 4 times, the 3D look draws every time, and at Home no
     // WebGL context is left alive (the page's getContext is watched from the start)
@@ -16096,7 +16354,10 @@ async function main() {
       const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
       require('fs').mkdirSync(shots, { recursive: true });
       for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
-        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, at = w + 'x' + h + ' ';
+        // http: the child switch and Grown-up help reload the page with a changed save; over file:// headless Chrome sometimes started
+        // the reloaded page with empty storage on a busy machine (check.sh v197: "the right pictures did not open Ben", then no Who is
+        // playing? button: the fixture alone, one child), see openApp in tools/lib/browser.js
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true, http: true }), pg = app.page, at = w + 'x' + h + ' ';
         const gridLook = () => pg.evaluate(() => {
           const g = document.querySelector('.sheet-bg.on .kp'), o = [];
           if (!g) return ['no grid'];
@@ -16114,9 +16375,10 @@ async function main() {
           const b = await (await pg.$('#who')).boundingBox();
           await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
           await pg.mouse.down();
+          // held until "Who is playing?" opens (the app's 1 s timer), as a child holds it: a fixed 1.3 s of virtual time let go only
+          // about 40 ms of real time after the timer was due, and on a busy CPU the timer ran late, so the release cancelled it
           await vwait(pg, 1300);
-          await pg.mouse.up();
-          await pg.waitForSelector('.pf-kid');
+          await pg.waitForSelector('.pf-kid', { timeout: 15000 }).finally(() => pg.mouse.up());
         };
         try {
           const nm = await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false);
@@ -16373,6 +16635,162 @@ async function main() {
       if (bad.length) fail('RC2-GATE lockouts, the grown-up session, Empty bank, the owner notes:\n  ' + bad.join('\n  '));
       else step('RC2-GATE: a PIN wait from a clock change has expired; Find my level goes Home; Story themes back to Grown-ups only in the ' +
         'grown-up session; a child screen ends it; Empty bank logged through ptGift; the learn-first hint; the Forgot PIN note once; Grown-ups is no update hub');
+    }
+
+    // FEEDBACK-4 (BEST-APP roadmap 4): Tell us what you think. Home (a child's screen) has no feedback card, e-mail or store link; the
+    // gear and the PIN open Grown-ups, where the card sits after About: the web version shows Email us only, the Play app (?src=play with a
+    // mocked Google Play billing) also Review on Google Play, opened outside the app (target _blank, rel noopener). The mailto carries the
+    // release and the build only, never the child's name. 48 px targets, inside the screen, no sideways scroll, at 380x780 and 1024x600.
+    // Nothing is tapped through (the links leave the app), so no network request. Screenshots: tools/out/feedback/.
+    if (seg('FEEDBACK-4')) {
+      const bad = [], notes = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'feedback'), { INDEX_URL } = require('./lib/browser');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const build = (require('fs').readFileSync(P_.join(__dirname, 'build.py'), 'utf8').match(/^VER = '(v\d+)'/m) || [])[1];
+      const mail = 'mailto:hello@whistlestoplearning.com?subject=' + encodeURIComponent('Whistlestop feedback (1.0.0, build ' + build + ')');
+      const PLAYURL = 'https://play.google.com/store/apps/details?id=com.whistlestoplearning.app';
+      const mock = () => { const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [] };
+        window.getDigitalGoodsService = async m => m === 'https://play.google.com/billing' ? svc : null; };
+      for (const mode of ['web', 'play']) for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = 'FEEDBACK-4 ' + mode + ' ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, mode == 'play' ? { fixture: 'midway', width: w, height: h, url: INDEX_URL + '?src=play', init: [mock, ''] } : { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        try {
+          if (mode == 'play') await pg.waitForFunction(() => PLAY.on, null, { timeout: 5000 });
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          const kid = await pg.evaluate(() => ({ card: !!document.querySelector('#gw-tell'), links: [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')).filter(u => /^mailto:|play\.google/.test(u)),
+            words: /rate us|review on google play|tell us what you think/i.test(document.body.innerText) }));
+          if (kid.card || kid.links.length || kid.words) bad.push(at + 'Home (a child\'s screen) shows feedback or a rating: ' + JSON.stringify(kid));
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#gw-tell', { timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }));
+          await vwait(pg, 300);
+          const c = await pg.evaluate(() => {
+            const card = document.querySelector('#gw-tell'), vw = document.documentElement.clientWidth, r = card.getBoundingClientRect();
+            const ids = [...document.querySelectorAll('.gw > .gw-cols > *')].map(e => e.id);
+            const ln = a => { if (!a) return null; const b = a.getBoundingClientRect(); return { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'),
+              w: b.width, h: b.height, inside: b.left >= -1 && b.right <= vw + 1, text: a.textContent.trim() }; };
+            return { name: S.name, text: card.textContent, mail: ln(card.querySelector('#fb-mail')), play: ln(card.querySelector('#fb-play')),
+              inside: r.left >= -1 && r.right <= vw + 1, wide: document.documentElement.scrollWidth - vw, order: ids.slice(ids.indexOf('gw-about')), visible: r.height > 0 && r.top < innerHeight && r.bottom > 0 };
+          });
+          if (!/^Tell us what you think/.test(c.text.trim())) bad.push(at + 'the card says "' + c.text.trim().slice(0, 60) + '"');
+          if (c.order.join() !== 'gw-about,gw-tell,gw-pin,gw-reset') bad.push(at + 'the cards after About are ' + c.order.join());
+          if (!c.mail || c.mail.href !== mail || c.mail.target || c.mail.text !== 'Email us') bad.push(at + 'the e-mail link: ' + JSON.stringify(c.mail) + ', want ' + mail);
+          if (c.name && (decodeURIComponent((c.mail || {}).href || '') + c.text).includes(c.name)) bad.push(at + 'the card or its e-mail carries the child\'s name ' + c.name);
+          if (mode == 'web' && c.play) bad.push(at + 'the web version shows the Play link');
+          if (mode == 'play' && (!c.play || c.play.href !== PLAYURL || c.play.target !== '_blank' || !/noopener/.test(c.play.rel || '') || c.play.text !== 'Review on Google Play'))
+            bad.push(at + 'the Play link: ' + JSON.stringify(c.play));
+          for (const l of [c.mail, c.play]) if (l && (l.w < 47.5 || l.h < 47.5 || !l.inside)) bad.push(at + l.text + ' is ' + Math.round(l.w) + 'x' + Math.round(l.h) + (l.inside ? '' : ', off the screen'));
+          if (!c.inside || c.wide > 0 || !c.visible) bad.push(at + 'the card is off the screen or the page scrolls sideways by ' + c.wide + ' px');
+          await pg.screenshot({ path: P_.join(shots, `feedback-${mode}-${w}x${h}.png`) }).catch(() => {});
+          notes.push(mode + ' ' + w + 'x' + h + (c.play ? ' (e-mail and Play)' : ' (e-mail only)'));
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('FEEDBACK-4 Tell us what you think:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('FEEDBACK-4: Home has no feedback card, e-mail or rating; the gear and the PIN open Grown-ups with Tell us what you think after About (' +
+        notes.join(', ') + '); the mailto carries only the release and ' + build + '; the Play link opens outside the app; 48 px targets, no sideways scroll, no network requests');
+    }
+
+    // PARENT-11 (BEST-APP roadmap 11): the Parent corner on the report card, behind the PIN. The gear and the PIN open Grown-ups and the
+    // report card: before approval (PARENT_ON 0, as built) there is no corner; with the gate flipped on in the page (PARENT_ON = 1, as a
+    // reviewed read-through builds it) the corner is the first card, with the week's summary and two dinner questions; Make a certificate
+    // opens the certificate. Print media: only the certificate is shown, inside the page, its contents inside its frame, and the PDF the
+    // tablet's print would make is one page. At 380x780 and 1024x600; Home (the child's side) never shows any of it; no network requests.
+    if (seg('PARENT-11')) {
+      const bad = [], notes = [], P_ = require('path'), FS_ = require('fs'), shots = P_.join(__dirname, 'out', 'parent11');
+      FS_.mkdirSync(shots, { recursive: true });
+      for (const [w, h, shotOnly] of [[380, 780], [1024, 600], [1123, 794, true]]) {
+        const at = 'PARENT-11 ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        try {
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          await pg.evaluate(async () => {
+            await partLoad('gate'); PIN.set('2580');
+            const n = STRK.idx(today()), k = d => STRK.key(n - d);
+            S.name = 'Ava'; S.grade = 3;
+            S.log = [{ d: k(0), sec: 600, rounds: 2, q: 20, ok: 18, by: { math: 420, read: 180 } }, { d: k(2), sec: 300, rounds: 1, q: 10, ok: 8, by: { math: 300 } }];
+            S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, frac2: { n: 12, p: .8, ms: 6000, d: 2, last: n - 1, md: -1 }, sight1: { n: 25, p: .92, ms: 4000, d: 4, last: n - 1, md: n - 6 } };
+            S.maps.math.add1 = 3; S.maps.math.frac2 = 2; S.maps.read.sight1 = 3;
+            S.lm = [['add1', n - 3, 1, 2, 2, 2, 0]]; S.know = { add1: { s: 2 } };
+            save(); home();
+          });
+          const kid = await pg.evaluate(() => ({ pc: !!document.querySelector('[id^="pc-"],[class*="pc-"],#rp-parent'), words: /Parent corner|questions for dinner|Certificate of Learning/i.test(document.body.innerText) }));
+          if (kid.pc || kid.words) bad.push(at + 'Home (a child\'s screen) shows the Parent corner: ' + JSON.stringify(kid));
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#rp-open', { timeout: 10000 });
+          await pg.click('#rp-open');
+          await pg.waitForSelector('#rp-weeks', { timeout: 10000 });
+          const off = await pg.evaluate(() => ({ on: PARENT_ON, corner: !!document.querySelector('#rp-parent'), n: document.querySelectorAll('.rp-card').length, ls: !!document.querySelector('#rp-teach') }));
+          if (off.on !== 0 || off.corner || off.n !== (off.ls ? 8 : 7)) bad.push(at + 'before approval: ' + JSON.stringify(off)); // 7 cards and the lessons' card (the save has a lesson)
+          await pg.click('#back');
+          await pg.waitForSelector('#rp-open', { timeout: 10000 });
+          await pg.evaluate(() => { PARENT_ON = 1; });
+          await pg.click('#rp-open');
+          await pg.waitForSelector('#rp-parent', { timeout: 10000 });
+          await vwait(pg, 300);
+          const c = await pg.evaluate(() => {
+            const sc = document.querySelector('.rp-scroll'), card = document.querySelector('#rp-parent'), b = document.querySelector('#pc-cert'), vw = document.documentElement.clientWidth;
+            return { first: document.querySelector('.rp-card') === card, n: document.querySelectorAll('.rp-card').length, text: card.innerText, dq: [...card.querySelectorAll('.pc-dq li')].map(l => l.dataset.g),
+              over: sc.scrollWidth - sc.clientWidth, wide: document.documentElement.scrollWidth - vw, btn: b ? [b.offsetWidth, b.offsetHeight] : null };
+          });
+          if (!c.first || c.n !== off.n + 1) bad.push(at + 'the corner is not the first of ' + (off.n + 1) + ' cards: ' + JSON.stringify({ first: c.first, n: c.n }));
+          if (!/^Parent corner/.test(c.text.trim()) || !/This week Ava learned/.test(c.text) || !/Stops passed: Adding to 10/.test(c.text) || !/Two questions for dinner/.test(c.text) || /undefined|NaN|\{\w+\}/.test(c.text))
+            bad.push(at + 'the corner says: ' + c.text.slice(0, 300));
+          if (c.dq.length !== 2 || !c.dq.every(g => ['add', 'frac', 'spell'].includes(g))) bad.push(at + 'the dinner questions are from ' + c.dq.join());
+          if (c.over > 0 || c.wide > 0) bad.push(at + 'the report card scrolls sideways by ' + Math.max(c.over, c.wide) + ' px');
+          if (!c.btn || c.btn[0] < 48 || c.btn[1] < 48) bad.push(at + 'Make a certificate is ' + JSON.stringify(c.btn));
+          await pg.evaluate(() => document.querySelector('#pc-cert').scrollIntoView({ block: 'center' }));
+          await pg.click('#pc-cert');
+          await pg.waitForSelector('#pc-sheet', { timeout: 10000 });
+          await vwait(pg, 300);
+          const s = await pg.evaluate(() => {
+            const sh = document.querySelector('#pc-sheet'), r = sh.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            return { text: sh.innerText, inside: r.left >= -1 && r.right <= vw + 1, wide: document.documentElement.scrollWidth - vw, logo: !!sh.querySelector('.wl-mk'),
+              btns: [...document.querySelectorAll('.top .btn')].map(b => Math.min(b.offsetWidth, b.offsetHeight)) };
+          });
+          if (!/Certificate of Learning/.test(s.text) || !/\bAva\b/.test(s.text) || !/Passed \d+ stops? in Math/.test(s.text) || !/Passed \d+ stops? in Reading/.test(s.text) || !/June 15, 2026/.test(s.text) || !s.logo)
+            bad.push(at + 'the certificate says: ' + s.text.replace(/\s+/g, ' ').slice(0, 300));
+          if (!s.inside || s.wide > 0) bad.push(at + 'the certificate is off the screen or scrolls sideways by ' + s.wide + ' px');
+          if (s.btns.some(x => x < 48)) bad.push(at + 'the top buttons are ' + s.btns.join(', ') + ' px');
+          // print media: only the certificate, on one page
+          await pg.emulateMedia({ media: 'print' });
+          await vwait(pg, 200);
+          const pr = await pg.evaluate(() => {
+            const sh = document.querySelector('#pc-sheet'), inn = sh.querySelector('.pc-in'), r = sh.getBoundingClientRect(), vw = document.documentElement.clientWidth, shown = [];
+            for (const e of document.body.querySelectorAll('*')) {
+              if (sh.contains(e) || e.contains(sh) || ['SCRIPT', 'STYLE', 'LINK', 'TEMPLATE'].includes(e.tagName)) continue;
+              const b = e.getBoundingClientRect(), cs = getComputedStyle(e);
+              if (b.width > 0 && b.height > 0 && cs.visibility != 'hidden' && cs.display != 'none' && (e.innerText || '').trim()) shown.push((e.id || e.className || e.tagName) + ': ' + (e.innerText || '').trim().slice(0, 30));
+            }
+            const kids = [...inn.children].map(k => k.getBoundingClientRect());
+            return { shown: shown.slice(0, 5), inside: r.left >= -1 && r.right <= vw + 1, fit: kids.every(k => k.bottom <= inn.getBoundingClientRect().bottom + 1 && k.right <= inn.getBoundingClientRect().right + 1),
+              h: Math.round(r.height), w: Math.round(r.width) };
+          });
+          if (pr.shown.length) bad.push(at + 'print shows more than the certificate: ' + pr.shown.join(' | '));
+          if (!pr.inside || !pr.fit) bad.push(at + 'print: the certificate or its contents do not fit (' + pr.w + 'x' + pr.h + ')');
+          await pg.screenshot({ path: P_.join(shots, `cert-print-${w}x${h}.png`), fullPage: true }).catch(() => {});
+          if (!shotOnly) {
+            const pdf = await pg.pdf({ preferCSSPageSize: true, printBackground: true });
+            const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page(?!s)/g) || []).length;
+            if (pages !== 1) bad.push(at + 'the printed certificate is ' + pages + ' pages');
+            await pg.emulateMedia({ media: 'screen' });
+            await pg.click('#back');
+            await pg.waitForSelector('#rp-parent', { timeout: 10000 });
+            notes.push(w + 'x' + h + ' (print ' + pr.w + 'x' + pr.h + ' px, ' + pages + ' page)');
+          }
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('PARENT-11 Parent corner:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('PARENT-11: Home shows nothing of it; the gear and the PIN open Grown-ups; the report card has no corner before approval and, with the gate flipped on, the corner first (the week, 2 dinner questions, Make a certificate); the certificate prints alone on one page (' +
+        notes.join(', ') + '); no sideways scroll, 48 px buttons, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);

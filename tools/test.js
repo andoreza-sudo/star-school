@@ -72,11 +72,10 @@ const KNOWN={ // check name -> exact problem strings that are known content issu
     'es_verb L2: no say (choice)',
     'es_adj L2: no say (choice)'
   ],
-  // R-01s: left for later chunks (docs/reviews/R-01-spanish.md, logged in PROGRESS.md): days and months level 1 show one calendar picture
-  // for every day and month (Must 4, M), and a "who" answer at story level 2 can show the same face with a different name under it (Should 16, M)
+  // R-01s: left for later chunks (docs/reviews/R-01-spanish.md, logged in PROGRESS.md): a "who" answer at story level 2 can show the same
+  // face with a different name under it (Should 16, M). (Must 4, one calendar picture for every day and month at level 1, is fixed by
+  // the DAYS-D3 drawings, src/data/d-art-cal.js: its two entries came off this list because they no longer happen.)
   'Spanish review fixes R-01s':[
-    'es_days L1: two choices share a picture',
-    'es_months L1: two choices share a picture',
     'es_story L2: two choices share a picture'
   ],
 };
@@ -1777,7 +1776,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     load(fx('maxed'));S.grade=1;
     const stop=NODES.math.findIndex(n=>n.sk=='sub'&&n.lv==1);
     const play=()=>{G=newG({path:'math',node:stop,sk:'sub',lv:1,n:10});const o=[];
-      while(G.done<G.n){const q=makeQ();o.push({rv:q.rvk||'',review:!!q.review});G.done++}return o};
+      while(G.done<G.n){const q=makeQ();o.push({rv:q.rvk||'',review:!!q.review,kind:q.kind});G.done++}return o};
     const today=REV.day();
     for(const setup of [()=>{S.rev=[]},()=>{S.rev=[{sk:'sub',lv:1,seed:1,label:'q',box:1,due:today+1,n:1}]},
       ()=>{S.rev=[{sk:'sight',lv:1,seed:1,label:'r',box:0,due:today,n:1}]}]){
@@ -1787,9 +1786,20 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     S.rev=[];
     [1,2,3].map(s=>revMiss(genQ('sub',1,s),today));
     [4,5,6].map(s=>revMiss(genQ('add',1,s),today)).forEach(x=>x.n=9); // more missed: asked first at the path slots
-    const o=play(),at=o.map((x,i)=>x.rv?i:-1).filter(i=>i>=0);
-    if(at.join()!=='1,3,5,7')bad('review slots: '+JSON.stringify(o));
-    else if(!o[1].rv.startsWith('sub|1|')||!o[5].rv.startsWith('sub|1|')||!o[3].rv.startsWith('add|1|')||!o[7].rv.startsWith('add|1|'))bad('slot owners: '+JSON.stringify(o));
+    // MIX-8 (BEST-APP roadmap 8, approved; docs/drafts/MIX8.md (b)): a review question that would be the third question of its kind
+    // in a row waits until it is not (at the latest the round's last new question), and no other slot is filled while it waits. So
+    // the slots are checked twice: with the run cap off (the v197 round) exactly questions 2, 4, 6, 8 with the owners as before (was
+    // the only check); with it on, each review question is at its slot, or later only while every question it waited through
+    // would have made it a third in a row; a slot is empty only while an earlier review question waits; the items are the same
+    MIX8.off=true;const o0=play();MIX8.off=false;const at0=o0.map((x,i)=>x.rv?i:-1).filter(i=>i>=0);
+    if(at0.join()!=='1,3,5,7')bad('review slots (run cap off): '+JSON.stringify(o0));
+    else if(!o0[1].rv.startsWith('sub|1|')||!o0[5].rv.startsWith('sub|1|')||!o0[3].rv.startsWith('add|1|')||!o0[7].rv.startsWith('add|1|'))bad('slot owners (run cap off): '+JSON.stringify(o0));
+    const o=play(),at=o.map((x,i)=>x.rv?i:-1).filter(i=>i>=0),SL=[1,3,5,7],busy=new Set();
+    for(const j of at){const sl=Math.max(...SL.filter(x=>x<=j));
+      for(let x=sl;x<j;x++){busy.add(x);if(o[x].rv||!(o[x-1].kind==o[j].kind&&o[x-2].kind==o[j].kind)){bad('review slots: question '+(j+1)+' waited at '+(x+1)+' with no run of its kind: '+JSON.stringify(o));break}}
+      if(j>sl&&j<o.length-1&&o[j-1].kind==o[j].kind&&o[j-2].kind==o[j].kind)bad('review slots: a waiting question asked as the third of its kind: '+JSON.stringify(o))}
+    if(at.length<3||SL.some(x=>!o[x].rv&&!busy.has(x)))bad('review slots: '+JSON.stringify(o));
+    if(at.length==4&&at.map(i=>o[i].rv.split('|')[0]).join()!=='sub,add,sub,add')bad('slot owners: '+JSON.stringify(o));
     if(new Set(at.map(i=>o[i].rv)).size!==at.length||at.some(i=>!o[i].review))bad('an item asked twice or without the review tag');
     // boss, test out, mix and placement rounds never take review slots
     for(const x of [{boss:{e:'x',name:'x'},pool:[]},{test:{wi:0},pool:[]},{mix:true},{nomast:true}]){
@@ -1841,10 +1851,14 @@ run('daily review: card counts due items, the round asks them first, nothing due
   startReview();
   if(!G||!G.mix||!G.daily||G.n!==10||G.pool.length!==10||started||nexts!==1)bad.push('round: '+JSON.stringify({n:G&&G.n,p:G&&G.pool&&G.pool.length,started,nexts}));
   else{
-    const got=G.pool.map(q=>q.rvk);
-    if(got.join()!==want.join())bad.push('round does not ask the due items first, most urgent first');
+    // MIX-8 (BEST-APP roadmap 8, approved): the round is the same 10 items, most urgent first, except that an item which would be the
+    // third of one kind in a row waits for the first later item of another kind (runCap, a pure reordering; it was urgency order only)
+    const got=G.pool.map(q=>q.rvk),capped=runCap(want.map(k=>G.pool.find(q=>q.rvk===k))).map(q=>q.rvk);
+    if(got.slice().sort().join()!==want.slice().sort().join())bad.push('round does not ask the 10 most urgent due items');
+    if(got.join()!==capped.join())bad.push('round does not ask the due items most urgent first (run cap aside)');
+    {const ks=G.pool.map(q=>q.kind);for(let i=2;i<ks.length;i++)if(ks[i]==ks[i-1]&&ks[i]==ks[i-2]&&ks.slice(i+1).some(k=>k!==ks[i]))bad.push('three '+ks[i]+' items in a row with another kind left')}
     const asked=[];for(let i=0;i<10;i++)asked.push(makeQ().rvk);
-    if(asked.join()!==want.join())bad.push('makeQ order');
+    if(asked.join()!==got.join())bad.push('makeQ order');
   }
   // 3 due: a short round of exactly those 3
   S.rev=rall.slice(0,3).map(x=>({...x,due:td}));
@@ -15423,6 +15437,285 @@ run('object art DRAW8 E1: eight picture words drawn',()=>{
   return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes; asked in the sample: '+out.asked.join(' ')};
 });
 
+// ---- DAYS-D3: the Spanish days and months drawn (docs/drafts/AUDIT-WORDS-READ.md D3, owner: option 1; src/data/d-art-cal.js) ----
+// From grade 1 every day showed one calendar emoji and every month another. Each word now has its own picture, made by one helper:
+// a week strip of 7 boxes (lunes first) with the day's box lit, a ring of 12 dots (January at one o'clock) with the month's dot lit,
+// and three boxes with today's star for hoy, mañana and ayer. Checked: the object art rules (tokens only), every word a distinct
+// drawing, the lit cell where the word says, the drawings shown by the units' questions, and no two choices with one picture.
+run('DAYS-D3: Spanish days and months each drawn, lit in the right place',()=>{
+  const p=[];
+  const DAYS=['mon','tue','wed','thu','fri','sat','sun'],MON='jan feb mar apr may jun jul aug sep oct nov dec'.split(' ');
+  const WANT={lunes:'week-mon',martes:'week-tue','miércoles':'week-wed',jueves:'week-thu',viernes:'week-fri','sábado':'week-sat',domingo:'week-sun',
+    hoy:'day-today','mañana':'day-tomorrow',ayer:'day-yesterday',enero:'month-jan',febrero:'month-feb',marzo:'month-mar',abril:'month-apr',
+    mayo:'month-may',junio:'month-jun',julio:'month-jul',agosto:'month-aug',septiembre:'month-sep',octubre:'month-oct',noviembre:'month-nov',diciembre:'month-dec'};
+  const NAMES=Object.values(WANT),artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  const out=eval(js+`
+  const bad=[],N=${JSON.stringify(NAMES)},W=${JSON.stringify(WANT)},css=${JSON.stringify(artCss)},DAYS=${JSON.stringify(DAYS)},MON=${JSON.stringify(MON)};let total=0;
+  const num=(el,a)=>{const m=new RegExp('\\\\s'+a+'="(-?[\\\\d.]+)"').exec(el);return m?+m[1]:NaN};
+  // 1. the rules of the object art sets (DESIGN_SYSTEM 6.5, as the DRAW8 check): tokens only, no raw colours, on the grid, small
+  for(const n of N){const d=ART[n];
+    if(!d){bad.push('no drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing');
+    if((d.match(/<[a-z]+/g)||[]).length>40)bad.push(n+': over 40 elements');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t);
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad.push(n+': attribute '+m[1]);
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour '+a);
+    for(const m of d.matchAll(/var\\(--(a-[a-z0-9]+)\\)/g))if(!css.includes('--'+m[1]+':var(--ill-'))bad.push(n+': role --'+m[1]+' is not in 21-art.css');
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity '+m[1]);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the grid');
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the grid');
+    for(const el of d.match(/<rect[^>]*>/g)||[])if(num(el,'x')+num(el,'width')>64||num(el,'y')+num(el,'height')>64)bad.push(n+': a box runs off the grid');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+    // 2. a distinct drawing: not the same as any other drawing (the other days, the other months, anything else in ART)
+    for(const k in ART)if(k!==n&&ART[k]===d)bad.push(n+': the same drawing as '+k)}
+  if(total>60000)bad.push('the 22 are '+total+' bytes (limit 60000)');
+  // 3. the lit cell is where the word says. Lit is orange (--a-o2 shade, one per drawing); the rest is grey or blue, today yellow
+  const lit=d=>(d.match(/<(rect|circle)[^>]*var\\(--a-o2\\)[^>]*>/g)||[]);
+  DAYS.forEach((k,i)=>{const d=ART['week-'+k]||'',L=lit(d);
+    if(L.length!==1){bad.push('week-'+k+': '+L.length+' lit boxes');return}
+    // the unlit boxes: grey or blue rects with no opacity (the binder rings' glints have one)
+    const cells=(d.match(/<rect[^>]*var\\(--a-(e|b)\\)"\\/>/g)||[]).map(el=>num(el,'x')).sort((a,b)=>a-b);
+    if(cells.length!==6)bad.push('week-'+k+': '+cells.length+' unlit boxes, wants 6');
+    const cx=num(L[0],'x')+num(L[0],'width')/2,pos=cells.filter(x=>x+3.3<cx).length;
+    if(pos!==i)bad.push('week-'+k+': the lit box is box '+(pos+1)+' of 7, wants '+(i+1));
+    if(Math.abs(cx-(7.4+i*8.2))>1)bad.push('week-'+k+': the lit box is off its place in the strip ('+cx+')');
+    // the weekend boxes are the blue ones, Monday first: the blue boxes are in the last two places
+    const blue=(d.match(/<rect[^>]*var\\(--a-b\\)"\\/>/g)||[]).map(el=>num(el,'x'));
+    if(blue.some(x=>x<4.1+5*8.2-.1))bad.push('week-'+k+': a weekday box is blue')});
+  MON.forEach((k,i)=>{const d=ART['month-'+k]||'',L=lit(d);
+    if(L.length!==1){bad.push('month-'+k+': '+L.length+' lit dots');return}
+    const dots=(d.match(/<circle[^>]*var\\(--a-e\\)[^>]*>/g)||[]);
+    if(dots.length!==11)bad.push('month-'+k+': '+dots.length+' unlit dots, wants 11');
+    const a=Math.atan2(num(L[0],'cx')-32,33-num(L[0],'cy'))*6/Math.PI,clock=((Math.round(a)%12)+12)%12||12;
+    if(clock!==i+1)bad.push('month-'+k+': the lit dot is at '+clock+" o'clock, wants "+(i+1));
+    if(num(L[0],'r')<1.5*Math.max(...dots.map(el=>num(el,'r'))))bad.push('month-'+k+': the lit dot is not clearly bigger')});
+  [['today',0],['tomorrow',1],['yesterday',-1]].forEach(([w,dir])=>{const d=ART['day-'+w]||'',L=lit(d);
+    if(L.length!==1){bad.push('day-'+w+': '+L.length+' lit boxes');return}
+    const cx=num(L[0],'x')+num(L[0],'width')/2,want=32+dir*19.6;
+    if(Math.abs(cx-want)>1.5)bad.push('day-'+w+': the lit box is at '+cx+', wants '+want);
+    const arrow=/var\\(--a-k2\\)" d="M([\\d.]+) [\\d.]+L([\\d.]+)/.exec(d.replace(/<rect[^>]*>/g,''));
+    if(!dir&&arrow)bad.push('day-today: an arrow');
+    if(dir&&(!arrow||Math.sign(+arrow[2]-+arrow[1])!==dir))bad.push('day-'+w+': the arrow does not point from today to the lit box');
+    if((d.match(/var\\(--a-y\\)" d=/g)||[]).length!==1)bad.push('day-'+w+': not one star for today')});
+  // 4. the words name these drawings (nothing else does), and their questions show them, never the calendar emoji
+  const its=ES_UNITS.filter(u=>u.id==='days'||u.id==='months').flatMap(u=>u.items);
+  for(const w in W){const it=its.find(x=>x[0]===w);if(!it||it[4]!==W[w])bad.push(w+': art '+(it&&it[4]))}
+  for(const u of ES_UNITS)for(const it of u.items)if(N.includes(it[4])&&W[it[0]]!==it[4])bad.push(u.id+' '+it[0]+' uses '+it[4]);
+  const seen=new Set(),g0=S.grade;let qn=0;
+  for(const g of [undefined,-1,0,1,3]){S.grade=g;
+    for(const sk of ['es_days','es_months'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=(g===3?600:150);s++){const q=genQ(sk,lv,s);qn++;
+      const h=q.html+(q.choices||[]).map(c=>c.l).join('');
+      for(const n of N)if(h.includes(picArt(n)))seen.add(n);
+      if(/📅|📆|🌅|📌|◀/.test(h))bad.push(sk+' L'+lv+' seed '+s+': an emoji picture');
+      if(lv===1){const ps=q.choices.map(c=>String(c.l).replace(/<small>[\\s\\S]*?<\\/small>/g,''));
+        if(new Set(ps).size!==ps.length)bad.push('grade '+g+': '+sk+' L1 seed '+s+': two choices share a picture')}}}
+  S.grade=g0;
+  for(const n of N)if(!seen.has(n))bad.push(n+': never shown by a days or months question');
+  ({bad,total,qn});`);
+  // 5. one helper makes them; it is deterministic (a second evaluation gives the same drawings byte for byte)
+  const CSRC=fs.readFileSync(path.join(SRC,'data','d-art-cal.js'),'utf8');
+  if(/Math\.random|Date|rnd\(/.test(CSRC))p.push('d-art-cal.js must not use randomness or the date');
+  const ev=()=>eval(js+';JSON.stringify('+JSON.stringify(NAMES)+'.map(n=>ART[n]))');
+  if(ev()!==ev())p.push('the drawings differ between two evaluations');
+  // 6. where they live: the data file (start-up is index.html + gen + gen2 + data: performance P6-03 has the budget), not index.html
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!DATAC.includes('the Spanish days and months (D3'))p.push('the D3 drawings are not in '+DATA_FILE+' (rebuild)');
+  if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('the Spanish days and months (D3'))p.push('the D3 drawings must not be in index.html');
+  if(!fs.existsSync(path.join(ROOT,'docs','drafts','DAYS-MONTHS.png')))p.push('the review sheet docs/drafts/DAYS-MONTHS.png is missing');
+  return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes (made at load from '+CSRC.length+' bytes of source); '+out.qn+' questions'};
+});
+
+// ---- EMOJI-12: the emoji a young child still met most, drawn (BEST-APP roadmap 12; docs/drafts/AUDIO12.md part B; src/data/d-art-e.js) ----
+// The sticker won at the end of every round (and the sticker book) and the Pre-K syllable pictures were emoji beside drawn art. Thirteen
+// new drawings (12 of them also stickers) and 21 stickers that now show a drawing the app already had (STK_ART in 05-pets.js). Checked:
+// the object art rules, every drawing different, the questions and the sticker screens show the drawing, never these emoji again, the
+// emoji kept as the fallback (a sticker with no drawing, the code alone without the data file), and where the drawings live.
+run('object art EMOJI-12: thirteen drawings; stickers and syllable pictures show drawings, not emoji',()=>{
+  const p=[];
+  const NAMES='octopus penguin dinosaur strawberry castle volcano ladybug pumpkin doughnut guitar trumpet whale crayon'.split(' ');
+  // the emoji each sticker showed before, and its drawing now (a replaced one must never come back)
+  const STK_WANT={'🐠':'fish','🦖':'dinosaur','🚀':'rocket','🌈':'rainbow','🍩':'doughnut','🎸':'guitar','🦁':'lion','🍕':'pizza','🎈':'balloon','🌟':'star',
+    '🐙':'octopus','🦋':'butterfly','🍦':'icecream','🚂':'train','🐢':'turtle','🦊':'fox','🏰':'castle','🌻':'sunflower','🐝':'bee','🍪':'cookie','🎃':'pumpkin',
+    '🐳':'whale','🦉':'owl','🚁':'helicopter','🍓':'strawberry','🐧':'penguin','🦒':'giraffe','⛵':'boat','🌋':'volcano','🎺':'trumpet','🐞':'ladybug',
+    '🌙':'moon','🐘':'elephant'};
+  const ESRC=fs.readFileSync(path.join(SRC,'data','d-art-e.js'),'utf8'),artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  if(/rnd\(|Math\.random|Date|function|=>/.test(ESRC.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('d-art-e.js must be plain data (no code, no randomness)');
+  const out=eval(js+`
+  const bad=[],N=${JSON.stringify(NAMES)},W=${JSON.stringify(STK_WANT)},css=${JSON.stringify(artCss)};let total=0;
+  // 1. the rules of the object art sets (DESIGN_SYSTEM 6.5; the set C and DRAW8 checks)
+  for(const n of N){const d=ART[n];
+    if(!d){bad.push('no drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing');
+    if((d.match(/<[a-z]+/g)||[]).length>40)bad.push(n+': over 40 elements');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t);
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad.push(n+': attribute '+m[1]);
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour '+a);
+    for(const m of d.matchAll(/var\\(--(a-[a-z0-9]+)\\)/g))if(!css.includes('--'+m[1]+':var(--ill-'))bad.push(n+': role --'+m[1]+' is not in 21-art.css');
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity '+m[1]);
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform '+m[1]);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the grid');
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the grid');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d)||/gradient|filter|mask|clip|<text|<use|url\\(|style=|\\sid=|href/i.test(d))bad.push(n+': raw colour, id, defs, text or url');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+    for(const k in ART)if(k!==n&&ART[k]===d)bad.push(n+': the same drawing as '+k)}
+  if(total>30000)bad.push('the thirteen are '+total+' bytes (limit 30000)');
+  // 2. stickers: each one above shows its drawing on the reward card and in the book, never its emoji; one with no drawing keeps its emoji
+  for(const [e,n] of Object.entries(W)){
+    const s=STK.find(x=>x.replace(/\\uFE0F/g,'')===e);
+    if(!s){bad.push('sticker '+e+' is gone');continue}
+    if(STK_ART[s]!==n)bad.push('sticker '+e+' should show the '+n+' drawing, not '+STK_ART[s]);
+    const h=RW.sticker(s,true,0);
+    if(!h.includes(picArt(n)))bad.push('sticker '+e+': the reward card shows no drawing');
+    if(h.replace(/<svg[\\s\\S]*?<\\/svg>/g,'').includes(e))bad.push('sticker '+e+': the emoji is back on the reward card');
+    if(stkPic(s)!==picArt(n))bad.push('sticker '+e+': stkPic does not give the drawing')}
+  const plain=STK.filter(s=>!STK_ART[s]);
+  for(const s of plain)if(stkPic(s)!==esc(s))bad.push('sticker '+s+' has no drawing but does not keep its emoji');
+  if(Object.keys(STK_ART).length!==Object.keys(W).length)bad.push('STK_ART has '+Object.keys(STK_ART).length+' stickers, not '+Object.keys(W).length);
+  // 3. the syllable pictures (ABC Beach, Pre-K) and the K story problems' crayon show the drawing, never the emoji
+  const SYL={octopus:'🐙',penguin:'🐧',dinosaur:'🦖',strawberry:'🍓',castle:'🏰',volcano:'🌋',ladybug:'🐞',pumpkin:'🎃',doughnut:'🍩',guitar:'🎸',trumpet:'🎺'};
+  for(const [w,e] of Object.entries(SYL)){const x=SYLP.find(x=>x[0]===w);if(!x)bad.push(w+': no longer a syllable picture');else if(picFor(x[0],x[1])!==picArt(w))bad.push(w+': the syllable picture shows '+x[1])}
+  const seen=new Set();let qn=0;
+  for(let s=1;s<=400;s++){const q=genQ('syl',1,s);qn++;const h=String(q.html)+(q.choices||[]).map(c=>String(c.l)).join('')+(q.items||[]).map(c=>String(c.l||'')).join('');
+    for(const [w,e] of Object.entries(SYL)){if(h.includes(picArt(w)))seen.add(w);if(h.replace(/<svg[\\s\\S]*?<\\/svg>/g,'').includes(e))bad.push('syl1 seed '+s+': the emoji '+e+' for '+w)}}
+  for(const w of Object.keys(SYL))if(!seen.has(w))bad.push(w+': never shown by 400 syllable questions');
+  let cr=0;for(let s=1;s<=200;s++){const q=genQ('story',1,s),h=String(q.html);if(h.includes('🖍'))bad.push('story1 seed '+s+': the crayon emoji');if(h.includes(picArt('crayon')))cr++}
+  if(!cr)bad.push('the crayon drawing never showed in 200 story problems');
+  ({bad,total,qn,cr,plain:plain.length,json:JSON.stringify(N.map(n=>ART[n]))});`);
+  const again=eval(js+';JSON.stringify('+JSON.stringify(NAMES)+'.map(n=>ART[n]))');
+  if(again!==out.json)p.push('the drawings differ between two evaluations');
+  // 4. the screens that show stickers go through stkPic (the reward card, the book, the swap screen)
+  const homeSrc=fs.readFileSync(path.join(SRC,'js','46-home.js'),'utf8'),rwSrc=fs.readFileSync(path.join(SRC,'js','18-reward-art.js'),'utf8');
+  if(/class="(sb-e|rw-se)">\$\{esc\(s\)\}/.test(homeSrc+rwSrc))p.push('a sticker is still drawn as its emoji (esc(s)) instead of stkPic(s)');
+  if((homeSrc.match(/<span class="sb-e">\$\{stkPic\(s\)\}<\/span>/g)||[]).length!==2)p.push('the book and the swap screen must show stkPic(s)');
+  // 5. where they live: the data file, not index.html; the code alone (no data file) falls back to the emoji
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!DATAC.includes('EMOJI-12, BEST-APP roadmap 12'))p.push('the EMOJI-12 drawings are not in '+DATA_FILE+' (rebuild)');
+  if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('EMOJI-12, BEST-APP roadmap 12'))p.push('the EMOJI-12 drawings must not be in index.html');
+  const alone=eval(cat('js')+PARTS.map(x=>cat('js',x.stem)).join('')+';[picFor("octopus","O"),stkPic(STK.find(s=>s.startsWith("\u{1F419}")))]');
+  if(alone[0]!=='O'||alone[1]!=='\u{1F419}')p.push('without the data file picFor and the stickers must fall back to the emoji: '+alone);
+  if(!fs.existsSync(path.join(ROOT,'docs','drafts','EMOJI12.png')))p.push('the review sheet docs/drafts/EMOJI12.png is missing');
+  return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes; '+Object.keys(STK_WANT).length+' of 48 stickers drawn ('+out.plain+' keep their emoji); '+out.qn+' syllable questions, crayon drawn in '+out.cr+' of 200 story problems'};
+});
+
+// ---- AUDIO-12: existing words said for a child who cannot read yet (BEST-APP roadmap 12; docs/drafts/AUDIO12.md part A; 12-speech.js) ----
+// The arrival lines of Pet Care, the Pet Shop, the sticker book, the streak calendar and a closed Game Room, the round's "Tap the
+// treasure chest!", the reward's tip, and the toasts that say why a tap did nothing: said in Pre-K, K and 1st grade with "Read questions
+// out loud" on; never for a reader (2nd grade and up) or with the voice off. Only text the screen shows; said once on arrival.
+run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for readers or with the voice off',()=>{
+  const p=[];
+  const r=eval(js+`;(()=>{const bad=[],res={};
+  const D=global.document,T0=global.setTimeout,Q=[],app={style:{},innerHTML:'',classList:{add(){},remove(){},toggle(){},contains:()=>false}};
+  const dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},setAttribute(){},getAttribute(){return null},
+    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},insertAdjacentHTML(){},addEventListener(){},scrollIntoView(){},isConnected:true};
+  const has=c=>new RegExp('class="[^"]*\\\\b'+c+'\\\\b').test(app.innerHTML);
+  global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:/^\\.[\\w-]+$/.test(s)?(has(s.slice(1))?dummy:null):dummy,querySelectorAll:()=>[],
+    createElement:()=>Object.assign({},dummy),body:dummy,documentElement:dummy});
+  global.setTimeout=f=>{Q.push(f);return 0};
+  const log=[];const keep={say,fb,music:typeof music=='function'?music:null};
+  say=(t,b,l,q)=>log.push(String(t));fb=()=>{};if(keep.music)music=()=>{};
+  const run=(g,v,f)=>{S.grade=g;S.voice=v;log.length=0;Q.length=0;app.innerHTML='';f();let n=0;while(Q.length&&n++<200)Q.shift()();return log.slice()};
+  try{
+    S.name='Ava';S.petName='Sparky';S.coins=3;S.care={food:90,clean:90,fun:90,t:Date.now(),gift:''};S.pt={bank:0,used:0,gift:0};
+    const W={care:()=>{care()},shop:()=>{shopSel=null;shop()},book:()=>{book()},streak:()=>{streakCal(0)},room:()=>{GH.hub()},
+      toast:()=>{fbSay('Finish the stop before this one!')},map:()=>{const d=drawMap,tw=teachWarm;drawMap=teachWarm=()=>{};try{pathMap('math')}finally{drawMap=d;teachWarm=tw}}, /* the map's drawing is the map checks' */bt:()=>{BT.offer=null;BT.hub()}};
+    const want={care:'Sparky is super happy!',shop:'Tap an item to try it on!',book:'Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.',
+      streak:null,room:null,toast:'Finish the stop before this one!',
+      map:'Tap the glowing stop to play!',bt:'Tap a puzzle to play!'}; // REC-12: the two new-wording lines the owner approved 2026-11-26 (AUDIO12.md)
+    for(const [k,f] of Object.entries(W)){
+      for(const g of [-1,0,1]){const said=run(g,true,f);res[k]=said;
+        if(k=='bt'&&g==1){if(said.length)bad.push('bt, grade 1 (band B): said '+JSON.stringify(said));continue} // REC-12: the hub's line is the youngest band's (A: Pre-K and K)
+        const w=k=='streak'?STRK.info().count?null:'Finish a round to light your flame!':k=='room'?ptWhyNot():want[k];
+        if(!w)continue;
+        if(!said.includes(w))bad.push(k+', grade '+g+': '+JSON.stringify(w)+' not said ('+JSON.stringify(said)+')')}
+      for(const g of [2,3,5]){const said=run(g,true,f);if(said.length)bad.push(k+', grade '+g+' (a reader): said '+JSON.stringify(said))}
+      const off=run(-1,false,f);if(off.length)bad.push(k+', voice off: said '+JSON.stringify(off))}
+    // said once on arrival: a redraw of the same screen (after a snack, a tab) says nothing again
+    run(-1,true,()=>{care();Q.length=0;log.length=0;care()});if(log.length)bad.push('Pet Care redrawn: said again '+JSON.stringify(log));
+    run(-1,true,()=>{shopSel=null;shop();Q.length=0;log.length=0;shop()});if(log.length)bad.push('the Pet Shop redrawn: said again '+JSON.stringify(log));
+    // the Game Room with game time left: nothing new is said
+    S.pt.bank=300;if(run(-1,true,()=>GH.hub()).length)bad.push('the Game Room with time left says something new');
+    // the pre card's line is the screen's own text
+    if(!RW.pre().includes('Tap the treasure chest!'))bad.push('the pre card no longer shows "Tap the treasure chest!"');
+  }finally{say=keep.say;fb=keep.fb;if(keep.music)music=keep.music;global.document=D;global.setTimeout=T0}
+  return{bad,res}})()`);
+  p.push(...r.bad);
+  // the call sites: the round (pre card and tip), the map's lock toasts, the no-game-time and locked-game toasts use the helpers
+  const rd=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  const roundSrc=rd('50-round.js'),homeSrc=rd('46-home.js');
+  if(!/view\(RW\.pre\(\)\);nrSay\('Tap the treasure chest!','#chest',\d+\)/.test(roundSrc))p.push('the round does not say the pre card line to a non-reader');
+  if(!/if\(tip&&!grew\)nrSay\(tip,'#fin',0\)/.test(roundSrc))p.push('the reward does not say its tip to a non-reader');
+  if((homeSrc.match(/fbSay\('Finish the stop before this one!'\)/g)||[]).length!==2||!homeSrc.includes("fbSay(`Learn it with ${petN()} first!`)"))p.push('the map lock toasts are not said');
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);if(/\bfb\(ptWhyNot\(\)/.test(t))p.push(f+': a no-game-time toast is shown but not said (fbSay)')}
+  // nothing new is said that the screen does not show: every literal nrSay / fbSay line is in the source as screen text too
+  // REC-12: except the two new-wording lines the owner approved on 2026-11-26 (AUDIO12.md "New wording"), said on the map and the hub
+  const NEW_OK=require('./en-audio.js').NR_NEW;
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);
+    for(const m of t.matchAll(/\bnrSay\('([^']+)'/g))if(t.split(m[1]).length<3&&!rd('18-reward-art.js').includes(m[1])&&!NEW_OK.includes(m[1]))p.push(f+': "'+m[1]+'" is said but not shown')}
+  // v197: the two new lines are also shown (fb), as the a11y sound rule asks of every spoken line
+  if(!/if\(\$\('\.node\.cur'\)\|\|\$\('\.lsn\.cur'\)\)if\(nrSay\('Tap the glowing stop to play!','#map',\d+\)\)setTimeout\(\(\)=>\{if\(\$\('#map'\)\)fb\('Tap the glowing stop to play!'/.test(homeSrc))p.push('the map does not say "Tap the glowing stop to play!" to a non-reader (pathMap)');
+  if(!/BT\.band\(\) == 'A'\) \{ if \(nrSay\('Tap a puzzle to play!', '\.bt-hub', \d+\)\) setTimeout\(\(\) => \{ if \(\$\('\.bt-hub'\)\) fb\('Tap a puzzle to play!'/.test(rd('74-teasers.js')))p.push('the Brain Teasers hub does not say "Tap a puzzle to play!" to the youngest band');
+  return{problems:p,note:'Pet Care, Pet Shop, sticker book, streak, Game Room, toasts, map, Brain Teasers hub (REC-12): said in Pre-K to 1st (the hub: Pre-K and K), silent for 2nd to 6th and with the voice off'};
+});
+
+// ---- REC-12: the AUDIO-12 non-reader lines recorded in the pet's teacher voice (owner approval 2026-11-26: docs/drafts/AUDIO12.md "Tier 1",
+// 89 lines, and the 2 "New wording" lines; tools/en-audio.js NR_LIT, NR_GEN, NR_NEW). Each is collected, has its file (luna, speed 0.95,
+// the little pet's recipe) and say() plays it; nothing beyond the approved list is collected for it. "Mmm!" failed the speech to text check
+// in every take (6), so it stays the tablet's voice (NO_REC). The generated prompts ("How many ducks?") are what the Pre-K generators build;
+// owner decision 2026-11-26: they play from start-up (EN_TEACH0) like the others.
+run('AUDIO-12 REC-12: the approved non-reader lines are recorded and say() plays them',()=>{
+  const p=[],EA=require('./en-audio.js'),E=require('./es-audio.js'),vm=require('vm'),dir=path.join(ROOT,EA.TEACH_DIR);
+  const ctx=E.loadApp(),R=t=>vm.runInContext(t,ctx),lines=EA.collectTeach(ctx),M=R('EN_TEACH'),M0=R('EN_TEACH0');
+  const approved=[...EA.NR_LIT,...EA.NR_GEN,...EA.NR_NEW],want=approved.filter(t=>t!=='Mmm!');
+  if(approved.length!==91||new Set(approved).size!==91)p.push(approved.length+' approved lines listed (want 89 Tier 1 + 2 new wording = 91, all different)');
+  // 1. collected: exactly the approved lines, the little pet's recipe; "Mmm!" left to the tablet (speech to text failed)
+  const nr=[...lines.values()].filter(o=>o.from.some(f=>f.startsWith(EA.NR_FROM)));
+  const got=new Set(nr.map(o=>o.text));
+  for(const t of want)if(!got.has(t))p.push('not collected: '+t);
+  for(const t of got)if(!want.includes(t))p.push('collected but not approved: '+t);
+  if(lines.has('Mmm!')||M.lines['Mmm!'])p.push('"Mmm!" is recorded: it failed the speech to text check and should stay the tablet\'s voice');
+  let bytes=0,chars=0;
+  for(const o of nr){if(o.rec!=='little')p.push(o.text+': recorded for the older pet (want the little pet, speed 0.95)');
+    const f=M.lines[o.text];if(f!==EA.teachFileOf(o.text,'little')){p.push('no recording for "'+o.text+'" in EN_TEACH');continue}
+    const fp=path.join(dir,f+'.ogg');if(!fs.existsSync(fp)){p.push(EA.TEACH_DIR+f+'.ogg is missing');continue}bytes+=fs.statSync(fp).size;chars+=o.text.length}
+  // 2. the generated prompts are exactly what the Pre-K generators build (31-gen-math-early.js: PK.OBJ, PK_PLATES, genPkShape's four shapes)
+  const gsrc=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8'),shp=(gsrc.match(/function genPkShape\(\) \{\s*const names = \[([^\]]+)\]/)||[])[1];
+  const gen=new Set([...R("PK.OBJ.map(o=>'How many '+o[1]+'?')"),...R("PK_PLATES.map(([c,o])=>'Which '+c+' has more '+o[1]+'?')"),
+    ...(shp?shp.split(',').map(x=>'Tap the '+x.trim().replace(/'/g,'')+'.'):[])]);
+  if(!shp)p.push('genPkShape\'s shape names not found');
+  if(JSON.stringify([...gen].sort())!==JSON.stringify(EA.NR_GEN.slice().sort()))p.push('the generated prompts differ from what the generators build: '+JSON.stringify([...gen].filter(x=>!EA.NR_GEN.includes(x)))+' / '+JSON.stringify(EA.NR_GEN.filter(x=>!gen.has(x))));
+  for(const g of ['genPkCount','genPkMore','genPkShape'])if(R('typeof '+g)!=='function')p.push(g+' is gone');
+  if(R('typeof genPkMore')=='function')for(let i=0;i<40;i++){const q=R('genPkMore()');if(!EA.NR_GEN.includes(q.say)){p.push('genPkMore said '+q.say);break}}
+  // 3. at start (EN_TEACH0): every recorded approved line, the generated prompts too (owner decision 2026-11-26: they play from start-up)
+  for(const t of want)if(M0.lines[t]!==M.lines[t])p.push('not in EN_TEACH0 (said outside a lesson): '+t);
+  // 4. say() in a stand-in browser plays each line's file: with teach12 in and before it (all 90 both times); a line
+  //    with a name plays the recorded sentence and says the name with the tablet's voice
+  const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
+  const env={Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text)},cancel(){},speaking:false,pending:false}};
+  const tryAll=(S2,M_,which)=>{let n=0;S2("S.voice=true;CLIPS=[];ENA.t=0;S.cheerV='mix'");
+    for(const t of want){S2('hush()');log.length=0;S2('say('+JSON.stringify(t)+')');const rec=which(t);
+      const ok=rec?log.join('|')==='play '+M_.dir+M.lines[t]+M_.ext:log.join('|')==='speak '+t;if(!ok)p.push((rec?'not played from its recording':'not the tablet\'s voice')+' ('+(M_===M?'teach12 in':'before teach12')+'): '+t+' -> '+log.join(' | '));else if(rec)n++}return n};
+  let n1=0,n0=0;
+  try{const s=E.loadApp(null,env),S2=t=>vm.runInContext(t,s);n1=tryAll(S2,M,()=>true);
+    S2('hush()');log.length=0;S2("say('Hi Ava! Pick a game!')");if(log[0]!=='speak Hi Ava!'||!S2('ESA.q').some(x=>x.tch&&x.t==='Pick a game!'))p.push('"Hi Ava! Pick a game!": '+log.join(' | '));
+    S2('hush()');log.length=0;S2("say('Sort them! Put the big ones in the big box and the small ones in the small box.')");if(log[0]!=='play '+M.dir+M.lines['Sort them!']+M.ext)p.push('a two-sentence prompt: '+log.join(' | '));
+    S2('hush()');log.length=0;S2("say('Mmm!')");if(log.join()!=='speak Mmm!')p.push('"Mmm!" (tablet voice): '+log.join(' | '));
+  }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  try{const s0=E.loadApp(E.appSource().replace('const EN_TEACH=','const EN_TEACH_NOT_LOADED='),env),S0=t=>vm.runInContext(t,s0);
+    if(S0('typeof EN_TEACH')!=='undefined')p.push('the stand-in still has EN_TEACH');n0=tryAll(S0,M0,()=>true)}
+  catch(e){p.push('say() before teach12 could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  if(n1!==want.length||n0!==want.length)p.push('played '+n1+' with teach12 and '+n0+' at start (want '+want.length+' both)');
+  return{problems:p,note:nr.length+' of 91 approved lines recorded ("Mmm!" failed speech to text: tablet voice), '+chars+' characters, '+bytes+' bytes; played: '+n1+' with teach12, '+n0+' at start (with the '+EA.NR_GEN.length+' generated prompts)'};
+});
+
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
   const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
   const css=fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
@@ -17640,7 +17933,8 @@ run('Block Builder journey G-01b',()=>{
   const css=fs.readFileSync(path.join(SRC,'css','60-game-blocks.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
   for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|margin)\b/.test(m[1]))p.push('60-game-blocks.css: a transition on layout: '+m[1]);
   const src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8');
-  if(!/ptLeft\(\) <= 0\) \{ SFX\.wrong\(\); fb\(ptWhyNot\(\)/.test(src.slice(src.indexOf("$('#bbday').onclick"))))p.push('the build of the day does not check game time');
+  // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())
+  if(!/ptLeft\(\) <= 0\) \{ SFX\.wrong\(\); fbSay\(ptWhyNot\(\)[^}]*\); return; \}/.test(src.slice(src.indexOf("$('#bbday').onclick"))))p.push('the build of the day does not check game time');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
@@ -18643,7 +18937,8 @@ run('snack stand G-04a',()=>{
   if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
-  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
+  // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())
+  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fbSay\(ptWhyNot\(\)[^}]*\);\s*return;\s*\}/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
   if(!/gtStart\('#gtm', \(\) => snTimeUp\(\)\)/.test(src)||!/GH\.wire\(\{quit: \(\) => snQuit\(\)/.test(src)||!/timeUpOverlay\(\)/.test(src))p.push('the day must use gtStart, the Pause sheet and the time-up card');
   if(!/GH\.end\('snack'/.test(src))p.push('the end of a day must use the shared end card');
   if(/Math\.random/.test(src))p.push('the day must be seeded (no Math.random)');
@@ -19127,6 +19422,7 @@ run('Brain Teasers and practice fixes R-01b',()=>{
     {fakeOn();const KN=KIND.num;
      say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};next=()=>{};
      KIND.num=Object.assign({},KN,{right(){},reveal(){},retry(){}});
+     K2.off=true; // K2OLD (TAP-10): old tests check old, with K2.off (add 1 mixes in the ten frame; these rounds answer number questions)
      try{const round=(firsts,helped)=>{load(null);S.grade=1;S.mast={};const i0=ni('math','add',1);
          G=newG({path:'math',node:i0,sk:'add',lv:1,n:10});G.res=[];
          for(let i=0;i<10;i++){G.q=genQ('add',1,i+1);G.tries=0;G.retry=false;G.lock=false;G.hq=helped.includes(i);G.qt=Date.now()-3000;
@@ -19138,7 +19434,7 @@ run('Brain Teasers and practice fixes R-01b',()=>{
          ['6 of 10, the misses fixed at the end',[1,1,1,0,1,1,0,1,0,0],[],[6,0,0,.6,3]]];
        for(const[nm,f,h,w]of T){const r=round(f,h);if(J(r)!==J(w))add('round "'+nm+'": [score, helped, stars, mastery p, best streak] '+J(r)+', want '+J(w))}}
      catch(e){add('round simulation threw '+e.message)}
-     finally{fakeOff();KIND.num=KN}
+     finally{fakeOff();KIND.num=KN;K2.off=false}
      note.push('rounds: hint-showing answers count half (10 right, 4 with the hint: 2 stars, mastery 0.8; 7 right, 2 with the hint: not passed); a 6-of-10 round with its misses fixed at the end: best streak 3 (it said 10)')}
     // Should 10: the review tile shows the next round's size, at most 10, in words
     {load(null);S.grade=1;S.rev=Array.from({length:21},(_,i)=>({sk:'add',lv:1,seed:i+1,label:'x'+i,box:0,due:0,n:1}));let h=hmToday();
@@ -19598,7 +19894,8 @@ run('sky hop G-04b',()=>{
   if(partOf('67-game-skyhop.js')!=='games2'||partOf('49-game-skyhop.css')!=='games2')p.push('Sky Hop must ship in games2.'+BUILD_VER+'.js');
   if(!/if\(typeof hopStop=='function'\)hopStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the course (hopStop)');
   if(o.dev!=='{"fast":1}')p.push('HOP_DEV test hook must be off: '+o.dev);
-  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a course must not start without game time (ptLeft, ptWhyNot)');
+  // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())
+  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fbSay\(ptWhyNot\(\)[^}]*\);\s*return;\s*\}/.test(src))p.push('a course must not start without game time (ptLeft, ptWhyNot)');
   if(!/gtStart\('#gtm', \(\) => hopTimeUp\(\)\)/.test(src)||!/GH\.wire\(\{quit: \(\) => hopQuit\(\)/.test(src)||!/timeUpOverlay\(\)/.test(src))p.push('the course must use gtStart, the Pause sheet and the time-up card');
   if(!/GH\.end\('hop'/.test(src))p.push('the flag must use the shared end card');
   if(/Math\.random/.test(src))p.push('nothing random (no Math.random)');
@@ -20680,6 +20977,71 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
     return out})()`);
   p.push(...w.bad);
   return{problems:p,note:`${r.n} samples; ${r.rt} review round trips; find the mistake: ${r.rows.join('; ')}; why on: ${w.rows.join(', ')} (${w.n} sentences)`};
+});
+
+// ---- TAP-10 (BEST-APP roadmap 10, docs/drafts/TAP10.md; src/js/49c-tap10.js): more stops answered on the model (the make kind) ----
+// TAP10: the stops TAP-10 converts and the share planned (K: about 40%, as tenf and add 4; miss 1 30%, so its why sentences stay on half
+// of its questions (KINDS2-D); 1st grade facts 25%: fluency stops, the pad stays the main way (exempt from the 65% rule, as mfact);
+// big 2 40% as big 1; frac 5 30% as the spec's parts stops). TAP10_OFF: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for
+// s = 1..150, ART emptied, from the generators of commit cc327f1 (before TAP-10); with K2.off the stops must give these exactly, so the
+// only change is the format draw. miss 1 and 2 are the KINDS2-D hashes (K2_OFF_D) again. No kinds2-seeds.json hash changes: the
+// fixture's labels (add 1-3, sub 1-2, miss 1-2) are kept by the converters (the "KINDS2 mix" check).
+const TAP10={add1:.4,sub1:.4,miss1:.3,add2:.25,add3:.25,sub2:.25,miss2:.25,big2:.4,frac5:.3};
+const TAP10_OFF={add1:'2456a14adfea',add2:'0deb4182f960',add3:'ce3f6157c2d7',sub1:'22db8e2f3446',sub2:'fa8af1c69fb7',miss1:'b1f02653e332',
+  miss2:'728e96437f83',big2:'75ba62daa06d',frac5:'c3b08e9a4b37'};
+run('TAP-10 touch the model: every new make question answerable on its model, wrong states wrong, hints, determinism, conversion rates, no new words',()=>{
+  // the lesson sources the words come from (no new sentence a child sees or hears)
+  const LSRC=['52c-scripts.js','52g-drafted.js','49b-kinds2.js'].map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n');
+  const r=k2BC('make',TAP10,['miss1','add2','add3','sub2','miss2'],`
+    const MODEL={add1:'frame',sub1:'frame',miss1:'frame',add2:'frame',add3:'frame',sub2:'frame',miss2:'frame',big2:'b10',frac5:'parts'};
+    // the words of each converted question, as patterns over its say and its visible text (the html without tags)
+    const SAY=[/^\\d+ plus \\d+\\. Tap the frame to put in \\d+, then \\d+ more\\.$/,/^There are \\d+\\. Take away \\d+\\.$/,/^\\d+ and how many make \\d+\\? Put in more to make \\d+\\.$/,
+      /^\\d+ plus \\d+\\. Make the answer on the frame\\.$/,/^\\d+ minus \\d+\\. Take away \\d+\\.$/,/^\\d+ plus what makes \\d+\\? Put in more to make \\d+\\.$/,
+      /^\\d+ plus \\d+\\. Make the answer with blocks\\.$/,/^Tap the parts to shade \\d+ (half|thirds?|fourths?|sixths?|eighths?|halves) of the (bar|circle)\\.$/];
+    const TXT=[/^\\d+ \\+ \\d+ ?Put in \\d+, then \\d+ more\\.$/,/^\\d+ − \\d+ ?Take away \\d+\\.$/,/^\\d+ \\+ \\? = \\d+ ?Put in more to make \\d+\\.$/,/^\\d+ \\+ \\d+ ?Make the answer on the frame\\.$/,
+      /^\\d+ \\+ \\d+ ?Make the answer with blocks\\.$/,/^Shade ?\\d+ ?\\d+ ?of the (bar|circle)\\.$/];
+    const ANS=[/^\\d+ and \\d+ make \\d+$/,/^\\d+ take away \\d+ leaves \\d+\\.$/,/^\\d+ is \\d+ tens? and \\d+ ones?$/,/^\\d+ (half|thirds?|fourths?|sixths?|eighths?|halves)$/];
+    const txt=h=>String(h).replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim();
+    // drive a state to the answer by the model's own steps (a cell or a part tapped, a stepper), as the child's taps do
+    const drive=(q,s)=>{const M=K2MM[q.model],t=M.ans(q);for(let k=0;k<60;k++){const i=t.findIndex((x,j)=>x!==s[j]);if(i<0)return s;
+      s=q.model=='parts'?M.step(q,s,i):M.step(q,s,q.model=='frame'?0:i,t[i]>s[i]?1:-1);if(!s)return null}return null};
+    const seen={};let n=0,wr=0;
+    for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);
+      for(let s=1;s<=400;s++){const q=genQ(sk,+lv,s);if(q.kind!=='make')continue;n++;const M=K2MM[q.model],tag=id+' '+q.label+': ';
+        if(q.model!==MODEL[id])bad(tag+'model '+q.model);
+        // answerable: from the start state, the model's steps reach a state the kind takes as right; it is the answer state
+        const s0=M.s0(q),end=drive(q,s0.slice());
+        if(!end||!KIND.make.same(q,mmOf(q,end))||KIND.make.same(q,mmOf(q,s0)))bad(tag+'not answerable from its start, or the start is right');
+        // checked by the model's state: every state one step off the answer is wrong (a counter more or less, a part, a block)
+        const A=M.ans(q),offs=q.model=='parts'?A.map((x,i)=>M.step(q,A,i)):A.flatMap((x,i)=>[M.step(q,A,q.model=='frame'?0:i,1),M.step(q,A,q.model=='frame'?0:i,-1)]);
+        for(const o of offs.filter(Boolean)){wr++;if(KIND.make.same(q,mmOf(q,o)))bad(tag+'a wrong state is taken as right: '+o.join())}
+        // the parts: any parts shaded, as many as the equal fraction needs, are right (it is the share that counts, not which parts)
+        if(q.model=='parts'){const k=A.filter(Boolean).length,rev=A.map((x,i)=>+(i>=A.length-k));if(!KIND.make.same(q,mmOf(q,rev)))bad(tag+'the same share in other parts is wrong')}
+        // the take-away frame starts with its counters in (drawn), never with fixed ones; a + ? = c starts with a in
+        if(q.m.from){if(s0[0]!==q.m.from||(M.draw(q,s0).match(/<circle/g)||[]).length!==q.m.from)bad(tag+'the frame does not start with '+q.m.from)}
+        if(q.model=='frame'&&(M.draw(q,s0).match(/data-c="/g)||[]).length!==q.m.total)bad(tag+'not one cell a counter');
+        // the hint: the fact's own, and it shows
+        if(!q.hint||!hintHTML(q)||hintHTML(q).length<10)bad(tag+'no hint');
+        // determinism: the same seed gives the same question (and the same input area)
+        const b=genQ(sk,+lv,s);if(JSON.stringify(b)!==JSON.stringify(q)||KIND.make.render(b)!==KIND.make.render(q))bad(tag+'not the same for the same seed');
+        // no new words: the say and the words on screen are the lessons' (or KINDS2's) own
+        if(!SAY.some(x=>x.test(q.say)))bad(tag+'say is not a lesson line: '+q.say);
+        if(!TXT.some(x=>x.test(txt(q.html))))bad(tag+'words on screen are not a lesson line: '+txt(q.html));
+        if(!ANS.some(x=>x.test(KIND.make.spoken(q))))bad(tag+'the answer said on reveal is not a lesson line: '+KIND.make.spoken(q));
+        seen[id]=(seen[id]||0)+1}}
+    out.tap={n,wr,seen};
+    // the validator: m.from must leave something taken away and fit; not with fixed counters
+    const F={kind:'make',model:'frame',m:{total:10,from:7},ans:'4',eq:'value',label:'zz',say:'x',html:'<div class="sub">x</div>',hint:{k:'text',s:'x'}};
+    if(kindProblems(F).length)bad('m.from: a valid take away fails: '+kindProblems(F).join('; '));
+    for(const m of [{total:10,from:4},{total:10,from:3},{total:10,from:11},{total:10,from:7,fixed:2}])if(!kindProblems(Object.assign({},F,{m})).length)bad('m.from: the validator missed '+JSON.stringify(m));
+  `,TAP10_OFF);
+  const p=[...r.bad];
+  for(const id in TAP10)if(!(r.tap.seen[id]>=40))p.push(id+': only '+(r.tap.seen[id]||0)+' make questions in 400 seeds');
+  // the words checked above come from the lessons: each phrase is in their source
+  for(const t of ['Put in ${a}, then ${b} more.','There are ${a}. Take away ${b}.','Put in more to make ${t}.','${a} and how many make ${t}? Put in more to make ${t}.',
+    "'Make the answer on the frame.'",'Take away ${b}.','${a} plus what makes ${s}? Put in more to make ${s}.','Make the answer with blocks.','Tap the parts to shade ${fcSay(n, d)} of the ${sh}.',
+    '${a} take away ${a - v} leaves ${v}.','ansSay: `${a} and ${b} make ${c}`',"ansSay: `${n} is ${parts.join(' and ')}`"])if(!LSRC.includes(t))p.push('not a lesson or KINDS2 line: '+t);
+  return{problems:p,note:`${r.tap.n} make questions (${r.tap.wr} wrong states judged wrong); ${r.rt} review round trips; ${r.rows.join('; ')}`};
 });
 
 // ---- G-MOVES (v188): one new move and one boss per action game (src/js/59-game-hub.js GH.face / GH.bossRec / GH.boss / GH.moveNew,
@@ -22518,7 +22880,10 @@ run('recorded teacher lines TEACH-4',()=>{
   // so the about 860 fixed lesson lines are about 1400 sentences (with the fixed sentences of lines that also hold a number or a {slot})
   // fix2 v194 (Fable): the cap narrowed to 1400 (1289 lines now; the owner approved the budgets 2026-11-24), so a slip shows sooner
   // REC-2, owner decision 2026-11-24 (9.0 MB): the warm-up lines and the Explore lines of grade 3 and up too: 1420 collected, the cap 1400 -> 1500
-  if(lines.size<60||lines.size>1500)p.push(lines.size+' teacher lines (want at most 1500: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded; REC-2 (owner decision 2026-11-24, 9.0 MB) 1500 with the last two groups)');
+  // REC-12 (owner approval 2026-11-26): the non-reader lines of AUDIO12.md are their own approved list, counted exactly by "AUDIO-12 REC-12";
+  // the cap below stays on the lesson and TEACH-4 lines it was set for
+  const nNr=[...lines.values()].filter(o=>o.from.every(f=>f.startsWith(EA.NR_FROM))).length,nLs=lines.size-nNr;
+  if(nLs<60||nLs>1500)p.push(nLs+' teacher lines (want at most 1500: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded; REC-2 (owner decision 2026-11-24, 9.0 MB) 1500 with the last two groups)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
     if(f!==EA.teachFileOf(k,o.rec))p.push('"'+k+'": file '+f+' is not the hash of its text and recipe');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
@@ -22544,7 +22909,7 @@ run('recorded teacher lines TEACH-4',()=>{
   if(!M0||JSON.stringify(M0.lines)!==JSON.stringify(want0)||M0.dir!==M.dir||M0.ext!==M.ext)p.push('EN_TEACH0 is not the start-up list of the teacher manifest ('+(M0?Object.keys(M0.lines).length:0)+' lines, want '+Object.keys(want0).length+'): run node tools/en-audio.js --teach-start');
   if(!data.includes('const EN_TEACH0=')||tp.includes('const EN_TEACH0=')||html.includes('const EN_TEACH0='))p.push('EN_TEACH0 must be in '+DATA_FILE+' only');
   for(const k of ['What comes next?','How many in all?','Say it slowly.'])if(!M0||!M0.lines[k])p.push('not recorded outside a lesson: '+k);
-  const b0=fs.statSync(path.join(SRC,'data','d-teach-start.js')).size;if(b0>6000)p.push('src/data/d-teach-start.js is '+b0+' bytes (want at most 6000: it loads at start)');
+  const b0=fs.statSync(path.join(SRC,'data','d-teach-start.js')).size;if(b0>7000)p.push('src/data/d-teach-start.js is '+b0+' bytes (want at most 7000: it loads at start)'); // owner decision 2026-11-26: the AUDIO-12 generated prompts play from start-up (was 6000)
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');
@@ -23939,7 +24304,7 @@ run('grown-ups PIN: the hash, a wrong PIN, lockout timing, the first time under 
   const r=R(`(()=>{const bad=[];let now=1.8e12;const D0=Date.now;Date.now=()=>now;const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,wrong:SFX.wrong};
     try{
     PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toGrown=0;grown=()=>{toGrown++};
-    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){},next(n){pads.push(n)}}),last=()=>pads[pads.length-1];
     // 1. the hash: salted, slow, never the PIN itself; per tablet in PIN.KEY
     for(const k in __st)delete __st[k];
     if(PIN.has())bad.push('a PIN on an empty tablet');
@@ -24006,7 +24371,7 @@ run('grown-ups PIN in first setup: setup asks for it twice before saving, the ga
   const r=R(`(()=>{const bad=[];const pads=[],keep={pad:PIN.pad,askQ:NAV.askQ,sheet:UI.sheet,fb,grown,home,wrong:SFX.wrong,put:PIN.put,psheet:PLAY.sheet};
     try{
     PIN.pad=o=>{pads.push(o);return{}};fb=()=>{};SFX.wrong=()=>{};let toHome=0,toGrown=0;home=()=>{toHome++};grown=()=>{toGrown++};
-    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){}}),last=()=>pads[pads.length-1];
+    const pd=()=>({closed:0,m:'',close(){this.closed=1},msg(t){this.m=t},clear(){},next(n){pads.push(n)}}),last=()=>pads[pads.length-1];
     const q=x=>document.querySelector(x),go=nm=>{loadSave(null);setup();q('#nm').value=nm;q('#pn').value='Rex';q('#go').onclick()};
     // 1. a new tablet: Let's go! asks for the PIN before anything is saved; no name: no PIN asked
     for(const k in __st)delete __st[k];
@@ -24628,13 +24993,17 @@ run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-f
      __fresh(2);S.rev=[1,2].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1}));startReview();const n=G.n;__play(all);o.push(n+'|'+__end());
      return JSON.stringify(o)})()`));
    const want=['6 out of 6: You are a superstar!','8 out of 8: You are a superstar!','10 out of 10: You are a superstar!','7 out of 10: Fantastic work!','5 out of 10: Good job! Keep practicing!',
-     '4 out of 10: Nice try! Practice makes you stronger!','7 out of 7: You are a superstar!','0 out of 10: Nice try! Practice makes you stronger!','2|2 out of 2: You are a superstar!'];
+     // MIX-8 (BEST-APP roadmap 8, approved): card 6 misses its first 6, a hard start (4 misses in the first 4 leave 1 star out of reach),
+     // so the round ends at 6 questions, all missed; the line is the same approved one (it was "4 out of 10", the 4 right after question 6)
+     '0 out of 6: Nice try! Practice makes you stronger!','7 out of 7: You are a superstar!','0 out of 10: Nice try! Practice makes you stronger!','2|2 out of 2: You are a superstar!'];
    want.forEach((w,i)=>{if(rows[i]!==w)p.push('end card '+(i+1)+': "'+rows[i]+'", want "'+w+'"')})}
   // 4. learn first: the time on a question that ends revealed counts (the question is not counted); every answer wrong logged 0 s
   {const r=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;ptCfg().need=2;const i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);start('math',i);const g=G;let n=0;
      while(g.done<g.n&&n++<40){__off+=20000;check(__NO,__fk);if(!G.lock)check(__NO,__fk);g.__pend=false;__step(g)}
      const e=ACT.entry(today())||{sec:0,q:0};return JSON.stringify({sec:e.sec,q:e.q,locked:ptGate().locked})})()`));
-   if(r.sec<180||r.q!==0||r.locked)p.push('learn first: 10 questions of 20 s, every answer wrong: '+JSON.stringify(r)+' (want about 200 s logged, 0 questions, the Game Room open after 2 minutes)')}
+   // MIX-8 (BEST-APP roadmap 8, approved): every answer wrong is a hard start, so the round ends after 6 questions (was 10): about 120 s
+   // logged (was 200), the same 90% floor (108 of 120; it was 180 of 200); the Game Room still opens after its 2 minutes
+   if(r.sec<108||r.q!==0||r.locked)p.push('learn first: 6 questions of 20 s (a hard start ends the round of 10 at 6), every answer wrong: '+JSON.stringify(r)+' (want about 120 s logged, 0 questions, the Game Room open after 2 minutes)')}
   // 5. "Say 5 Spanish words" with no microphone or a blocked one: a finished Spanish round does it; with a microphone only the count does
   {const r=JSON.parse(R(`(()=>{__fresh(2);const x={k:'speak',d:0},es={k:'round',p:'es',mix:false,test:false},o={};
      SPK.mic='yes';SPK.deny=0;o.micOk=MIS.hit(x,es);SPK.deny=1;o.blocked=MIS.hit(x,es);o.blockedMath=MIS.hit(x,{k:'round',p:'math'});o.blockedMix=MIS.hit(x,{k:'round',p:'es',mix:true});
@@ -24660,9 +25029,19 @@ run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-f
   //    Challenge questions; with nothing due the round is as before
   {const r=JSON.parse(R(`(()=>{const go=due=>{__fresh(2);S.unlockAll=true;const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);
        S.rev=due?[1,2,3,4,5,6].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1})):[];__asked=[];start(p,i);const g=__play(()=>true);
-       return{mode:g.mode,tags:__asked.slice(0,10).map(q=>q.review?'r':mastTag(q)||'-').join(''),left:REV.get().filter(x=>x.box==0).length,stars:getSt(p,i)}};
+       // MIX-8 (b): a review question that would be the third of its kind in a row waits: wait[k] is true when the k-th review question
+       // is at its slot, or later and at every question it waited through the two questions before were of its kind; plain[j]: a
+       // question that is not a review is the stop's own before question 6 and a Challenge question from 6 on
+       const a=__asked.slice(0,10),rv=a.map((q,j)=>q.review?j:-1).filter(j=>j>=0),tag=q=>q.review?'r':mastTag(q)||'-';
+       const wait=rv.map((j,k)=>{const sl=[3,7][k];if(j<sl)return false;for(let x=sl;x<j;x++)if(!a[x].review&&!(a[x-1].kind==a[j].kind&&a[x-2].kind==a[j].kind))return false;return true});
+       const plain=a.every((q,j)=>q.review||tag(q)==(j<5?'-':'ch'));
+       return{mode:g.mode,tags:a.map(tag).join(''),rv,wait,plain,left:REV.get().filter(x=>x.box==0).length,stars:getSt(p,i)}};
      return JSON.stringify([go(true),go(false)])})()`));
-   if(r[0].mode!=='challenge'||r[0].tags.replace(/ch/g,'c')!=='---r-ccrcc')p.push('review slots in a challenge round: '+JSON.stringify(r[0])+' (want a review question of the path at questions 4 and 8)');
+   // MIX-8 (BEST-APP roadmap 8, approved): the review question of the path is asked at question 4 and 8 as before, or a little later
+   // when it would be the third question of its kind in a row there (the run cap: it waits as long as that holds, so the question it
+   // takes is a later one: the stop's own before question 6, a Challenge from 6 on); was exactly ---r-ccrcc
+   {const t=r[0].tags.replace(/ch/g,'c');
+    if(r[0].mode!=='challenge'||!r[0].plain||r[0].rv.length!==2||r[0].wait.some(w=>!w)||t.replace(/r/g,'')!==t.replace(/r/g,'').replace(/[^-c]/g,''))p.push('review slots in a challenge round: '+JSON.stringify(r[0])+' (want a review question of the path at questions 4 and 8, later only to keep three of one kind from a row)')}
    if(r[0].left!==4||r[0].stars!==3)p.push('review slots: '+r[0].left+' of 6 items still in box 0 after a perfect round (want 4: two were asked), stars '+r[0].stars);
    if(r[1].mode!=='challenge'||r[1].tags.replace(/ch/g,'c')!=='-----ccccc')p.push('nothing due: the challenge round changed: '+JSON.stringify(r[1]))}
   // 10. owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run to its end three times without passing Show opens its
@@ -24738,6 +25117,486 @@ run('practice owner decisions P1-P6: the boss only says Try again, short rounds 
    if(same!==240)p.push('P6: ptCalc for a 5 of 5 round of the stop is '+same+' s')}
   }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'40 boss misses; pass and 2 stars for 7 round lengths, whole rounds of 6, 8, 5 and 10; reviews of 1, 2, 5 and 10; the speak mission said 3 times; 7 check-ins'};
+});
+
+// ---- MIX-8 (BEST-APP roadmap 8, "Break up practice"; docs/drafts/MIX8.md; 50-round.js): thousands of whole rounds on fake elements,
+// through the real start(), next(), makeQ(), check() and finish(), each played twice from the same seeds and the same answers: with
+// MIX-8 on, and off (MIX8.off: the v197 round). Answers are by position (the k-th new question's first and second try), so both runs
+// get the same first-try results. Checks: (b) never three questions of one kind in a row, except the misses left for the round's end,
+// a stop that has only one kind (KMONO), a pool round's own order (passages), and a review question at the round's last new question;
+// (c) every missed question comes back exactly once in the same round, never before BACK more new questions; (d) the round is cut
+// exactly when the hard-start rule (recomputed here from the first tries) says so, and never then passes or earns a star (the v197
+// round did not either); an all-right round, and any round with no hard start, keeps its score, stars, pass and (with the same review
+// items fixed) game time, coins and stars collected; the same seeds and answers give the same round (determinism).
+run('round mix MIX-8: run cap, misses back in the round, the hard start, all-right rounds unchanged, determinism',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={};
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(doc,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx);
+  let note='';
+  try{
+  R(`say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};spkHook=()=>false;for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   var __log=[],__ft=[],__pt=null,__fin=null;const __M0=Math.random;
+   renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q);
+     __log.push({q,retry:!!G.retry,done:G.done,n:G.n})};
+   var __ptl=null;ptEarn=s=>{__pt=s};{const c0=ptCalc;ptCalc=function(){const r=c0.apply(this,arguments);__ptl=r.lines.filter(l=>!/^Fixed /.test(l[1]));return r}}{const f0=finish;finish=function(){__fin=G;return f0()}}
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;S.unlockAll=true;bankReset()}
+   // one round: go() starts it; pat = {f, s, r}: first try right, second try right (by new question), a retry right (in order asked)
+   function __play(seed,grade,go,pat,off){MIX8.off=!!off;__fresh(grade);if(pat.rev)S.rev=pat.rev();RNG=mulberry32(seed);Math.random=mulberry32(seed*7+3);
+     __log=[];__ft=[];__pt=null;__ptl=null;__fin=null;let guard=0,rt=0;go();
+     while(!__fin&&guard++<120){const g=G,q=g.q;
+       if(g.retry){if(pat.r[rt++%pat.r.length])check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}}
+       else{const k=g.done,ok=!!pat.f[k];__ft.push({ok,hq:!!G.hq,ch:mastTag(q)=='ch',done:k});
+         if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(pat.s[k]?__OK:__NO,__fk)}}
+       next()}
+     MIX8.off=false;Math.random=__M0;RNG=__M0;const g=__fin;
+     return g&&{g,log:__log,ft:__ft,pt:__pt,ptl:JSON.stringify(__ptl),stars:g.path&&g.node>=0?getSt(g.path,g.node):-1,coins:S.coins,col:S.stars,key:__log.map(e=>(e.retry?'r:':'')+e.q.kind+':'+e.q.label).join('|')}}`);
+  const r=JSON.parse(R(`(()=>{
+    const o={late:0,reord:0,rounds:0,off:0,same:0,allRight:0,hard:0,hardOff0:0,mono:0,flush:0,last:0,pass:0,miss:0,mid:0,end:0,det:0,mix:0,bad:[]},bad=m=>{if(o.bad.length<40&&!o.bad.includes(m))o.bad.push(m)};
+    const stops=[];for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&SK[n.sk].gen)stops.push([p,i])});
+    const J=JSON.stringify,need=starNeed;
+    for(let t=0;t<2400;t++){
+      const [p,i]=stops[(t*37)%stops.length],nd=NODES[p][i],grade=GRADES[t%GRADES.length],rr=mulberry32(t*131+17),seed=t*9973+11;
+      // models: all right; random first tries at 85%, 60% or 35%; a hard start (the first 3, 4 or 5 missed, the rest right)
+      const m=t%5,pr=[1,.85,.6,.35][m]||0,hk=3+t%3,pat={f:[],s:[],r:[]};
+      for(let k=0;k<12;k++){pat.f.push(m==4?k>=hk:rr()<pr);pat.s.push(rr()<.5);pat.r.push(rr()<.7)}
+      if(t%3==1)pat.rev=()=>[1,2,3,4,5,6].map(s=>({sk:nd.sk,lv:nd.lv,seed:s*13+t,label:revLabel(genQ(nd.sk,nd.lv,s*13+t).label),box:0,due:0,n:1})).concat(
+        NODES[p].filter(x=>x.sk!='boss'&&SK[x.sk]&&SK[x.sk].gen).slice(0,4).map((x,j)=>({sk:x.sk,lv:x.lv,seed:j+1,label:revLabel(genQ(x.sk,x.lv,j+1).label),box:0,due:0,n:2})));
+      // KMONO (49b-kinds2.js) is a session memo of one-kind stops that changes how many draws pickQ makes: kept as it was for the replay
+      const km=J(KMONO),go=()=>start(p,i),A=__play(seed,grade,go,pat),B=__play(seed,grade,go,pat,true);
+      if(!A||!B){bad(nid(nd)+' grade '+grade+': the round did not end');continue}
+      o.rounds++;o.off++;const g=A.g,own=!g.pool,id=nd.sk+nd.lv,n0=B.g.n;
+      // (b) the run cap
+      for(let j=2;j<A.log.length;j++){const e=A.log[j],k=e.q.kind;if(A.log[j-1].q.kind!==k||A.log[j-2].q.kind!==k)continue;
+        if(e.retry&&e.done>=e.n)o.flush++;else if(!own)o.pass++;else if(KMONO[id]||KMONO[e.q.sk+e.q.lv])o.mono++;else if(e.q.review&&e.done==e.n-1)o.last++;
+        else bad(id+' grade '+grade+': three '+k+' questions in a row at '+(j+1)+' of '+A.log.length+', done '+e.done+' of '+e.n+' ('+A.log.slice(j-2,j+1).map(x=>(x.retry?'retry ':x.q.review?'review ':'')+x.q.label).join(' / ')+')')}
+      // (c) every miss comes back once, in this round, not before BACK more new questions
+      const missed=A.log.filter(e=>!e.retry&&e.q.back!=null);
+      for(const e of missed){o.miss++;const back=A.log.filter(x=>x.retry&&x.q===e.q);
+        if(back.length!==1){bad(id+': a missed question came back '+back.length+' times');continue}
+        const b=back[0];if(A.log.indexOf(b)<A.log.indexOf(e)||(b.done<e.q.back&&b.done<b.n))bad(id+': a miss came back too soon');
+        if(b.done<b.n)o.mid++;else{o.end++;if(e.q.back<g.n)o.late++}}
+      if(A.log.some(x=>x.retry&&x.q.back==null))bad(id+': a retry of a question that was not missed');
+      // (d) the hard start, recomputed from the first tries
+      let want=null;{let sc=0,h=0,fg=0,n=n0;for(const f of A.ft){const d=f.done+1;if(f.ok){sc++;if(f.hq)h++}else if(f.ch)fg++;
+        if(own&&n>=8&&d*2<=n&&sc-h/2+fg+(n-d)<need(n,.7)){want=Math.max(d+1,Math.ceil(n*.6-1e-9));break}}}
+      if(want!==null){o.hard++;if(g.n0!==n0||g.n!==want)bad(id+' grade '+grade+': hard start want n '+want+', got '+g.n+' (n0 '+g.n0+')');
+        if(A.stars!==B.stars||A.stars>0||g.score>=need(g.n,.7))bad(id+': a hard start changed the stars '+B.stars+' -> '+A.stars);
+        if(B.stars===0)o.hardOff0++}
+      else{if(g.n0!=null||g.n!==n0)bad(id+' grade '+grade+': the round was cut with no hard start ('+n0+' -> '+g.n+')');
+        // a review question that waited one question (the run cap) is answered at another position: positional answers then differ
+        const rp=L=>L.filter(x=>!x.retry&&x.q.review).map(x=>x.done).join();
+        const a=[g.score,g.helped||0,g.forgive||0,A.stars,g.best],b=[B.g.score,B.g.helped||0,B.g.forgive||0,B.stars,B.g.best];
+        if(rp(A.log)!==rp(B.log))o.reord++;
+        else if(J(a)!==J(b))bad(id+' grade '+grade+': [score, helped, forgiven, stars, best] '+J(b)+' -> '+J(a));
+        else if((g.fixed||0)===(B.g.fixed||0)){o.same++;if(A.pt!==B.pt||A.coins!==B.coins||A.col!==B.col)bad(id+': game time, coins or stars collected changed '+J([B.pt,B.coins,B.col])+' -> '+J([A.pt,A.coins,A.col]))}}
+      // game time: the same lines (the "Fixed" line aside: a fresh question can carry a due item's label, and the draws differ), and
+      // the same seconds when the same review items were fixed
+      if(m==0){o.allRight++;if(g.score!==n0||A.stars!==3||A.ptl!==B.ptl||(g.fixed||0)===(B.g.fixed||0)&&A.pt!==B.pt||A.coins!==B.coins||A.col!==B.col||A.log.some(x=>x.retry)||g.n!==n0)bad(id+' grade '+grade+': an all-right round changed '+J([g.score,n0,A.stars,B.stars,A.pt,B.pt,A.coins,B.coins,A.col,B.col,g.n,g.fixed,B.g.fixed,g.best,B.g.best,t]))}
+      // determinism: the same seed and answers again
+      if(t%8==0){o.det++;for(const k in KMONO)delete KMONO[k];Object.assign(KMONO,JSON.parse(km));const C=__play(seed,grade,go,pat);if(!C||C.key!==A.key||C.pt!==A.pt||C.stars!==A.stars)bad(id+': the same seed and answers gave another round')}}
+    // Tricky Mix and Daily Review: pools reordered once (runCap), misses back in the round
+    for(let t=0;t<200;t++){const daily=t%2,pat={f:[],s:[],r:[]},rr=mulberry32(t+5);for(let k=0;k<12;k++){pat.f.push(rr()<.6);pat.s.push(rr()<.5);pat.r.push(rr()<.7)}
+      pat.rev=()=>stops.filter((x,j)=>j%23==t%23).slice(0,9).map(([pp,ii],j)=>{const x=NODES[pp][ii];return{sk:x.sk,lv:x.lv,seed:j+t,label:revLabel(genQ(x.sk,x.lv,j+t).label),box:0,due:0,n:1}});
+      const A=__play(t*31+1,2,daily?startReview:startMix,pat);if(!A){bad('mix: the round did not end');continue}o.mix++;
+      for(const e of A.log.filter(x=>!x.retry&&x.q.back!=null))if(A.log.filter(x=>x.retry&&x.q===e.q).length!==1)bad('mix: a miss did not come back once')}
+    // runCap: a permutation; a third of one kind in a row only when nothing of another kind is left
+    {const rr=mulberry32(99);for(let t=0;t<2000;t++){const a=Array.from({length:1+Math.floor(rr()*12)},(_,j)=>({kind:'k'+Math.floor(rr()*(1+t%4)),j})),b=runCap(a);
+      if(b.length!==a.length||new Set(b).size!==a.length||b.some(x=>!a.includes(x)))bad('runCap is not a reordering');
+      for(let j=2;j<b.length;j++)if(b[j].kind==b[j-1].kind&&b[j].kind==b[j-2].kind&&b.slice(j+1).some(x=>x.kind!==b[j].kind))bad('runCap left an avoidable run')}}
+    return JSON.stringify(o)})()`));
+  p.push(...r.bad);
+  if(r.rounds<2000||r.hard<150||r.allRight<400||r.miss<1000||r.mix<200||r.det<250)p.push('too few cases: '+JSON.stringify(r));
+  if(r.late>r.miss*.1)p.push(r.late+' of '+r.miss+' misses waited for the end with a new question left after their turn');
+  if(r.mid<r.miss*.5)p.push('only '+r.mid+' of '+r.miss+' misses came back inside the round (the rest at the end)');
+  if(r.hardOff0!==r.hard)p.push('a hard start fired where the v197 round passed');
+  note=`${r.rounds} stop rounds over 8 grades, each also played as v197 (${r.allRight} all right, unchanged; ${r.reord} with a review question moved by the run cap; ${r.same} with no hard start and the same review items fixed: same score, stars, game time, coins); `+
+    `${r.hard} hard starts, all 0 stars as in v197; ${r.miss} misses, ${r.mid} back inside the round, ${r.end} at the end (${r.late} of them with a new question left after their turn); runs of 3 allowed: ${r.flush} end retries, ${r.mono} one-kind stops, ${r.pass} passage rounds, ${r.last} last-question reviews; `+
+    `${r.det} rounds replayed identically; ${r.mix} Tricky Mix and Daily Review rounds; 2000 runCap pools`;
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note};
+});
+
+// ---- FEEDBACK-4 (BEST-APP roadmap 4): Tell us what you think, in Grown-ups only (80-grown.js feedbackCard) ----
+// 1. the card is drawn only by grown() (behind the PIN), after About; nothing else in src builds it or links the e-mail or the Play page;
+// 2. the mailto is the address with a subject of the release and the build only, whatever the child's save holds (no name, grade or
+//    progress); 3. the Play page only in Play mode (PLAY.on), opened outside the app like the privacy policy; the web shows the e-mail only;
+// 4. no rating prompt anywhere a child goes (no "rate us", review flow or store link outside the card); 5. its words are in the read-through.
+run('FEEDBACK-4: Tell us what you think in Grown-ups only, a mailto with no child data, the Play page only in Play mode, no rating prompt for a child',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const code=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/<!--[\s\S]*?-->/g,'').replace(/(^|[^:'"\\])\/\/.*$/gm,'$1');
+  const gr=rd('js/80-grown.js'),fa=gr.indexOf('function feedbackCard(){'),fz=gr.indexOf('\n}\n',fa);
+  const ga=gr.indexOf('function grown(){'),gz=gr.indexOf('\nfunction ',ga+1),gbody=gr.slice(ga,gz<0?gr.length:gz);
+  if(fa<0||fz<0)p.push('80-grown.js has no feedbackCard()');
+  // 1. Grown-ups only, near the bottom: after About, before the PIN and Start over cards
+  if(!/\$\{aboutCard\(\)\}\n  \$\{feedbackCard\(\)\}\n  \$\{GW\.card\('gw-pin'/.test(gbody))p.push('grown() must show feedbackCard() right after About, before Grown-ups PIN');
+  const files=[['shell.html',path.join(SRC,'shell.html')],...['js','css','data'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).map(n=>[d+'/'+n,path.join(SRC,d,n)]))];
+  const RATE=/\brate (us|this app|the app|whistlestop)\b|\brating prompt|\b(leave|write) (us )?a review\b|\breview (us|whistlestop|on google play)\b|play\.google\.com\/store|market:\/\/|requestReview|ReviewManager|launchReviewFlow|\bmailto:|hello@whistlestoplearning|feedbackCard\(|\bFB_(MAIL|PLAY)\b/i;
+  let calls=0;
+  for(const [n,f] of files){
+    let c=code(fs.readFileSync(f,'utf8'));
+    if(n==='js/80-grown.js'){const a=c.indexOf('const FB_MAIL='),b=c.indexOf('\n}\n',c.indexOf('function feedbackCard(){'));
+      calls=(c.slice(c.indexOf('function grown(){')).match(/feedbackCard\(\)/g)||[]).length;
+      if(a<0||b<0){p.push('80-grown.js: the card\'s code is not where the check expects it');continue}
+      c=c.slice(0,a)+c.slice(b)} // the card itself; its one call in grown() is counted above
+    c.split('\n').forEach((l,i)=>{if(RATE.test(l)&&!(n==='js/80-grown.js'&&/^  \$\{feedbackCard\(\)\}$/.test(l)))p.push(n+':'+(i+1)+' asks for a rating or links the e-mail or the store outside Grown-ups: '+l.trim().slice(0,100))});
+  }
+  if(calls!==1)p.push('feedbackCard() is called '+calls+' times in grown(), want 1');
+  // 2. and 3. drawn as a grown-up sees it, from a save full of a child's details
+  const r=eval(js+`
+  (()=>{const o={};S.name='Zorbalina';S.petName='Fluffernut';S.buddy='Quentavius';S.stars=4321;S.coins=987;S.grade=3;S.best=17;
+    PLAY.on=false;o.web=feedbackCard();PLAY.on=true;o.play=feedbackCard();PLAY.on=false;o.subj=feedbackSubject();o.rel=RELEASE;o.build=BUILD;o.pkg=PLAY.PKG;
+    o.grade=gradeSpoken(3);return o})()`);
+  const want='mailto:hello@whistlestoplearning.com?subject='+encodeURIComponent('Whistlestop feedback ('+r.rel+', build '+r.build+')');
+  const href=(h,id)=>{const m=new RegExp('<a [^>]*id="'+id+'"[^>]*>').exec(h);return m?m[0]:''},hv=a=>(/href="([^"]*)"/.exec(a)||[])[1]||'';
+  if(!/^Whistlestop feedback \(\d+\.\d+\.\d+, build (v\d+|__VER__)\)$/.test(r.subj))p.push('the subject is "'+r.subj+'"');
+  for(const [k,h] of [['web',r.web],['play',r.play]]){
+    const m=href(h,'fb-mail'),u=hv(m),txt=h.replace(/<[^>]*>/g,' ');
+    if(u!==want)p.push(k+': the e-mail link is '+u+', want '+want);
+    if(/target=/.test(m))p.push(k+': the mailto opens a new window (it goes to the e-mail app; a new window would be left empty)');
+    const all=decodeURIComponent(u)+' '+txt;
+    for(const s of ['Zorbalina','Fluffernut','Quentavius','4321','987',r.grade,'grade'])if(all.includes(s))p.push(k+': the card or its e-mail carries the child\'s '+s);
+    if(!/<section class="gw-card" id="gw-tell">/.test(h)||!txt.includes('Tell us what you think'))p.push(k+': not the gw-tell card');
+    if(/#[0-9a-fA-F]{3,8}\b|style=|[\u{1F300}-\u{1FAFF}]/u.test(h))p.push(k+': a raw colour, an inline style or an emoji');
+    if(/fetch\(|XMLHttpRequest|sendBeacon|<img|<script|onclick/.test(h))p.push(k+': more than plain links');
+  }
+  if(/fb-play|play\.google/.test(r.web))p.push('the web version shows the Play page');
+  const pl=href(r.play,'fb-play');
+  if(hv(pl)!=='https://play.google.com/store/apps/details?id=com.whistlestoplearning.app'||r.pkg!=='com.whistlestoplearning.app')p.push('Play mode: the Play link is '+(hv(pl)||'missing'));
+  if(!/target="_blank"/.test(pl)||!/rel="noopener"/.test(pl))p.push('the Play link does not open outside the app as the privacy policy does (target _blank, rel noopener)');
+  if(!/class="btn soft sm"/.test(href(r.web,'fb-mail'))||!/class="btn soft sm"/.test(pl))p.push('the links are not the 48 px soft buttons About uses');
+  // the card's code reads nothing of the child's save
+  const fsrc=code(gr.slice(gr.indexOf('const FB_MAIL='),fz));
+  if(/\bS\.|\bS\[|PRF\.|gradeOf|gradeSpoken|NODES|\bP\(|localStorage|SKEY|petN\(/.test(fsrc))p.push('the card\'s code reads the child\'s save');
+  // 5. every new sentence is in the read-through, marked pending owner approval
+  let doc='';try{doc=fs.readFileSync(path.join(ROOT,'docs','drafts','FEEDBACK-READ.md'),'utf8')}catch(e){p.push('docs/drafts/FEEDBACK-READ.md is missing')}
+  if(doc){if(!/pending owner approval/i.test(doc)||!/\| *Where *\| *Proposed text *\| *Why *\|/i.test(doc))p.push('FEEDBACK-READ.md: no where / proposed text / why table marked pending owner approval');
+    for(const s of ['Tell us what you think','Ideas, problems or a kind word: write to hello@whistlestoplearning.com.','Email us','Review on Google Play','Whistlestop feedback (1.0.0, build v'])
+      if(!doc.includes(s))p.push('FEEDBACK-READ.md does not list "'+s+'"')}
+  return{problems:p,note:'web: e-mail only; Play: e-mail and the Play page; '+files.length+' src files scanned for a rating prompt'};
+});
+
+// ---- SPACED-9 (BEST-APP roadmap 9, "Spaced check-ins for learned and skipped stops"; R-01 Should 4; docs/drafts/SPACED9.md; 59-review.js
+// SPC): weeks of play on a moving clock, through the real start(), makeQ(), check(), finish(), startMix() and placeApply(). Checks:
+// 1. the schedule: a passed stop is due 2 days after the pass, then 7, 21 and 60 days after each right first try, then finished; a
+//    wrong first try puts it back to 2 days (and makes the question a review item as always); a right one with the hint showing keeps
+//    its box; a date set ahead of the clock (the clock went back) is due; 2. the daily cap: never more than SPC.CAP check-ins asked on
+//    a day, SPC.MIX in one Mixed Practice, every one due when asked and moved exactly by the rule, in 8 weeks of 4 rounds a day;
+// 3. old saves (every fixture, and a save with 120 passed stops): migrate() adds S.spc = {} and changes nothing else; the first read
+//    spreads the passed stops over the weeks ahead (none due that day, at most SPC.ROOM.l learned and SPC.ROOM.k skipped first due on
+//    one day, the ones not practised for longest first), and migrate stays idempotent; 4. skipped stops (placement, Test out) get one
+//    light check-in from the next day, nearest below the placement first; right finishes it, wrong puts it on the learned ladder and
+//    the miss is a review item; 5. payouts: the same round, Mixed Practice and Daily Review pay the same game time, coins and stars
+//    with check-ins due as with none (a check-in takes the place of the "older stop" question), Daily Review's count is unchanged;
+// 6. determinism: the 8 weeks replayed from the same seeds give the same check-ins and the same schedule.
+run('SPACED-9: spaced check-ins for learned and skipped stops: the schedule, the daily cap, old saves spread, skipped stops, payouts, determinism',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={};
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(doc,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  let note='';
+  try{
+  R(`var __off=0;{const D0=Date,T0=Date.UTC(2026,10,2,12);Date=class extends D0{constructor(...a){if(a.length)super(...a);else super(T0+__off)}static now(){return T0+__off}}}
+   function __to(dn){while(mastDay()<dn)__off+=3600e3} // the app's own clock (today(), mastDay()) moved to day number dn
+   say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};spkHook=()=>false;for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   var __asked=[],__pt=0,__tr=[];renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q);__asked.push({q,retry:!!G.retry,day:mastDay(),mix:!!G.mix})};
+   ptEarn=s=>{__pt+=s};
+   {const f=spcTry;spcTry=function(q,ok,h){const e0=q&&q.spc&&S.spc.s[q.spc]?Object.assign({},S.spc.s[q.spc]):null,r=f(q,ok,h);if(q&&q.spc)__tr.push({k:q.spc,day:mastDay(),ok:!!ok,h:!!h,e0,e1:r&&Object.assign({},r)});return r}}
+   function __step(g){if(g.done<g.n){const b=backQ(g);if(b){g.q=b;g.retry=true}else{g.q=makeQ();g.retry=false}g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;bankReset()}
+   function __play(model){const g=G;let n=0;while(g.__pend&&n++<80){const ok=g.retry||model(g.q,g);__off+=3000;G.qt=Date.now()-3000;
+       if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}finish();return g}
+   const __ok=()=>{const a=[];for(const p in NODES)NODES[p].forEach((n,i)=>{if(SPC.ok(n)&&!SK[n.sk].round)a.push([p,i])});return a};`);
+  // 1. the schedule
+  {const r=JSON.parse(R(`(()=>{const o={bad:[]},bad=m=>o.bad.push(m);__fresh(2);
+     const st=__ok().filter(([p,i])=>p=='math'&&NODES[p][i].wi<=3),[p,i]=st[3],k=nid(NODES[p][i]),[p2,i2]=st[5],k2=nid(NODES[p2][i2]);
+     const D=mastDay();setSt(p,i,2);setSt(p2,i2,2);SPC.sync();const e=S.spc.s[k];
+     if(!e||e.b!==0||e.d!==D+2||e.k)bad('a stop passed on day 0: '+JSON.stringify(e)+', want due on day 2');
+     const days=[];for(let t=0;t<120&&e.b<SPC.DONE;t++){__to(D+t);const due=SPC.list(p).some(x=>x.k==k);
+       if(due!==(e.d<=D+t))bad('day '+t+': due '+due+', d '+(e.d-D));
+       if(due){days.push(t);spcTry(SPC.q({k,sk:NODES[p][i].sk,lv:NODES[p][i].lv},mastDay()),true,false)}}
+     o.days=days;__to(D+400);if(e.b!==SPC.DONE||SPC.list(p).some(x=>x.k==k))bad('the stop is not finished after four right check-ins: '+JSON.stringify(e));
+     // wrong, helped, the clock set back
+     const e2=S.spc.s[k2],n2=NODES[p2][i2],D2=mastDay();e2.b=2;e2.d=D2;
+     spcTry(SPC.q({k:k2,sk:n2.sk,lv:n2.lv},D2),true,true);if(e2.b!==2||e2.d!==D2+21)bad('a right check-in with the hint showing: '+JSON.stringify(e2)+', want box 2 due in 21 days');
+     __to(D2+21);spcTry(SPC.q({k:k2,sk:n2.sk,lv:n2.lv},mastDay()),false,false);if(e2.b!==0||e2.d!==D2+23)bad('a wrong check-in: '+JSON.stringify(e2)+', want box 0 due in 2 days');
+     // the clock set back 30 days: every date moves back with it (nothing waits for months); forward again: nothing moves
+     SPC.list(p2);const d0=e2.d;__off-=30*864e5;SPC.list(p2);if(e2.d!==d0-30)bad('the clock set back 30 days: due moved '+(e2.d-d0)+' days, want -30');
+     __off+=30*864e5;SPC.list(p2);if(e2.d!==d0-30)bad('the clock forward again moved the dates');
+     return JSON.stringify(o)})()`));
+   p.push(...r.bad);if(JSON.stringify(r.days)!=='[2,9,30,90]')p.push('the schedule: check-ins on days '+JSON.stringify(r.days)+', want [2,9,30,90] (2, then 7, 21 and 60 days after each right one)')}
+  // 3. old saves
+  {const r=JSON.parse(R(`((raws)=>{const o={bad:[],rows:[]},bad=m=>o.bad.push(m);
+     const look=(name)=>{const D=mastDay(),s=S.spc.s,ks=Object.keys(s),per={};let want=0,last=-1,lastL=null;
+       const seen={};for(const p in NODES)NODES[p].forEach((n,i)=>{if(!SPC.ok(n)||seen[nid(n)])return;const t=SPC.kind(p,i)||(NODES[p].some((m,j)=>nid(m)==nid(n)&&SPC.kind(p,j))?'x':'');if(t){seen[nid(n)]=1;want++}});
+       if(ks.length!==want)bad(name+': '+ks.length+' stops in the schedule, want '+want);
+       for(const k of ks){const e=s[k],t=e.k?'k':'l';if(e.b!==0)bad(name+': '+k+' not in box 0');if(e.d<D+(e.k?1:SPC.INT[0]))bad(name+': '+k+' first due on day '+(e.d-D));per[t+e.d]=(per[t+e.d]||0)+1;last=Math.max(last,e.d-D)}
+       for(const x in per)if(per[x]>SPC.ROOM[x[0]])bad(name+': '+per[x]+' '+(x[0]=='k'?'skipped':'learned')+' stops first due on day '+(+x.slice(1)-D));
+       if(SPC.list(null,D).length)bad(name+': check-ins due on the day the old save is first read');
+       const L=ks.filter(k=>!s[k].k).sort((a,b)=>s[a].d-s[b].d),ls=L.map(k=>(mastRec(k)||{}).last||0);
+       for(let j=1;j<ls.length;j++)if(ls[j]<ls[j-1]){bad(name+': the stops not practised for longest are not first');break}
+       let mx=0;for(let t=0;t<=last;t++){let c=0;for(const k of ks)if(s[k].d==D+t)c++;mx=Math.max(mx,c)}
+       o.rows.push(name+(ks.length?' '+ks.length+' stops over '+last+' days, at most '+mx+' a day':' none'));return{n:ks.length,last,mx}};
+     for(const name in raws){const raw=raws[name];for(const k in __store)delete __store[k];__store[KEY]=raw;loadSave(raw);
+       const had='spc' in JSON.parse(raw);migrate();
+       if(!had&&JSON.stringify(S.spc)!=='{}')bad(name+': migrate() made S.spc '+JSON.stringify(S.spc).slice(0,80)+', want {} (a default by id)');
+       const a=JSON.parse(JSON.stringify(S));delete a.spc;migrate();const b=JSON.parse(JSON.stringify(S));delete b.spc;if(JSON.stringify(a)!==JSON.stringify(b))bad(name+': migrate not idempotent');
+       SPC.sync();look(name);const once=JSON.stringify(S);migrate();SPC.sync();if(JSON.stringify(S)!==once)bad(name+': a second migrate and read changed the schedule')}
+     // a save from before this item with 120 passed stops and some practised long ago: spread, no flood
+     __fresh(3);const st=__ok();let c=0;for(const [p,i] of st){if(c>=120)break;if(!passed(p,i)){setSt(p,i,2);c++;S.mast=S.mast||{};S.mast[nid(NODES[p][i])]={n:12,p:.9,ms:4000,d:3,last:mastDay()-(c*7)%90}}}
+     delete S.spc;const raw=JSON.stringify(S);loadSave(raw);migrate();SPC.sync();const r=look('120 passed stops');
+     if(r.last<59||r.mx>SPC.ROOM.l)bad('120 passed stops: spread over '+r.last+' days, at most '+r.mx+' a day (want 60+ days, at most '+SPC.ROOM.l+')');
+     // the first weeks after: never more than the cap asked on a day
+     return JSON.stringify(o)})(${JSON.stringify(Object.fromEntries(['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'].map(n=>[n,fx(n)])))})`));
+   p.push(...r.bad);note+='old saves: '+r.rows.join('; ')+'. '}
+  // 4. skipped stops: placement and Test out
+  {const r=JSON.parse(R(`(()=>{const o={bad:[]},bad=m=>o.bad.push(m);__fresh(3);const D=mastDay(),ws=PATHS.math.worlds,at=ws.findIndex(w=>w.g>=2);
+     placeApply('math',{done:true,skip:Array.from({length:at},(_,j)=>j),at,asked:8,right:8});
+     SPC.sync(); // as the next round, or Mixed Practice, reads it (placeApply only adds S.skip and S.place: the placement check)
+     const s=S.spc.s,K=Object.keys(s).filter(k=>s[k].k);
+     if(!K.length)bad('placement: no skipped stop got a check-in');
+     if(Object.keys(s).some(k=>!s[k].k))bad('placement: a stop that was not passed is on the learned ladder');
+     const first=K.sort((a,b)=>s[a].d-s[b].d)[0],fi=NODES.math.findIndex(n=>nid(n)==first),top=Math.max(...K.map(k=>NODES.math.findIndex(n=>nid(n)==k)));
+     if(s[first].d!==D+1||fi!==top)bad('placement: the first light check-in is '+first+' on day '+(s[first].d-D)+', want the nearest stop below the placement ('+nid(NODES.math[top])+') tomorrow');
+     o.nK=K.length;o.span=Math.max(...K.map(k=>s[k].d))-D;
+     // the next day: a round of the placed world asks the light check-ins at question 4 and 8; a wrong one goes on the ladder and is a review item
+     __to(D+1);const i0=curNode('math');RNG=mulberry32(5);start('math',i0);__asked=[];__tr=[];__play((q,g)=>!q.spc);
+     const tk=__tr.filter(x=>x.e0&&x.e0.k);if(!tk.length)bad('placement: the next day\\'s round asked no light check-in');
+     for(const x of tk){if(x.e1.b!==0||x.e1.d!==D+3||x.e1.k)bad('a wrong light check-in: '+JSON.stringify(x.e1)+', want box 0 due in 2 days, learned');
+       const n=SPC.nd(x.k);if(!REV.get().some(it=>it.sk==n.sk&&it.lv==n.lv))bad('a wrong light check-in did not become a review item')} // (it can be asked again, and fixed, at question 8)
+     __to(D+2);start('math',i0);__tr=[];__play(()=>true);const tr=__tr.filter(x=>x.e0&&x.e0.k);
+     for(const x of tr)if(x.e1.b!==SPC.DONE)bad('a right light check-in is not finished: '+JSON.stringify(x.e1));
+     o.light=tk.length+tr.length;
+     // Test out: the world's stops get 2 stars but stay skipped (light), unless played SPC.OWN times
+     __fresh(2);S.unlockAll=true;const wi=PATHS.math.worlds.findIndex(w=>w.g==2),bi=NODES.math.findIndex(n=>n.sk=='boss'&&n.wi==wi);
+     RNG=mulberry32(9);G=newG({path:'math',node:bi,sk:'test',test:{wi},pool:worldPool('math',wi,10)});next();__play(()=>true);
+     if(!worldSkipped('math',wi))bad('Test out did not pass');
+     const tw=NODES.math.filter(n=>n.wi==wi&&SPC.ok(n)),tl=tw.filter(n=>{const e=S.spc.s[nid(n)];return e&&e.k&&e.d>=mastDay()+1});
+     if(!tl.length||tw.some(n=>{const e=S.spc.s[nid(n)];return!e||!e.k&&!((mastRec(nid(n))||{}).n>=SPC.OWN)}))bad('Test out: '+tl.length+' of '+tw.length+' stops have a light check-in');
+     o.test=tl.length+' of '+tw.length;return JSON.stringify(o)})()`));
+   p.push(...r.bad);note+='placement: '+r.nK+' skipped stops, light check-ins over '+r.span+' days, '+r.light+' asked in 2 days; Test out: '+r.test+' stops light. '}
+  // 5. payouts: the same rounds with check-ins due and with none
+  {const r=JSON.parse(R(`(()=>{const o={bad:[],spc:0,mix:0},bad=m=>o.bad.push(m);
+     const one=(due,go,seed)=>{__fresh(2);const st=__ok().filter(([p])=>p=='math').slice(0,30);for(const [p,i] of st.slice(0,20))setSt(p,i,2);
+       S.rev=[1].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1}));
+       const D=mastDay();SPC.sync();for(const k in S.spc.s)S.spc.s[k].d=due?D:D+40;
+       const rc=revCard(),dn=dueItems().length;RNG=mulberry32(seed);Math.random=mulberry32(seed+1);__pt=0;__asked=[];go(st[22]);__play(()=>true);
+       return{pt:__pt,coins:S.coins,stars:S.stars,map:JSON.stringify(S.maps),rc,dn,spc:__asked.filter(a=>a.q.spc&&!a.retry).length}};
+     for(let t=0;t<12;t++){const go=[([p,i])=>start(p,i),()=>startMix(),()=>startReview()][t%3];
+       const A=one(true,go,t*7+1),B=one(false,go,t*7+1);
+       if(t%3!=2&&!A.spc)bad('round '+t+': no check-in was asked with check-ins due');if(B.spc)bad('round '+t+': a check-in was asked with none due');
+       if(t%3==0)o.spc+=A.spc;if(t%3==1)o.mix+=A.spc;if(t%3==1&&A.spc>SPC.MIX)bad('Mixed Practice asked '+A.spc+' check-ins');
+       if(t%3==2&&A.spc)bad('Daily Review asked a check-in');
+       for(const k of ['pt','coins','stars','map','rc','dn'])if(A[k]!==B[k])bad(['a stop round','Mixed Practice','Daily Review'][t%3]+': '+k+' '+B[k]+' with no check-in due, '+A[k]+' with check-ins due')}
+     o.ptl=JSON.stringify(ptEarnList());return JSON.stringify(o)})()`));
+   p.push(...r.bad);note+='payouts: 4 stop rounds ('+r.spc+' check-ins), 4 Mixed Practice ('+r.mix+'), 4 Daily Reviews: the same game time, coins, stars and review count as with none due. '}
+  // 2. the cap on one day with 60 check-ins due: three stop rounds and two Mixed Practice ask exactly SPC.CAP, the next day SPC.CAP more
+  {const r=JSON.parse(R(`(()=>{__fresh(2);const st=__ok().filter(([p])=>p=='math').slice(0,70);for(const [p,i] of st.slice(0,60))setSt(p,i,2);SPC.sync();const D=mastDay();
+     for(const k in S.spc.s)S.spc.s[k].d=D;const per=[];
+     for(let t=0;t<2;t++){__to(D+t);let n=0;for(let r=0;r<5;r++){RNG=mulberry32(r+t*5);__asked=[];if(r<3)start(...st[62+r]);else startMix();__play(()=>true);n+=__asked.filter(a=>a.q.spc&&!a.retry).length}per.push(n)}
+     return JSON.stringify(per)})()`));
+   if(JSON.stringify(r)!==JSON.stringify([R('SPC.CAP'),R('SPC.CAP')]))p.push('60 check-ins due: '+JSON.stringify(r)+' asked on two days of 5 rounds, want the cap ('+R('SPC.CAP')+') each day')}
+  // 2 and 6. eight weeks of play, twice
+  const weeks=`(()=>{const o={bad:[],asked:0,perDay:{},mixMax:0,rounds:0,box:[0,0,0,0,0],newL:0,newK:0},bad=m=>{if(o.bad.length<30)o.bad.push(m)};__off=0;__fresh(1);
+     const st=__ok(),D=mastDay(),ptr={},rr=mulberry32(77);let c=0;
+     for(const [p,i] of st)if(p=='math'&&c<30||p=='read'&&c>=30&&c<45){setSt(p,i,2);c++}else if(p=='read'&&c==30){setSt(p,i,2);c++}
+     SPC.sync();__tr=[]; // the 31 stops passed before: spread (as an old save's)
+     for(let t=0;t<56;t++){__to(D+t);const dn=mastDay();
+       for(let r=0;r<4;r++){const p=['math','read','math','mix'][r];__asked=[];const k0=Object.keys(SPC.get().s);RNG=mulberry32(t*17+r);Math.random=mulberry32(t*31+r);
+         if(p=='mix')startMix();else{const ps=st.filter(x=>x[0]==p);let j=ptr[p]||0;while(j<ps.length&&passed(...ps[j])&&rr()<.97)j++;ptr[p]=j;start(...ps[Math.min(j,ps.length-1)])}
+         __play(q=>rr()<.82);o.rounds++;
+         const sq=__asked.filter(a=>a.q.spc&&!a.retry);o.asked+=sq.length;o.perDay[t]=(o.perDay[t]||0)+sq.length;if(p=='mix')o.mixMax=Math.max(o.mixMax,sq.length);
+         for(const k of Object.keys(SPC.get().s))if(!k0.includes(k)){const e=S.spc.s[k];if(e.k)o.newK++;else o.newL++;if(e.k?e.d<dn+1:e.d!==dn+2)bad('day '+t+': '+k+' joined due on day '+(e.d-D)+(e.k?'':', want 2 days after its pass'))}}
+       if(o.perDay[t]>SPC.CAP)bad('day '+t+': '+o.perDay[t]+' check-ins asked (cap '+SPC.CAP+')')}
+     for(const x of __tr){const e0=x.e0,e1=x.e1;if(!e0||!e1){bad('a check-in of a stop not in the schedule');continue}
+       if(!SPC.due(e0,x.day))bad('a check-in asked before it was due: '+JSON.stringify(x));
+       const want=!x.ok?{b:0,d:x.day+2}:x.h?{b:e0.b,d:x.day+SPC.INT[e0.b]}:e0.k?{b:SPC.DONE}:e0.b+1>=SPC.DONE?{b:SPC.DONE}:{b:e0.b+1,d:x.day+SPC.INT[e0.b+1]};
+       if(e1.b!==want.b||want.d!=null&&e1.d!==want.d)bad('a check-in moved '+JSON.stringify(e0)+' -> '+JSON.stringify(e1)+', want '+JSON.stringify(want)+' ('+(x.ok?'right':'wrong')+(x.h?', helped':'')+')')}
+     for(const k in S.spc.s)o.box[S.spc.s[k].b]++;
+     o.trace=JSON.stringify(__tr)+JSON.stringify(S.spc)+JSON.stringify(S.maps);o.right=__tr.filter(x=>x.ok).length;return JSON.stringify(o)})()`;
+  // KMONO (49b-kinds2.js) is a session memo of one-kind stops that changes how many draws pickQ makes: kept as it was for the replay
+  const km=R('JSON.stringify(KMONO)'),A=JSON.parse(R(weeks));R('for(const k in KMONO)delete KMONO[k];Object.assign(KMONO,'+km+')');const B=JSON.parse(R(weeks));
+  p.push(...A.bad);
+  if(A.trace!==B.trace)p.push('determinism: the same 8 weeks replayed gave other check-ins or another schedule');
+  if(A.mixMax>R('SPC.MIX'))p.push('a Mixed Practice asked '+A.mixMax+' check-ins');
+  if(A.asked<100||A.box[1]+A.box[2]+A.box[3]+A.box[4]<20||A.newL<10)p.push('too few check-ins to judge: '+JSON.stringify({asked:A.asked,box:A.box,newL:A.newL}));
+  const days=Object.values(A.perDay),full=days.filter(x=>x==R('SPC.CAP')).length;
+  note+=`8 weeks, ${A.rounds} rounds: ${A.asked} check-ins (${A.right} right), at most ${Math.max(...days)} a day (cap ${R('SPC.CAP')}; ${full} days at the cap), at most ${A.mixMax} in a Mixed Practice; ${A.newL} stops joined as passed; boxes at the end ${JSON.stringify(A.box)}; replayed identically`;
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note};
+});
+
+// ---- PARENT-11 (BEST-APP roadmap 11): the Parent corner of the report card (src/js/41d-parent.js, part gate; docs/drafts/PARENT11-READ.md).
+// 1. the parts: the corner, its words and the certificate in the lazy part gate; only PARENT_ON (82a-parenton.js) in index.html;
+// 2. the approval gate: PARENT_ON is 1 exactly when the read-through's status line says "reviewed <name> <date>"; the words check holds
+//    on the tree and on a copy whose status line is flipped (the one-line flip), with no name, or with the file left behind;
+// 3. the words: every sentence of PCW and every dinner question is in the read-through's where / proposed text / why table; 2 to 4
+//    questions per group, every skill on a map has a group, no question twice, no banned theme;
+// 4. in the app: nothing before approval (PARENT_ON 0: the 7 sections of the report card, none of the corner's words); after the flip
+//    the corner is the first card; the summary from fixture saves (midway, maxed) with a week of records: exactly the stops passed and
+//    played in the last 7 days, the lessons, the skills that got stronger, the minutes; the dinner questions come from the groups of the
+//    week's skills (the bigger group first, the child's grade, the same all week); the certificate has the name and the right counts;
+//    the save is never changed or saved; 5. no network: the corner's code and CSS reach nothing outside the tablet.
+run('PARENT-11: Parent corner: the week\'s summary from fixture saves, dinner questions from the week\'s skills, the approval gate, the certificate, no network',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),cpx=require('child_process'),os=require('os');
+  const DOC='docs/drafts/PARENT11-READ.md',src=rd('src/js/41d-parent.js'),css=rd('src/css/41d-parent.css');
+  // 1. the parts
+  for(const f of ['41d-parent.js','41d-parent.css'])if(partOf(f)!=='gate')p.push(f+' is not in the part gate');
+  if(partOf('82a-parenton.js'))p.push('82a-parenton.js (PARENT_ON) is not in index.html');
+  const W=Function(src.replace(/const PC = \{[\s\S]*$/,'')+';return {PCW,PCQ}')(),{PCW,PCQ}=W;
+  const gf=PART_FILES[PARTS.findIndex(x=>x.stem==='gate')],ih=rd('index.html');
+  if(!rd(gf).includes('const PCQ')||!rd(gf).includes('.pc-sheet'))p.push(gf+' does not carry the corner and its CSS');
+  for(const f of ['index.html',...START_FILES])if(rd(f).includes('const PCQ')||rd(f).includes(PCQ[0].q[0][0]))p.push(f+' (start-up) carries the dinner questions');
+  if(!/let PARENT_ON = [01];/.test(ih))p.push('index.html has no PARENT_ON');
+  // 2. the gate
+  const doc=rd(DOC),st=(doc.match(/^status: (.*)$/m)||[])[1]||'',rev=/^reviewed\b/.test(st),on=Function(rd('src/js/82a-parenton.js')+';return PARENT_ON')();
+  if(!rev&&st!=='unreviewed')p.push(DOC+': the status line is "'+st+'" (unreviewed, or reviewed <name> <date>)');
+  if(rev&&!revNamed(DOC))p.push(DOC+': reviewed, but its status line names no reviewer and date');
+  if(on!==(rev?1:0))p.push('PARENT_ON is '+on+' with the read-through '+(rev?'reviewed':'not reviewed'));
+  if(!rev&&!/pending owner approval/i.test(doc))p.push(DOC+' is not marked pending owner approval');
+  try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check'],{stdio:'pipe'})}catch(e){p.push('a words file is not what the drafts say (python3 tools/build.py --words-only)')}
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'parent-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),"/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n   BUILT by tools/build.py from docs/drafts/<stop>.md (\"status: reviewed ...\") for the scripts that name them (lsDraft, 52g-drafted.js):\n   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\nconst LSW = {\n};\n");
+  const pon=n=>rd('src/js/82a-parenton.js').replace(/let PARENT_ON = [01];/,'let PARENT_ON = '+n+';');
+  const chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(line,n)=>{fs.writeFileSync(path.join(tmp,DOC),doc.replace(/^status: .*$/m,line));fs.writeFileSync(path.join(tmp,'src/js/82a-parenton.js'),pon(n))};
+  put('status: unreviewed',0);if(chk()!==0)p.push('the words check refuses PARENT_ON 0 for an unreviewed read-through');
+  put('status: unreviewed',1);if(chk()!==1)p.push('the words check passes PARENT_ON 1 for an unreviewed read-through');
+  put('status: reviewed 2026-11-26',1);if(chk()!==1)p.push('the words check passes PARENT_ON 1 for a status line with no reviewer');
+  put('status: reviewed Test Owner 2026-11-26',0);if(chk()!==1)p.push('the words check passes PARENT_ON 0 for a reviewed read-through (the flip did not turn it on)');
+  put('status: reviewed Test Owner 2026-11-26',1);if(chk()!==0)p.push('the words check refuses PARENT_ON 1 for a reviewed read-through');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  if(!/^status: (un)?reviewed/m.test(doc)||(doc.match(/^status:/gm)||[]).length!==1)p.push(DOC+' needs exactly one status line (the one-line flip)');
+  // 3. the words: in the table, the bank's shape, banned themes
+  const rows=doc.split('\n').filter(l=>/^\| .+ \| .+ \| .+ \|$/.test(l)).map(l=>l.split(' | ')[1]);
+  if(!/\| *Where *\| *Proposed text *\| *Why *\|/.test(doc))p.push(DOC+': no where / proposed text / why table');
+  for(const k in PCW)if(!rows.includes(PCW[k]))p.push(DOC+' does not list PCW.'+k+' "'+PCW[k]+'"');
+  const qs=PCQ.flatMap(g=>g.q.map(q=>q[0]));
+  for(const q of qs)if(!rows.includes(q))p.push(DOC+' does not list the dinner question "'+q+'"');
+  if(new Set(qs).size!==qs.length)p.push('a dinner question is in the bank twice');
+  if(rows.length!==Object.keys(PCW).length+qs.length+2)p.push(DOC+' has '+(rows.length-2)+' rows, the code '+(Object.keys(PCW).length+qs.length)+' sentences');
+  for(const g of PCQ){if(g.q.length<2||g.q.length>4)p.push('dinner group '+g.id+' has '+g.q.length+' questions (2 to 4)');
+    for(const [q,a,b] of g.q)if(!(a>=-1&&b<=6&&a<=b)||!/[?.]$/.test(q)||q.length>130)p.push(g.id+': "'+q+'" grades '+a+' to '+b);}
+  if(/magic|evolution|spell(s|ing)? (a|the) |homework|screen|tablet|app\b/i.test(qs.join(' ')))p.push('a dinner question names a banned theme, homework or a screen');
+  // 5. no network, tokens only
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|import\(|navigator\.share|localStorage|\bsave\(|new Image/.test(src))p.push('41d-parent.js reaches outside the tablet or writes the save');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|url\(/.test(css)||/#[0-9a-fA-F]{6}\b|rgba?\(/.test(src))p.push('the corner has a colour that is not a token, or loads a file');
+  if(!/@media print/.test(css)||!/body:has\(\.pc-cv\)>:not\(#app\)\{display:none!important\}/.test(css)||!/page:pccert/.test(css))p.push('41d-parent.css: no print rules that print the certificate alone');
+  // 4. in the app
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(fx){
+    const bad=[],store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    let saves=0;const sv=save;save=()=>{saves++};
+    const load=raw=>{if(saves)bad.push('the corner saved '+saves+' times');for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate();saves=0};
+    const now=STRK.idx(today()),txt=h=>h.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ');
+    const secs=h=>h.split('<section').length-1,PW=Object.values(PCW);
+    try{
+      // a. before approval: the report card as it was, none of the corner's words; after the flip: the corner is the first card
+      for(const n of ['fresh','midway','maxed']){
+        load(fx[n]);S.name='Ava';PARENT_ON=0;const h0=REP.html(REP.data());
+        if(secs(h0)!==7||/rp-parent|pc-/.test(h0)||PW.some(w=>w.length>8&&!/\{/.test(w)&&h0.includes(w)))bad.push(n+': the corner shows before approval');
+        PARENT_ON=1;const before=JSON.stringify(S),h1=REP.html(REP.data());
+        if(secs(h1)!==8||h1.indexOf('id="rp-parent"')<0||h1.indexOf('id="rp-parent"')>h1.indexOf('id="rp-weeks"')||!h1.includes(PCW.h))bad.push(n+': after the flip the corner is not the first card');
+        if(JSON.stringify(S)!==before)bad.push(n+': drawing the corner changed the save');
+        if(/\bundefined\b|\bNaN\b|\[object |\{\w+\}/.test(txt(h1)))bad.push(n+': bad text in the corner: '+(txt(h1).match(/\bundefined\b|\bNaN\b|\[object |\{\w+\}/)||[])[0]);
+      }
+      PARENT_ON=1;
+      // b. a fresh child: kind empty states, no questions, no certificate yet
+      load(null);S.name='Ava';let d=PC.data(),h=PC.html(d);
+      if(d.passed.length||d.dinner.length||d.passedAll||!h.includes(PCW.none)||!h.includes(PCW.dNone)||!h.includes(PC.fill(PCW.cNone,{name:'Ava'}))||h.includes('pc-cert'))bad.push('fresh: '+txt(h).slice(0,300));
+      // c. midway with a week of records: two math stops played and passed this week (add1 today, frac2 two days ago), one played
+      //    and not passed (sub2), one passed but last played 7 days ago (cnt1: not this week), a lesson this week and one older, a
+      //    stop mastered this week, a badge won this week and one won 9 days ago
+      load(fx.midway);S.name='Ava';S.grade=3;
+      S.maps.math.add1=3;S.maps.math.frac2=2;S.maps.math.cnt1=3;delete S.maps.math.sub2;
+      S.mast={add1:{n:30,p:.95,ms:5000,d:3,last:now,md:now-2},frac2:{n:12,p:.8,ms:6000,d:2,last:now-2,md:-1},sub2:{n:8,p:.5,ms:6000,d:1,last:now-1,md:-1},
+        cnt1:{n:20,p:.9,ms:5000,d:4,last:now-7,md:now-20},pv1:{n:14,p:.8,d:3,last:now-30,md:-1}};
+      S.chk={frac2:{n:1,best:5,last:now-2,at:12,b:now-2},pv1:{n:1,best:4,last:now-9,at:12,b:now-9}};
+      S.lm=[['pv1',now-12,1,2,2,2,0],['add1',now-3,1,2,2,2,0],['zzz9',now,1,2,2,2,0],['add1',now-1,2,2,2,2,0]];S.know={add1:{s:2},pv1:{s:3},cnt1:{s:0}};
+      S.log=[{d:STRK.key(now),sec:600,rounds:2,q:20,ok:18,by:{math:600}},{d:STRK.key(now-2),sec:330,rounds:1,q:10,ok:8,by:{math:330}},{d:STRK.key(now-8),sec:900,rounds:3,q:30,ok:30,by:{read:900}}];
+      const before=JSON.stringify(S);d=PC.data();h=PC.html(d);
+      const ids=a=>a.map(x=>x.id).join();
+      if(ids(d.passed)!=='add1,frac2')bad.push('midway: passed this week '+ids(d.passed)+', want add1,frac2');
+      if(ids(d.worked)!=='add1,sub2,frac2')bad.push('midway: played this week '+ids(d.worked));
+      if(ids(d.lessons)!=='add1')bad.push('midway: lessons this week '+ids(d.lessons));
+      if(ids(d.stronger)!=='add1,frac2')bad.push('midway: stronger this week '+ids(d.stronger)+', want add1 (mastered) and frac2 (badge)');
+      if(d.cur.sec!==930||d.cur.active!==2)bad.push('midway: this week '+JSON.stringify(d.cur));
+      const nm=t=>NODES.math.find(n=>nid(n)==t).t;
+      for(const t of [PC.fill(PCW.time,{min:PC.fill(PCW.min,{n:16}),days:2}),PC.fill(PCW.passed,{list:'<b>'+nm('add1')+'</b> and <b>'+nm('frac2')+'</b>'}),
+        PC.fill(PCW.lessons,{pet:esc(petN()),list:'<b>'+nm('add1')+'</b>'}),PC.fill(PCW.stronger,{list:'<b>'+nm('add1')+'</b> and <b>'+nm('frac2')+'</b>'})])
+        if(!h.includes(t))bad.push('midway: the summary misses "'+t+'"');
+      if(h.includes(nm('cnt1'))&&!d.dinner.some(x=>x.t==nm('cnt1')))bad.push('midway: a stop of 7 days ago is in the summary');
+      // the dinner questions: add (add1, sub2) has 2 stops this week, frac (frac2) 1: one each, add first, grade 3 ones
+      const G=id=>PCQ.find(g=>g.id==id),inG=(id,q)=>G(id).q.some(x=>x[0]==q&&3>=x[1]&&3<=x[2]);
+      if(d.dinner.length!==2||d.dinner[0].g!=='add'||d.dinner[1].g!=='frac'||!inG('add',d.dinner[0].q)||!inG('frac',d.dinner[1].q))bad.push('midway: dinner '+JSON.stringify(d.dinner));
+      if(!d.dinner.every(x=>h.includes(esc(x.q))))bad.push('midway: the dinner questions are not on the card');
+      if(JSON.stringify(S)!==before)bad.push('midway: the corner changed the save');
+      // the certificate: the name and the counts (every stop passed so far, per subject; lessons taught; stops mastered)
+      const c=PC.certHTML(d),pa=REP.data().paths;
+      if(!c.includes('>Ava<')||!c.includes(d.date)||!/^[A-Z][a-z]+ \d{1,2}, \d{4}$/.test(d.date)||!c.includes('wl-mk'))bad.push('midway certificate: name, date or logo '+txt(c).slice(0,200));
+      for(const o of pa){const want=o.done?PC.fill(o.done==1?PCW.cStop1:PCW.cStops,{n:o.done,area:o.label}):'';
+        if(want&&!c.includes(want))bad.push('midway certificate: no "'+want+'"');if(!want&&c.includes(o.label+'<'))bad.push('midway certificate: '+o.label+' with nothing passed');}
+      if(!c.includes(PC.fill(PCW.cLessons,{n:2,pet:petN()}))||!c.includes(PC.fill(PCW.cMast,{n:2})))bad.push('midway certificate: lessons (2 taught) or mastered (2: add1 and cnt1): '+txt(c));
+      // d. only one group this week: two questions of it; the same all week (6 more days), another pick the next week
+      load(fx.maxed);S.name='Mo';S.grade=4;
+      const one=(sk,lv,last)=>{S.mast={[sk+lv]:{n:10,p:.8,ms:5000,d:1,last,md:-1}};return PC.data()};
+      S.mast={};let q=one('frac',6,now).dinner;
+      if(q.length!==2||q[0].g!=='frac'||q[1].g!=='frac'||q[0].q===q[1].q||!q.every(x=>inG4('frac',x.q)))bad.push('maxed: one group, dinner '+JSON.stringify(q));
+      function inG4(id,s){return G(id).q.some(x=>x[0]==s&&4>=x[1]&&4<=x[2])}
+      // e. every group: a week with only its first stop gives its questions; the week's pick is stable and rotates
+      let rot=0;
+      for(const g of PCQ){
+        const st=Object.keys(NODES).flatMap(pp=>NODES[pp].filter(n=>n.sk!='boss'&&PC.group(pp,n.sk)===g).map(n=>({pp,n})))[0];
+        if(!st){bad.push('dinner group '+g.id+' has no stop on any map');continue}
+        S.grade=Math.max(-1,Math.min(6,PATHS[st.pp].worlds[st.n.wi].g));if(S.grade<0&&!GRADES.includes(-1))S.grade=0;
+        const picks=new Set();
+        for(let k=0;k<21;k++){S.mast={[nid(st.n)]:{n:10,p:.8,ms:5000,d:1,last:now+k,md:-1}};const dd=PC.data(now+k).dinner;
+          if(!dd.length||dd.some(x=>x.g!==g.id||!g.q.some(y=>y[0]==x.q)||x.t!==st.n.t))bad.push(g.id+': day '+k+' dinner '+JSON.stringify(dd));
+          picks.add(dd.map(x=>x.q).join('|'));
+          if(Math.floor((now+k)/7)===Math.floor((now+k-1)/7)&&k&&!picks.has(prev))bad.push(g.id+': the pick changed within a week');var prev=dd.map(x=>x.q).join('|');}
+        const fit=g.q.filter(x=>S.grade>=x[1]&&S.grade<=x[2]).length;
+        if((picks.size>1)!==(fit>1))bad.push(g.id+': '+picks.size+' different picks in 3 weeks with '+fit+' questions for grade '+S.grade);
+        if(picks.size>1)rot++;
+      }
+      // every skill on a map has a dinner group, and each group's skills are real
+      for(const pp in NODES)for(const n of NODES[pp])if(n.sk!='boss'){const g=PC.group(pp,n.sk),wg=PATHS[pp].byLevel?null:PATHS[pp].worlds[n.wi].g;
+        if(!g)bad.push('no dinner group for '+pp+':'+n.sk);else if(wg!==null&&!g.q.some(x=>wg>=x[1]&&wg<=x[2]))bad.push('dinner group '+g.id+' has no question for grade '+wg+' ('+n.t+')')}
+      for(const g of PCQ)for(const s of g.sk.split(' ').filter(Boolean))if(!SK[s.split(':').pop()])bad.push(g.id+': '+s+' is not a skill');
+      // f. maxed: the certificate counts every passed stop per subject; a blank line for a child with no name; a name is escaped
+      load(fx.maxed);S.name='';d=PC.data();
+      const pm=REP.data().paths;for(const o of pm){const a=d.areas.find(x=>x.p==o.p);if(!a||a.n!==o.done)bad.push('maxed: '+o.p+' '+(a&&a.n)+' passed, the report card says '+o.done)}
+      if(!PC.certHTML(d).includes('pc-blank'))bad.push('a certificate with no name has no blank line');
+      S.name='<img src=x onerror=alert(1)>';d=PC.data();if(PC.certHTML(d).includes('<img')||PC.html(d).includes('<img'))bad.push('the name is not escaped');
+      // g. damaged records never throw
+      S.mast={add1:null,sub1:{n:'x',last:'y'}};S.lm=[null,5,['add1','x'],{}];S.chk=7;S.know=[];S.log='x';
+      try{PC.html(PC.data());PC.certHTML(PC.data())}catch(e){bad.push('damaged records: '+e.message)}
+      if(saves)bad.push('the corner saved '+saves+' times');
+    }catch(e){bad.push('threw: '+(e&&e.stack||e).toString().split('\n').slice(0,3).join(' | '))}
+    save=sv;PARENT_ON=0;
+    return bad;
+  };
+  const r=eval(js+';('+body.toString()+')('+JSON.stringify({fresh:fx('fresh'),midway:fx('midway'),maxed:fx('maxed')})+')');
+  p.push(...r);
+  // the report card loads the part when it is not in, and binds the button; the certificate prints through needOnline, offline too
+  const rep=fs.readFileSync(path.join(SRC,'js','82-report.js'),'utf8');
+  if(!/if \(PARENT_ON && m\) \{if \(typeof PC != 'undefined'\) PC\.bind\(\); else partLoad\('gate'\)/.test(rep))p.push('report() does not load the part gate for the corner');
+  if(!/needOnline\(\(\) => \{try \{window\.print\(\)\} catch \(e\) \{\}\}, \{block: false\}\)/.test(src))p.push('the certificate does not print through needOnline (block: false)');
+  const per={};for(const g of PCQ)per[g.p]=(per[g.p]||0)+g.q.length;
+  return{problems:p,note:'status '+st+' (PARENT_ON '+on+'); '+PCQ.reduce((t,g)=>t+g.q.length,0)+' dinner questions in '+PCQ.length+' groups ('+Object.entries(per).map(e=>e.join(' ')).join(', ')+'), '+Object.keys(PCW).length+' other sentences'};
 });
 
 Promise.all(PENDING).then(()=>{

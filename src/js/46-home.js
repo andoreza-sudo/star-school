@@ -377,6 +377,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read');if(p=='es'||p=='disc')teachWarm(p); // NAV-01: Back goes one step back
+  if($('.node.cur')||$('.lsn.cur'))if(nrSay('Tap the glowing stop to play!','#map',800))setTimeout(()=>{if($('#map'))fb('Tap the glowing stop to play!','info',2500)},800); // shown too: a spoken line is also on screen (a11y sound rule) // REC-12 (owner approved the words 2026-11-26): a non-reader hears what to do on arrival (12-speech.js)
   if(wi!=null)return mapTop(p);
   const c=$('.node.cur')||$('.lsn.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 /* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */
@@ -426,10 +427,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
-    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}
+    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fbSay(`Learn it with ${petN()} first!`);return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
-  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)
@@ -466,7 +467,7 @@ function stkSwapView(pick,got){const miss=STK.filter(s=>!stkN(s)),d=stkDoubles()
     `<p>${d} double${d==1?'':'s'} left.</p></div></div>`+
     `<div class="sb-act">${UI.btn(pick?'Swap '+SWAP_COST+' doubles':'Pick a sticker',{kind:'primary',size:'lg',icon:'check',id:'swgo'})}${UI.btn('Back to my stickers',{icon:'sticker-book',id:'swbk'})}</div></div>`+
     (miss.length?`<section class="sb-page"><h2 class="sb-ph"><span>Stickers you do not have</span><span class="sb-pc">${miss.length}</span></h2>`+
-      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${esc(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
+      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${stkPic(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
   NAV.bar('');$('#back').onclick=$('#swbk').onclick=()=>book();
   $$('.sb-pk').forEach(b=>b.onclick=()=>{SFX.pop(R(0,5));stkSwapView(b.dataset.s,null)});
   $('#swgo').onclick=()=>{if(!pick||!ok){fb(ok?'Tap a sticker first.':'You need '+SWAP_COST+' doubles.','warn',1800);return}
@@ -479,7 +480,7 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
   const turn=i=>[-6,4,-2,7,-4,3,-7,5,-3,6,-5,2][i%12];
   const slot=(s,i)=>{const n=stkN(s);
     return n?`<button class="sb-slot sb-stk" data-s="${esc(s)}" style="--r:${turn(i)}deg" aria-label="Sticker ${i+1}${n>1?', you have '+n:''}">`+
-      `<span class="sb-e">${esc(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
+      `<span class="sb-e">${stkPic(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
       :`<span class="sb-slot sb-no" aria-hidden="true">${ico('star',30)}</span>`};
   const page=(p,k)=>{const got=p.filter(s=>stkN(s)).length;
     return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1} of ${pages.length}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
@@ -492,6 +493,7 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
     `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}${typeof CHK!='undefined'?`<div class="ck-bk">${UI.btn('Stop badges',{kind:'subject',p:'disc',icon:'medal',id:'bkck'})}</div>`:''}</div>
   <div class="sgrid sb-pages">${pages.map(page).join('')}</div></div></div>`);
   NAV.bar('');$('#back').onclick=()=>home(true);
+  nrSay('Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.','.sb',600); // AUDIO-12: the book's line, for a non-reader (12-speech.js)
   if($('#bkswap'))$('#bkswap').onclick=()=>{SFX.whoosh();stkSwapView(null,null)};
   if($('#bkck'))$('#bkck').onclick=()=>{SFX.whoosh();CHK.shelf(book)}; // CHECK-IN: the stop badges (51b-checkin.js)
   if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book

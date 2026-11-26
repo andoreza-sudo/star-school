@@ -156,6 +156,21 @@ async function answer(page) {
   } else if (q.kind === 'match') {
     const pairs = await page.evaluate(() => G.q.items.map((it, i) => [i, G.q.opts.findIndex(o => o.v === it.v)]));
     for (const [i, j] of pairs) { await page.click(`.mb[data-s="L"][data-i="${i}"]`); await page.click(`.mb[data-s="R"][data-i="${j}"]`); }
+  } else if (q.kind === 'make' || q.kind === 'line') {
+    // TAP-10 turns some add / sub / miss / big 2 / frac 5 questions into KINDS2 make questions (KINDS2-B line too): the controls that
+    // bring the model to the answer, then Check, by the helpers of tools/kinds-samples.js, as tools/smoke.js answerK2 does
+    const KSM = require('./kinds-samples');
+    if (q.kind === 'line') {
+      await page.waitForFunction(() => { const e = document.querySelector('.lnw svg'); if (!e) return false; const r = e.getBoundingClientRect(),
+        k = [r.x, r.y, r.width, r.height].join(), same = window.__lnBox === k; window.__lnBox = k; return same; }, null, { polling: 'raf', timeout: 5000 }).catch(() => {});
+      const p = await page.evaluate(`(${KSM.linePt.toString()})(null)`);
+      await page.mouse.click(p.x, p.y);
+    } else for (let i = 0; i < 80; i++) {
+      const sel = await page.evaluate(`(${KSM.makeStep.toString()})(false)`);
+      if (!sel) break;
+      await page.click(sel);
+    }
+    await page.click('#mcheck');
   } else throw new Error('perf: cannot answer a ' + q.kind + ' question');
 }
 

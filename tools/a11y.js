@@ -89,19 +89,28 @@ async function answerAct(p) {
   return [wrong, right];
 }
 const qScreen = fn => ({ run: ev(fn), act: answerAct });
-// CHECK-IN: a check-in question (add 1, typed) answered wrong: the answer shows and the round moves on (one try, no hint); the next one right
+// CHECK-IN: a check-in question (add 1) answered wrong: the answer shows and the round moves on (one try, no hint); the next one right.
+// A check-in mixes the stop's kinds (CHK.qs, pickQ), and TAP-10 turns some add 1 questions into make questions (a frame to fill): a
+// typed question is answered on the number keys, a KINDS2 one (make, line, sort, mark) by its own controls (k2Wrong, k2Right)
+const K2KINDS = ['sort', 'mark', 'line', 'make'];
 async function chkAct(p) {
   const key = d => p.click(`.k[data-k="${d}"]`);
   await p.evaluate(() => { window.__a11y.mark('wrong'); window.__q = G.q; });
-  for (const d of await p.evaluate(() => String(+G.q.ans + 1))) await key(d);
-  await key('go');
+  if (K2KINDS.includes(await p.evaluate(() => G.q.kind))) await k2Wrong(p);
+  else {
+    for (const d of await p.evaluate(() => String(+G.q.ans + 1))) await key(d);
+    await key('go');
+  }
   await p.waitForTimeout(250);
   const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
   await p.waitForFunction(() => G && G.q !== window.__q && !G.lock, null, { timeout: 8000 });
   await p.waitForTimeout(500);
   await p.evaluate(() => { window.__a11y.mark('right'); });
-  for (const d of await p.evaluate(() => String(G.q.ans))) await key(d);
-  await key('go');
+  if (K2KINDS.includes(await p.evaluate(() => G.q.kind))) await k2Right(p);
+  else {
+    for (const d of await p.evaluate(() => String(G.q.ans))) await key(d);
+    await key('go');
+  }
   await p.waitForTimeout(250);
   const right = await p.evaluate(() => window.__a11y.signal('right'));
   await p.waitForTimeout(900);
@@ -151,6 +160,14 @@ async function k2Act(p) {
   const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
   await p.waitForTimeout(900);
   await p.evaluate(() => { window.__a11y.mark('right'); });
+  await k2Right(p);
+  await p.waitForTimeout(250);
+  const right = await p.evaluate(() => window.__a11y.signal('right'));
+  await p.waitForTimeout(900);
+  return [wrong, right];
+}
+// the right answer to the KINDS2 question on screen (after a wrong try: what is already right stays)
+async function k2Right(p) {
   const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, ans: G.q.kind == 'mark' ? G.q.ans.map(Number) : null,
     plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null }));
   if (q.kind === 'line' || q.kind === 'make') await k2LineMake(p, false);
@@ -165,10 +182,6 @@ async function k2Act(p) {
     for (const i of q.ans) if (!(await p.$(`.mkt[data-i="${i}"].right`))) await p.click(`.mkt[data-i="${i}"]`);
     if (!q.one) await p.click('#mcheck');
   }
-  await p.waitForTimeout(250);
-  const right = await p.evaluate(() => window.__a11y.signal('right'));
-  await p.waitForTimeout(900);
-  return [wrong, right];
 }
 // a two-question round of the first generated questions of that kind at a stop (real sort or mark questions); the second one keeps a
 // question screen (with its Hear it button) after the first is answered
@@ -225,6 +238,11 @@ const SCREENS = {
   'make-miss': k2Miss('coins', 3, 'make'),
   'make-parts': k2Screen('frac', 2, 'make'),
   'make-frame': k2Screen('tenf', 2, 'make'),
+  // TAP-10: take away on the ten frame (it starts full; Kindergarten), its miss, the double frame (1st), an equal fraction shaded (3rd)
+  'make-take': k2Screen('sub', 1, 'make'),
+  'make-take-miss': k2Miss('sub', 1, 'make'),
+  'make-frame20': k2Screen('miss', 2, 'make'),
+  'make-equal': k2Screen('frac', 5, 'make'),
   // KINDS2-D: find the mistake (kind tap: the steps of a worked example), fresh and after a wrong step; why (the sentence above the hint
   // after the misconception value of a real sub 4 question)
   'fix-question': { run: k2Start('big', 3, 'tap'), act: answerAct },
@@ -286,6 +304,17 @@ const SCREENS = {
   'grown-play': {
     adult: true,
     run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForTimeout(300); },
+  },
+  // PARENT-11: the Parent corner on the report card (its words as if the owner had approved them: PARENT_ON = 1) with a week of play,
+  // and the certificate it opens
+  'parent-corner': { adult: true, run: async p => { await p.evaluate(async () => { await partLoad('gate'); parentWeek(); PARENT_ON = 1; report();
+    document.querySelector('#rp-parent').scrollIntoView(); }); await p.waitForTimeout(500); } },
+  'parent-cert': { adult: true, run: async p => { await p.evaluate(async () => { await partLoad('gate'); parentWeek(); PARENT_ON = 1; PC.cert(); }); await p.waitForTimeout(500); } },
+  // FEEDBACK-4: Tell us what you think in Grown-ups: Email us on the web; Email us and Review on Google Play in the Play app
+  'grown-feedback': { adult: true, run: ev(() => { grown(); document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }); }) },
+  'grown-feedback-play': {
+    adult: true,
+    run: async p => { await p.evaluate(() => { playMock(); grown(); document.querySelector('#gw-tell').scrollIntoView({ block: 'center' }); }); await p.waitForTimeout(300); },
   },
   // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
   'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
@@ -670,6 +699,12 @@ function pageInit() {
       tenf3: { s: 3, n: 1, lv: [[1, 1], [0, 0], [1, 1]], b: {}, box: 1, due: d + 5, d: d - 8, last: d - 3, k: d - 3 },
       add4: { s: 1, n: 2, lv: [[1, 2], [0, 2], [0, 1]], b: { op: 3 }, box: 0, due: 0, w: [['op', 'add4 3', d], ['op', 'add4 4', d], ['op', 'add4 4', d]] } };
     S.lm = [['tenf2', d - 1, 1, 2, 2, 2, 0], ['add4', d, 0, 2, 1, 2, 0]]; S.tq = 'Ask them: "How many more make 10?"'; save(); };
+  // PARENT-11: a week of play for the Parent corner: two math stops passed this week, a reading stop mastered, a lesson. No S.log (the
+  // minutes line): with one, the report card's 14-day chart below the corner is drawn, and its 12-unit SVG labels measure 11 px at 380
+  // wide (the chart's own, as on any report card with minutes; the screen "report" has no log either)
+  window.parentWeek = () => { const n = STRK.idx(today()); S.name = 'Ava'; S.grade = 3;
+    S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, frac2: { n: 12, p: .8, ms: 6000, d: 2, last: n - 1, md: -1 }, sight1: { n: 25, p: .92, ms: 4000, d: 4, last: n - 1, md: n - 6 } };
+    S.maps.math.add1 = 3; S.maps.math.frac2 = 2; S.maps.read.sight1 = 3; S.lm = [['add1', n - 3, 1, 2, 2, 2, 0]]; S.know = { add1: { s: 2 } }; save(); };
   A.say = (t) => { A.said.push({ t: String(t || ''), at: A.now() }); };
   // CHECK-IN: make a passed math stop (skill sk, level 1; add by default) ready for a check-in; returns its index on the math map
   window.chkReady = (sk = 'add') => { const i = NODES.math.findIndex(n => n.sk == sk && n.lv == 1), k = nid(NODES.math[i]); S.maps.math[k] = Math.max(1, S.maps.math[k] || 0);

@@ -3063,7 +3063,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v196'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v196 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v197'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v197 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3266,6 +3266,7 @@ function runMigrations(from){
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
   if(!Array.isArray(S.ints))S.ints=[]; // PERS-01: the story themes picked (30p-pers.js): a default, nothing else changes
+  if(!('spc' in S))S.spc={}; // SPACED-9: the stops' spaced check-ins (59-review.js): a default by id; the first read spreads an old save's passed stops over the weeks ahead
   if(!('chk' in S))S.chk={}; // CHECK-IN: the stop check-ins and badges (51b-checkin.js): a default by id, nothing else changes
   if(!('pin' in S))S.pin=null; // G-FEEL2: the report card's "Practise this next" pin (55-missions.js): a default by id, nothing else changes
   if(!('fps' in S))S.fps=false;if(!('hcGl' in S))S.hcGl=true; // GL-01: the speed box (19b-fps.js) off, Hill Climb's 3D look on (62b-hill-gl.js): defaults by id
@@ -3291,7 +3292,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v196'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v197'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3797,6 +3798,17 @@ const petN=()=>S.petName||PETS[S.pet].def;
 const STK=[...'🐠🐬🦖🚀🌈🍩🎸🏆🦁🐼🍕🎈🌟🐙🦋🍦🚂⚽🎨🐢🦊🍉🏰🛸🌻🐝🍪🎃🐳🦉🏀🚁🧁🍓🐧🦒🎡⛵🌋🦜🧸🎺🐞🍭🌙🦈🚒🐘'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m=>m[0]);
 // how many of a sticker the child has; the fish also counts an old sticker (U+1F984) a save may still hold (CONTENT-01: no such theme, saves are not rewritten)
 const stkN=s=>(S.stickers[s]||0)+(s=='\u{1F420}'?(S.stickers['\u{1F984}']||0):0);
+/* EMOJI-12: a sticker shows a drawing when the app has one for it, else its emoji (docs/drafts/AUDIO12.md part B: the sticker won at
+   the end of every round was the emoji a child met most). 12 are new (src/data/d-art-e.js, also the Pre-K syllable pictures), 21 are
+   object art the app already drew (the soccer ball keeps its emoji: the drawn ball is a beach ball). Saves keep the emoji (S.stickers keys); only the picture on screen changes. ART is read inside
+   stkPic (the data file loads after this file). */
+const STK_ART={'\u{1F420}':'fish','\u{1F996}':'dinosaur','\u{1F680}':'rocket','\u{1F308}':'rainbow','\u{1F369}':'doughnut','\u{1F3B8}':'guitar',
+  '\u{1F981}':'lion','\u{1F355}':'pizza','\u{1F388}':'balloon','\u{1F31F}':'star','\u{1F419}':'octopus','\u{1F98B}':'butterfly','\u{1F366}':'icecream',
+  '\u{1F682}':'train','\u{1F422}':'turtle','\u{1F98A}':'fox','\u{1F3F0}':'castle','\u{1F33B}':'sunflower','\u{1F41D}':'bee',
+  '\u{1F36A}':'cookie','\u{1F383}':'pumpkin','\u{1F433}':'whale','\u{1F989}':'owl','\u{1F681}':'helicopter','\u{1F353}':'strawberry',
+  '\u{1F427}':'penguin','\u{1F992}':'giraffe','\u26F5':'boat','\u{1F30B}':'volcano','\u{1F3BA}':'trumpet','\u{1F41E}':'ladybug',
+  '\u{1F319}':'moon','\u{1F418}':'elephant'};
+const stkPic=s=>{const n=STK_ART[s];return n&&typeof ART!='undefined'&&ART[n]&&typeof picArt=='function'?picArt(n):esc(s)};
 
 /* ---------- sound engine (all synthesized, works offline) ----------
    P4-17 (DESIGN_SYSTEM 8.2): one soft, consistent set of sounds.
@@ -4015,6 +4027,16 @@ function ttsSay(t,btn,es,slow,cheer){if(typeof document!="undefined"&&document.h
   speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
+/* AUDIO-12: words a child who cannot read yet would otherwise miss (docs/drafts/AUDIO12.md). nrOn(): Pre-K to 1st grade (the bands
+   whose questions are read out, gradeCfg().auto 'all' or 'auto') with "Read questions out loud" on (S.voice); a reader (2nd grade
+   and up) hears nothing new. Only text the screen already shows is said, never a new sentence (new lines wait for the owner).
+   Nothing here moves or flashes, so calm mode (less movement, no confetti) is unchanged.
+   nrSay(t, sel, ms): a screen's own line, said ms after it is drawn, only while sel is still on screen; queued behind a cheer.
+   fbSay(t, cls, ms): a toast that tells the child why a tap did nothing ("Finish the stop before this one!", "Need 3 more coins!",
+   no game time): shown as before, and said at once for a non-reader. */
+const nrOn=()=>typeof S!='undefined'&&!!S&&!!S.voice&&typeof gradeCfg=='function'&&gradeCfg().auto!='tap';
+function nrSay(t,sel,ms=500){if(!t||!nrOn())return false;setTimeout(()=>{if(nrOn()&&(!sel||$(sel)))say(String(t),null,null,1)},ms);return true}
+function fbSay(t,cls='warn',ms){fb(t,cls,ms);if(t&&nrOn())say(String(t))}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
 // 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
 let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');
@@ -6447,10 +6469,10 @@ const RW = {
     return `<span class="rw-badge">${RW.art(ribbon + rose, 'rw-rose', '0 0 64 64')}<span class="rw-be">${esc(prize)}</span></span>`;
   },
 
-  // a sticker prize: die-cut white border, a slight turn, "New" tag the first time
+  // a sticker prize: die-cut white border, a slight turn, "New" tag the first time; its drawing when it has one (EMOJI-12, stkPic in 05-pets.js)
   sticker(s, isNew, i = 0) {
     const turn = [-7, 5, -3, 7][i % 4];
-    return `<span class="rw-stk" style="--r:${turn}deg"><span class="rw-se">${esc(s)}</span>${isNew ? UI.tag('New', 'new') : ''}</span>`;
+    return `<span class="rw-stk" style="--r:${turn}deg"><span class="rw-se">${stkPic(s)}</span>${isNew ? UI.tag('New', 'new') : ''}</span>`;
   },
 
   // icon for a line of the game-time list (ptCalc labels in 58-playtime.js)
@@ -7316,9 +7338,13 @@ const NAVB={skip:0,
     if(document.getElementById('hs'))return null;
     const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
   on:()=>!!(history.state&&history.state.navb),
-  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
-    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
-  pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
+  // going: its own history.back() is on its way. history.state changes only when the browser has made that step (popstate), so a
+  // second sync before then (another new screen or sheet on a busy CPU) saw the stand-in entry still there and went back again: the
+  // second step left the app (the Play app closes; in a browser the page before it opens). pop() clears it; the 10 s are a fallback only
+  going:0,n:0,
+  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD||NAVB.going)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
+    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){const k=NAVB.going=++NAVB.n;NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);setTimeout(()=>{if(NAVB.going===k)NAVB.going=0},10000);history.back()}}catch(e){}},
+  pop(){NAVB.going=0;if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
 if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
   try{if(NAVB.on())history.replaceState(null,'')}catch(e){} // a reload (an update, Start over) kept the last page's entry: going back to it would load the app again
   const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
@@ -8290,7 +8316,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v196)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v197)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8330,6 +8356,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read');if(p=='es'||p=='disc')teachWarm(p); // NAV-01: Back goes one step back
+  if($('.node.cur')||$('.lsn.cur'))if(nrSay('Tap the glowing stop to play!','#map',800))setTimeout(()=>{if($('#map'))fb('Tap the glowing stop to play!','info',2500)},800); // shown too: a spoken line is also on screen (a11y sound rule) // REC-12 (owner approved the words 2026-11-26): a non-reader hears what to do on arrival (12-speech.js)
   if(wi!=null)return mapTop(p);
   const c=$('.node.cur')||$('.lsn.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 /* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */
@@ -8379,10 +8406,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
-    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}
+    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fbSay(`Learn it with ${petN()} first!`);return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
-  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)
@@ -8419,7 +8446,7 @@ function stkSwapView(pick,got){const miss=STK.filter(s=>!stkN(s)),d=stkDoubles()
     `<p>${d} double${d==1?'':'s'} left.</p></div></div>`+
     `<div class="sb-act">${UI.btn(pick?'Swap '+SWAP_COST+' doubles':'Pick a sticker',{kind:'primary',size:'lg',icon:'check',id:'swgo'})}${UI.btn('Back to my stickers',{icon:'sticker-book',id:'swbk'})}</div></div>`+
     (miss.length?`<section class="sb-page"><h2 class="sb-ph"><span>Stickers you do not have</span><span class="sb-pc">${miss.length}</span></h2>`+
-      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${esc(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
+      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${stkPic(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
   NAV.bar('');$('#back').onclick=$('#swbk').onclick=()=>book();
   $$('.sb-pk').forEach(b=>b.onclick=()=>{SFX.pop(R(0,5));stkSwapView(b.dataset.s,null)});
   $('#swgo').onclick=()=>{if(!pick||!ok){fb(ok?'Tap a sticker first.':'You need '+SWAP_COST+' doubles.','warn',1800);return}
@@ -8432,7 +8459,7 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
   const turn=i=>[-6,4,-2,7,-4,3,-7,5,-3,6,-5,2][i%12];
   const slot=(s,i)=>{const n=stkN(s);
     return n?`<button class="sb-slot sb-stk" data-s="${esc(s)}" style="--r:${turn(i)}deg" aria-label="Sticker ${i+1}${n>1?', you have '+n:''}">`+
-      `<span class="sb-e">${esc(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
+      `<span class="sb-e">${stkPic(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
       :`<span class="sb-slot sb-no" aria-hidden="true">${ico('star',30)}</span>`};
   const page=(p,k)=>{const got=p.filter(s=>stkN(s)).length;
     return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1} of ${pages.length}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
@@ -8445,6 +8472,7 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
     `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}${typeof CHK!='undefined'?`<div class="ck-bk">${UI.btn('Stop badges',{kind:'subject',p:'disc',icon:'medal',id:'bkck'})}</div>`:''}</div>
   <div class="sgrid sb-pages">${pages.map(page).join('')}</div></div></div>`);
   NAV.bar('');$('#back').onclick=()=>home(true);
+  nrSay('Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.','.sb',600); // AUDIO-12: the book's line, for a non-reader (12-speech.js)
   if($('#bkswap'))$('#bkswap').onclick=()=>{SFX.whoosh();stkSwapView(null,null)};
   if($('#bkck'))$('#bkck').onclick=()=>{SFX.whoosh();CHK.shelf(book)}; // CHECK-IN: the stop badges (51b-checkin.js)
   if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book
@@ -9094,6 +9122,7 @@ const shopPic = (t, id, size) => t == 'scene' ? `<span class="ps-scn sc-${esc(id
 
 function shop() {
   const t = shopTab, items = shopItems(t), it = shopSel && items.find(x => x[0] == shopSel), w = S.wear;
+  const arrive = !$('.ps'); // AUDIO-12: arriving, not a redraw after a tap
   const pv = { hat: w.hat, toy: w.toy, scene: w.scene };
   if (it) pv[t] = it[0];
   const pet = petSVG(S.pet, stage(), 'happy', { hat: wearOf(pv.hat), toy: wearOf(pv.toy), react: true });
@@ -9127,6 +9156,7 @@ function shop() {
     `<div class="petbig rig" id="pet"><span class="petwrap">${pet}</span></div></div>${info}</div>` +
     `<div class="ps-shelf"><div class="tabs ps-tabs">${tabs}</div><div class="shopgrid ps-grid">${cards}</div></div></div></div>`);
   NAV.bar('pet');
+  if (arrive && !it) nrSay('Tap an item to try it on!', '.ps', 600); // AUDIO-12: the info bar's line, for a non-reader (12-speech.js)
   $('#back').onclick = () => { shopSel = null; home(true); };
   $$('.tab').forEach(b => b.onclick = () => { shopTab = b.dataset.t; shopSel = null; SFX.pop(1); shop(); });
   $$('.item').forEach(b => b.onclick = () => shopTap(b));
@@ -9164,7 +9194,7 @@ function shopWear(id) {
 // buy: not enough coins says how many more; else a sheet asks first ("Yes, buy it" #psyes / "Not now" #psno)
 function shopBuy(it, btn) {
   const t = shopTab, need = it[1] - S.coins, nm = shopName(t, it);
-  if (need > 0) { SFX.wrong(); anim(btn, 'sad'); fb(`Need ${need} more coins! Finish a round to earn some.`, 'warn'); return; }
+  if (need > 0) { SFX.wrong(); anim(btn, 'sad'); fbSay(`Need ${need} more coins! Finish a round to earn some.`); return; }
   SFX.pop(3);
   const sh = UI.sheet(`<div class="ps-sheet"><div class="ps-big">${shopPic(t, it[0], '120px')}</div>` +
     `<h2>Buy the ${esc(nm.toLowerCase())}?</h2><p>It costs ${it[1]} coins. You will have ${S.coins - it[1]} left.</p>` +
@@ -9847,9 +9877,10 @@ function mixGroups(){const out={recent:[],weak:[],old:[]};
   return out}
 function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_W.weak?'weak':'old';return pick(gr[k].length?gr[k]:gr.recent)}
 function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
+  qs.push(...spcMix()); // SPACED-9: then up to 2 stops' check-ins that are due, within the day's cap (59-review.js)
   while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
   return qs}
-function startMix(){G=newG({mix:true,pool:shuffle(mixQs()),sk:'mix'});next()}
+function startMix(){G=newG({mix:true,pool:runCap(shuffle(mixQs())),sk:'mix'});next()} // MIX-8 (b): the same 10, never three of one kind in a row where they allow it
 const back=()=>G&&G.path?pathMap(G.path):home();
 function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=genQ(n.sk,n.lv);return q})}
 function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
@@ -9861,21 +9892,70 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
    <p>10 questions from this whole world. Get <b>9 right</b> and you skip all of its stops!</p><div class="rw-acts">${UI.btn("Let's do it!",{kind:'primary',size:'lg',wide:true,icon:'bolt',id:'tgo'})}${UI.btn('Not now',{kind:'ghost',wide:true,id:'tno'})}</div></div>`;
   document.body.appendChild(o);o.querySelector('#tno').onclick=()=>o.remove();
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
+/* MIX-8 (BEST-APP roadmap 8, "Break up practice"; docs/drafts/MIX8.md). No new words: every line shown or said is one the round had.
+   (b) the run cap is a reordering. pickQ already redraws the stop's own questions so a third of one kind in a row is rare (KINDS2);
+     a review question (q.review: a due item at a review slot, or the older stop at question 4 or 8) is never redrawn, so when it
+     would be the third of its kind in a row it waits: the round's next question comes first, and the review question is asked as
+     soon as it is not a third in a row, at the latest as the round's last new question (it is never lost). While it waits, the
+     questions made are the stop's own (no other review slot is filled then: a due item it would have taken stays due). It never
+     waits at the last new question, nor at a stop known to give one kind only (KMONO: waiting could not help, so the review slots
+     stay where they were). Misses wait for it too (backQ). A mix pool
+     (Tricky Mix, Daily Review) is reordered the same way once, at the start (runCap). Other pools (passages, boss, test out,
+     check-ins) keep their order.
+   (c) a missed question (its answer shown after the second wrong try) comes back after BACK other questions of the round, not only
+     at the end: between two new questions, at most one at a time, and never as the third of a kind in a row (unless the stop gives
+     one kind only, KMONO); never while a review question waits (b); what is left at the
+     end comes back then, as before. Test out keeps its misses for the end (unchanged). Scoring rule: a question coming back is a
+     retry, as at the end before: it never adds to the score, stars, coins, done, the dots, the mastery record or a review box, and
+     a wrong try at it is not booked again as a miss (addMiss runs on the question's first wrong try only); a retry missed again
+     does not come back a second time. A retry, right or wrong, leaves the in-row count as it was: it counts first tries only
+     (R-01b), so a miss coming back mid-round cannot break a run of first tries that the round's end would not have broken.
+   (d) a hard start ends the round sooner: see hardStart. */
+const BACK=2;
+const MIX8={off:false}; // tools/test.js MIX-8 only: off gives the v197 round (to show what changed and what did not); never set by the app
+const runKind=(g,k)=>{const h=g.kh||[];return h.length>1&&h[h.length-1]===k&&h[h.length-2]===k};
+// a pure reordering of a pool: each next question is the first one left that is not a third of a kind in a row (else the first one left)
+function runCap(a){if(MIX8.off)return a;const out=[],rest=a.slice(),g={kh:[]};
+  while(rest.length){let i=rest.findIndex(q=>!runKind(g,q.kind));if(i<0)i=0;const q=rest.splice(i,1)[0];out.push(q);g.kh.push(q.kind)}
+  return out}
 // KINDS2: every question asked goes on G.kh (its kind), whatever its source; the stop's own questions come from pickQ (49b-kinds2.js)
-function makeQ(){const q=makeQ1();if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
+function makeQ(){let q;const h=G.hold;
+  if(h&&(!runKind(G,h.kind)||G.done>=G.n-1)){q=h;G.hold=null} // MIX-8 (b): the review question that waited
+  else{if(h)G.nos=1;try{q=makeQ1()}finally{G.nos=0}
+    if(!h&&q&&q.review&&!MIX8.off&&!G.pool&&runKind(G,q.kind)&&G.done<G.n-1&&!(typeof KMONO!='undefined'&&KMONO[G.sk+G.lv])){
+      G.hold=q;G.nos=1;try{q=makeQ1()}finally{G.nos=0}}}
+  if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
+// MIX-8 (c): a missed question due back now, or null (one at a time, and not right after another one)
+function backQ(g){if(MIX8.off||g.test||g.retry||g.hold||!g.missed.length)return null;
+  const one=typeof KMONO!='undefined'&&KMONO[g.sk+g.lv]; // a stop of one kind: the run cap cannot hold there, so it does not wait
+  const i=g.missed.findIndex(q=>q.back<=g.done&&(one||!runKind(g,q.kind)));if(i<0)return null;
+  const q=g.missed.splice(i,1)[0];(g.kh||(g.kh=[])).push(q.kind);return q}
+/* MIX-8 (d) a hard start: in a stop's own round of 8 or more questions (no pool, boss, test out, check-in or mix), within its first
+   half, the first tries so far leave 1 star out of reach even if every question left is right on the first try with no hint (the
+   score as finish() rates it: right first tries, less half of those with the hint showing, plus wrong Challenge answers, P1-08).
+   Grade 1 and up (10 questions): 4 misses in the first 4 or 5. Kindergarten (8): 3 misses in the first 3 or 4. Pre-K (6) never.
+   The round is then cut to ceil(60%) of its questions (6 of 10, 5 of 8), and never ends before the next question. It changes no
+   pass and no stars: the round could not reach 1 star any more, and starNeed on the shorter round cannot be reached either
+   (starNeed grows by at most 1 per question). Stars, coins and game time use the same formulas on the shorter round (sc of n).
+   G.n0 keeps the length it had: the end card's "Get N right" names what the next full round needs. Once per round. */
+const SHORT={MIN:8,F:.6};
+function hardStart(g){
+  if(!g||MIX8.off||g.n0||!g.path||!(g.node>=0)||g.pool||g.boss||g.test||g.mix||g.chk||g.n<SHORT.MIN||g.done*2>g.n)return false;
+  if(g.score-(g.helped||0)/2+(g.forgive||0)+(g.n-g.done)>=starNeed(g.n,.7))return false;
+  g.n0=g.n;g.n=Math.max(g.done+1,Math.ceil(g.n*SHORT.F-1e-9));return true}
 function makeQ1(){if(G.pool)return G.pool.shift();
   // audit v195: the review slot comes before adaptation (challenge and support rounds took the slots after question 5); the mode is
   // still decided first, so the slot's question shows as the mode says. Nothing due: the round is unchanged.
   if(mastOn(G)&&G.done>=MAST.AT&&G.mode===undefined)G.mode=mastMode(G.fr||[],gradeOf());
-  {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
+  if(!G.nos){const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
   {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
-  if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
+  if(!G.nos&&G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01: Go Home? is open: go on when Keep playing closes it
   if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored
-  if(G.done<G.n){G.q=makeQ();G.retry=false}
+  if(G.done<G.n){const b=backQ(G);if(b){G.q=b;G.retry=true}else{G.q=makeQ();G.retry=false}} // MIX-8 (c)
   else if(G.missed.length){G.q=G.missed.shift();G.retry=true}
   else return finish();
   renderQ()}
@@ -9945,7 +10025,8 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function addMiss(q){if(q.lsx)return;const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
+// MIX-8: a question coming back (G.retry) is not booked as a miss again: its first wrong try was
+function addMiss(q){if(q.lsx||!MIX8.off&&G&&G.retry&&G.q===q)return;const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
 /* TEACH-1: the lessons' switch (part teach, 52-lesson.js). TEACH.off gives the app as it was before them: no lesson offer on the map, and in
@@ -9957,15 +10038,16 @@ const twoWay=q=>q.kind=='choice'&&q.choices.length==2||q.kind=='tap'&&new Set(St
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 const CHEERS=[...new Set([...PRAISE,...PET_YAY])]; // EN-PRAISE: a right answer shows and says one of these (recorded in six voices, tools/en-audio.js)
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
-  if(G.tries==0&&!G.retry)mastTry(q,ok,null,G.hq); // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half)
+  if(G.tries==0&&!G.retry){mastTry(q,ok,null,G.hq);spcTry(q,ok,G.hq)} // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half); SPACED-9: a stop's check-in moves on (59-review.js)
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
+    if(!G.retry)hardStart(G); // MIX-8 (d)
     if(first&&!q.lsx&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js); fix2 v194: never for a lesson mix-in (lsx), whose label can be a review item's
-    G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
+    G.streak=first?G.streak+1:G.retry&&!MIX8.off?G.streak:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
@@ -9979,7 +10061,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     else if(G.boss){fb(pick(['Zap!','Pow!','Bam!','Zing!']),'zap');petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
     else{const pr=pick(CHEERS);fb(pr);petSay(pick(PET_YAY));const cs=q.after&&hasClips('cheer')?false:cheerSay('cheer',pr,.3);if(cs=='clip')wait+=400;else if(cs&&q.after)wait+=700} // EN-PRAISE: said in a recorded voice (q.after waits for it)
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
-  G.tries++;G.streak=0;qStreak();
+  G.tries++;if(!G.retry||MIX8.off)G.streak=0;qStreak(); // MIX-8: a retry never touches the in-row count
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
@@ -9993,7 +10075,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   G.lock=true;
   actQEnd(false,true); // audit v195: a revealed question's time is learning time too ("Learn first"); the question is not counted
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture
-  if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
+  if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);q.back=G.done+BACK;G.res[G.done-1]='try';hardStart(G)} // MIX-8 (c) back after BACK more, (d)
   qProg();
   fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
@@ -10036,10 +10118,11 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass&&!(n1&&PLAY.lockedS(p,ni+1)),testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
+  if(newPass||testOk)try{SPC.sync()}catch(e){logErr('spaced check-ins: '+e.message)} // SPACED-9: a stop passed (or a world tested out) joins the check-ins (59-review.js)
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.
-  view(RW.pre());
+  view(RW.pre());nrSay('Tap the treasure chest!','#chest',700); // AUDIO-12: the pre card's line, for a non-reader (12-speech.js)
   // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
   setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
@@ -10051,7 +10134,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const need=starNeed(n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const need=starNeed(g.n0||n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
     f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
@@ -10064,7 +10147,8 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))
+      if(tip&&!grew)nrSay(tip,'#fin',0)},t); // AUDIO-12: a non-reader also hears why the next stop did not open (the tip under the score)
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
@@ -10132,7 +10216,7 @@ function roundOops(){
      - 3 wrong first tries in a row, at any point: the pet offers a hint and the next question is an easier one (from
        easier(stop), with the hint shown; in challenge mode, from the round's own stop). After question 5 it also steps
        the mode down: challenge -> normal, normal -> support.
-     Star thresholds, round length, coins and locks never change. Everything is decided from the answers alone, so the
+     Star thresholds, round length, coins and locks never change here (MIX-8's hard start, hardStart in 50-round.js, can shorten a round that can no longer reach 1 star). Everything is decided from the answers alone, so the
      same answers give the same questions' stops (tests rely on it).
    Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok, ms, helped) on a first try, renderQ() calls
    mastShow(q) last, finish() adds G.forgive to the score for the star rating.
@@ -10794,6 +10878,7 @@ function streakCal(off){
     <div class="stc-sub small stc-pzs"><span>Next prizes, days in a row:</span>${prizes}</div>
    </div></div>`);
   NAV.bar('');$('#back').onclick=()=>home();
+  if(!off)nrSay(msg,'.stc-card',600); // AUDIO-12: the streak line, for a non-reader (12-speech.js); not again for each month turned
   $('#stcp').onclick=()=>streakCal(off+1);
   $('#stcn').onclick=()=>streakCal(off-1);
 }
@@ -10855,7 +10940,7 @@ function pcMood(c,pn){
   return Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy!`:`${pn} is doing great!`;
 }
 // Pet Care (P4-18 icons and meters; P4-12 drawn stage and feedback, card layout, two columns on a wide landscape screen)
-function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
+function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf(),arrive=!$('.pc'); // AUDIO-12: arriving, not the redraw after a snack
   const mood=pcMood(c,pn);
   const bar=(l,icon,v,k)=>{const n=pcShow(v);return `<div class="cbar gx-cbar ${k}"><span class="gx-ci">${ico(icon,26)}</span><span class="gx-cl">${l}</span>${UI.meter(n/100,{label:l+' '+n+'%'})}<b>${n}%</b></div>`};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('paw',24)}</span><span>Pet Care</span></div>${UI.chip('coin',S.coins,{id:'coinc',aria:'Coins'})}</div>
@@ -10864,11 +10949,12 @@ function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
   <h2 class="gx-h">${ico('food',26)}<span>Snacks</span></h2><div class="shopgrid gx-snacks">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item gx-snack" data-f="${i}" aria-label="${SNACK_W[i]}, ${cost} coins"><span class="gx-sp">${picFor(SNACK_W[i],e)}</span><div class="gx-price">${ico('coin',22,'ic-coin')}<b>${cost}</b></div></button>`).join('')}</div>
   <div class="actions gx-acts2"><button class="btn act gx-act" id="bath"><span class="gx-ai">${ico('bath',34)}</span>Bath time (free)</button><button class="btn act gx-act" id="play"><span class="gx-ai">${ico('ball',34)}</span>Play (free)</button></div></div></div>`);
   NAV.bar('pet');$('#back').onclick=()=>home();
+  if(arrive)nrSay(pcMood(c,petN()),'.pc',600); // AUDIO-12: the line over the pet, for a non-reader (12-speech.js)
   const pet=$('#pet');
   const done=()=>{c.t=Date.now();if(Math.min(c.food,c.clean,c.fun)>=80&&c.gift!==today()){c.gift=today();S.coins+=5;
     setTimeout(()=>{SFX.fanfare();RW.burst(document.body,28);UI.toast(`${petN()} gave you 5 coins!`,'good',2000,'gift')},900)}save();setTimeout(care,1300)};
-  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fb(`${petN()} is full!`,'warn');anim(pet,'sad');return}
-    if(S.coins<cost){SFX.wrong();anim(b,'sad');fb(`Need ${cost-S.coins} more coins!`,'warn');return}
+  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fbSay(`${petN()} is full!`);anim(pet,'sad');return}
+    if(S.coins<cost){SFX.wrong();anim(b,'sad');fbSay(`Need ${cost-S.coins} more coins!`);return}
     S.coins-=cost;c.food=Math.min(100,c.food+v);SFX.chomp();anim(pet,'jump');careFx('food');if(S.voice)say(pick(['Yum yum!','Delicious!','Thank you!','Mmm!']));done()});
   $('#bath').onclick=()=>{c.clean=100;SFX.splash();anim(pet,'sad');careFx('bath',11);if(S.voice)say(pick(['Splish splash!','So clean!','Bubbles!']));done()};
   $('#play').onclick=()=>{c.fun=Math.min(100,c.fun+30);SFX.giggle();anim(pet,'jump');careFx('play');setTimeout(()=>anim(pet,'jump'),550);if(S.voice)say(pick(['Wheee!','Again! Again!','That was fun!']));done()}}
@@ -11012,7 +11098,8 @@ function gameRoom(){partsThen(GAME_PARTS,()=>GH.hub())}
    In a round (makeQ calls revSlot()): normal stop rounds only (no pool, boss, test, mix, placement). Question 4 and 8 (done 3
    and 7) ask the most urgent due item of the path, else the usual review of an older stop as before; question 2 and 6
    (done 1 and 5) ask a due item of the stop itself, else a normal question. An item is asked at most once per round. A child
-   with nothing due gets exactly the rounds of v53. */
+   with nothing due gets exactly the rounds of v53. SPACED-9 (below): question 8 asks a due stop check-in first, and question 4 one
+   when no missed item of the path is due, in place of the older stop. */
 const REV={
   INT:[0,1,3,7,21], // days until due on entering box 0..4
   CAP:150,          // most items kept
@@ -11149,14 +11236,143 @@ function revSlot(){
   const path=REV.SLOTS_PATH.includes(g.done),own=REV.SLOTS_OWN.includes(g.done);
   if(!path&&!own)return null;
   const asked=g.rvAsked||(g.rvAsked={});
+  if(g.done==REV.SLOTS_PATH[1]){const sq=spcSlot(g);if(sq)return sq} // SPACED-9: question 8 asks a stop's check-in first, when one is due (else as before)
   const it=dueItems(REV.CAP,g.path).find(x=>!asked[revKey(x)]&&(path||(x.sk==g.sk&&x.lv==g.lv)));
-  if(!it)return null;
+  if(!it)return path?spcSlot(g):null; // SPACED-9: no missed question due at a path slot: a stop's check-in, when one is due
   asked[revKey(it)]=1;
   const q=revQ(it);
   if(!q)return null;
   q.review=1;
   g.last=q.label;
   return q;
+}
+
+/* ---------- SPACED-9: spaced check-ins of learned and skipped stops (BEST-APP roadmap 9; R-01 Should 4; docs/drafts/SPACED9.md) ----------
+   Leitner boxes above catch the questions a child missed. These catch the stops a child passed, or skipped by placement or Test out,
+   so they are checked again before they are forgotten: one question of the stop's own level, in the review slots that already
+   exist: question 8 of a stop round of the same path (before a missed question of the path, which keeps question 4 and the
+   round's own slots), question 4 when no missed question is due there (in place of the random "older stop" question), and
+   Mixed Practice, after its missed questions. It looks like the review question it replaces ("Remember this
+   one?"), so no new words, and it pays as that question did (a question of the round: no new game time, coins or stars).
+   Schedule (SPC.INT): a passed stop is first due 2 days after the pass; each right first try moves it to the next interval:
+   7, then 21, then 60 days; a right answer at the 60-day check-in finishes it (box SPC.DONE). A wrong first try puts it back to
+   2 days (and the question is a review item as always: addMiss). A right first try with the hint showing keeps its box: due again
+   after the same interval. A skipped stop (in a world skipped by placement or Test out, not played SPC.OWN times: Test out's stars do
+   not make it learned) gets one light check-in, from the next day, the stops just below where the child was
+   placed first: right finishes it, wrong puts it on the passed ladder (2 days), so a mis-placed child is caught.
+   No flood: at most SPC.CAP check-ins are asked a day, all rounds together. A stop passed in a round is first due exactly 2 days
+   later; stops that enter the schedule together (an old save's passed stops the first time it is read, a loaded backup, the
+   skipped stops of a placement or a Test out) take the first day from their start with room: at most SPC.ROOM.l learned and
+   SPC.ROOM.k skipped stops first fall due on one day. So an old save's passed stops are spread over the weeks ahead, the ones not
+   practised for longest first, and nothing is due on the day it is first seen.
+   Saved data: S.spc = {s: {nid: {b, d, k?}}, day, n} (a default {} by id in migrate, 00-core.js; filled the first time it is read)
+     b   box 0..3: which check-in is next (SPC.INT[b] days after the last); SPC.DONE (4) = finished, kept so it is not added again
+     d   day number (mastDay()) it is next due; due when d <= today. (Not revDue's "further ahead than the longest interval": an old
+         save's stops are spread further ahead than that on purpose.)
+     k   1: entered as a skipped stop and not checked yet (its check-in is the light one)
+     day, n  the day number and the check-ins asked that day (the cap)
+     t   the latest day the schedule was read on: a clock set back moves every d back by the difference
+   Everything runs on mastDay() (today(), the app's clock) and the map, no random draw except the question itself, so the same
+   save and day give the same check-ins. */
+const SPC={
+  INT:[2,7,21,60],   // days to the next check-in from box 0..3
+  DONE:4,            // box of a finished stop
+  CAP:3,             // check-ins asked a day
+  ROOM:{l:2,k:1},    // stops entering the schedule that may first fall due on one day: learned, skipped
+  MIX:2,             // most check-ins in one Mixed Practice
+  get(){
+    let o=S.spc;
+    if(!o||typeof o!='object'||Array.isArray(o))o=S.spc={};
+    if(!o.s||typeof o.s!='object'||Array.isArray(o.s))o.s={};
+    for(const k in o.s){const e=o.s[k];if(!e||typeof e!='object'||!(e.b>=0&&e.b<=SPC.DONE)||!Number.isFinite(e.d))delete o.s[k];else e.b=Math.floor(e.b)}
+    return o;
+  },
+  ok:nd=>!!(nd&&nd.sk!='boss'&&SK[nd.sk]&&SK[nd.sk].gen&&!SK[nd.sk].side&&nd.lv>=1&&nd.lv<=(SK[nd.sk].max||1)),
+  _nd:null,
+  nd(k){ // the first map stop with this id (sk, lv)
+    if(!SPC._nd){SPC._nd={};for(const p in NODES)NODES[p].forEach(n=>{if(SPC.ok(n)&&!SPC._nd[nid(n)])SPC._nd[nid(n)]=n})}
+    return SPC._nd[k]||null;
+  },
+  OWN:5,             // first tries at a stop (half a round) that make a stop of a skipped world learned, not skipped
+  // 'l' learned (passed, and played: not only given its stars by Test out), 'k' skipped (in a world skipped by placement or Test out,
+  // open, not played OWN times), or '' (not reached)
+  kind(p,i){
+    const n=NODES[p][i],r=mastRec(nid(n)),own=!!r&&+r.n>=SPC.OWN,sk=worldSkipped(p,n.wi);
+    if(passed(p,i)&&(own||!sk))return'l';
+    return sk&&unlocked(p,i)?'k':'';
+  },
+  onPath:(k,p)=>!!NODES[p]&&NODES[p].some(n=>n.sk!='boss'&&nid(n)==k),
+  due:(e,d)=>e.b<SPC.DONE&&e.d<=d,
+  // adds the stops passed or skipped that are not in the schedule yet (see the head for the order and the room)
+  sync(d){
+    if(d==null)d=mastDay();
+    const o=SPC.get(),s=o.s,c={};
+    // the clock was set back (today is before the last day the schedule saw): every date moves back with it, so nothing waits for months
+    if(Number.isFinite(o.t)&&d<o.t)for(const k in s)s[k].d-=o.t-d;
+    o.t=d;
+    for(const p in NODES)NODES[p].forEach((n,i)=>{
+      if(!SPC.ok(n))return;
+      const k=nid(n),e=s[k],t=SPC.kind(p,i);
+      if(e){if(e.k&&t=='l')delete e.k;return} // a skipped stop the child has since played and passed: on the learned ladder
+      const x=c[k]||(c[k]={k,ps:0,sk:0,p,i,last:(mastRec(k)||{}).last||0});
+      if(t=='l')x.ps=1;
+      else if(t=='k'&&!x.sk){x.sk=1;x.p=p;x.i=i}
+    });
+    const L=[],K=[],top={};
+    for(const k in c){const x=c[k];if(x.ps)L.push(x);else if(x.sk){K.push(x);top[x.p]=Math.max(top[x.p]==null?-1:top[x.p],x.i)}}
+    if(!L.length&&!K.length)return 0;
+    const po=Object.keys(NODES),used={};
+    for(const k in s){const e=s[k],t=e.k?'k':'l';used[t+e.d]=(used[t+e.d]||0)+1}
+    // learned: not practised for longest first; skipped: nearest below where the child was placed first, the paths in turn
+    L.sort((a,b)=>a.last-b.last||po.indexOf(a.p)-po.indexOf(b.p)||a.i-b.i);
+    K.sort((a,b)=>(top[a.p]-a.i)-(top[b.p]-b.i)||po.indexOf(a.p)-po.indexOf(b.p)||a.i-b.i);
+    const put=(x,t,d0)=>{let dd=d0;while((used[t+dd]||0)>=SPC.ROOM[t])dd++;used[t+dd]=(used[t+dd]||0)+1;s[x.k]=t=='k'?{b:0,d:dd,k:1}:{b:0,d:dd}};
+    if(L.length==1)s[L[0].k]={b:0,d:d+SPC.INT[0]}; // a stop passed in a round (finish() reads the schedule after each pass): 2 days, exactly
+    else L.forEach(x=>put(x,'l',d+SPC.INT[0]));
+    K.forEach(x=>put(x,'k',d+1));
+    return L.length+K.length;
+  },
+  // the stops due on day d (on path p when given), most overdue first: [{k, sk, lv, e}]
+  list(p,d){
+    if(d==null)d=mastDay();
+    SPC.sync(d);
+    const s=SPC.get().s,out=[];
+    for(const k in s){const e=s[k],n=SPC.nd(k);if(n&&SPC.due(e,d)&&(!p||SPC.onPath(k,p)))out.push({k,sk:n.sk,lv:n.lv,e})}
+    return out.sort((a,b)=>a.e.d-b.e.d||(a.e.k?1:0)-(b.e.k?1:0)||(a.k<b.k?-1:a.k>b.k?1:0));
+  },
+  left(d){const o=SPC.get();return Math.max(0,SPC.CAP-(o.day===d?o.n|0:0))},
+  take(d){const o=SPC.get();if(o.day!==d){o.day=d;o.n=0}o.n=(o.n|0)+1},
+  q(x,d){SPC.take(d);const q=genQ(x.sk,x.lv);q.sk=x.sk;q.lv=x.lv;q.spc=x.k;return q},
+};
+// revSlot, at a path slot (question 4 or 8) with no missed question due: the most overdue check-in of the path, not the round's own stop
+function spcSlot(g){
+  const d=mastDay();
+  if(!SPC.left(d))return null;
+  const asked=g.rvAsked||(g.rvAsked={});
+  const x=SPC.list(g.path,d).find(x=>!asked['spc|'+x.k]&&!(x.sk==g.sk&&x.lv==g.lv));
+  if(!x)return null;
+  asked['spc|'+x.k]=1;
+  const q=SPC.q(x,d);
+  q.review=1;
+  g.last=q.label;
+  return q;
+}
+// Mixed Practice (mixQs, 50-round.js): up to SPC.MIX check-ins of any path, within the day's cap
+function spcMix(){
+  const d=mastDay(),out=[];
+  for(const x of SPC.list(null,d)){if(out.length>=SPC.MIX||!SPC.left(d))break;out.push(SPC.q(x,d))}
+  return out;
+}
+// check(), on the first try at a check-in question: right moves the stop on, wrong puts it back to 2 days (see the head)
+function spcTry(q,ok,helped){
+  if(!q||!q.spc)return null;
+  const e=SPC.get().s[q.spc],d=mastDay();
+  if(!e||e.b>=SPC.DONE)return null;
+  if(!ok){e.b=0;e.d=d+SPC.INT[0];delete e.k}
+  else if(helped)e.d=d+SPC.INT[e.b];
+  else if(e.k){e.b=SPC.DONE;delete e.k}
+  else{e.b++;if(e.b<SPC.DONE)e.d=d+SPC.INT[e.b]}
+  return e;
 }
 
 // ---- P5-03 Daily Review ----
@@ -11170,7 +11386,7 @@ function startReview(){
   const qs=reviewQs();
   if(!qs.length)return startMix();
   if(qs.some(q=>/^es_/.test(q.sk)))spkProbe(); // S-SPK: a "Say it!" step after the first Spanish item (50-say.js)
-  G=newG({mix:true,daily:true,pool:qs,n:qs.length,sk:'mix'});
+  G=newG({mix:true,daily:true,pool:runCap(qs),n:qs.length,sk:'mix'}); // MIX-8 (b): the same items, never three of one kind in a row where they allow it (50-round.js)
   next();
 }
 function revCard(){
@@ -11315,7 +11531,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v196'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v197'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -11628,6 +11844,7 @@ const BT = {
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
     if (fresh.length) BT.badgeSheet(fresh);
     else if (BT.offer) BT.offerLower();
+    else if (L.length && !PLAY.locked() && BT.band() == 'A') { if (nrSay('Tap a puzzle to play!', '.bt-hub', 600)) setTimeout(() => { if ($('.bt-hub')) fb('Tap a puzzle to play!', 'info', 2500); }, 600); } // shown too (a11y sound rule) // REC-12 (owner approved the words 2026-11-26): the youngest band hears what to do (12-speech.js)
     BT.warm(); // P6-03
   },
 
@@ -11882,6 +12099,9 @@ const BT = {
   fmtSec(s) { return s < 60 ? `${s} sec` : s % 60 ? `${Math.floor(s / 60)} min ${s % 60} sec` : `${s / 60} min`; },
 };
 for (const c of BT.CAT) BT.types[c.id] = BT.entry(c); // P6-03: every catalog type, its code still to come (bt.<VER>.js)
+/* PARENT-11: BUILT by tools/build.py (never edit): 1 once docs/drafts/PARENT11-READ.md says "status: reviewed <name> <date>",
+   else 0: the report card draws no Parent corner (41d-parent.js, part gate). A let: tools/smoke.js sets it to try the corner. */
+let PARENT_ON = 0;
 /* ---------- app mode: full screen, install button ---------- */
 const isApp=()=>matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
 let installEvt=null;
@@ -11943,12 +12163,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v196');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v197');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v196')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v196)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v197')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v197)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo('', true, false)}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11970,15 +12190,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v196';
+  return !!f && f[1] === 'v197';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v196') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v197') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v196.js';
+    s.src = stem + '.v197.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12003,9 +12223,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v196.js"></script>
-<script src="gen2.v196.js"></script>
-<script src="data.v196.js"></script>
+<script src="gen.v197.js"></script>
+<script src="gen2.v197.js"></script>
+<script src="data.v197.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

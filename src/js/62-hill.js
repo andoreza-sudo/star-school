@@ -713,11 +713,11 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
   GH.wire({back:gameRoom});
   $$('[data-vc]').forEach(hcVehPic);
   $$('[data-w]').forEach(b=>b.onclick=()=>{const k=+b.dataset.w;if(!hcWOpen(k)){SFX.wrong();fb(`Win ${HC_NEED[k]-hcTot()} more stars to open ${HCW[k].n}.`,'warn long',2600);return}SFX.pop(1);hcMW=k;garage()});
-  const play=(k,i)=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(k,i)};
+  const play=(k,i)=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(k,i)};
   $$('[data-stg]').forEach(b=>b.onclick=()=>{const i=+b.dataset.stg;if(!hcSOpen(w,i)){SFX.wrong();fb(`Finish ${HC_ST[w][i-1][1]} first!`,'warn long',2400);return}play(w,i)});
   $('#hcgo').onclick=()=>play(w,pi);
   $$('[data-st]').forEach(b=>b.onclick=()=>play(HCW.findIndex(D=>D.id==b.dataset.st),null));
-  $('#hcday').onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(day.wi,null,day)};
+  $('#hcday').onclick=()=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(day.wi,null,day)};
   $('#hcgar').onclick=()=>{SFX.pop(2);hcGarage()};
   const bb=$('#hcboss');if(bb)bb.onclick=()=>{if(!hcBossOpen(w)){SFX.wrong();fb(`Win a star on ${HC_ST[w][HC_SPW-1][1]} to meet ${HC_BOSS[w][0]}.`,'warn long',2600);return}SFX.pop(2);hcBossMenu(w)};
   if(hcHopOpen()&&!gs.hop)GH.moveNew({name:'Hop',icon:'arrow-up',line:'Tap Hop to jump over bumps and logs!',done:()=>{gs.hop=1;save()}}); // G-MOVES: once

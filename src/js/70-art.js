@@ -358,13 +358,13 @@ function artThumb(k){const st=stS(),[t,v]=k.split(':');try{
 function artThumbs(){const q=[...$$('[data-th]'),...$$('[data-gth]')];let i=0;const one=()=>{const e=q[i++];if(!e||!e.isConnected)return;
     if(e.dataset.th)e.innerHTML=artThumb(e.dataset.th);else{const g=galGet(+e.dataset.gth);if(g)e.innerHTML=galPic(g,false)}};
   const f=()=>{const t0=performance.now();do one();while(i<q.length&&performance.now()-t0<8);if(i<q.length)requestAnimationFrame(f)};if(q.length)requestAnimationFrame(f)}
-function artOpen(k,back){if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}ART_BACK=back||(()=>colorMenu(STTAB));const[t,v]=k.split(':');SFX.whoosh();
+function artOpen(k,back){if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return}ART_BACK=back||(()=>colorMenu(STTAB));const[t,v]=k.split(':');SFX.whoosh();
   if(t=='px')colorPic(v,'num');else if(t=='sh')shapePage(v,'num');else artPage(k)}
 function colorMenu(tab){if(tab&&['shape','pixel','paint'].includes(tab))return classicColor(tab);if(tab)STTAB=tab;if(!ART_TABS.some(t=>t[0]==STTAB))STTAB='packs';
   artNeonMigrate();artNeonShrink();artMusic(false);
   view(`${GH.top('art')}${artMenuHTML(STTAB)}`);
   $('#back').onclick=gameRoom;$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);colorMenu(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return false}return true};
   $$('[data-k]').forEach(b=>b.onclick=()=>artOpen(b.dataset.k));
   $$('[data-day]').forEach(b=>b.onclick=()=>artOpen(b.dataset.day));
   $$('[data-lock]').forEach(b=>b.onclick=()=>{SFX.wrong();fb(b.dataset.lock,'warn',2400)});
@@ -401,7 +401,7 @@ function classicHTML(tab){const cs=cbS(),ss=shS();
 function classicColor(tab){if(tab)CBTAB=tab;artMusic(false);
   view(`${GH.top('art',{sub:'More'})}<div class="scroll">${classicHTML(CBTAB)}</div>`);
   $('#back').onclick=()=>colorMenu('classic');$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);classicColor(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true},bk=()=>{ART_BACK=()=>classicColor(CBTAB)};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return false}return true},bk=()=>{ART_BACK=()=>classicColor(CBTAB)};
   if($('#free'))$('#free').onclick=()=>{if(chk()){bk();freePaint(-1)}};
   $$('[data-art]').forEach(b=>b.onclick=()=>{if(chk()){bk();freePaint(+b.dataset.art)}});
   $$('[data-id]').forEach(b=>b.onclick=()=>{if(chk())modeChooser(m=>{bk();colorPic(b.dataset.id,m)},false)});

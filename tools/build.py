@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # (BRAND, v193: the icons are copied from docs/brand/icons/, drawn by tools/brand-icons.js; the build no longer needs Pillow)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v196'
+VER = 'v197'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -125,6 +125,19 @@ def askon_js(root):
     return ('/* ASK-01: BUILT by tools/build.py (never edit): how many "Ask the pet" questions are reviewed (ASKW, 39s-askw.js, part hints).\n'
             '   0: Home and the map draw no Ask button (a let: tools/smoke.js sets it to try the menu). */\n'
             'let ASK_ON = %d;\n' % len(ask_words(root)))
+# PARENT-11: the Parent corner of the report card (src/js/41d-parent.js, part gate) shows its drafted words (PCW, PCQ) only once the owner
+# has read them: docs/drafts/PARENT11-READ.md has one status line, "status: unreviewed" until then. Changing it to
+# "status: reviewed <name> <YYYY-MM-DD>" (the one-line flip) and building again writes src/js/82a-parenton.js with PARENT_ON = 1 (in
+# index.html); with 0 the report card draws no corner. --words-only and --words-check cover this file too.
+PARENT_FILE, PARENT_DOC = '82a-parenton.js', os.path.join('docs', 'drafts', 'PARENT11-READ.md')
+def parent_on(root):
+    f = os.path.join(root, PARENT_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def parenton_js(root):
+    return ('/* PARENT-11: BUILT by tools/build.py (never edit): 1 once docs/drafts/PARENT11-READ.md says "status: reviewed <name> <date>",\n'
+            '   else 0: the report card draws no Parent corner (41d-parent.js, part gate). A let: tools/smoke.js sets it to try the corner. */\n'
+            'let PARENT_ON = %d;\n' % parent_on(root))
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
@@ -132,6 +145,7 @@ def write_words(root):
     open(os.path.join(root, 'src', 'js', PERS_FILE), 'w', encoding='utf-8', newline='').write(pers_js(root))
     open(os.path.join(root, 'src', 'js', ASK_FILE), 'w', encoding='utf-8', newline='').write(ask_js(root))
     open(os.path.join(root, 'src', 'js', ASKON_FILE), 'w', encoding='utf-8', newline='').write(askon_js(root))
+    open(os.path.join(root, 'src', 'js', PARENT_FILE), 'w', encoding='utf-8', newline='').write(parenton_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
@@ -142,7 +156,7 @@ if '--words-check' in sys.argv:
     _pf = os.path.join(_w, 'src', 'js', PERS_FILE)
     if os.path.isfile(_pf) and open(_pf, encoding='utf-8', newline='').read() != pers_js(_w):
         _bad.append(PERS_FILE)
-    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js)):
+    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js)):
         _af = os.path.join(_w, 'src', 'js', _f)
         if os.path.isfile(_af) and open(_af, encoding='utf-8', newline='').read() != _fn(_w):
             _bad.append(_f)
@@ -150,7 +164,7 @@ if '--words-check' in sys.argv:
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js and src/js/39t-askon.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js and src/js/82a-parenton.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -165,7 +179,7 @@ write_words(ROOT)  # TEACH-2b: the reviewed words, before the parts are read (TE
 # is <stem>.<VER>.js: a <style> it adds to <head> (its src/css files, if any), its src/js files (sorted), and a last line
 # `var <STEM>_VER='<VER>'`. Keep one entry per line: tools/test.js reads this list. See CONTRIBUTING 3.3.
 PARTS = [
-    ('gen', r'(23-viz|30-gen-math|30p-pers|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|45-placement|50-say|50-say-cmp|50-say-corner|57-fluency|80-grown|81-backup|82-report|88-online|89-play)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note); PLAY-01: the Play app's unlock screens and purchase; MERGE-186 (ROOM 2): placement (Find my level), Say it! with its sound check and listening corner, and Fact Sprint, called only from screens after start-up (their CSS stays in index.html)
+    ('gen', r'(23-viz|30-gen-math|30p-pers|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|45-placement|49c-tap10|50-say|50-say-cmp|50-say-corner|57-fluency|80-grown|81-backup|82-report|88-online|89-play)\.js'),  # A11c: math visuals and the question generators, part 1; TAP-10: the make converters of BEST-APP item 10 (gen2 is at its 400 KB warning); ROOM: the Grown-ups screens (settings, backup, report, online note); PLAY-01: the Play app's unlock screens and purchase; MERGE-186 (ROOM 2): placement (Find my level), Say it! with its sound check and listening corner, and Fact Sprint, called only from screens after start-up (their CSS stays in index.html)
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2|51b-checkin)\.js|(37b-kinds-c|51b-checkin)\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds; CHECK-IN: check-ins and stop badges
     ('bt', r'\d+-bt-[\w-]+\.(js|css)|d-(puz-[a-z]+|riddles|memory|words-bt)\.js'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays); TRIM-START (v196): and the src/data files only those types read (PUZ, RIDDLES, MEMW, BTW, 130 KB, read only inside functions), off the start-up path
     ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub|59b-fx)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
@@ -180,7 +194,7 @@ PARTS = [
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
     ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw|39u-stage)\.js|(39p-pers|39r-ask|39u-stage)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
-    ('gate', r'(41b-pin|41c-kidpw)\.js|(41b-pin|41c-kidpw)\.css'),  # RC-1 (v188): the Grown-ups PIN pad and the children's picture passwords, loaded when asked for (NAV.quiz, the picker)
+    ('gate', r'(41b-pin|41c-kidpw|41d-parent)\.js|(41b-pin|41c-kidpw|41d-parent)\.css'),  # RC-1 (v188): the Grown-ups PIN pad and the children's picture passwords, loaded when asked for (NAV.quiz, the picker); PARENT-11: the report card's Parent corner and certificate (behind the PIN, so the part is in; report() loads it if not)
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.

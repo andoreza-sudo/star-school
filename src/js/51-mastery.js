@@ -27,7 +27,7 @@
      - 3 wrong first tries in a row, at any point: the pet offers a hint and the next question is an easier one (from
        easier(stop), with the hint shown; in challenge mode, from the round's own stop). After question 5 it also steps
        the mode down: challenge -> normal, normal -> support.
-     Star thresholds, round length, coins and locks never change. Everything is decided from the answers alone, so the
+     Star thresholds, round length, coins and locks never change here (MIX-8's hard start, hardStart in 50-round.js, can shorten a round that can no longer reach 1 star). Everything is decided from the answers alone, so the
      same answers give the same questions' stops (tests rely on it).
    Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok, ms, helped) on a first try, renderQ() calls
    mastShow(q) last, finish() adds G.forgive to the score for the star rating.

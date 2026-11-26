@@ -97,6 +97,7 @@ function streakCal(off){
     <div class="stc-sub small stc-pzs"><span>Next prizes, days in a row:</span>${prizes}</div>
    </div></div>`);
   NAV.bar('');$('#back').onclick=()=>home();
+  if(!off)nrSay(msg,'.stc-card',600); // AUDIO-12: the streak line, for a non-reader (12-speech.js); not again for each month turned
   $('#stcp').onclick=()=>streakCal(off+1);
   $('#stcn').onclick=()=>streakCal(off-1);
 }
