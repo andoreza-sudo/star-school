@@ -9849,7 +9849,7 @@ function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_
 function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
   while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
   return qs}
-function startMix(){G=newG({mix:true,pool:shuffle(mixQs()),sk:'mix'});next()}
+function startMix(){G=newG({mix:true,pool:runCap(shuffle(mixQs())),sk:'mix'});next()} // MIX-8 (b): the same 10, never three of one kind in a row where they allow it
 const back=()=>G&&G.path?pathMap(G.path):home();
 function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=genQ(n.sk,n.lv);return q})}
 function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
@@ -9861,21 +9861,70 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
    <p>10 questions from this whole world. Get <b>9 right</b> and you skip all of its stops!</p><div class="rw-acts">${UI.btn("Let's do it!",{kind:'primary',size:'lg',wide:true,icon:'bolt',id:'tgo'})}${UI.btn('Not now',{kind:'ghost',wide:true,id:'tno'})}</div></div>`;
   document.body.appendChild(o);o.querySelector('#tno').onclick=()=>o.remove();
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
+/* MIX-8 (BEST-APP roadmap 8, "Break up practice"; docs/drafts/MIX8.md). No new words: every line shown or said is one the round had.
+   (b) the run cap is a reordering. pickQ already redraws the stop's own questions so a third of one kind in a row is rare (KINDS2);
+     a review question (q.review: a due item at a review slot, or the older stop at question 4 or 8) is never redrawn, so when it
+     would be the third of its kind in a row it waits: the round's next question comes first, and the review question is asked as
+     soon as it is not a third in a row, at the latest as the round's last new question (it is never lost). While it waits, the
+     questions made are the stop's own (no other review slot is filled then: a due item it would have taken stays due). It never
+     waits at the last new question, nor at a stop known to give one kind only (KMONO: waiting could not help, so the review slots
+     stay where they were). Misses wait for it too (backQ). A mix pool
+     (Tricky Mix, Daily Review) is reordered the same way once, at the start (runCap). Other pools (passages, boss, test out,
+     check-ins) keep their order.
+   (c) a missed question (its answer shown after the second wrong try) comes back after BACK other questions of the round, not only
+     at the end: between two new questions, at most one at a time, and never as the third of a kind in a row (unless the stop gives
+     one kind only, KMONO); never while a review question waits (b); what is left at the
+     end comes back then, as before. Test out keeps its misses for the end (unchanged). Scoring rule: a question coming back is a
+     retry, as at the end before: it never adds to the score, stars, coins, done, the dots, the mastery record or a review box, and
+     a wrong try at it is not booked again as a miss (addMiss runs on the question's first wrong try only); a retry missed again
+     does not come back a second time. A retry, right or wrong, leaves the in-row count as it was: it counts first tries only
+     (R-01b), so a miss coming back mid-round cannot break a run of first tries that the round's end would not have broken.
+   (d) a hard start ends the round sooner: see hardStart. */
+const BACK=2;
+const MIX8={off:false}; // tools/test.js MIX-8 only: off gives the v197 round (to show what changed and what did not); never set by the app
+const runKind=(g,k)=>{const h=g.kh||[];return h.length>1&&h[h.length-1]===k&&h[h.length-2]===k};
+// a pure reordering of a pool: each next question is the first one left that is not a third of a kind in a row (else the first one left)
+function runCap(a){if(MIX8.off)return a;const out=[],rest=a.slice(),g={kh:[]};
+  while(rest.length){let i=rest.findIndex(q=>!runKind(g,q.kind));if(i<0)i=0;const q=rest.splice(i,1)[0];out.push(q);g.kh.push(q.kind)}
+  return out}
 // KINDS2: every question asked goes on G.kh (its kind), whatever its source; the stop's own questions come from pickQ (49b-kinds2.js)
-function makeQ(){const q=makeQ1();if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
+function makeQ(){let q;const h=G.hold;
+  if(h&&(!runKind(G,h.kind)||G.done>=G.n-1)){q=h;G.hold=null} // MIX-8 (b): the review question that waited
+  else{if(h)G.nos=1;try{q=makeQ1()}finally{G.nos=0}
+    if(!h&&q&&q.review&&!MIX8.off&&!G.pool&&runKind(G,q.kind)&&G.done<G.n-1&&!(typeof KMONO!='undefined'&&KMONO[G.sk+G.lv])){
+      G.hold=q;G.nos=1;try{q=makeQ1()}finally{G.nos=0}}}
+  if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
+// MIX-8 (c): a missed question due back now, or null (one at a time, and not right after another one)
+function backQ(g){if(MIX8.off||g.test||g.retry||g.hold||!g.missed.length)return null;
+  const one=typeof KMONO!='undefined'&&KMONO[g.sk+g.lv]; // a stop of one kind: the run cap cannot hold there, so it does not wait
+  const i=g.missed.findIndex(q=>q.back<=g.done&&(one||!runKind(g,q.kind)));if(i<0)return null;
+  const q=g.missed.splice(i,1)[0];(g.kh||(g.kh=[])).push(q.kind);return q}
+/* MIX-8 (d) a hard start: in a stop's own round of 8 or more questions (no pool, boss, test out, check-in or mix), within its first
+   half, the first tries so far leave 1 star out of reach even if every question left is right on the first try with no hint (the
+   score as finish() rates it: right first tries, less half of those with the hint showing, plus wrong Challenge answers, P1-08).
+   Grade 1 and up (10 questions): 4 misses in the first 4 or 5. Kindergarten (8): 3 misses in the first 3 or 4. Pre-K (6) never.
+   The round is then cut to ceil(60%) of its questions (6 of 10, 5 of 8), and never ends before the next question. It changes no
+   pass and no stars: the round could not reach 1 star any more, and starNeed on the shorter round cannot be reached either
+   (starNeed grows by at most 1 per question). Stars, coins and game time use the same formulas on the shorter round (sc of n).
+   G.n0 keeps the length it had: the end card's "Get N right" names what the next full round needs. Once per round. */
+const SHORT={MIN:8,F:.6};
+function hardStart(g){
+  if(!g||MIX8.off||g.n0||!g.path||!(g.node>=0)||g.pool||g.boss||g.test||g.mix||g.chk||g.n<SHORT.MIN||g.done*2>g.n)return false;
+  if(g.score-(g.helped||0)/2+(g.forgive||0)+(g.n-g.done)>=starNeed(g.n,.7))return false;
+  g.n0=g.n;g.n=Math.max(g.done+1,Math.ceil(g.n*SHORT.F-1e-9));return true}
 function makeQ1(){if(G.pool)return G.pool.shift();
   // audit v195: the review slot comes before adaptation (challenge and support rounds took the slots after question 5); the mode is
   // still decided first, so the slot's question shows as the mode says. Nothing due: the round is unchanged.
   if(mastOn(G)&&G.done>=MAST.AT&&G.mode===undefined)G.mode=mastMode(G.fr||[],gradeOf());
-  {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
+  if(!G.nos){const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
   {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
-  if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
+  if(!G.nos&&G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const q=pickQ(G.sk,G.lv,!G.chk&&!G.test&&!G.boss); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js); mix: Practice only
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01: Go Home? is open: go on when Keep playing closes it
   if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored
-  if(G.done<G.n){G.q=makeQ();G.retry=false}
+  if(G.done<G.n){const b=backQ(G);if(b){G.q=b;G.retry=true}else{G.q=makeQ();G.retry=false}} // MIX-8 (c)
   else if(G.missed.length){G.q=G.missed.shift();G.retry=true}
   else return finish();
   renderQ()}
@@ -9945,7 +9994,8 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function addMiss(q){if(q.lsx)return;const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
+// MIX-8: a question coming back (G.retry) is not booked as a miss again: its first wrong try was
+function addMiss(q){if(q.lsx||!MIX8.off&&G&&G.retry&&G.q===q)return;const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
 /* TEACH-1: the lessons' switch (part teach, 52-lesson.js). TEACH.off gives the app as it was before them: no lesson offer on the map, and in
@@ -9964,8 +10014,9 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
+    if(!G.retry)hardStart(G); // MIX-8 (d)
     if(first&&!q.lsx&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js); fix2 v194: never for a lesson mix-in (lsx), whose label can be a review item's
-    G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
+    G.streak=first?G.streak+1:G.retry&&!MIX8.off?G.streak:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
@@ -9979,7 +10030,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     else if(G.boss){fb(pick(['Zap!','Pow!','Bam!','Zing!']),'zap');petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
     else{const pr=pick(CHEERS);fb(pr);petSay(pick(PET_YAY));const cs=q.after&&hasClips('cheer')?false:cheerSay('cheer',pr,.3);if(cs=='clip')wait+=400;else if(cs&&q.after)wait+=700} // EN-PRAISE: said in a recorded voice (q.after waits for it)
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
-  G.tries++;G.streak=0;qStreak();
+  G.tries++;if(!G.retry||MIX8.off)G.streak=0;qStreak(); // MIX-8: a retry never touches the in-row count
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
@@ -9993,7 +10044,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   G.lock=true;
   actQEnd(false,true); // audit v195: a revealed question's time is learning time too ("Learn first"); the question is not counted
   K.reveal(q);if(one&&q.hint){$('#hint').innerHTML=hintHTML(q);fit();hintIn()} // TEACH-1: the answer with its picture
-  if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
+  if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);q.back=G.done+BACK;G.res[G.done-1]='try';hardStart(G)} // MIX-8 (c) back after BACK more, (d)
   qProg();
   fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
@@ -10051,7 +10102,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const need=starNeed(n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const need=starNeed(g.n0||n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
     f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
@@ -10132,7 +10183,7 @@ function roundOops(){
      - 3 wrong first tries in a row, at any point: the pet offers a hint and the next question is an easier one (from
        easier(stop), with the hint shown; in challenge mode, from the round's own stop). After question 5 it also steps
        the mode down: challenge -> normal, normal -> support.
-     Star thresholds, round length, coins and locks never change. Everything is decided from the answers alone, so the
+     Star thresholds, round length, coins and locks never change here (MIX-8's hard start, hardStart in 50-round.js, can shorten a round that can no longer reach 1 star). Everything is decided from the answers alone, so the
      same answers give the same questions' stops (tests rely on it).
    Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok, ms, helped) on a first try, renderQ() calls
    mastShow(q) last, finish() adds G.forgive to the score for the star rating.
@@ -11170,7 +11221,7 @@ function startReview(){
   const qs=reviewQs();
   if(!qs.length)return startMix();
   if(qs.some(q=>/^es_/.test(q.sk)))spkProbe(); // S-SPK: a "Say it!" step after the first Spanish item (50-say.js)
-  G=newG({mix:true,daily:true,pool:qs,n:qs.length,sk:'mix'});
+  G=newG({mix:true,daily:true,pool:runCap(qs),n:qs.length,sk:'mix'}); // MIX-8 (b): the same items, never three of one kind in a row where they allow it (50-round.js)
   next();
 }
 function revCard(){

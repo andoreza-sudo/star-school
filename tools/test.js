@@ -1840,10 +1840,14 @@ run('daily review: card counts due items, the round asks them first, nothing due
   startReview();
   if(!G||!G.mix||!G.daily||G.n!==10||G.pool.length!==10||started||nexts!==1)bad.push('round: '+JSON.stringify({n:G&&G.n,p:G&&G.pool&&G.pool.length,started,nexts}));
   else{
-    const got=G.pool.map(q=>q.rvk);
-    if(got.join()!==want.join())bad.push('round does not ask the due items first, most urgent first');
+    // MIX-8 (BEST-APP roadmap 8, approved): the round is the same 10 items, most urgent first, except that an item which would be the
+    // third of one kind in a row waits for the first later item of another kind (runCap, a pure reordering; it was urgency order only)
+    const got=G.pool.map(q=>q.rvk),capped=runCap(want.map(k=>G.pool.find(q=>q.rvk===k))).map(q=>q.rvk);
+    if(got.slice().sort().join()!==want.slice().sort().join())bad.push('round does not ask the 10 most urgent due items');
+    if(got.join()!==capped.join())bad.push('round does not ask the due items most urgent first (run cap aside)');
+    {const ks=G.pool.map(q=>q.kind);for(let i=2;i<ks.length;i++)if(ks[i]==ks[i-1]&&ks[i]==ks[i-2]&&ks.slice(i+1).some(k=>k!==ks[i]))bad.push('three '+ks[i]+' items in a row with another kind left')}
     const asked=[];for(let i=0;i<10;i++)asked.push(makeQ().rvk);
-    if(asked.join()!==want.join())bad.push('makeQ order');
+    if(asked.join()!==got.join())bad.push('makeQ order');
   }
   // 3 due: a short round of exactly those 3
   S.rev=rall.slice(0,3).map(x=>({...x,due:td}));
@@ -24720,13 +24724,17 @@ run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-f
      __fresh(2);S.rev=[1,2].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1}));startReview();const n=G.n;__play(all);o.push(n+'|'+__end());
      return JSON.stringify(o)})()`));
    const want=['6 out of 6: You are a superstar!','8 out of 8: You are a superstar!','10 out of 10: You are a superstar!','7 out of 10: Fantastic work!','5 out of 10: Good job! Keep practicing!',
-     '4 out of 10: Nice try! Practice makes you stronger!','7 out of 7: You are a superstar!','0 out of 10: Nice try! Practice makes you stronger!','2|2 out of 2: You are a superstar!'];
+     // MIX-8 (BEST-APP roadmap 8, approved): card 6 misses its first 6, a hard start (4 misses in the first 4 leave 1 star out of reach),
+     // so the round ends at 6 questions, all missed; the line is the same approved one (it was "4 out of 10", the 4 right after question 6)
+     '0 out of 6: Nice try! Practice makes you stronger!','7 out of 7: You are a superstar!','0 out of 10: Nice try! Practice makes you stronger!','2|2 out of 2: You are a superstar!'];
    want.forEach((w,i)=>{if(rows[i]!==w)p.push('end card '+(i+1)+': "'+rows[i]+'", want "'+w+'"')})}
   // 4. learn first: the time on a question that ends revealed counts (the question is not counted); every answer wrong logged 0 s
   {const r=JSON.parse(R(`(()=>{__fresh(2);S.unlockAll=true;ptCfg().need=2;const i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);start('math',i);const g=G;let n=0;
      while(g.done<g.n&&n++<40){__off+=20000;check(__NO,__fk);if(!G.lock)check(__NO,__fk);g.__pend=false;__step(g)}
      const e=ACT.entry(today())||{sec:0,q:0};return JSON.stringify({sec:e.sec,q:e.q,locked:ptGate().locked})})()`));
-   if(r.sec<180||r.q!==0||r.locked)p.push('learn first: 10 questions of 20 s, every answer wrong: '+JSON.stringify(r)+' (want about 200 s logged, 0 questions, the Game Room open after 2 minutes)')}
+   // MIX-8 (BEST-APP roadmap 8, approved): every answer wrong is a hard start, so the round ends after 6 questions (was 10): about 120 s
+   // logged (was 200), the same 90% floor (108 of 120; it was 180 of 200); the Game Room still opens after its 2 minutes
+   if(r.sec<108||r.q!==0||r.locked)p.push('learn first: 6 questions of 20 s (a hard start ends the round of 10 at 6), every answer wrong: '+JSON.stringify(r)+' (want about 120 s logged, 0 questions, the Game Room open after 2 minutes)')}
   // 5. "Say 5 Spanish words" with no microphone or a blocked one: a finished Spanish round does it; with a microphone only the count does
   {const r=JSON.parse(R(`(()=>{__fresh(2);const x={k:'speak',d:0},es={k:'round',p:'es',mix:false,test:false},o={};
      SPK.mic='yes';SPK.deny=0;o.micOk=MIS.hit(x,es);SPK.deny=1;o.blocked=MIS.hit(x,es);o.blockedMath=MIS.hit(x,{k:'round',p:'math'});o.blockedMix=MIS.hit(x,{k:'round',p:'es',mix:true});
@@ -24752,9 +24760,19 @@ run('practice audit fixes: Fact Race clock, mix-in hints, end-card line, learn-f
   //    Challenge questions; with nothing due the round is as before
   {const r=JSON.parse(R(`(()=>{const go=due=>{__fresh(2);S.unlockAll=true;const p='math',i=NODES.math.findIndex(n=>n.sk=='big'&&n.lv==3);
        S.rev=due?[1,2,3,4,5,6].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1})):[];__asked=[];start(p,i);const g=__play(()=>true);
-       return{mode:g.mode,tags:__asked.slice(0,10).map(q=>q.review?'r':mastTag(q)||'-').join(''),left:REV.get().filter(x=>x.box==0).length,stars:getSt(p,i)}};
+       // MIX-8 (b): a review question that would be the third of its kind in a row waits: wait[k] is true when the k-th review question
+       // is at its slot, or later and at every question it waited through the two questions before were of its kind; plain[j]: a
+       // question that is not a review is the stop's own before question 6 and a Challenge question from 6 on
+       const a=__asked.slice(0,10),rv=a.map((q,j)=>q.review?j:-1).filter(j=>j>=0),tag=q=>q.review?'r':mastTag(q)||'-';
+       const wait=rv.map((j,k)=>{const sl=[3,7][k];if(j<sl)return false;for(let x=sl;x<j;x++)if(!a[x].review&&!(a[x-1].kind==a[j].kind&&a[x-2].kind==a[j].kind))return false;return true});
+       const plain=a.every((q,j)=>q.review||tag(q)==(j<5?'-':'ch'));
+       return{mode:g.mode,tags:a.map(tag).join(''),rv,wait,plain,left:REV.get().filter(x=>x.box==0).length,stars:getSt(p,i)}};
      return JSON.stringify([go(true),go(false)])})()`));
-   if(r[0].mode!=='challenge'||r[0].tags.replace(/ch/g,'c')!=='---r-ccrcc')p.push('review slots in a challenge round: '+JSON.stringify(r[0])+' (want a review question of the path at questions 4 and 8)');
+   // MIX-8 (BEST-APP roadmap 8, approved): the review question of the path is asked at question 4 and 8 as before, or a little later
+   // when it would be the third question of its kind in a row there (the run cap: it waits as long as that holds, so the question it
+   // takes is a later one: the stop's own before question 6, a Challenge from 6 on); was exactly ---r-ccrcc
+   {const t=r[0].tags.replace(/ch/g,'c');
+    if(r[0].mode!=='challenge'||!r[0].plain||r[0].rv.length!==2||r[0].wait.some(w=>!w)||t.replace(/r/g,'')!==t.replace(/r/g,'').replace(/[^-c]/g,''))p.push('review slots in a challenge round: '+JSON.stringify(r[0])+' (want a review question of the path at questions 4 and 8, later only to keep three of one kind from a row)')}
    if(r[0].left!==4||r[0].stars!==3)p.push('review slots: '+r[0].left+' of 6 items still in box 0 after a perfect round (want 4: two were asked), stars '+r[0].stars);
    if(r[1].mode!=='challenge'||r[1].tags.replace(/ch/g,'c')!=='-----ccccc')p.push('nothing due: the challenge round changed: '+JSON.stringify(r[1]))}
   // 10. owner decision 2026-11-24 ("open practice after 3 tries"): a lesson run to its end three times without passing Show opens its
@@ -24830,6 +24848,110 @@ run('practice owner decisions P1-P6: the boss only says Try again, short rounds 
    if(same!==240)p.push('P6: ptCalc for a 5 of 5 round of the stop is '+same+' s')}
   }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'40 boss misses; pass and 2 stars for 7 round lengths, whole rounds of 6, 8, 5 and 10; reviews of 1, 2, 5 and 10; the speak mission said 3 times; 7 check-ins'};
+});
+
+// ---- MIX-8 (BEST-APP roadmap 8, "Break up practice"; docs/drafts/MIX8.md; 50-round.js): thousands of whole rounds on fake elements,
+// through the real start(), next(), makeQ(), check() and finish(), each played twice from the same seeds and the same answers: with
+// MIX-8 on, and off (MIX8.off: the v197 round). Answers are by position (the k-th new question's first and second try), so both runs
+// get the same first-try results. Checks: (b) never three questions of one kind in a row, except the misses left for the round's end,
+// a stop that has only one kind (KMONO), a pool round's own order (passages), and a review question at the round's last new question;
+// (c) every missed question comes back exactly once in the same round, never before BACK more new questions; (d) the round is cut
+// exactly when the hard-start rule (recomputed here from the first tries) says so, and never then passes or earns a star (the v197
+// round did not either); an all-right round, and any round with no hard start, keeps its score, stars, pass and (with the same review
+// items fixed) game time, coins and stars collected; the same seeds and answers give the same round (determinism).
+run('round mix MIX-8: run cap, misses back in the round, the hard start, all-right rounds unchanged, determinism',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={};
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(doc,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx);
+  let note='';
+  try{
+  R(`say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};spkHook=()=>false;for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   var __log=[],__ft=[],__pt=null,__fin=null;const __M0=Math.random;
+   renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q);
+     __log.push({q,retry:!!G.retry,done:G.done,n:G.n})};
+   var __ptl=null;ptEarn=s=>{__pt=s};{const c0=ptCalc;ptCalc=function(){const r=c0.apply(this,arguments);__ptl=r.lines.filter(l=>!/^Fixed /.test(l[1]));return r}}{const f0=finish;finish=function(){__fin=G;return f0()}}
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;S.unlockAll=true;bankReset()}
+   // one round: go() starts it; pat = {f, s, r}: first try right, second try right (by new question), a retry right (in order asked)
+   function __play(seed,grade,go,pat,off){MIX8.off=!!off;__fresh(grade);if(pat.rev)S.rev=pat.rev();RNG=mulberry32(seed);Math.random=mulberry32(seed*7+3);
+     __log=[];__ft=[];__pt=null;__ptl=null;__fin=null;let guard=0,rt=0;go();
+     while(!__fin&&guard++<120){const g=G,q=g.q;
+       if(g.retry){if(pat.r[rt++%pat.r.length])check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}}
+       else{const k=g.done,ok=!!pat.f[k];__ft.push({ok,hq:!!G.hq,ch:mastTag(q)=='ch',done:k});
+         if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(pat.s[k]?__OK:__NO,__fk)}}
+       next()}
+     MIX8.off=false;Math.random=__M0;RNG=__M0;const g=__fin;
+     return g&&{g,log:__log,ft:__ft,pt:__pt,ptl:JSON.stringify(__ptl),stars:g.path&&g.node>=0?getSt(g.path,g.node):-1,coins:S.coins,col:S.stars,key:__log.map(e=>(e.retry?'r:':'')+e.q.kind+':'+e.q.label).join('|')}}`);
+  const r=JSON.parse(R(`(()=>{
+    const o={late:0,reord:0,rounds:0,off:0,same:0,allRight:0,hard:0,hardOff0:0,mono:0,flush:0,last:0,pass:0,miss:0,mid:0,end:0,det:0,mix:0,bad:[]},bad=m=>{if(o.bad.length<40&&!o.bad.includes(m))o.bad.push(m)};
+    const stops=[];for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&SK[n.sk].gen)stops.push([p,i])});
+    const J=JSON.stringify,need=starNeed;
+    for(let t=0;t<2400;t++){
+      const [p,i]=stops[(t*37)%stops.length],nd=NODES[p][i],grade=GRADES[t%GRADES.length],rr=mulberry32(t*131+17),seed=t*9973+11;
+      // models: all right; random first tries at 85%, 60% or 35%; a hard start (the first 3, 4 or 5 missed, the rest right)
+      const m=t%5,pr=[1,.85,.6,.35][m]||0,hk=3+t%3,pat={f:[],s:[],r:[]};
+      for(let k=0;k<12;k++){pat.f.push(m==4?k>=hk:rr()<pr);pat.s.push(rr()<.5);pat.r.push(rr()<.7)}
+      if(t%3==1)pat.rev=()=>[1,2,3,4,5,6].map(s=>({sk:nd.sk,lv:nd.lv,seed:s*13+t,label:revLabel(genQ(nd.sk,nd.lv,s*13+t).label),box:0,due:0,n:1})).concat(
+        NODES[p].filter(x=>x.sk!='boss'&&SK[x.sk]&&SK[x.sk].gen).slice(0,4).map((x,j)=>({sk:x.sk,lv:x.lv,seed:j+1,label:revLabel(genQ(x.sk,x.lv,j+1).label),box:0,due:0,n:2})));
+      // KMONO (49b-kinds2.js) is a session memo of one-kind stops that changes how many draws pickQ makes: kept as it was for the replay
+      const km=J(KMONO),go=()=>start(p,i),A=__play(seed,grade,go,pat),B=__play(seed,grade,go,pat,true);
+      if(!A||!B){bad(nid(nd)+' grade '+grade+': the round did not end');continue}
+      o.rounds++;o.off++;const g=A.g,own=!g.pool,id=nd.sk+nd.lv,n0=B.g.n;
+      // (b) the run cap
+      for(let j=2;j<A.log.length;j++){const e=A.log[j],k=e.q.kind;if(A.log[j-1].q.kind!==k||A.log[j-2].q.kind!==k)continue;
+        if(e.retry&&e.done>=e.n)o.flush++;else if(!own)o.pass++;else if(KMONO[id]||KMONO[e.q.sk+e.q.lv])o.mono++;else if(e.q.review&&e.done==e.n-1)o.last++;
+        else bad(id+' grade '+grade+': three '+k+' questions in a row at '+(j+1)+' of '+A.log.length+', done '+e.done+' of '+e.n+' ('+A.log.slice(j-2,j+1).map(x=>(x.retry?'retry ':x.q.review?'review ':'')+x.q.label).join(' / ')+')')}
+      // (c) every miss comes back once, in this round, not before BACK more new questions
+      const missed=A.log.filter(e=>!e.retry&&e.q.back!=null);
+      for(const e of missed){o.miss++;const back=A.log.filter(x=>x.retry&&x.q===e.q);
+        if(back.length!==1){bad(id+': a missed question came back '+back.length+' times');continue}
+        const b=back[0];if(A.log.indexOf(b)<A.log.indexOf(e)||(b.done<e.q.back&&b.done<b.n))bad(id+': a miss came back too soon');
+        if(b.done<b.n)o.mid++;else{o.end++;if(e.q.back<g.n)o.late++}}
+      if(A.log.some(x=>x.retry&&x.q.back==null))bad(id+': a retry of a question that was not missed');
+      // (d) the hard start, recomputed from the first tries
+      let want=null;{let sc=0,h=0,fg=0,n=n0;for(const f of A.ft){const d=f.done+1;if(f.ok){sc++;if(f.hq)h++}else if(f.ch)fg++;
+        if(own&&n>=8&&d*2<=n&&sc-h/2+fg+(n-d)<need(n,.7)){want=Math.max(d+1,Math.ceil(n*.6-1e-9));break}}}
+      if(want!==null){o.hard++;if(g.n0!==n0||g.n!==want)bad(id+' grade '+grade+': hard start want n '+want+', got '+g.n+' (n0 '+g.n0+')');
+        if(A.stars!==B.stars||A.stars>0||g.score>=need(g.n,.7))bad(id+': a hard start changed the stars '+B.stars+' -> '+A.stars);
+        if(B.stars===0)o.hardOff0++}
+      else{if(g.n0!=null||g.n!==n0)bad(id+' grade '+grade+': the round was cut with no hard start ('+n0+' -> '+g.n+')');
+        // a review question that waited one question (the run cap) is answered at another position: positional answers then differ
+        const rp=L=>L.filter(x=>!x.retry&&x.q.review).map(x=>x.done).join();
+        const a=[g.score,g.helped||0,g.forgive||0,A.stars,g.best],b=[B.g.score,B.g.helped||0,B.g.forgive||0,B.stars,B.g.best];
+        if(rp(A.log)!==rp(B.log))o.reord++;
+        else if(J(a)!==J(b))bad(id+' grade '+grade+': [score, helped, forgiven, stars, best] '+J(b)+' -> '+J(a));
+        else if((g.fixed||0)===(B.g.fixed||0)){o.same++;if(A.pt!==B.pt||A.coins!==B.coins||A.col!==B.col)bad(id+': game time, coins or stars collected changed '+J([B.pt,B.coins,B.col])+' -> '+J([A.pt,A.coins,A.col]))}}
+      // game time: the same lines (the "Fixed" line aside: a fresh question can carry a due item's label, and the draws differ), and
+      // the same seconds when the same review items were fixed
+      if(m==0){o.allRight++;if(g.score!==n0||A.stars!==3||A.ptl!==B.ptl||(g.fixed||0)===(B.g.fixed||0)&&A.pt!==B.pt||A.coins!==B.coins||A.col!==B.col||A.log.some(x=>x.retry)||g.n!==n0)bad(id+' grade '+grade+': an all-right round changed '+J([g.score,n0,A.stars,B.stars,A.pt,B.pt,A.coins,B.coins,A.col,B.col,g.n,g.fixed,B.g.fixed,g.best,B.g.best,t]))}
+      // determinism: the same seed and answers again
+      if(t%8==0){o.det++;for(const k in KMONO)delete KMONO[k];Object.assign(KMONO,JSON.parse(km));const C=__play(seed,grade,go,pat);if(!C||C.key!==A.key||C.pt!==A.pt||C.stars!==A.stars)bad(id+': the same seed and answers gave another round')}}
+    // Tricky Mix and Daily Review: pools reordered once (runCap), misses back in the round
+    for(let t=0;t<200;t++){const daily=t%2,pat={f:[],s:[],r:[]},rr=mulberry32(t+5);for(let k=0;k<12;k++){pat.f.push(rr()<.6);pat.s.push(rr()<.5);pat.r.push(rr()<.7)}
+      pat.rev=()=>stops.filter((x,j)=>j%23==t%23).slice(0,9).map(([pp,ii],j)=>{const x=NODES[pp][ii];return{sk:x.sk,lv:x.lv,seed:j+t,label:revLabel(genQ(x.sk,x.lv,j+t).label),box:0,due:0,n:1}});
+      const A=__play(t*31+1,2,daily?startReview:startMix,pat);if(!A){bad('mix: the round did not end');continue}o.mix++;
+      for(const e of A.log.filter(x=>!x.retry&&x.q.back!=null))if(A.log.filter(x=>x.retry&&x.q===e.q).length!==1)bad('mix: a miss did not come back once')}
+    // runCap: a permutation; a third of one kind in a row only when nothing of another kind is left
+    {const rr=mulberry32(99);for(let t=0;t<2000;t++){const a=Array.from({length:1+Math.floor(rr()*12)},(_,j)=>({kind:'k'+Math.floor(rr()*(1+t%4)),j})),b=runCap(a);
+      if(b.length!==a.length||new Set(b).size!==a.length||b.some(x=>!a.includes(x)))bad('runCap is not a reordering');
+      for(let j=2;j<b.length;j++)if(b[j].kind==b[j-1].kind&&b[j].kind==b[j-2].kind&&b.slice(j+1).some(x=>x.kind!==b[j].kind))bad('runCap left an avoidable run')}}
+    return JSON.stringify(o)})()`));
+  p.push(...r.bad);
+  if(r.rounds<2000||r.hard<150||r.allRight<400||r.miss<1000||r.mix<200||r.det<250)p.push('too few cases: '+JSON.stringify(r));
+  if(r.late>r.miss*.1)p.push(r.late+' of '+r.miss+' misses waited for the end with a new question left after their turn');
+  if(r.mid<r.miss*.5)p.push('only '+r.mid+' of '+r.miss+' misses came back inside the round (the rest at the end)');
+  if(r.hardOff0!==r.hard)p.push('a hard start fired where the v197 round passed');
+  note=`${r.rounds} stop rounds over 8 grades, each also played as v197 (${r.allRight} all right, unchanged; ${r.reord} with a review question moved by the run cap; ${r.same} with no hard start and the same review items fixed: same score, stars, game time, coins); `+
+    `${r.hard} hard starts, all 0 stars as in v197; ${r.miss} misses, ${r.mid} back inside the round, ${r.end} at the end (${r.late} of them with a new question left after their turn); runs of 3 allowed: ${r.flush} end retries, ${r.mono} one-kind stops, ${r.pass} passage rounds, ${r.last} last-question reviews; `+
+    `${r.det} rounds replayed identically; ${r.mix} Tricky Mix and Daily Review rounds; 2000 runCap pools`;
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note};
 });
 
 // ---- FEEDBACK-4 (BEST-APP roadmap 4): Tell us what you think, in Grown-ups only (80-grown.js feedbackCard) ----
