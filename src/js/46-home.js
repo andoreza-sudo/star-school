@@ -377,6 +377,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read');if(p=='es'||p=='disc')teachWarm(p); // NAV-01: Back goes one step back
+  if($('.node.cur')||$('.lsn.cur'))nrSay('Tap the glowing stop to play!','#map',800); // REC-12 (owner approved the words 2026-11-26): a non-reader hears what to do on arrival (12-speech.js)
   if(wi!=null)return mapTop(p);
   const c=$('.node.cur')||$('.lsn.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 /* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */

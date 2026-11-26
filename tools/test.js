@@ -15604,7 +15604,7 @@ run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for reader
   const r=eval(js+`;(()=>{const bad=[],res={};
   const D=global.document,T0=global.setTimeout,Q=[],app={style:{},innerHTML:'',classList:{add(){},remove(){},toggle(){},contains:()=>false}};
   const dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},setAttribute(){},getAttribute(){return null},
-    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},insertAdjacentHTML(){},addEventListener(){},isConnected:true};
+    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},insertAdjacentHTML(){},addEventListener(){},scrollIntoView(){},isConnected:true};
   const has=c=>new RegExp('class="[^"]*\\\\b'+c+'\\\\b').test(app.innerHTML);
   global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:/^\\.[\\w-]+$/.test(s)?(has(s.slice(1))?dummy:null):dummy,querySelectorAll:()=>[],
     createElement:()=>Object.assign({},dummy),body:dummy,documentElement:dummy});
@@ -15615,11 +15615,13 @@ run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for reader
   try{
     S.name='Ava';S.petName='Sparky';S.coins=3;S.care={food:90,clean:90,fun:90,t:Date.now(),gift:''};S.pt={bank:0,used:0,gift:0};
     const W={care:()=>{care()},shop:()=>{shopSel=null;shop()},book:()=>{book()},streak:()=>{streakCal(0)},room:()=>{GH.hub()},
-      toast:()=>{fbSay('Finish the stop before this one!')}};
+      toast:()=>{fbSay('Finish the stop before this one!')},map:()=>{const d=drawMap,tw=teachWarm;drawMap=teachWarm=()=>{};try{pathMap('math')}finally{drawMap=d;teachWarm=tw}}, /* the map's drawing is the map checks' */bt:()=>{BT.offer=null;BT.hub()}};
     const want={care:'Sparky is super happy!',shop:'Tap an item to try it on!',book:'Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.',
-      streak:null,room:null,toast:'Finish the stop before this one!'};
+      streak:null,room:null,toast:'Finish the stop before this one!',
+      map:'Tap the glowing stop to play!',bt:'Tap a puzzle to play!'}; // REC-12: the two new-wording lines the owner approved 2026-11-26 (AUDIO12.md)
     for(const [k,f] of Object.entries(W)){
       for(const g of [-1,0,1]){const said=run(g,true,f);res[k]=said;
+        if(k=='bt'&&g==1){if(said.length)bad.push('bt, grade 1 (band B): said '+JSON.stringify(said));continue} // REC-12: the hub's line is the youngest band's (A: Pre-K and K)
         const w=k=='streak'?STRK.info().count?null:'Finish a round to light your flame!':k=='room'?ptWhyNot():want[k];
         if(!w)continue;
         if(!said.includes(w))bad.push(k+', grade '+g+': '+JSON.stringify(w)+' not said ('+JSON.stringify(said)+')')}
@@ -15643,9 +15645,61 @@ run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for reader
   if((homeSrc.match(/fbSay\('Finish the stop before this one!'\)/g)||[]).length!==2||!homeSrc.includes("fbSay(`Learn it with ${petN()} first!`)"))p.push('the map lock toasts are not said');
   for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);if(/\bfb\(ptWhyNot\(\)/.test(t))p.push(f+': a no-game-time toast is shown but not said (fbSay)')}
   // nothing new is said that the screen does not show: every literal nrSay / fbSay line is in the source as screen text too
+  // REC-12: except the two new-wording lines the owner approved on 2026-11-26 (AUDIO12.md "New wording"), said on the map and the hub
+  const NEW_OK=require('./en-audio.js').NR_NEW;
   for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);
-    for(const m of t.matchAll(/\bnrSay\('([^']+)'/g))if(t.split(m[1]).length<3&&!rd('18-reward-art.js').includes(m[1]))p.push(f+': "'+m[1]+'" is said but not shown')}
-  return{problems:p,note:'Pet Care, Pet Shop, sticker book, streak, Game Room, toasts: said in Pre-K to 1st, silent for 2nd to 6th and with the voice off'};
+    for(const m of t.matchAll(/\bnrSay\('([^']+)'/g))if(t.split(m[1]).length<3&&!rd('18-reward-art.js').includes(m[1])&&!NEW_OK.includes(m[1]))p.push(f+': "'+m[1]+'" is said but not shown')}
+  if(!/if\(\$\('\.node\.cur'\)\|\|\$\('\.lsn\.cur'\)\)nrSay\('Tap the glowing stop to play!','#map',\d+\)/.test(homeSrc))p.push('the map does not say "Tap the glowing stop to play!" to a non-reader (pathMap)');
+  if(!/BT\.band\(\) == 'A'\) nrSay\('Tap a puzzle to play!', '\.bt-hub', \d+\)/.test(rd('74-teasers.js')))p.push('the Brain Teasers hub does not say "Tap a puzzle to play!" to the youngest band');
+  return{problems:p,note:'Pet Care, Pet Shop, sticker book, streak, Game Room, toasts, map, Brain Teasers hub (REC-12): said in Pre-K to 1st (the hub: Pre-K and K), silent for 2nd to 6th and with the voice off'};
+});
+
+// ---- REC-12: the AUDIO-12 non-reader lines recorded in the pet's teacher voice (owner approval 2026-11-26: docs/drafts/AUDIO12.md "Tier 1",
+// 89 lines, and the 2 "New wording" lines; tools/en-audio.js NR_LIT, NR_GEN, NR_NEW). Each is collected, has its file (luna, speed 0.95,
+// the little pet's recipe) and say() plays it; nothing beyond the approved list is collected for it. "Mmm!" failed the speech to text check
+// in every take (6), so it stays the tablet's voice (NO_REC). The generated prompts ("How many ducks?") are what the Pre-K generators build.
+run('AUDIO-12 REC-12: the approved non-reader lines are recorded and say() plays them',()=>{
+  const p=[],EA=require('./en-audio.js'),E=require('./es-audio.js'),vm=require('vm'),dir=path.join(ROOT,EA.TEACH_DIR);
+  const ctx=E.loadApp(),R=t=>vm.runInContext(t,ctx),lines=EA.collectTeach(ctx),M=R('EN_TEACH'),M0=R('EN_TEACH0');
+  const approved=[...EA.NR_LIT,...EA.NR_GEN,...EA.NR_NEW],want=approved.filter(t=>t!=='Mmm!');
+  if(approved.length!==91||new Set(approved).size!==91)p.push(approved.length+' approved lines listed (want 89 Tier 1 + 2 new wording = 91, all different)');
+  // 1. collected: exactly the approved lines, the little pet's recipe; "Mmm!" left to the tablet (speech to text failed)
+  const nr=[...lines.values()].filter(o=>o.from.some(f=>f.startsWith(EA.NR_FROM)));
+  const got=new Set(nr.map(o=>o.text));
+  for(const t of want)if(!got.has(t))p.push('not collected: '+t);
+  for(const t of got)if(!want.includes(t))p.push('collected but not approved: '+t);
+  if(lines.has('Mmm!')||M.lines['Mmm!'])p.push('"Mmm!" is recorded: it failed the speech to text check and should stay the tablet\'s voice');
+  let bytes=0,chars=0;
+  for(const o of nr){if(o.rec!=='little')p.push(o.text+': recorded for the older pet (want the little pet, speed 0.95)');
+    const f=M.lines[o.text];if(f!==EA.teachFileOf(o.text,'little')){p.push('no recording for "'+o.text+'" in EN_TEACH');continue}
+    const fp=path.join(dir,f+'.ogg');if(!fs.existsSync(fp)){p.push(EA.TEACH_DIR+f+'.ogg is missing');continue}bytes+=fs.statSync(fp).size;chars+=o.text.length}
+  // 2. the generated prompts are exactly what the Pre-K generators build (31-gen-math-early.js: PK.OBJ, PK_PLATES, genPkShape's four shapes)
+  const gsrc=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8'),shp=(gsrc.match(/function genPkShape\(\) \{\s*const names = \[([^\]]+)\]/)||[])[1];
+  const gen=new Set([...R("PK.OBJ.map(o=>'How many '+o[1]+'?')"),...R("PK_PLATES.map(([c,o])=>'Which '+c+' has more '+o[1]+'?')"),
+    ...(shp?shp.split(',').map(x=>'Tap the '+x.trim().replace(/'/g,'')+'.'):[])]);
+  if(!shp)p.push('genPkShape\'s shape names not found');
+  if(JSON.stringify([...gen].sort())!==JSON.stringify(EA.NR_GEN.slice().sort()))p.push('the generated prompts differ from what the generators build: '+JSON.stringify([...gen].filter(x=>!EA.NR_GEN.includes(x)))+' / '+JSON.stringify(EA.NR_GEN.filter(x=>!gen.has(x))));
+  for(const g of ['genPkCount','genPkMore','genPkShape'])if(R('typeof '+g)!=='function')p.push(g+' is gone');
+  if(R('typeof genPkMore')=='function')for(let i=0;i<40;i++){const q=R('genPkMore()');if(!EA.NR_GEN.includes(q.say)){p.push('genPkMore said '+q.say);break}}
+  // 3. at start (EN_TEACH0): every approved line in the code word for word; the generated ones play once teach12 is in (the d-teach-start.js limit)
+  for(const t of want){const lit=!EA.NR_GEN.includes(t);if(lit&&M0.lines[t]!==M.lines[t])p.push('not in EN_TEACH0 (said outside a lesson): '+t)}
+  // 4. say() in a stand-in browser plays each line's file: with teach12 in (all 90) and before it (all but the generated ones); a line
+  //    with a name plays the recorded sentence and says the name with the tablet's voice
+  const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
+  const env={Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text)},cancel(){},speaking:false,pending:false}};
+  const tryAll=(S2,M_,which)=>{let n=0;S2("S.voice=true;CLIPS=[];ENA.t=0;S.cheerV='mix'");
+    for(const t of want){S2('hush()');log.length=0;S2('say('+JSON.stringify(t)+')');const rec=which(t);
+      const ok=rec?log.join('|')==='play '+M_.dir+M.lines[t]+M_.ext:log.join('|')==='speak '+t;if(!ok)p.push((rec?'not played from its recording':'not the tablet\'s voice')+' ('+(M_===M?'teach12 in':'before teach12')+'): '+t+' -> '+log.join(' | '));else if(rec)n++}return n};
+  let n1=0,n0=0;
+  try{const s=E.loadApp(null,env),S2=t=>vm.runInContext(t,s);n1=tryAll(S2,M,()=>true);
+    S2('hush()');log.length=0;S2("say('Hi Ava! Pick a game!')");if(log[0]!=='speak Hi Ava!'||!S2('ESA.q').some(x=>x.tch&&x.t==='Pick a game!'))p.push('"Hi Ava! Pick a game!": '+log.join(' | '));
+    S2('hush()');log.length=0;S2("say('Sort them! Put the big ones in the big box and the small ones in the small box.')");if(log[0]!=='play '+M.dir+M.lines['Sort them!']+M.ext)p.push('a two-sentence prompt: '+log.join(' | '));
+    S2('hush()');log.length=0;S2("say('Mmm!')");if(log.join()!=='speak Mmm!')p.push('"Mmm!" (tablet voice): '+log.join(' | '));
+  }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  try{const s0=E.loadApp(E.appSource().replace('const EN_TEACH=','const EN_TEACH_NOT_LOADED='),env),S0=t=>vm.runInContext(t,s0);
+    if(S0('typeof EN_TEACH')!=='undefined')p.push('the stand-in still has EN_TEACH');n0=tryAll(S0,M0,t=>!EA.NR_GEN.includes(t))}
+  catch(e){p.push('say() before teach12 could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  return{problems:p,note:nr.length+' of 91 approved lines recorded ("Mmm!" failed speech to text: tablet voice), '+chars+' characters, '+bytes+' bytes; played: '+n1+' with teach12, '+n0+' at start ('+EA.NR_GEN.length+' generated prompts wait for teach12)'};
 });
 
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
@@ -22809,7 +22863,10 @@ run('recorded teacher lines TEACH-4',()=>{
   // so the about 860 fixed lesson lines are about 1400 sentences (with the fixed sentences of lines that also hold a number or a {slot})
   // fix2 v194 (Fable): the cap narrowed to 1400 (1289 lines now; the owner approved the budgets 2026-11-24), so a slip shows sooner
   // REC-2, owner decision 2026-11-24 (9.0 MB): the warm-up lines and the Explore lines of grade 3 and up too: 1420 collected, the cap 1400 -> 1500
-  if(lines.size<60||lines.size>1500)p.push(lines.size+' teacher lines (want at most 1500: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded; REC-2 (owner decision 2026-11-24, 9.0 MB) 1500 with the last two groups)');
+  // REC-12 (owner approval 2026-11-26): the non-reader lines of AUDIO12.md are their own approved list, counted exactly by "AUDIO-12 REC-12";
+  // the cap below stays on the lesson and TEACH-4 lines it was set for
+  const nNr=[...lines.values()].filter(o=>o.from.every(f=>f.startsWith(EA.NR_FROM))).length,nLs=lines.size-nNr;
+  if(nLs<60||nLs>1500)p.push(nLs+' teacher lines (want at most 1500: the owner raised the cap from 110 on 2026-11-19, to 200, then to 1600 on 2026-11-24 for every lesson line; narrowed to 1400 with 1289 recorded; REC-2 (owner decision 2026-11-24, 9.0 MB) 1500 with the last two groups)');
   let total=0,big=0;const used=new Set();
   for(const [k,o] of lines){const f=M.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js --teach');continue}
     if(f!==EA.teachFileOf(k,o.rec))p.push('"'+k+'": file '+f+' is not the hash of its text and recipe');else if(!files.includes(f+'.ogg'))p.push(EA.TEACH_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}

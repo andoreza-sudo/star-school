@@ -87,6 +87,11 @@ All Tier 1 and Tier 2 lines are existing approved text, so nothing is new wordin
 
 ### Tier 1: 89 lines, proposed now
 
+**Recorded (REC-12, owner approval 2026-11-26).** tools/en-audio.js `NR_LIT`, `NR_GEN` and `NR_NEW` hold these 89 lines and the 2 new-wording lines. 90 of the 91 are recorded (luna, speed 0.95, 2,099 characters, 325,258 bytes). "Mmm!" (48) was heard as nothing by the speech to text check in all 6 takes, so it stays the tablet's voice (`NO_REC`). "How many cars?" and "How many apples?" are generator lines too (`PK.OBJ`), so 19 lines are generated, not 17.
+- The lines in the code word for word are also in EN_TEACH0, so they play from the start.
+- The 19 generated prompts are in EN_TEACH only. They play their recording once teach12 has loaded (a map loads it), and the tablet's voice before that. Adding them to EN_TEACH0 would make src/data/d-teach-start.js about 6,490 bytes, over the 6,000 the TEACH-4 check allows. That limit is the owner's call.
+- Audio total: 9,490,378 bytes (AUDIO_FAIL 9,500,000).
+
 Groups:
 - A: question prompts, Pre-K and K;
 - B: the pet talking;
@@ -217,14 +222,16 @@ More question prompts (Tap the number..., the four harder shapes), the game star
 | 110 | F | Tap your picture. | existing | 17 |  |
 
 
-### New wording: 2 lines, approve the words first
+### New wording: 2 lines, approved by the owner on 2026-11-26
 
-The map and the Brain Teasers hub have no sentence of their own to say on arrival. These two are proposals only and are not in the app.
+The map and the Brain Teasers hub have no sentence of their own to say on arrival. The owner approved both lines, exactly as written, on 2026-11-26 (REC-12). They are said only to a non-reader (`nrOn()`: Pre-K to 1st grade with S.voice on):
+- 111, on arrival at any map with a glowing stop (46-home.js `pathMap`);
+- 112, in the Brain Teasers hub, for the youngest band only (band A, Pre-K and K; not in the free sample, and not when a badge or easier-level sheet opens; 74-teasers.js `BT.hub`).
 
 | # | Group | Line | Text is | Chars | Seen* |
 |---|---|---|---|---|---|
-| 111 | N | Tap the glowing stop to play! | **new wording** | 29 |  |
-| 112 | N | Tap a puzzle to play! | **new wording** | 21 |  |
+| 111 | N | Tap the glowing stop to play! | **new wording, approved 2026-11-26** | 29 |  |
+| 112 | N | Tap a puzzle to play! | **new wording, approved 2026-11-26** | 21 |  |
 
 ## 4. Speech wired in this task (existing text only)
 

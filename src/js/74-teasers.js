@@ -443,6 +443,7 @@ const BT = {
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
     if (fresh.length) BT.badgeSheet(fresh);
     else if (BT.offer) BT.offerLower();
+    else if (L.length && !PLAY.locked() && BT.band() == 'A') nrSay('Tap a puzzle to play!', '.bt-hub', 600); // REC-12 (owner approved the words 2026-11-26): the youngest band hears what to do (12-speech.js)
     BT.warm(); // P6-03
   },
 
