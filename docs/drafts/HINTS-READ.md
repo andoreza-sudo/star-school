@@ -61,7 +61,7 @@ never in a check-in, and not when Grown-ups has lessons off.
 
 ### Adding (add)
 
-- **swap** (level 2): "10 plus 8 equals what?" Answer given: 81
+- **swap** (level 2): "10 plus 8. Make the answer on the frame." Answer given: 81
   Hint: "Look at 81. Which digit is the tens?" (reviewed)
 - **op** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 1
   Hint: "Look at the sign. It says add." (reviewed)
@@ -69,7 +69,7 @@ never in a check-in, and not when Grown-ups has lessons off.
   Hint: "2 is in the problem already. Find the missing number." (reviewed)
 - **on1** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 4
   Hint: "So close. Count again from 2, one step for each of 1." (reviewed)
-- **pvcat** (level 2): "10 plus 8 equals what?" Answer given: 108
+- **pvcat** (level 2): "10 plus 8. Make the answer on the frame." Answer given: 108
   Hint: "The parts share places. Each digit takes the place of a zero." (reviewed)
 
 ### Count By (cnt)

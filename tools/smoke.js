@@ -13437,6 +13437,94 @@ async function main() {
         'answer), on a rounding line and a real sub 4 question; no console errors, no network requests');
     }
 
+    // TAP-10 (BEST-APP roadmap 10, src/js/49c-tap10.js): the new model questions answered by real taps on the model, at 360x740 and
+    // 800x1280 on the midway save. Each converted stop (add 1-3, sub 1-2, miss 1-2 on the ten frame, big 2 with blocks, frac 5 shaded):
+    // its real make question, the fit (48 px targets, Check on screen, no sideways scroll), answered by taps on the frame's cells (an
+    // empty one puts a counter in, a filled one takes one out) or the bar's parts (the blocks by their steppers), right on the first try.
+    // Take away: the frame starts with the counters in; one too few taken is "Too many", the hint shows, the state stays; one more cell,
+    // right. By the keyboard: Tab to "Take one away", Enter, Tab to Check, Enter. No console errors, no network requests.
+    if (seg('TAP-10')) {
+      const bad = [], notes = [];
+      // the next tap on the model that brings the state to the answer (null: there): a frame cell, a part; else a control (makeStep)
+      const TAP = () => {
+        const q = G.q, s = G.mm, t = K2MM[q.model].ans(q);
+        if (q.model == 'frame') { const f = q.m.fixed || 0; return s[0] == t[0] ? null : `.mmv rect[data-c="${s[0] < t[0] ? f + s[0] : f + s[0] - 1}"]`; }
+        if (q.model == 'parts' && !document.querySelector('.mmv.mm-notap')) { const i = t.findIndex((x, j) => x !== s[j]); return i < 0 ? null : `.mmv [data-v="${i}"]`; }
+        return 'ctl';
+      };
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ka.page, at = 'TAP-10 ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), MK = '.inp .mmw';
+        const byTaps = async tag => {
+          let n = 0, ctl = 0;
+          for (let i = 0; i < 40; i++) {
+            let sel = await pg.evaluate(TAP);
+            if (sel === 'ctl') { sel = await pg.evaluate(`(${KSM.makeStep.toString()})(false)`); if (sel) ctl++; }
+            if (!sel) break;
+            await pg.click(sel);
+            n++;
+          }
+          if (!n) bad.push(at + tag + ': no taps');
+          return ctl;
+        };
+        try {
+          // 1. every converted stop: its real make question, right on the first try by taps on the model
+          for (const [sk, lv, model] of [['add', 1, 'frame'], ['sub', 1, 'frame'], ['miss', 1, 'frame'], ['add', 2, 'frame'], ['add', 3, 'frame'],
+            ['sub', 2, 'frame'], ['miss', 2, 'frame'], ['big', 2, 'b10'], ['frac', 5, 'parts']]) {
+            const tag = sk + lv;
+            await K.round(K.real(sk, lv, 'make'), MK);
+            const q0 = await pg.evaluate(() => ({ model: G.q.model, mm: G.mm.join(), from: G.q.m.from, counters: document.querySelectorAll('.mmv .viz circle').length, go: !document.querySelector('#mcheck').disabled }));
+            if (q0.model !== model || q0.go) bad.push(at + tag + ' fresh: ' + JSON.stringify(q0));
+            if (q0.from && (q0.mm !== String(q0.from) || q0.counters !== q0.from)) bad.push(at + tag + ': the take-away frame does not start full: ' + JSON.stringify(q0));
+            await K.fitOk(tag + ' fresh');
+            const ctl = await byTaps(tag);
+            if (model != 'b10' && ctl) bad.push(at + tag + ': ' + ctl + ' steps needed the buttons, not the model');
+            await K.fitOk(tag + ' at the answer');
+            const r = await K.at(() => pg.click('#mcheck'), 300, () => ({ right: !!document.querySelector('.mmw.right') }));
+            if (r.s !== 1 || !r.lock || !r.right) bad.push(at + tag + ' right first try: ' + JSON.stringify(r));
+            if (w === 360 && (tag == 'sub1' || tag == 'frac5')) await pg.screenshot({ path: `/tmp/tap10-smoke-${tag}.png` }).catch(() => {});
+            await K.settle(tag);
+          }
+          // 2. take away, one too few taken: "Too many", the hint, the state kept; one more filled cell tapped, right on the second try
+          await K.round(K.real('sub', 1, 'make'), MK);
+          const t0 = await pg.evaluate(() => ({ a: G.q.m.from, c: +G.q.ans }));
+          for (let k = t0.a - 1; k > t0.c; k--) await pg.click(`.mmv rect[data-c="${k}"]`);
+          const { mm1, ...m1 } = await K.at(() => pg.click('#mcheck'), 250, () => ({ mm1: G.mm.join() }));
+          if (!/Too many/.test(m1.toast) || !m1.hint || mm1 !== String(t0.c + 1) || m1.tries !== 1) bad.push(at + 'take away one too few: ' + JSON.stringify([m1, mm1, t0]));
+          await vwait(pg, 900);
+          await pg.click(`.mmv rect[data-c="${t0.c}"]`);
+          const m2 = await K.at(() => pg.click('#mcheck'), 300);
+          if (m2.s !== 0 || m2.done !== 1 || !m2.lock) bad.push(at + 'take away right on the second try: ' + JSON.stringify(m2));
+          await K.settle('take away second try');
+          // 3. keyboard: Tab to "Take one away", Enter until the answer, Tab to Check, Enter
+          await K.round(K.real('sub', 1, 'make'), MK);
+          const kb = await pg.evaluate(() => G.q.m.from - +G.q.ans);
+          let ok = await K.tabTo('.mmb[data-d="-1"]');
+          for (let k = 0; k < kb && ok; k++) await pg.keyboard.press('Enter');
+          ok = ok && await K.tabTo('#mcheck') && (await pg.keyboard.press('Enter'), true);
+          await vwait(pg, 300);
+          if (!ok || (await K.score()) !== 1) bad.push(at + 'take away by keyboard: ' + ok + ' ' + await pg.evaluate(() => G.mm.join()));
+          await K.settle('take away by keyboard');
+          // 4. the bot's answer() on a real question of each frame stop (as every other segment plays them)
+          for (const [sk, lv] of [['miss', 2], ['add', 1]]) {
+            await K.round(K.real(sk, lv, 'make'), MK);
+            await answer(pg);
+            await vwait(pg, 300);
+            if ((await K.score()) !== 1) bad.push(at + sk + lv + ' make: answer() did not get it right');
+            await K.settle(sk + lv + ' answer()');
+          }
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of ka.errors) bad.push(at + e);
+        for (const u of ka.network) bad.push(at + 'network request: ' + u);
+        notes.push(w + 'x' + h);
+        await ka.ctx.close();
+      }
+      if (bad.length) fail('TAP-10 touch the model:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TAP-10: touch the model at ' + notes.join(' and ') + ': real add 1-3, sub 1-2, miss 1-2 (ten frame by its cells), big 2 (blocks) and ' +
+        'frac 5 (shaded parts) make questions right by taps on the model, 48 px targets, Check on screen, no sideways scroll; take away one too few ' +
+        '(Too many, the hint, the state kept) then right; take away by the keyboard; answer() on miss 2 and add 1; no console errors, no network requests');
+    }
+
     // TEACH-1 "Sparky teaches" (src/js/52-lesson.js, 52b-know.js, 52c-scripts.js in the part teach; docs/TEACH-PLAN-2.md batch 1), at
     // 360x740 and 800x1280 on the midway save as a Kindergartner. The part is not loaded at start; the math map loads it and shows the
     // offer (a notebook by the stop the pet suggests: 48 px or more, on screen, covering no stop). Make Ten by its offer: the first

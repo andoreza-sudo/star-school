@@ -19223,6 +19223,7 @@ run('Brain Teasers and practice fixes R-01b',()=>{
     {fakeOn();const KN=KIND.num;
      say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};next=()=>{};
      KIND.num=Object.assign({},KN,{right(){},reveal(){},retry(){}});
+     K2.off=true; // K2OLD (TAP-10): old tests check old, with K2.off (add 1 mixes in the ten frame; these rounds answer number questions)
      try{const round=(firsts,helped)=>{load(null);S.grade=1;S.mast={};const i0=ni('math','add',1);
          G=newG({path:'math',node:i0,sk:'add',lv:1,n:10});G.res=[];
          for(let i=0;i<10;i++){G.q=genQ('add',1,i+1);G.tries=0;G.retry=false;G.lock=false;G.hq=helped.includes(i);G.qt=Date.now()-3000;
@@ -19234,7 +19235,7 @@ run('Brain Teasers and practice fixes R-01b',()=>{
          ['6 of 10, the misses fixed at the end',[1,1,1,0,1,1,0,1,0,0],[],[6,0,0,.6,3]]];
        for(const[nm,f,h,w]of T){const r=round(f,h);if(J(r)!==J(w))add('round "'+nm+'": [score, helped, stars, mastery p, best streak] '+J(r)+', want '+J(w))}}
      catch(e){add('round simulation threw '+e.message)}
-     finally{fakeOff();KIND.num=KN}
+     finally{fakeOff();KIND.num=KN;K2.off=false}
      note.push('rounds: hint-showing answers count half (10 right, 4 with the hint: 2 stars, mastery 0.8; 7 right, 2 with the hint: not passed); a 6-of-10 round with its misses fixed at the end: best streak 3 (it said 10)')}
     // Should 10: the review tile shows the next round's size, at most 10, in words
     {load(null);S.grade=1;S.rev=Array.from({length:21},(_,i)=>({sk:'add',lv:1,seed:i+1,label:'x'+i,box:0,due:0,n:1}));let h=hmToday();
@@ -20776,6 +20777,71 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
     return out})()`);
   p.push(...w.bad);
   return{problems:p,note:`${r.n} samples; ${r.rt} review round trips; find the mistake: ${r.rows.join('; ')}; why on: ${w.rows.join(', ')} (${w.n} sentences)`};
+});
+
+// ---- TAP-10 (BEST-APP roadmap 10, docs/drafts/TAP10.md; src/js/49c-tap10.js): more stops answered on the model (the make kind) ----
+// TAP10: the stops TAP-10 converts and the share planned (K: about 40%, as tenf and add 4; miss 1 30%, so its why sentences stay on half
+// of its questions (KINDS2-D); 1st grade facts 25%: fluency stops, the pad stays the main way (exempt from the 65% rule, as mfact);
+// big 2 40% as big 1; frac 5 30% as the spec's parts stops). TAP10_OFF: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for
+// s = 1..150, ART emptied, from the generators of commit cc327f1 (before TAP-10); with K2.off the stops must give these exactly, so the
+// only change is the format draw. miss 1 and 2 are the KINDS2-D hashes (K2_OFF_D) again. No kinds2-seeds.json hash changes: the
+// fixture's labels (add 1-3, sub 1-2, miss 1-2) are kept by the converters (the "KINDS2 mix" check).
+const TAP10={add1:.4,sub1:.4,miss1:.3,add2:.25,add3:.25,sub2:.25,miss2:.25,big2:.4,frac5:.3};
+const TAP10_OFF={add1:'2456a14adfea',add2:'0deb4182f960',add3:'ce3f6157c2d7',sub1:'22db8e2f3446',sub2:'fa8af1c69fb7',miss1:'b1f02653e332',
+  miss2:'728e96437f83',big2:'75ba62daa06d',frac5:'c3b08e9a4b37'};
+run('TAP-10 touch the model: every new make question answerable on its model, wrong states wrong, hints, determinism, conversion rates, no new words',()=>{
+  // the lesson sources the words come from (no new sentence a child sees or hears)
+  const LSRC=['52c-scripts.js','52g-drafted.js','49b-kinds2.js'].map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n');
+  const r=k2BC('make',TAP10,['miss1','add2','add3','sub2','miss2'],`
+    const MODEL={add1:'frame',sub1:'frame',miss1:'frame',add2:'frame',add3:'frame',sub2:'frame',miss2:'frame',big2:'b10',frac5:'parts'};
+    // the words of each converted question, as patterns over its say and its visible text (the html without tags)
+    const SAY=[/^\\d+ plus \\d+\\. Tap the frame to put in \\d+, then \\d+ more\\.$/,/^There are \\d+\\. Take away \\d+\\.$/,/^\\d+ and how many make \\d+\\? Put in more to make \\d+\\.$/,
+      /^\\d+ plus \\d+\\. Make the answer on the frame\\.$/,/^\\d+ minus \\d+\\. Take away \\d+\\.$/,/^\\d+ plus what makes \\d+\\? Put in more to make \\d+\\.$/,
+      /^\\d+ plus \\d+\\. Make the answer with blocks\\.$/,/^Tap the parts to shade \\d+ (half|thirds?|fourths?|sixths?|eighths?|halves) of the (bar|circle)\\.$/];
+    const TXT=[/^\\d+ \\+ \\d+ ?Put in \\d+, then \\d+ more\\.$/,/^\\d+ − \\d+ ?Take away \\d+\\.$/,/^\\d+ \\+ \\? = \\d+ ?Put in more to make \\d+\\.$/,/^\\d+ \\+ \\d+ ?Make the answer on the frame\\.$/,
+      /^\\d+ \\+ \\d+ ?Make the answer with blocks\\.$/,/^Shade ?\\d+ ?\\d+ ?of the (bar|circle)\\.$/];
+    const ANS=[/^\\d+ and \\d+ make \\d+$/,/^\\d+ take away \\d+ leaves \\d+\\.$/,/^\\d+ is \\d+ tens? and \\d+ ones?$/,/^\\d+ (half|thirds?|fourths?|sixths?|eighths?|halves)$/];
+    const txt=h=>String(h).replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim();
+    // drive a state to the answer by the model's own steps (a cell or a part tapped, a stepper), as the child's taps do
+    const drive=(q,s)=>{const M=K2MM[q.model],t=M.ans(q);for(let k=0;k<60;k++){const i=t.findIndex((x,j)=>x!==s[j]);if(i<0)return s;
+      s=q.model=='parts'?M.step(q,s,i):M.step(q,s,q.model=='frame'?0:i,t[i]>s[i]?1:-1);if(!s)return null}return null};
+    const seen={};let n=0,wr=0;
+    for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);
+      for(let s=1;s<=400;s++){const q=genQ(sk,+lv,s);if(q.kind!=='make')continue;n++;const M=K2MM[q.model],tag=id+' '+q.label+': ';
+        if(q.model!==MODEL[id])bad(tag+'model '+q.model);
+        // answerable: from the start state, the model's steps reach a state the kind takes as right; it is the answer state
+        const s0=M.s0(q),end=drive(q,s0.slice());
+        if(!end||!KIND.make.same(q,mmOf(q,end))||KIND.make.same(q,mmOf(q,s0)))bad(tag+'not answerable from its start, or the start is right');
+        // checked by the model's state: every state one step off the answer is wrong (a counter more or less, a part, a block)
+        const A=M.ans(q),offs=q.model=='parts'?A.map((x,i)=>M.step(q,A,i)):A.flatMap((x,i)=>[M.step(q,A,q.model=='frame'?0:i,1),M.step(q,A,q.model=='frame'?0:i,-1)]);
+        for(const o of offs.filter(Boolean)){wr++;if(KIND.make.same(q,mmOf(q,o)))bad(tag+'a wrong state is taken as right: '+o.join())}
+        // the parts: any parts shaded, as many as the equal fraction needs, are right (it is the share that counts, not which parts)
+        if(q.model=='parts'){const k=A.filter(Boolean).length,rev=A.map((x,i)=>+(i>=A.length-k));if(!KIND.make.same(q,mmOf(q,rev)))bad(tag+'the same share in other parts is wrong')}
+        // the take-away frame starts with its counters in (drawn), never with fixed ones; a + ? = c starts with a in
+        if(q.m.from){if(s0[0]!==q.m.from||(M.draw(q,s0).match(/<circle/g)||[]).length!==q.m.from)bad(tag+'the frame does not start with '+q.m.from)}
+        if(q.model=='frame'&&(M.draw(q,s0).match(/data-c="/g)||[]).length!==q.m.total)bad(tag+'not one cell a counter');
+        // the hint: the fact's own, and it shows
+        if(!q.hint||!hintHTML(q)||hintHTML(q).length<10)bad(tag+'no hint');
+        // determinism: the same seed gives the same question (and the same input area)
+        const b=genQ(sk,+lv,s);if(JSON.stringify(b)!==JSON.stringify(q)||KIND.make.render(b)!==KIND.make.render(q))bad(tag+'not the same for the same seed');
+        // no new words: the say and the words on screen are the lessons' (or KINDS2's) own
+        if(!SAY.some(x=>x.test(q.say)))bad(tag+'say is not a lesson line: '+q.say);
+        if(!TXT.some(x=>x.test(txt(q.html))))bad(tag+'words on screen are not a lesson line: '+txt(q.html));
+        if(!ANS.some(x=>x.test(KIND.make.spoken(q))))bad(tag+'the answer said on reveal is not a lesson line: '+KIND.make.spoken(q));
+        seen[id]=(seen[id]||0)+1}}
+    out.tap={n,wr,seen};
+    // the validator: m.from must leave something taken away and fit; not with fixed counters
+    const F={kind:'make',model:'frame',m:{total:10,from:7},ans:'4',eq:'value',label:'zz',say:'x',html:'<div class="sub">x</div>',hint:{k:'text',s:'x'}};
+    if(kindProblems(F).length)bad('m.from: a valid take away fails: '+kindProblems(F).join('; '));
+    for(const m of [{total:10,from:4},{total:10,from:3},{total:10,from:11},{total:10,from:7,fixed:2}])if(!kindProblems(Object.assign({},F,{m})).length)bad('m.from: the validator missed '+JSON.stringify(m));
+  `,TAP10_OFF);
+  const p=[...r.bad];
+  for(const id in TAP10)if(!(r.tap.seen[id]>=40))p.push(id+': only '+(r.tap.seen[id]||0)+' make questions in 400 seeds');
+  // the words checked above come from the lessons: each phrase is in their source
+  for(const t of ['Put in ${a}, then ${b} more.','There are ${a}. Take away ${b}.','Put in more to make ${t}.','${a} and how many make ${t}? Put in more to make ${t}.',
+    "'Make the answer on the frame.'",'Take away ${b}.','${a} plus what makes ${s}? Put in more to make ${s}.','Make the answer with blocks.','Tap the parts to shade ${fcSay(n, d)} of the ${sh}.',
+    '${a} take away ${a - v} leaves ${v}.','ansSay: `${a} and ${b} make ${c}`',"ansSay: `${n} is ${parts.join(' and ')}`"])if(!LSRC.includes(t))p.push('not a lesson or KINDS2 line: '+t);
+  return{problems:p,note:`${r.tap.n} make questions (${r.tap.wr} wrong states judged wrong); ${r.rt} review round trips; ${r.rows.join('; ')}`};
 });
 
 // ---- G-MOVES (v188): one new move and one boss per action game (src/js/59-game-hub.js GH.face / GH.bossRec / GH.boss / GH.moveNew,

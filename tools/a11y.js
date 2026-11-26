@@ -225,6 +225,11 @@ const SCREENS = {
   'make-miss': k2Miss('coins', 3, 'make'),
   'make-parts': k2Screen('frac', 2, 'make'),
   'make-frame': k2Screen('tenf', 2, 'make'),
+  // TAP-10: take away on the ten frame (it starts full; Kindergarten), its miss, the double frame (1st), an equal fraction shaded (3rd)
+  'make-take': k2Screen('sub', 1, 'make'),
+  'make-take-miss': k2Miss('sub', 1, 'make'),
+  'make-frame20': k2Screen('miss', 2, 'make'),
+  'make-equal': k2Screen('frac', 5, 'make'),
   // KINDS2-D: find the mistake (kind tap: the steps of a worked example), fresh and after a wrong step; why (the sentence above the hint
   // after the misconception value of a real sub 4 question)
   'fix-question': { run: k2Start('big', 3, 'tap'), act: answerAct },

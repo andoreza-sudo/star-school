@@ -931,7 +931,7 @@ const mmGreedy = (types, t) => types.map(c => {
 // the models: start state, value, the answer's state, a step from a control (or null when it is out of range), the drawing, the controls
 const K2MM = {
   frame: {
-    s0: () => [0],
+    s0: q => [q.m.from || 0], // TAP-10: m.from, counters in at the start that the child takes away (take away on the frame)
     val: (q, s) => s[0],
     ans: q => [+q.ans],
     step: (q, s, i, d) => (s[0] + d < 0 || s[0] + d > q.m.total - (q.m.fixed || 0) ? null : [s[0] + d]),
@@ -1125,6 +1125,7 @@ KIND.make = {
     if (q.model == 'frame') {
       if (![5, 10, 20].includes(m.total)) p.push('make frame: total must be 5, 10 or 20');
       if (!int || a + (m.fixed || 0) > m.total) p.push('make frame: the target does not fit in the frame');
+      if (m.from != null && (m.fixed || !Number.isInteger(m.from) || m.from <= a || m.from > m.total)) p.push('make frame: m.from must be more than the target and fit (no m.fixed)');
     } else if (q.model == 'b10') {
       if (![2, 3].includes(m.places)) p.push('make b10: places must be 2 or 3');
       if (!int || a >= Math.pow(10, m.places)) p.push('make b10: the target needs more places than the steppers have');
@@ -1777,7 +1778,7 @@ const K2GEN = {
   fact: {1: [.4, k2Factor], 2: [.6, k2Prime]},
   ang: {1: [.5, k2Angle]},
   // KINDS2-B line and KINDS2-C make (spec 3; shares raised to 40% where 30% or 25% would leave the old kind over 65%, see PROGRESS)
-  frac: {1: [.4, k2Halves], 2: [.3, k2FracShade], 3: [q => (q.kind == 'tap' ? 1 : .22), k2FracLine], 4: [.4, k2Half]},
+  frac: {1: [.4, k2Halves], 2: [.3, k2FracShade], 3: [q => (q.kind == 'tap' ? 1 : .22), k2FracLine], 4: [.4, k2Half], 5: [q => (k2EqOk(q.label) ? .8 : 0), k2FracEq]}, // 5: TAP-10
   dec: {1: [[.3, k2Dec1Line], [.3, k2DecShade]], 2: [[.4, k2Half], [.3, k2Dec2Line]], 3: [.33, k2FixDecAdd], 4: [.2, k2FixDecMul]},
   cnt: {1: [.4, k2Cnt], 4: [.4, k2Cnt]},
   round: {1: [.5, k2Round], 2: [.5, k2Round], 3: [.5, k2Round], 4: [.5, k2Round]},
@@ -1785,8 +1786,10 @@ const K2GEN = {
   int: {1: [.4, k2IntLine], 2: [.45, k2IntOpp]},
   tenf: {1: [.45, k2Frame], 2: [.45, k2Frame], 3: [.45, k2Frame]},
   pk_count: {3: [.45, k2Frame]},
-  add: {4: [.45, k2AddFrame]},
-  big: {1: [.4, k2B10], 3: [.2, k2FixAdd], 4: [.2, k2FixAdd], 5: [.2, k2FixAdd], 6: [.27, k2FixAdd]},
+  // TAP-10 (the converters are in 49c-tap10.js): add 1-3, miss 1-2, sub 1-2 (below) on the ten frame, big 2 with blocks, frac 5 (above)
+  add: {1: [q => (k2Ab(q.label, '+') && /^[1-9]\d* \+ [1-9]/.test(q.label) ? .57 : 0), k2AddK], 2: [.25, k2Add20], 3: [.25, k2Add20], 4: [.45, k2AddFrame]},
+  miss: {1: [q => (k2MissAb(q.label) ? .8 : 0), k2MissFrame], 2: [q => (k2MissAb(q.label) ? .5 : 0), k2MissFrame]},
+  big: {1: [.4, k2B10], 2: [.4, k2B10Sum], 3: [.2, k2FixAdd], 4: [.2, k2FixAdd], 5: [.2, k2FixAdd], 6: [.27, k2FixAdd]},
   coins: {1: [.45, k2Coins], 2: [.4, k2Coins], 3: [.4, k2Coins], 5: [.45, k2Coins]},
   time: {1: [.4, k2Clock], 2: [.4, k2Clock], 3: [.4, k2Clock], 4: [.4, k2Clock], 5: [.4, k2Clock]},
   arr: {1: [.4, k2Array], 2: [.25, k2Array]},
@@ -1800,7 +1803,7 @@ const K2GEN = {
   // KINDS2-D find the mistake (spec 3: 20% of the computation stops). A converter gives no question for some facts (5 or more digits,
   // mixed numbers, a one-step division ...), so a share is raised where that leaves the stop near 20%; ooo 1 and alg 3 convert only
   // their number questions. big 7 (6-digit sums: 7 lines, too tall for a phone) has none; sub 8 converts its 4-digit facts only.
-  sub: {4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]},
+  sub: {1: [q => (k2TakeOk(q.label) ? .6 : 0), k2SubFrame], 2: [.25, k2SubFrame], 4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]}, // 1, 2: TAP-10
   mbig: {2: [.28, k2FixMbig], 3: [.33, k2FixMbig], 4: [.28, k2FixMbig], 5: [.25, k2FixMbig]},
   dbig: {1: [.2, k2FixDiv], 2: [.4, k2FixDiv], 3: [.22, k2FixDiv]},
   fop: {1: [.33, k2FixFop], 3: [.2, k2FixFop]},
