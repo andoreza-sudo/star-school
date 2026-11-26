@@ -15657,7 +15657,8 @@ run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for reader
 // ---- REC-12: the AUDIO-12 non-reader lines recorded in the pet's teacher voice (owner approval 2026-11-26: docs/drafts/AUDIO12.md "Tier 1",
 // 89 lines, and the 2 "New wording" lines; tools/en-audio.js NR_LIT, NR_GEN, NR_NEW). Each is collected, has its file (luna, speed 0.95,
 // the little pet's recipe) and say() plays it; nothing beyond the approved list is collected for it. "Mmm!" failed the speech to text check
-// in every take (6), so it stays the tablet's voice (NO_REC). The generated prompts ("How many ducks?") are what the Pre-K generators build.
+// in every take (6), so it stays the tablet's voice (NO_REC). The generated prompts ("How many ducks?") are what the Pre-K generators build;
+// owner decision 2026-11-26: they play from start-up (EN_TEACH0) like the others.
 run('AUDIO-12 REC-12: the approved non-reader lines are recorded and say() plays them',()=>{
   const p=[],EA=require('./en-audio.js'),E=require('./es-audio.js'),vm=require('vm'),dir=path.join(ROOT,EA.TEACH_DIR);
   const ctx=E.loadApp(),R=t=>vm.runInContext(t,ctx),lines=EA.collectTeach(ctx),M=R('EN_TEACH'),M0=R('EN_TEACH0');
@@ -15681,9 +15682,9 @@ run('AUDIO-12 REC-12: the approved non-reader lines are recorded and say() plays
   if(JSON.stringify([...gen].sort())!==JSON.stringify(EA.NR_GEN.slice().sort()))p.push('the generated prompts differ from what the generators build: '+JSON.stringify([...gen].filter(x=>!EA.NR_GEN.includes(x)))+' / '+JSON.stringify(EA.NR_GEN.filter(x=>!gen.has(x))));
   for(const g of ['genPkCount','genPkMore','genPkShape'])if(R('typeof '+g)!=='function')p.push(g+' is gone');
   if(R('typeof genPkMore')=='function')for(let i=0;i<40;i++){const q=R('genPkMore()');if(!EA.NR_GEN.includes(q.say)){p.push('genPkMore said '+q.say);break}}
-  // 3. at start (EN_TEACH0): every approved line in the code word for word; the generated ones play once teach12 is in (the d-teach-start.js limit)
-  for(const t of want){const lit=!EA.NR_GEN.includes(t);if(lit&&M0.lines[t]!==M.lines[t])p.push('not in EN_TEACH0 (said outside a lesson): '+t)}
-  // 4. say() in a stand-in browser plays each line's file: with teach12 in (all 90) and before it (all but the generated ones); a line
+  // 3. at start (EN_TEACH0): every recorded approved line, the generated prompts too (owner decision 2026-11-26: they play from start-up)
+  for(const t of want)if(M0.lines[t]!==M.lines[t])p.push('not in EN_TEACH0 (said outside a lesson): '+t);
+  // 4. say() in a stand-in browser plays each line's file: with teach12 in and before it (all 90 both times); a line
   //    with a name plays the recorded sentence and says the name with the tablet's voice
   const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
   const env={Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text)},cancel(){},speaking:false,pending:false}};
@@ -15697,9 +15698,10 @@ run('AUDIO-12 REC-12: the approved non-reader lines are recorded and say() plays
     S2('hush()');log.length=0;S2("say('Mmm!')");if(log.join()!=='speak Mmm!')p.push('"Mmm!" (tablet voice): '+log.join(' | '));
   }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
   try{const s0=E.loadApp(E.appSource().replace('const EN_TEACH=','const EN_TEACH_NOT_LOADED='),env),S0=t=>vm.runInContext(t,s0);
-    if(S0('typeof EN_TEACH')!=='undefined')p.push('the stand-in still has EN_TEACH');n0=tryAll(S0,M0,t=>!EA.NR_GEN.includes(t))}
+    if(S0('typeof EN_TEACH')!=='undefined')p.push('the stand-in still has EN_TEACH');n0=tryAll(S0,M0,()=>true)}
   catch(e){p.push('say() before teach12 could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
-  return{problems:p,note:nr.length+' of 91 approved lines recorded ("Mmm!" failed speech to text: tablet voice), '+chars+' characters, '+bytes+' bytes; played: '+n1+' with teach12, '+n0+' at start ('+EA.NR_GEN.length+' generated prompts wait for teach12)'};
+  if(n1!==want.length||n0!==want.length)p.push('played '+n1+' with teach12 and '+n0+' at start (want '+want.length+' both)');
+  return{problems:p,note:nr.length+' of 91 approved lines recorded ("Mmm!" failed speech to text: tablet voice), '+chars+' characters, '+bytes+' bytes; played: '+n1+' with teach12, '+n0+' at start (with the '+EA.NR_GEN.length+' generated prompts)'};
 });
 
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
@@ -22892,7 +22894,7 @@ run('recorded teacher lines TEACH-4',()=>{
   if(!M0||JSON.stringify(M0.lines)!==JSON.stringify(want0)||M0.dir!==M.dir||M0.ext!==M.ext)p.push('EN_TEACH0 is not the start-up list of the teacher manifest ('+(M0?Object.keys(M0.lines).length:0)+' lines, want '+Object.keys(want0).length+'): run node tools/en-audio.js --teach-start');
   if(!data.includes('const EN_TEACH0=')||tp.includes('const EN_TEACH0=')||html.includes('const EN_TEACH0='))p.push('EN_TEACH0 must be in '+DATA_FILE+' only');
   for(const k of ['What comes next?','How many in all?','Say it slowly.'])if(!M0||!M0.lines[k])p.push('not recorded outside a lesson: '+k);
-  const b0=fs.statSync(path.join(SRC,'data','d-teach-start.js')).size;if(b0>6000)p.push('src/data/d-teach-start.js is '+b0+' bytes (want at most 6000: it loads at start)');
+  const b0=fs.statSync(path.join(SRC,'data','d-teach-start.js')).size;if(b0>7000)p.push('src/data/d-teach-start.js is '+b0+' bytes (want at most 7000: it loads at start)'); // owner decision 2026-11-26: the AUDIO-12 generated prompts play from start-up (was 6000)
   const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.TEACH_DIR));
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');

@@ -88,8 +88,7 @@ All Tier 1 and Tier 2 lines are existing approved text, so nothing is new wordin
 ### Tier 1: 89 lines, proposed now
 
 **Recorded (REC-12, owner approval 2026-11-26).** tools/en-audio.js `NR_LIT`, `NR_GEN` and `NR_NEW` hold these 89 lines and the 2 new-wording lines. 90 of the 91 are recorded (luna, speed 0.95, 2,099 characters, 325,258 bytes). "Mmm!" (48) was heard as nothing by the speech to text check in all 6 takes, so it stays the tablet's voice (`NO_REC`). "How many cars?" and "How many apples?" are generator lines too (`PK.OBJ`), so 19 lines are generated, not 17.
-- The lines in the code word for word are also in EN_TEACH0, so they play from the start.
-- The 19 generated prompts are in EN_TEACH only. They play their recording once teach12 has loaded (a map loads it), and the tablet's voice before that. Adding them to EN_TEACH0 would make src/data/d-teach-start.js about 6,490 bytes, over the 6,000 the TEACH-4 check allows. That limit is the owner's call.
+- All 90 are also in EN_TEACH0, so they play from the start. The 19 generated prompts are added by name (owner decision 2026-11-26: the AUDIO-12 generated prompts play from start-up). For them the TEACH-4 limit on src/data/d-teach-start.js went from 6,000 to 7,000 bytes.
 - Audio total: 9,490,378 bytes (AUDIO_FAIL 9,500,000).
 
 Groups:

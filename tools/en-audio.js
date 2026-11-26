@@ -97,9 +97,8 @@ const NO_REC = new Set(['Add their lengths.', 'Add the lengths.', 'Rate story: b
    PK_PLATES ("Which pond has more ducks?") and the four first shapes ("Tap the square."), so they are not in the code as written.
    NR_NEW: the two new-wording lines, on the map (46-home.js pathMap) and the Brain Teasers hub for band A (74-teasers.js BT.hub).
    NR_LIT and NR_NEW are in the code outside the lessons word for word, so teachStart puts them in EN_TEACH0 (they play from the start).
-   NR_GEN are not, so they are in EN_TEACH only: they play their recording once teach12 has loaded (a map loads it, teachWarm), the
-   tablet's voice before that. AUDIO12.md proposed adding them to EN_TEACH0 too, but that makes src/data/d-teach-start.js about 6,490
-   bytes, over the 6,000 the TEACH-4 check allows for it (it loads at start); that limit is left for the owner to decide. */
+   NR_GEN are not, so teachStart adds them by name (owner decision 2026-11-26: the AUDIO-12 generated prompts play from start-up; the
+   TEACH-4 limit on src/data/d-teach-start.js was raised from 6,000 to 7,000 bytes for them). */
 const NR_LIT = ['Watch, then trace it with your finger.', 'Which one does not belong?', 'Match each big letter to its little letter.', 'Which word is this?',
   'Sort them!', 'Say each word.', 'Put the pin on the missing number.', 'Count on.', 'Count back.', 'Sort the numbers: even or odd?', 'How many counters?',
   'How many more to make ten?', 'Ten counters are in the frame.', 'Put the big ones in the big box and the small ones in the small box.',
@@ -205,7 +204,8 @@ const TEACH_START = path.join(SRC, 'data', 'd-teach-start.js');
 function teachStart(M) {
   const txt = ['js', 'data'].flatMap(d => fs.readdirSync(path.join(SRC, d)).filter(f => f.endsWith('.js') && !/^(52|d-teach-)/.test(f)).sort()
     .map(f => fs.readFileSync(path.join(SRC, d, f), 'utf8'))).join('\n');
-  return Object.fromEntries(Object.keys(M).filter(k => txt.includes(k)|| txt.includes(k.replace(/'/g, "\\'"))).sort().map(k => [k, M[k]]));
+  // REC-12, owner decision 2026-11-26: the AUDIO-12 generated prompts play from start-up (they are not in the code word for word)
+  return Object.fromEntries(Object.keys(M).filter(k => NR_GEN.includes(k) || txt.includes(k) || txt.includes(k.replace(/'/g, "\\'"))).sort().map(k => [k, M[k]]));
 }
 function teachStartText(M) {
   const L = teachStart(M), keys = Object.keys(L);
