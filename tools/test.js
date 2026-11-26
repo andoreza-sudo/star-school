@@ -15660,8 +15660,9 @@ run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for reader
   const NEW_OK=require('./en-audio.js').NR_NEW;
   for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);
     for(const m of t.matchAll(/\bnrSay\('([^']+)'/g))if(t.split(m[1]).length<3&&!rd('18-reward-art.js').includes(m[1])&&!NEW_OK.includes(m[1]))p.push(f+': "'+m[1]+'" is said but not shown')}
-  if(!/if\(\$\('\.node\.cur'\)\|\|\$\('\.lsn\.cur'\)\)nrSay\('Tap the glowing stop to play!','#map',\d+\)/.test(homeSrc))p.push('the map does not say "Tap the glowing stop to play!" to a non-reader (pathMap)');
-  if(!/BT\.band\(\) == 'A'\) nrSay\('Tap a puzzle to play!', '\.bt-hub', \d+\)/.test(rd('74-teasers.js')))p.push('the Brain Teasers hub does not say "Tap a puzzle to play!" to the youngest band');
+  // v197: the two new lines are also shown (fb), as the a11y sound rule asks of every spoken line
+  if(!/if\(\$\('\.node\.cur'\)\|\|\$\('\.lsn\.cur'\)\)if\(nrSay\('Tap the glowing stop to play!','#map',\d+\)\)setTimeout\(\(\)=>\{if\(\$\('#map'\)\)fb\('Tap the glowing stop to play!'/.test(homeSrc))p.push('the map does not say "Tap the glowing stop to play!" to a non-reader (pathMap)');
+  if(!/BT\.band\(\) == 'A'\) \{ if \(nrSay\('Tap a puzzle to play!', '\.bt-hub', \d+\)\) setTimeout\(\(\) => \{ if \(\$\('\.bt-hub'\)\) fb\('Tap a puzzle to play!'/.test(rd('74-teasers.js')))p.push('the Brain Teasers hub does not say "Tap a puzzle to play!" to the youngest band');
   return{problems:p,note:'Pet Care, Pet Shop, sticker book, streak, Game Room, toasts, map, Brain Teasers hub (REC-12): said in Pre-K to 1st (the hub: Pre-K and K), silent for 2nd to 6th and with the voice off'};
 });
 

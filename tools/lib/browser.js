@@ -126,7 +126,7 @@ async function openApp(browser, opts = {}) {
   if (opts.init) await ctx.addInitScript(opts.init[0], opts.init[1]);
   const page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-  page.on('pageerror', e => errors.push('exception: ' + e.message));
+  page.on('pageerror', e => errors.push('exception: ' + e.message + (process.env.SMOKE_STACK ? ' @ ' + String(e.stack || '').split('\n').slice(1, 4).join(' ') : '')));
   await page.goto(opts.url || (base ? base + 'index.html' : INDEX_URL));
   await page.waitForSelector('#app *', { timeout: 10000 });
   await page.waitForTimeout(300);

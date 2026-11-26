@@ -15257,7 +15257,7 @@ async function main() {
               const o = {}, hid = v => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => v }); document.dispatchEvent(new Event('visibilitychange')); };
               const wait = () => new Promise(r => setTimeout(r, 400));
               S.sound = true; S.music = true; ac(); await AC.resume(); music(true); await wait(); o.run0 = AC.state;
-              const au = { paused: false, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); } }, keep = ESA.au; ESA.au = au;
+              const au = { paused: false, dataset: {}, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); } }, keep = ESA.au; ESA.au = au;
               hid(true); await wait(); SFX.pop(); tone(440, .1); await wait(); o.hidden = AC.state; o.auHidden = au.paused;
               hid(false); await wait(); o.back = AC.state; o.auBack = au.paused;
               dispatchEvent(new Event('pagehide')); await wait(); o.pagehide = AC.state; dispatchEvent(new Event('pageshow')); await wait(); o.pageshow = AC.state;
