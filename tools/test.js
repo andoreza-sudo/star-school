@@ -1776,7 +1776,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     load(fx('maxed'));S.grade=1;
     const stop=NODES.math.findIndex(n=>n.sk=='sub'&&n.lv==1);
     const play=()=>{G=newG({path:'math',node:stop,sk:'sub',lv:1,n:10});const o=[];
-      while(G.done<G.n){const q=makeQ();o.push({rv:q.rvk||'',review:!!q.review});G.done++}return o};
+      while(G.done<G.n){const q=makeQ();o.push({rv:q.rvk||'',review:!!q.review,kind:q.kind});G.done++}return o};
     const today=REV.day();
     for(const setup of [()=>{S.rev=[]},()=>{S.rev=[{sk:'sub',lv:1,seed:1,label:'q',box:1,due:today+1,n:1}]},
       ()=>{S.rev=[{sk:'sight',lv:1,seed:1,label:'r',box:0,due:today,n:1}]}]){
@@ -1786,9 +1786,20 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     S.rev=[];
     [1,2,3].map(s=>revMiss(genQ('sub',1,s),today));
     [4,5,6].map(s=>revMiss(genQ('add',1,s),today)).forEach(x=>x.n=9); // more missed: asked first at the path slots
-    const o=play(),at=o.map((x,i)=>x.rv?i:-1).filter(i=>i>=0);
-    if(at.join()!=='1,3,5,7')bad('review slots: '+JSON.stringify(o));
-    else if(!o[1].rv.startsWith('sub|1|')||!o[5].rv.startsWith('sub|1|')||!o[3].rv.startsWith('add|1|')||!o[7].rv.startsWith('add|1|'))bad('slot owners: '+JSON.stringify(o));
+    // MIX-8 (BEST-APP roadmap 8, approved; docs/drafts/MIX8.md (b)): a review question that would be the third question of its kind
+    // in a row waits until it is not (at the latest the round's last new question), and no other slot is filled while it waits. So
+    // the slots are checked twice: with the run cap off (the v197 round) exactly questions 2, 4, 6, 8 with the owners as before (was
+    // the only check); with it on, each review question is at its slot, or later only while every question it waited through
+    // would have made it a third in a row; a slot is empty only while an earlier review question waits; the items are the same
+    MIX8.off=true;const o0=play();MIX8.off=false;const at0=o0.map((x,i)=>x.rv?i:-1).filter(i=>i>=0);
+    if(at0.join()!=='1,3,5,7')bad('review slots (run cap off): '+JSON.stringify(o0));
+    else if(!o0[1].rv.startsWith('sub|1|')||!o0[5].rv.startsWith('sub|1|')||!o0[3].rv.startsWith('add|1|')||!o0[7].rv.startsWith('add|1|'))bad('slot owners (run cap off): '+JSON.stringify(o0));
+    const o=play(),at=o.map((x,i)=>x.rv?i:-1).filter(i=>i>=0),SL=[1,3,5,7],busy=new Set();
+    for(const j of at){const sl=Math.max(...SL.filter(x=>x<=j));
+      for(let x=sl;x<j;x++){busy.add(x);if(o[x].rv||!(o[x-1].kind==o[j].kind&&o[x-2].kind==o[j].kind)){bad('review slots: question '+(j+1)+' waited at '+(x+1)+' with no run of its kind: '+JSON.stringify(o));break}}
+      if(j>sl&&j<o.length-1&&o[j-1].kind==o[j].kind&&o[j-2].kind==o[j].kind)bad('review slots: a waiting question asked as the third of its kind: '+JSON.stringify(o))}
+    if(at.length<3||SL.some(x=>!o[x].rv&&!busy.has(x)))bad('review slots: '+JSON.stringify(o));
+    if(at.length==4&&at.map(i=>o[i].rv.split('|')[0]).join()!=='sub,add,sub,add')bad('slot owners: '+JSON.stringify(o));
     if(new Set(at.map(i=>o[i].rv)).size!==at.length||at.some(i=>!o[i].review))bad('an item asked twice or without the review tag');
     // boss, test out, mix and placement rounds never take review slots
     for(const x of [{boss:{e:'x',name:'x'},pool:[]},{test:{wi:0},pool:[]},{mix:true},{nomast:true}]){
@@ -17921,7 +17932,8 @@ run('Block Builder journey G-01b',()=>{
   const css=fs.readFileSync(path.join(SRC,'css','60-game-blocks.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
   for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|margin)\b/.test(m[1]))p.push('60-game-blocks.css: a transition on layout: '+m[1]);
   const src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8');
-  if(!/ptLeft\(\) <= 0\) \{ SFX\.wrong\(\); fb\(ptWhyNot\(\)/.test(src.slice(src.indexOf("$('#bbday').onclick"))))p.push('the build of the day does not check game time');
+  // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())
+  if(!/ptLeft\(\) <= 0\) \{ SFX\.wrong\(\); fbSay\(ptWhyNot\(\)[^}]*\); return; \}/.test(src.slice(src.indexOf("$('#bbday').onclick"))))p.push('the build of the day does not check game time');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
@@ -18924,7 +18936,8 @@ run('snack stand G-04a',()=>{
   if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
-  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
+  // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())
+  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fbSay\(ptWhyNot\(\)[^}]*\);\s*return;\s*\}/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
   if(!/gtStart\('#gtm', \(\) => snTimeUp\(\)\)/.test(src)||!/GH\.wire\(\{quit: \(\) => snQuit\(\)/.test(src)||!/timeUpOverlay\(\)/.test(src))p.push('the day must use gtStart, the Pause sheet and the time-up card');
   if(!/GH\.end\('snack'/.test(src))p.push('the end of a day must use the shared end card');
   if(/Math\.random/.test(src))p.push('the day must be seeded (no Math.random)');
@@ -19880,7 +19893,8 @@ run('sky hop G-04b',()=>{
   if(partOf('67-game-skyhop.js')!=='games2'||partOf('49-game-skyhop.css')!=='games2')p.push('Sky Hop must ship in games2.'+BUILD_VER+'.js');
   if(!/if\(typeof hopStop=='function'\)hopStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the course (hopStop)');
   if(o.dev!=='{"fast":1}')p.push('HOP_DEV test hook must be off: '+o.dev);
-  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a course must not start without game time (ptLeft, ptWhyNot)');
+  // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())
+  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fbSay\(ptWhyNot\(\)[^}]*\);\s*return;\s*\}/.test(src))p.push('a course must not start without game time (ptLeft, ptWhyNot)');
   if(!/gtStart\('#gtm', \(\) => hopTimeUp\(\)\)/.test(src)||!/GH\.wire\(\{quit: \(\) => hopQuit\(\)/.test(src)||!/timeUpOverlay\(\)/.test(src))p.push('the course must use gtStart, the Pause sheet and the time-up card');
   if(!/GH\.end\('hop'/.test(src))p.push('the flag must use the shared end card');
   if(/Math\.random/.test(src))p.push('nothing random (no Math.random)');
