@@ -33,7 +33,8 @@
    In a round (makeQ calls revSlot()): normal stop rounds only (no pool, boss, test, mix, placement). Question 4 and 8 (done 3
    and 7) ask the most urgent due item of the path, else the usual review of an older stop as before; question 2 and 6
    (done 1 and 5) ask a due item of the stop itself, else a normal question. An item is asked at most once per round. A child
-   with nothing due gets exactly the rounds of v53. */
+   with nothing due gets exactly the rounds of v53. SPACED-9 (below): question 8 asks a due stop check-in first, and question 4 one
+   when no missed item of the path is due, in place of the older stop. */
 const REV={
   INT:[0,1,3,7,21], // days until due on entering box 0..4
   CAP:150,          // most items kept
@@ -170,14 +171,143 @@ function revSlot(){
   const path=REV.SLOTS_PATH.includes(g.done),own=REV.SLOTS_OWN.includes(g.done);
   if(!path&&!own)return null;
   const asked=g.rvAsked||(g.rvAsked={});
+  if(g.done==REV.SLOTS_PATH[1]){const sq=spcSlot(g);if(sq)return sq} // SPACED-9: question 8 asks a stop's check-in first, when one is due (else as before)
   const it=dueItems(REV.CAP,g.path).find(x=>!asked[revKey(x)]&&(path||(x.sk==g.sk&&x.lv==g.lv)));
-  if(!it)return null;
+  if(!it)return path?spcSlot(g):null; // SPACED-9: no missed question due at a path slot: a stop's check-in, when one is due
   asked[revKey(it)]=1;
   const q=revQ(it);
   if(!q)return null;
   q.review=1;
   g.last=q.label;
   return q;
+}
+
+/* ---------- SPACED-9: spaced check-ins of learned and skipped stops (BEST-APP roadmap 9; R-01 Should 4; docs/drafts/SPACED9.md) ----------
+   Leitner boxes above catch the questions a child missed. These catch the stops a child passed, or skipped by placement or Test out,
+   so they are checked again before they are forgotten: one question of the stop's own level, in the review slots that already
+   exist: question 8 of a stop round of the same path (before a missed question of the path, which keeps question 4 and the
+   round's own slots), question 4 when no missed question is due there (in place of the random "older stop" question), and
+   Mixed Practice, after its missed questions. It looks like the review question it replaces ("Remember this
+   one?"), so no new words, and it pays as that question did (a question of the round: no new game time, coins or stars).
+   Schedule (SPC.INT): a passed stop is first due 2 days after the pass; each right first try moves it to the next interval:
+   7, then 21, then 60 days; a right answer at the 60-day check-in finishes it (box SPC.DONE). A wrong first try puts it back to
+   2 days (and the question is a review item as always: addMiss). A right first try with the hint showing keeps its box: due again
+   after the same interval. A skipped stop (in a world skipped by placement or Test out, not played SPC.OWN times: Test out's stars do
+   not make it learned) gets one light check-in, from the next day, the stops just below where the child was
+   placed first: right finishes it, wrong puts it on the passed ladder (2 days), so a mis-placed child is caught.
+   No flood: at most SPC.CAP check-ins are asked a day, all rounds together. A stop passed in a round is first due exactly 2 days
+   later; stops that enter the schedule together (an old save's passed stops the first time it is read, a loaded backup, the
+   skipped stops of a placement or a Test out) take the first day from their start with room: at most SPC.ROOM.l learned and
+   SPC.ROOM.k skipped stops first fall due on one day. So an old save's passed stops are spread over the weeks ahead, the ones not
+   practised for longest first, and nothing is due on the day it is first seen.
+   Saved data: S.spc = {s: {nid: {b, d, k?}}, day, n} (a default {} by id in migrate, 00-core.js; filled the first time it is read)
+     b   box 0..3: which check-in is next (SPC.INT[b] days after the last); SPC.DONE (4) = finished, kept so it is not added again
+     d   day number (mastDay()) it is next due; due when d <= today. (Not revDue's "further ahead than the longest interval": an old
+         save's stops are spread further ahead than that on purpose.)
+     k   1: entered as a skipped stop and not checked yet (its check-in is the light one)
+     day, n  the day number and the check-ins asked that day (the cap)
+     t   the latest day the schedule was read on: a clock set back moves every d back by the difference
+   Everything runs on mastDay() (today(), the app's clock) and the map, no random draw except the question itself, so the same
+   save and day give the same check-ins. */
+const SPC={
+  INT:[2,7,21,60],   // days to the next check-in from box 0..3
+  DONE:4,            // box of a finished stop
+  CAP:3,             // check-ins asked a day
+  ROOM:{l:2,k:1},    // stops entering the schedule that may first fall due on one day: learned, skipped
+  MIX:2,             // most check-ins in one Mixed Practice
+  get(){
+    let o=S.spc;
+    if(!o||typeof o!='object'||Array.isArray(o))o=S.spc={};
+    if(!o.s||typeof o.s!='object'||Array.isArray(o.s))o.s={};
+    for(const k in o.s){const e=o.s[k];if(!e||typeof e!='object'||!(e.b>=0&&e.b<=SPC.DONE)||!Number.isFinite(e.d))delete o.s[k];else e.b=Math.floor(e.b)}
+    return o;
+  },
+  ok:nd=>!!(nd&&nd.sk!='boss'&&SK[nd.sk]&&SK[nd.sk].gen&&!SK[nd.sk].side&&nd.lv>=1&&nd.lv<=(SK[nd.sk].max||1)),
+  _nd:null,
+  nd(k){ // the first map stop with this id (sk, lv)
+    if(!SPC._nd){SPC._nd={};for(const p in NODES)NODES[p].forEach(n=>{if(SPC.ok(n)&&!SPC._nd[nid(n)])SPC._nd[nid(n)]=n})}
+    return SPC._nd[k]||null;
+  },
+  OWN:5,             // first tries at a stop (half a round) that make a stop of a skipped world learned, not skipped
+  // 'l' learned (passed, and played: not only given its stars by Test out), 'k' skipped (in a world skipped by placement or Test out,
+  // open, not played OWN times), or '' (not reached)
+  kind(p,i){
+    const n=NODES[p][i],r=mastRec(nid(n)),own=!!r&&+r.n>=SPC.OWN,sk=worldSkipped(p,n.wi);
+    if(passed(p,i)&&(own||!sk))return'l';
+    return sk&&unlocked(p,i)?'k':'';
+  },
+  onPath:(k,p)=>!!NODES[p]&&NODES[p].some(n=>n.sk!='boss'&&nid(n)==k),
+  due:(e,d)=>e.b<SPC.DONE&&e.d<=d,
+  // adds the stops passed or skipped that are not in the schedule yet (see the head for the order and the room)
+  sync(d){
+    if(d==null)d=mastDay();
+    const o=SPC.get(),s=o.s,c={};
+    // the clock was set back (today is before the last day the schedule saw): every date moves back with it, so nothing waits for months
+    if(Number.isFinite(o.t)&&d<o.t)for(const k in s)s[k].d-=o.t-d;
+    o.t=d;
+    for(const p in NODES)NODES[p].forEach((n,i)=>{
+      if(!SPC.ok(n))return;
+      const k=nid(n),e=s[k],t=SPC.kind(p,i);
+      if(e){if(e.k&&t=='l')delete e.k;return} // a skipped stop the child has since played and passed: on the learned ladder
+      const x=c[k]||(c[k]={k,ps:0,sk:0,p,i,last:(mastRec(k)||{}).last||0});
+      if(t=='l')x.ps=1;
+      else if(t=='k'&&!x.sk){x.sk=1;x.p=p;x.i=i}
+    });
+    const L=[],K=[],top={};
+    for(const k in c){const x=c[k];if(x.ps)L.push(x);else if(x.sk){K.push(x);top[x.p]=Math.max(top[x.p]==null?-1:top[x.p],x.i)}}
+    if(!L.length&&!K.length)return 0;
+    const po=Object.keys(NODES),used={};
+    for(const k in s){const e=s[k],t=e.k?'k':'l';used[t+e.d]=(used[t+e.d]||0)+1}
+    // learned: not practised for longest first; skipped: nearest below where the child was placed first, the paths in turn
+    L.sort((a,b)=>a.last-b.last||po.indexOf(a.p)-po.indexOf(b.p)||a.i-b.i);
+    K.sort((a,b)=>(top[a.p]-a.i)-(top[b.p]-b.i)||po.indexOf(a.p)-po.indexOf(b.p)||a.i-b.i);
+    const put=(x,t,d0)=>{let dd=d0;while((used[t+dd]||0)>=SPC.ROOM[t])dd++;used[t+dd]=(used[t+dd]||0)+1;s[x.k]=t=='k'?{b:0,d:dd,k:1}:{b:0,d:dd}};
+    if(L.length==1)s[L[0].k]={b:0,d:d+SPC.INT[0]}; // a stop passed in a round (finish() reads the schedule after each pass): 2 days, exactly
+    else L.forEach(x=>put(x,'l',d+SPC.INT[0]));
+    K.forEach(x=>put(x,'k',d+1));
+    return L.length+K.length;
+  },
+  // the stops due on day d (on path p when given), most overdue first: [{k, sk, lv, e}]
+  list(p,d){
+    if(d==null)d=mastDay();
+    SPC.sync(d);
+    const s=SPC.get().s,out=[];
+    for(const k in s){const e=s[k],n=SPC.nd(k);if(n&&SPC.due(e,d)&&(!p||SPC.onPath(k,p)))out.push({k,sk:n.sk,lv:n.lv,e})}
+    return out.sort((a,b)=>a.e.d-b.e.d||(a.e.k?1:0)-(b.e.k?1:0)||(a.k<b.k?-1:a.k>b.k?1:0));
+  },
+  left(d){const o=SPC.get();return Math.max(0,SPC.CAP-(o.day===d?o.n|0:0))},
+  take(d){const o=SPC.get();if(o.day!==d){o.day=d;o.n=0}o.n=(o.n|0)+1},
+  q(x,d){SPC.take(d);const q=genQ(x.sk,x.lv);q.sk=x.sk;q.lv=x.lv;q.spc=x.k;return q},
+};
+// revSlot, at a path slot (question 4 or 8) with no missed question due: the most overdue check-in of the path, not the round's own stop
+function spcSlot(g){
+  const d=mastDay();
+  if(!SPC.left(d))return null;
+  const asked=g.rvAsked||(g.rvAsked={});
+  const x=SPC.list(g.path,d).find(x=>!asked['spc|'+x.k]&&!(x.sk==g.sk&&x.lv==g.lv));
+  if(!x)return null;
+  asked['spc|'+x.k]=1;
+  const q=SPC.q(x,d);
+  q.review=1;
+  g.last=q.label;
+  return q;
+}
+// Mixed Practice (mixQs, 50-round.js): up to SPC.MIX check-ins of any path, within the day's cap
+function spcMix(){
+  const d=mastDay(),out=[];
+  for(const x of SPC.list(null,d)){if(out.length>=SPC.MIX||!SPC.left(d))break;out.push(SPC.q(x,d))}
+  return out;
+}
+// check(), on the first try at a check-in question: right moves the stop on, wrong puts it back to 2 days (see the head)
+function spcTry(q,ok,helped){
+  if(!q||!q.spc)return null;
+  const e=SPC.get().s[q.spc],d=mastDay();
+  if(!e||e.b>=SPC.DONE)return null;
+  if(!ok){e.b=0;e.d=d+SPC.INT[0];delete e.k}
+  else if(helped)e.d=d+SPC.INT[e.b];
+  else if(e.k){e.b=SPC.DONE;delete e.k}
+  else{e.b++;if(e.b<SPC.DONE)e.d=d+SPC.INT[e.b]}
+  return e;
 }
 
 // ---- P5-03 Daily Review ----

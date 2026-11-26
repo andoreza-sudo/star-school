@@ -211,6 +211,7 @@ function runMigrations(from){
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
   if(!Array.isArray(S.ints))S.ints=[]; // PERS-01: the story themes picked (30p-pers.js): a default, nothing else changes
+  if(!('spc' in S))S.spc={}; // SPACED-9: the stops' spaced check-ins (59-review.js): a default by id; the first read spreads an old save's passed stops over the weeks ahead
   if(!('chk' in S))S.chk={}; // CHECK-IN: the stop check-ins and badges (51b-checkin.js): a default by id, nothing else changes
   if(!('pin' in S))S.pin=null; // G-FEEL2: the report card's "Practise this next" pin (55-missions.js): a default by id, nothing else changes
   if(!('fps' in S))S.fps=false;if(!('hcGl' in S))S.hcGl=true; // GL-01: the speed box (19b-fps.js) off, Hill Climb's 3D look on (62b-hill-gl.js): defaults by id

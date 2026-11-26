@@ -27,6 +27,7 @@ function mixGroups(){const out={recent:[],weak:[],old:[]};
   return out}
 function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_W.weak?'weak':'old';return pick(gr[k].length?gr[k]:gr.recent)}
 function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
+  qs.push(...spcMix()); // SPACED-9: then up to 2 stops' check-ins that are due, within the day's cap (59-review.js)
   while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
   return qs}
 function startMix(){G=newG({mix:true,pool:runCap(shuffle(mixQs())),sk:'mix'});next()} // MIX-8 (b): the same 10, never three of one kind in a row where they allow it
@@ -187,7 +188,7 @@ const twoWay=q=>q.kind=='choice'&&q.choices.length==2||q.kind=='tap'&&new Set(St
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 const CHEERS=[...new Set([...PRAISE,...PET_YAY])]; // EN-PRAISE: a right answer shows and says one of these (recorded in six voices, tools/en-audio.js)
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
-  if(G.tries==0&&!G.retry)mastTry(q,ok,null,G.hq); // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half)
+  if(G.tries==0&&!G.retry){mastTry(q,ok,null,G.hq);spcTry(q,ok,G.hq)} // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half); SPACED-9: a stop's check-in moves on (59-review.js)
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
@@ -267,6 +268,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass&&!(n1&&PLAY.lockedS(p,ni+1)),testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
+  if(newPass||testOk)try{SPC.sync()}catch(e){logErr('spaced check-ins: '+e.message)} // SPACED-9: a stop passed (or a world tested out) joins the check-ins (59-review.js)
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.

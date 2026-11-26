@@ -25013,6 +25013,163 @@ run('FEEDBACK-4: Tell us what you think in Grown-ups only, a mailto with no chil
   return{problems:p,note:'web: e-mail only; Play: e-mail and the Play page; '+files.length+' src files scanned for a rating prompt'};
 });
 
+// ---- SPACED-9 (BEST-APP roadmap 9, "Spaced check-ins for learned and skipped stops"; R-01 Should 4; docs/drafts/SPACED9.md; 59-review.js
+// SPC): weeks of play on a moving clock, through the real start(), makeQ(), check(), finish(), startMix() and placeApply(). Checks:
+// 1. the schedule: a passed stop is due 2 days after the pass, then 7, 21 and 60 days after each right first try, then finished; a
+//    wrong first try puts it back to 2 days (and makes the question a review item as always); a right one with the hint showing keeps
+//    its box; a date set ahead of the clock (the clock went back) is due; 2. the daily cap: never more than SPC.CAP check-ins asked on
+//    a day, SPC.MIX in one Mixed Practice, every one due when asked and moved exactly by the rule, in 8 weeks of 4 rounds a day;
+// 3. old saves (every fixture, and a save with 120 passed stops): migrate() adds S.spc = {} and changes nothing else; the first read
+//    spreads the passed stops over the weeks ahead (none due that day, at most SPC.ROOM.l learned and SPC.ROOM.k skipped first due on
+//    one day, the ones not practised for longest first), and migrate stays idempotent; 4. skipped stops (placement, Test out) get one
+//    light check-in from the next day, nearest below the placement first; right finishes it, wrong puts it on the learned ladder and
+//    the miss is a review item; 5. payouts: the same round, Mixed Practice and Daily Review pay the same game time, coins and stars
+//    with check-ins due as with none (a check-in takes the place of the "older stop" question), Daily Review's count is unchanged;
+// 6. determinism: the 8 weeks replayed from the same seeds give the same check-ins and the same schedule.
+run('SPACED-9: spaced check-ins for learned and skipped stops: the schedule, the daily cap, old saves spread, skipped stops, payouts, determinism',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={};
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const doc={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(doc,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  let note='';
+  try{
+  R(`var __off=0;{const D0=Date,T0=Date.UTC(2026,10,2,12);Date=class extends D0{constructor(...a){if(a.length)super(...a);else super(T0+__off)}static now(){return T0+__off}}}
+   function __to(dn){while(mastDay()<dn)__off+=3600e3} // the app's own clock (today(), mastDay()) moved to day number dn
+   say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};spkHook=()=>false;for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   var __asked=[],__pt=0,__tr=[];renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q);__asked.push({q,retry:!!G.retry,day:mastDay(),mix:!!G.mix})};
+   ptEarn=s=>{__pt+=s};
+   {const f=spcTry;spcTry=function(q,ok,h){const e0=q&&q.spc&&S.spc.s[q.spc]?Object.assign({},S.spc.s[q.spc]):null,r=f(q,ok,h);if(q&&q.spc)__tr.push({k:q.spc,day:mastDay(),ok:!!ok,h:!!h,e0,e1:r&&Object.assign({},r)});return r}}
+   function __step(g){if(g.done<g.n){const b=backQ(g);if(b){g.q=b;g.retry=true}else{g.q=makeQ();g.retry=false}g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __fresh(grade){for(const k in __store)delete __store[k];loadSave(null);migrate();S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;bankReset()}
+   function __play(model){const g=G;let n=0;while(g.__pend&&n++<80){const ok=g.retry||model(g.q,g);__off+=3000;G.qt=Date.now()-3000;
+       if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}finish();return g}
+   const __ok=()=>{const a=[];for(const p in NODES)NODES[p].forEach((n,i)=>{if(SPC.ok(n)&&!SK[n.sk].round)a.push([p,i])});return a};`);
+  // 1. the schedule
+  {const r=JSON.parse(R(`(()=>{const o={bad:[]},bad=m=>o.bad.push(m);__fresh(2);
+     const st=__ok().filter(([p,i])=>p=='math'&&NODES[p][i].wi<=3),[p,i]=st[3],k=nid(NODES[p][i]),[p2,i2]=st[5],k2=nid(NODES[p2][i2]);
+     const D=mastDay();setSt(p,i,2);setSt(p2,i2,2);SPC.sync();const e=S.spc.s[k];
+     if(!e||e.b!==0||e.d!==D+2||e.k)bad('a stop passed on day 0: '+JSON.stringify(e)+', want due on day 2');
+     const days=[];for(let t=0;t<120&&e.b<SPC.DONE;t++){__to(D+t);const due=SPC.list(p).some(x=>x.k==k);
+       if(due!==(e.d<=D+t))bad('day '+t+': due '+due+', d '+(e.d-D));
+       if(due){days.push(t);spcTry(SPC.q({k,sk:NODES[p][i].sk,lv:NODES[p][i].lv},mastDay()),true,false)}}
+     o.days=days;__to(D+400);if(e.b!==SPC.DONE||SPC.list(p).some(x=>x.k==k))bad('the stop is not finished after four right check-ins: '+JSON.stringify(e));
+     // wrong, helped, the clock set back
+     const e2=S.spc.s[k2],n2=NODES[p2][i2],D2=mastDay();e2.b=2;e2.d=D2;
+     spcTry(SPC.q({k:k2,sk:n2.sk,lv:n2.lv},D2),true,true);if(e2.b!==2||e2.d!==D2+21)bad('a right check-in with the hint showing: '+JSON.stringify(e2)+', want box 2 due in 21 days');
+     __to(D2+21);spcTry(SPC.q({k:k2,sk:n2.sk,lv:n2.lv},mastDay()),false,false);if(e2.b!==0||e2.d!==D2+23)bad('a wrong check-in: '+JSON.stringify(e2)+', want box 0 due in 2 days');
+     // the clock set back 30 days: every date moves back with it (nothing waits for months); forward again: nothing moves
+     SPC.list(p2);const d0=e2.d;__off-=30*864e5;SPC.list(p2);if(e2.d!==d0-30)bad('the clock set back 30 days: due moved '+(e2.d-d0)+' days, want -30');
+     __off+=30*864e5;SPC.list(p2);if(e2.d!==d0-30)bad('the clock forward again moved the dates');
+     return JSON.stringify(o)})()`));
+   p.push(...r.bad);if(JSON.stringify(r.days)!=='[2,9,30,90]')p.push('the schedule: check-ins on days '+JSON.stringify(r.days)+', want [2,9,30,90] (2, then 7, 21 and 60 days after each right one)')}
+  // 3. old saves
+  {const r=JSON.parse(R(`((raws)=>{const o={bad:[],rows:[]},bad=m=>o.bad.push(m);
+     const look=(name)=>{const D=mastDay(),s=S.spc.s,ks=Object.keys(s),per={};let want=0,last=-1,lastL=null;
+       const seen={};for(const p in NODES)NODES[p].forEach((n,i)=>{if(!SPC.ok(n)||seen[nid(n)])return;const t=SPC.kind(p,i)||(NODES[p].some((m,j)=>nid(m)==nid(n)&&SPC.kind(p,j))?'x':'');if(t){seen[nid(n)]=1;want++}});
+       if(ks.length!==want)bad(name+': '+ks.length+' stops in the schedule, want '+want);
+       for(const k of ks){const e=s[k],t=e.k?'k':'l';if(e.b!==0)bad(name+': '+k+' not in box 0');if(e.d<D+(e.k?1:SPC.INT[0]))bad(name+': '+k+' first due on day '+(e.d-D));per[t+e.d]=(per[t+e.d]||0)+1;last=Math.max(last,e.d-D)}
+       for(const x in per)if(per[x]>SPC.ROOM[x[0]])bad(name+': '+per[x]+' '+(x[0]=='k'?'skipped':'learned')+' stops first due on day '+(+x.slice(1)-D));
+       if(SPC.list(null,D).length)bad(name+': check-ins due on the day the old save is first read');
+       const L=ks.filter(k=>!s[k].k).sort((a,b)=>s[a].d-s[b].d),ls=L.map(k=>(mastRec(k)||{}).last||0);
+       for(let j=1;j<ls.length;j++)if(ls[j]<ls[j-1]){bad(name+': the stops not practised for longest are not first');break}
+       let mx=0;for(let t=0;t<=last;t++){let c=0;for(const k of ks)if(s[k].d==D+t)c++;mx=Math.max(mx,c)}
+       o.rows.push(name+(ks.length?' '+ks.length+' stops over '+last+' days, at most '+mx+' a day':' none'));return{n:ks.length,last,mx}};
+     for(const name in raws){const raw=raws[name];for(const k in __store)delete __store[k];__store[KEY]=raw;loadSave(raw);
+       const had='spc' in JSON.parse(raw);migrate();
+       if(!had&&JSON.stringify(S.spc)!=='{}')bad(name+': migrate() made S.spc '+JSON.stringify(S.spc).slice(0,80)+', want {} (a default by id)');
+       const a=JSON.parse(JSON.stringify(S));delete a.spc;migrate();const b=JSON.parse(JSON.stringify(S));delete b.spc;if(JSON.stringify(a)!==JSON.stringify(b))bad(name+': migrate not idempotent');
+       SPC.sync();look(name);const once=JSON.stringify(S);migrate();SPC.sync();if(JSON.stringify(S)!==once)bad(name+': a second migrate and read changed the schedule')}
+     // a save from before this item with 120 passed stops and some practised long ago: spread, no flood
+     __fresh(3);const st=__ok();let c=0;for(const [p,i] of st){if(c>=120)break;if(!passed(p,i)){setSt(p,i,2);c++;S.mast=S.mast||{};S.mast[nid(NODES[p][i])]={n:12,p:.9,ms:4000,d:3,last:mastDay()-(c*7)%90}}}
+     delete S.spc;const raw=JSON.stringify(S);loadSave(raw);migrate();SPC.sync();const r=look('120 passed stops');
+     if(r.last<59||r.mx>SPC.ROOM.l)bad('120 passed stops: spread over '+r.last+' days, at most '+r.mx+' a day (want 60+ days, at most '+SPC.ROOM.l+')');
+     // the first weeks after: never more than the cap asked on a day
+     return JSON.stringify(o)})(${JSON.stringify(Object.fromEntries(['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'].map(n=>[n,fx(n)])))})`));
+   p.push(...r.bad);note+='old saves: '+r.rows.join('; ')+'. '}
+  // 4. skipped stops: placement and Test out
+  {const r=JSON.parse(R(`(()=>{const o={bad:[]},bad=m=>o.bad.push(m);__fresh(3);const D=mastDay(),ws=PATHS.math.worlds,at=ws.findIndex(w=>w.g>=2);
+     placeApply('math',{done:true,skip:Array.from({length:at},(_,j)=>j),at,asked:8,right:8});
+     SPC.sync(); // as the next round, or Mixed Practice, reads it (placeApply only adds S.skip and S.place: the placement check)
+     const s=S.spc.s,K=Object.keys(s).filter(k=>s[k].k);
+     if(!K.length)bad('placement: no skipped stop got a check-in');
+     if(Object.keys(s).some(k=>!s[k].k))bad('placement: a stop that was not passed is on the learned ladder');
+     const first=K.sort((a,b)=>s[a].d-s[b].d)[0],fi=NODES.math.findIndex(n=>nid(n)==first),top=Math.max(...K.map(k=>NODES.math.findIndex(n=>nid(n)==k)));
+     if(s[first].d!==D+1||fi!==top)bad('placement: the first light check-in is '+first+' on day '+(s[first].d-D)+', want the nearest stop below the placement ('+nid(NODES.math[top])+') tomorrow');
+     o.nK=K.length;o.span=Math.max(...K.map(k=>s[k].d))-D;
+     // the next day: a round of the placed world asks the light check-ins at question 4 and 8; a wrong one goes on the ladder and is a review item
+     __to(D+1);const i0=curNode('math');RNG=mulberry32(5);start('math',i0);__asked=[];__tr=[];__play((q,g)=>!q.spc);
+     const tk=__tr.filter(x=>x.e0&&x.e0.k);if(!tk.length)bad('placement: the next day\\'s round asked no light check-in');
+     for(const x of tk){if(x.e1.b!==0||x.e1.d!==D+3||x.e1.k)bad('a wrong light check-in: '+JSON.stringify(x.e1)+', want box 0 due in 2 days, learned');
+       const n=SPC.nd(x.k);if(!REV.get().some(it=>it.sk==n.sk&&it.lv==n.lv))bad('a wrong light check-in did not become a review item')} // (it can be asked again, and fixed, at question 8)
+     __to(D+2);start('math',i0);__tr=[];__play(()=>true);const tr=__tr.filter(x=>x.e0&&x.e0.k);
+     for(const x of tr)if(x.e1.b!==SPC.DONE)bad('a right light check-in is not finished: '+JSON.stringify(x.e1));
+     o.light=tk.length+tr.length;
+     // Test out: the world's stops get 2 stars but stay skipped (light), unless played SPC.OWN times
+     __fresh(2);S.unlockAll=true;const wi=PATHS.math.worlds.findIndex(w=>w.g==2),bi=NODES.math.findIndex(n=>n.sk=='boss'&&n.wi==wi);
+     RNG=mulberry32(9);G=newG({path:'math',node:bi,sk:'test',test:{wi},pool:worldPool('math',wi,10)});next();__play(()=>true);
+     if(!worldSkipped('math',wi))bad('Test out did not pass');
+     const tw=NODES.math.filter(n=>n.wi==wi&&SPC.ok(n)),tl=tw.filter(n=>{const e=S.spc.s[nid(n)];return e&&e.k&&e.d>=mastDay()+1});
+     if(!tl.length||tw.some(n=>{const e=S.spc.s[nid(n)];return!e||!e.k&&!((mastRec(nid(n))||{}).n>=SPC.OWN)}))bad('Test out: '+tl.length+' of '+tw.length+' stops have a light check-in');
+     o.test=tl.length+' of '+tw.length;return JSON.stringify(o)})()`));
+   p.push(...r.bad);note+='placement: '+r.nK+' skipped stops, light check-ins over '+r.span+' days, '+r.light+' asked in 2 days; Test out: '+r.test+' stops light. '}
+  // 5. payouts: the same rounds with check-ins due and with none
+  {const r=JSON.parse(R(`(()=>{const o={bad:[],spc:0,mix:0},bad=m=>o.bad.push(m);
+     const one=(due,go,seed)=>{__fresh(2);const st=__ok().filter(([p])=>p=='math').slice(0,30);for(const [p,i] of st.slice(0,20))setSt(p,i,2);
+       S.rev=[1].map(s=>({sk:'add',lv:1,seed:s,label:revLabel(genQ('add',1,s).label),box:0,due:0,n:1}));
+       const D=mastDay();SPC.sync();for(const k in S.spc.s)S.spc.s[k].d=due?D:D+40;
+       const rc=revCard(),dn=dueItems().length;RNG=mulberry32(seed);Math.random=mulberry32(seed+1);__pt=0;__asked=[];go(st[22]);__play(()=>true);
+       return{pt:__pt,coins:S.coins,stars:S.stars,map:JSON.stringify(S.maps),rc,dn,spc:__asked.filter(a=>a.q.spc&&!a.retry).length}};
+     for(let t=0;t<12;t++){const go=[([p,i])=>start(p,i),()=>startMix(),()=>startReview()][t%3];
+       const A=one(true,go,t*7+1),B=one(false,go,t*7+1);
+       if(t%3!=2&&!A.spc)bad('round '+t+': no check-in was asked with check-ins due');if(B.spc)bad('round '+t+': a check-in was asked with none due');
+       if(t%3==0)o.spc+=A.spc;if(t%3==1)o.mix+=A.spc;if(t%3==1&&A.spc>SPC.MIX)bad('Mixed Practice asked '+A.spc+' check-ins');
+       if(t%3==2&&A.spc)bad('Daily Review asked a check-in');
+       for(const k of ['pt','coins','stars','map','rc','dn'])if(A[k]!==B[k])bad(['a stop round','Mixed Practice','Daily Review'][t%3]+': '+k+' '+B[k]+' with no check-in due, '+A[k]+' with check-ins due')}
+     o.ptl=JSON.stringify(ptEarnList());return JSON.stringify(o)})()`));
+   p.push(...r.bad);note+='payouts: 4 stop rounds ('+r.spc+' check-ins), 4 Mixed Practice ('+r.mix+'), 4 Daily Reviews: the same game time, coins, stars and review count as with none due. '}
+  // 2. the cap on one day with 60 check-ins due: three stop rounds and two Mixed Practice ask exactly SPC.CAP, the next day SPC.CAP more
+  {const r=JSON.parse(R(`(()=>{__fresh(2);const st=__ok().filter(([p])=>p=='math').slice(0,70);for(const [p,i] of st.slice(0,60))setSt(p,i,2);SPC.sync();const D=mastDay();
+     for(const k in S.spc.s)S.spc.s[k].d=D;const per=[];
+     for(let t=0;t<2;t++){__to(D+t);let n=0;for(let r=0;r<5;r++){RNG=mulberry32(r+t*5);__asked=[];if(r<3)start(...st[62+r]);else startMix();__play(()=>true);n+=__asked.filter(a=>a.q.spc&&!a.retry).length}per.push(n)}
+     return JSON.stringify(per)})()`));
+   if(JSON.stringify(r)!==JSON.stringify([R('SPC.CAP'),R('SPC.CAP')]))p.push('60 check-ins due: '+JSON.stringify(r)+' asked on two days of 5 rounds, want the cap ('+R('SPC.CAP')+') each day')}
+  // 2 and 6. eight weeks of play, twice
+  const weeks=`(()=>{const o={bad:[],asked:0,perDay:{},mixMax:0,rounds:0,box:[0,0,0,0,0],newL:0,newK:0},bad=m=>{if(o.bad.length<30)o.bad.push(m)};__off=0;__fresh(1);
+     const st=__ok(),D=mastDay(),ptr={},rr=mulberry32(77);let c=0;
+     for(const [p,i] of st)if(p=='math'&&c<30||p=='read'&&c>=30&&c<45){setSt(p,i,2);c++}else if(p=='read'&&c==30){setSt(p,i,2);c++}
+     SPC.sync();__tr=[]; // the 31 stops passed before: spread (as an old save's)
+     for(let t=0;t<56;t++){__to(D+t);const dn=mastDay();
+       for(let r=0;r<4;r++){const p=['math','read','math','mix'][r];__asked=[];const k0=Object.keys(SPC.get().s);RNG=mulberry32(t*17+r);Math.random=mulberry32(t*31+r);
+         if(p=='mix')startMix();else{const ps=st.filter(x=>x[0]==p);let j=ptr[p]||0;while(j<ps.length&&passed(...ps[j])&&rr()<.97)j++;ptr[p]=j;start(...ps[Math.min(j,ps.length-1)])}
+         __play(q=>rr()<.82);o.rounds++;
+         const sq=__asked.filter(a=>a.q.spc&&!a.retry);o.asked+=sq.length;o.perDay[t]=(o.perDay[t]||0)+sq.length;if(p=='mix')o.mixMax=Math.max(o.mixMax,sq.length);
+         for(const k of Object.keys(SPC.get().s))if(!k0.includes(k)){const e=S.spc.s[k];if(e.k)o.newK++;else o.newL++;if(e.k?e.d<dn+1:e.d!==dn+2)bad('day '+t+': '+k+' joined due on day '+(e.d-D)+(e.k?'':', want 2 days after its pass'))}}
+       if(o.perDay[t]>SPC.CAP)bad('day '+t+': '+o.perDay[t]+' check-ins asked (cap '+SPC.CAP+')')}
+     for(const x of __tr){const e0=x.e0,e1=x.e1;if(!e0||!e1){bad('a check-in of a stop not in the schedule');continue}
+       if(!SPC.due(e0,x.day))bad('a check-in asked before it was due: '+JSON.stringify(x));
+       const want=!x.ok?{b:0,d:x.day+2}:x.h?{b:e0.b,d:x.day+SPC.INT[e0.b]}:e0.k?{b:SPC.DONE}:e0.b+1>=SPC.DONE?{b:SPC.DONE}:{b:e0.b+1,d:x.day+SPC.INT[e0.b+1]};
+       if(e1.b!==want.b||want.d!=null&&e1.d!==want.d)bad('a check-in moved '+JSON.stringify(e0)+' -> '+JSON.stringify(e1)+', want '+JSON.stringify(want)+' ('+(x.ok?'right':'wrong')+(x.h?', helped':'')+')')}
+     for(const k in S.spc.s)o.box[S.spc.s[k].b]++;
+     o.trace=JSON.stringify(__tr)+JSON.stringify(S.spc)+JSON.stringify(S.maps);o.right=__tr.filter(x=>x.ok).length;return JSON.stringify(o)})()`;
+  // KMONO (49b-kinds2.js) is a session memo of one-kind stops that changes how many draws pickQ makes: kept as it was for the replay
+  const km=R('JSON.stringify(KMONO)'),A=JSON.parse(R(weeks));R('for(const k in KMONO)delete KMONO[k];Object.assign(KMONO,'+km+')');const B=JSON.parse(R(weeks));
+  p.push(...A.bad);
+  if(A.trace!==B.trace)p.push('determinism: the same 8 weeks replayed gave other check-ins or another schedule');
+  if(A.mixMax>R('SPC.MIX'))p.push('a Mixed Practice asked '+A.mixMax+' check-ins');
+  if(A.asked<100||A.box[1]+A.box[2]+A.box[3]+A.box[4]<20||A.newL<10)p.push('too few check-ins to judge: '+JSON.stringify({asked:A.asked,box:A.box,newL:A.newL}));
+  const days=Object.values(A.perDay),full=days.filter(x=>x==R('SPC.CAP')).length;
+  note+=`8 weeks, ${A.rounds} rounds: ${A.asked} check-ins (${A.right} right), at most ${Math.max(...days)} a day (cap ${R('SPC.CAP')}; ${full} days at the cap), at most ${A.mixMax} in a Mixed Practice; ${A.newL} stops joined as passed; boxes at the end ${JSON.stringify(A.box)}; replayed identically`;
+  }catch(e){p.push('the check could not run: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){
