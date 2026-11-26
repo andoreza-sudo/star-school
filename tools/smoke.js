@@ -15277,6 +15277,13 @@ async function main() {
             await pg.click('.lh-path[data-p="math"]'); await pg.waitForSelector('#map'); await vwait(pg, 400);
             const s2 = await st(), s3 = await back(), s4 = await back();
             if (s0.navb || !s0.home || !s1.navb || !s2.navb || !s3.learn || !s3.navb || !s4.home || s4.navb) bad.push(at + 'back up one screen: ' + JSON.stringify([s0, s1, s2, s3, s4]));
+            // the step back to Home is still on its way when the next screen change syncs again (two MutationObserver batches on a busy
+            // CPU): one step only (a second one left the app: about:blank here, the Play app closed; smoke shard 4 v197, P2-35)
+            await pg.click('#navbar [data-nav="learn"]'); await pg.waitForSelector('.lh'); await vwait(pg, 400);
+            const u0 = pg.url(), two = await pg.evaluate(() => { home(); NAVB.sync(); NAVB.sync(); return 'ok'; }).catch(e => e.message.split('\n')[0]);
+            await vwait(pg, 1200);
+            const s5 = await st().catch(e => ({ err: e.message.split('\n')[0] }));
+            if (two !== 'ok' || pg.url() !== u0 || !s5.home || s5.navb) bad.push(at + 'two syncs while a step back is on its way: ' + JSON.stringify({ two, url: pg.url(), s5 }));
             await pg.evaluate(() => { pathMap('math'); const i = curNode('math'); start('math', i); });
             await pg.waitForSelector('.play.qs'); await vwait(pg, 600);
             const r1 = await back(), r2 = await back();

@@ -209,9 +209,13 @@ const NAVB={skip:0,
     if(document.getElementById('hs'))return null;
     const b=document.querySelector('#app [aria-label="Back"],#app .nv-house,[data-go="home"],#navbar [data-nav="home"]:not(.on)');return b?()=>b.click():null},
   on:()=>!!(history.state&&history.state.navb),
-  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
-    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);history.back()}}catch(e){}},
-  pop(){if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
+  // going: its own history.back() is on its way. history.state changes only when the browser has made that step (popstate), so a
+  // second sync before then (another new screen or sheet on a busy CPU) saw the stand-in entry still there and went back again: the
+  // second step left the app (the Play app closes; in a browser the page before it opens). pop() clears it; the 10 s are a fallback only
+  going:0,n:0,
+  sync(){if(typeof SWU!='undefined'&&SWU.due===2||SAVE_HOLD||NAVB.going)return; // RC-1: Home is reloading into an update (or a child switch, Start over: reloadSaved): a history step would stop it
+    try{const d=!!NAVB.act();if(d&&!NAVB.on())history.pushState({navb:1},'');else if(!d&&NAVB.on()){const k=NAVB.going=++NAVB.n;NAVB.skip=1;setTimeout(()=>{NAVB.skip=0},1500);setTimeout(()=>{if(NAVB.going===k)NAVB.going=0},10000);history.back()}}catch(e){}},
+  pop(){NAVB.going=0;if(NAVB.skip)NAVB.skip=0;else{const f=NAVB.act();try{if(f)f()}catch(e){}}setTimeout(NAVB.sync,0)}};
 if(typeof history!='undefined'&&history.pushState&&typeof MutationObserver!='undefined'&&document.body){addEventListener('popstate',NAVB.pop);let q=0;
   try{if(NAVB.on())history.replaceState(null,'')}catch(e){} // a reload (an update, Start over) kept the last page's entry: going back to it would load the app again
   const mo=new MutationObserver(()=>{if(!q){q=1;setTimeout(()=>{q=0;NAVB.sync()},0)}}),a=document.getElementById('app'); // a new screen, a sheet or card
