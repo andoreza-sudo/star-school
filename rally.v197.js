@@ -2345,7 +2345,7 @@ function rlMenu(place) {
   const gt = () => {
     if (ptLeft() > 0) return true;
     SFX.wrong();
-    fb(ptWhyNot(), 'warn long', 3000);
+    fbSay(ptWhyNot(), 'warn long', 3000);
     return false;
   };
   $('#rlgar').onclick = () => { SFX.whoosh(); rlGarage(); };

@@ -225,6 +225,7 @@ const GH = {
    <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
    <p>Replaying a stop you already mastered, or the same stop over and over, earns less.</p></section></div></div>`);
     NAV.bar('games');
+    if (!on) nrSay(ptWhyNot(), '.gh-room', 600); // AUDIO-12: with no game time, a non-reader hears why (the line under the ticket; 12-speech.js)
     $('#back').onclick = () => home();
     if ($('#learn')) $('#learn').onclick = () => home();
     for (const g of GH.games) {
@@ -233,7 +234,7 @@ const GH = {
         const why = g.lock ? g.lock() : '';
         if (why) {
           SFX.wrong();
-          fb(why, 'warn long', 2600);
+          fbSay(why, 'warn long', 2600);
           return;
         }
         SFX.whoosh();
@@ -466,7 +467,7 @@ const GH = {
     GH.wire({ back: o.back });
     $('#gbsay').onclick = () => say(say1);
     $('#gbgo').onclick = () => {
-      if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+      if (ptLeft() <= 0) { SFX.wrong(); fbSay(ptWhyNot(), 'warn long', 3000); return; }
       SFX.whoosh();
       o.start();
     };
@@ -1611,11 +1612,11 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
   GH.wire({back:gameRoom});
   $$('[data-vc]').forEach(hcVehPic);
   $$('[data-w]').forEach(b=>b.onclick=()=>{const k=+b.dataset.w;if(!hcWOpen(k)){SFX.wrong();fb(`Win ${HC_NEED[k]-hcTot()} more stars to open ${HCW[k].n}.`,'warn long',2600);return}SFX.pop(1);hcMW=k;garage()});
-  const play=(k,i)=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(k,i)};
+  const play=(k,i)=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(k,i)};
   $$('[data-stg]').forEach(b=>b.onclick=()=>{const i=+b.dataset.stg;if(!hcSOpen(w,i)){SFX.wrong();fb(`Finish ${HC_ST[w][i-1][1]} first!`,'warn long',2400);return}play(w,i)});
   $('#hcgo').onclick=()=>play(w,pi);
   $$('[data-st]').forEach(b=>b.onclick=()=>play(HCW.findIndex(D=>D.id==b.dataset.st),null));
-  $('#hcday').onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(day.wi,null,day)};
+  $('#hcday').onclick=()=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(day.wi,null,day)};
   $('#hcgar').onclick=()=>{SFX.pop(2);hcGarage()};
   const bb=$('#hcboss');if(bb)bb.onclick=()=>{if(!hcBossOpen(w)){SFX.wrong();fb(`Win a star on ${HC_ST[w][HC_SPW-1][1]} to meet ${HC_BOSS[w][0]}.`,'warn long',2600);return}SFX.pop(2);hcBossMenu(w)};
   if(hcHopOpen()&&!gs.hop)GH.moveNew({name:'Hop',icon:'arrow-up',line:'Tap Hop to jump over bumps and logs!',done:()=>{gs.hop=1;save()}}); // G-MOVES: once
@@ -2429,7 +2430,7 @@ function hcGlLabels(x, H, SX, SY, left, right, sc) {
 let GT=null;
 function gtStop(){if(GT){clearInterval(GT.iv);GT=null}}
 function gtStart(el,onEnd){gtStop();GT={up:false,grace:0,iv:setInterval(()=>{if(!GT||document.hidden||GH.held)return;const p=pt();
-  if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fb('Game time is almost up!','warn long',2500);SFX.rattle()}}
+  if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fbSay('Game time is almost up!','warn long',2500);SFX.rattle()}}
   else if(--GT.grace<=0){gtStop();save();return onEnd()}
   if(p.used%5==0)save();GH.setTime($(el),GT.up?GT.grace:null)},1000)}}
 // P4-16: the shared end card (GH.end) for the game on screen; NAV-01: no Play again (no time), Next (#tl) goes to Learn, Home
@@ -2945,13 +2946,13 @@ function artThumb(k){const st=stS(),[t,v]=k.split(':');try{
 function artThumbs(){const q=[...$$('[data-th]'),...$$('[data-gth]')];let i=0;const one=()=>{const e=q[i++];if(!e||!e.isConnected)return;
     if(e.dataset.th)e.innerHTML=artThumb(e.dataset.th);else{const g=galGet(+e.dataset.gth);if(g)e.innerHTML=galPic(g,false)}};
   const f=()=>{const t0=performance.now();do one();while(i<q.length&&performance.now()-t0<8);if(i<q.length)requestAnimationFrame(f)};if(q.length)requestAnimationFrame(f)}
-function artOpen(k,back){if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}ART_BACK=back||(()=>colorMenu(STTAB));const[t,v]=k.split(':');SFX.whoosh();
+function artOpen(k,back){if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return}ART_BACK=back||(()=>colorMenu(STTAB));const[t,v]=k.split(':');SFX.whoosh();
   if(t=='px')colorPic(v,'num');else if(t=='sh')shapePage(v,'num');else artPage(k)}
 function colorMenu(tab){if(tab&&['shape','pixel','paint'].includes(tab))return classicColor(tab);if(tab)STTAB=tab;if(!ART_TABS.some(t=>t[0]==STTAB))STTAB='packs';
   artNeonMigrate();artNeonShrink();artMusic(false);
   view(`${GH.top('art')}${artMenuHTML(STTAB)}`);
   $('#back').onclick=gameRoom;$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);colorMenu(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return false}return true};
   $$('[data-k]').forEach(b=>b.onclick=()=>artOpen(b.dataset.k));
   $$('[data-day]').forEach(b=>b.onclick=()=>artOpen(b.dataset.day));
   $$('[data-lock]').forEach(b=>b.onclick=()=>{SFX.wrong();fb(b.dataset.lock,'warn',2400)});
@@ -2988,7 +2989,7 @@ function classicHTML(tab){const cs=cbS(),ss=shS();
 function classicColor(tab){if(tab)CBTAB=tab;artMusic(false);
   view(`${GH.top('art',{sub:'More'})}<div class="scroll">${classicHTML(CBTAB)}</div>`);
   $('#back').onclick=()=>colorMenu('classic');$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);classicColor(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true},bk=()=>{ART_BACK=()=>classicColor(CBTAB)};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fbSay(ptWhyNot(),'warn long',3000);return false}return true},bk=()=>{ART_BACK=()=>classicColor(CBTAB)};
   if($('#free'))$('#free').onclick=()=>{if(chk()){bk();freePaint(-1)}};
   $$('[data-art]').forEach(b=>b.onclick=()=>{if(chk()){bk();freePaint(+b.dataset.art)}});
   $$('[data-id]').forEach(b=>b.onclick=()=>{if(chk())modeChooser(m=>{bk();colorPic(b.dataset.id,m)},false)});

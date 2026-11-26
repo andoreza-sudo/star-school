@@ -2758,12 +2758,12 @@ function bbMenu() {
   for (const b of $$('[data-ch]')) b.onclick = () => {
     const i = +b.dataset.ch, k = bbChOf(i);
     if (!bbOpen(i)) { SFX.wrong(); anim(b, 'sad'); fb(!bbChOpen(k) ? `Build ${BB_OPEN_AT} in ${BB_CHS[k - 1].n} to open ${BB_CHS[k].n}!` : 'Finish ' + BBP[i - 1].n + ' first!', 'warn'); return; }
-    if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+    if (ptLeft() <= 0) { SFX.wrong(); fbSay(ptWhyNot(), 'warn long', 3000); return; }
     SFX.whoosh();
     blockBuilder(i);
   };
   $('#bbday').onclick = () => {
-    if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+    if (ptLeft() <= 0) { SFX.wrong(); fbSay(ptWhyNot(), 'warn long', 3000); return; }
     SFX.whoosh();
     blockBuilder('day');
   };
@@ -2776,7 +2776,7 @@ function bbMenu() {
   // G-MOVES: the Paint card, once
   if (bbPaintOpen() && !bs.mv) GH.moveNew({ name: 'Paint', icon: 'palette', line: 'Paint: tap a block to make it the block you chose!', done: () => { bs.mv = 1; save(); } });
   for (const b of $$('[data-w]')) b.onclick = () => {
-    if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+    if (ptLeft() <= 0) { SFX.wrong(); fbSay(ptWhyNot(), 'warn long', 3000); return; }
     bs.cur = +b.dataset.w;
     save();
     SFX.whoosh();

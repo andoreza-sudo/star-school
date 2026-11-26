@@ -3798,6 +3798,17 @@ const petN=()=>S.petName||PETS[S.pet].def;
 const STK=[...'🐠🐬🦖🚀🌈🍩🎸🏆🦁🐼🍕🎈🌟🐙🦋🍦🚂⚽🎨🐢🦊🍉🏰🛸🌻🐝🍪🎃🐳🦉🏀🚁🧁🍓🐧🦒🎡⛵🌋🦜🧸🎺🐞🍭🌙🦈🚒🐘'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m=>m[0]);
 // how many of a sticker the child has; the fish also counts an old sticker (U+1F984) a save may still hold (CONTENT-01: no such theme, saves are not rewritten)
 const stkN=s=>(S.stickers[s]||0)+(s=='\u{1F420}'?(S.stickers['\u{1F984}']||0):0);
+/* EMOJI-12: a sticker shows a drawing when the app has one for it, else its emoji (docs/drafts/AUDIO12.md part B: the sticker won at
+   the end of every round was the emoji a child met most). 12 are new (src/data/d-art-e.js, also the Pre-K syllable pictures), 21 are
+   object art the app already drew (the soccer ball keeps its emoji: the drawn ball is a beach ball). Saves keep the emoji (S.stickers keys); only the picture on screen changes. ART is read inside
+   stkPic (the data file loads after this file). */
+const STK_ART={'\u{1F420}':'fish','\u{1F996}':'dinosaur','\u{1F680}':'rocket','\u{1F308}':'rainbow','\u{1F369}':'doughnut','\u{1F3B8}':'guitar',
+  '\u{1F981}':'lion','\u{1F355}':'pizza','\u{1F388}':'balloon','\u{1F31F}':'star','\u{1F419}':'octopus','\u{1F98B}':'butterfly','\u{1F366}':'icecream',
+  '\u{1F682}':'train','\u{1F422}':'turtle','\u{1F98A}':'fox','\u{1F3F0}':'castle','\u{1F33B}':'sunflower','\u{1F41D}':'bee',
+  '\u{1F36A}':'cookie','\u{1F383}':'pumpkin','\u{1F433}':'whale','\u{1F989}':'owl','\u{1F681}':'helicopter','\u{1F353}':'strawberry',
+  '\u{1F427}':'penguin','\u{1F992}':'giraffe','\u26F5':'boat','\u{1F30B}':'volcano','\u{1F3BA}':'trumpet','\u{1F41E}':'ladybug',
+  '\u{1F319}':'moon','\u{1F418}':'elephant'};
+const stkPic=s=>{const n=STK_ART[s];return n&&typeof ART!='undefined'&&ART[n]&&typeof picArt=='function'?picArt(n):esc(s)};
 
 /* ---------- sound engine (all synthesized, works offline) ----------
    P4-17 (DESIGN_SYSTEM 8.2): one soft, consistent set of sounds.
@@ -4016,6 +4027,16 @@ function ttsSay(t,btn,es,slow,cheer){if(typeof document!="undefined"&&document.h
   speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
+/* AUDIO-12: words a child who cannot read yet would otherwise miss (docs/drafts/AUDIO12.md). nrOn(): Pre-K to 1st grade (the bands
+   whose questions are read out, gradeCfg().auto 'all' or 'auto') with "Read questions out loud" on (S.voice); a reader (2nd grade
+   and up) hears nothing new. Only text the screen already shows is said, never a new sentence (new lines wait for the owner).
+   Nothing here moves or flashes, so calm mode (less movement, no confetti) is unchanged.
+   nrSay(t, sel, ms): a screen's own line, said ms after it is drawn, only while sel is still on screen; queued behind a cheer.
+   fbSay(t, cls, ms): a toast that tells the child why a tap did nothing ("Finish the stop before this one!", "Need 3 more coins!",
+   no game time): shown as before, and said at once for a non-reader. */
+const nrOn=()=>typeof S!='undefined'&&!!S&&!!S.voice&&typeof gradeCfg=='function'&&gradeCfg().auto!='tap';
+function nrSay(t,sel,ms=500){if(!t||!nrOn())return false;setTimeout(()=>{if(nrOn()&&(!sel||$(sel)))say(String(t),null,null,1)},ms);return true}
+function fbSay(t,cls='warn',ms){fb(t,cls,ms);if(t&&nrOn())say(String(t))}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
 // 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
 let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');
@@ -6448,10 +6469,10 @@ const RW = {
     return `<span class="rw-badge">${RW.art(ribbon + rose, 'rw-rose', '0 0 64 64')}<span class="rw-be">${esc(prize)}</span></span>`;
   },
 
-  // a sticker prize: die-cut white border, a slight turn, "New" tag the first time
+  // a sticker prize: die-cut white border, a slight turn, "New" tag the first time; its drawing when it has one (EMOJI-12, stkPic in 05-pets.js)
   sticker(s, isNew, i = 0) {
     const turn = [-7, 5, -3, 7][i % 4];
-    return `<span class="rw-stk" style="--r:${turn}deg"><span class="rw-se">${esc(s)}</span>${isNew ? UI.tag('New', 'new') : ''}</span>`;
+    return `<span class="rw-stk" style="--r:${turn}deg"><span class="rw-se">${stkPic(s)}</span>${isNew ? UI.tag('New', 'new') : ''}</span>`;
   },
 
   // icon for a line of the game-time list (ptCalc labels in 58-playtime.js)
@@ -8380,10 +8401,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
-    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}
+    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fbSay(`Learn it with ${petN()} first!`);return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
-  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)
@@ -8420,7 +8441,7 @@ function stkSwapView(pick,got){const miss=STK.filter(s=>!stkN(s)),d=stkDoubles()
     `<p>${d} double${d==1?'':'s'} left.</p></div></div>`+
     `<div class="sb-act">${UI.btn(pick?'Swap '+SWAP_COST+' doubles':'Pick a sticker',{kind:'primary',size:'lg',icon:'check',id:'swgo'})}${UI.btn('Back to my stickers',{icon:'sticker-book',id:'swbk'})}</div></div>`+
     (miss.length?`<section class="sb-page"><h2 class="sb-ph"><span>Stickers you do not have</span><span class="sb-pc">${miss.length}</span></h2>`+
-      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${esc(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
+      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${stkPic(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
   NAV.bar('');$('#back').onclick=$('#swbk').onclick=()=>book();
   $$('.sb-pk').forEach(b=>b.onclick=()=>{SFX.pop(R(0,5));stkSwapView(b.dataset.s,null)});
   $('#swgo').onclick=()=>{if(!pick||!ok){fb(ok?'Tap a sticker first.':'You need '+SWAP_COST+' doubles.','warn',1800);return}
@@ -8433,7 +8454,7 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
   const turn=i=>[-6,4,-2,7,-4,3,-7,5,-3,6,-5,2][i%12];
   const slot=(s,i)=>{const n=stkN(s);
     return n?`<button class="sb-slot sb-stk" data-s="${esc(s)}" style="--r:${turn(i)}deg" aria-label="Sticker ${i+1}${n>1?', you have '+n:''}">`+
-      `<span class="sb-e">${esc(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
+      `<span class="sb-e">${stkPic(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
       :`<span class="sb-slot sb-no" aria-hidden="true">${ico('star',30)}</span>`};
   const page=(p,k)=>{const got=p.filter(s=>stkN(s)).length;
     return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1} of ${pages.length}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
@@ -8446,6 +8467,7 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
     `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}${typeof CHK!='undefined'?`<div class="ck-bk">${UI.btn('Stop badges',{kind:'subject',p:'disc',icon:'medal',id:'bkck'})}</div>`:''}</div>
   <div class="sgrid sb-pages">${pages.map(page).join('')}</div></div></div>`);
   NAV.bar('');$('#back').onclick=()=>home(true);
+  nrSay('Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.','.sb',600); // AUDIO-12: the book's line, for a non-reader (12-speech.js)
   if($('#bkswap'))$('#bkswap').onclick=()=>{SFX.whoosh();stkSwapView(null,null)};
   if($('#bkck'))$('#bkck').onclick=()=>{SFX.whoosh();CHK.shelf(book)}; // CHECK-IN: the stop badges (51b-checkin.js)
   if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book
@@ -9095,6 +9117,7 @@ const shopPic = (t, id, size) => t == 'scene' ? `<span class="ps-scn sc-${esc(id
 
 function shop() {
   const t = shopTab, items = shopItems(t), it = shopSel && items.find(x => x[0] == shopSel), w = S.wear;
+  const arrive = !$('.ps'); // AUDIO-12: arriving, not a redraw after a tap
   const pv = { hat: w.hat, toy: w.toy, scene: w.scene };
   if (it) pv[t] = it[0];
   const pet = petSVG(S.pet, stage(), 'happy', { hat: wearOf(pv.hat), toy: wearOf(pv.toy), react: true });
@@ -9128,6 +9151,7 @@ function shop() {
     `<div class="petbig rig" id="pet"><span class="petwrap">${pet}</span></div></div>${info}</div>` +
     `<div class="ps-shelf"><div class="tabs ps-tabs">${tabs}</div><div class="shopgrid ps-grid">${cards}</div></div></div></div>`);
   NAV.bar('pet');
+  if (arrive && !it) nrSay('Tap an item to try it on!', '.ps', 600); // AUDIO-12: the info bar's line, for a non-reader (12-speech.js)
   $('#back').onclick = () => { shopSel = null; home(true); };
   $$('.tab').forEach(b => b.onclick = () => { shopTab = b.dataset.t; shopSel = null; SFX.pop(1); shop(); });
   $$('.item').forEach(b => b.onclick = () => shopTap(b));
@@ -9165,7 +9189,7 @@ function shopWear(id) {
 // buy: not enough coins says how many more; else a sheet asks first ("Yes, buy it" #psyes / "Not now" #psno)
 function shopBuy(it, btn) {
   const t = shopTab, need = it[1] - S.coins, nm = shopName(t, it);
-  if (need > 0) { SFX.wrong(); anim(btn, 'sad'); fb(`Need ${need} more coins! Finish a round to earn some.`, 'warn'); return; }
+  if (need > 0) { SFX.wrong(); anim(btn, 'sad'); fbSay(`Need ${need} more coins! Finish a round to earn some.`); return; }
   SFX.pop(3);
   const sh = UI.sheet(`<div class="ps-sheet"><div class="ps-big">${shopPic(t, it[0], '120px')}</div>` +
     `<h2>Buy the ${esc(nm.toLowerCase())}?</h2><p>It costs ${it[1]} coins. You will have ${S.coins - it[1]} left.</p>` +
@@ -10093,7 +10117,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.
-  view(RW.pre());
+  view(RW.pre());nrSay('Tap the treasure chest!','#chest',700); // AUDIO-12: the pre card's line, for a non-reader (12-speech.js)
   // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
   setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
@@ -10118,7 +10142,8 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))
+      if(tip&&!grew)nrSay(tip,'#fin',0)},t); // AUDIO-12: a non-reader also hears why the next stop did not open (the tip under the score)
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
@@ -10848,6 +10873,7 @@ function streakCal(off){
     <div class="stc-sub small stc-pzs"><span>Next prizes, days in a row:</span>${prizes}</div>
    </div></div>`);
   NAV.bar('');$('#back').onclick=()=>home();
+  if(!off)nrSay(msg,'.stc-card',600); // AUDIO-12: the streak line, for a non-reader (12-speech.js); not again for each month turned
   $('#stcp').onclick=()=>streakCal(off+1);
   $('#stcn').onclick=()=>streakCal(off-1);
 }
@@ -10909,7 +10935,7 @@ function pcMood(c,pn){
   return Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy!`:`${pn} is doing great!`;
 }
 // Pet Care (P4-18 icons and meters; P4-12 drawn stage and feedback, card layout, two columns on a wide landscape screen)
-function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
+function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf(),arrive=!$('.pc'); // AUDIO-12: arriving, not the redraw after a snack
   const mood=pcMood(c,pn);
   const bar=(l,icon,v,k)=>{const n=pcShow(v);return `<div class="cbar gx-cbar ${k}"><span class="gx-ci">${ico(icon,26)}</span><span class="gx-cl">${l}</span>${UI.meter(n/100,{label:l+' '+n+'%'})}<b>${n}%</b></div>`};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('paw',24)}</span><span>Pet Care</span></div>${UI.chip('coin',S.coins,{id:'coinc',aria:'Coins'})}</div>
@@ -10918,11 +10944,12 @@ function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
   <h2 class="gx-h">${ico('food',26)}<span>Snacks</span></h2><div class="shopgrid gx-snacks">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item gx-snack" data-f="${i}" aria-label="${SNACK_W[i]}, ${cost} coins"><span class="gx-sp">${picFor(SNACK_W[i],e)}</span><div class="gx-price">${ico('coin',22,'ic-coin')}<b>${cost}</b></div></button>`).join('')}</div>
   <div class="actions gx-acts2"><button class="btn act gx-act" id="bath"><span class="gx-ai">${ico('bath',34)}</span>Bath time (free)</button><button class="btn act gx-act" id="play"><span class="gx-ai">${ico('ball',34)}</span>Play (free)</button></div></div></div>`);
   NAV.bar('pet');$('#back').onclick=()=>home();
+  if(arrive)nrSay(pcMood(c,petN()),'.pc',600); // AUDIO-12: the line over the pet, for a non-reader (12-speech.js)
   const pet=$('#pet');
   const done=()=>{c.t=Date.now();if(Math.min(c.food,c.clean,c.fun)>=80&&c.gift!==today()){c.gift=today();S.coins+=5;
     setTimeout(()=>{SFX.fanfare();RW.burst(document.body,28);UI.toast(`${petN()} gave you 5 coins!`,'good',2000,'gift')},900)}save();setTimeout(care,1300)};
-  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fb(`${petN()} is full!`,'warn');anim(pet,'sad');return}
-    if(S.coins<cost){SFX.wrong();anim(b,'sad');fb(`Need ${cost-S.coins} more coins!`,'warn');return}
+  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fbSay(`${petN()} is full!`);anim(pet,'sad');return}
+    if(S.coins<cost){SFX.wrong();anim(b,'sad');fbSay(`Need ${cost-S.coins} more coins!`);return}
     S.coins-=cost;c.food=Math.min(100,c.food+v);SFX.chomp();anim(pet,'jump');careFx('food');if(S.voice)say(pick(['Yum yum!','Delicious!','Thank you!','Mmm!']));done()});
   $('#bath').onclick=()=>{c.clean=100;SFX.splash();anim(pet,'sad');careFx('bath',11);if(S.voice)say(pick(['Splish splash!','So clean!','Bubbles!']));done()};
   $('#play').onclick=()=>{c.fun=Math.min(100,c.fun+30);SFX.giggle();anim(pet,'jump');careFx('play');setTimeout(()=>anim(pet,'jump'),550);if(S.voice)say(pick(['Wheee!','Again! Again!','That was fun!']));done()}}

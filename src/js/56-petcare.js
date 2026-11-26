@@ -56,7 +56,7 @@ function pcMood(c,pn){
   return Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy!`:`${pn} is doing great!`;
 }
 // Pet Care (P4-18 icons and meters; P4-12 drawn stage and feedback, card layout, two columns on a wide landscape screen)
-function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
+function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf(),arrive=!$('.pc'); // AUDIO-12: arriving, not the redraw after a snack
   const mood=pcMood(c,pn);
   const bar=(l,icon,v,k)=>{const n=pcShow(v);return `<div class="cbar gx-cbar ${k}"><span class="gx-ci">${ico(icon,26)}</span><span class="gx-cl">${l}</span>${UI.meter(n/100,{label:l+' '+n+'%'})}<b>${n}%</b></div>`};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('paw',24)}</span><span>Pet Care</span></div>${UI.chip('coin',S.coins,{id:'coinc',aria:'Coins'})}</div>
@@ -65,11 +65,12 @@ function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
   <h2 class="gx-h">${ico('food',26)}<span>Snacks</span></h2><div class="shopgrid gx-snacks">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item gx-snack" data-f="${i}" aria-label="${SNACK_W[i]}, ${cost} coins"><span class="gx-sp">${picFor(SNACK_W[i],e)}</span><div class="gx-price">${ico('coin',22,'ic-coin')}<b>${cost}</b></div></button>`).join('')}</div>
   <div class="actions gx-acts2"><button class="btn act gx-act" id="bath"><span class="gx-ai">${ico('bath',34)}</span>Bath time (free)</button><button class="btn act gx-act" id="play"><span class="gx-ai">${ico('ball',34)}</span>Play (free)</button></div></div></div>`);
   NAV.bar('pet');$('#back').onclick=()=>home();
+  if(arrive)nrSay(pcMood(c,petN()),'.pc',600); // AUDIO-12: the line over the pet, for a non-reader (12-speech.js)
   const pet=$('#pet');
   const done=()=>{c.t=Date.now();if(Math.min(c.food,c.clean,c.fun)>=80&&c.gift!==today()){c.gift=today();S.coins+=5;
     setTimeout(()=>{SFX.fanfare();RW.burst(document.body,28);UI.toast(`${petN()} gave you 5 coins!`,'good',2000,'gift')},900)}save();setTimeout(care,1300)};
-  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fb(`${petN()} is full!`,'warn');anim(pet,'sad');return}
-    if(S.coins<cost){SFX.wrong();anim(b,'sad');fb(`Need ${cost-S.coins} more coins!`,'warn');return}
+  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fbSay(`${petN()} is full!`);anim(pet,'sad');return}
+    if(S.coins<cost){SFX.wrong();anim(b,'sad');fbSay(`Need ${cost-S.coins} more coins!`);return}
     S.coins-=cost;c.food=Math.min(100,c.food+v);SFX.chomp();anim(pet,'jump');careFx('food');if(S.voice)say(pick(['Yum yum!','Delicious!','Thank you!','Mmm!']));done()});
   $('#bath').onclick=()=>{c.clean=100;SFX.splash();anim(pet,'sad');careFx('bath',11);if(S.voice)say(pick(['Splish splash!','So clean!','Bubbles!']));done()};
   $('#play').onclick=()=>{c.fun=Math.min(100,c.fun+30);SFX.giggle();anim(pet,'jump');careFx('play');setTimeout(()=>anim(pet,'jump'),550);if(S.voice)say(pick(['Wheee!','Again! Again!','That was fun!']));done()}}

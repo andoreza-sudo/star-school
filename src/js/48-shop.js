@@ -18,6 +18,7 @@ const shopPic = (t, id, size) => t == 'scene' ? `<span class="ps-scn sc-${esc(id
 
 function shop() {
   const t = shopTab, items = shopItems(t), it = shopSel && items.find(x => x[0] == shopSel), w = S.wear;
+  const arrive = !$('.ps'); // AUDIO-12: arriving, not a redraw after a tap
   const pv = { hat: w.hat, toy: w.toy, scene: w.scene };
   if (it) pv[t] = it[0];
   const pet = petSVG(S.pet, stage(), 'happy', { hat: wearOf(pv.hat), toy: wearOf(pv.toy), react: true });
@@ -51,6 +52,7 @@ function shop() {
     `<div class="petbig rig" id="pet"><span class="petwrap">${pet}</span></div></div>${info}</div>` +
     `<div class="ps-shelf"><div class="tabs ps-tabs">${tabs}</div><div class="shopgrid ps-grid">${cards}</div></div></div></div>`);
   NAV.bar('pet');
+  if (arrive && !it) nrSay('Tap an item to try it on!', '.ps', 600); // AUDIO-12: the info bar's line, for a non-reader (12-speech.js)
   $('#back').onclick = () => { shopSel = null; home(true); };
   $$('.tab').forEach(b => b.onclick = () => { shopTab = b.dataset.t; shopSel = null; SFX.pop(1); shop(); });
   $$('.item').forEach(b => b.onclick = () => shopTap(b));
@@ -88,7 +90,7 @@ function shopWear(id) {
 // buy: not enough coins says how many more; else a sheet asks first ("Yes, buy it" #psyes / "Not now" #psno)
 function shopBuy(it, btn) {
   const t = shopTab, need = it[1] - S.coins, nm = shopName(t, it);
-  if (need > 0) { SFX.wrong(); anim(btn, 'sad'); fb(`Need ${need} more coins! Finish a round to earn some.`, 'warn'); return; }
+  if (need > 0) { SFX.wrong(); anim(btn, 'sad'); fbSay(`Need ${need} more coins! Finish a round to earn some.`); return; }
   SFX.pop(3);
   const sh = UI.sheet(`<div class="ps-sheet"><div class="ps-big">${shopPic(t, it[0], '120px')}</div>` +
     `<h2>Buy the ${esc(nm.toLowerCase())}?</h2><p>It costs ${it[1]} coins. You will have ${S.coins - it[1]} left.</p>` +

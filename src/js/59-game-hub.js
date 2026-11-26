@@ -222,6 +222,7 @@ const GH = {
    <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
    <p>Replaying a stop you already mastered, or the same stop over and over, earns less.</p></section></div></div>`);
     NAV.bar('games');
+    if (!on) nrSay(ptWhyNot(), '.gh-room', 600); // AUDIO-12: with no game time, a non-reader hears why (the line under the ticket; 12-speech.js)
     $('#back').onclick = () => home();
     if ($('#learn')) $('#learn').onclick = () => home();
     for (const g of GH.games) {
@@ -230,7 +231,7 @@ const GH = {
         const why = g.lock ? g.lock() : '';
         if (why) {
           SFX.wrong();
-          fb(why, 'warn long', 2600);
+          fbSay(why, 'warn long', 2600);
           return;
         }
         SFX.whoosh();
@@ -463,7 +464,7 @@ const GH = {
     GH.wire({ back: o.back });
     $('#gbsay').onclick = () => say(say1);
     $('#gbgo').onclick = () => {
-      if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+      if (ptLeft() <= 0) { SFX.wrong(); fbSay(ptWhyNot(), 'warn long', 3000); return; }
       SFX.whoosh();
       o.start();
     };

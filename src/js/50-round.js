@@ -272,7 +272,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   const grew=stage(S.stars)>stage(before);save();
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.
-  view(RW.pre());
+  view(RW.pre());nrSay('Tap the treasure chest!','#chest',700); // AUDIO-12: the pre card's line, for a non-reader (12-speech.js)
   // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
   setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
@@ -297,7 +297,8 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(unl?' You unlocked the next stop!':''))
+      if(tip&&!grew)nrSay(tip,'#fin',0)},t); // AUDIO-12: a non-reader also hears why the next stop did not open (the tip under the score)
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+

@@ -133,6 +133,16 @@ function ttsSay(t,btn,es,slow,cheer){if(typeof document!="undefined"&&document.h
   speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll();swHush()}catch(e){if(btn)noVoice(btn)}}
 function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
   if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
+/* AUDIO-12: words a child who cannot read yet would otherwise miss (docs/drafts/AUDIO12.md). nrOn(): Pre-K to 1st grade (the bands
+   whose questions are read out, gradeCfg().auto 'all' or 'auto') with "Read questions out loud" on (S.voice); a reader (2nd grade
+   and up) hears nothing new. Only text the screen already shows is said, never a new sentence (new lines wait for the owner).
+   Nothing here moves or flashes, so calm mode (less movement, no confetti) is unchanged.
+   nrSay(t, sel, ms): a screen's own line, said ms after it is drawn, only while sel is still on screen; queued behind a cheer.
+   fbSay(t, cls, ms): a toast that tells the child why a tap did nothing ("Finish the stop before this one!", "Need 3 more coins!",
+   no game time): shown as before, and said at once for a non-reader. */
+const nrOn=()=>typeof S!='undefined'&&!!S&&!!S.voice&&typeof gradeCfg=='function'&&gradeCfg().auto!='tap';
+function nrSay(t,sel,ms=500){if(!t||!nrOn())return false;setTimeout(()=>{if(nrOn()&&(!sel||$(sel)))say(String(t),null,null,1)},ms);return true}
+function fbSay(t,cls='warn',ms){fb(t,cls,ms);if(t&&nrOn())say(String(t))}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
 // 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
 let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');

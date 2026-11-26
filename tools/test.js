@@ -15519,6 +15519,135 @@ run('DAYS-D3: Spanish days and months each drawn, lit in the right place',()=>{
   return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes (made at load from '+CSRC.length+' bytes of source); '+out.qn+' questions'};
 });
 
+// ---- EMOJI-12: the emoji a young child still met most, drawn (BEST-APP roadmap 12; docs/drafts/AUDIO12.md part B; src/data/d-art-e.js) ----
+// The sticker won at the end of every round (and the sticker book) and the Pre-K syllable pictures were emoji beside drawn art. Thirteen
+// new drawings (12 of them also stickers) and 21 stickers that now show a drawing the app already had (STK_ART in 05-pets.js). Checked:
+// the object art rules, every drawing different, the questions and the sticker screens show the drawing, never these emoji again, the
+// emoji kept as the fallback (a sticker with no drawing, the code alone without the data file), and where the drawings live.
+run('object art EMOJI-12: thirteen drawings; stickers and syllable pictures show drawings, not emoji',()=>{
+  const p=[];
+  const NAMES='octopus penguin dinosaur strawberry castle volcano ladybug pumpkin doughnut guitar trumpet whale crayon'.split(' ');
+  // the emoji each sticker showed before, and its drawing now (a replaced one must never come back)
+  const STK_WANT={'🐠':'fish','🦖':'dinosaur','🚀':'rocket','🌈':'rainbow','🍩':'doughnut','🎸':'guitar','🦁':'lion','🍕':'pizza','🎈':'balloon','🌟':'star',
+    '🐙':'octopus','🦋':'butterfly','🍦':'icecream','🚂':'train','🐢':'turtle','🦊':'fox','🏰':'castle','🌻':'sunflower','🐝':'bee','🍪':'cookie','🎃':'pumpkin',
+    '🐳':'whale','🦉':'owl','🚁':'helicopter','🍓':'strawberry','🐧':'penguin','🦒':'giraffe','⛵':'boat','🌋':'volcano','🎺':'trumpet','🐞':'ladybug',
+    '🌙':'moon','🐘':'elephant'};
+  const ESRC=fs.readFileSync(path.join(SRC,'data','d-art-e.js'),'utf8'),artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  if(/rnd\(|Math\.random|Date|function|=>/.test(ESRC.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('d-art-e.js must be plain data (no code, no randomness)');
+  const out=eval(js+`
+  const bad=[],N=${JSON.stringify(NAMES)},W=${JSON.stringify(STK_WANT)},css=${JSON.stringify(artCss)};let total=0;
+  // 1. the rules of the object art sets (DESIGN_SYSTEM 6.5; the set C and DRAW8 checks)
+  for(const n of N){const d=ART[n];
+    if(!d){bad.push('no drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing');
+    if((d.match(/<[a-z]+/g)||[]).length>40)bad.push(n+': over 40 elements');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t);
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/.test(m[1]))bad.push(n+': attribute '+m[1]);
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour '+a);
+    for(const m of d.matchAll(/var\\(--(a-[a-z0-9]+)\\)/g))if(!css.includes('--'+m[1]+':var(--ill-'))bad.push(n+': role --'+m[1]+' is not in 21-art.css');
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity '+m[1]);
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform '+m[1]);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the grid');
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the grid');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d)||/gradient|filter|mask|clip|<text|<use|url\\(|style=|\\sid=|href/i.test(d))bad.push(n+': raw colour, id, defs, text or url');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+    for(const k in ART)if(k!==n&&ART[k]===d)bad.push(n+': the same drawing as '+k)}
+  if(total>30000)bad.push('the thirteen are '+total+' bytes (limit 30000)');
+  // 2. stickers: each one above shows its drawing on the reward card and in the book, never its emoji; one with no drawing keeps its emoji
+  for(const [e,n] of Object.entries(W)){
+    const s=STK.find(x=>x.replace(/\\uFE0F/g,'')===e);
+    if(!s){bad.push('sticker '+e+' is gone');continue}
+    if(STK_ART[s]!==n)bad.push('sticker '+e+' should show the '+n+' drawing, not '+STK_ART[s]);
+    const h=RW.sticker(s,true,0);
+    if(!h.includes(picArt(n)))bad.push('sticker '+e+': the reward card shows no drawing');
+    if(h.replace(/<svg[\\s\\S]*?<\\/svg>/g,'').includes(e))bad.push('sticker '+e+': the emoji is back on the reward card');
+    if(stkPic(s)!==picArt(n))bad.push('sticker '+e+': stkPic does not give the drawing')}
+  const plain=STK.filter(s=>!STK_ART[s]);
+  for(const s of plain)if(stkPic(s)!==esc(s))bad.push('sticker '+s+' has no drawing but does not keep its emoji');
+  if(Object.keys(STK_ART).length!==Object.keys(W).length)bad.push('STK_ART has '+Object.keys(STK_ART).length+' stickers, not '+Object.keys(W).length);
+  // 3. the syllable pictures (ABC Beach, Pre-K) and the K story problems' crayon show the drawing, never the emoji
+  const SYL={octopus:'🐙',penguin:'🐧',dinosaur:'🦖',strawberry:'🍓',castle:'🏰',volcano:'🌋',ladybug:'🐞',pumpkin:'🎃',doughnut:'🍩',guitar:'🎸',trumpet:'🎺'};
+  for(const [w,e] of Object.entries(SYL)){const x=SYLP.find(x=>x[0]===w);if(!x)bad.push(w+': no longer a syllable picture');else if(picFor(x[0],x[1])!==picArt(w))bad.push(w+': the syllable picture shows '+x[1])}
+  const seen=new Set();let qn=0;
+  for(let s=1;s<=400;s++){const q=genQ('syl',1,s);qn++;const h=String(q.html)+(q.choices||[]).map(c=>String(c.l)).join('')+(q.items||[]).map(c=>String(c.l||'')).join('');
+    for(const [w,e] of Object.entries(SYL)){if(h.includes(picArt(w)))seen.add(w);if(h.replace(/<svg[\\s\\S]*?<\\/svg>/g,'').includes(e))bad.push('syl1 seed '+s+': the emoji '+e+' for '+w)}}
+  for(const w of Object.keys(SYL))if(!seen.has(w))bad.push(w+': never shown by 400 syllable questions');
+  let cr=0;for(let s=1;s<=200;s++){const q=genQ('story',1,s),h=String(q.html);if(h.includes('🖍'))bad.push('story1 seed '+s+': the crayon emoji');if(h.includes(picArt('crayon')))cr++}
+  if(!cr)bad.push('the crayon drawing never showed in 200 story problems');
+  ({bad,total,qn,cr,plain:plain.length,json:JSON.stringify(N.map(n=>ART[n]))});`);
+  const again=eval(js+';JSON.stringify('+JSON.stringify(NAMES)+'.map(n=>ART[n]))');
+  if(again!==out.json)p.push('the drawings differ between two evaluations');
+  // 4. the screens that show stickers go through stkPic (the reward card, the book, the swap screen)
+  const homeSrc=fs.readFileSync(path.join(SRC,'js','46-home.js'),'utf8'),rwSrc=fs.readFileSync(path.join(SRC,'js','18-reward-art.js'),'utf8');
+  if(/class="(sb-e|rw-se)">\$\{esc\(s\)\}/.test(homeSrc+rwSrc))p.push('a sticker is still drawn as its emoji (esc(s)) instead of stkPic(s)');
+  if((homeSrc.match(/<span class="sb-e">\$\{stkPic\(s\)\}<\/span>/g)||[]).length!==2)p.push('the book and the swap screen must show stkPic(s)');
+  // 5. where they live: the data file, not index.html; the code alone (no data file) falls back to the emoji
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!DATAC.includes('EMOJI-12, BEST-APP roadmap 12'))p.push('the EMOJI-12 drawings are not in '+DATA_FILE+' (rebuild)');
+  if(fs.existsSync(path.join(ROOT,'index.html'))&&fs.readFileSync(path.join(ROOT,'index.html'),'utf8').includes('EMOJI-12, BEST-APP roadmap 12'))p.push('the EMOJI-12 drawings must not be in index.html');
+  const alone=eval(cat('js')+PARTS.map(x=>cat('js',x.stem)).join('')+';[picFor("octopus","O"),stkPic(STK.find(s=>s.startsWith("\u{1F419}")))]');
+  if(alone[0]!=='O'||alone[1]!=='\u{1F419}')p.push('without the data file picFor and the stickers must fall back to the emoji: '+alone);
+  if(!fs.existsSync(path.join(ROOT,'docs','drafts','EMOJI12.png')))p.push('the review sheet docs/drafts/EMOJI12.png is missing');
+  return{problems:out.bad.concat(p),note:NAMES.length+' drawings, '+out.total+' bytes; '+Object.keys(STK_WANT).length+' of 48 stickers drawn ('+out.plain+' keep their emoji); '+out.qn+' syllable questions, crayon drawn in '+out.cr+' of 200 story problems'};
+});
+
+// ---- AUDIO-12: existing words said for a child who cannot read yet (BEST-APP roadmap 12; docs/drafts/AUDIO12.md part A; 12-speech.js) ----
+// The arrival lines of Pet Care, the Pet Shop, the sticker book, the streak calendar and a closed Game Room, the round's "Tap the
+// treasure chest!", the reward's tip, and the toasts that say why a tap did nothing: said in Pre-K, K and 1st grade with "Read questions
+// out loud" on; never for a reader (2nd grade and up) or with the voice off. Only text the screen shows; said once on arrival.
+run('AUDIO-12: non-reader lines are said in Pre-K to 1st grade, never for readers or with the voice off',()=>{
+  const p=[];
+  const r=eval(js+`;(()=>{const bad=[],res={};
+  const D=global.document,T0=global.setTimeout,Q=[],app={style:{},innerHTML:'',classList:{add(){},remove(){},toggle(){},contains:()=>false}};
+  const dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},setAttribute(){},getAttribute(){return null},
+    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},insertAdjacentHTML(){},addEventListener(){},isConnected:true};
+  const has=c=>new RegExp('class="[^"]*\\\\b'+c+'\\\\b').test(app.innerHTML);
+  global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:/^\\.[\\w-]+$/.test(s)?(has(s.slice(1))?dummy:null):dummy,querySelectorAll:()=>[],
+    createElement:()=>Object.assign({},dummy),body:dummy,documentElement:dummy});
+  global.setTimeout=f=>{Q.push(f);return 0};
+  const log=[];const keep={say,fb,music:typeof music=='function'?music:null};
+  say=(t,b,l,q)=>log.push(String(t));fb=()=>{};if(keep.music)music=()=>{};
+  const run=(g,v,f)=>{S.grade=g;S.voice=v;log.length=0;Q.length=0;app.innerHTML='';f();let n=0;while(Q.length&&n++<200)Q.shift()();return log.slice()};
+  try{
+    S.name='Ava';S.petName='Sparky';S.coins=3;S.care={food:90,clean:90,fun:90,t:Date.now(),gift:''};S.pt={bank:0,used:0,gift:0};
+    const W={care:()=>{care()},shop:()=>{shopSel=null;shop()},book:()=>{book()},streak:()=>{streakCal(0)},room:()=>{GH.hub()},
+      toast:()=>{fbSay('Finish the stop before this one!')}};
+    const want={care:'Sparky is super happy!',shop:'Tap an item to try it on!',book:'Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.',
+      streak:null,room:null,toast:'Finish the stop before this one!'};
+    for(const [k,f] of Object.entries(W)){
+      for(const g of [-1,0,1]){const said=run(g,true,f);res[k]=said;
+        const w=k=='streak'?STRK.info().count?null:'Finish a round to light your flame!':k=='room'?ptWhyNot():want[k];
+        if(!w)continue;
+        if(!said.includes(w))bad.push(k+', grade '+g+': '+JSON.stringify(w)+' not said ('+JSON.stringify(said)+')')}
+      for(const g of [2,3,5]){const said=run(g,true,f);if(said.length)bad.push(k+', grade '+g+' (a reader): said '+JSON.stringify(said))}
+      const off=run(-1,false,f);if(off.length)bad.push(k+', voice off: said '+JSON.stringify(off))}
+    // said once on arrival: a redraw of the same screen (after a snack, a tab) says nothing again
+    run(-1,true,()=>{care();Q.length=0;log.length=0;care()});if(log.length)bad.push('Pet Care redrawn: said again '+JSON.stringify(log));
+    run(-1,true,()=>{shopSel=null;shop();Q.length=0;log.length=0;shop()});if(log.length)bad.push('the Pet Shop redrawn: said again '+JSON.stringify(log));
+    // the Game Room with game time left: nothing new is said
+    S.pt.bank=300;if(run(-1,true,()=>GH.hub()).length)bad.push('the Game Room with time left says something new');
+    // the pre card's line is the screen's own text
+    if(!RW.pre().includes('Tap the treasure chest!'))bad.push('the pre card no longer shows "Tap the treasure chest!"');
+  }finally{say=keep.say;fb=keep.fb;if(keep.music)music=keep.music;global.document=D;global.setTimeout=T0}
+  return{bad,res}})()`);
+  p.push(...r.bad);
+  // the call sites: the round (pre card and tip), the map's lock toasts, the no-game-time and locked-game toasts use the helpers
+  const rd=f=>fs.readFileSync(path.join(SRC,'js',f),'utf8');
+  const roundSrc=rd('50-round.js'),homeSrc=rd('46-home.js');
+  if(!/view\(RW\.pre\(\)\);nrSay\('Tap the treasure chest!','#chest',\d+\)/.test(roundSrc))p.push('the round does not say the pre card line to a non-reader');
+  if(!/if\(tip&&!grew\)nrSay\(tip,'#fin',0\)/.test(roundSrc))p.push('the reward does not say its tip to a non-reader');
+  if((homeSrc.match(/fbSay\('Finish the stop before this one!'\)/g)||[]).length!==2||!homeSrc.includes("fbSay(`Learn it with ${petN()} first!`)"))p.push('the map lock toasts are not said');
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);if(/\bfb\(ptWhyNot\(\)/.test(t))p.push(f+': a no-game-time toast is shown but not said (fbSay)')}
+  // nothing new is said that the screen does not show: every literal nrSay / fbSay line is in the source as screen text too
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){const t=rd(f);
+    for(const m of t.matchAll(/\bnrSay\('([^']+)'/g))if(t.split(m[1]).length<3&&!rd('18-reward-art.js').includes(m[1]))p.push(f+': "'+m[1]+'" is said but not shown')}
+  return{problems:p,note:'Pet Care, Pet Shop, sticker book, streak, Game Room, toasts: said in Pre-K to 1st, silent for 2nd to 6th and with the voice off'};
+});
+
 run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
   const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
   const css=fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');

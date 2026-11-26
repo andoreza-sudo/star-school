@@ -3,7 +3,7 @@
 let GT=null;
 function gtStop(){if(GT){clearInterval(GT.iv);GT=null}}
 function gtStart(el,onEnd){gtStop();GT={up:false,grace:0,iv:setInterval(()=>{if(!GT||document.hidden||GH.held)return;const p=pt();
-  if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fb('Game time is almost up!','warn long',2500);SFX.rattle()}}
+  if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fbSay('Game time is almost up!','warn long',2500);SFX.rattle()}}
   else if(--GT.grace<=0){gtStop();save();return onEnd()}
   if(p.used%5==0)save();GH.setTime($(el),GT.up?GT.grace:null)},1000)}}
 // P4-16: the shared end card (GH.end) for the game on screen; NAV-01: no Play again (no time), Next (#tl) goes to Learn, Home

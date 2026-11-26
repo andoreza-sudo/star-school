@@ -285,10 +285,10 @@ const RW = {
     return `<span class="rw-badge">${RW.art(ribbon + rose, 'rw-rose', '0 0 64 64')}<span class="rw-be">${esc(prize)}</span></span>`;
   },
 
-  // a sticker prize: die-cut white border, a slight turn, "New" tag the first time
+  // a sticker prize: die-cut white border, a slight turn, "New" tag the first time; its drawing when it has one (EMOJI-12, stkPic in 05-pets.js)
   sticker(s, isNew, i = 0) {
     const turn = [-7, 5, -3, 7][i % 4];
-    return `<span class="rw-stk" style="--r:${turn}deg"><span class="rw-se">${esc(s)}</span>${isNew ? UI.tag('New', 'new') : ''}</span>`;
+    return `<span class="rw-stk" style="--r:${turn}deg"><span class="rw-se">${stkPic(s)}</span>${isNew ? UI.tag('New', 'new') : ''}</span>`;
   },
 
   // icon for a line of the game-time list (ptCalc labels in 58-playtime.js)

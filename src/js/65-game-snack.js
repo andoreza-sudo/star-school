@@ -1323,7 +1323,7 @@ function snMenu(place) {
   $('#snopen').onclick = () => {
     if (ptLeft() <= 0) {
       SFX.wrong();
-      fb(ptWhyNot(), 'warn long', 3000);
+      fbSay(ptWhyNot(), 'warn long', 3000);
       return;
     }
     SFX.whoosh();
