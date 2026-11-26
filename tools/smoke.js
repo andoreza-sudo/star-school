@@ -8973,7 +8973,9 @@ async function main() {
       const tmpd = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-bak-'));
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const tag = w + 'x' + h;
-        const ba = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        // http: Start over, Yes and Undo last load reload the page with a changed save; over file:// headless Chrome sometimes starts the
+        // reloaded page with empty storage on a busy machine, see openApp in tools/lib/browser.js (the backup file is a blob: no request)
+        const ba = await openApp(browser, { fixture: 'midway', width: w, height: h, http: true });
         const bp = ba.page;
         const chk = async what => { for (const o of await bp.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
         await bp.waitForSelector('.game[data-p="math"]');
@@ -10603,7 +10605,9 @@ async function main() {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const tag = w + 'x' + h;
-        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        // http: Add a child and the child switches reload the page with a changed save; over file:// headless Chrome sometimes starts the
+        // reloaded page with empty storage on a busy machine, see openApp in tools/lib/browser.js
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h, http: true });
         const pg = pa.page;
         const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
         const hold = async sel => {
@@ -15956,7 +15960,9 @@ async function main() {
       const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
       require('fs').mkdirSync(shots, { recursive: true });
       for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
-        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, at = w + 'x' + h + ' ';
+        // http: Erase everything and Undo erase reload the page with a changed save; over file:// headless Chrome sometimes starts the
+        // reloaded page with empty storage on a busy machine, see openApp in tools/lib/browser.js
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true, http: true }), pg = app.page, at = w + 'x' + h + ' ';
         const padLook = () => pg.evaluate(pin => {
           const pad = document.querySelector('.sheet-bg.on #pnpad'), o = [];
           if (!pad) return ['no pad'];
@@ -16510,7 +16516,9 @@ async function main() {
     //    the erased save back (BAK.undo; was: PRF.remove dropped the child and its "Undo erase" copy). 380x780, real taps.
     if (seg('RC2-UNDO')) {
       const bad = [];
-      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      // http: Erase everything and Back on setup reload the page with a changed save; over file:// headless Chrome sometimes starts the
+      // reloaded page with empty storage on a busy machine, see openApp in tools/lib/browser.js
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true, http: true }), pg = app.page;
       try {
         await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false); save(); });
         const s0 = await pg.evaluate(() => ({ name: S.name, stars: S.stars, id: PRF.cur }));
