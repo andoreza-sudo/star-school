@@ -76,6 +76,9 @@ function collect(ctx, opt = {}) {
   // are collected whatever the gate says: deep15Apply runs once here with DEEP15_ON set for the call (it adds the words to the end of their
   // units and the two new units), so a tablet has the recordings ready the day the gate is turned on
   R('if(typeof deep15Apply=="function"&&typeof D15F!="undefined"&&!D15F){const o=DEEP15_ON;DEEP15_ON=1;try{deep15Apply()}finally{DEEP15_ON=o}}');
+  // ES-MORE (owner decision 2026-11-27, docs/drafts/ES-MORE-READ.md approved: record the words first, then turn on): the same for the 22
+  // weather and feelings words (src/data/d-es-more.js, part teaches): esMoreApply runs once here with ESMORE_ON set for the call
+  R('if(typeof esMoreApply=="function"&&typeof ESMF!="undefined"&&!ESMF){const o=ESMORE_ON;ESMORE_ON=1;try{esMoreApply()}finally{ESMORE_ON=o}}');
   const { ES_UNITS, ES_GRAM, ES_STORY, CB_COL, SPN } = R('({ES_UNITS,ES_GRAM,ES_STORY,CB_COL,SPN})');
   const esFull = R('esFull'), esSay = R('esSay'), esSpellable = R('esSpellable'), gPlArt = R('gPlArt'), ES_FORMS = R('ES_FORMS');
   // 1. unit words
