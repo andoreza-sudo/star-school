@@ -241,6 +241,172 @@ async function teachMain(dry) {
   return failed;
 }
 
+/* REC-198 (owner decision 2026-11-27: the audio budget 9.5 -> 12 MB "for the read-along stories and the new Spanish words"; every story,
+   question and screen sentence of docs/drafts/STORIES7-READ.md approved): the STORIES-7 recordings, in the pet's teacher voice (luna, the
+   little pet's speed 0.95: the stories are for K to 2nd grade), in their own folder audio/story/<hash>.ogg and their own manifest
+   src/data/d-story-audio.js (built into the teachrd part with the stories; never loaded at start):
+     ST7A[id] = {f: '<file>.ogg', t: [[start, end], ...]}   each story read whole (its title, then its sentences), one [start, end] in ms per
+                                                           word of st7Words (52x-story7.js), so the words light up on the recording's clock
+     ST7S.lines[text] = file                                each question (read aloud, Hear it) and each sentence the reader says aloud
+                                                           (ST7_SAID); st7Say in 52x-story7.js plays it, else say() as before
+     ST7S.w[word] = file                                    every different word of the stories, lower case, for a tap on a word
+   Word times: the speech to text check of each new story returns word timestamps (xAI /v1/stt "words"); they are aligned to the story's
+   words (storyTimes: the same word, a near miss, two words heard as one, or one heard as two; a word the alignment misses shares the gap
+   around it by its letters). Where speech to text cannot be reached, the times are estimated from the file's length, split by syllables
+   with pauses after each sentence (estTimes). A story that the check hears wrong, or whose words do not line up, is recorded again.
+     node tools/en-audio.js --story            the stories and the lines (new ones only), the manifest; plain node tools/en-audio.js does them too
+     node tools/en-audio.js --story --words    and the word taps, only while all the audio stays STORY_MARGIN under AUDIO_FAIL (else the word
+                                               files are deleted again and the taps stay the tablet's voice); once the manifest lists words, a
+                                               later run keeps them
+   tools/test.js "REC-198" checks every story, line and word against the manifest and the files, and the times. */
+const STORY_DIR = 'audio/story/', STORY_VOICE = TEACH_VOICE, STORY_SPEED = TEACH_SPEED;
+const STORY_FORMAT = 'xai-tts en wav24k speed0.95 trim opus16k-mono ogg story v1';
+const STORY_MANIFEST = path.join(SRC, 'data', 'd-story-audio.js');
+const STORY_MARGIN = 300000; // owner instruction 2026-11-27: the word taps only with at least 300 KB of the budget left
+const ST7_SAID = ['shelfTip', 'tipStart', 'tipAfter', 'tipYou', 'right', 'wrong']; // the ST7W sentences the reader says aloud (the others are labels)
+const storyFileOf = k => VA.fileOf(STORY_FORMAT, STORY_VOICE, k);
+// a word said alone that speech to text writes as a word that sounds the same (2026-11-27, every take: "see" and "sea" as "C", "pecks" as "Pex"):
+// those spellings count as the word
+const WORD_HEARD = { see: ['c', 'sea'], sea: ['c', 'see'], pecks: ['pex'], packs: ['pax'] };
+const wCheck = (j, file) => { const bad = check(j, file); return bad && (WORD_HEARD[wordKey(j.text)] || []).includes(norm(bad.replace(/^heard /, ''))) ? null : bad; };
+const wordKey = k => String(k).toLowerCase();
+// collectStory(ctx?) -> {stories: [{id, text, words: st7Words}], lines: Map key -> {text, from}, words: Map key -> {text, from}}
+function collectStory(ctx) {
+  ctx = ctx || E.loadApp();
+  const R = s => vm.runInContext(s, ctx), L = R('ST7.list'), W = R('ST7W'), tch = R('typeof EN_TEACH=="undefined"?{}:EN_TEACH.lines');
+  const stories = L.map(st => {
+    const t = /[.!?]$/.test(st.t) ? st.t : st.t + '.';
+    return { id: st.id, text: enKey(t + ' ' + st.s.join(' ')), words: R(`st7Words(st7Get(${JSON.stringify(st.id)}))`) };
+  });
+  const lines = new Map(), words = new Map();
+  const add = (t, from) => { const k = enKey(t); if (!k || tch[k]) return; if (!lines.has(k)) lines.set(k, { text: k, from: [] }); lines.get(k).from.push(from); };
+  for (const k of ST7_SAID) add(W[k], 'ST7W.' + k);
+  for (const st of L) st.q.forEach((q, i) => add(q[0], st.id + ' q' + (i + 1)));
+  for (const s of stories) for (const w of s.words) {
+    const k = wordKey(w.k);
+    if (!k) continue;
+    if (!words.has(k)) words.set(k, { text: w.k, from: [] });
+    const o = words.get(k);
+    if (o.text !== k && w.k === k) o.text = k; // sent as the word is written in a sentence; a name keeps its capital
+    o.from.push(s.id);
+  }
+  return { stories, lines, words };
+}
+// word times from speech to text: align the story's words (st7Words, as said: w.k) to the words heard
+const wn = s => norm(s);
+const syl = w => Math.max(1, (String(w).toLowerCase().replace(/[^a-z]/g, '').replace(/e$/, '').match(/[aeiouy]+/g) || []).length);
+function storyTimes(words, heard, dur) {
+  const S = words.map(w => wn(w.k)), H = heard.map(h => ({ n: wn(h.text), s: Math.round(h.start * 1000), e: Math.round(h.end * 1000) })).filter(h => h.n);
+  const n = S.length, m = H.length, INF = 1e9;
+  const near = (a, b) => a === b ? 0 : (a && b && dist(a, b) <= Math.max(1, Math.floor(Math.max(a.length, b.length) / 4))) ? 0.4 : INF;
+  const C = [...Array(n + 1)].map(() => new Array(m + 1).fill(INF)), B = [...Array(n + 1)].map(() => new Array(m + 1).fill(null));
+  C[0][0] = 0;
+  for (let i = 0; i <= n; i++) for (let j = 0; j <= m; j++) {
+    const c = C[i][j];
+    if (c >= INF) continue;
+    const go = (di, dj, cost, kind) => { if (i + di <= n && j + dj <= m && c + cost < C[i + di][j + dj]) { C[i + di][j + dj] = c + cost; B[i + di][j + dj] = [di, dj, kind]; } };
+    if (i < n && j < m) { const x = near(S[i], H[j].n); go(1, 1, x < INF ? x : 1.6, x < INF ? 'm' : 'x'); }
+    if (i + 1 < n && j < m && S[i] + S[i + 1] === H[j].n) go(2, 1, 0.3, '21');
+    if (i < n && j + 1 < m && S[i] === H[j].n + H[j + 1].n) go(1, 2, 0.3, '12');
+    go(1, 0, 1, 's'); go(0, 1, 1, 'h');
+  }
+  const T = new Array(n).fill(null);
+  let matched = 0;
+  for (let i = n, j = m; i > 0 || j > 0;) {
+    const [di, dj, kind] = B[i][j];
+    i -= di; j -= dj;
+    if (kind == 'm') { T[i] = [H[j].s, H[j].e]; matched++; }
+    else if (kind == '21') { const a = H[j], k0 = S[i].length / (S[i].length + S[i + 1].length), mid = Math.round(a.s + (a.e - a.s) * k0); T[i] = [a.s, mid]; T[i + 1] = [mid, a.e]; matched += 2; }
+    else if (kind == '12') { T[i] = [H[j].s, H[j + 1].e]; matched++; }
+  }
+  // a word not lined up shares the gap between its neighbours' times by its letters
+  for (let i = 0; i < n;) {
+    if (T[i]) { i++; continue; }
+    let k = i; while (k < n && !T[k]) k++;
+    const a = i ? T[i - 1][1] : 0, b = k < n ? T[k][0] : dur, tot = words.slice(i, k).reduce((s, w) => s + w.k.length + 1, 0);
+    let t = a;
+    for (let x = i; x < k; x++) { const d = (b - a) * (words[x].k.length + 1) / tot; T[x] = [Math.round(t), Math.round(t + d)]; t += d; }
+    i = k;
+  }
+  return { t: tidy(T, dur), matched };
+}
+// estimated word times from the length alone: syllables, with pauses after a word, a sentence and the title
+function estTimes(words, dur) {
+  const lead = 30, tail = 120, wt = words.map(w => 0.35 + syl(w.k)), gap = words.map(w => w.end ? (w.s < 0 ? 1.6 : 1.2) : 0.25);
+  gap[gap.length - 1] = 0;
+  const unit = Math.max(1, dur - lead - tail) / (wt.reduce((a, b) => a + b, 0) + gap.reduce((a, b) => a + b, 0));
+  let t = lead;
+  return tidy(words.map((w, i) => { const a = [Math.round(t), Math.round(t + wt[i] * unit)]; t += (wt[i] + gap[i]) * unit; return a; }), dur);
+}
+// increasing and inside the file: each word starts at or after the last one ends, lasts at least 40 ms, ends by the file's end
+function tidy(T, dur) {
+  const n = T.length, out = T.map(x => [Math.max(0, Math.round(x[0])), Math.round(x[1])]);
+  for (let i = 0; i < n; i++) { if (i && out[i][0] < out[i - 1][1]) out[i][0] = out[i - 1][1]; if (out[i][1] < out[i][0] + 40) out[i][1] = out[i][0] + 40; }
+  for (let i = n - 1; i >= 0; i--) { const lim = i == n - 1 ? dur : out[i + 1][0]; if (out[i][1] > lim) out[i][1] = lim; if (out[i][0] > out[i][1] - 40) out[i][0] = out[i][1] - 40; }
+  return out;
+}
+const storyOk = (t, dur) => Array.isArray(t) && t.every((x, i) => x[1] > x[0] && x[0] >= 0 && (!i || x[0] >= t[i - 1][1])) && t[t.length - 1][1] <= dur;
+function storyManifest(ST, lines, words, how) {
+  const ids = Object.keys(ST), lk = [...lines.keys()].sort(), wk = [...words.keys()].sort();
+  return '/* ---------- REC-198: the recorded stories of STORIES-7 (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --story) ----------\n'
+    + '   ' + STORY_DIR + '<file> (xAI text to speech, English, the voice ' + STORY_VOICE + ', speed ' + STORY_SPEED + ', Opus 16 kbps mono), in the part teachrd.\n'
+    + '   ST7A[story id] = {f: file, t: [[start, end] in ms, one per word of st7Words], e: 1 when the times are estimated}: ' + ids.length + ' stories; word times from speech to text\n'
+    + '   timestamps for ' + how.stt + ', estimated from the length for ' + how.est + '. ST7S.lines: the questions and the reader\'s spoken sentences (' + lk.length + ');\n'
+    + '   ST7S.w: the words, lower case, for a tap on a word (' + wk.length + ', none means the tablet\'s voice). Keys of lines are esKey(text). */\n'
+    + 'const ST7A={\n' + ids.map(id => JSON.stringify(id) + ':{f:' + JSON.stringify(ST[id].f) + ',t:' + JSON.stringify(ST[id].t) + (ST[id].e ? ',e:1' : '') + '}').join(',\n') + '};\n'
+    + 'const ST7S={dir:' + JSON.stringify(STORY_DIR) + ',ext:' + JSON.stringify(EXT) + ',voice:' + JSON.stringify(STORY_VOICE) + ',lines:{\n'
+    + lk.map(k => JSON.stringify(k) + ':' + JSON.stringify(storyFileOf(k))).join(',\n') + '},\nw:{'
+    + wk.map(k => JSON.stringify(k) + ':' + JSON.stringify(storyFileOf(words.get(k).text))).join(',') + '}};\n';
+}
+const readStoryManifest = () => { try { return Function(fs.readFileSync(STORY_MANIFEST, 'utf8') + ';return {A:ST7A,S:ST7S}')(); } catch (e) { return null; } };
+const audioFail = () => +(fs.readFileSync(path.join(__dirname, 'test.js'), 'utf8').match(/AUDIO_FAIL=(\d+)/) || [])[1];
+const audioTotal = () => ['es', 'en', 'teach', 'story'].reduce((s, d) => { const p = path.join(ROOT, 'audio', d); return s + (fs.existsSync(p) ? fs.readdirSync(p).reduce((a, f) => a + fs.statSync(path.join(p, f)).size, 0) : 0); }, 0);
+async function storyMain(dry, wantWords) {
+  const { stories, lines, words } = collectStory(), dir = path.join(ROOT, STORY_DIR), old = readStoryManifest();
+  wantWords = wantWords || !!(old && Object.keys(old.S.w).length);
+  const chars = a => a.reduce((s, o) => s + o.text.length, 0), ex = o => fs.existsSync(path.join(dir, storyFileOf(o.text) + EXT));
+  console.log(`stories: ${stories.length} (${chars(stories)} characters); lines: ${lines.size} (${chars([...lines.values()])} characters); words: ${words.size} (${chars([...words.values()])} characters)${wantWords ? '' : ', not recorded (--words)'}`);
+  console.log(`new: ${stories.filter(o => !ex(o)).length} stories, ${[...lines.values()].filter(o => !ex(o)).length} lines, ${wantWords ? [...words.values()].filter(o => !ex(o)).length : 0} words`);
+  const failed = [], times = {};
+  const how = {}; // file -> 'stt' | 'est': how its word times were made
+  if (old) for (const id in old.A) { times[old.A[id].f] = old.A[id].t; how[old.A[id].f.slice(0, -EXT.length)] = old.A[id].e ? 'est' : 'stt'; } // a story already recorded keeps its times
+  const sCheck = (j, file) => {
+    const dur = VA.durMs(file), st = stories.find(s => s.id == j.id), r = VA.sttFull(file, LANG);
+    if (!r) { times[j.file + EXT] = estTimes(st.words, dur); how[j.file] = 'est'; return null; } // speech to text not reachable: keep the file, estimate
+    const a = norm(r.text), b = norm(j.text);
+    if (dist(a, b) > Math.max(2, Math.floor(b.length / 10))) return 'heard "' + r.text + '"';
+    if (!Array.isArray(r.words) || !r.words.length) { times[j.file + EXT] = estTimes(st.words, dur); how[j.file] = 'est'; return null; }
+    const T = storyTimes(st.words, r.words, dur);
+    if (T.matched < 0.85 * st.words.length) return 'only ' + T.matched + ' of ' + st.words.length + ' words line up';
+    times[j.file + EXT] = T.t; how[j.file] = 'stt'; return null;
+  };
+  const rec = (jobs, chk) => VA.record(jobs, { dir: STORY_DIR, ext: EXT, lang: LANG, speed: STORY_SPEED, dry, check: chk });
+  failed.push(...(await rec(stories.map(s => ({ id: s.id, text: s.text, voice: STORY_VOICE, file: storyFileOf(s.text) })), sCheck)).failed);
+  failed.push(...(await rec([...lines.values()].map(o => ({ text: o.text, voice: STORY_VOICE, file: storyFileOf(o.text) })), check)).failed);
+  if (wantWords) failed.push(...(await rec([...words.values()].map(o => ({ text: o.text, voice: STORY_VOICE, file: storyFileOf(o.text) })), wCheck)).failed);
+  if (dry) return failed;
+  // a story file kept from an earlier run without times (or with times that do not fit): times from speech to text now
+  for (const s of stories) {
+    const f = storyFileOf(s.text) + EXT, p = path.join(dir, f);
+    if (!fs.existsSync(p) || (times[f] && times[f].length == s.words.length && storyOk(times[f], VA.durMs(p)))) continue;
+    if (sCheck({ id: s.id, text: s.text, file: f.slice(0, -EXT.length) }, p)) { times[f] = estTimes(s.words, VA.durMs(p)); how[f.slice(0, -EXT.length)] = 'est'; }
+  }
+  const ST = {};
+  for (const s of stories) { const f = storyFileOf(s.text) + EXT; if (fs.existsSync(path.join(dir, f)) && times[f]) ST[s.id] = how[f.slice(0, -EXT.length)] == 'est' ? { f, t: times[f], e: 1 } : { f, t: times[f] }; }
+  const haveL = new Map([...lines].filter(([, o]) => ex(o)));
+  let haveW = new Map(wantWords ? [...words].filter(([, o]) => ex(o)) : []);
+  // the word taps only with STORY_MARGIN of the budget left (owner instruction 2026-11-27); else their files go again
+  const keepOf = W => new Set([...Object.values(ST).map(o => o.f), ...[...haveL.values(), ...W.values()].map(o => storyFileOf(o.text) + EXT)]);
+  VA.prune(STORY_DIR, EXT, keepOf(haveW));
+  const lim = audioFail() - STORY_MARGIN;
+  if (haveW.size && audioTotal() > lim) { console.log(`the word taps would leave less than ${STORY_MARGIN} bytes of the budget (all audio ${audioTotal()} > ${lim}): not kept`); haveW = new Map(); }
+  const keep = keepOf(haveW), [gone, bytes] = VA.prune(STORY_DIR, EXT, keep);
+  const nStt = Object.values(ST).filter(o => !o.e).length;
+  fs.writeFileSync(STORY_MANIFEST, storyManifest(ST, haveL, haveW, { stt: nStt, est: Object.keys(ST).length - nStt }));
+  console.log(`story manifest: ${Object.keys(ST).length} stories, ${haveL.size} lines, ${haveW.size} words, ${fs.statSync(STORY_MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files; all audio ${audioTotal()} bytes (budget ${audioFail()})`);
+  return failed;
+}
+
 // collect(ctx?) -> Map key -> {text, kind, from:[where], lit}
 function collect(ctx) {
   ctx = ctx || E.loadApp();
@@ -286,12 +452,13 @@ async function main() {
   const dry = process.argv.includes('--dry');
   if (process.argv.includes('--teach-start')) { writeTeachStart(); return; } // fix2 v194: only the start-up list, from the manifest
   if (process.argv.includes('--teach')) { if ((await teachMain(dry)).length) process.exitCode = 1; return; } // TEACH-4: the teacher lines only
+  if (process.argv.includes('--story')) { if ((await storyMain(dry, process.argv.includes('--words'))).length) process.exitCode = 1; return; } // REC-198: the stories only
   const lines = collect(), all = [...lines.values()];
   console.log(`lines: ${all.length} x ${VOICES.length} voices = ${all.length * VOICES.length} files, ${all.reduce((s, o) => s + o.text.length, 0) * VOICES.length} characters`);
   const jobs = [];
   for (const o of all) for (const [v] of VOICES) jobs.push({ text: o.text, voice: v, file: fileOf(o.text, v) });
   const { failed } = await VA.record(jobs, { dir: DIR, ext: EXT, lang: LANG, speed: SPEED, dry, check });
-  if (dry) return;
+  if (dry) { await teachMain(true); await storyMain(true, process.argv.includes('--words')); return; } // REC-198: --dry lists the teacher lines and the stories too
   // the manifest lists only lines with a file in every voice (a failed line keeps the tablet's voice until the next run)
   const dir = path.join(ROOT, DIR), have = new Map([...lines].filter(([k]) => VOICES.every(([v]) => fs.existsSync(path.join(dir, fileOf(k, v) + EXT)))));
   fs.writeFileSync(MANIFEST, manifestText(have));
@@ -299,7 +466,8 @@ async function main() {
   console.log(`manifest: ${have.size} lines, ${fs.statSync(MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
   if (failed.length) process.exitCode = 1;
   if ((await teachMain(false)).length) process.exitCode = 1; // TEACH-4: then the teacher lines
+  if ((await storyMain(false, process.argv.includes('--words'))).length) process.exitCode = 1; // REC-198: then the stories
 }
 
-module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectTeach, teachFileOf, teachStart, teachStartText, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_FORMAT_BIG, TEACH_GROUPS, NR_LIT, NR_GEN, NR_NEW, NR_FROM };
+module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS, collectStory, storyFileOf, storyTimes, estTimes, storyOk, wordKey, STORY_DIR, STORY_VOICE, STORY_FORMAT, STORY_MARGIN, ST7_SAID, collectTeach, teachFileOf, teachStart, teachStartText, TEACH_DIR, TEACH_VOICE, TEACH_FORMAT, TEACH_FORMAT_BIG, TEACH_GROUPS, NR_LIT, NR_GEN, NR_NEW, NR_FROM };
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });

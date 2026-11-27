@@ -26,7 +26,8 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
 // code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
-// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
+// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB, owner decision 2026-11-27 (read-along
+// stories and new Spanish words) to 12.0 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
@@ -36,7 +37,9 @@ const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB
 // 8.5 -> 9.0 MB, warn raised in proportion 7.55 -> 7.995 MB
 // owner decision 2026-11-24 (D2): the Spanish sort chips and the wrong forms the Spanish lessons read aloud are recorded too (about 128
 // short files): 9.0 -> 9.5 MB, warn raised in proportion 7.995 -> 8.439 MB
-const AUDIO_WARN=8439000,AUDIO_FAIL=9500000,AUDIO_FILE_FAIL=40000;
+// owner decision 2026-11-27: read-along stories and new Spanish words (REC-198: the STORIES-7 stories, questions, spoken lines and word taps
+// in audio/story, and the DEEP-15 Spanish words): 9.5 -> 12.0 MB, warn raised in proportion 8.439 -> 10.66 MB
+const AUDIO_WARN=10660000,AUDIO_FAIL=12000000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -22891,7 +22894,7 @@ run('recorded teacher lines TEACH-4',()=>{
   for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);if(!used.has(f))p.push(EA.TEACH_DIR+f+' is not in the manifest');
     const h=b.indexOf('OpusHead');if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.TEACH_DIR+f+' is not mono Ogg Opus');
     if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.TEACH_DIR+f+' is '+b.length+' bytes')}
-  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total;
+  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total+sum('audio/story'); // REC-198: and the recorded stories
   if(all>AUDIO_FAIL)p.push('the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
   // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions, and (REC-ALL) every lesson's fixed
   //    sentences at every age; never a digit; no cheer twice
@@ -25707,10 +25710,11 @@ run('STORIES-7: decodable mini-stories, the checker, the read-along spans and cl
     if(!EH.includes(R(`esc(st7F(ST7W.end,{title:${JSON.stringify(st.t)}}))`))||!/id="st7again"/.test(EH)||!/id="st7more"/.test(EH))p.push(st.id+': no end card after the questions');
   }
   // a recording's own word times replace the estimate (when they fit the words), and light the words on its clock
-  R(`globalThis.ST7A={'cvc-1':{f:'x.ogg',t:st7Words(st7Get('cvc-1')).map((w,i)=>[i*1000,i*1000+800])}}`);
+  // REC-198: the stories are recorded (ST7A, src/data/d-story-audio.js), so cvc-1's entry is swapped for the stand-in and put back after
+  R(`globalThis.__st7a=typeof ST7A=='undefined'?(globalThis.ST7A={},null):[ST7A['cvc-1']];ST7A['cvc-1']={f:'x.ogg',t:st7Words(st7Get('cvc-1')).map((w,i)=>[i*1000,i*1000+800])}`);
   if(R(`st7Plan(st7Get('cvc-1'))[3].join()`)!=='3000,3800'||R(`st7Lit(st7Plan(st7Get('cvc-1')),3500)`)!==3||R(`st7Lit(st7Plan(st7Get('cvc-1')),3900)`)!==-1)p.push('a recording\'s word times are not the clock');
   R(`ST7A['cvc-1'].t.pop()`);if(R(`st7Plan(st7Get('cvc-1'))[3].join()`)==='3000,3800')p.push('a recording whose times do not fit its words is still used');
-  R('delete globalThis.ST7A');
+  R(`if(__st7a)ST7A['cvc-1']=__st7a[0];else delete globalThis.ST7A`);
   // 7. determinism: the whole read-along again
   let trace2='';
   for(const st of ST.list){R('__reset()');T.q=[];T.now=0;R(`ST7.open(${JSON.stringify(st.id)})`);R('st7Play()');tick();trace2+=st.id+':'+JSON.parse(R('JSON.stringify(__lit)')).map(x=>x.join('@')).join(',')+';'}
@@ -25766,7 +25770,8 @@ run('STORIES-7: decodable mini-stories, the checker, the read-along spans and cl
   const chars=ST.list.reduce((a,s)=>a+[s.t,...s.s].join(' ').length,0),nq=ST.list.reduce((a,s)=>a+s.q.length,0),qc=ST.list.reduce((a,s)=>a+s.q.reduce((b,q)=>b+q[0].length,0),0);
   const fmt=n=>n.toLocaleString('en-US'),uw=new Set(ST.list.flatMap(s=>D.storyWords(s).map(w=>w.replace(/'s$/,'')))).size;
   for(const s of [`The ${ST.list.length} stories`,`| ${fmt(chars)} |`,`The ${nq} questions`,`| ${fmt(qc)} |`,`(${uw} words)`,`${ST.list.length} stories: 6 for each of the 7 stages`])if(!doc.includes(s))p.push(DOC+': the audio estimate does not say "'+s+'"');
-  if(!/budget decision/.test(doc)||!/Nothing is recorded/.test(doc))p.push(DOC+': the audio plan does not say that recording needs a budget decision');
+  // REC-198 (owner decision 2026-11-27): the stories are recorded, so the audio plan now says so (it said "Nothing is recorded" before the decision)
+  if(!/budget decision/.test(doc)||!/Recorded \(REC-198\)/.test(doc))p.push(DOC+': the audio plan does not say the stories are recorded after the budget decision (REC-198)');
   return{problems:p,note:`${ST.list.length} stories (${D.STAGES.map(s=>s.id+' '+(per[s.id]||0)).join(', ')}), ${words} words checked, ${nq} questions; status ${st} (STORY7_ON ${on})`};
 });
 
@@ -26142,6 +26147,69 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
   const code=D15FILES.map(f=>rd((f[0]=='d'?'src/data/':'src/js/')+f)).join('\n');
   if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the DEEP-15 code reaches outside the tablet or draws at random');
   return{problems:p,note:'gate off: same as without DEEP-15 ('+note.off+'); on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' Discover items, '+note.words+' Spanish words; longest answer '+(note.long||[]).join(', ')+'; repeats a round '+(note.rep||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DEEP15_ON '+on+')'};
+});
+
+// ---- REC-198 (owner decision 2026-11-27: the audio budget 9.5 -> 12 MB for the read-along stories and the new Spanish words; STORIES7-READ.md
+// and DEEP15-READ.md approved): every STORIES-7 story is recorded with word times that fit it, the questions and the reader's spoken lines and
+// (with the budget's 300 KB margin) the words for word taps; every DEEP-15 Spanish word has its recording; the files are in sw.js
+run('recorded stories and new Spanish words REC-198',()=>{
+  const p=[],E=require('./es-audio.js'),EA=require('./en-audio.js'),vm=require('vm'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const ctx=E.loadApp(),R=x=>vm.runInContext(x,ctx),dir=path.join(ROOT,EA.STORY_DIR),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  // the length of an Ogg Opus file in ms: the last page's granule position less the pre-skip, at 48 kHz
+  const oggMs=b=>{const h=b.indexOf('OpusHead'),pre=h>=0?b.readUInt16LE(h+10):0,l=b.lastIndexOf('OggS');return l<0?0:Math.round((Number(b.readBigUInt64LE(l+6))-pre)/48)};
+  const opus=b=>{const h=b.indexOf('OpusHead');return b.slice(0,4).toString()==='OggS'&&h>=0&&h<=80&&b[h+9]===1};
+  // 1. the DEEP-15 Spanish words (src/data/d-deep15.js: words at the end of thirteen units, two new units), whatever DEEP15_ON says
+  const ES=R('ES_AUDIO'),esDir=path.join(ROOT,E.DIR),d15=R('[...Object.values(D15.es).flat(),...D15.esNew.flatMap(u=>u.items)].map(esFull)');
+  for(const w of d15){const m=ES.lines[E.esKey(w)];if(!m)p.push('DEEP-15 Spanish word without a recording: '+w);else if(!fs.existsSync(path.join(esDir,m[0]+E.EXT)))p.push('DEEP-15 Spanish word '+w+': '+E.DIR+m[0]+E.EXT+' is missing')}
+  // 2. the stories: one file each (the hash of its text), mono Ogg Opus under the file limit, and its word times: one [start, end] in ms per
+  //    word of st7Words, whole numbers, each word after the last one, all inside the file, spanning it (first word in the first second,
+  //    last word ending in its last fifth)
+  const M=R('typeof ST7A=="undefined"?null:{A:ST7A,S:ST7S}');
+  if(!M)return{problems:p.concat('no ST7A / ST7S (src/data/d-story-audio.js): run node tools/en-audio.js --story')};
+  const {stories,lines,words}=EA.collectStory(ctx),used=new Set();let est=0,bytes=0,nW=0;
+  for(const s of stories){const a=M.A[s.id],w=s.id+': ';
+    if(!a){p.push(w+'no recording');continue}
+    if(a.f!==EA.storyFileOf(s.text)+'.ogg'){p.push(w+'file '+a.f+' is not the hash of its text');continue}
+    if(!files.includes(a.f)){p.push(w+EA.STORY_DIR+a.f+' is missing');continue}
+    used.add(a.f);if(a.e)est++;
+    const b=fs.readFileSync(path.join(dir,a.f)),ms=oggMs(b),t=a.t;
+    if(!Array.isArray(t)||t.length!==s.words.length){p.push(w+(t||[]).length+' word times for '+s.words.length+' words');continue}
+    if(t.some(x=>!Array.isArray(x)||x.length!==2||!Number.isInteger(x[0])||!Number.isInteger(x[1])))p.push(w+'a word time is not two whole numbers of ms');
+    else if(t.some((x,i)=>x[0]<0||x[1]<=x[0]||(i&&x[0]<t[i-1][1])))p.push(w+'the word times are not increasing');
+    else if(t[t.length-1][1]>ms)p.push(w+'the word times run to '+t[t.length-1][1]+' ms, past the end of the recording ('+ms+' ms)');
+    else if(t[0][0]>1000||t[t.length-1][1]<ms*0.8)p.push(w+'the word times ('+t[0][0]+' to '+t[t.length-1][1]+' ms) do not span the recording ('+ms+' ms)');
+    if(JSON.stringify(R(`st7Plan(st7Get(${JSON.stringify(s.id)}))`))!==JSON.stringify(t))p.push(w+'the reader does not use the recording\'s times');}
+  // 3. the questions and the sentences the reader says aloud; the words (all or none)
+  for(const [k,o] of lines){const f=M.S.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+')');continue}
+    if(f!==EA.storyFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.STORY_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
+  for(const k in M.S.lines)if(!lines.has(k))p.push('ST7S has a line the reader does not say: '+k);
+  const wk=Object.keys(M.S.w);
+  if(wk.length&&wk.length!==words.size)p.push('word taps: '+wk.length+' of '+words.size+' words recorded (all or none)');
+  for(const k of wk){const o=words.get(k),f=M.S.w[k];if(!o){p.push('ST7S has a word no story has: '+k);continue}
+    if(f!==EA.storyFileOf(o.text))p.push('word "'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.STORY_DIR+f+'.ogg is missing');else{used.add(f+'.ogg');nW++}}
+  for(const f of files){const b=fs.readFileSync(path.join(dir,f));bytes+=b.length;if(!used.has(f))p.push(EA.STORY_DIR+f+' is not in the manifest');
+    if(!opus(b))p.push(EA.STORY_DIR+f+' is not mono Ogg Opus');if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.STORY_DIR+f+' is '+b.length+' bytes (600 to '+AUDIO_FILE_FAIL+')')}
+  // 4. the budget: all the audio under AUDIO_FAIL; the word taps only with STORY_MARGIN of it left
+  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=['es','en','teach','story'].reduce((s,d)=>s+sum('audio/'+d),0);
+  if(all>AUDIO_FAIL)p.push('all the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
+  if(nW&&all>AUDIO_FAIL-EA.STORY_MARGIN)p.push('the word taps are recorded with less than '+EA.STORY_MARGIN+' bytes of the budget left ('+all+')');
+  // 5. the build: the manifest rides in teachrd (not at start); sw.js fills every story file after install and answers a Range request from its cache
+  if(partOf('d-story-audio.js')!=='teachrd')p.push('src/data/d-story-audio.js is not in the part teachrd');
+  for(const f of ['index.html',...START_FILES])if(/const ST7A=|const ST7S=/.test(rd(f)))p.push(f+' (start-up) carries the story recordings\' manifest');
+  const tr='teachrd.'+BUILD_VER+'.js';if(fs.existsSync(path.join(ROOT,tr))&&!rd(tr).includes('const ST7A='))p.push(tr+' does not carry ST7A');
+  const sw=rd('sw.js'),af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(x=>x.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.STORY_DIR));
+  if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.STORY_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' story recordings ('+af.length+')');
+  if(!/\\\/audio\\\/story\\\//.test(sw))p.push('sw.js: a Range request for a story recording is not answered from the cache');
+  // 6. the reader in a stand-in browser: a question and a tapped word play their files; recordings off (ENA.off, Tablet voice): the tablet's voice
+  const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
+  try{const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>log.push('speak '+u.text),cancel(){},speaking:false,pending:false}});
+    const S2=x=>vm.runInContext(x,s),q=stories.length&&R('ST7.list[0].q[0][0]');S2("S.voice=true;CLIPS=[];ENA.t=0");
+    log.length=0;S2(`st7Say(${JSON.stringify(q)})`);if(log.join()!=='play '+EA.STORY_DIR+M.S.lines[q]+'.ogg')p.push('a question: '+log.join(' | '));
+    if(nW){S2('hush()');log.length=0;S2("st7Say('Pig',null,1)");if(log.join()!=='play '+EA.STORY_DIR+M.S.w.pig+'.ogg')p.push('a tapped word: '+log.join(' | '))}
+    S2("hush();S.cheerV='tts'");log.length=0;S2(`st7Say(${JSON.stringify(q)})`);if(log.join()!=='speak '+q)p.push('Tablet voice: '+log.join(' | '));
+    S2("hush();S.cheerV='mix';ENA.off=true");log.length=0;S2(`st7Say(${JSON.stringify(q)})`);if(log.join()!=='speak '+q)p.push('ENA.off: '+log.join(' | '))}
+  catch(e){p.push('st7Say could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  return{problems:p,note:d15.length+' DEEP-15 Spanish words recorded; '+Object.keys(M.A).length+' of '+stories.length+' stories (word times: '+(Object.keys(M.A).length-est)+' from speech to text, '+est+' estimated), '+Object.keys(M.S.lines).length+' lines, '+nW+' of '+words.size+' words; '+files.length+' files, '+Math.round(bytes/1000)+' KB; all audio '+all+' bytes (budget '+AUDIO_FAIL+', '+(AUDIO_FAIL-all)+' left)'};
 });
 
 Promise.all(PENDING).then(()=>{

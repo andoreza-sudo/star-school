@@ -7,8 +7,9 @@ child reads it ("Now you read it", tapping any word to hear it, then "I read it!
 status: unreviewed
 
 Status: **pending owner approval**. Every story, every question and every new sentence of the screens is below. The code is built
-and tested, but no child sees any of it until the owner approves it. **Nothing is recorded**: the tablet's voice reads until the
-owner decides on recordings (see "Audio plan": recording needs a budget decision).
+and tested, but no child sees any of it until the owner approves it. **Recorded (REC-198)**: after the owner's budget decision of
+2026-11-27 every story, question and spoken screen sentence, and every word for word taps, is recorded in the pet's teacher voice
+(see "Audio plan").
 
 ## How to approve (the one-line flip)
 
@@ -182,12 +183,28 @@ in the table ("not" lists the other two).
 | team2-6 | Scout and the Hawk | Scout is a brown hound. He digs a bone out of the ground. Then a hawk swoops down and grabs it! Scout howls and howls. The hawk drops the bone. Scout has his bone back. | scout, hawk, brown, hound, out, ground, swoops, down, howls | the, a, he, of | Who grabs the bone? (hawk; not cat, frog)<br>What does Scout dig up? (bone; not ball, shoes) |
 <!-- stories:end -->
 
-## Audio plan (needs a budget decision from the owner)
+## Audio plan (the owner's budget decision of 2026-11-27: recorded, REC-198)
 
-Nothing is recorded. Recording the stories needs **a budget decision from the owner**: the audio budget (AUDIO_FAIL in
-tools/test.js) is 9.5 MB and the recordings already use 9,490,378 bytes, so about 9.6 KB is left, less than one story.
+**Recorded (REC-198).** The owner raised the audio budget (AUDIO_FAIL in tools/test.js) from 9.5 to 12 MB on 2026-11-27 "for the
+read-along stories and the new Spanish words", and approved every story and sentence here. `node tools/en-audio.js --story --words`
+recorded, in the teacher voice luna at the little pet's speed 0.95 (audio/story/, manifest src/data/d-story-audio.js in the teachrd part):
 
-The estimate uses the teacher voice the lessons already have (audio/teach: 1,509 recorded lines, 43,283 characters, 6,245,807
+| Recorded | Files | Characters sent | Bytes |
+|---|---|---|---|
+| The 42 stories, each read whole (title, then the sentences), with one [start, end] time in ms per word (ST7A) | 42 | 6,435 | 977,395 |
+| The 73 questions and the 6 screen sentences the reader says aloud (shelfTip, tipStart, tipAfter, tipYou, right, wrong; the other 12 are button labels or carry a title or a number, so they are not said or not fixed) (ST7S.lines) | 79 | 1,743 | 254,053 |
+| Every different word, lower case, for a tap on a word (ST7S.w) | 397 | 1,625 | 584,715 |
+
+**Word times.** Each new story file was checked with xAI speech to text, which returns word timestamps; the story's words are lined up
+with the words heard (the same word, a near miss, two words heard as one or one as two; a word not lined up shares the gap around it by
+its letters) and kept only when at least 85% line up (all 42 did, at the first take). Where speech to text cannot be reached, the tool
+estimates the times from the file's length, split by syllables with pauses after each sentence (ST7A marks such a story `e: 1`; none is).
+The reader lights the words on the recording's clock, one word at a time in order (st7Tick), through the speech module (storyPlay in
+12-speech.js: it ducks the music, stops on hush and waits while the app is hidden). Recordings off (Tablet voice, no Opus) or a file
+that fails: the word-by-word tablet voice, as before. The word taps were recorded because all the audio stays more than 300 KB under the
+budget (11,579,513 of 12,000,000 bytes). tools/test.js "REC-198" checks it all.
+
+The estimate made before the decision used the teacher voice the lessons already have (audio/teach: 1,509 recorded lines, 43,283 characters, 6,245,807
 bytes, so about **144 bytes per character** of text, Opus 16 kbps mono):
 
 | What would be recorded | Characters | Estimated size |
@@ -200,5 +217,5 @@ bytes, so about **144 bytes per character** of text, Opus 16 kbps mono):
 
 Options for the owner: (a) record the stories only (about 0.92 MB, the read-along itself; questions and word taps stay on the tablet
 voice); (b) everything (about 1.9 MB); (c) keep the tablet's voice. (a) or (b) means raising AUDIO_FAIL (to about 10.4 or 11.4 MB) or
-recording something else at a lower bit rate. No budget was changed for this chunk. A recorded story needs its word times (the
+recording something else at a lower bit rate. (No budget was changed for the STORIES-7 chunk itself.) A recorded story needs its word times (the
 start and end of each word, in ms) as well as the file; the speech tool's word timestamps, or a forced aligner run once, give them.

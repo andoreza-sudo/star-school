@@ -26,8 +26,12 @@ read aloud with its choices, like Nature Trail, because grades 1 and 2 are still
 | Spanish unit names (learn screen, report) | Toys & Play; Nature |
 | While the new stops load (a second or less) | Getting the new stops ready... |
 
-**Recordings.** Nothing is recorded. Until it is, the tablet's own voice reads these lines, as it does for any line without a file. The
-audio budget is full (9.49 of 9.5 MB); recording them needs a budget decision from you. Estimate (from the recordings already made):
+**Recordings.** REC-198 (the owner's budget decision of 2026-11-27, the audio budget 9.5 -> 12 MB): the Spanish words are recorded,
+whatever the status line says, so they are ready when the items are turned on. `node tools/es-audio.js` recorded 135 files (1,140
+characters): the 81 words below marked "needs one" (the shown form, "la fresa"), the bare word of the 18 new words of the spell units
+(house, clothes, school), the 38 wrong-article forms the Spanish lessons read aloud for the new nouns ("el fresa", the D2 rule), less one
+already recorded; "gris" moved from Leo to Eve with its unit (the color unit is an Eve unit), so its Leo file went. The Discover questions
+are not recorded (not part of the decision); the tablet's voice reads them. The estimate made before the decision:
 
 | Lines | Count | Characters | Bytes per character | Estimate |
 |---|---|---|---|---|

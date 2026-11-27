@@ -3949,19 +3949,28 @@ function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.can
   if(ESA.au){ESA.au.onended=ESA.au.onerror=null;ESA.au._vis=0;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
+// REC-198: it.m names the manifest a line's file is in when it is not EN_TEACH, EN_AUDIO or ES_AUDIO (the recorded stories' lines, ST7S in 52x-story7.js)
 function esaPlay(it){if(typeof document!="undefined"&&document.hidden){ESA.q.unshift(it);return} // review v196: a line due while the app is hidden waits for it (sfxVis pumps)
-  const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;swHush(); // sample fix: the worker's audio fill waits while the app speaks (90-app.js)
-  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
+  const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.rate||(it.slow>0&&it.slow<1?it.slow:1);ESA.cur=it;swHush(); // sample fix: the worker's audio fill waits while the app speaks (90-app.js)
+  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.story)it.done=1;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
-  const M=it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  const M=it.m||(it.tch?tchM():it.en?EN_AUDIO:ES_AUDIO);a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
   if(it.btn)it.btn.classList.add('talking');
   try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
   sfxDuck(speakBusy)}
 // a file that does not load or play: never tried again this session; the line goes to the tablet's voice
 function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
+  if(it.story){it.failed=1;if(it.fail)it.fail();esaPump();return} // REC-198: a story recording: the reader reads on without it
   if(it.en){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow,1)} // EN-PRAISE: the rest of the cheer, tablet voice
   if(it.tch){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow)} // TEACH-4: the rest of the teacher line, tablet voice
   if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
+/* REC-198: a recorded story (the STORIES-7 read-along, 52x-story7.js), played like every recording here: on the shared ESA.au, so it ducks
+   the music, hush() stops it and it waits while the app is hidden (esaPlay). dir + f is its file, rate its speed. Returns the item, or null
+   (no Opus, or the file failed before): storyMs(it) is its clock in ms while it plays, -1 while it waits; it.done once it ended;
+   storyGone(it) when it was stopped (hush) before its end; fail() runs if the file does not play (never tried again this session). */
+function storyPlay(dir,f,t,rate,fail){if(!esaOk()||ESA.bad[f])return null;hush();const it={a:[[f,0]],i:0,t:String(t),ts:[String(t)],m:{dir,ext:''},rate,fail,story:1};esaPlay(it);return it}
+const storyMs=it=>ESA.cur===it&&ESA.au?ESA.au.currentTime*1000:-1;
+const storyGone=it=>!it.done&&ESA.cur!==it&&!ESA.q.includes(it);
 /* EN-PRAISE: recorded English encouragement. EN_AUDIO (src/data/d-en-audio.js, made by tools/en-audio.js) maps every fixed praise,
    try-again and well-done line say() speaks ("Great job!", "Almost!", "You got 7 stars!", "New record!") to six recordings, one per
    voice (three female, three male: EN_AUDIO.voices). say(t) in English plays the line in one voice, chosen so the same voice never
