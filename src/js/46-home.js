@@ -264,12 +264,16 @@ function hmPlace() {
 // TEACH-5S review fix (v186): the review tile shows whenever anything is due, lessons on or off. (TEACH-5S had hidden it while
 // every due item was at a learned lesson's stop, but lesson Remember asks one lesson a day and never clears S.rev, so those
 // items stayed due with no way in but a mission that is not always drawn.)
+// OWNER-1127 (owner 2026-11-27): a brand-new child (no round played yet: no stop round, lesson, Mixed Practice or review logged,
+// no star on a map) sees "Nothing to review yet"; read only (S.log is read as it is, never created)
+const hmFresh = () => !Object.values(S.prog || {}).some(x => x && x.r > 0) && !(Array.isArray(S.log) && S.log.some(e => e && e.rounds > 0)) &&
+  !Object.values(S.maps || {}).some(m => m && Object.values(m).some(v => v > 0));
 function hmToday() {
   const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on();
   const rev = n
     ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}</span>` +
       `<span class="hm-tl"><b class="hm-rn" id="revn">${n}</b> to review</span></button></div>`
-    : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">All caught up!</span></div>`;
+    : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">${hmFresh() ? 'Nothing to review yet' : 'All caught up!'}</span></div>`;
   return `<div class="hm-today${flu ? '' : ' n2'}">${rev}
     ${flu ? `<button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>` : ''}
     <button class="hm-tile" id="mix"><span class="hm-ti t-mix">${hmMixIco()}</span><span class="hm-tl">Mixed Practice</span></button></div>`;

@@ -15104,8 +15104,10 @@ async function main() {
           const op = await pg.evaluate(a => ({ lock: document.querySelector(`.node[data-n="${a}"]`).classList.contains('lock'), gu: !!document.querySelector('.plgu') }), a);
           if (op.lock || op.gu) bad.push(at + 'the map after the unlock: ' + JSON.stringify(op));
           // 4. Grown-ups by the PIN (owner decision 2026-11-19: PIN gate; was: by the 3-second hold): the card has no price and no way to
-          //    pay; "Unlock or restore" asks for the PIN again; a reinstall (the tablet forgot, Google Play remembers) is restored as the
-          //    sheet opens, no payment
+          //    pay; a reinstall (the tablet forgot, Google Play remembers) is restored as the sheet opens, no payment.
+          //    OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL question 2): "Unlock or restore" asks for the PIN again only when
+          //    Grown-ups was opened by the PIN more than 2 minutes ago; within 2 minutes the sheet opens at once (NAV.pinT, in memory only).
+          //    Was: the PIN again every time. The 2 minutes are not waited out: NAV.pinT is set back, as if Grown-ups had been opened then.
           await pg.evaluate(() => { PLAY.setOwn(false); delete PLAY.st.ackd; PLAY.write(); window.__pl.owned = [{ itemId: 'unlock_all', purchaseToken: 'tok1' }]; window.__pl.log = []; home(); });
           await pg.click('#gear');
           await pinIn(pg, '2580');
@@ -15117,16 +15119,31 @@ async function main() {
           if (PRICE.test(cd.t) || cd.buy || !cd.go || cd.ab !== 'Free sample (Google Play)' || cd.log.length) bad.push(at + 'the Grown-ups card: ' + JSON.stringify(cd));
           await fit(pg, at + 'Grown-ups card: ', '#gw-play .btn');
           await pg.screenshot({ path: path.join(shots, `play-grown-${sz}.png`) });
+          // more than 2 minutes after the PIN: the PIN again
+          await pg.evaluate(() => { NAV.pinT -= NAV.PIN_MS + 1000; });
           await pg.click('#plgo');
           await pg.waitForSelector('.sheet-bg.on #pnpad', { timeout: 5000 });
-          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore opened the sheet without the PIN');
+          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore, more than 2 minutes after the PIN, opened the sheet without the PIN');
           await pinIn(pg, '2580');
-          await pg.waitForFunction(() => PLAY.own && document.querySelector('#plmsg') && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
-            .catch(() => bad.push(at + 'the reinstall was not restored as the sheet opened'));
-          if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + 'restore started a payment');
-          await pg.click('#plno');
-          await pg.waitForFunction(() => document.querySelector('#ab-ed') && document.querySelector('#ab-ed').textContent === 'Unlocked on Google Play', null, { timeout: 8000 })
-            .catch(() => bad.push(at + 'Grown-ups did not redraw as unlocked'));
+          const restored = async how => {
+            await pg.waitForFunction(() => PLAY.own && document.querySelector('#plmsg') && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
+              .catch(() => bad.push(at + how + ': the reinstall was not restored as the sheet opened'));
+            if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + how + ': restore started a payment');
+            await pg.click('#plno');
+            await pg.waitForFunction(() => document.querySelector('#ab-ed') && document.querySelector('#ab-ed').textContent === 'Unlocked on Google Play', null, { timeout: 8000 })
+              .catch(() => bad.push(at + how + ': Grown-ups did not redraw as unlocked'));
+          };
+          await restored('after 2 minutes');
+          // within 2 minutes of opening Grown-ups by the PIN: no second PIN, the sheet at once
+          await pg.evaluate(() => { PLAY.setOwn(false); delete PLAY.st.ackd; PLAY.write(); window.__pl.log = []; home(); });
+          await pg.click('#gear');
+          await pinIn(pg, '2580');
+          await pg.waitForSelector('#plgo', { timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#plgo').scrollIntoView());
+          await pg.click('#plgo');
+          await pg.waitForSelector('#plsheet', { timeout: 5000 }).catch(() => bad.push(at + 'Unlock or restore, within 2 minutes of the PIN, did not open the sheet'));
+          if (await pg.$('.sheet-bg.on #pnpad')) bad.push(at + 'Unlock or restore asked the PIN again within 2 minutes of opening Grown-ups by the PIN');
+          await restored('within 2 minutes');
           // 5. the Game Room in the free sample: every game open (game time still comes from learning)
           await pg.evaluate(() => { PLAY.setOwn(false); S.pt = { bank: 600, day: today(), used: 0 }; save(); gameRoom(); });
           await pg.waitForSelector('.gh-card', { timeout: 20000 });
@@ -15158,7 +15175,7 @@ async function main() {
       else step('PLAY-01: the Play app at ' + notes.join(' and ') + ': the first 5 stops of the grade\'s start world open, the 6th and a locked world each tell a ' +
         'child one calm line with no price, OK goes back to their world; Unlock everything asks the grown-up question first (a wrong answer opens nothing, no price ' +
         'or Google Play call before it); the sheet shows the price from Google Play and the launch line; cancel changes nothing; the purchase calls show() in the tap ' +
-        'and is acknowledged through the endpoint (Digital Goods v2); Grown-ups by the hold shows no price or way to pay, Unlock or restore asks the question and a ' +
+        'and is acknowledged through the endpoint (Digital Goods v2); Grown-ups by the hold shows no price or way to pay, Unlock or restore asks the PIN again after 2 minutes, not within (OWNER-1127), and a ' +
         'reinstall is restored as the sheet opens; every Game Room game opens; normal Chrome with ?src=play and the web version lock nothing; no console errors, no network requests');
     }
     // end PLAY-01
@@ -15305,7 +15322,7 @@ async function main() {
     // lesson, every beat of it, Practice to the end, the chest (stickers, stars, game time: the win), Home, Games, the first game to a
     // running stage. No dead ends: every tap leads on (a wait for the next screen fails the step), no lock is shown to the child on the
     // way and no price or Google Play call happens before the grown-up check. Then the grown-up buys: Grown-ups asks the PIN, the card
-    // has no price, Unlock or restore asks the PIN again, and only then the sheet shows the price and Unlock opens Google Play.
+    // has no price, Unlock or restore (seconds later: no second PIN, OWNER-1127) opens the sheet with the price and Unlock opens Google Play.
     if (seg('SAMPLE-10MIN')) {
       const bad = [], { INDEX_URL } = require('./lib/browser'), PRICE = /[$€£]|\d[.,]\d\d/;
       const mock = () => {
@@ -15448,7 +15465,9 @@ async function main() {
         if (kidLock) bad.push(at + 'a lock sheet was shown to the child on the way (' + kidLock + ')');
         const pre = await paid();
         if (pre.length) bad.push(at + 'Google Play was asked before any grown-up check: ' + pre.join());
-        // 6. the grown-up buys: the PIN for Grown-ups, no price on the card, the PIN again for Unlock or restore, then the sheet
+        // 6. the grown-up buys: the PIN for Grown-ups, no price on the card, then the sheet. OWNER-1127 (owner decision 2026-11-27):
+        //    Unlock or restore seconds after Grown-ups was opened by the PIN asks no second PIN (was: the PIN again; PLAY-01 checks
+        //    that it is asked again after 2 minutes). Google Play is still asked nothing before the grown-up's PIN
         await tap('#gpause');
         await pg.waitForSelector('.sheet-bg.on #gquit, #hs', { timeout: 10000 });
         if (await pg.$('.sheet-bg.on #gquit')) await tap('.sheet-bg.on #gquit');
@@ -15462,10 +15481,8 @@ async function main() {
         if (PRICE.test(cd) || (await paid()).length) bad.push(at + 'the Grown-ups card shows a price or asked Google Play: ' + cd.slice(0, 120));
         await pg.evaluate(() => document.querySelector('#plgo').scrollIntoView({ block: 'center' }));
         await tap('#plgo');
-        await padH(pg, /PIN/);
-        if (await pg.$('#plsheet') || (await paid()).length) bad.push(at + 'Unlock or restore did not ask the PIN first');
-        for (const d of '2580') await tap(`.sheet-bg.on .pn-k[data-k="${d}"]`);
         await pg.waitForSelector('#plsheet', { timeout: 10000 });
+        if (await pg.$('.sheet-bg.on #pnpad')) bad.push(at + 'Unlock or restore asked the PIN again seconds after Grown-ups was opened by the PIN');
         await pg.waitForFunction(() => /9\.99/.test(document.querySelector('#plprice').textContent) && !document.querySelector('#plbuy').disabled, null, { timeout: 8000 })
           .catch(() => bad.push(at + 'no price on the unlock sheet'));
         await tap('#plbuy');
@@ -15479,7 +15496,7 @@ async function main() {
       await ta.ctx.close();
       if (bad.length) fail('SAMPLE-10MIN a new family in the free sample:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('SAMPLE-10MIN: a new family in the free sample at 380x780, by taps: ' + marks.join(', ') + '; no dead end and no lock shown to the child; ' +
-        'Google Play is asked only after the grown-up PIN (Grown-ups, then Unlock or restore again), the price is on the sheet only; no console errors, no network requests');
+        'Google Play is asked only after the grown-up PIN (Grown-ups; Unlock or restore within 2 minutes asks no second PIN), the price is on the sheet only; no console errors, no network requests');
     }
     // end SAMPLE-10MIN
     // BB-GL (sample fix): Block Builder gives its WebGL context back when the child leaves the game (view() calls bbStop, as 60-gl.js end()

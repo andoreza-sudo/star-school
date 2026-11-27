@@ -4143,14 +4143,16 @@ function grown(){let armed=false;
       <div class="vline gw-vl"><span class="vtxt">${ico('plus',22,'ic-off')}<span>Say anything you like</span></span>${UI.btn('Record',{size:'sm',icon:'record',cls:'rec gw-rec',attrs:`data-rec="${k}|x"`})}</div></div>`}).join('');
   const nstk=STK.filter(s=>stkN(s)).length,pr=typeof PIN!='undefined'&&PIN.noteR;
   NAV.gwK=1;NAV.gwT=Date.now(); // RC-2: a grown-up screen: the session goes on
+  // OWNER-1127 (owner 2026-11-27): in the free sample (PLAY.locked()) Unlock Whistlestop is the first card; layout only
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
   <div class="scroll gw">${gwMoved()}${pr?`<p class="gw-note" id="pnreset">${ico('lock',22)}<span>Your PIN was reset with Forgot PIN on ${esc(new Date(pr).toLocaleDateString())}.</span></p>`:''}<div class="gw-cols">
+  ${PLAY.locked()?PLAY.card():''}
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
     ${SAVE_FAILED?warn('Could not save progress: the device storage may be full.'):''}`,{sub:esc(gradeSpoken(gradeOf()))+'. Everything is saved on this tablet only.'})}
   ${PRF.card()}
-  ${PLAY.on?PLAY.card():''}
+  ${PLAY.on&&!PLAY.locked()?PLAY.card():''}
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
@@ -4603,6 +4605,7 @@ const REP = {
     const m = {name: S.name || '', date: REP.dayText(now), year: new Date(now * 864e5).getUTCFullYear(), grade: gradeOf()};
     // TEACH-1: the lessons' before-and-after measure (S.lm: [nid, day, pre right, pre n, post right, post n, tested out], 52b-know.js) and tonight's question
     const lm = Array.isArray(S.lm) ? S.lm : [], sm = i => lm.reduce((t, x) => t + (+x[i] || 0), 0), pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+    m.skip = REP.skipMiss(); // OWNER-1127
     m.ls = typeof LSREP != 'undefined' ? LSREP.data() : null; // TEACH-2: the lessons' card (52d-notebook.js, part teach)
     m.teach = lm.length ? {n: lm.length, pre: pc(sm(2), sm(3)), post: pc(sm(4), sm(5)), to: lm.filter(x => x[6]).length, tq: typeof S.tq == 'string' ? S.tq : ''} : null;
     REP.keepLog(() => {
@@ -4761,7 +4764,18 @@ const REP = {
         : `is still working on <b>${esc(o.work)}</b>.`) + '</li>').join('')}</ul>`;
   },
   pinned: (m, x) => !!m.pin && m.pin.p == x.p && m.pin.sk == x.sk && m.pin.lv == x.lv,
+  // OWNER-1127 (owner 2026-11-27; docs/drafts/SPACED9.md): a skipped stop (placement, Test out) whose check-in was answered wrong
+  // (S.spc.x, spcTry in 59-review.js), read as it is: a possible mis-placement
+  skipMiss() {
+    const x = S.spc && S.spc.x;
+    if (!x || typeof x != 'object' || Array.isArray(x) || typeof SPC == 'undefined') return [];
+    return Object.keys(x).sort((a, b) => (+x[b] || 0) - (+x[a] || 0)).map(k => SPC.nd(k)).filter(Boolean).map(n => n.t);
+  },
   needs(m) {
+    const sk = (m.skip || []).map(t => `<p class="rp-p0">${ico('warning', 22)} Checked a skipped stop: <b>${esc(t)}</b>. Practice it again.</p>`).join('');
+    return sk + REP.needs0(m);
+  },
+  needs0(m) {
     if (!m.tried) return '<div class="rp-empty">This list fills in after a few rounds.</div>';
     if (!m.needs.length) return REP.subj(m) + '<div class="rp-empty">Nothing stands out. Every stop they have tried is going well.</div>';
     return REP.subj(m) + `<p class="small rp-p0">The stops with the lowest first-try scores. Playing one again from the map is the best help. `
@@ -4904,7 +4918,8 @@ function needOnline(action, o = {}) {
    is one quiet button for grown-ups (PLAY.bandHTML on a locked world of the map, PLAY.rowHTML in Brain Teasers). It asks the grown-up
    PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Whistlestop sheet ask
    Google Play for the price and offer to buy or restore. Grown-ups has a card that says what the unlock includes, with no price and
-   no buttons but "Unlock or restore", which asks for the PIN again first.
+   no buttons but "Unlock or restore", which asks for the PIN again first (not when Grown-ups was opened by the PIN in the last
+   2 minutes: owner decision 2026-11-27, NAV.pinOk).
 
    The purchase goes through Google Play billing in the Trusted Web Activity: the Digital Goods API (getDigitalGoodsService(BILLING),
    getDetails([SKU]) for the price, listPurchases() to restore) and the Payment Request API (supportedMethods BILLING, data {sku}).
@@ -5137,7 +5152,8 @@ Object.assign(PLAY, {
   },
   cardBind() {
     const b = $('#plgo');
-    if (b) b.onclick = () => PLAY.grown(() => NAV.gwBack());
+    // OWNER-1127: no second PIN when Grown-ups was opened by the PIN in the last 2 minutes (NAV.pinOk)
+    if (b) b.onclick = () => NAV.pinOk() ? (SFX.click(), PLAY.sheet(() => NAV.gwBack())) : PLAY.grown(() => NAV.gwBack());
   },
   sheet(back) {
     const body = `<p class="pl-price" id="plprice">${PLAY.own ? 'Unlocked. Thank you!' : 'Asking Google Play for the price...'}</p>` +

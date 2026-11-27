@@ -19376,8 +19376,10 @@ run('Brain Teasers and practice fixes R-01b',()=>{
      if(!MIS.valid(S.day.m))add('the "more" mission is not a valid mission');
      let w=MIS.done({k:'round',p:'read',n:1});if(w.won.length)add('one round finished the "more" mission');
      w=MIS.done({k:'round',p:'read',n:2});if(!w.won.some(x=>x.x.k=='more'))add('the second round did not finish the "more" mission');
-     if(MIS.title({k:'more'})!=='Play 2 rounds today')add('more title '+MIS.title({k:'more'}));
-     note.push('Pre-K/K: "Play 2 rounds today" in place of the perfect round')}
+     // OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL wording 4): day().r counts lessons and badge check-ins too (52-lesson.js
+     // and 51b-checkin.js add to it), so the title became "Learn and play 2 times today" (was "Play 2 rounds today")
+     if(MIS.title({k:'more'})!=='Learn and play 2 times today')add('more title '+MIS.title({k:'more'}));
+     note.push('Pre-K/K: "Learn and play 2 times today" in place of the perfect round')}
     // Should 2: Mixed Practice weighted to recent (50%) and weak (30%) stops, older 20%. A 3rd grader at maths stop 90 and reading stop 60.
     {const grd=n=>PATHS[n.p].worlds[n.wi].g;
      const setup=weak=>{load(null);S.grade=3;NODES.math.forEach((n,i)=>{if(i<90)S.maps.math[nid(n)]=2});NODES.read.forEach((n,i)=>{if(i<60)S.maps.read[nid(n)]=2});
@@ -22705,11 +22707,14 @@ run('home: the review tile shows whenever anything is due, lessons on or off TEA
     S.know={add1:{s:2,box:0,due:200,d:1,last:1,n:1,lv:[[0,0],[0,0],[0,0]],b:{}}};o.learned=tile();o.gone=typeof revCovered!='undefined';
     TEACH.off=true;o.off=tile();TEACH.off=false;
     S.rev.push(item('es_greet',1,'hola'));o.mixed=tile();
-    S.rev=[];o.none=tile();
+    S.rev=[];o.none0=tile();o.yet=/Nothing to review yet/.test(hmToday());P('add').r=1;o.none=tile();
     return o})()`);
   const p=[];
   for(const k of ['unlearned','learned','off','mixed'])if(!o[k].rev||o[k].ok)p.push(k+': items are due but there is no review tile');
   if(o.none.rev||!o.none.ok)p.push('nothing due: "All caught up!" is gone');
+  // OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL wording 1): a brand-new child (no round played yet, as loadSave(null)
+  // here) sees "Nothing to review yet" in the same tile, no button; "All caught up!" (o.none) once a round was played
+  if(o.none0.rev||o.none0.ok||!o.yet)p.push('nothing due, no round played yet: not "Nothing to review yet"');
   if(o.gone)p.push('revCovered (the rule that hid the tile) is still in the code');
   for(const k of ['unlearned','learned','off','mixed','none']){const x=o[k],want=x.flu?'':' n2';if(x.tiles!==(x.flu?3:2)||x.cls!==want)p.push(k+': '+x.tiles+' tiles in a row of class "'+x.cls+'"')}
   if(/\.hm-today\.n1\b/.test(fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8')))p.push('the one-tile row style is left over');
@@ -26152,6 +26157,121 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
   return{problems:p,note:'gate off: same as without DEEP-15 ('+note.off+'); on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' Discover items, '+note.words+' Spanish words; longest answer '+(note.long||[]).join(', ')+'; repeats a round '+(note.rep||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DEEP15_ON '+on+')'};
 });
 
+
+// ---- OWNER-1127: the owner's decisions of 2026-11-27 on the free sample (docs/drafts/OWNER-DECISIONS-2026-11-27.md; SAMPLE-REHEARSAL.md
+// questions 2 to 5 and wording 1 to 4; SPACED9.md's report line), through the real code in a Node vm with a stand-in page:
+// B2 no second PIN for Unlock or restore within 2 minutes of opening Grown-ups by the PIN (NAV.pinT, in memory, never saved); after
+// 2 minutes, from the map's grown-up button, or by the old question, the PIN is asked as before; B3 the Unlock card first in Grown-ups
+// in the free sample only; B4 from 3rd grade up a tap (or Enter) on the lesson's bubble ends the line and wakes the controls once,
+// below 3rd grade nothing; B5 the free sample's Puzzles tab: the Puzzle of the Day and one line (read out for a non-reader), no
+// locked cards; B6 a brand-new child's Today tile and first mission; B7 Mixed Practice on day one (missions and Learn); B8 the "more"
+// mission's title, which counts lessons too; B9 a skipped stop's check-in answered wrong is a report card line until it is right.
+run('OWNER-1127: the owner\'s free-sample decisions of 2026-11-27 (PIN, Unlock card, lesson bubble, Puzzles tab, day-one words, mission, report line)',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  // an element that keeps what is set on it (innerHTML, onclick, tabIndex ...) and is the stand-in for everything else
+  const el=()=>{const o={};return new Proxy(o,{get:(t,k)=>k in o?o[k]:typeof k=='string'&&/^on/.test(k)?null:k==='querySelectorAll'?(()=>[]):fk[k],set:(t,k,v)=>{o[k]=v;return true}})};
+  const els={},doc={querySelector:s=>els[s]||fk,querySelectorAll:()=>[],addEventListener(){},getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false,documentElement:fk};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,
+    removeEventListener(){},matchMedia:()=>({matches:false}),__els:els,__el:el});
+  const R=x=>vm.runInContext(x,ctx),html=()=>String(els['#app'].innerHTML||'');
+  try{
+    R(`globalThis.window=globalThis;say=()=>{};fb=()=>{};music=()=>{};var __hush=0,__nr=[];{const h=hush;hush=()=>{__hush++;h()}};{const n=nrSay;nrSay=(t,s,m)=>{const r=n(t,s,m);if(r)__nr.push(t);return r}} // said (a non-reader with the voice on)
+       for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+       function __fresh(g){loadSave(null);migrate();S.name='Ava';S.grade=g;S.voice=true;for(const p in PATHS)S.maps[p]=S.maps[p]||{};PLAY.on=false;PLAY.own=false}`);
+    els['#app']=R('__el()');
+    // ---- B2: the PIN when buying ----
+    const b2=JSON.parse(R(`(()=>{const o={};__fresh(1);let gw=0,sh=0,gr=0;
+      const pg=PIN.gate,byPin=go=>go(1),byQ=go=>go(); // PIN.enter passes 1 (the PIN typed); the old question and choosing a PIN pass nothing
+      const g0=grown,s0=PLAY.sheet,r0=PLAY.grown;grown=()=>{gw++};PLAY.sheet=()=>{sh++};PLAY.grown=()=>{gr++};
+      PIN.gate=byPin;NAV.pinT=0;NAV.quiz();o.open=[gw,NAV.pinOk()];
+      const bt=__el();__els['#plgo']=bt;PLAY.cardBind();bt.onclick();o.within=[sh,gr];
+      NAV.pinT-=NAV.PIN_MS+1;bt.onclick();o.after=[sh,gr];
+      NAV.pinT=0;NAV.quiz(()=>{});o.other=NAV.pinOk(); // the map's grown-up button, Erase, Delete: not "Grown-ups opened by the PIN"
+      PIN.gate=byQ;NAV.quiz();o.question=NAV.pinOk(); // no PIN yet: the old question and choosing one
+      PIN.gate=byPin;NAV.quiz();save();
+      PIN.gate=pg;grown=g0;PLAY.sheet=s0;PLAY.grown=r0;delete __els['#plgo'];return JSON.stringify(o)})()`));
+    if(b2.open.join()!=='1,true')p.push('B2: Grown-ups by the PIN did not start the 2 minutes: '+b2.open);
+    if(b2.within.join()!=='1,0')p.push('B2: Unlock or restore within 2 minutes: sheet '+b2.within[0]+', PIN asked '+b2.within[1]+' (want the sheet, no PIN)');
+    if(b2.after.join()!=='1,1')p.push('B2: Unlock or restore after 2 minutes did not ask the PIN: '+b2.after);
+    if(b2.other)p.push('B2: a PIN for something other than opening Grown-ups started the 2 minutes');
+    if(b2.question)p.push('B2: the old question (no PIN yet) counted as the PIN');
+    for(const k of Object.keys(store))if(/pinT/.test(store[k])||store[k].includes(String(R('NAV.pinT'))))p.push('B2: the PIN time is saved in '+k);
+    const pin=rd('src/js/41b-pin.js'),nav=rd('src/js/41-nav.js');
+    if(!/if \(r == 'ok'\) \{ p\.close\(\); then\(1\);/.test(pin))p.push('B2: PIN.enter does not say the PIN itself was typed');
+    for(const f of fs.readdirSync(path.join(SRC,'js')))if(/NAV\.pinT\s*[-+]?=[^=]/.test(fs.readFileSync(path.join(SRC,'js',f),'utf8'))&&!['41-nav.js'].includes(f))p.push('B2: '+f+' sets NAV.pinT (only NAV.quiz in 41-nav.js does, in memory)');
+    if(/pinT[^\n]*(localStorage|PRF\.put|save\(\))/.test(nav))p.push('B2: NAV.pinT is saved');
+    // ---- B3: the Unlock card first in the free sample ----
+    const b3=JSON.parse(R(`(()=>{const o={},at=()=>{const h=__els['#app'].innerHTML;return[h.indexOf('id="gw-play"'),h.indexOf('id="gw-sum"'),(h.match(/id="gw-play"/g)||[]).length]};
+      __fresh(1);PLAY.on=true;PLAY.own=false;grown();o.locked=at();PLAY.own=true;grown();o.own=at();PLAY.on=false;PLAY.own=false;grown();o.web=at();return JSON.stringify(o)})()`));
+    if(!(b3.locked[0]>=0&&b3.locked[0]<b3.locked[1]&&b3.locked[2]==1))p.push('B3: in the free sample Unlock Whistlestop is not the first card: '+b3.locked);
+    if(!(b3.own[0]>b3.own[1]&&b3.own[2]==1))p.push('B3: unlocked, the card moved: '+b3.own);
+    if(b3.web[2])p.push('B3: the web version shows the Unlock card');
+    // ---- B4: the lesson bubble ----
+    const b4=JSON.parse(R(`(()=>{const o={}; // setTimeout is a no-op here, so the line never ends by itself: only the bubble can wake the controls
+      const t=g=>{__fresh(g);const b=__el();b.firstChild={textContent:''};b.classList={toggle(){}};__els['#lsbub']=b;LS.st={L:{p:'math'}};let w=0;__hush=0;
+        LS.talk(['Ten ones make one ten. Let us count them together.'],()=>{w++});const r={tab:b.tabIndex,click:typeof b.onclick};
+        if(b.onclick){b.onclick();b.onclick();r.after=[w,__hush];const b2=__el();b2.firstChild={textContent:''};b2.classList={toggle(){}};__els['#lsbub']=b2;
+          LS.talk(['Again.'],()=>{w++});let pd=0;b2.onkeydown({key:'Enter',preventDefault(){pd++}});r.key=[w,pd];LS.st={L:{p:'math'}};b2.onclick();r.gone=w}
+        else r.after=[w,__hush];delete __els['#lsbub'];LS.st=null;return r};
+      o.g2=t(2);o.g3=t(3);o.g6=t(6);o.k=t(0);return JSON.stringify(o)})()`));
+    for(const g of ['g3','g6']){const r=b4[g];
+      if(r.click!=='function'||r.tab!==0)p.push('B4: grade '+g.slice(1)+': the bubble cannot be tapped or reached with the keyboard');
+      else{if(r.after.join()!=='1,1')p.push('B4: grade '+g.slice(1)+': a tap (twice) woke the controls '+r.after[0]+' times and stopped the voice '+r.after[1]+' times (want 1 and 1)');
+        if(r.key.join()!=='2,1')p.push('B4: grade '+g.slice(1)+': Enter on the bubble did not wake the controls');
+        if(r.gone!==2)p.push('B4: grade '+g.slice(1)+': a tap on an old line\'s bubble after the screen moved on woke something')}}
+    for(const g of ['g2','k'])if(b4[g].click==='function'||b4[g].after.join()!=='0,0')p.push('B4: grade '+(g=='k'?'K':'2')+': the bubble does something ('+JSON.stringify(b4[g])+'), below 3rd grade it must not');
+    // ---- B5: the Puzzles tab in the free sample ----
+    const b5=JSON.parse(R(`(()=>{const o={},one=(g,lock)=>{__fresh(g);PLAY.on=lock;PLAY.own=!lock;__nr=[];BT.hub();const h=__els['#app'].innerHTML;
+        return{day:h.includes('id="btday"'),cards:(h.match(/class="[^"]*bt-type/g)||[]).length,line:h.includes('<p class="gx-lead" id="btmore">More puzzles open when a grown-up unlocks Whistlestop.</p>'),
+          gu:h.includes('plgu'),said:__nr.includes('More puzzles open when a grown-up unlocks Whistlestop.'),keep:h.includes('btkeep')||h.includes('btbdg'),n:BT.offered().length}};
+      o.k=one(0,true);o.g4=one(4,true);o.open=one(1,false);return JSON.stringify(o)})()`));
+    for(const [k,r] of [['K',b5.k],['4th grade',b5.g4]]){
+      if(!r.day||!r.line||r.cards||r.keep)p.push('B5: '+k+', free sample: the Puzzles tab is '+JSON.stringify(r)+' (want the Puzzle of the Day and the line, no cards)');
+      if(!r.gu)p.push('B5: '+k+': the quiet grown-ups button is gone');}
+    if(!b5.k.said)p.push('B5: the line is not read out for a non-reader');
+    if(b5.g4.said)p.push('B5: the line is read out for a reader (non-readers only, as the other hub lines)');
+    if(b5.open.line||b5.open.cards!==b5.open.n||!b5.open.n)p.push('B5: unlocked, the Puzzles tab changed: '+JSON.stringify(b5.open));
+    // ---- B6, B7, B8: day-one words, the "more" mission ----
+    const b6=JSON.parse(R(`(()=>{const o={},tile=()=>{const h=hmToday();return h.includes('Nothing to review yet')?'yet':h.includes('All caught up!')?'ok':'?'};
+      __fresh(1);S.rev=[];o.fresh=tile();o.round=MIS.sub({k:'round',p:'math'});o.mix=MIS.sub({k:'mix'});learnHub();o.learn=/A bit of every subject!/.test(__els['#app'].innerHTML);
+      S.log=[{d:today(),sec:60,rounds:1,q:5,ok:5,by:{math:60}}];o.logged=tile();
+      __fresh(1);S.rev=[];P('add').r=1;o.played=tile();
+      __fresh(1);const i=NODES.math.findIndex(n=>n.sk!='boss');setSt('math',i,2);o.round2=MIS.sub({k:'round',p:'math'});o.read2=MIS.sub({k:'round',p:'read'});o.mix2=MIS.sub({k:'mix'});
+      learnHub();o.learn2=/A bit of everything you learned/.test(__els['#app'].innerHTML);o.pin=MIS.sub({k:'round',p:'read',pin:1,i:0});
+      o.more=MIS.title({k:'more'});
+      __fresh(0);S.day={d:today(),r:0,done:false};S.day.m=[{k:'round',p:'math',d:0},{k:'more',d:0},{k:'mix',d:0}];
+      o.done=MIS.done({k:'round',p:'read',n:2}).won.map(w=>'Mission done: '+MIS.title(w.x)+'!');return JSON.stringify(o)})()`));
+    if(b6.fresh!=='yet')p.push('B6: a brand-new child\'s Today tile says '+b6.fresh+', want "Nothing to review yet"');
+    if(b6.logged!=='ok'||b6.played!=='ok')p.push('B6: after a round the tile is not "All caught up!": '+b6.logged+' / '+b6.played);
+    if(b6.round!=='Start your first stop!'||b6.read2!=='Start your first stop!')p.push('B6: a subject with no stop passed: "'+b6.round+'" / "'+b6.read2+'"');
+    if(b6.round2!=='Make it stronger!')p.push('B6: a subject with a stop passed: "'+b6.round2+'"');
+    if(b6.pin!=='Picked for you today!')p.push('B6: a grown-up\'s pinned stop lost its line: "'+b6.pin+'"');
+    if(b6.mix!=='A bit of every subject!'||!b6.learn)p.push('B7: nothing learned: missions "'+b6.mix+'", Learn '+b6.learn);
+    if(b6.mix2!=='A bit of everything!'||!b6.learn2)p.push('B7: something learned: missions "'+b6.mix2+'", Learn '+b6.learn2);
+    if(b6.more!=='Learn and play 2 times today'||!b6.done.includes('Mission done: Learn and play 2 times today!'))p.push('B8: the "more" mission: '+b6.more+' / '+b6.done);
+    // B8: what the line promises is what is counted: a lesson and a badge check-in add to the day's rounds before the missions are booked
+    for(const [f,re] of [['src/js/52-lesson.js',/d\.r\+\+;\n    const stk = streakTick\(\), mi = MIS\.done\(\{k: 'round'[^\n]*n: d\.r\}\)/],['src/js/50-round.js',/d\.r\+\+;const stk=streakTick\(\);\n  const mi=MIS\.done\([^\n]*n:d\.r\}\)/]])
+      if(!re.test(rd(f)))p.push('B8: '+f+' no longer counts its round for the "more" mission (n: day().r)');
+    // ---- B9: the report card line for a skipped stop's check-in answered wrong ----
+    const b9=JSON.parse(R(`(()=>{const o={},D=mastDay(),line=()=>{const h=REP.html(REP.data());return(h.match(/Checked a skipped stop: <b>([^<]*)<\\/b>\\. Practice it again\\./g)||[]).join('|')};
+      __fresh(3);const n=NODES.math.find(x=>SPC.ok(x)),k=nid(n),n2=NODES.read.find(x=>SPC.ok(x)),k2=nid(n2);o.name=n.t;
+      S.spc={s:{[k]:{b:0,d:D,k:1},[k2]:{b:1,d:D}}};o.none=line();
+      spcTry({spc:k2},false,false);o.learned=line();
+      spcTry({spc:k},false,false);o.wrong=line();const before=JSON.stringify(S);o.l2=line();o.ro=before===JSON.stringify(S);
+      spcTry({spc:k},true,true);o.helped=line();
+      spcTry({spc:k},true,false);o.right=line();o.x='x' in S.spc;return JSON.stringify(o)})()`));
+    const want='Checked a skipped stop: <b>'+b9.name.replace(/&/g,'&amp;')+'</b>. Practice it again.';
+    if(b9.none||b9.learned)p.push('B9: a line with no skipped stop missed: '+(b9.none||b9.learned));
+    if(b9.wrong!==want)p.push('B9: a skipped stop answered wrong: "'+b9.wrong+'", want "'+want+'"');
+    if(!b9.ro||b9.l2!==b9.wrong)p.push('B9: the report card changed the save');
+    if(b9.helped!==want)p.push('B9: a right answer with the hint showing took the line away');
+    if(b9.right||b9.x)p.push('B9: a right check-in did not clear the line');
+  }catch(e){p.push('the check could not run: '+String(e.stack||e).split('\n').slice(0,4).join(' | '))}
+  return{problems:p,note:'B2 PIN within 2 minutes / after; B3 card order; B4 bubble at K, 2nd, 3rd, 6th; B5 Puzzles tab K and 4th; B6-B8 day-one words and the mission; B9 the report line'};
+});
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){
