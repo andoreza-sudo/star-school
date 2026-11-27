@@ -15094,7 +15094,11 @@ run('Spanish speaking check S-SPK2',()=>{
   return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
     // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
     try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6,other2:false}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
-      const want={npos:288,nneg:282,voice:54,child:222,similar:39,other:3,silence:0}; // v196 (owner 2026-11-25): 128 new Spanish lines; the lessons' wrong forms make no voice pair (tools/spk-calib.js)
+      // v196 (owner 2026-11-25): 128 new Spanish lines; the lessons' wrong forms make no voice pair (tools/spk-calib.js): 288/282, 54, 222, 39, 3
+      // owner decision 2026-11-27: new recordings (REC-198): the DEEP-15 Spanish words are 134 more recorded lines (798 -> 932), so the every-6th set has more
+      // targets and its far picks move: true match 96.4% of 330 (was 95.8% of 288), false accept 16.4% of 324 (was 14.9% of 282); the full set
+      // (node tools/spk-calib.js) 99.3% / 11.8% of 2,414, similar word 220/786 (28%), another word 30/784 (3.8%), as before; thresholds unchanged
+      const want={npos:330,nneg:324,voice:54,child:264,similar:43,other:10,silence:0};
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
       if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
