@@ -327,6 +327,24 @@ const SCREENS = {
   'ask-home': { run: async p => { await askReady(p); await p.evaluate(() => home()); await askTap(p); } },
   'ask-map': { run: async p => { await askReady(p); await p.evaluate(() => pathMap('math')); await p.waitForSelector('.ak-mp', { timeout: 5000 });
     await p.evaluate(() => document.querySelector('.ak-mp').scrollIntoView({ block: 'center' })); await askTap(p); } },
+  // STORIES-7: the decodable mini-stories as if the owner had approved them (STORY7_ON = 1): the Stories stop on the reading map, the
+  // shelf, a story while Read to me lights its words, Now you read it with a word tapped, a picture question, the end card
+  'story-map': { run: async p => { await p.evaluate(() => { window.say = window.__a11y.say; STORY7_ON = 1; S.unlockAll = true; pathMap('read', 1); });
+    await p.waitForSelector('.st7n', { timeout: 5000 }); await p.evaluate(() => document.querySelector('.st7n').scrollIntoView({ block: 'center' })); await p.waitForTimeout(300); } },
+  'story-shelf': { run: async p => { await storyReady(p); await p.evaluate(() => ST7.shelf('pic2')); await p.waitForTimeout(500); } },
+  'story-read': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('cvc-1'); st7Play(); }); await p.waitForTimeout(1500); } },
+  'story-you': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('team2-2'); st7You(); st7Tap(3); }); await p.waitForTimeout(600); } },
+  'story-quiz': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('cvc-1'); st7Quiz(0); }); await p.waitForTimeout(600); } },
+  'story-end': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('rvowel-1'); st7Fin(); }); await p.waitForTimeout(600); } },
+  // OLDER-14: the older look as if the owner had approved it (OLDER_ON = 1), a 5th grader: the score card with no chest (a 10 of 10 over an
+  // earlier best: New best!), Home with Show my pet off, and the switch in Grown-ups
+  'older-card': { run: async p => { await p.evaluate(() => { window.say = window.__a11y.say; OLDER_ON = 1; S.grade = 5; const i = NODES.math.findIndex(n => n.sk != 'boss' && PATHS.math.worlds[n.wi].g == 5);
+      S.pb = { [OLD14.key('math', i)]: [6, 10, 400000] }; start('math', i); });
+    await p.waitForTimeout(600);
+    await p.evaluate(() => { const n = G.n; G.score = n; G.done = n; finish(); if (window.__a11y) window.__a11y.said = []; });
+    await p.waitForSelector('#btns', { state: 'visible', timeout: 8000 }); await p.waitForTimeout(3000); } },
+  'older-home': { run: ev(() => { OLDER_ON = 1; S.grade = 5; S.petOff = true; home(); }) },
+  'grown-older': { adult: true, run: ev(() => { OLDER_ON = 1; S.grade = 5; grown(); document.querySelector('#petshow').closest('label').scrollIntoView({ block: 'center' }); }) },
   'grown-children': {
     adult: true,
     run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),
@@ -334,6 +352,8 @@ const SCREENS = {
   // more: the sticker book, the Brain Teasers hub, the report card, and every game screen
   stickers: { run: ev(() => book()) },
   'bt-hub': { run: ev(() => { S.grade = 2; BT.hub(); }) },
+  // OWNER-1127: the free sample's Puzzles tab (the Puzzle of the Day, one line, the grown-ups button)
+  'bt-hub-sample': { run: ev(() => { playMock(); S.grade = 0; BT.hub(); }) },
   'bt-maze': {
     // P6-03: after the reload the puzzle code is not in yet: BT.start loads it ("Getting the puzzles ready..."), so wait for the maze
     run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForSelector('#btstage .mz'); await p.waitForTimeout(600); },
@@ -576,6 +596,11 @@ const SCREENS = {
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 // P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
 // PERS-01: the hints part (the picker and PERSW) loaded, with the interest drafts' words in PERSW (nothing is reviewed yet)
+// STORIES-7: the stories' parts in, the gate on, every stop open, the page's say watched
+async function storyReady(p) {
+  await p.evaluate(async () => { window.say = window.__a11y.say; STORY7_ON = 1; S.unlockAll = true; await partsLoad(['teach', 'teach12', 'teachrd']); });
+  await p.waitForFunction(() => typeof ST7 != 'undefined' && typeof ST7.open == 'function', null, { timeout: 30000 });
+}
 // ASK-01: the hints part loaded, the question drafts' words in ASKW (nothing is reviewed yet), the Ask button on (ASK_ON), a last mistake
 async function askReady(p) {
   await p.evaluate(() => partLoad('hints'));

@@ -438,7 +438,30 @@ async function traceGlyph(page, o = {}) {
   throw new Error('trace: the glyph was not finished');
 }
 
-// Plays the round that is on screen to the end and opens the chest.
+// OLDER-14 (owner approved 2026-11-27, OLDER_ON 1): a round ends in one of two ways. Below grade 4 (or with the gate off) the treasure
+// chest, which the bot taps to see the rewards; for grades 4 to 6 the score card at once, with no chest to tap (#fin #sc, as the OLDER-14
+// segment checks it; the payouts are the same). endWait waits for either and says which ('chest' or 'card'); endOpen also taps the chest
+// when there is one, so after it the card and its buttons are coming either way. Neither changes the grade.
+const END_SEL = '#chest, #fin #sc';
+async function endWait(page, timeout = 5000) {
+  await page.waitForSelector(END_SEL, { timeout });
+  return (await page.$('#chest')) ? 'chest' : 'card';
+}
+async function endOpen(page, timeout = 5000) {
+  const k = await endWait(page, timeout);
+  if (k === 'chest') await page.click('#chest');
+  return k;
+}
+
+// DEEP-15 (owner approved 2026-11-27, DEEP15_ON 1): opening the Discover or Spanish map loads part teaches, which then adds the new stops
+// (the world Discovery Garden after Nature Trail; the Nature and Toys stops in La Ciudad and La Casa) and draws the map again: the stop
+// indexes after them move (a stop is saved by its id, never its index). A step that looks up a stop's index on those maps waits for this
+// first, so it never taps an index from before the insertion; with the gate off (or the part already applied) it returns at once.
+async function d15Wait(page, timeout = 30000) {
+  await page.waitForFunction(() => typeof DEEP15_ON == 'undefined' || !DEEP15_ON || D15F === 1, null, { timeout });
+}
+
+// Plays the round that is on screen to the end and opens the chest (grades 4 to 6 with OLDER-14: the score card, nothing to open).
 async function playRound(page, label, total, onAsk) {
   if (total === undefined) total = await page.evaluate(() => G.n); // 8 at the default grade (K), 6 Pre-K, 10 from 1st
   let n = 0;
@@ -453,10 +476,10 @@ async function playRound(page, label, total, onAsk) {
     // wait for the next question object or the finish screen
     await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
   }
-  await page.waitForSelector('#chest', { timeout: 5000 });
+  await endWait(page);
   const score = await page.evaluate(() => G.score);
   if (score !== total) fail(`${label}: expected ${total}/${total} from the bot, got ${score}`);
-  await page.click('#chest');
+  await endOpen(page);
   await page.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
   // a pet growth / hatch overlay may cover the buttons: tap its Yay button when it shows up
   await vwait(page, 800);
@@ -1279,12 +1302,15 @@ async function main() {
       if (eb < 48) fail('report card button on Grown-ups is ' + eb + ' px high');
       await rp.click('#rp-open');
       await rp.waitForSelector('#rp-weeks');
+      // PARENT-11 (owner approved 2026-11-27, PARENT_ON 1): the card has the Parent corner (#rp-parent) as an 8th section once the gate
+      // part is loaded (report() loads it and draws the card again); with the flag off, the 7 sections as before. As tools/test.js does.
+      await rp.waitForFunction(() => !PARENT_ON || document.querySelector('#rp-parent'), null, { timeout: 10000 }).catch(() => {});
       const rr = await rp.evaluate(() => {
         const sc = document.querySelector('.scroll');
-        return { n: document.querySelectorAll('.rp-card').length, over: sc.scrollWidth - sc.clientWidth, S: JSON.stringify(S), text: sc.textContent,
+        return { n: document.querySelectorAll('.rp-card').length, want: 7 + (PARENT_ON ? 1 : 0), over: sc.scrollWidth - sc.clientWidth, S: JSON.stringify(S), text: sc.textContent,
           btn: Math.min(...[...document.querySelectorAll('.top .btn')].map(b => b.offsetHeight)), svg: document.querySelector('.rp-svg').getBoundingClientRect().width };
       });
-      if (rr.n !== 7) fail('report card sections: ' + rr.n);
+      if (rr.n !== rr.want) fail('report card sections: ' + rr.n + ', want ' + rr.want);
       else if (rr.over > 0) fail('report card is ' + rr.over + ' px wider than the screen at 380');
       else if (rr.S !== before) fail('opening the report card changed the saved data');
       else if (rr.btn < 48) fail('report card top buttons are ' + rr.btn + ' px high');
@@ -4916,14 +4942,19 @@ async function main() {
         if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/18/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
         await dp.click('.game[data-p="disc"]');
         await dp.waitForSelector('.node[data-n="0"]');
+        // DEEP-15 (owner approved 2026-11-27): the part adds Discovery Garden (g 1, 6 stops and its boss) after Nature Trail and the map is
+        // drawn again on it, where this 1st grader now starts: Nature Trail, Discovery Garden, then Science Lab, 19 stops (12 with the gate
+        // off). Nature Trail's stops keep indexes 0-5, so the round below is still Living Things at stop 0.
+        await d15Wait(dp);
+        await dp.waitForSelector('.node[data-n="0"]');
         await lsLearnSel(dp, '.node[data-n="0"]'); // TEACH-5S: Living Things has a lesson now (LS-STOP's rule: a practice step marks a locked stop's lesson learned first)
         const map = await dp.evaluate(() => {
           const ns = [...document.querySelectorAll('.node')];
-          return { n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
+          return { want: DEEP15_ON ? 19 : 12, n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
             over: document.documentElement.scrollWidth - document.documentElement.clientWidth, title: document.querySelector('.top').textContent };
         });
-        if (map.n !== 12 || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
-        else step(`${tag}: Home card, then the map (Nature Trail and the world after it, 12 stops; the first is open), 48 px stops, no sideways scroll`);
+        if (map.n !== map.want || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
+        else step(`${tag}: Home card, then the map (Nature Trail${map.want === 19 ? ', Discovery Garden' : ''} and the world after it, ${map.n} stops; the first is open), 48 px stops, no sideways scroll`);
         const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
         await lsLearnSel(dp, '.node[data-n="0"]'); // LS-STOP: as above
         await dp.click('.node[data-n="0"]');
@@ -5269,12 +5300,19 @@ async function main() {
       await dp.waitForSelector('.game[data-p="disc"]');
       await dp.click('.game[data-p="disc"]');
       await dp.waitForSelector('.node[data-n="0"]');
+      // DEEP-15 (owner approved 2026-11-27): Discovery Garden (6 stops and its boss) goes in after Nature Trail once the part loads, so the
+      // Science Lab stops move 7 places on; this finds every stop by its id (as the app saves them) after the insertion, not by a fixed
+      // index (Life Cycles & Food was 6, States & Capitals 9). A 4th grader still starts in Science Lab. With OLDER-14 on, this 4th grader's
+      // rounds end with the score card (playRound handles both endings).
+      await d15Wait(dp);
+      await dp.waitForSelector('.node.cur');
+      const IX = await dp.evaluate(() => Object.fromEntries(['sci_life2', 'geo_us1', 'civ1'].map(id => [id, NODES.disc.findIndex(n => nid(n) === id)])));
       const on = await dp.evaluate(() => ({
         world: PATHS.disc.worlds[curWorld('disc')].id, cur: nid(NODES.disc[curNode('disc')]), chip: (document.querySelector('.wchip.on') || {}).textContent || '',
         node: document.querySelector('.node.cur') ? +document.querySelector('.node.cur').dataset.n : -1,
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       }));
-      if (on.world !== 'd_lab' || on.cur !== 'sci_life2' || !/Science Lab/.test(on.chip) || on.node !== 6 || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
+      if (on.world !== 'd_lab' || on.cur !== 'sci_life2' || !/Science Lab/.test(on.chip) || on.node !== IX.sci_life2 || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
       else step(`${tag}: Discover opens on Science Lab at Life Cycles & Food (sci_life 2), no sideways scroll`);
       const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
       // one real round on a stop: opens it by its map button, plays, checks every question, and returns to the map
@@ -5305,23 +5343,23 @@ async function main() {
         await dp.evaluate(() => pathMap(MAPP));
         await dp.waitForSelector('#map');
       };
-      await playStop(6, 'Life Cycles & Food');
-      const after1 = await dp.evaluate(() => ({ keys: Object.keys(S.maps.disc).join(), next: unlocked('disc', 7), others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]) }));
+      await playStop(IX.sci_life2, 'Life Cycles & Food');
+      const after1 = await dp.evaluate(i => ({ keys: Object.keys(S.maps.disc).join(), next: unlocked('disc', i + 1), others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]) }), IX.sci_life2);
       if (after1.keys !== 'sci_life2' || !after1.next || JSON.stringify(JSON.parse(after1.others).slice(0, 3)) !== JSON.stringify(JSON.parse(before).slice(0, 3)))
         fail(`${tag}: after the first stop ${JSON.stringify(after1)}`);
       else step(`${tag}: stars only under sci_life2, the next stop opened, no other path changed`);
       // Science Earth and Forces count as done (set directly), then the geography stop is played with taps
       await dp.evaluate(() => { S.maps.disc.sci_earth2 = 1; S.maps.disc.sci_phys2 = 1; save(); pathMap('disc'); });
-      await dp.waitForSelector('.node[data-n="9"]');
-      const geo = await dp.evaluate(() => ({ id: nid(NODES.disc[9]), open: unlocked('disc', 9), t: NODES.disc[9].t }));
+      await dp.waitForSelector(`.node[data-n="${IX.geo_us1}"]`);
+      const geo = await dp.evaluate(i => ({ id: nid(NODES.disc[i]), open: unlocked('disc', i), t: NODES.disc[i].t }), IX.geo_us1);
       if (geo.id !== 'geo_us1' || !geo.open) fail(`${tag}: geography stop ${JSON.stringify(geo)}`);
-      await playStop(9, 'States & Capitals');
+      await playStop(IX.geo_us1, 'States & Capitals');
       // the civics stop is in Nature Trail: the four stops before it count as done
       await dp.evaluate(() => { for (const k of ['sci_life1', 'sci_earth1', 'sci_phys1', 'geo_world1']) S.maps.disc[k] = 1; save(); pathMap('disc', 0); });
-      await dp.waitForSelector('.node[data-n="4"]');
-      const civ = await dp.evaluate(() => ({ id: nid(NODES.disc[4]), open: unlocked('disc', 4), t: NODES.disc[4].t }));
+      await dp.waitForSelector(`.node[data-n="${IX.civ1}"]`);
+      const civ = await dp.evaluate(i => ({ id: nid(NODES.disc[i]), open: unlocked('disc', i), t: NODES.disc[i].t }), IX.civ1);
       if (civ.id !== 'civ1' || !civ.open) fail(`${tag}: civics stop ${JSON.stringify(civ)}`);
-      await playStop(4, 'Our Community');
+      await playStop(IX.civ1, 'Our Community');
       const fin = await dp.evaluate(() => ({ g: S.grade, civ: S.maps.disc.civ1, geo: S.maps.disc.geo_us1, v: S.v, others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es]) }));
       if (!(fin.civ >= 1) || !(fin.geo >= 1) || fin.g !== 4 || fin.others !== JSON.stringify(JSON.parse(before).slice(0, 3))) fail(`${tag}: end state ${JSON.stringify(fin)}`);
       else step(`${tag}: geography and civics stops saved, the other paths are unchanged`);
@@ -5716,6 +5754,7 @@ async function main() {
         await cp.evaluate(() => { if (G) G.dead = true; home(); });
         await cp.click('.game[data-p="es"]');
         await cp.waitForSelector('.wchip.on');
+        await d15Wait(cp); // DEEP-15: La Casa's two new stops move La Ciudad's indexes (an index from before them opened Transport)
         const at = await cp.evaluate(id => ({ i: NODES.es.findIndex(n => nid(n) === id), w: NODES.es.find(n => nid(n) === id).wi, wid: NODES.es.find(n => nid(n) === id).wid }), id);
         if (at.wid !== 'e_ciudad') fail('P2-33 ' + id + ' is not in La Ciudad: ' + JSON.stringify(at));
         await cp.click(`.wchip[data-w="${at.w}"]`);
@@ -6794,6 +6833,7 @@ async function main() {
         await fp.evaluate(() => { if (G) G.dead = true; home(); });
         await fp.click('.game[data-p="es"]');
         await fp.waitForSelector('.wchip.on');
+        await d15Wait(fp); // DEEP-15: the new stops in La Casa and La Ciudad move Las Frases' indexes (an index from before them opened Nature)
         const at = await fp.evaluate(id => ({ i: NODES.es.findIndex(n => nid(n) === id), w: NODES.es.find(n => nid(n) === id).wi, wid: NODES.es.find(n => nid(n) === id).wid }), id);
         if (at.wid !== 'e_frases') fail('P2-34 ' + id + ' is not in Las Frases: ' + JSON.stringify(at));
         await fp.click(`.wchip[data-w="${at.w}"]`);
@@ -7226,9 +7266,12 @@ async function main() {
         // the report card: Print keeps its online note
         await sp.click('#rp-open');
         await sp.waitForSelector('#rp-weeks');
+        // PARENT-11 (owner approved 2026-11-27, PARENT_ON 1): the Parent corner is an 8th card with its icon header, once the gate part is
+        // loaded (it is: Grown-ups asked for the PIN); with the flag off, 7 as before
+        await sp.waitForFunction(() => !PARENT_ON || document.querySelector('#rp-parent'), null, { timeout: 10000 }).catch(() => {});
         const rp = await sp.evaluate(() => { const b = { height: document.querySelector('#rp-print').offsetHeight }, n = document.querySelector('.rp-online .online-note');
-          return { h: b.height, note: n ? n.textContent : '', vis: n ? n.getBoundingClientRect().height : 0, cards: document.querySelectorAll('.rp-card .gw-h svg.ic').length }; });
-        if (rp.h < 48 || !/online to share or print/.test(rp.note) || !rp.vis || rp.cards !== 7) bad.push(tag + ' report card: ' + JSON.stringify(rp));
+          return { h: b.height, note: n ? n.textContent : '', vis: n ? n.getBoundingClientRect().height : 0, cards: document.querySelectorAll('.rp-card .gw-h svg.ic').length, want: 7 + (PARENT_ON ? 1 : 0) }; });
+        if (rp.h < 48 || !/online to share or print/.test(rp.note) || !rp.vis || rp.cards !== rp.want) bad.push(tag + ' report card: ' + JSON.stringify(rp));
         await chk(sp, 'report card');
         await sp.click('#back');
         await sp.waitForSelector('#rp-open');
@@ -7476,6 +7519,7 @@ async function main() {
       await cp.evaluate(() => { if (G) G.dead = true; home(); });
       await cp.click('.game[data-p="es"]');
       await cp.waitForSelector('.wchip.on');
+      await d15Wait(cp); // DEEP-15: the new stops in La Casa and La Ciudad move Los Cuentos' indexes
       const at = await cp.evaluate(() => ({ i: NODES.es.findIndex(n => nid(n) === 'es_story1'), w: NODES.es.find(n => nid(n) === 'es_story1').wi, wid: NODES.es.find(n => nid(n) === 'es_story1').wid, last: PATHS.es.worlds[PATHS.es.worlds.length - 1].id }));
       if (at.wid !== 'e_cuentos' || at.last !== 'e_cuentos') fail('P2-35 es_story1 is not in Los Cuentos: ' + JSON.stringify(at));
       await cp.click(`.wchip[data-w="${at.w}"]`);
@@ -9204,6 +9248,7 @@ async function main() {
         await rp.evaluate(() => { if (G) G.dead = true; home(); });
         await rp.click('.game[data-p="es"]');
         await rp.waitForSelector('.wchip.on');
+        await d15Wait(rp); // DEEP-15: La Casa's two new stops move El Tiempo's indexes (an index from before them opened Months, not Weather)
         const at = await rp.evaluate(id => { const i = NODES.es.findIndex(n => nid(n) === id); return { i, w: NODES.es[i].wi, wid: NODES.es[i].wid }; }, id);
         if (at.wid !== wid) bad.push(id + ' is not in ' + wid + ': ' + JSON.stringify(at));
         await rp.click(`.wchip[data-w="${at.w}"]`);
@@ -11066,9 +11111,12 @@ async function main() {
         // more (one failing file would fail the install): after activation, when the page asks (a few seconds after the start, when idle),
         // 40 at a time; so this waits until the cache holds them all (SW-AUDIO: one file failing)
         const a1 = await p1.evaluate(async () => {
-          await partsLoad(['teach', 'teach12']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file
+          await partsLoad(['teach', 'teach12', 'teachrd']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file; REC-198: the story manifest in teachrd
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext)),
-            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))]; // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
+            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext),
+            // REC-198 (owner decision 2026-11-27): the recorded STORIES-7 stories, their questions and spoken lines, and the word taps (audio/story,
+            // ST7A and ST7S in d-story-audio.js), which sw.js caches with the others
+            Object.values(ST7A).map(a => a.f), Object.values(ST7S.lines).concat(Object.values(ST7S.w)).map(f => f + ST7S.ext)))]; // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
           const t0 = Date.now();let have = new Set();
           while (Date.now() - t0 < 90000) {
             const c = await caches.open('starschool-audio');have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
@@ -15104,8 +15152,10 @@ async function main() {
           const op = await pg.evaluate(a => ({ lock: document.querySelector(`.node[data-n="${a}"]`).classList.contains('lock'), gu: !!document.querySelector('.plgu') }), a);
           if (op.lock || op.gu) bad.push(at + 'the map after the unlock: ' + JSON.stringify(op));
           // 4. Grown-ups by the PIN (owner decision 2026-11-19: PIN gate; was: by the 3-second hold): the card has no price and no way to
-          //    pay; "Unlock or restore" asks for the PIN again; a reinstall (the tablet forgot, Google Play remembers) is restored as the
-          //    sheet opens, no payment
+          //    pay; a reinstall (the tablet forgot, Google Play remembers) is restored as the sheet opens, no payment.
+          //    OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL question 2): "Unlock or restore" asks for the PIN again only when
+          //    Grown-ups was opened by the PIN more than 2 minutes ago; within 2 minutes the sheet opens at once (NAV.pinT, in memory only).
+          //    Was: the PIN again every time. The 2 minutes are not waited out: NAV.pinT is set back, as if Grown-ups had been opened then.
           await pg.evaluate(() => { PLAY.setOwn(false); delete PLAY.st.ackd; PLAY.write(); window.__pl.owned = [{ itemId: 'unlock_all', purchaseToken: 'tok1' }]; window.__pl.log = []; home(); });
           await pg.click('#gear');
           await pinIn(pg, '2580');
@@ -15117,16 +15167,31 @@ async function main() {
           if (PRICE.test(cd.t) || cd.buy || !cd.go || cd.ab !== 'Free sample (Google Play)' || cd.log.length) bad.push(at + 'the Grown-ups card: ' + JSON.stringify(cd));
           await fit(pg, at + 'Grown-ups card: ', '#gw-play .btn');
           await pg.screenshot({ path: path.join(shots, `play-grown-${sz}.png`) });
+          // more than 2 minutes after the PIN: the PIN again
+          await pg.evaluate(() => { NAV.pinT -= NAV.PIN_MS + 1000; });
           await pg.click('#plgo');
           await pg.waitForSelector('.sheet-bg.on #pnpad', { timeout: 5000 });
-          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore opened the sheet without the PIN');
+          if (await pg.$('#plsheet')) bad.push(at + 'Unlock or restore, more than 2 minutes after the PIN, opened the sheet without the PIN');
           await pinIn(pg, '2580');
-          await pg.waitForFunction(() => PLAY.own && document.querySelector('#plmsg') && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
-            .catch(() => bad.push(at + 'the reinstall was not restored as the sheet opened'));
-          if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + 'restore started a payment');
-          await pg.click('#plno');
-          await pg.waitForFunction(() => document.querySelector('#ab-ed') && document.querySelector('#ab-ed').textContent === 'Unlocked on Google Play', null, { timeout: 8000 })
-            .catch(() => bad.push(at + 'Grown-ups did not redraw as unlocked'));
+          const restored = async how => {
+            await pg.waitForFunction(() => PLAY.own && document.querySelector('#plmsg') && /already has the unlock/.test(document.querySelector('#plmsg').textContent), null, { timeout: 5000 })
+              .catch(() => bad.push(at + how + ': the reinstall was not restored as the sheet opened'));
+            if (await pg.evaluate(() => window.__pl.log.some(x => /^pr|show/.test(x)))) bad.push(at + how + ': restore started a payment');
+            await pg.click('#plno');
+            await pg.waitForFunction(() => document.querySelector('#ab-ed') && document.querySelector('#ab-ed').textContent === 'Unlocked on Google Play', null, { timeout: 8000 })
+              .catch(() => bad.push(at + how + ': Grown-ups did not redraw as unlocked'));
+          };
+          await restored('after 2 minutes');
+          // within 2 minutes of opening Grown-ups by the PIN: no second PIN, the sheet at once
+          await pg.evaluate(() => { PLAY.setOwn(false); delete PLAY.st.ackd; PLAY.write(); window.__pl.log = []; home(); });
+          await pg.click('#gear');
+          await pinIn(pg, '2580');
+          await pg.waitForSelector('#plgo', { timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#plgo').scrollIntoView());
+          await pg.click('#plgo');
+          await pg.waitForSelector('#plsheet', { timeout: 5000 }).catch(() => bad.push(at + 'Unlock or restore, within 2 minutes of the PIN, did not open the sheet'));
+          if (await pg.$('.sheet-bg.on #pnpad')) bad.push(at + 'Unlock or restore asked the PIN again within 2 minutes of opening Grown-ups by the PIN');
+          await restored('within 2 minutes');
           // 5. the Game Room in the free sample: every game open (game time still comes from learning)
           await pg.evaluate(() => { PLAY.setOwn(false); S.pt = { bank: 600, day: today(), used: 0 }; save(); gameRoom(); });
           await pg.waitForSelector('.gh-card', { timeout: 20000 });
@@ -15158,7 +15223,7 @@ async function main() {
       else step('PLAY-01: the Play app at ' + notes.join(' and ') + ': the first 5 stops of the grade\'s start world open, the 6th and a locked world each tell a ' +
         'child one calm line with no price, OK goes back to their world; Unlock everything asks the grown-up question first (a wrong answer opens nothing, no price ' +
         'or Google Play call before it); the sheet shows the price from Google Play and the launch line; cancel changes nothing; the purchase calls show() in the tap ' +
-        'and is acknowledged through the endpoint (Digital Goods v2); Grown-ups by the hold shows no price or way to pay, Unlock or restore asks the question and a ' +
+        'and is acknowledged through the endpoint (Digital Goods v2); Grown-ups by the hold shows no price or way to pay, Unlock or restore asks the PIN again after 2 minutes, not within (OWNER-1127), and a ' +
         'reinstall is restored as the sheet opens; every Game Room game opens; normal Chrome with ?src=play and the web version lock nothing; no console errors, no network requests');
     }
     // end PLAY-01
@@ -15305,7 +15370,7 @@ async function main() {
     // lesson, every beat of it, Practice to the end, the chest (stickers, stars, game time: the win), Home, Games, the first game to a
     // running stage. No dead ends: every tap leads on (a wait for the next screen fails the step), no lock is shown to the child on the
     // way and no price or Google Play call happens before the grown-up check. Then the grown-up buys: Grown-ups asks the PIN, the card
-    // has no price, Unlock or restore asks the PIN again, and only then the sheet shows the price and Unlock opens Google Play.
+    // has no price, Unlock or restore (seconds later: no second PIN, OWNER-1127) opens the sheet with the price and Unlock opens Google Play.
     if (seg('SAMPLE-10MIN')) {
       const bad = [], { INDEX_URL } = require('./lib/browser'), PRICE = /[$€£]|\d[.,]\d\d/;
       const mock = () => {
@@ -15349,13 +15414,32 @@ async function main() {
         await vspeed(pg);
         if (!(await pg.evaluate(() => PIN.check('2580') === 'ok'))) bad.push(at + 'the PIN chosen in setup is not 2580');
         mark('Home');
-        // 2. the top mission opens the first lesson's start card (a stop of the free sample)
+        // 2. the top mission opens the first lesson's start card (a stop of the free sample).
+        //    OWNER-1127: with DEEP-15 approved (2026-11-27) a 1st grader's Discover starts in Discovery Garden, whose new stops have no
+        //    lesson yet, and Spanish gains two such stops; the missions are drawn by the day, so the top one may open one of them as a
+        //    practice round. Then it must be a free stop without a lesson, and the child goes Home by the corner house (Go Home?) and
+        //    taps Math and its glowing stop, the lesson the rehearsal followed ("Play a Math round"). Every other day: as before.
         await vwait(pg, 400);
         await tap('.hm-mi >> nth=0');
+        const got = await (await pg.waitForFunction(() => document.querySelector('#lslearn') ? 'lesson' : typeof G != 'undefined' && G && G.q && document.querySelector('#prompt') && !document.querySelector('#lsplay') ? 'round' : null, null, { timeout: 15000 })).jsonValue();
+        if (got === 'round') {
+          const r = await pg.evaluate(() => ({ p: G.path, id: nid(NODES[G.path][G.node]), free: PLAY.freeStop(G.path, G.node), ls: typeof LESSONS != 'undefined' && !!LESSONS[nid(NODES[G.path][G.node])] }));
+          if (!r.free || r.ls || !/^(sci_plant|sci_wx|sci_rock|sci_mach|civ_past|civ_work|es_toy|es_nature)\d/.test(r.id)) bad.push(at + 'the top mission opened a round, not a lesson: ' + JSON.stringify(r));
+          marks.push('the top mission: ' + r.id + ' (DEEP-15, no lesson yet)');
+          await tap('#quit');
+          await pg.waitForSelector('.sheet-bg.on #gquit', { timeout: 5000 });
+          await tap('#gquit');
+          await pg.waitForSelector('#hs', { timeout: 10000 });
+          await vwait(pg, 400);
+          await tap('.game[data-p="math"]');
+          await pg.waitForSelector('.lsn.cur, .node.cur', { timeout: 10000 });
+          await vwait(pg, 400);
+          await tap('.lsn.cur, .node.cur >> nth=0');
+        }
         await pg.waitForSelector('#lslearn', { timeout: 15000 });
         await tap('#lslearn');
         await pg.waitForSelector('#lsplay', { timeout: 10000 });
-        const st0 = await pg.evaluate(() => { const p = LS.st.L.p, i = NODES[p].findIndex(n => nid(n) === LS.st.id); return { p, id: LS.st.id, i, free: i >= 0 && PLAY.freeStop(p, i) }; });
+        const st0 = await pg.evaluate(() => { const p = LS.st.L.p || 'math', i = /* a math lesson names no path (LS: L.p || 'math') */ NODES[p].findIndex(n => nid(n) === LS.st.id); return { p, id: LS.st.id, i, free: i >= 0 && PLAY.freeStop(p, i) }; });
         if (!st0.free) bad.push(at + 'the first mission leads to a stop outside the free sample: ' + JSON.stringify(st0));
         // 3. every beat of the lesson, answered right with the lesson's own controls
         const wake = () => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
@@ -15429,7 +15513,9 @@ async function main() {
         if (kidLock) bad.push(at + 'a lock sheet was shown to the child on the way (' + kidLock + ')');
         const pre = await paid();
         if (pre.length) bad.push(at + 'Google Play was asked before any grown-up check: ' + pre.join());
-        // 6. the grown-up buys: the PIN for Grown-ups, no price on the card, the PIN again for Unlock or restore, then the sheet
+        // 6. the grown-up buys: the PIN for Grown-ups, no price on the card, then the sheet. OWNER-1127 (owner decision 2026-11-27):
+        //    Unlock or restore seconds after Grown-ups was opened by the PIN asks no second PIN (was: the PIN again; PLAY-01 checks
+        //    that it is asked again after 2 minutes). Google Play is still asked nothing before the grown-up's PIN
         await tap('#gpause');
         await pg.waitForSelector('.sheet-bg.on #gquit, #hs', { timeout: 10000 });
         if (await pg.$('.sheet-bg.on #gquit')) await tap('.sheet-bg.on #gquit');
@@ -15443,10 +15529,8 @@ async function main() {
         if (PRICE.test(cd) || (await paid()).length) bad.push(at + 'the Grown-ups card shows a price or asked Google Play: ' + cd.slice(0, 120));
         await pg.evaluate(() => document.querySelector('#plgo').scrollIntoView({ block: 'center' }));
         await tap('#plgo');
-        await padH(pg, /PIN/);
-        if (await pg.$('#plsheet') || (await paid()).length) bad.push(at + 'Unlock or restore did not ask the PIN first');
-        for (const d of '2580') await tap(`.sheet-bg.on .pn-k[data-k="${d}"]`);
         await pg.waitForSelector('#plsheet', { timeout: 10000 });
+        if (await pg.$('.sheet-bg.on #pnpad')) bad.push(at + 'Unlock or restore asked the PIN again seconds after Grown-ups was opened by the PIN');
         await pg.waitForFunction(() => /9\.99/.test(document.querySelector('#plprice').textContent) && !document.querySelector('#plbuy').disabled, null, { timeout: 8000 })
           .catch(() => bad.push(at + 'no price on the unlock sheet'));
         await tap('#plbuy');
@@ -15460,7 +15544,7 @@ async function main() {
       await ta.ctx.close();
       if (bad.length) fail('SAMPLE-10MIN a new family in the free sample:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('SAMPLE-10MIN: a new family in the free sample at 380x780, by taps: ' + marks.join(', ') + '; no dead end and no lock shown to the child; ' +
-        'Google Play is asked only after the grown-up PIN (Grown-ups, then Unlock or restore again), the price is on the sheet only; no console errors, no network requests');
+        'Google Play is asked only after the grown-up PIN (Grown-ups; Unlock or restore within 2 minutes asks no second PIN), the price is on the sheet only; no console errors, no network requests');
     }
     // end SAMPLE-10MIN
     // BB-GL (sample fix): Block Builder gives its WebGL context back when the child leaves the game (view() calls bbStop, as 60-gl.js end()
@@ -16723,6 +16807,9 @@ async function main() {
           await pg.click('#gear');
           await pinIn(pg);
           await pg.waitForSelector('#rp-open', { timeout: 10000 });
+          // OWNER-1127: the owner approved PARENT-11 on 2026-11-27, so the build now has PARENT_ON = 1 (test.js PARENT-11 checks the
+          // flag follows the status line); "before approval" is tried by setting it to 0 in the page, as an unreviewed build has it
+          await pg.evaluate(() => { PARENT_ON = 0; });
           await pg.click('#rp-open');
           await pg.waitForSelector('#rp-weeks', { timeout: 10000 });
           const off = await pg.evaluate(() => ({ on: PARENT_ON, corner: !!document.querySelector('#rp-parent'), n: document.querySelectorAll('.rp-card').length, ls: !!document.querySelector('#rp-teach') }));
@@ -16791,6 +16878,295 @@ async function main() {
       if (bad.length) fail('PARENT-11 Parent corner:\n  ' + bad.slice(0, 30).join('\n  '));
       else step('PARENT-11: Home shows nothing of it; the gear and the PIN open Grown-ups; the report card has no corner before approval and, with the gate flipped on, the corner first (the week, 2 dinner questions, Make a certificate); the certificate prints alone on one page (' +
         notes.join(', ') + '); no sideways scroll, 48 px buttons, no network requests');
+    }
+
+    if (seg('STORIES-7')) {
+      // STORIES-7 (BEST-APP roadmap 7): with the gate off the reading map has no Stories stop; with it on (as the owner's flip would):
+      // a Stories stop, the shelf, a story, Read to me lights every word once and in order, Now you read it with word taps and
+      // I read it!, the picture questions (a wrong picture first, then the right one), the end card. 48 px, no sideways scroll, at both sizes.
+      const bad = [], notes = [];
+      for (const [w, h] of [[360, 740], [1024, 600]]) {
+        const at = 'STORIES-7 ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        const fit = sel => pg.evaluate(sel => {
+          const vw = document.documentElement.clientWidth, small = [];
+          for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) small.push((b.id || b.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+          const sc = [...document.querySelectorAll('#app .scroll')].map(s => s.scrollWidth - s.clientWidth);
+          return { small: small.slice(0, 5), wide: Math.max(document.documentElement.scrollWidth - vw, ...sc, 0) };
+        }, sel);
+        const look = async (where, sel) => { const f = await fit(sel); if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', ')); if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px'); };
+        try {
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          // gate off: no Stories stop in any reading world. OWNER-1127: the owner approved STORIES-7 on 2026-11-27, so the build now has
+          // STORY7_ON = 1 (test.js STORIES-7 checks it follows the status line); the gate off is tried by setting it to 0 in the page
+          const off = await pg.evaluate(() => { STORY7_ON = 0; S.unlockAll = true; pathMap('read', 0); let n = 0; for (let wi = 0; wi < PATHS.read.worlds.length; wi++) { MAPW.read = wi; drawMap('read'); n += document.querySelectorAll('.st7n').length; } return { on: STORY7_ON, n }; });
+          if (off.on !== 0 || off.n) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
+          // gate on: Letter Meadow's Stories stop, after Picture Words
+          await pg.evaluate(() => { STORY7_ON = 1; pathMap('read', 1); });
+          await pg.waitForSelector('.st7n:not(.lock)', { timeout: 10000 });
+          const stop = await pg.evaluate(() => { const b = document.querySelector('.st7n:not(.lock)'); b.scrollIntoView({ block: 'center' }); return b.getAttribute('aria-label'); });
+          if (stop !== 'Stories: Picture Words') bad.push(at + 'the first Stories stop is ' + stop);
+          await look('the map', '.st7n');
+          await pg.click('.st7n:not(.lock)');
+          await pg.waitForSelector('#st7s .st7-card', { timeout: 30000 });
+          await vwait(pg, 400);
+          const sh = await pg.evaluate(() => ({ secs: document.querySelectorAll('.st7-sg').length, cards: document.querySelectorAll('.st7-card').length, first: document.querySelector('.st7-sg .st7-card').textContent.trim() }));
+          if (sh.secs !== 7 || sh.cards < 6 || sh.first !== 'Pig in the Mud') bad.push(at + 'the shelf: ' + JSON.stringify(sh));
+          await look('the shelf', '#app button');
+          await pg.click('.st7-card[data-st="cvc-1"]');
+          await pg.waitForSelector('#st7 .st7-w', { timeout: 10000 });
+          await vwait(pg, 400);
+          await look('the story', '#app button');
+          // Read to me: record every word that lights, in order
+          const n = await pg.evaluate(() => {
+            ST7R.rate = 2; window.__st7 = []; window.__st7rec = []; // REC-198: and the recording each word lit on (the story's file, played by storyPlay)
+            new MutationObserver(() => { const e = document.querySelector('.st7-w.st7-on'); if (e && window.__st7[window.__st7.length - 1] !== +e.dataset.i) { window.__st7.push(+e.dataset.i); window.__st7rec.push(ESA.cur && ESA.cur.story && ESA.au ? ESA.au.src.split('/').slice(-2).join('/') + '@' + Math.round(ESA.au.currentTime * 1000) : ''); } })
+              .observe(document.querySelector('#st7'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+            return document.querySelectorAll('.st7-w').length;
+          });
+          await pg.click('#st7read');
+          const lab = await pg.evaluate(() => document.querySelector('#st7read').textContent.trim());
+          if (lab !== 'Stop') bad.push(at + 'Read to me does not turn into Stop: ' + lab);
+          await pg.waitForFunction(() => ST7R.mode === '' && window.__st7.length > 0, null, { timeout: 120000 });
+          const lit = await pg.evaluate(() => ({ seq: window.__st7.join(), tip: document.querySelector('#st7tip').textContent, past: document.querySelectorAll('.st7-w.st7-past').length }));
+          if (lit.seq !== Array.from({ length: n }, (_, i) => i).join()) bad.push(at + 'Read to me lit ' + lit.seq + ' of ' + n + ' words');
+          if (lit.tip !== 'Now you read it!' || lit.past !== n) bad.push(at + 'after Read to me: ' + JSON.stringify({ tip: lit.tip, past: lit.past }));
+          // REC-198: the story plays its recording (audio/story/<ST7A file>), every word lit while it plays, on its word times
+          const rc = await pg.evaluate(() => ({ want: 'story/' + ST7A['cvc-1'].f, t: ST7A['cvc-1'].t, rec: window.__st7rec }));
+          const offTime = rc.rec.filter((r, i) => { const ms = +r.split('@')[1]; return i < rc.rec.length - 2 && !(ms >= rc.t[i][0] - 50 && ms <= rc.t[i][0] + 600); }).length;
+          if (rc.rec.length !== n || rc.rec.slice(0, -2).some(r => r.split('@')[0] !== rc.want) || offTime > 2) bad.push(at + 'Read to me did not light the words on the recording ' + rc.want + ': ' + rc.rec.slice(0, 8).join(' ') + ' (' + offTime + ' off their time)');
+          else notes.push(w + 'x' + h + ' recording ' + rc.want);
+          // Now you read it: two word taps, then I read it!
+          await pg.click('#st7you');
+          await pg.click('.st7-w[data-i="4"]');
+          await pg.click('.st7-w[data-i="7"]');
+          const you = await pg.evaluate(() => ({ mode: ST7R.mode, heard: [...document.querySelectorAll('.st7-w.st7-heard')].map(e => +e.dataset.i).join(), done: getComputedStyle(document.querySelector('#st7done')).display !== 'none', tip: document.querySelector('#st7tip').textContent }));
+          if (you.mode !== 'you' || you.heard !== '4,7' || !you.done || !/Tap a word/.test(you.tip)) bad.push(at + 'Now you read it: ' + JSON.stringify(you));
+          await look('Now you read it', '#app button');
+          await pg.click('#st7done');
+          // the questions: a wrong picture, then the right one
+          for (let k = 0; k < 2; k++) {
+            await pg.waitForFunction(k => document.querySelector('#st7q') && ST7R.qi === k && !document.querySelector('#st7q .ch.right'), k, { timeout: 10000 });
+            await vwait(pg, 400);
+            await look('question ' + (k + 1), '#app button');
+            const q = await pg.evaluate(k => { const Q = st7Q(ST7R.st, k); return { r: Q.choices.findIndex(c => c.v === Q.ans), x: Q.choices.findIndex(c => c.v !== Q.ans), names: [...document.querySelectorAll('#st7q .ch')].map(b => b.getAttribute('aria-label')).join() }; }, k);
+            if (q.names.split(',').length !== 3 || q.names.includes('null')) bad.push(at + 'question ' + (k + 1) + ': the pictures have no names: ' + q.names);
+            await pg.click(`#st7q .ch[data-i="${q.x}"]`);
+            const wr = await pg.evaluate(x => ({ wrong: document.querySelector(`#st7q .ch[data-i="${x}"]`).classList.contains('wrong'), still: !!document.querySelector('#st7q') }), q.x);
+            if (!wr.wrong || !wr.still) bad.push(at + 'question ' + (k + 1) + ': a wrong picture: ' + JSON.stringify(wr));
+            await pg.click(`#st7q .ch[data-i="${q.r}"]`);
+          }
+          await pg.waitForSelector('#st7e', { timeout: 10000 });
+          await vwait(pg, 400);
+          const end = await pg.evaluate(() => document.querySelector('#st7e').innerText);
+          if (!/You read Pig in the Mud!/.test(end) || !/Read it again/.test(end) || !/More stories/.test(end)) bad.push(at + 'the end card says ' + end.replace(/\s+/g, ' '));
+          await look('the end card', '#app button');
+          await pg.click('#st7more');
+          await pg.waitForSelector('#st7s', { timeout: 10000 });
+          notes.push(w + 'x' + h + ' (' + n + ' words lit in order)');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('STORIES-7 decodable mini-stories:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('STORIES-7: the gate off draws no Stories stop; on: the Stories stop after Picture Words, the shelf, Read to me lights every word once in order, Now you read it with word taps and I read it!, two picture questions (a wrong picture stays), the end card (' +
+        notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
+    }
+
+    if (seg('OLDER-14')) {
+      // OLDER-14 (BEST-APP roadmap 14): a 5th grader with the gate flipped on in the page (OLDER_ON = 1, as a reviewed read-through builds
+      // it) plays a grade 5 math stop through the real UI: no chest, the score card at once (the score, Time, Your best, the stars, New best!
+      // over the best an earlier round left), the same rows and end buttons; then Grown-ups (the PIN) turns Show my pet off: Home has no pet,
+      // Pet Care, Pet Shop or My Pet tab, and the pet's save is untouched; on again brings it back. At 380x780 and 1024x600: 48 px targets,
+      // no sideways scroll, no console errors, no network requests.
+      const bad = [], notes = [], P_ = require('path'), FS_ = require('fs'), shots = P_.join(__dirname, 'out', 'older14');
+      FS_.mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = 'OLDER-14 ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        const fit = sel => pg.evaluate(sel => {
+          const vw = document.documentElement.clientWidth, small = [];
+          for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) small.push((b.id || b.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+          const sc = [...document.querySelectorAll('#app .scroll')].map(s => s.scrollWidth - s.clientWidth);
+          return { small: small.slice(0, 5), wide: Math.max(document.documentElement.scrollWidth - vw, ...sc, 0) };
+        }, sel);
+        const look = async (where, sel) => { const f = await fit(sel); if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', ')); if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px'); };
+        try {
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          // a 5th grader, the look approved, an earlier best of 6 of 10 on the stop
+          const i = await pg.evaluate(async () => {
+            await partLoad('gate'); PIN.set('2580');
+            OLDER_ON = 1; S.grade = 5; S.unlockAll = true; TEACH.off = true; S.pet = 'dino'; S.petName = 'Rex';
+            const i = NODES.math.findIndex(n => n.sk != 'boss' && PATHS.math.worlds[n.wi].g == 5);
+            S.pb = { [OLD14.key('math', i)]: [6, 10, 400000] }; save(); pathMap('math', NODES.math[i].wi); return i;
+          });
+          await pg.waitForSelector(`.node[data-n="${i}"]`, { timeout: 10000 });
+          await pg.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), i);
+          await pg.click(`.node[data-n="${i}"]`);
+          await pg.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 15000 });
+          const pay0 = await pg.evaluate(() => ({ coins: S.coins, stars: S.stars, stk: Object.values(S.stickers || {}).reduce((a, b) => a + b, 0) }));
+          let n = 0;
+          for (let guard = 0; guard < 40; guard++) {
+            const state = await pg.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
+            if (state === 'fin') break;
+            if (state === 'none') { await pg.waitForTimeout(150); continue; }
+            await pg.evaluate(() => { window.__q = G.q; });
+            await answer(pg); n++;
+            await pg.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+          }
+          await pg.waitForSelector('#fin #sc', { timeout: 5000 });
+          if (await pg.$('#chest')) bad.push(at + 'a 5th grader still gets the chest');
+          await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+          await vwait(pg, 1500);
+          await animsDone(pg);
+          const c = await pg.evaluate(() => {
+            const t = s => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, ' ').trim() : null; };
+            return { sc: t('#sc'), time: t('#o14t'), best: t('#o14b'), nb: t('#o14nb'), stars: !!document.querySelector('.rw-rate[aria-label="3 of 3 stars"]'), chest: !!document.querySelector('.rw-chest, .rw-chest-o, .rw-chest-art'),
+              line: t('.rw-line'), coins: t('#earn'), stk: document.querySelectorAll('#prz .rw-stk').length, btns: ['#again', '#ehome', '#bonus'].every(s => document.querySelector(s)), pb: S.pb[OLD14.key(G.path, G.node)],
+              score: G.score, nq: G.n, pay: { coins: S.coins, stars: S.stars, stk: Object.values(S.stickers || {}).reduce((a, b) => a + b, 0) }, superstar: /superstar|treasure/i.test(document.body.innerText) };
+          });
+          const m = /^Time (\d+):(\d\d)$/.exec(c.time || ''), secs = m ? +m[1] * 60 + +m[2] : -1;
+          if (c.sc !== c.score + ' out of ' + c.nq || c.score !== c.nq) bad.push(at + 'the score: ' + c.sc + ' (bot ' + c.score + ' of ' + c.nq + ')');
+          if (!m || secs < 1 || c.best !== 'Your best ' + c.nq + ' out of ' + c.nq + ' in ' + m[1] + ':' + m[2] || c.nb !== 'New best!' || JSON.stringify(c.pb.slice(0, 2)) !== JSON.stringify([c.nq, c.nq]))
+            bad.push(at + 'the score card: ' + JSON.stringify({ time: c.time, best: c.best, nb: c.nb, pb: c.pb }));
+          if (!c.stars || c.chest || c.superstar || c.line !== 'Excellent round!' || !c.btns || c.stk < 2) bad.push(at + 'the card: ' + JSON.stringify({ stars: c.stars, chest: c.chest, line: c.line, btns: c.btns, stk: c.stk }));
+          // paid as the chest flow pays a 10 of 10 (one star and one coin a right answer, a sticker and one more for all right), shown in the rows
+          if (c.pay.coins - pay0.coins < c.nq || c.pay.stars - pay0.stars < c.nq || c.pay.stk - pay0.stk < 2 || !new RegExp('\\+' + (c.pay.coins - pay0.coins) + ' coins for the pet shop!').test(c.coins))
+            bad.push(at + 'the payout: ' + JSON.stringify({ pay0, pay: c.pay, rows: c.coins }));
+          await look('the score card', '#app button');
+          await pg.screenshot({ path: P_.join(shots, `card-${w}x${h}.png`) }).catch(() => {});
+          // Home, then Grown-ups: Show my pet off
+          await pg.click('#ehome');
+          await pg.waitForSelector('#pet', { timeout: 10000 });
+          const keep = () => pg.evaluate(() => JSON.stringify([S.pet, S.petName, S.stars, S.coins, S.owned, S.wear, Object.keys(S.care || {}), S.stickers])); // the care meters drop with the clock, as always
+          const k0 = await keep();
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#petshow', { state: 'attached', timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#petshow').closest('label').scrollIntoView({ block: 'center' }));
+          const sw = await pg.evaluate(() => { const l = document.querySelector('#petshow').closest('label'), r = l.getBoundingClientRect(); return { on: document.querySelector('#petshow').checked, text: l.innerText.trim(), h: Math.round(r.height), w: Math.round(r.width), note: (document.querySelector('#petshowh') || {}).innerText }; });
+          if (!sw.on || sw.text !== 'Show my pet' || sw.h < 48 || !/^Grades 4 to 6\. Off hides the pet/.test(sw.note || '')) bad.push(at + 'the Show my pet switch: ' + JSON.stringify(sw));
+          await pg.click('label:has(#petshow)');
+          if (await pg.evaluate(() => S.petOff !== true)) bad.push(at + 'Show my pet off did not set S.petOff');
+          await pg.click('#back');
+          await pg.waitForSelector('.hm-hero', { timeout: 10000 });
+          await vwait(pg, 400);
+          const off = await pg.evaluate(() => ({ pet: !!document.querySelector('#pet, .petbig, .hm-stage, .hm-grow'), care: !!document.querySelector('#care'), shop: !!document.querySelector('#shop'), tab: !!document.querySelector('#navbar .nb-pet'),
+            book: !!document.querySelector('#book'), race: !!document.querySelector('#race'), rex: /Rex/.test(document.querySelector('#app').innerText) }));
+          if (off.pet || off.care || off.shop || off.tab || off.rex || !off.book || !off.race) bad.push(at + 'Home with the pet hidden: ' + JSON.stringify(off));
+          if (await keep() !== k0) bad.push(at + 'hiding the pet changed its save');
+          await look('Home without the pet', '#app button');
+          await pg.screenshot({ path: P_.join(shots, `home-nopet-${w}x${h}.png`), fullPage: true }).catch(() => {});
+          // the map: no pet by the stop
+          await pg.evaluate(() => pathMap('math'));
+          await pg.waitForSelector('#map .node', { timeout: 10000 });
+          if (await pg.$('.mappet')) bad.push(at + 'the map still draws the pet');
+          // on again: everything is back
+          await pg.evaluate(() => home());
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#petshow', { state: 'attached', timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#petshow').closest('label').scrollIntoView({ block: 'center' }));
+          await pg.click('label:has(#petshow)');
+          await pg.click('#back');
+          await pg.waitForSelector('#pet', { timeout: 10000 });
+          const on = await pg.evaluate(() => ({ care: !!document.querySelector('#care'), shop: !!document.querySelector('#shop'), tab: !!document.querySelector('#navbar .nb-pet'), flag: 'petOff' in S }));
+          if (!on.care || !on.shop || !on.tab || on.flag) bad.push(at + 'Show my pet on again: ' + JSON.stringify(on));
+          if (await keep() !== k0) bad.push(at + 'the pet\'s save changed after off and on');
+          notes.push(w + 'x' + h + ' (' + n + ' answers, ' + c.time + ')');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('OLDER-14 older look:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('OLDER-14: a 5th grader with the gate on: no chest, the score card (score, Time, Your best, 3 stars, New best! over an earlier 6 of 10), the payout rows; Show my pet off in Grown-ups: Home without the pet, Pet Care, Pet Shop or My Pet, no map pet, the pet\'s save untouched; on again: all back (' +
+        notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
+    }
+    if (seg('DEEP-15')) {
+      // DEEP-15 (BEST-APP roadmap 15): the drafted Discover and Spanish items. With the gate off (the build's DEEP15_ON = 0) the Discover
+      // map loads its parts as before and gains nothing; with it on (as the owner's flip would build), in a fresh page, a 1st grader taps
+      // Discover on Home, the map loads the part and opens on Discovery Garden, and a round of Seeds & Plants is played by real taps (every
+      // kind it draws); then Spanish: the La Casa chip, the new Toys stop, its learn screen and a round. Stars save under the new stop ids.
+      // 48 px, no sideways scroll, at both sizes.
+      const bad = [], notes = [];
+      const look = async (pg, at, where) => {
+        await animsDone(pg);
+        const f = await pg.evaluate(() => {
+          const vw = document.documentElement.clientWidth, small = [];
+          for (const b of document.querySelectorAll('#app button')) { const r = b.getBoundingClientRect(); if (r.width && r.height && (r.width < 47.5 || r.height < 47.5) && !b.closest('#navbar')) small.push((b.id || b.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+          const sc = [...document.querySelectorAll('#app .scroll')].map(s => s.scrollWidth - s.clientWidth);
+          return { small: small.slice(0, 5), wide: Math.max(document.documentElement.scrollWidth - vw, ...sc, 0) };
+        });
+        if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', '));
+        if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px');
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = 'DEEP-15 ' + w + 'x' + h + ': ';
+        for (const on of [0, 1]) {
+          const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+          const pg = ta.page;
+          try {
+            await pg.waitForSelector('.game[data-p="disc"]', { timeout: 10000 });
+            await pg.evaluate(on => { DEEP15_ON = on; S.grade = 1; save(); home(); }, on);
+            await pg.waitForSelector('.game[data-p="disc"]');
+            await pg.click('.game[data-p="disc"]');
+            if (!on) {
+              // gate off: the map loads its parts as before and gains nothing
+              await pg.waitForFunction(() => partReady('teaches') && document.querySelector('#map'), null, { timeout: 30000 });
+              await vwait(pg, 300);
+              const off = await pg.evaluate(() => ({ w: PATHS.disc.worlds.map(x => x.id).join(), f: D15F, units: ES_UNITS.length, chip: (document.querySelector('.wchip.on') || {}).textContent || '' }));
+              if (off.w !== 'd_nature,d_lab,d_cosmos' || off.f !== 0 || off.units !== 21 || !/Nature Trail/.test(off.chip)) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
+            } else {
+              await pg.waitForFunction(() => D15F === 1 && document.querySelector('#map') && PATHS.disc.worlds[1].id === 'd_garden', null, { timeout: 30000 });
+              const i = await pg.evaluate(() => NODES.disc.findIndex(n => nid(n) === 'sci_plant1'));
+              await pg.waitForSelector(`.node[data-n="${i}"]:not(.lock)`, { timeout: 10000 });
+              const mp = await pg.evaluate(i => ({ chip: (document.querySelector('.wchip.on') || {}).textContent || '', lab: document.querySelector(`.node[data-n="${i}"]`).getAttribute('aria-label') }), i);
+              if (!/Discovery Garden/.test(mp.chip) || mp.lab !== 'Seeds & Plants') bad.push(at + 'the map after the part: ' + JSON.stringify(mp));
+              await pg.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), i);
+              await look(pg, at, 'the map');
+              await pg.click(`.node[data-n="${i}"]`);
+              await pg.waitForSelector('#prompt', { timeout: 10000 });
+              const kinds = new Set();
+              await playRound(pg, at + 'Seeds & Plants', undefined, async () => { const k = await pg.evaluate(() => G.q.kind); if (!kinds.has(k)) { kinds.add(k); await look(pg, at, 'a ' + k + ' question'); } });
+              const s1 = await pg.evaluate(() => ({ st: S.maps.disc.sci_plant1 || 0, saved: (JSON.parse(localStorage.getItem(KEY)).maps.disc || {}).sci_plant1 || 0 }));
+              if (s1.st < 1 || s1.saved !== s1.st) bad.push(at + 'Seeds & Plants stars: ' + JSON.stringify(s1));
+              // Spanish: every stop unlocked (as Grown-ups can), the La Casa chip, the Toys stop at its end, the learn screen, a round
+              await pg.click('#ehome');
+              await pg.waitForSelector('#navbar .nb-home[aria-current="page"]');
+              await pg.evaluate(() => { S.unlockAll = true; save(); });
+              await pg.click('.game[data-p="es"]');
+              await pg.waitForSelector('#map');
+              const wi = await pg.evaluate(() => PATHS.es.worlds.findIndex(x => x.id === 'e_casa'));
+              await pg.evaluate(wi => document.querySelector(`.wchip[data-w="${wi}"]`).scrollIntoView({ inline: 'center' }), wi);
+              await pg.click(`.wchip[data-w="${wi}"]`);
+              const j = await pg.evaluate(() => NODES.es.findIndex(n => nid(n) === 'es_toy1'));
+              await pg.waitForSelector(`.node[data-n="${j}"]`, { timeout: 10000 });
+              await pg.evaluate(j => document.querySelector(`.node[data-n="${j}"]`).scrollIntoView({ block: 'center' }), j);
+              await pg.click(`.node[data-n="${j}"]`);
+              await pg.waitForSelector('#go', { timeout: 10000 });
+              const learn = await pg.evaluate(() => document.querySelector('#app').innerText);
+              if (!/pelota/.test(learn) || !/papalote/.test(learn)) bad.push(at + 'the Toys learn screen: ' + learn.slice(0, 120).replace(/\s+/g, ' '));
+              await look(pg, at, 'the Toys learn screen');
+              await pg.click('#go');
+              await pg.waitForSelector('#prompt', { timeout: 10000 });
+              await playRound(pg, at + 'Toys', undefined, async n => { if (!n) await look(pg, at, 'a Toys question'); });
+              const s2 = await pg.evaluate(() => ({ st: S.maps.es.es_toy1 || 0, saved: (JSON.parse(localStorage.getItem(KEY)).maps.es || {}).es_toy1 || 0 }));
+              if (s2.st < 1 || s2.saved !== s2.st) bad.push(at + 'Toys stars: ' + JSON.stringify(s2));
+              notes.push(w + 'x' + h + ' (Seeds & Plants drew ' + [...kinds].join(', ') + ')');
+            }
+          } catch (e) { bad.push(at + 'gate ' + on + ': ' + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+          for (const e of ta.errors) bad.push(at + e);
+          for (const u of ta.network) bad.push(at + 'network request: ' + u);
+          await ta.ctx.close();
+        }
+      }
+      if (bad.length) fail('DEEP-15 deeper Discover and Spanish:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('DEEP-15: the gate off adds nothing to the Discover map; on: a 1st grader taps Discover, the map loads the part and opens on Discovery Garden, a round of Seeds & Plants by real taps, then the Spanish Toys stop (learn screen, a round); stars under sci_plant1 and es_toy1 (' +
+        notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);

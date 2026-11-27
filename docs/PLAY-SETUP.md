@@ -189,15 +189,16 @@ Whistlestop. The bare domain whistlestoplearning.com never runs the app, so a ta
 
 **Families policy points the app already meets**: no ads, no analytics, no accounts; children never see a price or a purchase
 prompt (locked content shows "This world opens when a grown-up unlocks Whistlestop." and OK); the price and the Unlock button are
-only behind the Grown-ups PIN (v188, owner decision 2026-11-19: 4 digits the parent chooses the first time Grown-ups opens, which is
-guarded by a times-table question until a PIN exists; 5 wrong PINs wait 1, 5, 15, 30, then 60 minutes; Forgot PIN? asks three 2-digit
+only behind the Grown-ups PIN (v188, owner decision 2026-11-19; since v196 the parent chooses the 4 digits in first setup, and a save from before
+v196 has Grown-ups guarded by a times-table question until a PIN is chosen; 5 wrong PINs wait 1, 5, 15, 30, then 60 minutes; Forgot PIN? asks three 2-digit
 x 2-digit multiplications and then lets the parent choose a new PIN); Google Play's own purchase check still protects the payment
 itself; no timers, no repeated prompts, no "ask your parent" screens. Children with a picture password (optional, set by the parent)
 open only their own progress.
 
 **Reviewer note (App content > App access, "All or some functionality is restricted")**: "Settings and the one-time unlock are
-behind a parent PIN. On a fresh install: tap Grown-ups at the top of the home screen, answer the multiplication question, then choose
-any 4-digit PIN (for example 2580) and type it again. Use that PIN afterwards. No account or login is needed."
+behind a parent PIN chosen during first setup. On a fresh install: enter a name, then choose any 4-digit PIN (for example 2580)
+and type it again when asked. Use that PIN for Grown-ups afterwards. No account or login is needed." (v196: the PIN is chosen in
+first setup; an older save without one answers a times-table question once, then chooses a PIN.)
 
 **Data deletion (privacy policy)**: each child: Grown-ups > Start over, or Delete next to a child. Everything, including the PIN:
 clear the site's data (Chrome asks when uninstalling; or Chrome > Settings > Site settings > app.whistlestoplearning.com).

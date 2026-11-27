@@ -17,7 +17,7 @@ const NAV = {
   tabs() {
     const t = [['home', 'home', 'Home', () => home()], ['learn', 'map', 'Learn', () => learnHub()], ['games', 'gamepad', 'Games', () => gameRoom()]];
     if (typeof BT != 'undefined' && BT.list().length) t.push(['puzzles', 'puzzle', 'Puzzles', () => BT.hub()]);
-    t.push(['pet', 'paw', 'My Pet', () => care()]);
+    if (typeof petShown != 'function' || petShown()) t.push(['pet', 'paw', 'My Pet', () => care()]); // OLDER-14: not when the pet is hidden
     return t;
   },
   barHTML(cur) {
@@ -139,7 +139,7 @@ const NAV = {
   // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
   // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
-    const go0 = typeof then == 'function' ? then : grown, go = () => { NAV.gwT = Date.now(); go0(); }; // RC-2: the grown-up session starts
+    const gw = typeof then != 'function', go0 = gw ? grown : then, go = pin => { NAV.gwT = Date.now(); if (gw && pin === 1) NAV.pinT = NAV.gwT; go0(); }; // RC-2: the grown-up session starts
     if (typeof PIN != 'undefined') return PIN.gate(go);
     return partLoad('gate').then(ok => {
       if (ok && typeof PIN != 'undefined') return PIN.gate(go);
@@ -151,6 +151,10 @@ const NAV = {
   // Grown-ups, the report card, Story themes). Back from a grown-up screen goes to Grown-ups only while it is valid, else Home; away
   // from the Grown-ups screens (Story themes, which a grown-up may hand to the child) it lasts GW_MS from the last Grown-ups screen.
   gwT: 0, gwK: 0, GW_MS: 180000,
+  // OWNER-1127 (owner decision 2026-11-27): Grown-ups opened by the PIN (PIN.enter passes 1) in the last 2 minutes: Unlock or restore
+  // asks no second PIN (PLAY.cardBind). In memory only, never saved, so a reload asks again
+  pinT: 0, PIN_MS: 120000,
+  pinOk() { return NAV.pinT > 0 && Date.now() - NAV.pinT < NAV.PIN_MS; },
   gwOk() { return NAV.gwT > 0 && (!!document.querySelector('#app .gw') || Date.now() - NAV.gwT < NAV.GW_MS); },
   gwBack() { return NAV.gwOk() ? grown() : home(); },
   // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in; then: what a right answer opens.
@@ -186,7 +190,7 @@ function learnHub() {
     return GFX.card({ cls: 'game lh-path', attrs: `data-p="${k}"`, p: k, icon: UI.SUBJ_ICON[k] || 'map', title: placeName(k),
       sub: `<span>${np} of ${N.length} stops. ${esc(done ? 'All done! Play any stop.' : np ? 'Next: ' + N[curNode(k)].t : 'Start here!')}</span>`, go: done ? 'trophy' : 'play' });
   }).join('');
-  const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
+  const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: MIS.none() ? 'A bit of every subject!' : 'A bit of everything you learned' }) + // OWNER-1127: nothing learned yet
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
     (raceOn() ? GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) : '') +
     (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)

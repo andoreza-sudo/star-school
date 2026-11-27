@@ -540,6 +540,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### REC-198: recorded read-along stories and new Spanish words (v198, 2026-11-27, Claude; branch rec198)
+- **Owner decision 2026-11-27**: audio budget 9.5 -> 12 MB; record the STORIES-7 stories (STORIES7-READ.md) and the DEEP-15 Spanish words (DEEP15-READ.md), all wording approved.
+- **Budgets changed**: AUDIO_FAIL 9,500,000 -> 12,000,000; AUDIO_WARN 8,439,000 -> 10,660,000 (in proportion). CONTRIBUTING, HANDOFF, check.sh and test.js say so.
+- **Spanish**: tools/es-audio.js collects the DEEP-15 words whatever DEEP15_ON says (deep15Apply runs once in the collector). 135 files, 1,140 characters: the 81 new shown forms, 18 bare words of spell units, 38 wrong-article forms (D2 rule); "gris" moved Leo -> Eve with its unit. audio/es 2,037,283 -> 2,310,255 bytes.
+- **Stories**: tools/en-audio.js --story [--words] (luna, speed 0.95, audio/story, src/data/d-story-audio.js in teachrd): 42 stories (6,435 characters, 977,395 bytes), 79 lines (73 questions + 6 spoken screen sentences; 1,743 characters, 254,053 bytes), 397 word taps (1,625 characters, 584,715 bytes). Word times from xAI speech to text word timestamps, aligned to st7Words (all 42 at the first take); a syllable estimate is the fallback. The reader plays the story through storyPlay (12-speech.js: shared ESA.au, hush, the hidden-app queue, music ducking), lighting one word at a time on the recording's clock; lines and word taps via st7Say. sw.js lists audio/story in AF and answers its Range requests.
+- **All audio**: 11,579,513 bytes (420,487 under 12 MB; the word taps needed a 300 KB margin).
+- **Tests**: new test.js "REC-198". TEACH-4's all-audio total now counts audio/story. **Expected values changed**: STORIES-7's stand-in ST7A swaps cvc-1's entry and puts it back (the real ST7A is a const now); STORIES-7's doc check wants "Recorded (REC-198)" in place of "Nothing is recorded". Smoke STORIES-7 checks the words light on the recording. No other threshold, hash, KNOWN list or fixture changed.
+- Not done: the STORY7_ON / DEEP15_ON status lines are still "unreviewed" (the gates stay off until the owner's one-line flips).
+
 ### MIX-8: Break up practice (BEST-APP roadmap 8; v197, 2026-11-26, Claude; branch mix8 from b20b7b9)
 - **What**: no new words (the roadmap's condition for no owner decision). Gap table, rules and evidence: docs/drafts/MIX8.md. (a) mixed shapes was partly done (KINDS2, lsMix, review and mastery questions); the 176 one-kind stops need new content, left for a content chunk. (b) a review question that would be the third of its kind in a row waits until it is not (never lost; not at a one-kind stop); Tricky Mix and Daily Review pools are reordered once (runCap). (c) a revealed miss comes back after 2 more new questions, one at a time, inside the round (the rest at the end as before; test out unchanged); a retry never scores, never moves mastery or a review box, is not booked as a miss again, and leaves the in-row count alone. (d) hard start: in a stop's own round of 8+, within its first half, once 1 star is out of reach (4 misses in the first 4-5 of 10; 3 in the first 3-4 of 8), the round is cut to 60% (6 of 10, 5 of 8); stars and pass cannot change (0 either way), formulas unchanged; the end card's "Get N right" names the full round's number.
 - Boss, test out, check-ins, Fact Race, Brain Teasers and passages are left alone.
@@ -1409,7 +1418,10 @@ A review of MERGE-186 (G-MOVES, TEACH-5S). VER stays v186.
   for "rarely tell a right child to listen again": a similar word sometimes passes, a different word or silence almost never.
   tools/test.js recomputes a smaller set (every 6th line as target: true match 95.8% of 288, other voice 54/66, false accept
   14.9% of 282; set again in v196, owner 2026-11-25, for the 128 new Spanish lines, with the lessons' wrong forms such as "el camisa"
-  left out of the other-voice pairs because no child is asked to say one) and fails if it moves. Real children's voices differ more than Leo and Eve, so
+  left out of the other-voice pairs because no child is asked to say one; owner decision 2026-11-27: new recordings (REC-198), the
+  DEEP-15 Spanish words (798 -> 932 recorded lines): true match 96.4% of 330, other voice 54/66, false accept 16.4% of 324 (similar word 43/132, another word 10/132);
+  the full set, `node tools/spk-calib.js`, ABS 1.6 / RATIO 1.15 unchanged: true match 99.3% of 1,638, false accept 11.8% of 2,414 with
+  the second unrelated word (similar word 220/786 = 28%, another word 30/784 = 3.8%, other2 36/784, silence and noise 0/60)) and fails if it moves. Real children's voices differ more than Leo and Eve, so
   expect fewer "Great job!" for right words than here; the self-check stays the real decision.
 - A page opened from a file (file://, the test harness) cannot read its own recordings, so there is no sound check there (no fetch is
   tried); the installed app and GitHub Pages (https, service worker cache) have it.

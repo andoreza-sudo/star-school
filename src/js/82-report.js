@@ -67,6 +67,7 @@ const REP = {
     const m = {name: S.name || '', date: REP.dayText(now), year: new Date(now * 864e5).getUTCFullYear(), grade: gradeOf()};
     // TEACH-1: the lessons' before-and-after measure (S.lm: [nid, day, pre right, pre n, post right, post n, tested out], 52b-know.js) and tonight's question
     const lm = Array.isArray(S.lm) ? S.lm : [], sm = i => lm.reduce((t, x) => t + (+x[i] || 0), 0), pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+    m.skip = REP.skipMiss(); // OWNER-1127
     m.ls = typeof LSREP != 'undefined' ? LSREP.data() : null; // TEACH-2: the lessons' card (52d-notebook.js, part teach)
     m.teach = lm.length ? {n: lm.length, pre: pc(sm(2), sm(3)), post: pc(sm(4), sm(5)), to: lm.filter(x => x[6]).length, tq: typeof S.tq == 'string' ? S.tq : ''} : null;
     REP.keepLog(() => {
@@ -225,7 +226,18 @@ const REP = {
         : `is still working on <b>${esc(o.work)}</b>.`) + '</li>').join('')}</ul>`;
   },
   pinned: (m, x) => !!m.pin && m.pin.p == x.p && m.pin.sk == x.sk && m.pin.lv == x.lv,
+  // OWNER-1127 (owner 2026-11-27; docs/drafts/SPACED9.md): a skipped stop (placement, Test out) whose check-in was answered wrong
+  // (S.spc.x, spcTry in 59-review.js), read as it is: a possible mis-placement
+  skipMiss() {
+    const x = S.spc && S.spc.x;
+    if (!x || typeof x != 'object' || Array.isArray(x) || typeof SPC == 'undefined') return [];
+    return Object.keys(x).sort((a, b) => (+x[b] || 0) - (+x[a] || 0)).map(k => SPC.nd(k)).filter(Boolean).map(n => n.t);
+  },
   needs(m) {
+    const sk = (m.skip || []).map(t => `<p class="rp-p0">${ico('warning', 22)} Checked a skipped stop: <b>${esc(t)}</b>. Practice it again.</p>`).join('');
+    return sk + REP.needs0(m);
+  },
+  needs0(m) {
     if (!m.tried) return '<div class="rp-empty">This list fills in after a few rounds.</div>';
     if (!m.needs.length) return REP.subj(m) + '<div class="rp-empty">Nothing stands out. Every stop they have tried is going well.</div>';
     return REP.subj(m) + `<p class="small rp-p0">The stops with the lowest first-try scores. Playing one again from the map is the best help. `

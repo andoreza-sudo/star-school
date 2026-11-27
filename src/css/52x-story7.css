@@ -1,0 +1,45 @@
+/* STORIES-7: the story reader (52x-story7.js, part teachrd). Tokens only. Every word is a 48 px button (a tap says it); the word
+   being read is lit (.st7-on: a thick ring and a tint, no movement, so reduced motion and Calm mode need nothing more). Phone: the
+   picture over the words; wide and low (1024x600): the picture beside them. */
+.st7-shelf,.st7-story,.st7-quiz,.st7-end{padding:var(--s-3) var(--s-4) var(--s-6)}
+.st7-tip{margin:var(--s-2) auto var(--s-3);max-width:44em;text-align:center;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}
+.st7-sg{margin:0 auto var(--s-4);max-width:60em}
+.st7-sh{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-2);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--read-shade)}
+.st7-sh .ic{flex:none;color:var(--read)}
+.st7-sg.lock .st7-sh{color:var(--ink-2)}
+.st7-sg.lock .st7-sh .ic{color:var(--ink-3)}
+.st7-lk{margin:0;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}
+.st7-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-2)}
+.btn.st7-card{flex-direction:column;justify-content:center;gap:var(--s-1);min-height:120px;padding:var(--s-2);text-align:center;font-size:var(--fs-3);line-height:var(--lh-3)}
+.st7-cp{display:block;width:64px;height:64px}
+.st7-page{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto;max-width:60em}
+.st7-pic{width:112px;height:112px;flex:none}
+.st7-pic .art{display:block;width:100%;height:100%}
+.st7-body{width:100%}
+.st7-t,.st7-txt{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--s-1);margin:0}
+.st7-t{justify-content:center;margin-bottom:var(--s-2)}
+.st7-w{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:48px;padding:0 var(--s-1);border:0;border-radius:var(--r-chip);
+  background:transparent;color:var(--ink);font:inherit;font-family:var(--font-body);font-size:var(--fs-5);line-height:var(--lh-5);cursor:pointer}
+.st7-t .st7-w{font-family:var(--font-display);color:var(--read-shade);font-weight:700}
+.st7-w:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.st7-w.st7-on{background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star-shade)}
+.st7-w.st7-past{color:var(--ink)}
+.st7-youmode .st7-w{box-shadow:inset 0 -3px 0 var(--read-tint)}
+.st7-youmode .st7-w.st7-heard{background:var(--read-tint);color:var(--ink)}
+.st7-act{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2);margin:0 auto}
+.st7-act .btn{min-height:var(--tap)}
+.st7-hide{display:none!important}
+.st7-qn{margin:0 0 var(--s-2);text-align:center;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}
+.st7-qp{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-2);margin:0 auto var(--s-4);max-width:40em}
+.st7-qt{margin:0;font-size:var(--fs-5);line-height:var(--lh-5);text-align:center;color:var(--ink)}
+.st7-quiz .inp{max-width:40em;margin:0 auto}
+.choices.st7-ch .ch{min-height:96px}
+.st7-end{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center}
+.st7-big{margin:0;font-family:var(--font-display);font-size:var(--fs-5);line-height:var(--lh-5);color:var(--read-shade)}
+@media (min-width:700px) and (max-height:700px){
+  .st7-page{flex-direction:row;align-items:flex-start}
+  .st7-pic{width:150px;height:150px}
+  .st7-t{justify-content:flex-start}
+  .st7-story{padding-top:var(--s-2)}
+  .st7-tip{margin:var(--s-2) auto}
+}

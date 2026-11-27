@@ -3,7 +3,7 @@
 BEST-APP roadmap item 11. A new first card on the report card, in Grown-ups behind the PIN: "This week your child learned...", two
 questions to ask at dinner, and a certificate to print. Nothing new on the child's side.
 
-status: unreviewed
+status: reviewed owner 2026-11-27
 
 Status: **pending owner approval**. The code uses the proposed text below, but the corner stays hidden until the owner approves it.
 

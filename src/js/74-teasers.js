@@ -406,6 +406,7 @@ const BT = {
     $$('.bt-win').forEach(e => e.remove());
   },
 
+  MORE: 'More puzzles open when a grown-up unlocks Whistlestop.', // OWNER-1127: approved 2026-11-27
   // Hub: the Puzzle of the Day, a Keep going card, the badges card and one card per type offered in the child's band
   hub() {
     BT.stop();
@@ -430,7 +431,9 @@ const BT = {
       const bdg = GFX.card({ id: 'btbdg', cls: 'bt-bdgc', p: 'bt', icon: 'medal', title: 'My badges', go: 'go',
         sub: `<span class="gx-ln">${got.length ? `<span class="bt-mini">${last.map(x => BT.medal(x, 30)).join('')}</span><span>${got.length} ${got.length == 1 ? 'badge' : 'badges'}</span>`
           : '<span>Solve puzzles to win badges!</span>'}</span>` });
-      body = `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>${PLAY.locked() ? PLAY.rowHTML() : ''}`;
+      // OWNER-1127 (owner decision 2026-11-27): the free sample shows the Puzzle of the Day and one line, not 18 locked cards
+      body = PLAY.locked() ? `<div class="games bt-top3">${day_}</div><p class="gx-lead" id="btmore">${esc(BT.MORE)}</p>${PLAY.rowHTML()}`
+        : `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>`;
     }
     view(`<div class="top tbar gx-mtop s-bt">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('puzzle', 24)}</span>` +
       `<span>Brain Teasers</span></div>${UI.chip('star', BT.totalStars(), { aria: 'Puzzle stars' })}</div><div class="scroll gx-list bt-hub">${body}</div>`);
@@ -443,6 +446,7 @@ const BT = {
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
     if (fresh.length) BT.badgeSheet(fresh);
     else if (BT.offer) BT.offerLower();
+    else if (L.length && PLAY.locked()) nrSay(BT.MORE, '.bt-hub', 600); // read out for a non-reader (AUDIO-12), as the hub's other line
     else if (L.length && !PLAY.locked() && BT.band() == 'A') { if (nrSay('Tap a puzzle to play!', '.bt-hub', 600)) setTimeout(() => { if ($('.bt-hub')) fb('Tap a puzzle to play!', 'info', 2500); }, 600); } // shown too (a11y sound rule) // REC-12 (owner approved the words 2026-11-26): the youngest band hears what to do (12-speech.js)
     BT.warm(); // P6-03
   },

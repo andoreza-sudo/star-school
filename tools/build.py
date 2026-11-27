@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # (BRAND, v193: the icons are copied from docs/brand/icons/, drawn by tools/brand-icons.js; the build no longer needs Pillow)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v197'
+VER = 'v198'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -138,6 +138,45 @@ def parenton_js(root):
     return ('/* PARENT-11: BUILT by tools/build.py (never edit): 1 once docs/drafts/PARENT11-READ.md says "status: reviewed <name> <date>",\n'
             '   else 0: the report card draws no Parent corner (41d-parent.js, part gate). A let: tools/smoke.js sets it to try the corner. */\n'
             'let PARENT_ON = %d;\n' % parent_on(root))
+# STORIES-7 (BEST-APP roadmap 7): the decodable mini-stories and their reader (src/js/52w-story7d.js, 52x-story7.js, part teachrd) show
+# only once the owner has read them: docs/drafts/STORIES7-READ.md has one status line, "status: unreviewed" until then. Changing it to
+# "status: reviewed <name> <YYYY-MM-DD>" (the one-line flip) and building again writes src/js/42c-story7on.js with STORY7_ON = 1 (in
+# index.html); with 0 the reading map draws no Stories stop (42c-story7.js, 46-home.js). --words-only and --words-check cover it too.
+STORY7_FILE, STORY7_DOC = '42c-story7on.js', os.path.join('docs', 'drafts', 'STORIES7-READ.md')
+def story7_on(root):
+    f = os.path.join(root, STORY7_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def story7on_js(root):
+    return ('/* STORIES-7: BUILT by tools/build.py (never edit): 1 once docs/drafts/STORIES7-READ.md is reviewed, else 0 (no Stories stop) */\n'
+            'let STORY7_ON = %d;\n' % story7_on(root))
+# OLDER-14 (BEST-APP roadmap 14): the older look for grades 4 to 6 (src/js/50b-older.js: the score card with a personal best and no chest,
+# the Show my pet switch) shows only once the owner has read its words: docs/drafts/OLDER14-READ.md has one status line, "status: unreviewed"
+# until then. Changing it to "status: reviewed <name> <YYYY-MM-DD>" (the one-line flip) and building again writes src/js/50a-olderon.js
+# with OLDER_ON = 1 (in index.html); with 0 every grade keeps the chest and the pet. --words-only and --words-check cover it too.
+OLDER_FILE, OLDER_DOC = '50a-olderon.js', os.path.join('docs', 'drafts', 'OLDER14-READ.md')
+def older_on(root):
+    f = os.path.join(root, OLDER_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def olderon_js(root):
+    return ('/* OLDER-14: BUILT by tools/build.py (never edit): 1 once docs/drafts/OLDER14-READ.md says "status: reviewed <name> <date>",\n'
+            '   else 0: every grade keeps the chest and the pet (50b-older.js). A let: tools/smoke.js and tools/test.js set it to try the look. */\n'
+            'let OLDER_ON = %d;\n' % older_on(root))
+# DEEP-15 (BEST-APP roadmap 15): the drafted Discover and Spanish items (src/data/d-deep15.js, added by src/js/52y-deep15.js, part teaches:
+# a world for grades 1-2 with six stops, Nature Trail match and order items, Spanish words and two units) reach a child only once the owner
+# has read them: docs/drafts/DEEP15-READ.md has one status line, "status: unreviewed" until then. Changing it to
+# "status: reviewed <name> <YYYY-MM-DD>" (the one-line flip) and building again writes src/js/42d-deep15on.js with DEEP15_ON = 1 (in
+# index.html); with 0 Discover and Spanish are exactly as before. --words-only and --words-check cover it too.
+DEEP15_FILE, DEEP15_DOC = '42d-deep15on.js', os.path.join('docs', 'drafts', 'DEEP15-READ.md')
+def deep15_on(root):
+    f = os.path.join(root, DEEP15_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def deep15on_js(root):
+    return ('/* DEEP-15: BUILT by tools/build.py (never edit): 1 once docs/drafts/DEEP15-READ.md says "status: reviewed <name> <date>",\n'
+            '   else 0: Discover and Spanish are as before (42e-deep15.js, 52y-deep15.js). A let: tools/smoke.js and tools/test.js set it to try the items. */\n'
+            'let DEEP15_ON = %d;\n' % deep15_on(root))
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
@@ -146,6 +185,9 @@ def write_words(root):
     open(os.path.join(root, 'src', 'js', ASK_FILE), 'w', encoding='utf-8', newline='').write(ask_js(root))
     open(os.path.join(root, 'src', 'js', ASKON_FILE), 'w', encoding='utf-8', newline='').write(askon_js(root))
     open(os.path.join(root, 'src', 'js', PARENT_FILE), 'w', encoding='utf-8', newline='').write(parenton_js(root))
+    open(os.path.join(root, 'src', 'js', STORY7_FILE), 'w', encoding='utf-8', newline='').write(story7on_js(root))
+    open(os.path.join(root, 'src', 'js', OLDER_FILE), 'w', encoding='utf-8', newline='').write(olderon_js(root))
+    open(os.path.join(root, 'src', 'js', DEEP15_FILE), 'w', encoding='utf-8', newline='').write(deep15on_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
@@ -156,7 +198,7 @@ if '--words-check' in sys.argv:
     _pf = os.path.join(_w, 'src', 'js', PERS_FILE)
     if os.path.isfile(_pf) and open(_pf, encoding='utf-8', newline='').read() != pers_js(_w):
         _bad.append(PERS_FILE)
-    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js)):
+    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js), (STORY7_FILE, story7on_js), (OLDER_FILE, olderon_js), (DEEP15_FILE, deep15on_js)):
         _af = os.path.join(_w, 'src', 'js', _f)
         if os.path.isfile(_af) and open(_af, encoding='utf-8', newline='').read() != _fn(_w):
             _bad.append(_f)
@@ -164,7 +206,7 @@ if '--words-check' in sys.argv:
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js and src/js/82a-parenton.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js, src/js/82a-parenton.js, src/js/42c-story7on.js, src/js/50a-olderon.js and src/js/42d-deep15on.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -189,8 +231,8 @@ PARTS = [
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
     ('teach12', r'(52e-words|52f-bench|52g-drafted|d-teach-audio)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
-    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r)\.js|(52k-teach4|52q-teach5r)\.css'),  # READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
-    ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s)\.js|52s-teach5s\.css'),  # TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
+    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r|52w-story7d|52x-story7|d-story-audio)\.js|(52k-teach4|52q-teach5r|52x-story7)\.css'),  # STORIES-7: the decodable mini-stories and their reader (52w, 52x; gated by STORY7_ON); REC-198: their recordings' manifest (d-story-audio.js: ST7A, ST7S); READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
+    ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s|52y-deep15|d-deep15)\.js|52s-teach5s\.css'),  # DEEP-15: the drafted Discover and Spanish items (52y-deep15.js and its data, d-deep15.js; gated by DEEP15_ON), which the same two maps load; TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
     ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw|39u-stage)\.js|(39p-pers|39r-ask|39u-stage)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped
@@ -207,6 +249,7 @@ PARTS = [
 # v182: hints (the Practice mistake hints, HINT-01), loaded when a Practice round starts (hintsWarm, 50-round.js); start-up was over P6-03's 2.5 MB.
 # TEACH-6M: teach6 (the grade 6 math lessons), loaded after teach35 by the math map for a 5th grader up and by a grade 6 lesson stop (lsParts).
 # RC-1: gate (the Grown-ups PIN pad, the picture passwords), loaded by NAV.quiz, Grown-ups and the "Who is playing?" picker when asked for.
+# STORIES-7: teachrd also carries the decodable mini-stories and their reader; a Stories stop on the reading map loads it with teach and teach12.
 LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
@@ -277,7 +320,8 @@ json.dump({"name": "Whistlestop", "short_name": "Whistlestop", "start_url": "./"
 # EN-PRAISE: the recorded English encouragement, audio/en/*.ogg (tools/en-audio.js; src/data/d-en-audio.js), the same way and cache.
 # AUDIO lists 'es/<file>' then 'en/<file>' (file names are hashes that differ between the two: each recipe is part of its hash).
 # TEACH-4: and the pet's recorded teacher lines, audio/teach/*.ogg (tools/en-audio.js; src/data/d-teach-audio.js), the same way and cache.
-AUDIO = [d + '/' + n for d in ('es', 'en', 'teach') if os.path.isdir(os.path.join(ROOT, 'audio', d))
+# REC-198: and the recorded stories of STORIES-7, audio/story/*.ogg (tools/en-audio.js --story; src/data/d-story-audio.js), the same way and cache.
+AUDIO = [d + '/' + n for d in ('es', 'en', 'teach', 'story') if os.path.isdir(os.path.join(ROOT, 'audio', d))
          for n in sorted(os.listdir(os.path.join(ROOT, 'audio', d))) if n.endswith('.ogg')]
 AUDIO_BYTES = sum(os.path.getsize(os.path.join(ROOT, 'audio', n)) for n in AUDIO)
 # Service worker. Cache name and precache list carry VER, so one release's index.html, part files and data file are cached and replaced together.
@@ -315,7 +359,7 @@ const fillAudio=()=>filling||(filling=caches.open(A).then(async c=>{const have=n
 self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio());if(e.data==='hush')hushT=Date.now()+HUSH_MS});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
- if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
+ if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\/|\\/audio\\/story\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):onDemand(e.request)));return}
  if(e.request.mode==='navigate'&&!/\\/(index\\.html)?$/.test(new URL(e.request.url).pathname)){const net=fetch(e.request),own=()=>caches.match(e.request,{ignoreSearch:true});e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},t=setTimeout(()=>own().then(fin),NAV_MS);
@@ -334,4 +378,4 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
 for f in ('privacy.html', 'icon-192.png'):
     shutil.copyfile(os.path.join(ROOT, f), os.path.join(ROOT, 'site', f))
 print(os.listdir(OUT), os.path.getsize(OUT + '/index.html'), [os.path.getsize(OUT + '/' + f) for f in FILES])
-print('audio (ES-AUDIO, EN-PRAISE and TEACH-4, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))
+print('audio (ES-AUDIO, EN-PRAISE, TEACH-4 and REC-198, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))

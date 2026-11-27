@@ -207,6 +207,7 @@ function revSlot(){
      k   1: entered as a skipped stop and not checked yet (its check-in is the light one)
      day, n  the day number and the check-ins asked that day (the cap)
      t   the latest day the schedule was read on: a clock set back moves every d back by the difference
+     x   OWNER-1127: {nid: day} skipped stops whose light check-in was answered wrong (the report card's line; spcTry)
    Everything runs on mastDay() (today(), the app's clock) and the map, no random draw except the question itself, so the same
    save and day give the same check-ins. */
 const SPC={
@@ -303,6 +304,10 @@ function spcTry(q,ok,helped){
   if(!q||!q.spc)return null;
   const e=SPC.get().s[q.spc],d=mastDay();
   if(!e||e.b>=SPC.DONE)return null;
+  // OWNER-1127 (owner 2026-11-27): a skipped stop's light check-in answered wrong is noted for the report card (REP.needs:
+  // "Checked a skipped stop: ... Practice it again."), S.spc.x = {nid: day}, until a later check-in of it is right on its own
+  const o=SPC.get(),x=o.x&&typeof o.x=='object'&&!Array.isArray(o.x)?o.x:null;
+  if(!ok&&e.k)(x||(o.x={}))[q.spc]=d;else if(ok&&!helped&&x){delete x[q.spc];if(!Object.keys(x).length)delete o.x}
   if(!ok){e.b=0;e.d=d+SPC.INT[0];delete e.k}
   else if(helped)e.d=d+SPC.INT[e.b];
   else if(e.k){e.b=SPC.DONE;delete e.k}

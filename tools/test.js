@@ -26,7 +26,8 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
 // TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
 // code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB. (REC-ALL 2026-11-24: the owner raised the audio to
-// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
+// 8.5 MB, REC-2 owner decision 2026-11-24 (9.0 MB) to 9.0 MB, owner decision 2026-11-24 (D2) to 9.5 MB, owner decision 2026-11-27 (read-along
+// stories and new Spanish words) to 12.0 MB; the 15 MB code limit is a ceiling, the code precached today is far below it.)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
@@ -36,7 +37,9 @@ const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB
 // 8.5 -> 9.0 MB, warn raised in proportion 7.55 -> 7.995 MB
 // owner decision 2026-11-24 (D2): the Spanish sort chips and the wrong forms the Spanish lessons read aloud are recorded too (about 128
 // short files): 9.0 -> 9.5 MB, warn raised in proportion 7.995 -> 8.439 MB
-const AUDIO_WARN=8439000,AUDIO_FAIL=9500000,AUDIO_FILE_FAIL=40000;
+// owner decision 2026-11-27: read-along stories and new Spanish words (REC-198: the STORIES-7 stories, questions, spoken lines and word taps
+// in audio/story, and the DEEP-15 Spanish words): 9.5 -> 12.0 MB, warn raised in proportion 8.439 -> 10.66 MB
+const AUDIO_WARN=10660000,AUDIO_FAIL=12000000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -1528,7 +1531,10 @@ run('report card (P5-06): read-only, empty and old saves, numbers, escaping, dam
       if(JSON.stringify(S)!==before||Object.keys(S).join(',')!==keys)bad(label+': opening the report card changed S');
       const txt=h.replace(/<[^>]*>/g,' ');
       if(BADTXT.test(txt))bad(label+': bad text '+(txt.match(BADTXT)||[])[0]);
-      if(!/Report card for/.test(h)||h.split('<section').length!==8)bad(label+': expected 7 sections, got '+(h.split('<section').length-1));
+      // OWNER-1127: the owner approved PARENT-11 on 2026-11-27 (PARENT_ON = 1), so the card has the Parent corner as an 8th section
+      // when the gate part (PC) is loaded, as it is here; with the flag off or the part not loaded, the 7 sections as before
+      const nsec=7+(PARENT_ON&&typeof PC!='undefined'?1:0);
+      if(!/Report card for/.test(h)||h.split('<section').length!==nsec+1)bad(label+': expected '+nsec+' sections, got '+(h.split('<section').length-1));
       return h;
     };
     const now=STRK.idx(today()),dk=n=>STRK.key(now-n);
@@ -13354,7 +13360,7 @@ run('word search and unscramble P3-15',()=>{
   // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
   const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
   const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
-  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js'&&n!=='d-teach-start.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js'&&n!=='d-teach-start.js'&&n!=='d-story-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -15088,7 +15094,11 @@ run('Spanish speaking check S-SPK2',()=>{
   return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
     // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
     try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6,other2:false}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
-      const want={npos:288,nneg:282,voice:54,child:222,similar:39,other:3,silence:0}; // v196 (owner 2026-11-25): 128 new Spanish lines; the lessons' wrong forms make no voice pair (tools/spk-calib.js)
+      // v196 (owner 2026-11-25): 128 new Spanish lines; the lessons' wrong forms make no voice pair (tools/spk-calib.js): 288/282, 54, 222, 39, 3
+      // owner decision 2026-11-27: new recordings (REC-198): the DEEP-15 Spanish words are 134 more recorded lines (798 -> 932), so the every-6th set has more
+      // targets and its far picks move: true match 96.4% of 330 (was 95.8% of 288), false accept 16.4% of 324 (was 14.9% of 282); the full set
+      // (node tools/spk-calib.js) 99.3% / 11.8% of 2,414, similar word 220/786 (28%), another word 30/784 (3.8%), as before; thresholds unchanged
+      const want={npos:330,nneg:324,voice:54,child:264,similar:43,other:10,silence:0};
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
       if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
@@ -19373,8 +19383,10 @@ run('Brain Teasers and practice fixes R-01b',()=>{
      if(!MIS.valid(S.day.m))add('the "more" mission is not a valid mission');
      let w=MIS.done({k:'round',p:'read',n:1});if(w.won.length)add('one round finished the "more" mission');
      w=MIS.done({k:'round',p:'read',n:2});if(!w.won.some(x=>x.x.k=='more'))add('the second round did not finish the "more" mission');
-     if(MIS.title({k:'more'})!=='Play 2 rounds today')add('more title '+MIS.title({k:'more'}));
-     note.push('Pre-K/K: "Play 2 rounds today" in place of the perfect round')}
+     // OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL wording 4): day().r counts lessons and badge check-ins too (52-lesson.js
+     // and 51b-checkin.js add to it), so the title became "Learn and play 2 times today" (was "Play 2 rounds today")
+     if(MIS.title({k:'more'})!=='Learn and play 2 times today')add('more title '+MIS.title({k:'more'}));
+     note.push('Pre-K/K: "Learn and play 2 times today" in place of the perfect round')}
     // Should 2: Mixed Practice weighted to recent (50%) and weak (30%) stops, older 20%. A 3rd grader at maths stop 90 and reading stop 60.
     {const grd=n=>PATHS[n.p].worlds[n.wi].g;
      const setup=weak=>{load(null);S.grade=3;NODES.math.forEach((n,i)=>{if(i<90)S.maps.math[nid(n)]=2});NODES.read.forEach((n,i)=>{if(i<60)S.maps.read[nid(n)]=2});
@@ -22702,11 +22714,14 @@ run('home: the review tile shows whenever anything is due, lessons on or off TEA
     S.know={add1:{s:2,box:0,due:200,d:1,last:1,n:1,lv:[[0,0],[0,0],[0,0]],b:{}}};o.learned=tile();o.gone=typeof revCovered!='undefined';
     TEACH.off=true;o.off=tile();TEACH.off=false;
     S.rev.push(item('es_greet',1,'hola'));o.mixed=tile();
-    S.rev=[];o.none=tile();
+    S.rev=[];o.none0=tile();o.yet=/Nothing to review yet/.test(hmToday());P('add').r=1;o.none=tile();
     return o})()`);
   const p=[];
   for(const k of ['unlearned','learned','off','mixed'])if(!o[k].rev||o[k].ok)p.push(k+': items are due but there is no review tile');
   if(o.none.rev||!o.none.ok)p.push('nothing due: "All caught up!" is gone');
+  // OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL wording 1): a brand-new child (no round played yet, as loadSave(null)
+  // here) sees "Nothing to review yet" in the same tile, no button; "All caught up!" (o.none) once a round was played
+  if(o.none0.rev||o.none0.ok||!o.yet)p.push('nothing due, no round played yet: not "Nothing to review yet"');
   if(o.gone)p.push('revCovered (the rule that hid the tile) is still in the code');
   for(const k of ['unlearned','learned','off','mixed','none']){const x=o[k],want=x.flu?'':' n2';if(x.tiles!==(x.flu?3:2)||x.cls!==want)p.push(k+': '+x.tiles+' tiles in a row of class "'+x.cls+'"')}
   if(/\.hm-today\.n1\b/.test(fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8')))p.push('the one-tile row style is left over');
@@ -22891,7 +22906,7 @@ run('recorded teacher lines TEACH-4',()=>{
   for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);if(!used.has(f))p.push(EA.TEACH_DIR+f+' is not in the manifest');
     const h=b.indexOf('OpusHead');if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.TEACH_DIR+f+' is not mono Ogg Opus');
     if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.TEACH_DIR+f+' is '+b.length+' bytes')}
-  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total;
+  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=sum('audio/es')+sum('audio/en')+total+sum('audio/story'); // REC-198: and the recorded stories
   if(all>AUDIO_FAIL)p.push('the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
   // 2. the lines are the app's: the little pet's own lines, the end card, the reasons, the batch 4 instructions, and (REC-ALL) every lesson's fixed
   //    sentences at every age; never a digit; no cheer twice
@@ -24685,11 +24700,17 @@ run('lockouts after a clock change, Back on setup keeps Undo erase, every way in
   for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){let c=strip(src(f));
     if(f==='80-grown.js'){const a=c.indexOf('function grown(){'),b=c.indexOf('\nfunction ',a+1);c=c.slice(0,a)+c.slice(b<0?c.length:b)}
     c=c.replace(/^\s*grown\(\w*\)\s*\{/gm,''); // a method named grown (PLAY.grown) is not the screen
-    const calls=[...c.matchAll(/(^|[^.\w$])grown\(/g)].length,refs=[...c.matchAll(/[?:=,(]\s*grown\s*[,;)}]/g)].length;
+    // a reference is grown passed or chosen as a value; OWNER-1127 B2 (owner decision 2026-11-27) wrote NAV.quiz's default as the first branch
+    // of a ternary (gw ? grown : then), which the first pattern does not match (41-nav.js read 0 references), so a first branch counts too
+    // (only after '?': an object key such as { grown: 1 } in 17b-pet-age.js is not a reference)
+    const calls=[...c.matchAll(/(^|[^.\w$])grown\(/g)].length,refs=[...c.matchAll(/[?:=,(]\s*grown\s*[,;)}]/g)].length+[...c.matchAll(/\?\s*grown\s*:/g)].length;
     const ok={'41-nav.js':[1,1],'41b-pin.js':[1,0]}[f]||[0,0];
     if(calls!==ok[0]||refs!==ok[1])p.push(f+': '+calls+' call(s) of grown() and '+refs+' reference(s) outside the gate (want '+ok+')')}
   if(!/gwBack\(\) \{ return NAV\.gwOk\(\) \? grown\(\) : home\(\); \}/.test(src('41-nav.js')))p.push('NAV.gwBack is not "Grown-ups while the session is valid, else Home"');
-  if(!/const go0 = typeof then == 'function' \? then : grown, go = \(\) => \{ NAV\.gwT = Date\.now\(\); go0\(\); \};/.test(src('41-nav.js')))p.push('NAV.quiz does not start the grown-up session');
+  // the grown-up session (NAV.gwT) starts on every way through the gate, whatever then is, before it runs. OWNER-1127 B2 (owner decision
+  // 2026-11-27) added the separate 2-minute PIN window (NAV.pinT): only Grown-ups itself opened by the typed PIN (PIN.enter passes 1) starts
+  // it, never the old question or choosing a PIN; it does not replace or condition the session, which is set first and unconditionally
+  if(!/const gw = typeof then != 'function', go0 = gw \? grown : then, go = pin => \{ NAV\.gwT = Date\.now\(\); if \(gw && pin === 1\) NAV\.pinT = NAV\.gwT; go0\(\); \};/.test(src('41-nav.js')))p.push('NAV.quiz does not start the grown-up session');
   if(!/change\(\) \{ PIN\.enter\(\(\) => PIN\.choose\(\(\) => grown\(\)/.test(src('41b-pin.js')))p.push('Change PIN reaches Grown-ups without PIN.enter');
   if(!/const placeBack=\(\)=>home\(\);/.test(src('45-placement.js')))p.push('Find my level\'s Back does not go Home');
   if(!/persPick\(\(\) => NAV\.gwBack\(\)\)/.test(src('39p-pers.js')))p.push('Story themes does not return through NAV.gwBack');
@@ -25274,9 +25295,10 @@ run('FEEDBACK-4: Tell us what you think in Grown-ups only, a mailto with no chil
   // the card's code reads nothing of the child's save
   const fsrc=code(gr.slice(gr.indexOf('const FB_MAIL='),fz));
   if(/\bS\.|\bS\[|PRF\.|gradeOf|gradeSpoken|NODES|\bP\(|localStorage|SKEY|petN\(/.test(fsrc))p.push('the card\'s code reads the child\'s save');
-  // 5. every new sentence is in the read-through, marked pending owner approval
+  // 5. every new sentence is in the read-through, marked pending owner approval, or (OWNER-1127: the owner approved every sentence on
+  // 2026-11-27, with no change notes) marked approved with the owner's date. The table and every sentence must still be listed.
   let doc='';try{doc=fs.readFileSync(path.join(ROOT,'docs','drafts','FEEDBACK-READ.md'),'utf8')}catch(e){p.push('docs/drafts/FEEDBACK-READ.md is missing')}
-  if(doc){if(!/pending owner approval/i.test(doc)||!/\| *Where *\| *Proposed text *\| *Why *\|/i.test(doc))p.push('FEEDBACK-READ.md: no where / proposed text / why table marked pending owner approval');
+  if(doc){if(!/pending owner approval|approved by the owner \d{4}-\d\d-\d\d/i.test(doc)||!/\| *Where *\| *Proposed text *\| *Why *\|/i.test(doc))p.push('FEEDBACK-READ.md: no where / proposed text / why table marked pending owner approval');
     for(const s of ['Tell us what you think','Ideas, problems or a kind word: write to hello@whistlestoplearning.com.','Email us','Review on Google Play','Whistlestop feedback (1.0.0, build v'])
       if(!doc.includes(s))p.push('FEEDBACK-READ.md does not list "'+s+'"')}
   return{problems:p,note:'web: e-mail only; Play: e-mail and the Play page; '+files.length+' src files scanned for a rating prompt'};
@@ -25599,6 +25621,735 @@ run('PARENT-11: Parent corner: the week\'s summary from fixture saves, dinner qu
   return{problems:p,note:'status '+st+' (PARENT_ON '+on+'); '+PCQ.reduce((t,g)=>t+g.q.length,0)+' dinner questions in '+PCQ.length+' groups ('+Object.entries(per).map(e=>e.join(' ')).join(', ')+'), '+Object.keys(PCW).length+' other sentences'};
 });
 
+// ---- STORIES-7 (BEST-APP roadmap 7): decodable mini-stories with read-along (src/js/52w-story7d.js, 52x-story7.js, part teachrd; the
+// Stories stop of the reading map, 42c-story7.js; the read-through docs/drafts/STORIES7-READ.md, its status line the gate STORY7_ON).
+// 1. the checker (tools/decode.js) is right about words it must pass and words it must refuse, at the right stage;
+// 2. every word of every title and sentence is decodable at its story's stage or a sight word taught before it on the reading map;
+//    6 to 8 stories per stage, 3 to 6 short sentences, each story practises its stage's pattern, a drawn picture, no banned theme;
+// 3. every word has its highlight span (a word button, data-i in order, the same text) and its [start, end] on the read-along clock;
+//    Read to me lights every word once, in order, on that clock, and says each word; a recording's word times replace the estimate;
+// 4. the questions: the answer is a word of the story, the two other pictures are not, all three are drawn, KIND.choice accepts it;
+//    a wrong tap does not move on, the right one does, the end card names the story;
+// 5. the gate: STORY7_ON is 1 exactly when the read-through is reviewed with a name and a date (the one-line flip, on a copy of the
+//    tree); off, no stop of any map has a Stories stop and only the map reaches the reader; the parts: index.html carries none of it;
+// 6. no network, tokens only; 7. determinism (the same plan, choices, lights and words every run); 8. the read-through shows exactly
+//    the app's stories, every sentence of the screens, and the audio estimate's counts.
+run('STORIES-7: decodable mini-stories, the checker, the read-along spans and clock, the questions, the gate, no network, determinism',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),D=require('./decode.js'),cpx=require('child_process'),os=require('os'),vm=require('vm');
+  const DOC='docs/drafts/STORIES7-READ.md',doc=rd(DOC),code=rd('src/js/52x-story7.js'),data=rd('src/js/52w-story7d.js'),css=rd('src/css/52x-story7.css'),hook=rd('src/js/42c-story7.js');
+  // 1. the checker
+  const want={cat:'cvc',cats:'cvc',egg:'cvc',hill:'cvc',gets:'cvc',"dad's":'cvc',frog:'blend',jumps:'blend',ring:'blend',picnic:'blend',rabbit:'blend',ship:'digraph',duck:'digraph',
+    that:'digraph',cake:'silente',ice:'silente',kite:'silente',rose:'silente',boat:'team',rain:'team',play:'team',eating:'team',cheese:'team',star:'rvowel',bird:'rvowel',horse:'rvowel',
+    moon:'team2',house:'team2',cow:'team2',draw:'team2',go:null,he:null,robot:null,lemon:null,was:null,ball:null,talk:null,cold:null,find:null,my:null,fire:null,more:null,
+    city:null,gem:null,page:null,baby:null,the:null,of:null,put:null,come:null,have:null,give:null,bread:null,want:null,work:null,sky:null,ear:null,hair:null,boxs:null};
+  for(const [w,e] of Object.entries(want)){const m=D.minStage(w),g=m<0?null:D.STAGES[m].id;if(g!==e)p.push('the checker: '+w+' decodes at '+g+', want '+e)}
+  // 2. the stories, in the app
+  const E=require('./es-audio.js'),T={now:0,q:[],seq:0};
+  const ctx=E.loadApp(null,{setTimeout:(f,ms)=>{T.q.push([T.now+(+ms||0),T.seq++,f]);return T.seq},clearTimeout(){},clearInterval(){},requestAnimationFrame:()=>0});
+  const R=x=>vm.runInContext(x,ctx);ctx.__T=T;
+  const tick=()=>{for(let g=0;g<200000&&T.q.length;g++){T.q.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const [t,,f]=T.q.shift();T.now=t;f()}};
+  R(`(()=>{const reg={},lit=[];globalThis.__lit=lit;globalThis.__said=[];globalThis.__sub=null;
+    const mk=sel=>({sel,dataset:{},style:{},innerHTML:'',textContent:'',disabled:false,classList:{s:new Set(),add(...c){c.forEach(x=>{this.s.add(x);if(x=='st7-on'){const m=/data-i="(\\d+)"/.exec(sel);if(m)lit.push([+m[1],__T.now])}})},
+      remove(...c){c.forEach(x=>this.s.delete(x))},toggle(){},contains(x){return this.s.has(x)}},setAttribute(){},removeAttribute(){},getAttribute(){return null},scrollIntoView(){},
+      querySelector:()=>null,querySelectorAll:()=>[],insertAdjacentHTML(){},addEventListener(){},getClientRects:()=>[],closest:()=>null});
+    globalThis.__reset=()=>{for(const k in reg)delete reg[k];lit.length=0;__said.length=0};
+    document.querySelector=s=>reg[s]||(reg[s]=mk(s));document.querySelectorAll=()=>[];globalThis.__reg=reg;
+    say=t=>{__said.push(String(t))};speakBusy=()=>false;nrSay=()=>false;fb=()=>{};S.sound=false;S.music=false;
+    const b0=KIND.choice.bind;KIND.choice.bind=(q,st,sub)=>{__sub=sub;return b0(q,st,sub)}})()`);
+  const ctxD={DOL:R('DOL'),readOrder:R('NODES.read.map(n=>nid(n))'),ST7:R('ST7')},ST=ctxD.ST7,ART=R('Object.keys(ART)');
+  if(JSON.stringify(ST.stages.map(s=>[s.id,s.stop]))!==JSON.stringify(D.STAGES.map(s=>[s.id,s.stop])))p.push('ST7.stages is not the checker\'s STAGES');
+  if(JSON.stringify(R('ST7_STOPS'))!==JSON.stringify(ST.stages.map(s=>s.stop)))p.push('ST7_STOPS (42c-story7.js) is not the stops of ST7.stages');
+  const at=ST.stages.map(s=>ctxD.readOrder.indexOf(s.stop));if(at.some(i=>i<0)||at.some((v,i)=>i&&v<=at[i-1]))p.push('a stage stop is not on the reading map, or not in map order: '+at);
+  const ids=new Set(),per={};let words=0;
+  for(const st of ST.list){
+    if(ids.has(st.id))p.push(st.id+' twice');ids.add(st.id);per[st.st]=(per[st.st]||0)+1;
+    if(!D.SI.hasOwnProperty(st.st))p.push(st.id+': unknown stage '+st.st);
+    const r=D.checkStory(st,ctxD);words+=r.words.length;
+    for(const b of r.bad)p.push(st.id+' "'+st.t+'": "'+b.w+'" is not decodable at '+st.st+' ('+b.why+')');
+    if(r.pattern.length<3)p.push(st.id+': only '+r.pattern.length+' words of its own pattern ('+r.pattern.join(', ')+')');
+    if(!(st.s.length>=3&&st.s.length<=6))p.push(st.id+': '+st.s.length+' sentences (3 to 6)');
+    for(const s of st.s.concat(st.t))if(s.split(/\s+/).length>10||!/^[“"]?[A-Z]/.test(s))p.push(st.id+': not a short sentence: '+s);
+    for(const s of st.s)if(!/[.!?][”"]?$/.test(s))p.push(st.id+': no end mark: '+s);
+    if(!ART.includes(st.pic))p.push(st.id+': no drawing '+st.pic);
+    if(/magic|spell(?!l)|evolution|wizard|witch/i.test([st.t,...st.s,...st.q.map(q=>q[0])].join(' ')))p.push(st.id+': a banned theme');
+  }
+  for(const s of D.STAGES)if(!(per[s.id]>=6&&per[s.id]<=8))p.push('stage '+s.id+' has '+(per[s.id]||0)+' stories (6 to 8)');
+  // 4. the questions
+  for(const st of ST.list){
+    const ws=new Set(D.storyWords(st).map(w=>w.replace(/'s$/,'')));
+    if(!(st.q.length>=1&&st.q.length<=2))p.push(st.id+': '+st.q.length+' questions');
+    st.q.forEach((q,k)=>{const [t,a,o]=q,all=[a,...o];
+      if(!/\?$/.test(t)||o.length!==2||new Set(all).size!==3)p.push(st.id+' q'+k+': '+JSON.stringify(q));
+      for(const w of all)if(!ART.includes(w))p.push(st.id+' q'+k+': no drawing for '+w);
+      if(!ws.has(a)&&!ws.has(a+'s'))p.push(st.id+' q'+k+': the answer '+a+' is not in the story');
+      for(const w of o)if(ws.has(w)||ws.has(w+'s'))p.push(st.id+' q'+k+': the wrong picture '+w+' is in the story, so two could be right');
+      const Q=JSON.parse(R(`JSON.stringify(st7Q(st7Get(${JSON.stringify(st.id)}),${k}))`));
+      const kp=R(`KIND.choice.validate(${JSON.stringify(Q)})`);if(kp.length)p.push(st.id+' q'+k+': '+kp.join('; '));
+      if(Q.ans!==a||Q.choices.filter(c=>c.v===a).length!==1||Q.choices.length!==3||Q.kind!=='choice'||!/pics/.test(Q.cls))p.push(st.id+' q'+k+': the choice question '+JSON.stringify(Q).slice(0,200));
+      if(R(`JSON.stringify(st7Q(st7Get(${JSON.stringify(st.id)}),${k}))`)!==JSON.stringify(Q))p.push(st.id+' q'+k+': the choices change order between runs');});
+  }
+  const pos=ST.list.flatMap(st=>st.q.map((q,k)=>R(`st7Q(st7Get(${JSON.stringify(st.id)}),${k}).choices.findIndex(c=>c.v==${JSON.stringify(q[1])})`)));
+  if([0,1,2].some(i=>pos.filter(x=>x===i).length<pos.length/6))p.push('the right picture is nearly always in the same place: '+[0,1,2].map(i=>pos.filter(x=>x===i).length));
+  // 3. spans and the clock; Read to me; Now you read it; the questions' flow (fake DOM and clock, STORY7_ON on)
+  R('STORY7_ON=1');
+  let trace='';
+  for(const st of ST.list){
+    const id=JSON.stringify(st.id);R('__reset()');T.q=[];T.now=0;R(`ST7.open(${id})`);tick();
+    const H=R(`__reg['#app'].innerHTML`),wsA=JSON.parse(R(`JSON.stringify(st7Words(st7Get(${id})))`)),plan=JSON.parse(R(`JSON.stringify(st7Plan(st7Get(${id})))`));
+    const spans=[...H.matchAll(/<button class="st7-w" data-i="(\d+)">([^<]*)<\/button>/g)].map(m=>[+m[1],m[2]]);
+    const toks=[st.t,...st.s].join(' ').split(/\s+/);
+    if(spans.length!==toks.length||spans.some((s,i)=>s[0]!==i||s[1]!==R(`esc(${JSON.stringify(toks[i])})`)))p.push(st.id+': '+spans.length+' word spans for '+toks.length+' words, or out of order');
+    if(wsA.length!==toks.length||plan.length!==toks.length)p.push(st.id+': '+plan.length+' times on the clock for '+toks.length+' words');
+    if(plan.some((x,i)=>!(x[1]>x[0])||i&&x[0]<plan[i-1][1]))p.push(st.id+': the clock overlaps or runs back');
+    if(plan.some((x,i)=>R(`st7Lit(${JSON.stringify(plan)},${(x[0]+x[1])/2})`)!==i))p.push(st.id+': st7Lit does not find a word at its own time');
+    if(!/class="st7-t"/.test(H)||!/id="st7read"/.test(H)||!/id="st7you"/.test(H)||!/id="st7done"[^>]*/.test(H)||!H.includes(R('ST7W.read'))||!H.includes(R('ST7W.you')))p.push(st.id+': the story screen misses a part');
+    // Read to me
+    R('__reset()');T.q=[];T.now=0;R('st7Play()');tick();
+    const lit=JSON.parse(R('JSON.stringify(__lit)')),said=JSON.parse(R('JSON.stringify(__said)'));
+    if(lit.map(x=>x[0]).join()!==toks.map((x,i)=>i).join())p.push(st.id+': Read to me lit '+lit.map(x=>x[0]).join(' ')+', not every word once in order');
+    if(lit.some((x,i)=>x[1]<plan[i][0]||x[1]>plan[i][0]+i*80+200))p.push(st.id+': a word lit off its time on the clock');
+    if(said.slice(0,toks.length).join('|')!==wsA.map(w=>w.k).join('|')||said[toks.length]!==R('ST7W.tipAfter'))p.push(st.id+': Read to me said '+said.slice(0,8).join('|'));
+    if(R('ST7R.mode')!=='')p.push(st.id+': still reading after the last word');
+    trace+=st.id+':'+lit.map(x=>x.join('@')).join(',')+';';
+    // Stop part way: no more words light
+    if(st.id==='cvc-1'){R('__reset()');T.q=[];T.now=0;R('st7Play()');for(let g=0;g<40&&T.q.length;g++){T.q.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const [t,,f]=T.q.shift();T.now=t;f()}
+      const n0=R('__lit.length');R('st7Play()');tick();if(R('__lit.length')!==n0||R('ST7R.mode')!=='')p.push('Stop does not stop the read-along');}
+    // Now you read it: a tap says the word; I read it! -> the questions; a wrong picture stays, the right one moves on; the end card
+    R('__reset()');R('st7You()');R('st7Tap(1)');
+    if(R('ST7R.mode')!=='you'||R('__said.join("|")')!==R('ST7W.tipYou')+'|'+wsA[1].k)p.push(st.id+': Now you read it: '+R('__said.join("|")'));
+    R('__reset()');T.q=[];R('st7Quiz(0)');
+    for(let k=0;k<st.q.length;k++){
+      const QH=R(`__reg['#app'].innerHTML`),q=st.q[k];
+      if(!QH.includes(R(`esc(${JSON.stringify(q[0])})`))||!QH.includes(R(`esc(st7F(ST7W.qn,{n:${k+1},all:${st.q.length}}))`))||(QH.match(/class="choice ch"/g)||[]).length!==3)p.push(st.id+' q'+k+': the question screen');
+      R(`__sub(${JSON.stringify(q[2][0])},{classList:{add(){}},disabled:false})`);tick();
+      if(R(`__reg['#app'].innerHTML`)!==QH)p.push(st.id+' q'+k+': a wrong picture moved on');
+      R(`__sub(${JSON.stringify(q[1])},{classList:{add(){}},disabled:false})`);tick();
+    }
+    const EH=R(`__reg['#app'].innerHTML`);
+    if(!EH.includes(R(`esc(st7F(ST7W.end,{title:${JSON.stringify(st.t)}}))`))||!/id="st7again"/.test(EH)||!/id="st7more"/.test(EH))p.push(st.id+': no end card after the questions');
+  }
+  // a recording's own word times replace the estimate (when they fit the words), and light the words on its clock
+  // REC-198: the stories are recorded (ST7A, src/data/d-story-audio.js), so cvc-1's entry is swapped for the stand-in and put back after
+  R(`globalThis.__st7a=typeof ST7A=='undefined'?(globalThis.ST7A={},null):[ST7A['cvc-1']];ST7A['cvc-1']={f:'x.ogg',t:st7Words(st7Get('cvc-1')).map((w,i)=>[i*1000,i*1000+800])}`);
+  if(R(`st7Plan(st7Get('cvc-1'))[3].join()`)!=='3000,3800'||R(`st7Lit(st7Plan(st7Get('cvc-1')),3500)`)!==3||R(`st7Lit(st7Plan(st7Get('cvc-1')),3900)`)!==-1)p.push('a recording\'s word times are not the clock');
+  R(`ST7A['cvc-1'].t.pop()`);if(R(`st7Plan(st7Get('cvc-1'))[3].join()`)==='3000,3800')p.push('a recording whose times do not fit its words is still used');
+  R(`if(__st7a)ST7A['cvc-1']=__st7a[0];else delete globalThis.ST7A`);
+  // 7. determinism: the whole read-along again
+  let trace2='';
+  for(const st of ST.list){R('__reset()');T.q=[];T.now=0;R(`ST7.open(${JSON.stringify(st.id)})`);R('st7Play()');tick();trace2+=st.id+':'+JSON.parse(R('JSON.stringify(__lit)')).map(x=>x.join('@')).join(',')+';'}
+  if(trace!==trace2)p.push('determinism: the read-along lit other words or at other times the second time');
+  if(JSON.stringify(ST.list.map(s=>D.checkStory(s,ctxD)))!==JSON.stringify(ST.list.map(s=>D.checkStory(s,ctxD))))p.push('determinism: the checker');
+  // 5. the gate
+  const st=(doc.match(/^status: (.*)$/m)||[])[1]||'',rev=/^reviewed\b/.test(st),on=Function(rd('src/js/42c-story7on.js')+';return STORY7_ON')();
+  if((doc.match(/^status:/gm)||[]).length!==1)p.push(DOC+' needs exactly one status line (the one-line flip)');
+  if(!rev&&st!=='unreviewed')p.push(DOC+': the status line is "'+st+'"');
+  if(rev&&!revNamed(DOC))p.push(DOC+': reviewed, but its status line names no reviewer and date');
+  if(on!==(rev?1:0))p.push('STORY7_ON is '+on+' with the read-through '+(rev?'reviewed':'not reviewed'));
+  if(!rev&&!/pending owner approval/i.test(doc))p.push(DOC+' is not marked pending owner approval');
+  if(!rd('index.html').includes('let STORY7_ON = '+on+';'))p.push('index.html does not carry STORY7_ON = '+on);
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'story7-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),rd('src/js/52e-words.js').replace(/const LSW = \{[\s\S]*$/,'const LSW = {\n};\n'));
+  const son=n=>rd('src/js/42c-story7on.js').replace(/let STORY7_ON = [01];/,'let STORY7_ON = '+n+';');
+  const chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(line,n)=>{fs.writeFileSync(path.join(tmp,DOC),doc.replace(/^status: .*$/m,line));fs.writeFileSync(path.join(tmp,'src/js/42c-story7on.js'),son(n))};
+  put('status: unreviewed',0);if(chk()!==0)p.push('the words check refuses STORY7_ON 0 for an unreviewed read-through');
+  put('status: unreviewed',1);if(chk()!==1)p.push('the words check passes STORY7_ON 1 for an unreviewed read-through');
+  put('status: reviewed 2026-11-26',1);if(chk()!==1)p.push('the words check passes STORY7_ON 1 for a status line with no reviewer');
+  put('status: reviewed Test Owner 2026-11-26',0);if(chk()!==1)p.push('the words check passes STORY7_ON 0 for a reviewed read-through (the flip did not turn it on)');
+  put('status: reviewed Test Owner 2026-11-26',1);if(chk()!==0)p.push('the words check refuses STORY7_ON 1 for a reviewed read-through');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // off: no Stories stop on any map; on: exactly one after each stage stop
+  R('STORY7_ON=0');
+  for(const pp of R('Object.keys(NODES)'))if(R(`NODES.${pp}.some((n,i)=>st7At('${pp}',i))`))p.push('with the gate off, '+pp+' has a Stories stop');
+  R('STORY7_ON=1');
+  const onAt=R(`NODES.read.map((n,i)=>st7At('read',i)?nid(n):'').filter(Boolean).join()`);
+  if(onAt!==ST.stages.map(s=>s.stop).join())p.push('with the gate on, the Stories stops follow '+onAt);
+  if(R(`Object.keys(NODES).filter(pp=>pp!='read').some(pp=>NODES[pp].some((n,i)=>st7At(pp,i)))`))p.push('a Stories stop on a map other than reading');
+  const home=rd('src/js/46-home.js');
+  if(!/y\+=106;if\(st7At\(p,i\)\)\{pts\.push\(/.test(home)||!/if\(ls==2\)return st7NodeHTML/.test(home)||!/\$\$\('\.st7n'\)\.forEach\(b=>b\.onclick=\(\)=>st7Go/.test(home))p.push('drawMap (46-home.js) does not draw and bind the Stories stop through st7At');
+  for(const f of fs.readdirSync(path.join(SRC,'js')))if(!['42c-story7.js','46-home.js','52x-story7.js','52w-story7d.js'].includes(f)&&/\bST7\b|\bst7[A-Z]\w*\(|ST7R|ST7W/.test(fs.readFileSync(path.join(SRC,'js',f),'utf8')))p.push(f+' reaches the stories (only the map\'s Stories stop may)');
+  if(!/if \(!st7OpenAt\(i\)\)/.test(hook)||!/partsThen\(\['teach', 'teach12', 'teachrd'\], \(\) => ST7\.shelf/.test(hook))p.push('st7Go opens the shelf without the stop\'s rule or its parts');
+  // the parts
+  for(const f of ['52w-story7d.js','52x-story7.js','52x-story7.css'])if(partOf(f)!=='teachrd')p.push(f+' is not in the part teachrd');
+  for(const f of ['42c-story7.js','42c-story7on.js'])if(partOf(f))p.push(f+' is not in index.html');
+  for(const f of ['index.html',...START_FILES])if(/const ST7 = |ST7W|Pig in the Mud/.test(rd(f)))p.push(f+' (start-up) carries the stories or the reader');
+  const fr='teachrd.'+BUILD_VER+'.js';if(fs.existsSync(path.join(ROOT,fr))&&(!rd(fr).includes('const ST7 = ')||!rd(fr).includes('.st7-w{')))p.push(fr+' does not carry the stories, the reader and its CSS');
+  // 6. no network, tokens only
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|import\(|navigator\.share|localStorage|\bsave\(/.test(code+data+hook))p.push('the stories reach outside the tablet or write the save');
+  if((code.match(/new Audio\(([^)]*)\)/g)||[]).some(x=>!/^new Audio\('audio\/story\/' \+ rec\.f\)$/.test(x)))p.push('the reader plays a file that is not a local audio/story/ file');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(/.test(css+rd('src/css/46b-lstop.css').split('STORIES-7')[1])||/#[0-9a-fA-F]{6}\b|rgba?\(/.test(code+hook))p.push('a colour that is not a token, or a file loaded by the CSS');
+  if(!/min-width:48px;min-height:48px/.test(css)||!/\.st7-act \.btn\{min-height:var\(--tap\)\}/.test(css))p.push('a word or a button of the reader is under 48 px');
+  // 8. the read-through
+  const tb=(doc.match(/<!-- stories:begin -->([\s\S]*?)\n<!-- stories:end -->/)||[])[1];
+  if(tb!==D.docTables(ctxD))p.push(DOC+': the story tables are not what the app has (paste node tools/decode.js --doc between the markers)');
+  const rows=doc.split('\n').filter(l=>/^\| .+ \| .+ \| .+ \|$/.test(l)).map(l=>l.split(' | ')[1]);
+  const W=R('ST7W');for(const k in W)if(!rows.includes(W[k]))p.push(DOC+' does not list ST7W.'+k+' "'+W[k]+'"');
+  for(const t of ['Stories','Stories: {stop}','Getting the stories ready...'])if(!rows.includes(t))p.push(DOC+' does not list "'+t+'"');
+  if(!/'Stories: ' \+ NODES\.read\[i\]\.t/.test(hook)||!/>Stories<\/div>/.test(hook)||!/line: 'Getting the stories ready\.\.\.'/.test(hook))p.push('42c-story7.js: its words are not the ones in '+DOC);
+  const chars=ST.list.reduce((a,s)=>a+[s.t,...s.s].join(' ').length,0),nq=ST.list.reduce((a,s)=>a+s.q.length,0),qc=ST.list.reduce((a,s)=>a+s.q.reduce((b,q)=>b+q[0].length,0),0);
+  const fmt=n=>n.toLocaleString('en-US'),uw=new Set(ST.list.flatMap(s=>D.storyWords(s).map(w=>w.replace(/'s$/,'')))).size;
+  for(const s of [`The ${ST.list.length} stories`,`| ${fmt(chars)} |`,`The ${nq} questions`,`| ${fmt(qc)} |`,`(${uw} words)`,`${ST.list.length} stories: 6 for each of the 7 stages`])if(!doc.includes(s))p.push(DOC+': the audio estimate does not say "'+s+'"');
+  // REC-198 (owner decision 2026-11-27): the stories are recorded, so the audio plan now says so (it said "Nothing is recorded" before the decision)
+  if(!/budget decision/.test(doc)||!/Recorded \(REC-198\)/.test(doc))p.push(DOC+': the audio plan does not say the stories are recorded after the budget decision (REC-198)');
+  return{problems:p,note:`${ST.list.length} stories (${D.STAGES.map(s=>s.id+' '+(per[s.id]||0)).join(', ')}), ${words} words checked, ${nq} questions; status ${st} (STORY7_ON ${on})`};
+});
+
+// ---- OLDER-14 (BEST-APP roadmap 14, docs/drafts/OLDER14.md; src/js/50b-older.js): grades 4 to 6 get a score card with a personal best and
+// no chest, and Grown-ups can hide the pet. Whole rounds on fake elements (as the practice audit check): 1. the gate off changes nothing for
+// any grade; 2. on: grades 4 to 6 get the score card at once, grades below 4 the chest; 3. every payout is the chest flow's, the same seeded
+// rounds both ways; 4. personal bests and New best!; 5. Show my pet hides and shows the pet and loses no data; 6. old saves; 7. the gate
+// (the one-line flip), the words in the read-through, the parts, tokens only.
+run('OLDER-14: grades 4 to 6 score card and personal best, no chest, payouts as the chest flow, Show my pet, old saves, the gate',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),cpx=require('child_process'),os=require('os'),p=[],store={},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const DOC='docs/drafts/OLDER14-READ.md',doc=rd(DOC),code=rd('src/js/50b-older.js'),css=rd('src/css/42b-older.css');
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const docu={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:docu,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(docu,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx),J=x=>JSON.parse(R(x));
+  let note='';
+  try{
+  R(`var __off=0,__T=Date.UTC(2026,10,27,15);{const D0=Date;Date=class extends D0{constructor(...a){if(a.length)super(...a);else super(__T+__off)}static now(){return __T+__off}}}
+   say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q)};
+   function __step(g){if(g.done<g.n){g.q=makeQ();g.retry=false;g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+   function __fresh(grade,raw){for(const k in __store)delete __store[k];loadSave(raw||null);migrate();if(!raw)S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;SPK.mic='?';SPK.deny=0;S.unlockAll=true;__off=0}
+   // what the round end draws and pays: the views, every row, card and sticker, RW.done's data and markup
+   var __chest={},__log=[],__views=[],__done=null,__html='';
+   var __app=new Proxy({},{get:(t,k)=>k==='innerHTML'?'':__fk[k],set:(t,k,v)=>{if(k==='innerHTML')__views.push(String(v));return true}}); // view() writes #app
+   document.querySelector=s=>s=='#chest'?__chest:s=='#app'?__app:__fk;
+   {const d0=RW.done;RW.done=o=>{__done=o;__html=d0(o);return __html};
+    for(const k of ['row','msg','sticker']){const f=RW[k];RW[k]=(...a)=>{const h=f(...a);__log.push(k+':'+h);return h}}}
+   // a whole stop round of path p, stop i: W = the question numbers missed on the first try, sec = seconds a question takes
+   function __round(p,i,W,sec,seed){__chest={};__log=[];__views=[];__done=null;__html='';Math.random=__rng(seed||7);RNG=__rng((seed||7)+99);start(p,i);
+     const g=G;let n=0;while(g.__pend&&n++<80){const ok=g.retry||!W.includes(g.done);__off+=(sec||3)*1000;G.qt=Date.now()-3000;
+       if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}
+     finish();const chest=typeof __chest.onclick=='function';if(chest)__chest.onclick();return g}
+   // the save without the bests, for the payout comparison
+   function __pay(){const s=JSON.parse(JSON.stringify(S));delete s.pb;return JSON.stringify(s)}
+   function __end(chest){const d=__done||{};return JSON.stringify({chest,views:__views.map(v=>v.includes('id="chest"')?'chest':v),log:__log,sc:d.sc,n:d.n,line:d.line,tip:d.tip,rate:d.rate,next:d.next,card:d.card||null,np:!!d.np,pay:__pay(),html:__html})}`);
+  const stop=g=>R(`NODES.math.findIndex(n=>n.sk!='boss'&&PATHS.math.worlds[n.wi].g==${g})`);
+  const iA=stop(5),iB=R(`NODES.math.findIndex((n,j)=>j>${iA}&&n.sk!='boss'&&PATHS.math.worlds[n.wi].g==5)`);
+  if(iA<0||iB<0)throw new Error('no grade 5 math stops');
+  const play=(grade,on,W,sec,seed,petOff)=>{R(`OLDER_ON=${on};__fresh(${grade});${petOff?'S.petOff=true;':''}`);const g=R(`__round('math',${iA},${JSON.stringify(W)},${sec},${seed})`);
+    return J(`(()=>{const e=JSON.parse(__end(${'typeof __chest.onclick=="function"'}));e.ms=G.t0?Date.now()-G.t0:0;return JSON.stringify(e)})()`)};
+  // 1. the gate off: every grade gets the chest, the approved line, the pet, no bests; a hidden pet flag changes nothing
+  for(const gr of [-1,0,2,3,4,5,6]){
+    const a=play(gr,0,[2,5],3,11),b=play(gr,0,[2,5],3,11,true);
+    if(!a.chest||a.views[0]!=='chest'||a.card||a.np||/o14|New best|Your best/.test(a.html)||!/rw-chest-o/.test(a.html))p.push('gate off, grade '+gr+': not the chest flow '+JSON.stringify({chest:a.chest,v:a.views[0],card:a.card,np:a.np}));
+    if(JSON.parse(a.pay).pb!==undefined)p.push('gate off, grade '+gr+': a personal best was saved');
+    const t=play(gr,0,[],3,11);if(t.line!=='You are a superstar!')p.push('gate off, grade '+gr+': 10 of 10 says "'+t.line+'"');
+    const nf=x=>{const o=JSON.parse(x);delete o.petOff;return JSON.stringify(o)};
+    if(JSON.stringify(Object.assign({},a,{pay:''}))!==JSON.stringify(Object.assign({},b,{pay:''}))||nf(a.pay)!==nf(b.pay))p.push('gate off, grade '+gr+': S.petOff changed the round end: '+Object.keys(a).filter(k=>JSON.stringify(a[k])!==JSON.stringify(b[k])).map(k=>k=='pay'?(A=>{const B=JSON.parse(b.pay);return 'pay '+Object.keys(Object.assign({},A,B)).filter(x=>JSON.stringify(A[x])!==JSON.stringify(B[x])).join(' ')})(JSON.parse(a.pay)):k).join(', '));
+    R(`OLDER_ON=0;__fresh(${gr});`);const h0=R('hmHero()+hmActs()+JSON.stringify(NAV.tabs().map(t=>t[0]))');R('S.petOff=true');const h1=R('hmHero()+hmActs()+JSON.stringify(NAV.tabs().map(t=>t[0]))');
+    if(h0!==h1||!h0.includes('id="pet"')||!h0.includes('id="care"')||!h0.includes('"pet"]'))p.push('gate off, grade '+gr+': Home or the bar changed with S.petOff');
+  }
+  if(!/on: \(\) => !!OLDER_ON && gradeOf\(\) >= 4,/.test(code)||!/noPet: \(\) => OLD14\.on\(\) && S\.petOff === true,/.test(code)||!/const petShown = \(\) => !OLD14\.noPet\(\);/.test(code))p.push('50b-older.js: OLD14.on / noPet / petShown do not all start from OLDER_ON and the grade');
+  // 2. the gate on: the score card at once for grades 4 to 6, the chest below 4
+  for(const gr of [-1,0,1,2,3]){const a=play(gr,1,[2],3,5);if(!a.chest||a.views[0]!=='chest'||a.card)p.push('gate on, grade '+gr+': not the chest');}
+  for(const gr of [4,5,6]){const a=play(gr,1,[2],3,5);
+    if(a.chest||a.views.length!==1||a.views[0]!=='<div class="center rw-fin" id="fin"><h1 id="sc"></h1></div>'||!a.card)p.push('gate on, grade '+gr+': the chest is still there '+JSON.stringify({chest:a.chest,views:a.views.map(v=>v.slice(0,60))}));
+    const h=a.html;
+    for(const id of ['sc','prz','earn','msgs','btns','bonus','again','ehome','rwst','o14t','o14b'])if(!h.includes('id="'+id+'"'))p.push('score card, grade '+gr+': no #'+id);
+    if(/rw-chest|Tap the treasure|treasure chest/.test(h)||(h.match(/<h1/g)||[]).length!==1)p.push('score card, grade '+gr+': a chest, or not one heading');
+    if(!h.includes('<b>9</b> out of 10')||!h.includes('<dt>Time</dt><dd>0:33</dd>')||!h.includes('<dt>Your best</dt><dd>9 out of 10 in 0:33</dd>'))p.push('score card, grade '+gr+': '+h.slice(h.indexOf('<h1')).replace(/<svg[\s\S]*?<\/svg>/g,'').slice(0,400));
+    if(a.rate!==2||!/aria-label="2 of 3 stars"/.test(h))p.push('score card, grade '+gr+': the stars '+a.rate);
+    if(a.line!=='Excellent round!')p.push('score card, grade '+gr+': 9 of 10 says "'+a.line+'"');}
+  // the other lines are the approved ones (8, 6 and 4 of 10)
+  for(const W of [[1,2],[1,2,3],[1,2,3,4,5],[0,1,2,3,4,5,6]]){const a=play(5,1,W,3,5),sh=k=>a.sc*10>=k*a.n,want=sh(9)?'Excellent round!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    if(a.line!==want)p.push('score card: '+a.sc+' of '+a.n+' says "'+a.line+'", want "'+want+'"')}
+  // 3. payouts: the same seeded rounds (wrong answers, seconds, random) with the chest and with the score card, grade 5 and 4
+  let pays=0;
+  for(const gr of [4,5])for(const [W,sec,seed] of [[[],3,1],[[1,4],2,2],[[0,2,4,6,8],4,3],[[0,1,2,3,4,5,6],3,4]]){
+    const a=play(gr,0,W,sec,seed),b=play(gr,1,W,sec,seed);pays++;
+    if(a.pay!==b.pay){const A=JSON.parse(a.pay),B=JSON.parse(b.pay);p.push('payouts, grade '+gr+' missed '+W+': the save differs in '+Object.keys(Object.assign({},A,B)).filter(k=>JSON.stringify(A[k])!==JSON.stringify(B[k])).join(', '))}
+    if(JSON.stringify(a.log)!==JSON.stringify(b.log))p.push('payouts, grade '+gr+' missed '+W+': the rows, cards or stickers differ');
+    for(const k of ['sc','n','tip','rate','next'])if(a[k]!==b[k])p.push('payouts, grade '+gr+' missed '+W+': '+k+' '+a[k]+' / '+b[k]);
+    if(!(b.log.some(x=>/^row:.*\+\d+ coins for the pet shop!/.test(x)))||!b.log.some(x=>/^sticker:/.test(x))||!b.log.some(x=>/^row:.*of game time!/.test(x)))p.push('payouts, grade '+gr+': the card shows no coins, sticker or game time');}
+  // the same with the pet hidden: the same save (but the flag) and rows, but the coin row's words
+  {const a=play(5,0,[3],3,9,true),b=play(5,1,[3],3,9,true);
+   if(a.pay!==b.pay)p.push('payouts with the pet hidden: the save differs');
+   const strip=l=>l.map(x=>x.replace(/\+(\d+) coins for the pet shop!/,'+$1 coins!'));
+   if(JSON.stringify(strip(a.log))!==JSON.stringify(b.log)||!b.log.some(x=>/\+\d+ coins!</.test(x)))p.push('payouts with the pet hidden: the rows differ in more than the coin words');}
+  // 4. personal bests: the first round sets it, a better share or the same share faster beats it (New best!), worse or slower does not
+  R(`OLDER_ON=1;__fresh(5)`);
+  const rb=(W,sec,i=iA)=>J(`(()=>{__round('math',${i},${JSON.stringify(W)},${sec},3);const c=__done.card;return JSON.stringify({best:c.best,isNew:c.isNew,ms:c.ms,nb:/id="o14nb"/.test(__html)&&__html.includes('New best!'),pb:S.pb})})()`);
+  const k=R(`OLD14.key('math',${iA})`);
+    // (the time: every question and each missed one again at the end, sec seconds each)
+  const steps=[[[1,2],3,[8,10,36000],false],[[1],3,[9,10,33000],true],[[3,4,5],2,[9,10,33000],false],[[],4,[10,10,40000],true],[[],5,[10,10,40000],false],[[],2,[10,10,20000],true],[[7],1,[10,10,20000],false]];
+  steps.forEach(([W,sec,best,isNew],j)=>{const r=rb(W,sec);
+    if(JSON.stringify(r.best)!==JSON.stringify(best)||r.isNew!==isNew||r.nb!==isNew||JSON.stringify(r.pb[k])!==JSON.stringify(best))p.push('personal best, round '+(j+1)+': '+JSON.stringify(r)+', want '+JSON.stringify({best,isNew}))});
+  {const r=rb([0],3,iB);if(r.isNew||JSON.stringify(r.best)!==JSON.stringify([9,10,33000])||Object.keys(r.pb).length!==2)p.push('personal best: another stop shares a best '+JSON.stringify(r))}
+  const B=J(`JSON.stringify([[[8,10,1],[4,5,9]],[[4,5,9],[8,10,10]],[[4,5,9],[8,10,8]],[[7,10,5],[8,10,99]],[[6,8,50],[7,10,10]],[[0,10,1],null]].map(([a,b])=>OLD14.better(a,b)))`);
+  if(B.join()!=='true,true,false,false,true,true')p.push('OLD14.better (a bigger share, or the same share faster): '+B.join());
+  // a damaged best is replaced, never kept or thrown on; Tricky Mix, Daily Review and test-out show the time but keep no best
+  for(const bad of ['"x"','[1,2]','[-1,10,5]','{"a":1}','null'])
+    {R(`OLDER_ON=1;__fresh(5);S.pb={${JSON.stringify(k)}:${bad}}`);const r=rb([],3);if(r.isNew||JSON.stringify(r.best)!==JSON.stringify([10,10,30000]))p.push('a damaged best '+bad+': '+JSON.stringify(r))}
+  {R(`OLDER_ON=1;__fresh(5);S.pb=[1,2]`);const r=rb([],3);if(Array.isArray(r.pb)||!r.pb[k])p.push('a damaged S.pb is not replaced')}
+  {const r=J(`(()=>{OLDER_ON=1;__fresh(5);const o=[];for(const g of [{mix:true},{daily:true,mix:true},{test:{wi:0}},{boss:{name:'x'}}]){G=newG(Object.assign({path:g.mix?null:'math',node:g.mix?-1:${iA}},g));__off+=12000;const c=OLD14.card(G,7,10,G.path,G.node);o.push([c.ms,c.best,c.isNew])}return JSON.stringify({o,pb:S.pb||null})})()`);
+   if(r.o.some(x=>x[0]!==12000||x[1]!==null||x[2])||r.pb&&Object.keys(r.pb).length)p.push('mix, review, test-out, boss: '+JSON.stringify(r))}
+  if(R(`OLD14.fmt(0)+' '+OLD14.fmt(59499)+' '+OLD14.fmt(61000)+' '+OLD14.fmt(5999000)`)!=='0:00 0:59 1:01 99:59')p.push('the time format');
+  // 5. Show my pet: off hides the pet on Home, the bar, the map and the round end; on brings it back; no pet data is touched
+  {R(`OLDER_ON=1;__fresh(5);S.pet='dino';S.petName='Rex';S.stars=400;S.coins=77;S.owned.crown=1;S.wear.hat='crown';careTick();S.care.food=55;save()`);
+   const keep=()=>R(`JSON.stringify([S.pet,S.petName,S.stars,S.coins,S.owned,S.wear,S.care.food,S.stickers])`),k0=keep();
+   const look=()=>J(`JSON.stringify({home:hmHero()+hmActs(),tabs:NAV.tabs().map(t=>t[0]),shown:petShown()})`);
+   const on0=look();R('S.petOff=true');const off=look();R('delete S.petOff');const on1=look();
+   if(!on0.shown||!on0.home.includes('id="pet"')||!on0.home.includes('id="care"')||!on0.home.includes('id="shop"')||!on0.tabs.includes('pet'))p.push('Show my pet on: Home lacks the pet '+JSON.stringify(on0.tabs));
+   if(off.shown||/id="pet"|id="care"|id="shop"|hm-grow|hm-stage|Rex/.test(off.home)||off.tabs.includes('pet')||!off.home.includes('id="book"')||!off.home.includes('id="stkb"')||!off.home.includes('hm-np'))p.push('Show my pet off: Home still shows the pet '+off.home.replace(/<svg[\s\S]*?<\/svg>/g,'').slice(0,300));
+   if(JSON.stringify(on0)!==JSON.stringify(on1))p.push('Show my pet: off and on again does not give the same Home');
+   if(keep()!==k0)p.push('Show my pet: the pet data changed');
+   R('S.petOff=true;S.grade=3');if(!R('petShown()')||!R('hmHero()').includes('id="pet"'))p.push('Show my pet off, then grade 3: the pet stays hidden');
+   R('S.grade=5');const m=J(`(()=>{const a=[];const q0=document.querySelector;let h='';const mp=new Proxy({},{get:(t,k)=>k==='innerHTML'?h:k==='clientWidth'?400:__fk[k],set:(t,k,v)=>{if(k==='innerHTML')h=String(v);return true}});document.querySelector=s=>s=='#map'?mp:__fk;for(const off of [true,false]){if(off)S.petOff=true;else delete S.petOff;pathMap('math');drawMap('math');a.push(/mappet/.test(h))}document.querySelector=q0;return JSON.stringify(a)})()`);
+   if(m.join()!=='false,true')p.push('the map pet with Show my pet off, on: '+m.join());
+   // the round end: no cheering pet, no growing overlay (the pet still grows), the coin words
+   const r=J(`(()=>{S.petOff=true;S.stars=GROW[2]-1;let grew=0;const g0=growShow,t0=setTimeout;growShow=()=>{grew++};setTimeout=f=>{try{f()}catch(e){}return 0}; // the end card's timers at once
+     const st=stage();__round('math',${iA},[],3,4);const a={grew,st0:st,st1:stage()};
+     const all=[0,1,2,3,4,5,6,7,8,9];__round('math',${iA},all,3,4);Object.assign(a,{pet:/rw-pet/.test(__html),rate:__done.rate,np:__done.np});
+     delete S.petOff;__round('math',${iA},all,3,4);a.pet2=/rw-pet/.test(__html);S.stars=GROW[3]-1;__round('math',${iA},[],3,4);a.grew2=grew;growShow=g0;setTimeout=t0;return JSON.stringify(a)})()`);
+   if(r.pet||!r.np||r.rate!==-1||r.grew!==0||r.st1<=r.st0||!r.pet2||r.grew2!==1)p.push('the round end with the pet hidden: '+JSON.stringify(r));
+   const gs=rd('src/js/80-grown.js');
+   if(!/\$\{OLD14\.on\(\)\?UI\.sw\(OLDW\.petSw,petShown\(\),'petshow'\):''\}/.test(gs)||!/if\(\$\('#petshow'\)\)\$\('#petshow'\)\.onchange=e=>\{if\(e\.target\.checked\)delete S\.petOff;else S\.petOff=true;save\(\)\}/.test(gs))p.push('Grown-ups: no Show my pet switch that only sets S.petOff');
+   const gw=J(`(()=>{const o=[];for(const [on,gr] of [[0,5],[1,3],[1,5]]){OLDER_ON=on;S.grade=gr;o.push(OLD14.on())}return JSON.stringify(o)})()`);
+   if(gw.join()!=='false,false,true')p.push('the switch is offered for '+gw.join());}
+  // 6. old saves: no bests, no flag; the pet shows, the first round sets the best, nothing is migrated
+  for(const f of ['legacy-single-map','legacy-index-maps','midway','maxed','tricky']){
+    const raw=fs.readFileSync(path.join(__dirname,'fixtures',f+'.json'),'utf8');
+    const r=J(`(()=>{OLDER_ON=1;__fresh(5,${JSON.stringify(raw)});const a={pb:S.pb===undefined,off:S.petOff===undefined,shown:petShown(),pet:S.pet};__round('math',${iA},[2],3,6);
+      a.card=__done.card;a.pet2=S.pet;return JSON.stringify(a)})()`);
+    if(!r.pb||!r.off||!r.shown||r.pet!==r.pet2||!r.card||r.card.isNew||JSON.stringify(r.card.best)!==JSON.stringify([9,10,33000]))p.push('old save '+f+': '+JSON.stringify(r));
+  }
+  if(/\bpb\b|petOff/.test(rd('src/js/00-core.js')))p.push('00-core.js: a migration touches the bests or the pet flag (old saves need none)');
+  note=`${pays} round pairs paid alike, ${steps.length} best steps`;
+  }catch(e){p.push('threw: '+(e.stack||e).toString().split('\n').slice(0,3).join(' '))}
+  // 7. the gate: one status line, OLDER_ON as the read-through says, the flip through build.py --words-check
+  const st=(doc.match(/^status: (.*)$/m)||[])[1]||'',rev=/^reviewed\b/.test(st),on=Function(rd('src/js/50a-olderon.js')+';return OLDER_ON')();
+  if((doc.match(/^status:/gm)||[]).length!==1)p.push(DOC+' needs exactly one status line (the one-line flip)');
+  if(!rev&&st!=='unreviewed')p.push(DOC+': the status line is "'+st+'"');
+  if(rev&&!revNamed(DOC))p.push(DOC+': reviewed, but its status line names no reviewer and date');
+  if(on!==(rev?1:0))p.push('OLDER_ON is '+on+' with the read-through '+(rev?'reviewed':'not reviewed'));
+  if(!rev&&!/pending owner approval/i.test(doc))p.push(DOC+' is not marked pending owner approval');
+  if(!rd('index.html').includes('let OLDER_ON = '+on+';'))p.push('index.html does not carry OLDER_ON = '+on);
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'older14-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),rd('src/js/52e-words.js').replace(/const LSW = \{[\s\S]*$/,'const LSW = {\n};\n'));
+  const oon=n=>rd('src/js/50a-olderon.js').replace(/let OLDER_ON = [01];/,'let OLDER_ON = '+n+';');
+  const chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(line,n)=>{fs.writeFileSync(path.join(tmp,DOC),doc.replace(/^status: .*$/m,line));fs.writeFileSync(path.join(tmp,'src/js/50a-olderon.js'),oon(n))};
+  put('status: unreviewed',0);if(chk()!==0)p.push('the words check refuses OLDER_ON 0 for an unreviewed read-through');
+  put('status: unreviewed',1);if(chk()!==1)p.push('the words check passes OLDER_ON 1 for an unreviewed read-through');
+  put('status: reviewed 2026-11-27',1);if(chk()!==1)p.push('the words check passes OLDER_ON 1 for a status line with no reviewer');
+  put('status: reviewed Test Owner 2026-11-27',0);if(chk()!==1)p.push('the words check passes OLDER_ON 0 for a reviewed read-through (the flip did not turn it on)');
+  put('status: reviewed Test Owner 2026-11-27',1);if(chk()!==0)p.push('the words check refuses OLDER_ON 1 for a reviewed read-through');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // every new sentence is in the read-through's table; the round end uses them from OLDW
+  const rows=doc.split('\n').filter(l=>/^\| .+ \| .+ \| .* \|$/.test(l)).map(l=>l.split(' | ')[1]);
+  const W=Function(code.replace(/^const OLD14[\s\S]*$/m,'')+';return OLDW')();
+  for(const k in W)if(!rows.includes(W[k]))p.push(DOC+' does not list OLDW.'+k+' "'+W[k]+'"');
+  const rnd=rd('src/js/50-round.js'),rw=rd('src/js/18-reward-art.js');
+  if(!/const line=sh\(9\)\?\(card\?OLDW\.top:'You are a superstar!'\):sh\(7\)\?'Fantastic work!'/.test(rnd)||!/np\?OLD14\.F\(OLDW\.coins,\{n:coins\}\):`\+\$\{coins\} coins for the pet shop!`/.test(rnd))p.push('50-round.js: the card\'s line or coin words are not OLDW\'s');
+  if(!/if\(card\)\{view\('<div class="center rw-fin" id="fin"><h1 id="sc"><\/h1><\/div>'\);return reveal\(\)\}/.test(rnd)||!/\$\('#chest'\)\.onclick=\(\)=>\{if\(opened\)return;opened=true;clearInterval\(rt\);SFX\.open\(\);reveal\(\)\};/.test(rnd))p.push('50-round.js: the score card and the chest tap do not share reveal()');
+  const pay=rnd.slice(rnd.indexOf('function finish()'),rnd.indexOf('const card=OLD14.card('));if(/OLD14|OLDER_ON|OLDW/.test(pay))p.push('50-round.js: the older look reaches the payout code above the card');
+  if(!/const art = o\.rate >= 0 \? RW\.rate\(o\.rate\) : o\.np \? '' : RW\.pet\(\);/.test(rw))p.push('18-reward-art.js: RW.done does not drop the pet only with o.np');
+  // the parts, tokens, no network
+  for(const f of ['50a-olderon.js','50b-older.js','42b-older.css'])if(partOf(f))p.push(f+' is not in index.html');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(|@keyframes|filter\s*:/.test(css.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('42b-older.css: a colour that is not a token, a file, keyframes or a filter');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage/.test(code))p.push('50b-older.js reaches outside the tablet');
+  if(/magic|evolution/i.test(code+css+doc))p.push('a banned theme word (CONTENT-01)');
+  return{problems:p,note:note+`; status ${st} (OLDER_ON ${on})`};
+});
+
+// ---- DEEP-15 (BEST-APP roadmap 15, docs/drafts/DEEP15.md): deeper Discover and Spanish, drafted for the owner and gated ----
+// src/data/d-deep15.js (the items) and src/js/52y-deep15.js (deep15Apply) are in part teaches; 42e-deep15.js (the map hooks) and
+// 42d-deep15on.js (DEEP15_ON, BUILT from docs/drafts/DEEP15-READ.md) are in index.html. 1. The gate off changes nothing at all: the app's
+// state and many seeded questions of every Discover and Spanish stop are the same as an app built without the DEEP-15 files, and the hooks
+// do nothing. 2. On: every new item is well formed and answerable (one right answer, no repeated choice, no duplicate item), passes the
+// Discover rules (P2-36, R-01d, AUD-DISC: the hint never names the answer, the answer is not in the prompt, read aloud with its choices in
+// order, pictures from the allow list, the right answer the longest choice in under 40% of questions, no joke choices, no evolution) and
+// the Spanish rules (P2-30, R-01s: article, NFC, one picture per word, no two right answers by value or picture, English plurals); 3. old
+// progress, a running round and the picked world keep their stops; 4. the lazy load on a fresh page (the map warms the part, a stop tapped
+// first waits for it), the start-up files carry none of it; 5. determinism; 6. the gate is the one-line flip and the read-through lists
+// every item.
+run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable items, Discover and Spanish rules, lazy load, determinism',()=>{
+  const p=[],bad=m=>{if(p.length<80&&!p.includes(m))p.push(m)},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),note={};
+  const DOC='docs/drafts/DEEP15-READ.md',doc=rd(DOC);
+  const D15FILES=['42d-deep15on.js','42e-deep15.js','52y-deep15.js','d-deep15.js'];
+  // the app without the DEEP-15 files (its hooks in 46-home.js then call nothing: open and pathMap are not run here)
+  const jsOff=cat('js').replace(rd('src/js/42d-deep15on.js'),'').replace(rd('src/js/42e-deep15.js'),'')+PARTS.map(x=>cat('js',x.stem).replace(rd('src/js/52y-deep15.js'),'')+cat('data',x.stem).replace(rd('src/data/d-deep15.js'),'')).join('')+cat('data');
+  if(jsOff.length!==js.length-D15FILES.reduce((a,f)=>a+rd((f[0]=='d'?'src/data/':'src/js/')+f).length,0))bad('the DEEP-15 files could not be taken out of the app for the comparison');
+  // 1. the state that matters, and seeded questions of every Discover and Spanish stop
+  const snap=function(){
+    const qs=[];for(const p of ['disc','es'])for(const n of NODES[p])if(n.sk!=='boss')for(let s=1;s<=12;s++)qs.push(JSON.stringify(genQ(n.sk,n.lv,s)));
+    return JSON.stringify({BANK,ES_UNITS,SPN,SK:Object.keys(SK).map(k=>[k,SK[k].t,SK[k].max,SK[k].area]),PATHS,NODES,WR,ICO_SK,SCN_W,ST:REP.STRANDS,qs});
+  };
+  const off0=eval(jsOff+';('+snap.toString()+')()');
+  // OWNER-1127: the owner approved DEEP-15 on 2026-11-27, so the built js now carries DEEP15_ON = 1; the gate-off comparison sets it to 0
+  // first (as a build from an unreviewed read-through would; a let, as smoke.js sets it), so it still proves the gate off changes nothing
+  const off1=eval(js+';DEEP15_ON=0;const __ap=deep15Apply(),__w=[d15Want("disc"),d15Want("es"),D15F];('+snap.toString()+')()+JSON.stringify([__ap,__w,DEEP15_ON])');
+  if(off1!==off0+JSON.stringify([false,[false,false,0],0]))bad('with the gate off the app is not exactly as without the DEEP-15 files (or deep15Apply did something)');
+  note.off=require('crypto').createHash('md5').update(off0).digest('hex').slice(0,10);
+  // 2.-5. with the gate on (as the owner's flip would build)
+  const body=function(){
+    const r={bad:[],n:{}},B=m=>{if(r.bad.length<80&&!r.bad.includes(m))r.bad.push(m)};
+    const g0=JSON.stringify([NODES.disc.map(nid),NODES.es.map(nid)]);
+    // a running round on Star Observatory and the strip on Science Lab: both keep their stop and world
+    const so=NODES.disc.findIndex(n=>nid(n)=='sci_earth3');G={path:'disc',node:so};MAPW.disc=1;MAPW.es=6;
+    const esW=PATHS.es.worlds[6].id;
+    loadSave(JSON.stringify({v:LATEST,mapv:2,name:'Kid',grade:1,maps:{disc:{sci_life1:3,civ1:2,sci_earth3:1},es:{es_greet1:2,es_story1:3,es_adj2:1}}}));migrate();
+    const stars0=JSON.stringify([S.maps.disc,S.maps.es]),olds=['disc','es'].map(p=>NODES[p].map(n=>nid(n)));
+    DEEP15_ON=1;
+    if(deep15Apply()!==true)B('deep15Apply did not apply with the gate on');
+    if(deep15Apply()!==false||d15Want('disc'))B('deep15Apply applied twice, or the maps still want the part');
+    if(nid(NODES.disc[G.node])!=='sci_earth3')B('the running round moved to '+nid(NODES.disc[G.node]));
+    if(PATHS.disc.worlds[MAPW.disc].id!=='d_lab'||PATHS.es.worlds[MAPW.es].id!==esW)B('the picked world moved');
+    if(JSON.stringify([S.maps.disc,S.maps.es])!==stars0)B('stars moved');
+    for(const [k,p] of ['disc','es'].entries())for(const id of olds[k])if(!NODES[p].some(n=>nid(n)===id))B(p+': stop '+id+' is gone');
+    // the map: Discovery Garden after Nature Trail, six stops and a boss; a 1st grader starts there; the Spanish stops before the bosses
+    const W=PATHS.disc.worlds;
+    if(W.map(w=>w.id+'/'+w.g).join()!=='d_nature/0,d_garden/1,d_lab/3,d_cosmos/5')B('Discover worlds '+W.map(w=>w.id+'/'+w.g));
+    const NEW=['sci_plant','sci_wx','sci_rock','sci_mach','civ_past','civ_work'];
+    if(W[1].nodes.map(n=>n[0]+n[1]).join()!==NEW.map(x=>x+1).join()||!NODES.disc[WR.disc[1][1]].boss)B('Discovery Garden stops '+JSON.stringify(W[1].nodes));
+    for(const n of NODES.disc)if(n.sk!='boss'&&(!SK[n.sk]||n.lv>SK[n.sk].max||!n.t||n.t.length>24))B('stop '+nid(n)+' title or skill');
+    const mk=S.maps.disc;S.maps.disc={};S.grade=1;if(PATHS.disc.worlds[defStart('disc',1)].id!=='d_garden'||curWorld('disc')!==1)B('a 1st grader does not start in Discovery Garden');S.maps.disc=mk;
+    S.grade=0;if(defStart('disc',0)!==0)B('a kindergartner does not start in Nature Trail');
+    const tail=id=>{const w=PATHS.es.worlds.find(x=>x.id==id).nodes;return w.slice(-2).map(n=>n[0]+n[1]).join()};
+    if(tail('e_casa')!=='es_toy1,es_toy2'||tail('e_ciudad')!=='es_nature1,es_nature2')B('Spanish stops: '+tail('e_casa')+' / '+tail('e_ciudad'));
+    for(const id of NEW)if(REP.strandOf(id)==='Other skills'||icoSk(id)==='star'||!ICONS[icoSk(id)])B(id+': report strand or icon');
+    if(SCN_W.d_garden!=='garden')B('Discovery Garden has no scene');
+    // Discover items
+    const STOP=/^(a|an|the|and|or|of|in|to|it|is|its|on|at|up|from|where|that|with|this|have)$/;
+    const JOKES=['candy and toys','candy, soda and chips','toys, books and games','dreamed','only in winter','turn blue','cheese','glows','glow','turns to ice cream','tasty','ice cream','stuck','a dragon','a unicorn','a candy bar','candy','free candy','a free car','vacations','video games'];
+    const EVO=/\bevolution|\bevolv|natural selection|ancestor|descend|over (many|the) generations|millions? of years|billions? of years|survival of the fittest/i;
+    const BADW=/\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|unicorns?|fairy|fairies|genies?|warlocks?)\b|cast(s|ing)? a spell/i;
+    const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+    const picOk=(pc,w)=>{if(!Array.isArray(pc)||!allow.has(String(pc[1]).replace(/️/g,''))||!/^[a-z-]+$/.test(pc[0]))B(w+': picture '+pc)};
+    const text=it=>[it.q,it.a,it.hint,...(it.d||[]),...Object.keys(it.bins||{}),...Object.values(it.bins||{}).flat(),...(it.pairs||[]).flat(),...(it.order||[])].filter(x=>x!=null).join(' | ');
+    const items=[];for(const id of NEW)BANK[id].forEach((it,bi)=>items.push({id,bi,it}));
+    for(const id in D15.top){const k=D15.top[id].length;BANK[id].slice(-k).forEach((it,i)=>items.push({id,bi:BANK[id].length-k+i,it,top:1}))}
+    const oldQ=new Set(['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'].flatMap(id=>BANK[id].map(x=>x.q)).filter((q,i,a)=>true));
+    const seenQ={};
+    for(const {id,bi,it,top} of items){
+      const w=id+' "'+it.q+'"',form=it.form||'choice';r.n[form]=(r.n[form]||0)+1;
+      if(it.lv!==1||it.aloud!==true)B(w+': not a level 1 read-aloud item');
+      if(seenQ[it.q])B(w+': the same question twice');seenQ[it.q]=1;
+      if(top&&BANK[id].filter(x=>x.q===it.q).length!==1)B(w+': already in the bank');
+      if(!top&&oldQ.has(it.q)&&BANK[id]!==undefined&&['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'].some(o=>BANK[o].some(x=>x.q===it.q)))B(w+': already a Discover question');
+      if(EVO.test(text(it))||BADW.test(text(it)))B(w+': evolution or magic');
+      if(!it.hint||it.hint.length<20)B(w+': hint missing');
+      if(!doc.includes(String(it.q).replace(/\|/g,'\\|')))B(w+': not in '+DOC);
+      if(form==='choice'){
+        if(it.grade!=='1-2')B(w+': grade '+it.grade);
+        const all=[it.a,...it.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)B(w+': a choice repeats');
+        if(it.d.length<2||it.d.length>3)B(w+': '+it.d.length+' wrong answers');
+        const hw=it.hint.toLowerCase().split(/[^a-z]+/),aw=it.a.toLowerCase().split(/[^a-z]+/).filter(x=>x.length>=3&&!STOP.test(x));
+        if(it.hint.toLowerCase().includes(it.a.toLowerCase())||aw.some(x=>hw.includes(x)))B(w+': the hint gives the answer: '+it.hint);
+        const qw=it.q.toLowerCase().split(/[^a-z]+/);if(aw.some(x=>x.length>=5&&qw.includes(x)))B(w+': the answer is in the prompt');
+        for(const c of [it.a,...it.d])if(JOKES.includes(c))B(w+': joke choice '+c);
+        if(it.em)picOk(it.em,w);
+        if(it.cp)for(const k in it.cp)picOk(it.cp[k],w);
+      }else{
+        if(it.cp)for(const k in it.cp)picOk(it.cp[k],w);
+        if(form==='sort'&&Object.values(it.bins).some(l=>!l.length))B(w+': an empty bin');
+      }
+      for(let s=1;s<=3;s++){
+        const q=genBank(id,1,{bi,s}),html=KIND[q.kind].render(q);
+        for(const x of kindProblems(q))B(w+': '+x);
+        if(!q.say||!q.hint||q.hint.k!=='text'||q.hint.w!==q.hint.s)B(w+': the prompt or the hint is not read aloud');
+        if(JSON.stringify(bankRebuild(q.bk))!==JSON.stringify(q))B(w+': bankRebuild differs');
+        if(q.kind==='choice'){let at=0;for(const c of q.choices){const i=q.say.indexOf(String(c.v),at);if(i<0)B(w+': "'+c.v+'" is not read in the order shown');else at=i+String(c.v).length}
+          if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(w+': not exactly one right choice');
+          if(it.cp&&new Set(q.choices.map(c=>c.l.replace(/<small>.*$/,''))).size!==q.choices.length)B(w+': two choices share a picture')}
+        else if(q.kind==='match'||q.kind==='order'){if(!q.speak)B(w+': a tile does not say itself')}
+        else if(q.kind==='sort'){const says=[...html.matchAll(/data-say="([^"]*)"/g)].map(m=>m[1]);for(const c of q.items)if(!says.includes(esc(c.say)))B(w+': chip '+c.v+' does not say itself')}
+      }
+    }
+    // 3000 seeded questions per new stop: no error, kinds mixed in by share, every item drawn, labels unique, reproducible; the right
+    // answer the single longest choice in under 40% of the choice questions (R-01d's civics rule, for every new stop)
+    r.long=[];
+    for(const id of NEW){
+      const seen=new Set(),labels={},kinds={};let lg=0,ch=0;
+      for(let s=1;s<=3000;s++){const q=genQ(id,1,s),w=id+' '+q.label+': ';seen.add(q.bk.bi);kinds[q.kind]=(kinds[q.kind]||0)+1;
+        if(q.sk!==id||q.lv!==1)B(w+'genQ did not stamp sk/lv');
+        if(!q.label||q.label.length>=60)B(w+'label length');
+        if(labels[q.label]!==undefined&&labels[q.label]!==q.bk.bi)B(w+'label is not unique');labels[q.label]=q.bk.bi;
+        if(q.kind==='choice'){ch++;const L=q.choices.map(c=>String(c.v).length),mx=Math.max(...L);if(String(q.ans).length===mx&&L.filter(v=>v===mx).length===1)lg++}}
+      if(seen.size!==BANK[id].length)B(id+': 3000 questions drew '+seen.size+' of '+BANK[id].length+' items');
+      if(!(kinds.choice>1500)||!kinds.sort||!kinds.match||!kinds.order)B(id+': kinds '+JSON.stringify(kinds));
+      if(lg/ch>=.4)B(id+': the right answer is the longest choice in '+(100*lg/ch).toFixed(1)+'%');
+      r.long.push(id+' '+(100*lg/ch).toFixed(0)+'%');
+      if(JSON.stringify(genQ(id,1,77))!==JSON.stringify(genQ(id,1,77)))B(id+' is not reproducible');
+    }
+    // live rounds of ten (least recently shown first, kinds by share): repeats per round, the new stops and Nature Trail with its top-up.
+    // Nature Trail had 0.27 to 0.77 a round before (docs/drafts/DEEP15.md); a new stop must do better than the worst of them
+    const reps=(id,lv)=>{let n=0;for(let k=0;k<60;k++){bankReset();bankRound();G={kh:[],last:null};const ls=new Set();for(let j=0;j<10;j++){const q=pickQ(id,lv,false);G.last=q.label;if(ls.has(q.label))n++;ls.add(q.label)}}bankReset();return n/60};
+    r.rep=[];
+    for(const id of NEW){const x=reps(id,1);r.rep.push(id+' '+x.toFixed(2));if(x>0.5)B(id+': '+x.toFixed(2)+' repeats in a round of ten')}
+    for(const id in D15.top)r.rep.push(id+'1 '+reps(id,1).toFixed(2));
+    // Spanish
+    const strip=s=>String(s).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
+    const BADPL=/\b[a-z]*(?:ch|sh|x|ss|z)s\b|\b[a-z]*[^aeiou\s]ys\b|\b(?:fishes|tooths|foots|mouses|childs|mans|womans|sheeps|leafs|knifes|persons)\b/i;
+    const touched=[...Object.keys(D15.es),...D15.esNew.map(u=>u.id)];let words=0;
+    for(const id of touched){const u=ES_UNITS.find(x=>x.id===id),neu=D15.esNew.some(x=>x.id===id),add=neu?u.items:D15.es[id];
+      if(!u||!SK['es_'+id]||SK['es_'+id].max!==(u.spell?3:2))B('es_'+id+': unit or skill');
+      if(neu&&(u.confuse||u.cap||u.spell||u.mix||u.l1))B(id+': a new unit with confuse, cap, spell, mix or l1');
+      if(!neu&&u.items.slice(-add.length).some((it,i)=>it!==add[i]))B(id+': the new words are not at the end');
+      for(const it of add){words++;const w=id+' '+it[0];
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||!it[1]||BADPL.test(it[1]))B(w+': word or gloss');
+        if(!['el','la','los','las',''].includes(it[3]))B(w+': article '+it[3]);
+        if(/^c:/.test(it[2])?!/^c:#[0-9a-f]{6}$/.test(it[2]):!allow.has(it[2].replace(/️/g,'')))B(w+': picture '+it[2]);
+        if(it[4]&&!ART[it[4]])B(w+': no drawing '+it[4]);
+        if(u.spell&&!esSpellable(it))B(w+': cannot be spelled in a spell unit');
+        if(!doc.includes('| '+(it[3]?it[3]+' ':'')+it[0]+' |'))B(w+': not in '+DOC)}
+      if(new Set(u.items.map(x=>x[0])).size!==u.items.length)B(id+': a word twice');
+      if(new Set(u.items.map(x=>x[2]+'|'+(x[4]||''))).size!==u.items.length)B(id+': two words share a picture');
+      for(let lv=1;lv<=SK['es_'+id].max;lv++)for(const g of [0,2])for(let s=1;s<=400;s++){S.grade=g;const q=genQ('es_'+id,lv,s),k='es_'+id+' L'+lv+' g'+g+': ';
+        if(q.kind!=='choice')continue;
+        const vs=q.choices.map(c=>String(c.v).toLowerCase());if(new Set(vs).size!==vs.length)B(k+'two choices share a value');
+        const ps=q.choices.filter(c=>c.h).map(picOf);if(new Set(ps).size!==ps.length)B(k+'two choices share a picture');
+        if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(k+'not exactly one right answer');
+        if(q.hint&&q.hint.s&&BADPL.test(q.hint.s))B(k+'English plural')}
+    }
+    S.grade=0;
+    for(let s=1;s<=300;s++){const q=genQ('es_mix',2,s);if(q.kind=='choice'&&q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B('es_mix: not exactly one right answer')}
+    r.words=words;r.n.units=touched.length;
+    r.det=require('crypto').createHash('md5').update(NEW.map(id=>JSON.stringify(genQ(id,1,5))).join()+JSON.stringify(genQ('es_toy',1,9))+JSON.stringify(genQ('es_animal',2,9))).digest('hex');
+    r.g0=g0;
+    return r;
+  };
+  const a=eval(js+';('+body.toString()+')()'),b=eval(js+';('+body.toString()+')()');
+  for(const m of a.bad)bad(m);
+  if(a.det!==b.det)bad('the new questions differ between two runs');
+  note.n=a.n;note.long=a.long;note.words=a.words;note.rep=a.rep;
+  // 4. the lazy load, on a fresh page as the built app runs (lazyPage, P6-02): nothing new in the start-up files; with the gate on the
+  //    Discover map asks for the lesson parts and teaches, then shows Discovery Garden; a stop tapped first waits, then opens by its id
+  const need=['index.html',...START_FILES,...LAZY_FILES];
+  if(need.some(f=>!fs.existsSync(path.join(ROOT,f))))bad('not built: run python3 tools/build.py');
+  else try{
+    const html=rd('index.html'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)])),TF='teaches.'+BUILD_VER+'.js';
+    for(const f of ['index.html',...START_FILES])if(/Discovery Garden|D15_HINT|d15Rows/.test(f==='index.html'?html:files[f]))bad(f+' carries DEEP-15 items (they belong in part teaches)');
+    if(!files[TF].includes('const D15 = {')||!files[TF].includes('function deep15Apply()'))bad(TF+' does not carry the items');
+    if(Buffer.byteLength(files[TF])>=PART_WARN)bad(TF+' is over the part warning');
+    // OWNER-1127: the start-up page carries the flag the status line asks for (was: always 0, while the read-through was unreviewed)
+    const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
+    if(!new RegExp('let DEEP15_ON = '+on0+';').test(html))bad('index.html is not built with DEEP15_ON = '+on0+' (the status line of '+DOC+')');
+    const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DEEP15_ON='+on);return pg};
+    const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
+    // off: the map loads what it always did, and nothing changes
+    let pg=page(0);const n0=pg.run('NODES.disc.map(nid).join()');pg.run('pathMap("disc")');serveAll(pg);
+    if(pg.run('NODES.disc.map(nid).join()+D15F')!==n0+'0'||!pg.run('partReady("teaches")'))bad('gate off: the Discover map changed or did not load teaches as before');
+    // on: the map warms the part, then draws Discovery Garden
+    pg=page(1);pg.run('pathMap("disc")');pg.flush();
+    const asked=pg.scripts.map(s=>s.src);
+    if(asked[0]!=='teach.'+BUILD_VER+'.js')bad('gate on: the map asked first for '+asked.join());
+    serveAll(pg);
+    const st=JSON.parse(pg.run('JSON.stringify({w:PATHS.disc.worlds.map(w=>w.id).join(),f:D15F,on:MAPP,map:!!document.querySelector("#map"),strip:!!document.querySelector("#map")&&document.querySelector("#map").innerHTML.includes("Seeds &amp; Plants")&&worldStrip("disc").includes("Discovery Garden"),es:ES_UNITS.length})'));
+    if(st.w!=='d_nature,d_garden,d_lab,d_cosmos'||st.f!==1||!st.strip)bad('gate on: after the part loaded the map is '+JSON.stringify(st));
+    // on: a stop tapped before the part is in waits for it, then the round of that stop starts
+    pg=page(1);pg.run('S.unlockAll=true;open("disc",6)');
+    if(!/id="partwait"/.test(pg.app.innerHTML)||!pg.app.innerHTML.includes('Getting the new stops ready...'))bad('gate on: a stop tapped first does not wait for the part: '+pg.app.innerHTML.slice(0,120));
+    serveAll(pg);
+    const g=JSON.parse(pg.run('JSON.stringify({sk:G&&G.sk,lv:G&&G.lv,node:G&&nid(NODES.disc[G.node]),q:!!(G&&G.q)})'));
+    if(g.sk!=='sci_lab'&&!(g.node==='sci_life2'&&g.sk==='sci_life'&&g.lv===2&&g.q))bad('gate on: the stop that waited opened '+JSON.stringify(g));
+    // on: a new stop by real index after the part, and a new Spanish unit's learn screen
+    pg.run('S.unlockAll=true;open("disc",NODES.disc.findIndex(n=>nid(n)=="sci_wx1"))');pg.flush();
+    const g2=JSON.parse(pg.run('JSON.stringify({sk:G.sk,q:G.q&&G.q.sk,n:G.n})'));
+    if(g2.sk!=='sci_wx'||g2.q!=='sci_wx')bad('gate on: Weather Watch did not start: '+JSON.stringify(g2));
+    note.lazy=asked.length+' parts asked, then '+st.w.split(',').length+' worlds';
+  }catch(e){bad('the lazy load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // 6. the gate: the status line, and the built flag follows it (tools/build.py deep15_on)
+  const st=(doc.match(/^status:\s*(.*)$/m)||[])[1]||'',on=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test(st)?1:0;
+  if(!rd('src/js/42d-deep15on.js').includes('let DEEP15_ON = '+on+';'))bad('42d-deep15on.js does not follow the status line of '+DOC+' (run python3 tools/build.py)');
+  for(const f of ['42d-deep15on.js','42e-deep15.js'])if(partOf(f))bad(f+' is not in index.html');
+  for(const f of ['52y-deep15.js','d-deep15.js'])if(partOf(f)!=='teaches')bad(f+' is not in part teaches');
+  if(!/function open\(p,i\)\{if\(d15Want\(p\)\)return d15Open\(p,i\);/.test(rd('src/js/46-home.js'))||!/teachWarm\(p\);d15Warm\(p\);/.test(rd('src/js/46-home.js')))bad('46-home.js: the open and map hooks');
+  const code=D15FILES.map(f=>rd((f[0]=='d'?'src/data/':'src/js/')+f)).join('\n');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the DEEP-15 code reaches outside the tablet or draws at random');
+  return{problems:p,note:'gate off: same as without DEEP-15 ('+note.off+'); on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' Discover items, '+note.words+' Spanish words; longest answer '+(note.long||[]).join(', ')+'; repeats a round '+(note.rep||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DEEP15_ON '+on+')'};
+});
+
+// ---- REC-198 (owner decision 2026-11-27: the audio budget 9.5 -> 12 MB for the read-along stories and the new Spanish words; STORIES7-READ.md
+// and DEEP15-READ.md approved): every STORIES-7 story is recorded with word times that fit it, the questions and the reader's spoken lines and
+// (with the budget's 300 KB margin) the words for word taps; every DEEP-15 Spanish word has its recording; the files are in sw.js
+run('recorded stories and new Spanish words REC-198',()=>{
+  const p=[],E=require('./es-audio.js'),EA=require('./en-audio.js'),vm=require('vm'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const ctx=E.loadApp(),R=x=>vm.runInContext(x,ctx),dir=path.join(ROOT,EA.STORY_DIR),files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  // the length of an Ogg Opus file in ms: the last page's granule position less the pre-skip, at 48 kHz
+  const oggMs=b=>{const h=b.indexOf('OpusHead'),pre=h>=0?b.readUInt16LE(h+10):0,l=b.lastIndexOf('OggS');return l<0?0:Math.round((Number(b.readBigUInt64LE(l+6))-pre)/48)};
+  const opus=b=>{const h=b.indexOf('OpusHead');return b.slice(0,4).toString()==='OggS'&&h>=0&&h<=80&&b[h+9]===1};
+  // 1. the DEEP-15 Spanish words (src/data/d-deep15.js: words at the end of thirteen units, two new units), whatever DEEP15_ON says
+  const ES=R('ES_AUDIO'),esDir=path.join(ROOT,E.DIR),d15=R('[...Object.values(D15.es).flat(),...D15.esNew.flatMap(u=>u.items)].map(esFull)');
+  for(const w of d15){const m=ES.lines[E.esKey(w)];if(!m)p.push('DEEP-15 Spanish word without a recording: '+w);else if(!fs.existsSync(path.join(esDir,m[0]+E.EXT)))p.push('DEEP-15 Spanish word '+w+': '+E.DIR+m[0]+E.EXT+' is missing')}
+  // 2. the stories: one file each (the hash of its text), mono Ogg Opus under the file limit, and its word times: one [start, end] in ms per
+  //    word of st7Words, whole numbers, each word after the last one, all inside the file, spanning it (first word in the first second,
+  //    last word ending in its last fifth)
+  const M=R('typeof ST7A=="undefined"?null:{A:ST7A,S:ST7S}');
+  if(!M)return{problems:p.concat('no ST7A / ST7S (src/data/d-story-audio.js): run node tools/en-audio.js --story')};
+  const {stories,lines,words}=EA.collectStory(ctx),used=new Set();let est=0,bytes=0,nW=0;
+  for(const s of stories){const a=M.A[s.id],w=s.id+': ';
+    if(!a){p.push(w+'no recording');continue}
+    if(a.f!==EA.storyFileOf(s.text)+'.ogg'){p.push(w+'file '+a.f+' is not the hash of its text');continue}
+    if(!files.includes(a.f)){p.push(w+EA.STORY_DIR+a.f+' is missing');continue}
+    used.add(a.f);if(a.e)est++;
+    const b=fs.readFileSync(path.join(dir,a.f)),ms=oggMs(b),t=a.t;
+    if(!Array.isArray(t)||t.length!==s.words.length){p.push(w+(t||[]).length+' word times for '+s.words.length+' words');continue}
+    if(t.some(x=>!Array.isArray(x)||x.length!==2||!Number.isInteger(x[0])||!Number.isInteger(x[1])))p.push(w+'a word time is not two whole numbers of ms');
+    else if(t.some((x,i)=>x[0]<0||x[1]<=x[0]||(i&&x[0]<t[i-1][1])))p.push(w+'the word times are not increasing');
+    else if(t[t.length-1][1]>ms)p.push(w+'the word times run to '+t[t.length-1][1]+' ms, past the end of the recording ('+ms+' ms)');
+    else if(t[0][0]>1000||t[t.length-1][1]<ms*0.8)p.push(w+'the word times ('+t[0][0]+' to '+t[t.length-1][1]+' ms) do not span the recording ('+ms+' ms)');
+    if(JSON.stringify(R(`st7Plan(st7Get(${JSON.stringify(s.id)}))`))!==JSON.stringify(t))p.push(w+'the reader does not use the recording\'s times');}
+  // 3. the questions and the sentences the reader says aloud; the words (all or none)
+  for(const [k,o] of lines){const f=M.S.lines[k];if(!f){p.push('no recording for "'+k+'" ('+o.from[0]+')');continue}
+    if(f!==EA.storyFileOf(k))p.push('"'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.STORY_DIR+f+'.ogg is missing');else used.add(f+'.ogg')}
+  for(const k in M.S.lines)if(!lines.has(k))p.push('ST7S has a line the reader does not say: '+k);
+  const wk=Object.keys(M.S.w);
+  if(wk.length&&wk.length!==words.size)p.push('word taps: '+wk.length+' of '+words.size+' words recorded (all or none)');
+  for(const k of wk){const o=words.get(k),f=M.S.w[k];if(!o){p.push('ST7S has a word no story has: '+k);continue}
+    if(f!==EA.storyFileOf(o.text))p.push('word "'+k+'": file '+f+' is not the hash of its text');else if(!files.includes(f+'.ogg'))p.push(EA.STORY_DIR+f+'.ogg is missing');else{used.add(f+'.ogg');nW++}}
+  for(const f of files){const b=fs.readFileSync(path.join(dir,f));bytes+=b.length;if(!used.has(f))p.push(EA.STORY_DIR+f+' is not in the manifest');
+    if(!opus(b))p.push(EA.STORY_DIR+f+' is not mono Ogg Opus');if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.STORY_DIR+f+' is '+b.length+' bytes (600 to '+AUDIO_FILE_FAIL+')')}
+  // 4. the budget: all the audio under AUDIO_FAIL; the word taps only with STORY_MARGIN of it left
+  const sum=d=>fs.existsSync(path.join(ROOT,d))?fs.readdirSync(path.join(ROOT,d)).reduce((s,f)=>s+fs.statSync(path.join(ROOT,d,f)).size,0):0,all=['es','en','teach','story'].reduce((s,d)=>s+sum('audio/'+d),0);
+  if(all>AUDIO_FAIL)p.push('all the recordings are '+all+' bytes, over the '+AUDIO_FAIL+' limit');
+  if(nW&&all>AUDIO_FAIL-EA.STORY_MARGIN)p.push('the word taps are recorded with less than '+EA.STORY_MARGIN+' bytes of the budget left ('+all+')');
+  // 5. the build: the manifest rides in teachrd (not at start); sw.js fills every story file after install and answers a Range request from its cache
+  if(partOf('d-story-audio.js')!=='teachrd')p.push('src/data/d-story-audio.js is not in the part teachrd');
+  for(const f of ['index.html',...START_FILES])if(/const ST7A=|const ST7S=/.test(rd(f)))p.push(f+' (start-up) carries the story recordings\' manifest');
+  const tr='teachrd.'+BUILD_VER+'.js';if(fs.existsSync(path.join(ROOT,tr))&&!rd(tr).includes('const ST7A='))p.push(tr+' does not carry ST7A');
+  const sw=rd('sw.js'),af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(x=>x.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.STORY_DIR));
+  if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.STORY_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' story recordings ('+af.length+')');
+  if(!/\\\/audio\\\/story\\\//.test(sw))p.push('sw.js: a Range request for a story recording is not answered from the cache');
+  // 6. the reader in a stand-in browser: a question and a tapped word play their files; recordings off (ENA.off, Tablet voice): the tablet's voice
+  const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
+  try{const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>log.push('speak '+u.text),cancel(){},speaking:false,pending:false}});
+    const S2=x=>vm.runInContext(x,s),q=stories.length&&R('ST7.list[0].q[0][0]');S2("S.voice=true;CLIPS=[];ENA.t=0");
+    log.length=0;S2(`st7Say(${JSON.stringify(q)})`);if(log.join()!=='play '+EA.STORY_DIR+M.S.lines[q]+'.ogg')p.push('a question: '+log.join(' | '));
+    if(nW){S2('hush()');log.length=0;S2("st7Say('Pig',null,1)");if(log.join()!=='play '+EA.STORY_DIR+M.S.w.pig+'.ogg')p.push('a tapped word: '+log.join(' | '))}
+    S2("hush();S.cheerV='tts'");log.length=0;S2(`st7Say(${JSON.stringify(q)})`);if(log.join()!=='speak '+q)p.push('Tablet voice: '+log.join(' | '));
+    S2("hush();S.cheerV='mix';ENA.off=true");log.length=0;S2(`st7Say(${JSON.stringify(q)})`);if(log.join()!=='speak '+q)p.push('ENA.off: '+log.join(' | '))}
+  catch(e){p.push('st7Say could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  return{problems:p,note:d15.length+' DEEP-15 Spanish words recorded; '+Object.keys(M.A).length+' of '+stories.length+' stories (word times: '+(Object.keys(M.A).length-est)+' from speech to text, '+est+' estimated), '+Object.keys(M.S.lines).length+' lines, '+nW+' of '+words.size+' words; '+files.length+' files, '+Math.round(bytes/1000)+' KB; all audio '+all+' bytes (budget '+AUDIO_FAIL+', '+(AUDIO_FAIL-all)+' left)'};
+});
+
+
+// ---- OWNER-1127: the owner's decisions of 2026-11-27 on the free sample (docs/drafts/OWNER-DECISIONS-2026-11-27.md; SAMPLE-REHEARSAL.md
+// questions 2 to 5 and wording 1 to 4; SPACED9.md's report line), through the real code in a Node vm with a stand-in page:
+// B2 no second PIN for Unlock or restore within 2 minutes of opening Grown-ups by the PIN (NAV.pinT, in memory, never saved); after
+// 2 minutes, from the map's grown-up button, or by the old question, the PIN is asked as before; B3 the Unlock card first in Grown-ups
+// in the free sample only; B4 from 3rd grade up a tap (or Enter) on the lesson's bubble ends the line and wakes the controls once,
+// below 3rd grade nothing; B5 the free sample's Puzzles tab: the Puzzle of the Day and one line (read out for a non-reader), no
+// locked cards; B6 a brand-new child's Today tile and first mission; B7 Mixed Practice on day one (missions and Learn); B8 the "more"
+// mission's title, which counts lessons too; B9 a skipped stop's check-in answered wrong is a report card line until it is right.
+run('OWNER-1127: the owner\'s free-sample decisions of 2026-11-27 (PIN, Unlock card, lesson bubble, Puzzles tab, day-one words, mission, report line)',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[],store={},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  // an element that keeps what is set on it (innerHTML, onclick, tabIndex ...) and is the stand-in for everything else
+  const el=()=>{const o={};return new Proxy(o,{get:(t,k)=>k in o?o[k]:typeof k=='string'&&/^on/.test(k)?null:k==='querySelectorAll'?(()=>[]):fk[k],set:(t,k,v)=>{o[k]=v;return true}})};
+  const els={},doc={querySelector:s=>els[s]||fk,querySelectorAll:()=>[],addEventListener(){},getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false,documentElement:fk};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:doc,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,
+    removeEventListener(){},matchMedia:()=>({matches:false}),__els:els,__el:el});
+  const R=x=>vm.runInContext(x,ctx),html=()=>String(els['#app'].innerHTML||'');
+  try{
+    R(`globalThis.window=globalThis;say=()=>{};fb=()=>{};music=()=>{};var __hush=0,__nr=[];{const h=hush;hush=()=>{__hush++;h()}};{const n=nrSay;nrSay=(t,s,m)=>{const r=n(t,s,m);if(r)__nr.push(t);return r}} // said (a non-reader with the voice on)
+       for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+       function __fresh(g){loadSave(null);migrate();S.name='Ava';S.grade=g;S.voice=true;for(const p in PATHS)S.maps[p]=S.maps[p]||{};PLAY.on=false;PLAY.own=false}`);
+    els['#app']=R('__el()');
+    // ---- B2: the PIN when buying ----
+    const b2=JSON.parse(R(`(()=>{const o={};__fresh(1);let gw=0,sh=0,gr=0;
+      const pg=PIN.gate,byPin=go=>go(1),byQ=go=>go(); // PIN.enter passes 1 (the PIN typed); the old question and choosing a PIN pass nothing
+      const g0=grown,s0=PLAY.sheet,r0=PLAY.grown;grown=()=>{gw++};PLAY.sheet=()=>{sh++};PLAY.grown=()=>{gr++};
+      PIN.gate=byPin;NAV.pinT=0;NAV.quiz();o.open=[gw,NAV.pinOk()];
+      const bt=__el();__els['#plgo']=bt;PLAY.cardBind();bt.onclick();o.within=[sh,gr];
+      NAV.pinT-=NAV.PIN_MS+1;bt.onclick();o.after=[sh,gr];
+      NAV.pinT=0;NAV.quiz(()=>{});o.other=NAV.pinOk(); // the map's grown-up button, Erase, Delete: not "Grown-ups opened by the PIN"
+      PIN.gate=byQ;NAV.quiz();o.question=NAV.pinOk(); // no PIN yet: the old question and choosing one
+      PIN.gate=byPin;NAV.quiz();save();
+      PIN.gate=pg;grown=g0;PLAY.sheet=s0;PLAY.grown=r0;delete __els['#plgo'];return JSON.stringify(o)})()`));
+    if(b2.open.join()!=='1,true')p.push('B2: Grown-ups by the PIN did not start the 2 minutes: '+b2.open);
+    if(b2.within.join()!=='1,0')p.push('B2: Unlock or restore within 2 minutes: sheet '+b2.within[0]+', PIN asked '+b2.within[1]+' (want the sheet, no PIN)');
+    if(b2.after.join()!=='1,1')p.push('B2: Unlock or restore after 2 minutes did not ask the PIN: '+b2.after);
+    if(b2.other)p.push('B2: a PIN for something other than opening Grown-ups started the 2 minutes');
+    if(b2.question)p.push('B2: the old question (no PIN yet) counted as the PIN');
+    for(const k of Object.keys(store))if(/pinT/.test(store[k])||store[k].includes(String(R('NAV.pinT'))))p.push('B2: the PIN time is saved in '+k);
+    const pin=rd('src/js/41b-pin.js'),nav=rd('src/js/41-nav.js');
+    if(!/if \(r == 'ok'\) \{ p\.close\(\); then\(1\);/.test(pin))p.push('B2: PIN.enter does not say the PIN itself was typed');
+    for(const f of fs.readdirSync(path.join(SRC,'js')))if(/NAV\.pinT\s*[-+]?=[^=]/.test(fs.readFileSync(path.join(SRC,'js',f),'utf8'))&&!['41-nav.js'].includes(f))p.push('B2: '+f+' sets NAV.pinT (only NAV.quiz in 41-nav.js does, in memory)');
+    if(/pinT[^\n]*(localStorage|PRF\.put|save\(\))/.test(nav))p.push('B2: NAV.pinT is saved');
+    // ---- B3: the Unlock card first in the free sample ----
+    const b3=JSON.parse(R(`(()=>{const o={},at=()=>{const h=__els['#app'].innerHTML;return[h.indexOf('id="gw-play"'),h.indexOf('id="gw-sum"'),(h.match(/id="gw-play"/g)||[]).length]};
+      __fresh(1);PLAY.on=true;PLAY.own=false;grown();o.locked=at();PLAY.own=true;grown();o.own=at();PLAY.on=false;PLAY.own=false;grown();o.web=at();return JSON.stringify(o)})()`));
+    if(!(b3.locked[0]>=0&&b3.locked[0]<b3.locked[1]&&b3.locked[2]==1))p.push('B3: in the free sample Unlock Whistlestop is not the first card: '+b3.locked);
+    if(!(b3.own[0]>b3.own[1]&&b3.own[2]==1))p.push('B3: unlocked, the card moved: '+b3.own);
+    if(b3.web[2])p.push('B3: the web version shows the Unlock card');
+    // ---- B4: the lesson bubble ----
+    const b4=JSON.parse(R(`(()=>{const o={}; // setTimeout is a no-op here, so the line never ends by itself: only the bubble can wake the controls
+      const t=g=>{__fresh(g);const b=__el();b.firstChild={textContent:''};b.classList={toggle(){}};__els['#lsbub']=b;LS.st={L:{p:'math'}};let w=0;__hush=0;
+        LS.talk(['Ten ones make one ten. Let us count them together.'],()=>{w++});const r={tab:b.tabIndex,click:typeof b.onclick};
+        if(b.onclick){b.onclick();b.onclick();r.after=[w,__hush];const b2=__el();b2.firstChild={textContent:''};b2.classList={toggle(){}};__els['#lsbub']=b2;
+          LS.talk(['Again.'],()=>{w++});let pd=0;b2.onkeydown({key:'Enter',preventDefault(){pd++}});r.key=[w,pd];LS.st={L:{p:'math'}};b2.onclick();r.gone=w}
+        else r.after=[w,__hush];delete __els['#lsbub'];LS.st=null;return r};
+      o.g2=t(2);o.g3=t(3);o.g6=t(6);o.k=t(0);return JSON.stringify(o)})()`));
+    for(const g of ['g3','g6']){const r=b4[g];
+      if(r.click!=='function'||r.tab!==0)p.push('B4: grade '+g.slice(1)+': the bubble cannot be tapped or reached with the keyboard');
+      else{if(r.after.join()!=='1,1')p.push('B4: grade '+g.slice(1)+': a tap (twice) woke the controls '+r.after[0]+' times and stopped the voice '+r.after[1]+' times (want 1 and 1)');
+        if(r.key.join()!=='2,1')p.push('B4: grade '+g.slice(1)+': Enter on the bubble did not wake the controls');
+        if(r.gone!==2)p.push('B4: grade '+g.slice(1)+': a tap on an old line\'s bubble after the screen moved on woke something')}}
+    for(const g of ['g2','k'])if(b4[g].click==='function'||b4[g].after.join()!=='0,0')p.push('B4: grade '+(g=='k'?'K':'2')+': the bubble does something ('+JSON.stringify(b4[g])+'), below 3rd grade it must not');
+    // ---- B5: the Puzzles tab in the free sample ----
+    const b5=JSON.parse(R(`(()=>{const o={},one=(g,lock)=>{__fresh(g);PLAY.on=lock;PLAY.own=!lock;__nr=[];BT.hub();const h=__els['#app'].innerHTML;
+        return{day:h.includes('id="btday"'),cards:(h.match(/class="[^"]*bt-type/g)||[]).length,line:h.includes('<p class="gx-lead" id="btmore">More puzzles open when a grown-up unlocks Whistlestop.</p>'),
+          gu:h.includes('plgu'),said:__nr.includes('More puzzles open when a grown-up unlocks Whistlestop.'),keep:h.includes('btkeep')||h.includes('btbdg'),n:BT.offered().length}};
+      o.k=one(0,true);o.g4=one(4,true);o.open=one(1,false);return JSON.stringify(o)})()`));
+    for(const [k,r] of [['K',b5.k],['4th grade',b5.g4]]){
+      if(!r.day||!r.line||r.cards||r.keep)p.push('B5: '+k+', free sample: the Puzzles tab is '+JSON.stringify(r)+' (want the Puzzle of the Day and the line, no cards)');
+      if(!r.gu)p.push('B5: '+k+': the quiet grown-ups button is gone');}
+    if(!b5.k.said)p.push('B5: the line is not read out for a non-reader');
+    if(b5.g4.said)p.push('B5: the line is read out for a reader (non-readers only, as the other hub lines)');
+    if(b5.open.line||b5.open.cards!==b5.open.n||!b5.open.n)p.push('B5: unlocked, the Puzzles tab changed: '+JSON.stringify(b5.open));
+    // ---- B6, B7, B8: day-one words, the "more" mission ----
+    const b6=JSON.parse(R(`(()=>{const o={},tile=()=>{const h=hmToday();return h.includes('Nothing to review yet')?'yet':h.includes('All caught up!')?'ok':'?'};
+      __fresh(1);S.rev=[];o.fresh=tile();o.round=MIS.sub({k:'round',p:'math'});o.mix=MIS.sub({k:'mix'});learnHub();o.learn=/A bit of every subject!/.test(__els['#app'].innerHTML);
+      S.log=[{d:today(),sec:60,rounds:1,q:5,ok:5,by:{math:60}}];o.logged=tile();
+      __fresh(1);S.rev=[];P('add').r=1;o.played=tile();
+      __fresh(1);const i=NODES.math.findIndex(n=>n.sk!='boss');setSt('math',i,2);o.round2=MIS.sub({k:'round',p:'math'});o.read2=MIS.sub({k:'round',p:'read'});o.mix2=MIS.sub({k:'mix'});
+      learnHub();o.learn2=/A bit of everything you learned/.test(__els['#app'].innerHTML);o.pin=MIS.sub({k:'round',p:'read',pin:1,i:0});
+      o.more=MIS.title({k:'more'});
+      __fresh(0);S.day={d:today(),r:0,done:false};S.day.m=[{k:'round',p:'math',d:0},{k:'more',d:0},{k:'mix',d:0}];
+      o.done=MIS.done({k:'round',p:'read',n:2}).won.map(w=>'Mission done: '+MIS.title(w.x)+'!');return JSON.stringify(o)})()`));
+    if(b6.fresh!=='yet')p.push('B6: a brand-new child\'s Today tile says '+b6.fresh+', want "Nothing to review yet"');
+    if(b6.logged!=='ok'||b6.played!=='ok')p.push('B6: after a round the tile is not "All caught up!": '+b6.logged+' / '+b6.played);
+    if(b6.round!=='Start your first stop!'||b6.read2!=='Start your first stop!')p.push('B6: a subject with no stop passed: "'+b6.round+'" / "'+b6.read2+'"');
+    if(b6.round2!=='Make it stronger!')p.push('B6: a subject with a stop passed: "'+b6.round2+'"');
+    if(b6.pin!=='Picked for you today!')p.push('B6: a grown-up\'s pinned stop lost its line: "'+b6.pin+'"');
+    if(b6.mix!=='A bit of every subject!'||!b6.learn)p.push('B7: nothing learned: missions "'+b6.mix+'", Learn '+b6.learn);
+    if(b6.mix2!=='A bit of everything!'||!b6.learn2)p.push('B7: something learned: missions "'+b6.mix2+'", Learn '+b6.learn2);
+    if(b6.more!=='Learn and play 2 times today'||!b6.done.includes('Mission done: Learn and play 2 times today!'))p.push('B8: the "more" mission: '+b6.more+' / '+b6.done);
+    // B8: what the line promises is what is counted: a lesson and a badge check-in add to the day's rounds before the missions are booked
+    for(const [f,re] of [['src/js/52-lesson.js',/d\.r\+\+;\n    const stk = streakTick\(\), mi = MIS\.done\(\{k: 'round'[^\n]*n: d\.r\}\)/],['src/js/50-round.js',/d\.r\+\+;const stk=streakTick\(\);\n  const mi=MIS\.done\([^\n]*n:d\.r\}\)/]])
+      if(!re.test(rd(f)))p.push('B8: '+f+' no longer counts its round for the "more" mission (n: day().r)');
+    // ---- B9: the report card line for a skipped stop's check-in answered wrong ----
+    const b9=JSON.parse(R(`(()=>{const o={},D=mastDay(),line=()=>{const h=REP.html(REP.data());return(h.match(/Checked a skipped stop: <b>([^<]*)<\\/b>\\. Practice it again\\./g)||[]).join('|')};
+      __fresh(3);const n=NODES.math.find(x=>SPC.ok(x)),k=nid(n),n2=NODES.read.find(x=>SPC.ok(x)),k2=nid(n2);o.name=n.t;
+      S.spc={s:{[k]:{b:0,d:D,k:1},[k2]:{b:1,d:D}}};o.none=line();
+      spcTry({spc:k2},false,false);o.learned=line();
+      spcTry({spc:k},false,false);o.wrong=line();const before=JSON.stringify(S);o.l2=line();o.ro=before===JSON.stringify(S);
+      spcTry({spc:k},true,true);o.helped=line();
+      spcTry({spc:k},true,false);o.right=line();o.x='x' in S.spc;return JSON.stringify(o)})()`));
+    const want='Checked a skipped stop: <b>'+b9.name.replace(/&/g,'&amp;')+'</b>. Practice it again.';
+    if(b9.none||b9.learned)p.push('B9: a line with no skipped stop missed: '+(b9.none||b9.learned));
+    if(b9.wrong!==want)p.push('B9: a skipped stop answered wrong: "'+b9.wrong+'", want "'+want+'"');
+    if(!b9.ro||b9.l2!==b9.wrong)p.push('B9: the report card changed the save');
+    if(b9.helped!==want)p.push('B9: a right answer with the hint showing took the line away');
+    if(b9.right||b9.x)p.push('B9: a right check-in did not clear the line');
+  }catch(e){p.push('the check could not run: '+String(e.stack||e).split('\n').slice(0,4).join(' | '))}
+  return{problems:p,note:'B2 PIN within 2 minutes / after; B3 card order; B4 bubble at K, 2nd, 3rd, 6th; B5 Puzzles tab K and 4th; B6-B8 day-one words and the mission; B9 the report line'};
+});
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){

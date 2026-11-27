@@ -334,15 +334,18 @@ const RW = {
 
   // after the tap. o: {sc, n, rate (stars or -1 for none), line, tip (the next step after a low score, or ''),
   // next (true: the next stop is open)}. NAV-01: the three end choices (Play again #again, Next #nxt, Home #ehome), the bonus game above
+  // OLDER-14: o.card (50b-older.js OLD14.card: grades 4 to 6, the look approved) is the score card: the time, the best and New best!
+  // under the score, the stickers in a plain row (no chest); o.np: the pet is hidden (no cheering pet). Without them, as before.
   done(o) {
-    const art = o.rate >= 0 ? RW.rate(o.rate) : RW.pet();
+    const art = o.rate >= 0 ? RW.rate(o.rate) : o.np ? '' : RW.pet();
     const btns = NAV.end3({ again: 'again', next: o.next ? 'nxt' : '', home: 'ehome',
       extra: UI.btn('Bonus game', { kind: 'subject', p: 'play', icon: 'gamepad', id: 'bonus' }) });
     const stars = o.sc ? RW.row('star', 'star', `<b class="rw-num">+0</b> stars`, 'rwst') : '';
-    return `<div class="rw-res"><section class="rw-a"><div class="rw-hero">${art}` +
+    return `<div class="rw-res${o.card ? ' o14' : ''}"><section class="rw-a"><div class="rw-hero">${art}` +
       `<h1 class="rw-score" id="sc"><b>${o.sc}</b> out of ${o.n}</h1><p class="rw-line">${esc(o.line)}</p>` +
-      `${o.tip ? `<p class="rw-tip">${ico('target', 24)}<span>${esc(o.tip)}</span></p>` : ''}</div>` +
-      `<div class="rw-tre"><div class="rw-chest-o">${RW.rays()}${RW.chest(1)}</div><div class="rw-prz" id="prz"></div></div></section>` +
+      `${o.card ? OLD14.html(o.card) : ''}${o.tip ? `<p class="rw-tip">${ico('target', 24)}<span>${esc(o.tip)}</span></p>` : ''}</div>` +
+      (o.card ? `<div class="rw-prz o14-prz" id="prz"></div></section>` :
+      `<div class="rw-tre"><div class="rw-chest-o">${RW.rays()}${RW.chest(1)}</div><div class="rw-prz" id="prz"></div></div></section>`) +
       `<section class="rw-b"><div class="rw-feed"><div class="rw-msgs" id="msgs"></div><div class="rw-earn" id="earn">${stars}</div></div>` +
       `<div class="rw-dock" id="btns" style="visibility:hidden">${btns}</div></section></div>`;
   },

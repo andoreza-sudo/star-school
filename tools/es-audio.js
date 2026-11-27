@@ -72,6 +72,10 @@ function collect(ctx, opt = {}) {
   // a hint that reads a list: its pieces when each is a line already, else the whole text
   const addList = (t, from) => { const k = esKey(t), ps = pieces(k); if (ps.length > 1 && ps.every(p => lines.has(p))) ps.forEach(p => add(p, from)); else add(k, from); };
   const R = s => vm.runInContext(s, ctx);
+  // REC-198 (owner decision 2026-11-27, docs/drafts/DEEP15-READ.md approved): the DEEP-15 Spanish words (src/data/d-deep15.js, part teaches)
+  // are collected whatever the gate says: deep15Apply runs once here with DEEP15_ON set for the call (it adds the words to the end of their
+  // units and the two new units), so a tablet has the recordings ready the day the gate is turned on
+  R('if(typeof deep15Apply=="function"&&typeof D15F!="undefined"&&!D15F){const o=DEEP15_ON;DEEP15_ON=1;try{deep15Apply()}finally{DEEP15_ON=o}}');
   const { ES_UNITS, ES_GRAM, ES_STORY, CB_COL, SPN } = R('({ES_UNITS,ES_GRAM,ES_STORY,CB_COL,SPN})');
   const esFull = R('esFull'), esSay = R('esSay'), esSpellable = R('esSpellable'), gPlArt = R('gPlArt'), ES_FORMS = R('ES_FORMS');
   // 1. unit words
