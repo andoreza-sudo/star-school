@@ -16993,6 +16993,88 @@ async function main() {
       else step('OLDER-14: a 5th grader with the gate on: no chest, the score card (score, Time, Your best, 3 stars, New best! over an earlier 6 of 10), the payout rows; Show my pet off in Grown-ups: Home without the pet, Pet Care, Pet Shop or My Pet, no map pet, the pet\'s save untouched; on again: all back (' +
         notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
     }
+    if (seg('DEEP-15')) {
+      // DEEP-15 (BEST-APP roadmap 15): the drafted Discover and Spanish items. With the gate off (the build's DEEP15_ON = 0) the Discover
+      // map loads its parts as before and gains nothing; with it on (as the owner's flip would build), in a fresh page, a 1st grader taps
+      // Discover on Home, the map loads the part and opens on Discovery Garden, and a round of Seeds & Plants is played by real taps (every
+      // kind it draws); then Spanish: the La Casa chip, the new Toys stop, its learn screen and a round. Stars save under the new stop ids.
+      // 48 px, no sideways scroll, at both sizes.
+      const bad = [], notes = [];
+      const look = async (pg, at, where) => {
+        await animsDone(pg);
+        const f = await pg.evaluate(() => {
+          const vw = document.documentElement.clientWidth, small = [];
+          for (const b of document.querySelectorAll('#app button')) { const r = b.getBoundingClientRect(); if (r.width && r.height && (r.width < 47.5 || r.height < 47.5) && !b.closest('#navbar')) small.push((b.id || b.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+          const sc = [...document.querySelectorAll('#app .scroll')].map(s => s.scrollWidth - s.clientWidth);
+          return { small: small.slice(0, 5), wide: Math.max(document.documentElement.scrollWidth - vw, ...sc, 0) };
+        });
+        if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', '));
+        if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px');
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = 'DEEP-15 ' + w + 'x' + h + ': ';
+        for (const on of [0, 1]) {
+          const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+          const pg = ta.page;
+          try {
+            await pg.waitForSelector('.game[data-p="disc"]', { timeout: 10000 });
+            await pg.evaluate(on => { DEEP15_ON = on; S.grade = 1; save(); home(); }, on);
+            await pg.waitForSelector('.game[data-p="disc"]');
+            await pg.click('.game[data-p="disc"]');
+            if (!on) {
+              // gate off: the map loads its parts as before and gains nothing
+              await pg.waitForFunction(() => partReady('teaches') && document.querySelector('#map'), null, { timeout: 30000 });
+              await vwait(pg, 300);
+              const off = await pg.evaluate(() => ({ w: PATHS.disc.worlds.map(x => x.id).join(), f: D15F, units: ES_UNITS.length, chip: (document.querySelector('.wchip.on') || {}).textContent || '' }));
+              if (off.w !== 'd_nature,d_lab,d_cosmos' || off.f !== 0 || off.units !== 21 || !/Nature Trail/.test(off.chip)) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
+            } else {
+              await pg.waitForFunction(() => D15F === 1 && document.querySelector('#map') && PATHS.disc.worlds[1].id === 'd_garden', null, { timeout: 30000 });
+              const i = await pg.evaluate(() => NODES.disc.findIndex(n => nid(n) === 'sci_plant1'));
+              await pg.waitForSelector(`.node[data-n="${i}"]:not(.lock)`, { timeout: 10000 });
+              const mp = await pg.evaluate(i => ({ chip: (document.querySelector('.wchip.on') || {}).textContent || '', lab: document.querySelector(`.node[data-n="${i}"]`).getAttribute('aria-label') }), i);
+              if (!/Discovery Garden/.test(mp.chip) || mp.lab !== 'Seeds & Plants') bad.push(at + 'the map after the part: ' + JSON.stringify(mp));
+              await pg.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), i);
+              await look(pg, at, 'the map');
+              await pg.click(`.node[data-n="${i}"]`);
+              await pg.waitForSelector('#prompt', { timeout: 10000 });
+              const kinds = new Set();
+              await playRound(pg, at + 'Seeds & Plants', undefined, async () => { const k = await pg.evaluate(() => G.q.kind); if (!kinds.has(k)) { kinds.add(k); await look(pg, at, 'a ' + k + ' question'); } });
+              const s1 = await pg.evaluate(() => ({ st: S.maps.disc.sci_plant1 || 0, saved: (JSON.parse(localStorage.getItem(KEY)).maps.disc || {}).sci_plant1 || 0 }));
+              if (s1.st < 1 || s1.saved !== s1.st) bad.push(at + 'Seeds & Plants stars: ' + JSON.stringify(s1));
+              // Spanish: every stop unlocked (as Grown-ups can), the La Casa chip, the Toys stop at its end, the learn screen, a round
+              await pg.click('#ehome');
+              await pg.waitForSelector('#navbar .nb-home[aria-current="page"]');
+              await pg.evaluate(() => { S.unlockAll = true; save(); });
+              await pg.click('.game[data-p="es"]');
+              await pg.waitForSelector('#map');
+              const wi = await pg.evaluate(() => PATHS.es.worlds.findIndex(x => x.id === 'e_casa'));
+              await pg.evaluate(wi => document.querySelector(`.wchip[data-w="${wi}"]`).scrollIntoView({ inline: 'center' }), wi);
+              await pg.click(`.wchip[data-w="${wi}"]`);
+              const j = await pg.evaluate(() => NODES.es.findIndex(n => nid(n) === 'es_toy1'));
+              await pg.waitForSelector(`.node[data-n="${j}"]`, { timeout: 10000 });
+              await pg.evaluate(j => document.querySelector(`.node[data-n="${j}"]`).scrollIntoView({ block: 'center' }), j);
+              await pg.click(`.node[data-n="${j}"]`);
+              await pg.waitForSelector('#go', { timeout: 10000 });
+              const learn = await pg.evaluate(() => document.querySelector('#app').innerText);
+              if (!/pelota/.test(learn) || !/papalote/.test(learn)) bad.push(at + 'the Toys learn screen: ' + learn.slice(0, 120).replace(/\s+/g, ' '));
+              await look(pg, at, 'the Toys learn screen');
+              await pg.click('#go');
+              await pg.waitForSelector('#prompt', { timeout: 10000 });
+              await playRound(pg, at + 'Toys', undefined, async n => { if (!n) await look(pg, at, 'a Toys question'); });
+              const s2 = await pg.evaluate(() => ({ st: S.maps.es.es_toy1 || 0, saved: (JSON.parse(localStorage.getItem(KEY)).maps.es || {}).es_toy1 || 0 }));
+              if (s2.st < 1 || s2.saved !== s2.st) bad.push(at + 'Toys stars: ' + JSON.stringify(s2));
+              notes.push(w + 'x' + h + ' (Seeds & Plants drew ' + [...kinds].join(', ') + ')');
+            }
+          } catch (e) { bad.push(at + 'gate ' + on + ': ' + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+          for (const e of ta.errors) bad.push(at + e);
+          for (const u of ta.network) bad.push(at + 'network request: ' + u);
+          await ta.ctx.close();
+        }
+      }
+      if (bad.length) fail('DEEP-15 deeper Discover and Spanish:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('DEEP-15: the gate off adds nothing to the Discover map; on: a 1st grader taps Discover, the map loads the part and opens on Discovery Garden, a round of Seeds & Plants by real taps, then the Spanish Toys stop (learn screen, a round); stars under sci_plant1 and es_toy1 (' +
+        notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
+    }
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

@@ -25939,6 +25939,211 @@ run('OLDER-14: grades 4 to 6 score card and personal best, no chest, payouts as 
   return{problems:p,note:note+`; status ${st} (OLDER_ON ${on})`};
 });
 
+// ---- DEEP-15 (BEST-APP roadmap 15, docs/drafts/DEEP15.md): deeper Discover and Spanish, drafted for the owner and gated ----
+// src/data/d-deep15.js (the items) and src/js/52y-deep15.js (deep15Apply) are in part teaches; 42e-deep15.js (the map hooks) and
+// 42d-deep15on.js (DEEP15_ON, BUILT from docs/drafts/DEEP15-READ.md) are in index.html. 1. The gate off changes nothing at all: the app's
+// state and many seeded questions of every Discover and Spanish stop are the same as an app built without the DEEP-15 files, and the hooks
+// do nothing. 2. On: every new item is well formed and answerable (one right answer, no repeated choice, no duplicate item), passes the
+// Discover rules (P2-36, R-01d, AUD-DISC: the hint never names the answer, the answer is not in the prompt, read aloud with its choices in
+// order, pictures from the allow list, the right answer the longest choice in under 40% of questions, no joke choices, no evolution) and
+// the Spanish rules (P2-30, R-01s: article, NFC, one picture per word, no two right answers by value or picture, English plurals); 3. old
+// progress, a running round and the picked world keep their stops; 4. the lazy load on a fresh page (the map warms the part, a stop tapped
+// first waits for it), the start-up files carry none of it; 5. determinism; 6. the gate is the one-line flip and the read-through lists
+// every item.
+run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable items, Discover and Spanish rules, lazy load, determinism',()=>{
+  const p=[],bad=m=>{if(p.length<80&&!p.includes(m))p.push(m)},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),note={};
+  const DOC='docs/drafts/DEEP15-READ.md',doc=rd(DOC);
+  const D15FILES=['42d-deep15on.js','42e-deep15.js','52y-deep15.js','d-deep15.js'];
+  // the app without the DEEP-15 files (its hooks in 46-home.js then call nothing: open and pathMap are not run here)
+  const jsOff=cat('js').replace(rd('src/js/42d-deep15on.js'),'').replace(rd('src/js/42e-deep15.js'),'')+PARTS.map(x=>cat('js',x.stem).replace(rd('src/js/52y-deep15.js'),'')+cat('data',x.stem).replace(rd('src/data/d-deep15.js'),'')).join('')+cat('data');
+  if(jsOff.length!==js.length-D15FILES.reduce((a,f)=>a+rd((f[0]=='d'?'src/data/':'src/js/')+f).length,0))bad('the DEEP-15 files could not be taken out of the app for the comparison');
+  // 1. the state that matters, and seeded questions of every Discover and Spanish stop
+  const snap=function(){
+    const qs=[];for(const p of ['disc','es'])for(const n of NODES[p])if(n.sk!=='boss')for(let s=1;s<=12;s++)qs.push(JSON.stringify(genQ(n.sk,n.lv,s)));
+    return JSON.stringify({BANK,ES_UNITS,SPN,SK:Object.keys(SK).map(k=>[k,SK[k].t,SK[k].max,SK[k].area]),PATHS,NODES,WR,ICO_SK,SCN_W,ST:REP.STRANDS,qs});
+  };
+  const off0=eval(jsOff+';('+snap.toString()+')()');
+  const off1=eval(js+';const __ap=deep15Apply(),__w=[d15Want("disc"),d15Want("es"),D15F];('+snap.toString()+')()+JSON.stringify([__ap,__w,DEEP15_ON])');
+  if(off1!==off0+JSON.stringify([false,[false,false,0],0]))bad('with the gate off the app is not exactly as without the DEEP-15 files (or deep15Apply did something)');
+  note.off=require('crypto').createHash('md5').update(off0).digest('hex').slice(0,10);
+  // 2.-5. with the gate on (as the owner's flip would build)
+  const body=function(){
+    const r={bad:[],n:{}},B=m=>{if(r.bad.length<80&&!r.bad.includes(m))r.bad.push(m)};
+    const g0=JSON.stringify([NODES.disc.map(nid),NODES.es.map(nid)]);
+    // a running round on Star Observatory and the strip on Science Lab: both keep their stop and world
+    const so=NODES.disc.findIndex(n=>nid(n)=='sci_earth3');G={path:'disc',node:so};MAPW.disc=1;MAPW.es=6;
+    const esW=PATHS.es.worlds[6].id;
+    loadSave(JSON.stringify({v:LATEST,mapv:2,name:'Kid',grade:1,maps:{disc:{sci_life1:3,civ1:2,sci_earth3:1},es:{es_greet1:2,es_story1:3,es_adj2:1}}}));migrate();
+    const stars0=JSON.stringify([S.maps.disc,S.maps.es]),olds=['disc','es'].map(p=>NODES[p].map(n=>nid(n)));
+    DEEP15_ON=1;
+    if(deep15Apply()!==true)B('deep15Apply did not apply with the gate on');
+    if(deep15Apply()!==false||d15Want('disc'))B('deep15Apply applied twice, or the maps still want the part');
+    if(nid(NODES.disc[G.node])!=='sci_earth3')B('the running round moved to '+nid(NODES.disc[G.node]));
+    if(PATHS.disc.worlds[MAPW.disc].id!=='d_lab'||PATHS.es.worlds[MAPW.es].id!==esW)B('the picked world moved');
+    if(JSON.stringify([S.maps.disc,S.maps.es])!==stars0)B('stars moved');
+    for(const [k,p] of ['disc','es'].entries())for(const id of olds[k])if(!NODES[p].some(n=>nid(n)===id))B(p+': stop '+id+' is gone');
+    // the map: Discovery Garden after Nature Trail, six stops and a boss; a 1st grader starts there; the Spanish stops before the bosses
+    const W=PATHS.disc.worlds;
+    if(W.map(w=>w.id+'/'+w.g).join()!=='d_nature/0,d_garden/1,d_lab/3,d_cosmos/5')B('Discover worlds '+W.map(w=>w.id+'/'+w.g));
+    const NEW=['sci_plant','sci_wx','sci_rock','sci_mach','civ_past','civ_work'];
+    if(W[1].nodes.map(n=>n[0]+n[1]).join()!==NEW.map(x=>x+1).join()||!NODES.disc[WR.disc[1][1]].boss)B('Discovery Garden stops '+JSON.stringify(W[1].nodes));
+    for(const n of NODES.disc)if(n.sk!='boss'&&(!SK[n.sk]||n.lv>SK[n.sk].max||!n.t||n.t.length>24))B('stop '+nid(n)+' title or skill');
+    const mk=S.maps.disc;S.maps.disc={};S.grade=1;if(PATHS.disc.worlds[defStart('disc',1)].id!=='d_garden'||curWorld('disc')!==1)B('a 1st grader does not start in Discovery Garden');S.maps.disc=mk;
+    S.grade=0;if(defStart('disc',0)!==0)B('a kindergartner does not start in Nature Trail');
+    const tail=id=>{const w=PATHS.es.worlds.find(x=>x.id==id).nodes;return w.slice(-2).map(n=>n[0]+n[1]).join()};
+    if(tail('e_casa')!=='es_toy1,es_toy2'||tail('e_ciudad')!=='es_nature1,es_nature2')B('Spanish stops: '+tail('e_casa')+' / '+tail('e_ciudad'));
+    for(const id of NEW)if(REP.strandOf(id)==='Other skills'||icoSk(id)==='star'||!ICONS[icoSk(id)])B(id+': report strand or icon');
+    if(SCN_W.d_garden!=='garden')B('Discovery Garden has no scene');
+    // Discover items
+    const STOP=/^(a|an|the|and|or|of|in|to|it|is|its|on|at|up|from|where|that|with|this|have)$/;
+    const JOKES=['candy and toys','candy, soda and chips','toys, books and games','dreamed','only in winter','turn blue','cheese','glows','glow','turns to ice cream','tasty','ice cream','stuck','a dragon','a unicorn','a candy bar','candy','free candy','a free car','vacations','video games'];
+    const EVO=/\bevolution|\bevolv|natural selection|ancestor|descend|over (many|the) generations|millions? of years|billions? of years|survival of the fittest/i;
+    const BADW=/\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|unicorns?|fairy|fairies|genies?|warlocks?)\b|cast(s|ing)? a spell/i;
+    const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+    const picOk=(pc,w)=>{if(!Array.isArray(pc)||!allow.has(String(pc[1]).replace(/️/g,''))||!/^[a-z-]+$/.test(pc[0]))B(w+': picture '+pc)};
+    const text=it=>[it.q,it.a,it.hint,...(it.d||[]),...Object.keys(it.bins||{}),...Object.values(it.bins||{}).flat(),...(it.pairs||[]).flat(),...(it.order||[])].filter(x=>x!=null).join(' | ');
+    const items=[];for(const id of NEW)BANK[id].forEach((it,bi)=>items.push({id,bi,it}));
+    for(const id in D15.top){const k=D15.top[id].length;BANK[id].slice(-k).forEach((it,i)=>items.push({id,bi:BANK[id].length-k+i,it,top:1}))}
+    const oldQ=new Set(['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'].flatMap(id=>BANK[id].map(x=>x.q)).filter((q,i,a)=>true));
+    const seenQ={};
+    for(const {id,bi,it,top} of items){
+      const w=id+' "'+it.q+'"',form=it.form||'choice';r.n[form]=(r.n[form]||0)+1;
+      if(it.lv!==1||it.aloud!==true)B(w+': not a level 1 read-aloud item');
+      if(seenQ[it.q])B(w+': the same question twice');seenQ[it.q]=1;
+      if(top&&BANK[id].filter(x=>x.q===it.q).length!==1)B(w+': already in the bank');
+      if(!top&&oldQ.has(it.q)&&BANK[id]!==undefined&&['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'].some(o=>BANK[o].some(x=>x.q===it.q)))B(w+': already a Discover question');
+      if(EVO.test(text(it))||BADW.test(text(it)))B(w+': evolution or magic');
+      if(!it.hint||it.hint.length<20)B(w+': hint missing');
+      if(!doc.includes(String(it.q).replace(/\|/g,'\\|')))B(w+': not in '+DOC);
+      if(form==='choice'){
+        if(it.grade!=='1-2')B(w+': grade '+it.grade);
+        const all=[it.a,...it.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)B(w+': a choice repeats');
+        if(it.d.length<2||it.d.length>3)B(w+': '+it.d.length+' wrong answers');
+        const hw=it.hint.toLowerCase().split(/[^a-z]+/),aw=it.a.toLowerCase().split(/[^a-z]+/).filter(x=>x.length>=3&&!STOP.test(x));
+        if(it.hint.toLowerCase().includes(it.a.toLowerCase())||aw.some(x=>hw.includes(x)))B(w+': the hint gives the answer: '+it.hint);
+        const qw=it.q.toLowerCase().split(/[^a-z]+/);if(aw.some(x=>x.length>=5&&qw.includes(x)))B(w+': the answer is in the prompt');
+        for(const c of [it.a,...it.d])if(JOKES.includes(c))B(w+': joke choice '+c);
+        if(it.em)picOk(it.em,w);
+        if(it.cp)for(const k in it.cp)picOk(it.cp[k],w);
+      }else{
+        if(it.cp)for(const k in it.cp)picOk(it.cp[k],w);
+        if(form==='sort'&&Object.values(it.bins).some(l=>!l.length))B(w+': an empty bin');
+      }
+      for(let s=1;s<=3;s++){
+        const q=genBank(id,1,{bi,s}),html=KIND[q.kind].render(q);
+        for(const x of kindProblems(q))B(w+': '+x);
+        if(!q.say||!q.hint||q.hint.k!=='text'||q.hint.w!==q.hint.s)B(w+': the prompt or the hint is not read aloud');
+        if(JSON.stringify(bankRebuild(q.bk))!==JSON.stringify(q))B(w+': bankRebuild differs');
+        if(q.kind==='choice'){let at=0;for(const c of q.choices){const i=q.say.indexOf(String(c.v),at);if(i<0)B(w+': "'+c.v+'" is not read in the order shown');else at=i+String(c.v).length}
+          if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(w+': not exactly one right choice');
+          if(it.cp&&new Set(q.choices.map(c=>c.l.replace(/<small>.*$/,''))).size!==q.choices.length)B(w+': two choices share a picture')}
+        else if(q.kind==='match'||q.kind==='order'){if(!q.speak)B(w+': a tile does not say itself')}
+        else if(q.kind==='sort'){const says=[...html.matchAll(/data-say="([^"]*)"/g)].map(m=>m[1]);for(const c of q.items)if(!says.includes(esc(c.say)))B(w+': chip '+c.v+' does not say itself')}
+      }
+    }
+    // 3000 seeded questions per new stop: no error, kinds mixed in by share, every item drawn, labels unique, reproducible; the right
+    // answer the single longest choice in under 40% of the choice questions (R-01d's civics rule, for every new stop)
+    r.long=[];
+    for(const id of NEW){
+      const seen=new Set(),labels={},kinds={};let lg=0,ch=0;
+      for(let s=1;s<=3000;s++){const q=genQ(id,1,s),w=id+' '+q.label+': ';seen.add(q.bk.bi);kinds[q.kind]=(kinds[q.kind]||0)+1;
+        if(q.sk!==id||q.lv!==1)B(w+'genQ did not stamp sk/lv');
+        if(!q.label||q.label.length>=60)B(w+'label length');
+        if(labels[q.label]!==undefined&&labels[q.label]!==q.bk.bi)B(w+'label is not unique');labels[q.label]=q.bk.bi;
+        if(q.kind==='choice'){ch++;const L=q.choices.map(c=>String(c.v).length),mx=Math.max(...L);if(String(q.ans).length===mx&&L.filter(v=>v===mx).length===1)lg++}}
+      if(seen.size!==BANK[id].length)B(id+': 3000 questions drew '+seen.size+' of '+BANK[id].length+' items');
+      if(!(kinds.choice>1500)||!kinds.sort||!kinds.match||!kinds.order)B(id+': kinds '+JSON.stringify(kinds));
+      if(lg/ch>=.4)B(id+': the right answer is the longest choice in '+(100*lg/ch).toFixed(1)+'%');
+      r.long.push(id+' '+(100*lg/ch).toFixed(0)+'%');
+      if(JSON.stringify(genQ(id,1,77))!==JSON.stringify(genQ(id,1,77)))B(id+' is not reproducible');
+    }
+    // live rounds of ten (least recently shown first, kinds by share): repeats per round, the new stops and Nature Trail with its top-up.
+    // Nature Trail had 0.27 to 0.77 a round before (docs/drafts/DEEP15.md); a new stop must do better than the worst of them
+    const reps=(id,lv)=>{let n=0;for(let k=0;k<60;k++){bankReset();bankRound();G={kh:[],last:null};const ls=new Set();for(let j=0;j<10;j++){const q=pickQ(id,lv,false);G.last=q.label;if(ls.has(q.label))n++;ls.add(q.label)}}bankReset();return n/60};
+    r.rep=[];
+    for(const id of NEW){const x=reps(id,1);r.rep.push(id+' '+x.toFixed(2));if(x>0.5)B(id+': '+x.toFixed(2)+' repeats in a round of ten')}
+    for(const id in D15.top)r.rep.push(id+'1 '+reps(id,1).toFixed(2));
+    // Spanish
+    const strip=s=>String(s).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
+    const BADPL=/\b[a-z]*(?:ch|sh|x|ss|z)s\b|\b[a-z]*[^aeiou\s]ys\b|\b(?:fishes|tooths|foots|mouses|childs|mans|womans|sheeps|leafs|knifes|persons)\b/i;
+    const touched=[...Object.keys(D15.es),...D15.esNew.map(u=>u.id)];let words=0;
+    for(const id of touched){const u=ES_UNITS.find(x=>x.id===id),neu=D15.esNew.some(x=>x.id===id),add=neu?u.items:D15.es[id];
+      if(!u||!SK['es_'+id]||SK['es_'+id].max!==(u.spell?3:2))B('es_'+id+': unit or skill');
+      if(neu&&(u.confuse||u.cap||u.spell||u.mix||u.l1))B(id+': a new unit with confuse, cap, spell, mix or l1');
+      if(!neu&&u.items.slice(-add.length).some((it,i)=>it!==add[i]))B(id+': the new words are not at the end');
+      for(const it of add){words++;const w=id+' '+it[0];
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||!it[1]||BADPL.test(it[1]))B(w+': word or gloss');
+        if(!['el','la','los','las',''].includes(it[3]))B(w+': article '+it[3]);
+        if(/^c:/.test(it[2])?!/^c:#[0-9a-f]{6}$/.test(it[2]):!allow.has(it[2].replace(/️/g,'')))B(w+': picture '+it[2]);
+        if(it[4]&&!ART[it[4]])B(w+': no drawing '+it[4]);
+        if(u.spell&&!esSpellable(it))B(w+': cannot be spelled in a spell unit');
+        if(!doc.includes('| '+(it[3]?it[3]+' ':'')+it[0]+' |'))B(w+': not in '+DOC)}
+      if(new Set(u.items.map(x=>x[0])).size!==u.items.length)B(id+': a word twice');
+      if(new Set(u.items.map(x=>x[2]+'|'+(x[4]||''))).size!==u.items.length)B(id+': two words share a picture');
+      for(let lv=1;lv<=SK['es_'+id].max;lv++)for(const g of [0,2])for(let s=1;s<=400;s++){S.grade=g;const q=genQ('es_'+id,lv,s),k='es_'+id+' L'+lv+' g'+g+': ';
+        if(q.kind!=='choice')continue;
+        const vs=q.choices.map(c=>String(c.v).toLowerCase());if(new Set(vs).size!==vs.length)B(k+'two choices share a value');
+        const ps=q.choices.filter(c=>c.h).map(picOf);if(new Set(ps).size!==ps.length)B(k+'two choices share a picture');
+        if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(k+'not exactly one right answer');
+        if(q.hint&&q.hint.s&&BADPL.test(q.hint.s))B(k+'English plural')}
+    }
+    S.grade=0;
+    for(let s=1;s<=300;s++){const q=genQ('es_mix',2,s);if(q.kind=='choice'&&q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B('es_mix: not exactly one right answer')}
+    r.words=words;r.n.units=touched.length;
+    r.det=require('crypto').createHash('md5').update(NEW.map(id=>JSON.stringify(genQ(id,1,5))).join()+JSON.stringify(genQ('es_toy',1,9))+JSON.stringify(genQ('es_animal',2,9))).digest('hex');
+    r.g0=g0;
+    return r;
+  };
+  const a=eval(js+';('+body.toString()+')()'),b=eval(js+';('+body.toString()+')()');
+  for(const m of a.bad)bad(m);
+  if(a.det!==b.det)bad('the new questions differ between two runs');
+  note.n=a.n;note.long=a.long;note.words=a.words;note.rep=a.rep;
+  // 4. the lazy load, on a fresh page as the built app runs (lazyPage, P6-02): nothing new in the start-up files; with the gate on the
+  //    Discover map asks for the lesson parts and teaches, then shows Discovery Garden; a stop tapped first waits, then opens by its id
+  const need=['index.html',...START_FILES,...LAZY_FILES];
+  if(need.some(f=>!fs.existsSync(path.join(ROOT,f))))bad('not built: run python3 tools/build.py');
+  else try{
+    const html=rd('index.html'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)])),TF='teaches.'+BUILD_VER+'.js';
+    for(const f of ['index.html',...START_FILES])if(/Discovery Garden|D15_HINT|d15Rows/.test(f==='index.html'?html:files[f]))bad(f+' carries DEEP-15 items (they belong in part teaches)');
+    if(!files[TF].includes('const D15 = {')||!files[TF].includes('function deep15Apply()'))bad(TF+' does not carry the items');
+    if(Buffer.byteLength(files[TF])>=PART_WARN)bad(TF+' is over the part warning');
+    if(!/let DEEP15_ON = 0;/.test(html))bad('index.html is not built with DEEP15_ON = 0');
+    const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DEEP15_ON='+on);return pg};
+    const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
+    // off: the map loads what it always did, and nothing changes
+    let pg=page(0);const n0=pg.run('NODES.disc.map(nid).join()');pg.run('pathMap("disc")');serveAll(pg);
+    if(pg.run('NODES.disc.map(nid).join()+D15F')!==n0+'0'||!pg.run('partReady("teaches")'))bad('gate off: the Discover map changed or did not load teaches as before');
+    // on: the map warms the part, then draws Discovery Garden
+    pg=page(1);pg.run('pathMap("disc")');pg.flush();
+    const asked=pg.scripts.map(s=>s.src);
+    if(asked[0]!=='teach.'+BUILD_VER+'.js')bad('gate on: the map asked first for '+asked.join());
+    serveAll(pg);
+    const st=JSON.parse(pg.run('JSON.stringify({w:PATHS.disc.worlds.map(w=>w.id).join(),f:D15F,on:MAPP,map:!!document.querySelector("#map"),strip:!!document.querySelector("#map")&&document.querySelector("#map").innerHTML.includes("Seeds &amp; Plants")&&worldStrip("disc").includes("Discovery Garden"),es:ES_UNITS.length})'));
+    if(st.w!=='d_nature,d_garden,d_lab,d_cosmos'||st.f!==1||!st.strip)bad('gate on: after the part loaded the map is '+JSON.stringify(st));
+    // on: a stop tapped before the part is in waits for it, then the round of that stop starts
+    pg=page(1);pg.run('S.unlockAll=true;open("disc",6)');
+    if(!/id="partwait"/.test(pg.app.innerHTML)||!pg.app.innerHTML.includes('Getting the new stops ready...'))bad('gate on: a stop tapped first does not wait for the part: '+pg.app.innerHTML.slice(0,120));
+    serveAll(pg);
+    const g=JSON.parse(pg.run('JSON.stringify({sk:G&&G.sk,lv:G&&G.lv,node:G&&nid(NODES.disc[G.node]),q:!!(G&&G.q)})'));
+    if(g.sk!=='sci_lab'&&!(g.node==='sci_life2'&&g.sk==='sci_life'&&g.lv===2&&g.q))bad('gate on: the stop that waited opened '+JSON.stringify(g));
+    // on: a new stop by real index after the part, and a new Spanish unit's learn screen
+    pg.run('S.unlockAll=true;open("disc",NODES.disc.findIndex(n=>nid(n)=="sci_wx1"))');pg.flush();
+    const g2=JSON.parse(pg.run('JSON.stringify({sk:G.sk,q:G.q&&G.q.sk,n:G.n})'));
+    if(g2.sk!=='sci_wx'||g2.q!=='sci_wx')bad('gate on: Weather Watch did not start: '+JSON.stringify(g2));
+    note.lazy=asked.length+' parts asked, then '+st.w.split(',').length+' worlds';
+  }catch(e){bad('the lazy load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // 6. the gate: the status line, and the built flag follows it (tools/build.py deep15_on)
+  const st=(doc.match(/^status:\s*(.*)$/m)||[])[1]||'',on=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test(st)?1:0;
+  if(!rd('src/js/42d-deep15on.js').includes('let DEEP15_ON = '+on+';'))bad('42d-deep15on.js does not follow the status line of '+DOC+' (run python3 tools/build.py)');
+  for(const f of ['42d-deep15on.js','42e-deep15.js'])if(partOf(f))bad(f+' is not in index.html');
+  for(const f of ['52y-deep15.js','d-deep15.js'])if(partOf(f)!=='teaches')bad(f+' is not in part teaches');
+  if(!/function open\(p,i\)\{if\(d15Want\(p\)\)return d15Open\(p,i\);/.test(rd('src/js/46-home.js'))||!/teachWarm\(p\);d15Warm\(p\);/.test(rd('src/js/46-home.js')))bad('46-home.js: the open and map hooks');
+  const code=D15FILES.map(f=>rd((f[0]=='d'?'src/data/':'src/js/')+f)).join('\n');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the DEEP-15 code reaches outside the tablet or draws at random');
+  return{problems:p,note:'gate off: same as without DEEP-15 ('+note.off+'); on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' Discover items, '+note.words+' Spanish words; longest answer '+(note.long||[]).join(', ')+'; repeats a round '+(note.rep||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DEEP15_ON '+on+')'};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){
