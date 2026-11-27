@@ -10722,7 +10722,9 @@ async function main() {
           await pg.waitForSelector('.sheet-bg.on #gwans, .sheet-bg.on #pnpad'); // RC-1: the Grown-ups PIN (owner decision 2026-11-19: PIN gate), right before deleting
           if (await pg.evaluate(() => !localStorage.getItem(KEY))) bad.push(tag + ' Ava deleted before the PIN');
           await pinIn(pg);
-          await pg.waitForFunction(() => PRF.count() === 1 && !document.querySelector('.sheet'));
+          // and the Children card redrawn: PRF.remove drops the child from PRF.ids before its IndexedDB cleanup and the redraw, so the
+          // count alone let the check below read the card while it still showed both children (rows 2), over file:// and http alike
+          await pg.waitForFunction(() => PRF.count() === 1 && !document.querySelector('.sheet') && document.querySelectorAll('#gw-kids .pf-row').length < 2);
           const gone = await pg.evaluate(() => ({ ava: localStorage.getItem(KEY), rows: document.querySelectorAll('#gw-kids .pf-row').length, name: S.name, stars: S.stars }));
           if (gone.ava !== null || gone.rows !== 1 || gone.name !== 'Ben' || gone.stars !== ben1.stars) bad.push(tag + ' after deleting Ava: ' + JSON.stringify(gone));
           await chk('Children card after delete');
