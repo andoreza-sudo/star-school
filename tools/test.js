@@ -13360,7 +13360,7 @@ run('word search and unscramble P3-15',()=>{
   // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
   const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
   const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
-  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js'&&n!=='d-teach-start.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js'&&n!=='d-teach-audio.js'&&n!=='d-teach-start.js'&&n!=='d-story-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
