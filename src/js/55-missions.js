@@ -5,7 +5,8 @@
      round    one learning round in the subject that needs the most practice (lowest mastery, else the least played)
      other    a learning round in a different subject
      perfect  a round with every answer right (the subject with the best mastery, to make it fair); grade 1 and up
-     more     Pre-K and K, in place of perfect (R-01b: an effort goal, not a "never slip" goal): finish 2 rounds today
+     more     Pre-K and K, in place of perfect (R-01b: an effort goal, not a "never slip" goal): finish 2 rounds today (day().r
+              counts lessons and badge check-ins too, so the title says "Learn and play 2 times today": owner 2026-11-27)
      sprint   one Fact Sprint (grade 1 and up, once a set is open: FLU.on(); R-01b, was K and up)
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
@@ -164,11 +165,16 @@ const MIS = {
   title(x) {
     const s = MIS.SUBJ[x.p] || 'Math', pn = MIS.pinNode(x);
     if (pn && x.k == 'round') return `Play ${pn.t}`;
-    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Play ${MIS.MORE} rounds today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
+    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Learn and play ${MIS.MORE} times today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
       review: "Do today's review", mix: 'Play Mixed Practice', speak: `Say ${SPK.GOAL} Spanish words` }[x.k];
   },
+  // OWNER-1127 (owner decision 2026-11-27): nothing learned yet (no stop passed in any subject)
+  none: () => Object.keys(PATHS).every(p => !MIS.passedN(p)),
   sub(x) {
     if (MIS.pinNode(x) && x.k == 'round') return 'Picked for you today!';
+    // OWNER-1127: day one says what is true: the subject's first stop, Mixed Practice of every subject
+    if (x.k == 'round' && NODES[x.p] && !MIS.passedN(x.p)) return 'Start your first stop!';
+    if (x.k == 'mix' && MIS.none()) return 'A bit of every subject!';
     return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', more: 'Keep practicing!', sprint: 'Beat your best!', teaser: 'Think hard!',
       review: 'Practice what you learned', mix: 'A bit of everything!', speak: 'Say it out loud!' }[x.k];
   },
@@ -186,6 +192,9 @@ const MIS = {
   },
   // Tapping a mission: straight to it
   go(x) {
+    // OWNER-1127: with DEEP-15 approved, a Discover or Spanish mission first loads the new stops, then picks its stop on the new map
+    // (picked before, it was the old map's: a 1st grader's Nature Trail stop, outside the free sample's new start world)
+    if (x.k == 'round' || x.k == 'other' || x.k == 'speak') { const p = x.k == 'speak' ? 'es' : x.p; if (typeof d15Want == 'function' && d15Want(p)) return d15Then(p, () => MIS.go(x)); }
     SFX.whoosh();
     if (x.k == 'sprint') {
       const ss = FLU.sets();

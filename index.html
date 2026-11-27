@@ -7300,7 +7300,7 @@ const NAV = {
   // runs after the Grown-ups PIN (PIN.gate, 41b-pin.js; before a PIN is set, the question below, then choosing one)
   // (the PIN pad is in the lazy part gate; if it cannot load, the old question still guards the way in)
   quiz(then) {
-    const go0 = typeof then == 'function' ? then : grown, go = () => { NAV.gwT = Date.now(); go0(); }; // RC-2: the grown-up session starts
+    const gw = typeof then != 'function', go0 = gw ? grown : then, go = pin => { NAV.gwT = Date.now(); if (gw && pin === 1) NAV.pinT = NAV.gwT; go0(); }; // RC-2: the grown-up session starts
     if (typeof PIN != 'undefined') return PIN.gate(go);
     return partLoad('gate').then(ok => {
       if (ok && typeof PIN != 'undefined') return PIN.gate(go);
@@ -7312,6 +7312,10 @@ const NAV = {
   // Grown-ups, the report card, Story themes). Back from a grown-up screen goes to Grown-ups only while it is valid, else Home; away
   // from the Grown-ups screens (Story themes, which a grown-up may hand to the child) it lasts GW_MS from the last Grown-ups screen.
   gwT: 0, gwK: 0, GW_MS: 180000,
+  // OWNER-1127 (owner decision 2026-11-27): Grown-ups opened by the PIN (PIN.enter passes 1) in the last 2 minutes: Unlock or restore
+  // asks no second PIN (PLAY.cardBind). In memory only, never saved, so a reload asks again
+  pinT: 0, PIN_MS: 120000,
+  pinOk() { return NAV.pinT > 0 && Date.now() - NAV.pinT < NAV.PIN_MS; },
   gwOk() { return NAV.gwT > 0 && (!!document.querySelector('#app .gw') || Date.now() - NAV.gwT < NAV.GW_MS); },
   gwBack() { return NAV.gwOk() ? grown() : home(); },
   // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in; then: what a right answer opens.
@@ -7347,7 +7351,7 @@ function learnHub() {
     return GFX.card({ cls: 'game lh-path', attrs: `data-p="${k}"`, p: k, icon: UI.SUBJ_ICON[k] || 'map', title: placeName(k),
       sub: `<span>${np} of ${N.length} stops. ${esc(done ? 'All done! Play any stop.' : np ? 'Next: ' + N[curNode(k)].t : 'Start here!')}</span>`, go: done ? 'trophy' : 'play' });
   }).join('');
-  const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
+  const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: MIS.none() ? 'A bit of every subject!' : 'A bit of everything you learned' }) + // OWNER-1127: nothing learned yet
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
     (raceOn() ? GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) : '') +
     (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)
@@ -7643,10 +7647,10 @@ function st7Go(i) {
   partsThen(['teach', 'teach12', 'teachrd'], () => ST7.shelf(nid(NODES.read[i])), {title: 'Stories', icon: 'skill-story', line: 'Getting the stories ready...'});
 }
 /* STORIES-7: BUILT by tools/build.py (never edit): 1 once docs/drafts/STORIES7-READ.md is reviewed, else 0 (no Stories stop) */
-let STORY7_ON = 0;
+let STORY7_ON = 1;
 /* DEEP-15: BUILT by tools/build.py (never edit): 1 once docs/drafts/DEEP15-READ.md says "status: reviewed <name> <date>",
    else 0: Discover and Spanish are as before (42e-deep15.js, 52y-deep15.js). A let: tools/smoke.js and tools/test.js set it to try the items. */
-let DEEP15_ON = 0;
+let DEEP15_ON = 1;
 /* DEEP-15 (BEST-APP roadmap 15): the drafted Discover and Spanish items (part teaches: 52y-deep15.js, d-deep15.js) reach a child only with
    DEEP15_ON (42d-deep15on.js, BUILT from docs/drafts/DEEP15-READ.md); with 0 nothing here does anything and both maps are as before.
    With 1, the Discover and Spanish maps load the part (d15Warm, beside teachWarm), which adds the items, the new Discover world and the two
@@ -7659,10 +7663,12 @@ function d15Warm(p) {
   if (!d15Want(p)) return;
   partsLoad(D15P).then(bad => { if (bad) return; deep15Apply(); D15F = 1; if (MAPP == p && $('#map')) pathMap(p); }); // opens where the child starts now (a 1st grader: the new world)
 }
+function d15Then(p, f) {
+  partsThen(D15P, () => { deep15Apply(); D15F = 1; f(); }, {title: PATHS[p].n, icon: UI.SUBJ_ICON[p] || 'map', line: 'Getting the new stops ready...'});
+}
 function d15Open(p, i) {
   const id = nid(NODES[p][i]);
-  partsThen(D15P, () => { deep15Apply(); D15F = 1; const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); },
-    {title: PATHS[p].n, icon: UI.SUBJ_ICON[p] || 'map', line: 'Getting the new stops ready...'});
+  d15Then(p, () => { const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); });
 }
 /* ---------- Map and world scenes (P4-09, DESIGN_SYSTEM 7; CSS 47-scenes.css; props, themes, world table: src/data/d-scenes.js) ----------
    A world band = a sky-to-ground CSS gradient (scene tokens) + one SVG: sun or moon, clouds, stars, rays, garland, horizon ridges,
@@ -8313,12 +8319,16 @@ function hmPlace() {
 // TEACH-5S review fix (v186): the review tile shows whenever anything is due, lessons on or off. (TEACH-5S had hidden it while
 // every due item was at a learned lesson's stop, but lesson Remember asks one lesson a day and never clears S.rev, so those
 // items stayed due with no way in but a mission that is not always drawn.)
+// OWNER-1127 (owner 2026-11-27): a brand-new child (no round played yet: no stop round, lesson, Mixed Practice or review logged,
+// no star on a map) sees "Nothing to review yet"; read only (S.log is read as it is, never created)
+const hmFresh = () => !Object.values(S.prog || {}).some(x => x && x.r > 0) && !(Array.isArray(S.log) && S.log.some(e => e && e.rounds > 0)) &&
+  !Object.values(S.maps || {}).some(m => m && Object.values(m).some(v => v > 0));
 function hmToday() {
   const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on();
   const rev = n
     ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}</span>` +
       `<span class="hm-tl"><b class="hm-rn" id="revn">${n}</b> to review</span></button></div>`
-    : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">All caught up!</span></div>`;
+    : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">${hmFresh() ? 'Nothing to review yet' : 'All caught up!'}</span></div>`;
   return `<div class="hm-today${flu ? '' : ' n2'}">${rev}
     ${flu ? `<button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>` : ''}
     <button class="hm-tile" id="mix"><span class="hm-ti t-mix">${hmMixIco()}</span><span class="hm-tl">Mixed Practice</span></button></div>`;
@@ -10268,7 +10278,7 @@ function roundOops(){
 }
 /* OLDER-14: BUILT by tools/build.py (never edit): 1 once docs/drafts/OLDER14-READ.md says "status: reviewed <name> <date>",
    else 0: every grade keeps the chest and the pet (50b-older.js). A let: tools/smoke.js and tools/test.js set it to try the look. */
-let OLDER_ON = 0;
+let OLDER_ON = 1;
 /* ---------- OLDER-14 (BEST-APP roadmap 14): an older look for grades 4 to 6 ----------
    Gated by OLDER_ON (50a-olderon.js, built from docs/drafts/OLDER14-READ.md). With 0 nothing here changes anything: OLD14.on() and
    OLD14.noPet() are false for every child, so finish() draws the chest and Home the pet, exactly as before.
@@ -10696,7 +10706,8 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
      round    one learning round in the subject that needs the most practice (lowest mastery, else the least played)
      other    a learning round in a different subject
      perfect  a round with every answer right (the subject with the best mastery, to make it fair); grade 1 and up
-     more     Pre-K and K, in place of perfect (R-01b: an effort goal, not a "never slip" goal): finish 2 rounds today
+     more     Pre-K and K, in place of perfect (R-01b: an effort goal, not a "never slip" goal): finish 2 rounds today (day().r
+              counts lessons and badge check-ins too, so the title says "Learn and play 2 times today": owner 2026-11-27)
      sprint   one Fact Sprint (grade 1 and up, once a set is open: FLU.on(); R-01b, was K and up)
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
@@ -10855,11 +10866,16 @@ const MIS = {
   title(x) {
     const s = MIS.SUBJ[x.p] || 'Math', pn = MIS.pinNode(x);
     if (pn && x.k == 'round') return `Play ${pn.t}`;
-    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Play ${MIS.MORE} rounds today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
+    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Learn and play ${MIS.MORE} times today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
       review: "Do today's review", mix: 'Play Mixed Practice', speak: `Say ${SPK.GOAL} Spanish words` }[x.k];
   },
+  // OWNER-1127 (owner decision 2026-11-27): nothing learned yet (no stop passed in any subject)
+  none: () => Object.keys(PATHS).every(p => !MIS.passedN(p)),
   sub(x) {
     if (MIS.pinNode(x) && x.k == 'round') return 'Picked for you today!';
+    // OWNER-1127: day one says what is true: the subject's first stop, Mixed Practice of every subject
+    if (x.k == 'round' && NODES[x.p] && !MIS.passedN(x.p)) return 'Start your first stop!';
+    if (x.k == 'mix' && MIS.none()) return 'A bit of every subject!';
     return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', more: 'Keep practicing!', sprint: 'Beat your best!', teaser: 'Think hard!',
       review: 'Practice what you learned', mix: 'A bit of everything!', speak: 'Say it out loud!' }[x.k];
   },
@@ -10877,6 +10893,9 @@ const MIS = {
   },
   // Tapping a mission: straight to it
   go(x) {
+    // OWNER-1127: with DEEP-15 approved, a Discover or Spanish mission first loads the new stops, then picks its stop on the new map
+    // (picked before, it was the old map's: a 1st grader's Nature Trail stop, outside the free sample's new start world)
+    if (x.k == 'round' || x.k == 'other' || x.k == 'speak') { const p = x.k == 'speak' ? 'es' : x.p; if (typeof d15Want == 'function' && d15Want(p)) return d15Then(p, () => MIS.go(x)); }
     SFX.whoosh();
     if (x.k == 'sprint') {
       const ss = FLU.sets();
@@ -11402,6 +11421,7 @@ function revSlot(){
      k   1: entered as a skipped stop and not checked yet (its check-in is the light one)
      day, n  the day number and the check-ins asked that day (the cap)
      t   the latest day the schedule was read on: a clock set back moves every d back by the difference
+     x   OWNER-1127: {nid: day} skipped stops whose light check-in was answered wrong (the report card's line; spcTry)
    Everything runs on mastDay() (today(), the app's clock) and the map, no random draw except the question itself, so the same
    save and day give the same check-ins. */
 const SPC={
@@ -11498,6 +11518,10 @@ function spcTry(q,ok,helped){
   if(!q||!q.spc)return null;
   const e=SPC.get().s[q.spc],d=mastDay();
   if(!e||e.b>=SPC.DONE)return null;
+  // OWNER-1127 (owner 2026-11-27): a skipped stop's light check-in answered wrong is noted for the report card (REP.needs:
+  // "Checked a skipped stop: ... Practice it again."), S.spc.x = {nid: day}, until a later check-in of it is right on its own
+  const o=SPC.get(),x=o.x&&typeof o.x=='object'&&!Array.isArray(o.x)?o.x:null;
+  if(!ok&&e.k)(x||(o.x={}))[q.spc]=d;else if(ok&&!helped&&x){delete x[q.spc];if(!Object.keys(x).length)delete o.x}
   if(!ok){e.b=0;e.d=d+SPC.INT[0];delete e.k}
   else if(helped)e.d=d+SPC.INT[e.b];
   else if(e.k){e.b=SPC.DONE;delete e.k}
@@ -11937,6 +11961,7 @@ const BT = {
     $$('.bt-win').forEach(e => e.remove());
   },
 
+  MORE: 'More puzzles open when a grown-up unlocks Whistlestop.', // OWNER-1127: approved 2026-11-27
   // Hub: the Puzzle of the Day, a Keep going card, the badges card and one card per type offered in the child's band
   hub() {
     BT.stop();
@@ -11961,7 +11986,9 @@ const BT = {
       const bdg = GFX.card({ id: 'btbdg', cls: 'bt-bdgc', p: 'bt', icon: 'medal', title: 'My badges', go: 'go',
         sub: `<span class="gx-ln">${got.length ? `<span class="bt-mini">${last.map(x => BT.medal(x, 30)).join('')}</span><span>${got.length} ${got.length == 1 ? 'badge' : 'badges'}</span>`
           : '<span>Solve puzzles to win badges!</span>'}</span>` });
-      body = `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>${PLAY.locked() ? PLAY.rowHTML() : ''}`;
+      // OWNER-1127 (owner decision 2026-11-27): the free sample shows the Puzzle of the Day and one line, not 18 locked cards
+      body = PLAY.locked() ? `<div class="games bt-top3">${day_}</div><p class="gx-lead" id="btmore">${esc(BT.MORE)}</p>${PLAY.rowHTML()}`
+        : `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>`;
     }
     view(`<div class="top tbar gx-mtop s-bt">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('puzzle', 24)}</span>` +
       `<span>Brain Teasers</span></div>${UI.chip('star', BT.totalStars(), { aria: 'Puzzle stars' })}</div><div class="scroll gx-list bt-hub">${body}</div>`);
@@ -11974,6 +12001,7 @@ const BT = {
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
     if (fresh.length) BT.badgeSheet(fresh);
     else if (BT.offer) BT.offerLower();
+    else if (L.length && PLAY.locked()) nrSay(BT.MORE, '.bt-hub', 600); // read out for a non-reader (AUDIO-12), as the hub's other line
     else if (L.length && !PLAY.locked() && BT.band() == 'A') { if (nrSay('Tap a puzzle to play!', '.bt-hub', 600)) setTimeout(() => { if ($('.bt-hub')) fb('Tap a puzzle to play!', 'info', 2500); }, 600); } // shown too (a11y sound rule) // REC-12 (owner approved the words 2026-11-26): the youngest band hears what to do (12-speech.js)
     BT.warm(); // P6-03
   },
@@ -12231,7 +12259,7 @@ const BT = {
 for (const c of BT.CAT) BT.types[c.id] = BT.entry(c); // P6-03: every catalog type, its code still to come (bt.<VER>.js)
 /* PARENT-11: BUILT by tools/build.py (never edit): 1 once docs/drafts/PARENT11-READ.md says "status: reviewed <name> <date>",
    else 0: the report card draws no Parent corner (41d-parent.js, part gate). A let: tools/smoke.js sets it to try the corner. */
-let PARENT_ON = 0;
+let PARENT_ON = 1;
 /* ---------- app mode: full screen, install button ---------- */
 const isApp=()=>matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
 let installEvt=null;

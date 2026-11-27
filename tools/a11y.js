@@ -352,6 +352,8 @@ const SCREENS = {
   // more: the sticker book, the Brain Teasers hub, the report card, and every game screen
   stickers: { run: ev(() => book()) },
   'bt-hub': { run: ev(() => { S.grade = 2; BT.hub(); }) },
+  // OWNER-1127: the free sample's Puzzles tab (the Puzzle of the Day, one line, the grown-ups button)
+  'bt-hub-sample': { run: ev(() => { playMock(); S.grade = 0; BT.hub(); }) },
   'bt-maze': {
     // P6-03: after the reload the puzzle code is not in yet: BT.start loads it ("Getting the puzzles ready..."), so wait for the maze
     run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForSelector('#btstage .mz'); await p.waitForTimeout(600); },

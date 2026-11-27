@@ -10,8 +10,10 @@ function d15Warm(p) {
   if (!d15Want(p)) return;
   partsLoad(D15P).then(bad => { if (bad) return; deep15Apply(); D15F = 1; if (MAPP == p && $('#map')) pathMap(p); }); // opens where the child starts now (a 1st grader: the new world)
 }
+function d15Then(p, f) {
+  partsThen(D15P, () => { deep15Apply(); D15F = 1; f(); }, {title: PATHS[p].n, icon: UI.SUBJ_ICON[p] || 'map', line: 'Getting the new stops ready...'});
+}
 function d15Open(p, i) {
   const id = nid(NODES[p][i]);
-  partsThen(D15P, () => { deep15Apply(); D15F = 1; const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); },
-    {title: PATHS[p].n, icon: UI.SUBJ_ICON[p] || 'map', line: 'Getting the new stops ready...'});
+  d15Then(p, () => { const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); });
 }

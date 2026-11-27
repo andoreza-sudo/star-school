@@ -1,6 +1,6 @@
 # DEEP-15 read-through: new Discover and Spanish items (BEST-APP roadmap 15)
 
-status: unreviewed
+status: reviewed owner 2026-11-27
 
 **What this is.** Every new question, answer, wrong choice, hint and word that roadmap item 15 drafted, with the reason for each. None of it
 reaches a child yet. The audit and the plan behind it are in `docs/drafts/DEEP15.md`.

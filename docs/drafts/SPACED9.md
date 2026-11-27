@@ -94,7 +94,8 @@ pay (P4) and the Home count ("N due") are unchanged. Badge check-ins and their p
 No new sentence. The check-in reuses the review question's existing tag "Remember this one?" and the pet's "Remember this?"
 (`50-round.js` renderQ). Nothing tells the child or the grown-up that a stop was a check-in or that a skipped stop was missed.
 
-Optional, for owner approval (not built): a Grown-ups report line when a light check-in of a skipped stop is missed, so a parent can
+Approved by the owner 2026-11-27 and built (OWNER-1127: `spcTry` notes it in `S.spc.x`, the report card's Needs practice shows it
+until a later check-in of the stop is right; docs/drafts/OWNER-DECISIONS-2026-11-27.md). Was optional: a Grown-ups report line when a light check-in of a skipped stop is missed, so a parent can
 see a possible mis-placement. Draft: "Checked a skipped stop: {stop name}. Practice it again." Not needed for this item: the missed
 stop already comes back as a review item and on the 2-day ladder.
 

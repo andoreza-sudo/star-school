@@ -76,7 +76,7 @@ const PIN = {
     const o = PIN.get();
     return PIN.pad({ title, line: PIN.locked(o) ? PIN.lockLine() : 'Type your 4-digit PIN.', forgot: then, done: (v, p) => {
       const r = PIN.check(v);
-      if (r == 'ok') { p.close(); then(); return; }
+      if (r == 'ok') { p.close(); then(1); return; } // 1: the PIN itself was typed (OWNER-1127, NAV.pinT)
       SFX.wrong();
       p.msg(r == 'locked' ? PIN.lockLine() : "That's not the PIN. Try again.");
     } });

@@ -450,12 +450,22 @@ const LS = {
     if (!then) return;
     // the controls wake once the line has been said (TEACH-PLAN-2 system H): poll the speech, at most WAKE ms (no voice: a short pause)
     const t0 = Date.now(), cap = t && LS.voice() && canSpeak() ? LS.WAKE : 600;
-    const go = () => {
-      if (LS.st !== me) return;
-      if (Date.now() - t0 < cap && (Date.now() - t0 < 400 || speakBusy())) return setTimeout(go, 200);
+    let done = 0;
+    const go = now => {
+      if (LS.st !== me || done) return;
+      if (now !== 1 && Date.now() - t0 < cap && (Date.now() - t0 < 400 || speakBusy())) return setTimeout(go, 200);
+      done = 1;
       then();
     };
     setTimeout(go, 200);
+    // OWNER-1127 (owner decision 2026-11-27, SAMPLE-REHEARSAL friction 4): from 3rd grade up a tap on the pet's bubble (or Enter or
+    // Space on it) ends the line and wakes the controls at once; below 3rd grade the bubble does nothing, as before
+    if (b && gradeOf() >= 3) {
+      const skip = () => { if (!done && LS.st === me) { hush(); go(1); } };
+      b.tabIndex = 0;
+      b.onclick = skip;
+      b.onkeydown = e => { if (e.key == 'Enter' || e.key == ' ') { e.preventDefault(); skip(); } };
+    }
   },
   calm: () => document.documentElement.classList.contains('calm') || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches),
   // the pet's face (LESSON-STAGE: and its reaction, the pet's own jump or wobble, anim in 12-speech.js; none in calm mode)

@@ -52,7 +52,7 @@ function aboutCard(){
    leaves the tablet). In the Play app (PLAY.on) also the app's Play page, so a grown-up can review it; the web version shows the e-mail
    only. Plain links, no network call: the Play page opens outside the app like the privacy policy (target _blank, rel noopener: the TWA
    hands an address outside its own site to Chrome or the Play Store); the mailto is handed to the e-mail app and the app stays where
-   it is. No child screen ever asks for a rating. Words: docs/drafts/FEEDBACK-READ.md (pending owner approval). */
+   it is. No child screen ever asks for a rating. Words: docs/drafts/FEEDBACK-READ.md (approved by the owner 2026-11-27). */
 const FB_MAIL='hello@whistlestoplearning.com',FB_PLAY='https://play.google.com/store/apps/details?id='+PLAY.PKG;
 function feedbackSubject(){return`Whistlestop feedback (${RELEASE}, build ${BUILD})`}
 function feedbackCard(){
@@ -98,14 +98,16 @@ function grown(){let armed=false;
       <div class="vline gw-vl"><span class="vtxt">${ico('plus',22,'ic-off')}<span>Say anything you like</span></span>${UI.btn('Record',{size:'sm',icon:'record',cls:'rec gw-rec',attrs:`data-rec="${k}|x"`})}</div></div>`}).join('');
   const nstk=STK.filter(s=>stkN(s)).length,pr=typeof PIN!='undefined'&&PIN.noteR;
   NAV.gwK=1;NAV.gwT=Date.now(); // RC-2: a grown-up screen: the session goes on
+  // OWNER-1127 (owner 2026-11-27): in the free sample (PLAY.locked()) Unlock Whistlestop is the first card; layout only
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
   <div class="scroll gw">${gwMoved()}${pr?`<p class="gw-note" id="pnreset">${ico('lock',22)}<span>Your PIN was reset with Forgot PIN on ${esc(new Date(pr).toLocaleDateString())}.</span></p>`:''}<div class="gw-cols">
+  ${PLAY.locked()?PLAY.card():''}
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
     ${SAVE_FAILED?warn('Could not save progress: the device storage may be full.'):''}`,{sub:esc(gradeSpoken(gradeOf()))+'. Everything is saved on this tablet only.'})}
   ${PRF.card()}
-  ${PLAY.on?PLAY.card():''}
+  ${PLAY.on&&!PLAY.locked()?PLAY.card():''}
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}

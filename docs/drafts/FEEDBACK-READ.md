@@ -9,9 +9,9 @@ How it works:
 - The line under the title shows the address, so a tablet with no e-mail app still has a way to write.
 - Plain links only. The app makes no network call. No child screen ever asks for a rating.
 
-Status: **pending owner approval**. The code uses the proposed text below until the owner approves or changes it.
+Status: **approved by the owner 2026-11-27** (every sentence below, no change notes). The code uses this text.
 
-## New sentences (pending owner approval)
+## New sentences (approved by the owner 2026-11-27)
 
 | Where | Proposed text | Why |
 |---|---|---|

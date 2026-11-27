@@ -4,7 +4,8 @@
    is one quiet button for grown-ups (PLAY.bandHTML on a locked world of the map, PLAY.rowHTML in Brain Teasers). It asks the grown-up
    PIN first (NAV.quiz: the Grown-ups PIN, RC-1, as for the Grown-ups button); only then does the Unlock Whistlestop sheet ask
    Google Play for the price and offer to buy or restore. Grown-ups has a card that says what the unlock includes, with no price and
-   no buttons but "Unlock or restore", which asks for the PIN again first.
+   no buttons but "Unlock or restore", which asks for the PIN again first (not when Grown-ups was opened by the PIN in the last
+   2 minutes: owner decision 2026-11-27, NAV.pinOk).
 
    The purchase goes through Google Play billing in the Trusted Web Activity: the Digital Goods API (getDigitalGoodsService(BILLING),
    getDetails([SKU]) for the price, listPurchases() to restore) and the Payment Request API (supportedMethods BILLING, data {sku}).
@@ -237,7 +238,8 @@ Object.assign(PLAY, {
   },
   cardBind() {
     const b = $('#plgo');
-    if (b) b.onclick = () => PLAY.grown(() => NAV.gwBack());
+    // OWNER-1127: no second PIN when Grown-ups was opened by the PIN in the last 2 minutes (NAV.pinOk)
+    if (b) b.onclick = () => NAV.pinOk() ? (SFX.click(), PLAY.sheet(() => NAV.gwBack())) : PLAY.grown(() => NAV.gwBack());
   },
   sheet(back) {
     const body = `<p class="pl-price" id="plprice">${PLAY.own ? 'Unlocked. Thank you!' : 'Asking Google Play for the price...'}</p>` +
