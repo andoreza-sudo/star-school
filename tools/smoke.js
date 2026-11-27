@@ -1294,12 +1294,15 @@ async function main() {
       if (eb < 48) fail('report card button on Grown-ups is ' + eb + ' px high');
       await rp.click('#rp-open');
       await rp.waitForSelector('#rp-weeks');
+      // PARENT-11 (owner approved 2026-11-27, PARENT_ON 1): the card has the Parent corner (#rp-parent) as an 8th section once the gate
+      // part is loaded (report() loads it and draws the card again); with the flag off, the 7 sections as before. As tools/test.js does.
+      await rp.waitForFunction(() => !PARENT_ON || document.querySelector('#rp-parent'), null, { timeout: 10000 }).catch(() => {});
       const rr = await rp.evaluate(() => {
         const sc = document.querySelector('.scroll');
-        return { n: document.querySelectorAll('.rp-card').length, over: sc.scrollWidth - sc.clientWidth, S: JSON.stringify(S), text: sc.textContent,
+        return { n: document.querySelectorAll('.rp-card').length, want: 7 + (PARENT_ON ? 1 : 0), over: sc.scrollWidth - sc.clientWidth, S: JSON.stringify(S), text: sc.textContent,
           btn: Math.min(...[...document.querySelectorAll('.top .btn')].map(b => b.offsetHeight)), svg: document.querySelector('.rp-svg').getBoundingClientRect().width };
       });
-      if (rr.n !== 7) fail('report card sections: ' + rr.n);
+      if (rr.n !== rr.want) fail('report card sections: ' + rr.n + ', want ' + rr.want);
       else if (rr.over > 0) fail('report card is ' + rr.over + ' px wider than the screen at 380');
       else if (rr.S !== before) fail('opening the report card changed the saved data');
       else if (rr.btn < 48) fail('report card top buttons are ' + rr.btn + ' px high');
@@ -7241,9 +7244,12 @@ async function main() {
         // the report card: Print keeps its online note
         await sp.click('#rp-open');
         await sp.waitForSelector('#rp-weeks');
+        // PARENT-11 (owner approved 2026-11-27, PARENT_ON 1): the Parent corner is an 8th card with its icon header, once the gate part is
+        // loaded (it is: Grown-ups asked for the PIN); with the flag off, 7 as before
+        await sp.waitForFunction(() => !PARENT_ON || document.querySelector('#rp-parent'), null, { timeout: 10000 }).catch(() => {});
         const rp = await sp.evaluate(() => { const b = { height: document.querySelector('#rp-print').offsetHeight }, n = document.querySelector('.rp-online .online-note');
-          return { h: b.height, note: n ? n.textContent : '', vis: n ? n.getBoundingClientRect().height : 0, cards: document.querySelectorAll('.rp-card .gw-h svg.ic').length }; });
-        if (rp.h < 48 || !/online to share or print/.test(rp.note) || !rp.vis || rp.cards !== 7) bad.push(tag + ' report card: ' + JSON.stringify(rp));
+          return { h: b.height, note: n ? n.textContent : '', vis: n ? n.getBoundingClientRect().height : 0, cards: document.querySelectorAll('.rp-card .gw-h svg.ic').length, want: 7 + (PARENT_ON ? 1 : 0) }; });
+        if (rp.h < 48 || !/online to share or print/.test(rp.note) || !rp.vis || rp.cards !== rp.want) bad.push(tag + ' report card: ' + JSON.stringify(rp));
         await chk(sp, 'report card');
         await sp.click('#back');
         await sp.waitForSelector('#rp-open');
