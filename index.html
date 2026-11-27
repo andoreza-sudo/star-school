@@ -1039,17 +1039,19 @@ html.notext .pktxt{display:none}
 .rp-n{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5)}
 .rp-cell .small{font-size:var(--fs-1)}
 /* 14-day chart */
-.rp-svg{display:block;width:100%;max-width:560px;height:auto}
+/* two weeks of 7 bars (viewBox 168 wide): side by side when both fit at 196 px or more, else one above the other; at 196 px a
+   12-unit label draws at 14 px (the smoke step P5-06 measures every label at 360x740 and 1024x600) */
+.rp-chart{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-4);max-width:576px}
+.rp-wc{flex:1 1 196px;min-width:196px;max-width:280px}
+.rp-svg{display:block;width:100%;height:auto}
 .rp-b0 rect{fill:var(--ink-3)}
 .rp-b1 rect{fill:var(--brand)}
 .rp-b0 rect.z,.rp-b1 rect.z{fill:var(--line)}
 .rp-v{font-size:12px;font-weight:700;fill:var(--ink)}
 .rp-l{font-size:12px;fill:var(--ink-3)}
 .rp-l.now{fill:var(--ink);font-weight:700}
-.rp-div{stroke:var(--line);stroke-width:2;stroke-dasharray:4 4}
 .rp-base{stroke:var(--line);stroke-width:2}
-.rp-wk{display:flex;max-width:560px;font-size:var(--fs-1);color:var(--ink-2);font-weight:700}
-.rp-wk span{flex:1;text-align:center}
+.rp-wk{font-size:var(--fs-1);color:var(--ink-2);font-weight:700;text-align:center}
 /* by subject */
 .rp-sub{display:flex;align-items:center;gap:var(--s-2);margin:var(--s-1) 0}
 .rp-sn{flex:0 0 96px;font-weight:700}
@@ -3083,7 +3085,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v198'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v198 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v199'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v199 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3312,7 +3314,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v198'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v199'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -8400,7 +8402,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v198)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v199)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');if(pet)pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11685,7 +11687,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v198'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v199'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12321,12 +12323,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v198');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v199');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v198')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v198)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v199')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v199)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo('', true, false)}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12348,15 +12350,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v198';
+  return !!f && f[1] === 'v199';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v198') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v199') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v198.js';
+    s.src = stem + '.v199.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12381,9 +12383,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v198.js"></script>
-<script src="gen2.v198.js"></script>
-<script src="data.v198.js"></script>
+<script src="gen.v199.js"></script>
+<script src="gen2.v199.js"></script>
+<script src="data.v199.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

@@ -22,17 +22,19 @@
 .rp-n{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5)}
 .rp-cell .small{font-size:var(--fs-1)}
 /* 14-day chart */
-.rp-svg{display:block;width:100%;max-width:560px;height:auto}
+/* two weeks of 7 bars (viewBox 168 wide): side by side when both fit at 196 px or more, else one above the other; at 196 px a
+   12-unit label draws at 14 px (the smoke step P5-06 measures every label at 360x740 and 1024x600) */
+.rp-chart{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-4);max-width:576px}
+.rp-wc{flex:1 1 196px;min-width:196px;max-width:280px}
+.rp-svg{display:block;width:100%;height:auto}
 .rp-b0 rect{fill:var(--ink-3)}
 .rp-b1 rect{fill:var(--brand)}
 .rp-b0 rect.z,.rp-b1 rect.z{fill:var(--line)}
 .rp-v{font-size:12px;font-weight:700;fill:var(--ink)}
 .rp-l{font-size:12px;fill:var(--ink-3)}
 .rp-l.now{fill:var(--ink);font-weight:700}
-.rp-div{stroke:var(--line);stroke-width:2;stroke-dasharray:4 4}
 .rp-base{stroke:var(--line);stroke-width:2}
-.rp-wk{display:flex;max-width:560px;font-size:var(--fs-1);color:var(--ink-2);font-weight:700}
-.rp-wk span{flex:1;text-align:center}
+.rp-wk{font-size:var(--fs-1);color:var(--ink-2);font-weight:700;text-align:center}
 /* by subject */
 .rp-sub{display:flex;align-items:center;gap:var(--s-2);margin:var(--s-1) 0}
 .rp-sn{flex:0 0 96px;font-weight:700}

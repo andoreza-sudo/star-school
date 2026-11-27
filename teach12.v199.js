@@ -1,5 +1,5 @@
-/* Whistlestop teach12 v198. BUILT by tools/build.py from 52e-words.js, 52f-bench.js, 52g-drafted.js, d-teach-audio.js: never edit by hand.
-   index.html v198 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v198.js. */
+/* Whistlestop teach12 v199. BUILT by tools/build.py from 52e-words.js, 52f-bench.js, 52g-drafted.js, d-teach-audio.js: never edit by hand.
+   index.html v199 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v199.js. */
 /* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------
    BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft, 52g-drafted.js):
    never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */
@@ -2109,4 +2109,4 @@ const EN_TEACH={dir:"audio/teach/",ext:".ogg",voice:"luna",lines:{
 "Your turn!":"3b0fd4519e3f",
 "Yum yum!":"e5199266125f"}};
 
-var TEACH12_VER='v198'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH12_VER='v199'; // last line: the whole file ran (checked by dataReady() before the app starts)

@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # (BRAND, v193: the icons are copied from docs/brand/icons/, drawn by tools/brand-icons.js; the build no longer needs Pillow)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v198'
+VER = 'v199'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')

@@ -1,5 +1,5 @@
-/* Whistlestop gen v198. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 49c-tap10.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v198 loads this file with <script src="gen.v198.js"> after its own code, before data.v198.js. */
+/* Whistlestop gen v199. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 49c-tap10.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v199 loads this file with <script src="gen.v199.js"> after its own code, before data.v199.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -4689,18 +4689,20 @@ const REP = {
   },
   // ---- HTML pieces ----
   chart(m) {
-    const max = Math.max(10, ...m.days.map(d => Math.round(d.sec / 60))), W = 336, base = 100, top = 82;
+    // Two charts of 7 days (last week, this week) side by side, or one above the other when the card is too narrow for both: each
+    // svg is at least 196 px wide (.rp-wc), so its 12-unit labels draw at 14 px or more (one 14-day svg drew them at 10 px at 360 wide)
+    const max = Math.max(10, ...m.days.map(d => Math.round(d.sec / 60))), W = 168, base = 100, top = 80;
     const L = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    const bars = m.days.map((d, k) => {
-      const mn = Math.round(d.sec / 60), h = d.sec > 0 ? Math.max(4, Math.round(mn / max * top)) : 0, x = k * 24 + 3, wk = (d.i + 4) % 7;
+    const bars = k0 => m.days.slice(k0, k0 + 7).map((d, j) => {
+      const k = k0 + j, mn = Math.round(d.sec / 60), h = d.sec > 0 ? Math.max(4, Math.round(mn / max * top)) : 0, x = j * 24 + 3, wk = (d.i + 4) % 7;
       return `<g class="${k < 7 ? 'rp-b0' : 'rp-b1'}">${h ? `<rect x="${x}" y="${base - h}" width="18" height="${h}" rx="4"/>` : `<rect class="z" x="${x}" y="${base - 2}" width="18" height="2"/>`}`
         + (d.sec > 0 ? `<text class="rp-v" x="${x + 9}" y="${base - h - 4}" text-anchor="middle">${REP.fmtMin(d.sec)}</text>` : '')
         + `<text class="rp-l${k == 13 ? ' now' : ''}" x="${x + 9}" y="118" text-anchor="middle">${L[wk]}</text></g>`;
     }).join('');
+    const wk = (k0, cap) => `<div class="rp-wc"><svg class="rp-svg" viewBox="0 0 ${W} 124" aria-hidden="true" focusable="false">`
+      + `<line class="rp-base" x1="0" x2="${W}" y1="${base}" y2="${base}"/>${bars(k0)}</svg><div class="rp-wk">${cap}</div></div>`;
     const sum = m.days.map(d => REP.dayText(d.i) + ' ' + REP.fmtMin(d.sec) + ' minutes').join(', ');
-    return `<svg class="rp-svg" viewBox="0 0 ${W} 124" role="img" aria-label="Minutes per day, last 14 days: ${esc(sum)}">`
-      + `<line class="rp-div" x1="168" x2="168" y1="6" y2="104"/><line class="rp-base" x1="0" x2="${W}" y1="${base}" y2="${base}"/>${bars}</svg>`
-      + `<div class="rp-wk"><span>Last week</span><span>This week</span></div>`;
+    return `<div class="rp-chart" role="img" aria-label="Minutes per day, last 14 days: ${esc(sum)}">${wk(0, 'Last week')}${wk(7, 'This week')}</div>`;
   },
   weeks(m) {
     const c = m.cur, p = m.prev;
@@ -5214,4 +5216,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v198'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v199'; // last line: the whole file ran (checked by dataReady() before the app starts)

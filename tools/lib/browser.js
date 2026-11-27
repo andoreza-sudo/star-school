@@ -70,7 +70,8 @@ async function launch() {
 }
 
 // http: the built files served on 127.0.0.1 by this process (one server, started on first use, port chosen by the system).
-// Steps that reload the page with a changed save use it (RC1-KIDS: a child switch). Over file:// headless Chrome sometimes starts the
+// Steps that reload the page with a changed save use it (RC1-KIDS: a child switch; P5-07, P5-10, RC1-GATE, RC2-UNDO: backup load, Start
+// over, Undo, child switch, erase). Over file:// headless Chrome sometimes starts the
 // reloaded page with empty storage on a busy machine: a plain page that only counts its reloads in localStorage read 0 again in about
 // 1 reload of 30 with 8 runs side by side (localStorage, sometimes sessionStorage too), and never over http (0 of 1,464); the app
 // itself is served over https. The page is the same app; only the origin differs.

@@ -359,6 +359,12 @@ const SCREENS = {
     run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForSelector('#btstage .mz'); await p.waitForTimeout(600); },
   },
   report: { adult: true, run: ev(() => report()) },
+  // the report card's minutes-per-day chart (two weeks of play) at a phone and a tablet: its labels are measured by smoke.js P5-06
+  'report-chart': { adult: true, sizes: [[360, 740], [1024, 600]], run: ev(() => {
+    S.log = [100, 110, 0.5, 20, 99, 50, 2, 120, 105, 110, 30, 40, 1, 90].map((mn, d) => ({ d: ACT.shift(today(), -d), sec: mn * 60, rounds: 1, q: 10, ok: 9, by: { math: mn * 60 } }));
+    report();
+    document.querySelector('.rp-chart').scrollIntoView({ block: 'center' });
+  }) },
   // G-FEEL2: the Needs practice list with its "Practise this next" buttons (one pinned) and the sentence per subject
   'report-pin': { adult: true, run: ev(() => {
     const s = mastStops('math').filter(x => unlocked('math', x.i)).slice(0, 3);
@@ -725,8 +731,7 @@ function pageInit() {
       add4: { s: 1, n: 2, lv: [[1, 2], [0, 2], [0, 1]], b: { op: 3 }, box: 0, due: 0, w: [['op', 'add4 3', d], ['op', 'add4 4', d], ['op', 'add4 4', d]] } };
     S.lm = [['tenf2', d - 1, 1, 2, 2, 2, 0], ['add4', d, 0, 2, 1, 2, 0]]; S.tq = 'Ask them: "How many more make 10?"'; save(); };
   // PARENT-11: a week of play for the Parent corner: two math stops passed this week, a reading stop mastered, a lesson. No S.log (the
-  // minutes line): with one, the report card's 14-day chart below the corner is drawn, and its 12-unit SVG labels measure 11 px at 380
-  // wide (the chart's own, as on any report card with minutes; the screen "report" has no log either)
+  // minutes line; the report card's minutes-per-day chart has its own screen, report-chart)
   window.parentWeek = () => { const n = STRK.idx(today()); S.name = 'Ava'; S.grade = 3;
     S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, frac2: { n: 12, p: .8, ms: 6000, d: 2, last: n - 1, md: -1 }, sight1: { n: 25, p: .92, ms: 4000, d: 4, last: n - 1, md: n - 6 } };
     S.maps.math.add1 = 3; S.maps.math.frac2 = 2; S.maps.read.sight1 = 3; S.lm = [['add1', n - 3, 1, 2, 2, 2, 0]]; S.know = { add1: { s: 2 } }; save(); };
