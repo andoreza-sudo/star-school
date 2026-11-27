@@ -15098,7 +15098,10 @@ run('Spanish speaking check S-SPK2',()=>{
       // owner decision 2026-11-27: new recordings (REC-198): the DEEP-15 Spanish words are 134 more recorded lines (798 -> 932), so the every-6th set has more
       // targets and its far picks move: true match 96.4% of 330 (was 95.8% of 288), false accept 16.4% of 324 (was 14.9% of 282); the full set
       // (node tools/spk-calib.js) 99.3% / 11.8% of 2,414, similar word 220/786 (28%), another word 30/784 (3.8%), as before; thresholds unchanged
-      const want={npos:330,nneg:324,voice:54,child:264,similar:43,other:10,silence:0};
+      // owner decision 2026-11-27: new recordings (ES-MORE): the 22 weather and feelings words are 30 more recorded lines (932 -> 962), so the every-6th
+      // set moves again: true match 96.4% of 338 (was 96.4% of 330), false accept 11.4% of 332 (was 16.4% of 324); the full set (node tools/spk-calib.js)
+      // 99.3% of 1,698 / 12.1% of 2,502, similar word 225/816 (28%), another word 38/815 (4.7%), other2 39/811, silence 0/60; thresholds unchanged
+      const want={npos:338,nneg:332,voice:54,child:272,similar:32,other:6,silence:0};
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
       if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
@@ -26137,7 +26140,9 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
     // OWNER-1127: the start-up page carries the flag the status line asks for (was: always 0, while the read-through was unreviewed)
     const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
     if(!new RegExp('let DEEP15_ON = '+on0+';').test(html))bad('index.html is not built with DEEP15_ON = '+on0+' (the status line of '+DOC+')');
-    const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DEEP15_ON='+on);return pg};
+    // DISC-46 (owner approved 2026-11-27, DISC46_ON 1 in the build): the same part load would also add Canyon Trail and Volcano Ridge to the
+    // Discover map; this check is DEEP-15's alone, so DISC-46 is off here (the DISC-46 check loads its worlds with DEEP-15 as built)
+    const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DISC46_ON=0;DEEP15_ON='+on);return pg};
     const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
     // off: the map loads what it always did, and nothing changes
     let pg=page(0);const n0=pg.run('NODES.disc.map(nid).join()');pg.run('pathMap("disc")');serveAll(pg);

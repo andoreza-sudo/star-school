@@ -1427,7 +1427,10 @@ A review of MERGE-186 (G-MOVES, TEACH-5S). VER stays v186.
   left out of the other-voice pairs because no child is asked to say one; owner decision 2026-11-27: new recordings (REC-198), the
   DEEP-15 Spanish words (798 -> 932 recorded lines): true match 96.4% of 330, other voice 54/66, false accept 16.4% of 324 (similar word 43/132, another word 10/132);
   the full set, `node tools/spk-calib.js`, ABS 1.6 / RATIO 1.15 unchanged: true match 99.3% of 1,638, false accept 11.8% of 2,414 with
-  the second unrelated word (similar word 220/786 = 28%, another word 30/784 = 3.8%, other2 36/784, silence and noise 0/60)) and fails if it moves. Real children's voices differ more than Leo and Eve, so
+  the second unrelated word (similar word 220/786 = 28%, another word 30/784 = 3.8%, other2 36/784, silence and noise 0/60); owner decision 2026-11-27: new recordings (ES-MORE),
+  the 22 weather and feelings words (932 -> 962 recorded lines): true match 96.4% of 338, other voice 54/66, false accept 11.4% of 332
+  (similar word 32/136, another word 6/136); the full set: true match 99.3% of 1,698, false accept 12.1% of 2,502 (similar word 225/816
+  = 28%, another word 38/815 = 4.7%, other2 39/811, silence and noise 0/60), thresholds unchanged) and fails if it moves. Real children's voices differ more than Leo and Eve, so
   expect fewer "Great job!" for right words than here; the self-check stays the real decision.
 - A page opened from a file (file://, the test harness) cannot read its own recordings, so there is no sound check there (no fetch is
   tried); the installed app and GitHub Pages (https, service worker cache) have it.
