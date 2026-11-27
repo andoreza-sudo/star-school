@@ -457,8 +457,11 @@ async function endOpen(page, timeout = 5000) {
 // (the world Discovery Garden after Nature Trail; the Nature and Toys stops in La Ciudad and La Casa) and draws the map again: the stop
 // indexes after them move (a stop is saved by its id, never its index). A step that looks up a stop's index on those maps waits for this
 // first, so it never taps an index from before the insertion; with the gate off (or the part already applied) it returns at once.
+// DISC-46 (owner approved 2026-11-27, DISC46_ON 1): the same part load adds Canyon Trail and Volcano Ridge on the Discover map (disc46Apply,
+// D46F; only the Discover map asks for it), so on that map this also waits for them.
 async function d15Wait(page, timeout = 30000) {
-  await page.waitForFunction(() => typeof DEEP15_ON == 'undefined' || !DEEP15_ON || D15F === 1, null, { timeout });
+  await page.waitForFunction(() => (typeof DEEP15_ON == 'undefined' || !DEEP15_ON || D15F === 1)
+    && (typeof DISC46_ON == 'undefined' || !DISC46_ON || D46F === 1 || MAPP !== 'disc'), null, { timeout });
 }
 
 // Plays the round that is on screen to the end and opens the chest (grades 4 to 6 with OLDER-14: the score card, nothing to open).
@@ -5342,7 +5345,7 @@ async function main() {
       await dp.waitForSelector('.node[data-n="0"]');
       // DEEP-15 (owner approved 2026-11-27): Discovery Garden (6 stops and its boss) goes in after Nature Trail once the part loads, so the
       // Science Lab stops move 7 places on; this finds every stop by its id (as the app saves them) after the insertion, not by a fixed
-      // index (Life Cycles & Food was 6, States & Capitals 9). A 4th grader still starts in Science Lab. With OLDER-14 on, this 4th grader's
+      // index (Life Cycles & Food was 6, States & Capitals 9). (A 4th grader started in Science Lab until DISC-46.) With OLDER-14 on, this 4th grader's
       // rounds end with the score card (playRound handles both endings).
       await d15Wait(dp);
       await dp.waitForSelector('.node.cur');
@@ -5352,8 +5355,13 @@ async function main() {
         node: document.querySelector('.node.cur') ? +document.querySelector('.node.cur').dataset.n : -1,
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       }));
-      if (on.world !== 'd_lab' || on.cur !== 'sci_life2' || !/Science Lab/.test(on.chip) || on.node !== IX.sci_life2 || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
-      else step(`${tag}: Discover opens on Science Lab at Life Cycles & Food (sci_life 2), no sideways scroll`);
+      // DISC-46 (owner decision 2026-11-27: 4th graders start on Canyon Trail): the part also adds Canyon Trail (g 4) after Science Lab, and a
+      // 4th grader now opens on its first stop, Energy at Work (sci_enr 1); with the gate off, Science Lab at Life Cycles & Food as before.
+      // The Science Lab and Nature Trail stops below are still played, found by id.
+      const want = await dp.evaluate(() => DISC46_ON ? { world: 'd_canyon', cur: 'sci_enr1', chip: /Canyon Trail/.source } : { world: 'd_lab', cur: 'sci_life2', chip: /Science Lab/.source });
+      const wantIx = await dp.evaluate(id => NODES.disc.findIndex(n => nid(n) === id), want.cur);
+      if (on.world !== want.world || on.cur !== want.cur || !new RegExp(want.chip).test(on.chip) || on.node !== wantIx || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
+      else step(`${tag}: Discover opens on ${want.world === 'd_canyon' ? 'Canyon Trail at Energy at Work (sci_enr 1)' : 'Science Lab at Life Cycles & Food (sci_life 2)'}, no sideways scroll`);
       const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
       // one real round on a stop: opens it by its map button, plays, checks every question, and returns to the map
       const playStop = async (n, what) => {
@@ -9273,8 +9281,8 @@ async function main() {
     }
 
     // R-01s Spanish review fixes at 380x780 (2x). A weather question and a feelings question, each opened from the Spanish map with real taps
-    //    (world chip, stop, ¡Vamos! on the learn screen), then the review's two-answer seed shown in the round (weather 1 seed 38, feelings 1
-    //    seed 41): no two choices mean the same thing, the cool / hot / cold pictures carry their English, a feeling shows both forms
+    //    (world chip, stop, ¡Vamos! on the learn screen), then the review's two-answer seed shown in the round (weather 1 seed 387, feelings 1
+    //    seed 18; were 38 and 41 before ES-MORE): no two choices mean the same thing, the cool / hot / cold pictures carry their English, a feeling shows both forms
     //    (cards and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
     //    Screenshots: tools/out/es-r01s-* (or the folder in R01S_SHOTS).
     if (seg('R-01s')) {
@@ -9286,7 +9294,10 @@ async function main() {
       const bad = [], notes = [];
       const PAIRS = [[/\bsol\b|sunny/i, /calor|\bhot\b/i], [/niev|snow/i, /fr[ií]o|\bcold\b/i], [/fresco|\bcool\b/i, /viento|windy/i],
         [/feliz|happy/i, /tranquil|\bcalm\b/i], [/feliz|happy/i, /emocionad|excited/i]];
-      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 38], ['es_feel1', 'e_casa', 'feelings', 41]]) {
+      // ES-MORE (owner approved 2026-11-27): 11 more words in each of the two units draw other questions from the review's seeds (38 drew
+      // el termómetro, 41 valiente), so the seeds are picked again for the same cases: weather 387 (hace fresco beside hace frío and hace
+      // calor, all three captioned), feelings 18 (tranquilo / tranquila)
+      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 387], ['es_feel1', 'e_casa', 'feelings', 18]]) {
         await rp.evaluate(() => { if (G) G.dead = true; home(); });
         await rp.click('.game[data-p="es"]');
         await rp.waitForSelector('.wchip.on');
@@ -9316,7 +9327,9 @@ async function main() {
         const txt = look.ch.map(c => c.v + ' ' + c.cap);
         for (const [a, b] of PAIRS) for (let i = 0; i < txt.length; i++) for (let j = 0; j < txt.length; j++) if (i !== j && a.test(txt[i]) && b.test(txt[j])) bad.push(tag + ': two choices mean the same: ' + txt.join(' | '));
         if (look.w > 380 || look.ch.length !== 3 || look.ch.some(c => c.h < 48)) bad.push(tag + ' layout: ' + JSON.stringify(look));
-        if (tag === 'weather') for (const c of look.ch) if (['hace calor', 'hace frío', 'hace fresco'].includes(c.v) !== !!c.cap) bad.push('weather caption on ' + c.v + ': "' + c.cap + '"');
+        // ES-MORE (owner approved 2026-11-27): hace buen tiempo shows its English under the picture too
+        if (tag === 'weather') for (const c of look.ch) if (['hace calor', 'hace frío', 'hace fresco', 'hace buen tiempo'].includes(c.v) !== !!c.cap) bad.push('weather caption on ' + c.v + ': "' + c.cap + '"');
+        if (tag === 'weather' && (look.ans !== 'hace fresco' || look.ch.filter(c => c.cap).length !== 3)) bad.push('weather review seed: ' + JSON.stringify(look.ch.map(c => c.v + ' ' + c.cap)));
         if (tag === 'feelings' && !/tranquilo \/ tranquila/.test(look.prompt)) bad.push('feelings prompt: ' + look.prompt);
         await shot(tag + '-question');
         // a wrong tap: the hint replays the word, gives neither the first letter nor the English meaning
@@ -17167,7 +17180,9 @@ async function main() {
               await pg.waitForFunction(() => partReady('teaches') && document.querySelector('#map'), null, { timeout: 30000 });
               await vwait(pg, 300);
               const off = await pg.evaluate(() => ({ w: PATHS.disc.worlds.map(x => x.id).join(), f: D15F, units: ES_UNITS.length, chip: (document.querySelector('.wchip.on') || {}).textContent || '' }));
-              if (off.w !== 'd_nature,d_lab,d_cosmos' || off.f !== 0 || off.units !== 21 || !/Nature Trail/.test(off.chip)) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
+              // DISC-46 (owner approved 2026-11-27, DISC46_ON 1 as built): the same part load adds Canyon Trail and Volcano Ridge, never Discovery Garden
+              const offW = await pg.evaluate(() => DISC46_ON ? 'd_nature,d_lab,d_canyon,d_cosmos,d_ridge' : 'd_nature,d_lab,d_cosmos');
+              if (off.w !== offW || off.f !== 0 || off.units !== 21 || !/Nature Trail/.test(off.chip)) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
             } else {
               await pg.waitForFunction(() => D15F === 1 && document.querySelector('#map') && PATHS.disc.worlds[1].id === 'd_garden', null, { timeout: 30000 });
               const i = await pg.evaluate(() => NODES.disc.findIndex(n => nid(n) === 'sci_plant1'));
