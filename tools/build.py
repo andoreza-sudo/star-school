@@ -186,6 +186,19 @@ def esmoreon_js(root):
     st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
     return ('/* ES-MORE: BUILT by tools/build.py from docs/drafts/ES-MORE-READ.md (never edit); 1 adds the words (52z-esmore.js) */\n'
             'let ESMORE_ON = %d;\n' % (1 if st else 0))
+# DISC-46: the drafted Discover worlds for grades 4 and 6 (src/data/d-disc46.js, added by src/js/52z-disc46.js, part teaches) reach a child
+# only once the owner has read them: docs/drafts/DISC46-READ.md has one status line, "status: draft" until then. Changing it to
+# "status: reviewed <name> <YYYY-MM-DD>" and building again writes src/js/42m-disc46on.js with DISC46_ON = 1 (in index.html); with 0
+# Discover is exactly as before. --words-only and --words-check cover it too.
+DISC46_FILE, DISC46_DOC = '42m-disc46on.js', os.path.join('docs', 'drafts', 'DISC46-READ.md')
+def disc46_on(root):
+    f = os.path.join(root, DISC46_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def disc46on_js(root):
+    return ('/* DISC-46: BUILT by tools/build.py (never edit): 1 once docs/drafts/DISC46-READ.md says "status: reviewed <name> <date>",\n'
+            '   else 0: Discover is as before (42n-disc46.js, 52z-disc46.js). A let: tools/test.js sets it to try the worlds. */\n'
+            'let DISC46_ON = %d;\n' % disc46_on(root))
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
@@ -198,6 +211,7 @@ def write_words(root):
     open(os.path.join(root, 'src', 'js', OLDER_FILE), 'w', encoding='utf-8', newline='').write(olderon_js(root))
     open(os.path.join(root, 'src', 'js', DEEP15_FILE), 'w', encoding='utf-8', newline='').write(deep15on_js(root))
     open(os.path.join(root, 'src', 'js', ESMORE_FILE), 'w', encoding='utf-8', newline='').write(esmoreon_js(root))
+    open(os.path.join(root, 'src', 'js', DISC46_FILE), 'w', encoding='utf-8', newline='').write(disc46on_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
@@ -213,7 +227,8 @@ if '--words-check' in sys.argv:
         if os.path.isfile(_af) and open(_af, encoding='utf-8', newline='').read() != _fn(_w):
             _bad.append(_f)
     _bad += [ESMORE_FILE] if os.path.isfile(os.path.join(_w, 'src', 'js', ESMORE_FILE)) and open(os.path.join(_w, 'src', 'js', ESMORE_FILE), encoding='utf-8', newline='').read() != esmoreon_js(_w) else []
-    print('words:the words files match the reviewed drafts' if not _bad else 'words: %s is not what the reviewed drafts say (run python3 tools/build.py)' % ', '.join(_bad))
+    _bad += [DISC46_FILE] if os.path.isfile(os.path.join(_w, 'src', 'js', DISC46_FILE)) and open(os.path.join(_w, 'src', 'js', DISC46_FILE), encoding='utf-8', newline='').read() != disc46on_js(_w) else []  # DISC-46
+    print('words: the words files match the reviewed drafts' if not _bad else 'words: %s is not what the reviewed drafts say (run python3 tools/build.py)' % ', '.join(_bad))
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
@@ -243,7 +258,7 @@ PARTS = [
     ('teach12', r'(52e-words|52f-bench|52g-drafted|d-teach-audio)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
     ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r|52w-story7d|52x-story7|d-story-audio)\.js|(52k-teach4|52q-teach5r|52x-story7)\.css'),  # STORIES-7: the decodable mini-stories and their reader (52w, 52x; gated by STORY7_ON); REC-198: their recordings' manifest (d-story-audio.js: ST7A, ST7S); READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
-    ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s|52y-deep15|d-deep15|52z-esmore|d-es-more)\.js|52s-teach5s\.css'),  # ES-MORE: the drafted Spanish weather and feelings words (52z-esmore.js, d-es-more.js; gated by ESMORE_ON); DEEP-15: the drafted Discover and Spanish items (52y-deep15.js and its data, d-deep15.js; gated by DEEP15_ON), which the same two maps load; TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
+    ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s|52y-deep15|d-deep15|52z-esmore|d-es-more|52z-disc46|d-disc46)\.js|52s-teach5s\.css'),  # ES-MORE: the drafted Spanish weather and feelings words (52z-esmore.js, d-es-more.js; gated by ESMORE_ON); DISC-46: the drafted Discover worlds for grades 4 and 6 (52z-disc46.js and its data, d-disc46.js; gated by DISC46_ON); DEEP-15: the drafted Discover and Spanish items (52y-deep15.js and its data, d-deep15.js; gated by DEEP15_ON), which the same two maps load; TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
     ('hints', r'(39m-mist|39n-hintw|39p-pers|39q-persw|39r-ask|39s-askw|39u-stage)\.js|(39p-pers|39r-ask|39u-stage)\.css'),  # v182: the Practice mistake hints (HINT-01: the engine and its reviewed words), off the start-up path; a Practice round loads it (hintsWarm in 50-round.js), the generic hint shows until then. PERS-01 (v185): the interest themes' reviewed words (39q-persw.js) and their picker (39p-pers.js, .css) ride along: until the part is in, story problems are the default ones. ASK-01 (v186): the Ask the pet menu (39r-ask.js, .css) and its reviewed words (39s-askw.js); Home and the map load the part when the Ask button is tapped

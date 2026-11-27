@@ -194,7 +194,7 @@ const MIS = {
   go(x) {
     // OWNER-1127: with DEEP-15 approved, a Discover or Spanish mission first loads the new stops, then picks its stop on the new map
     // (picked before, it was the old map's: a 1st grader's Nature Trail stop, outside the free sample's new start world)
-    if (x.k == 'round' || x.k == 'other' || x.k == 'speak') { const p = x.k == 'speak' ? 'es' : x.p; if (typeof d15Want == 'function' && d15Want(p)) return d15Then(p, () => MIS.go(x)); }
+    if (x.k == 'round' || x.k == 'other' || x.k == 'speak') { const p = x.k == 'speak' ? 'es' : x.p; if (typeof d15Want == 'function' && d15Want(p)) return d15Then(p, () => MIS.go(x)); if (typeof d46Want == 'function' && d46Want(p)) return d46Then(p, () => MIS.go(x)); } // DISC-46 likewise
     SFX.whoosh();
     if (x.k == 'sprint') {
       const ss = FLU.sets();
