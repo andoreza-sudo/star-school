@@ -1,6 +1,6 @@
 # DISC-46 read-through: two new Discover worlds, for grades 4 and 6
 
-status: draft
+status: reviewed owner 2026-11-27
 
 **What this is.** Every new question, answer, wrong choice, hint and line for two drafted Discover worlds, with the reason for each:
 **Canyon Trail** for 4th grade and **Volcano Ridge** for 6th grade. In all: 322 items: 242 choice questions, 32 sort, 24 match and 24 order items, in 12 stops (6 per world), plus 37 topic hints. None of it reaches a child yet.

@@ -7673,10 +7673,10 @@ function d15Open(p, i) {
   d15Then(p, () => { const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); });
 }
 /* ES-MORE: BUILT by tools/build.py from docs/drafts/ES-MORE-READ.md (never edit); 1 adds the words (52z-esmore.js) */
-let ESMORE_ON = 0;
+let ESMORE_ON = 1;
 /* DISC-46: BUILT by tools/build.py (never edit): 1 once docs/drafts/DISC46-READ.md says "status: reviewed <name> <date>",
    else 0: Discover is as before (42n-disc46.js, 52z-disc46.js). A let: tools/test.js sets it to try the worlds. */
-let DISC46_ON = 0;
+let DISC46_ON = 1;
 /* DISC-46: the drafted Discover worlds for grades 4 and 6 (part teaches: 52z-disc46.js, d-disc46.js) reach a child only with DISC46_ON
    (42m-disc46on.js, BUILT from docs/drafts/DISC46-READ.md); with 0 nothing here does anything and the Discover map is as before. With 1
    it works as DEEP-15 (42e-deep15.js): the Discover map loads the part (d46Warm), which adds the worlds (disc46Apply), then opens the map

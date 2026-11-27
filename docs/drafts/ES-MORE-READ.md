@@ -1,6 +1,6 @@
 # ES-MORE read-through: more Spanish weather and feelings words
 
-status: draft
+status: reviewed owner 2026-11-27
 
 **What this is.** 22 new Spanish words for young beginners: 11 in the unit Weather (`es_weather`, La Ciudad) and 11 in the unit
 Feelings (`es_feel`), with their English meanings, pictures, the pairs never offered together, and every line a child sees or hears with
@@ -28,7 +28,10 @@ Big Review, so neither changes.
 | Spanish map | no change (the stops Weather and Feelings keep their names) |
 | Learn screen (tap ¡Vamos! after the cards) | no change to its lines |
 
-**Recordings.** Not recorded (that needs the owner's approval). Until a word is recorded the tablet's own Spanish voice says it, and a learn
+**Recordings.** Recorded (owner decision 2026-11-27: record first, then turn on): `node tools/es-audio.js` recorded 30 files (472
+characters, 93,784 bytes): the 22 words, plus the said form of the 8 two-form feelings ("contento, contenta") beside the shown form, as
+the feelings already there have; audio/es is now 2,404,039 bytes in 962 files, all audio 11,673,297 bytes. The estimate below was made
+before. Before they were recorded: until a word is recorded the tablet's own Spanish voice says it, and a learn
 screen with any card not recorded uses one language per tap ("Tap a card to hear it in Spanish. Tap it again for English!") instead of
 English then Spanish: so with the gate on and no recordings, the Weather and Feelings learn screens change to that mode for all their cards.
 Recording them first keeps both screens as they are. The English meanings are said by the tablet's voice, as for every Spanish word.
