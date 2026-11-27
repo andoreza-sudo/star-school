@@ -8736,7 +8736,7 @@ async function main() {
       for (let i = 0; i < 400; i++) {
         await pg.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 15000 });
         if (await pg.$('#frepeat')) break;
-        const c = await pg.evaluate(() => String(FL.f.c));
+        const c = await pg.evaluate(() => FL && FL.f ? String(FL.f.c) : ''); // the 60 s may end between the wait and this read
         for (const d of c) await pg.click(`.k[data-k="${d}"]`, { timeout: 2000 }).catch(() => {}); // the 60 s may end between two digits
       }
       await pg.waitForSelector('#frepeat', { timeout: 15000 });
