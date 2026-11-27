@@ -24700,11 +24700,17 @@ run('lockouts after a clock change, Back on setup keeps Undo erase, every way in
   for(const f of fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js'))){let c=strip(src(f));
     if(f==='80-grown.js'){const a=c.indexOf('function grown(){'),b=c.indexOf('\nfunction ',a+1);c=c.slice(0,a)+c.slice(b<0?c.length:b)}
     c=c.replace(/^\s*grown\(\w*\)\s*\{/gm,''); // a method named grown (PLAY.grown) is not the screen
-    const calls=[...c.matchAll(/(^|[^.\w$])grown\(/g)].length,refs=[...c.matchAll(/[?:=,(]\s*grown\s*[,;)}]/g)].length;
+    // a reference is grown passed or chosen as a value; OWNER-1127 B2 (owner decision 2026-11-27) wrote NAV.quiz's default as the first branch
+    // of a ternary (gw ? grown : then), which the first pattern does not match (41-nav.js read 0 references), so a first branch counts too
+    // (only after '?': an object key such as { grown: 1 } in 17b-pet-age.js is not a reference)
+    const calls=[...c.matchAll(/(^|[^.\w$])grown\(/g)].length,refs=[...c.matchAll(/[?:=,(]\s*grown\s*[,;)}]/g)].length+[...c.matchAll(/\?\s*grown\s*:/g)].length;
     const ok={'41-nav.js':[1,1],'41b-pin.js':[1,0]}[f]||[0,0];
     if(calls!==ok[0]||refs!==ok[1])p.push(f+': '+calls+' call(s) of grown() and '+refs+' reference(s) outside the gate (want '+ok+')')}
   if(!/gwBack\(\) \{ return NAV\.gwOk\(\) \? grown\(\) : home\(\); \}/.test(src('41-nav.js')))p.push('NAV.gwBack is not "Grown-ups while the session is valid, else Home"');
-  if(!/const go0 = typeof then == 'function' \? then : grown, go = \(\) => \{ NAV\.gwT = Date\.now\(\); go0\(\); \};/.test(src('41-nav.js')))p.push('NAV.quiz does not start the grown-up session');
+  // the grown-up session (NAV.gwT) starts on every way through the gate, whatever then is, before it runs. OWNER-1127 B2 (owner decision
+  // 2026-11-27) added the separate 2-minute PIN window (NAV.pinT): only Grown-ups itself opened by the typed PIN (PIN.enter passes 1) starts
+  // it, never the old question or choosing a PIN; it does not replace or condition the session, which is set first and unconditionally
+  if(!/const gw = typeof then != 'function', go0 = gw \? grown : then, go = pin => \{ NAV\.gwT = Date\.now\(\); if \(gw && pin === 1\) NAV\.pinT = NAV\.gwT; go0\(\); \};/.test(src('41-nav.js')))p.push('NAV.quiz does not start the grown-up session');
   if(!/change\(\) \{ PIN\.enter\(\(\) => PIN\.choose\(\(\) => grown\(\)/.test(src('41b-pin.js')))p.push('Change PIN reaches Grown-ups without PIN.enter');
   if(!/const placeBack=\(\)=>home\(\);/.test(src('45-placement.js')))p.push('Find my level\'s Back does not go Home');
   if(!/persPick\(\(\) => NAV\.gwBack\(\)\)/.test(src('39p-pers.js')))p.push('Story themes does not return through NAV.gwBack');
