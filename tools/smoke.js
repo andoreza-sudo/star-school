@@ -1333,6 +1333,46 @@ async function main() {
       network.push(...rf.network);
       for (const e of rf.errors) fail(e);
       await rf.ctx.close();
+      // the minutes-per-day chart at 360x740 and 1024x600 with 14 days of play (3-digit minutes side by side): every label in its svgs
+      // draws at 14 px or more (font size x the svg's scale from its viewBox), inside its svg, no two labels or svgs overlap, no
+      // sideways scroll
+      const cbad = [], csz = [];
+      for (const [w, h] of [[360, 740], [1024, 600]]) {
+        const ca = await openApp(browser, { fixture: 'midway', width: w, height: h }), cp = ca.page, at = w + 'x' + h + ' ';
+        await cp.evaluate(() => {
+          const mins = [100, 110, 0.5, 20, 99, 50, 2, 120, 105, 110, 30, 40, 1, 90];
+          S.log = mins.map((mn, d) => ({ d: ACT.shift(today(), -d), sec: mn * 60, rounds: 1, q: 10, ok: 9, by: { math: mn * 60 } }));
+          report();
+        });
+        await cp.waitForSelector('.rp-svg');
+        const cr = await cp.evaluate(() => {
+          const out = [], boxes = [], svgs = [...document.querySelectorAll('.rp-svg')], px = [];
+          const hit = (a, b) => a.left < b.right - .5 && b.left < a.right - .5 && a.top < b.bottom - .5 && b.top < a.bottom - .5;
+          for (const svg of svgs) {
+            const sr = svg.getBoundingClientRect(), sc = sr.width / svg.viewBox.baseVal.width;
+            for (const t of svg.querySelectorAll('text')) {
+              const f = parseFloat(getComputedStyle(t).fontSize) * sc, r = t.getBoundingClientRect();
+              px.push(f);
+              if (f + .05 < 14) out.push(`label "${t.textContent}" draws at ${f.toFixed(1)} px`);
+              if (r.left < sr.left - .5 || r.right > sr.right + .5 || r.top < sr.top - .5 || r.bottom > sr.bottom + .5) out.push(`label "${t.textContent}" is cut off by its svg`);
+              for (const b of boxes) if (hit(b.r, r)) out.push(`labels "${b.s}" and "${t.textContent}" overlap`);
+              boxes.push({ r, s: t.textContent });
+            }
+          }
+          if (svgs.length == 2 && hit(svgs[0].getBoundingClientRect(), svgs[1].getBoundingClientRect())) out.push('the two weeks overlap');
+          for (const s of [document.documentElement, ...document.querySelectorAll('.scroll')]) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll ' + (s.className || 'page'));
+          return { out, n: px.length, min: Math.min(...px) };
+        });
+        if (cr.n != 28) cbad.push(at + cr.n + ' chart labels, want 28');
+        for (const o of cr.out) cbad.push(at + o);
+        csz.push(at + cr.min.toFixed(1) + ' px');
+        network.push(...ca.network);
+        for (const e of ca.errors) fail(at + e);
+        await ca.ctx.close();
+      }
+      if (cbad.length) fail('report card chart labels:\n  ' + cbad.join('\n  '));
+      else step('report card: the minutes-per-day chart labels draw at 14 px or more (smallest ' + csz.join(', ') + '), inside the chart, ' +
+        'none overlap, no sideways scroll');
     }
 
     // P5-02 spaced review: the tricky fixture (a v53 save whose 21 tricky misses are whole stored questions) is migrated on load
@@ -9017,7 +9057,9 @@ async function main() {
       const tmpd = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-bak-'));
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const tag = w + 'x' + h;
-        const ba = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        // http: Start over, Yes on a loaded backup and Undo last load reload the page with a changed save; over file:// headless Chrome sometimes starts the reloaded page with
+        // empty storage on a busy machine, see openApp in tools/lib/browser.js (as RC1-KIDS)
+        const ba = await openApp(browser, { fixture: 'midway', width: w, height: h, http: true });
         const bp = ba.page;
         const chk = async what => { for (const o of await bp.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
         await bp.waitForSelector('.game[data-p="math"]');
@@ -10648,7 +10690,9 @@ async function main() {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const tag = w + 'x' + h;
-        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        // http: a child switch, Add a child and a new visit reload the page with a changed save; over file:// headless Chrome sometimes starts the reloaded page with
+        // empty storage on a busy machine (check.sh: "1024x600 after deleting Ava: {ava: null, rows: 2, ...}", 3/3 alone), see openApp in tools/lib/browser.js (as RC1-KIDS)
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h, http: true });
         const pg = pa.page;
         const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
         const hold = async sel => {
@@ -16040,7 +16084,9 @@ async function main() {
       const bad = [], P_ = require('path'), shots = P_.join(__dirname, 'out', 'rc1');
       require('fs').mkdirSync(shots, { recursive: true });
       for (const [w, h] of [[380, 780], [360, 740], [1024, 600]]) {
-        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true }), pg = app.page, at = w + 'x' + h + ' ';
+        // http: Erase everything, Undo erase and deleting a child reload the page with a changed save; over file:// headless Chrome sometimes starts the reloaded page with
+        // empty storage on a busy machine, see openApp in tools/lib/browser.js (as RC1-KIDS)
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h, lazy: true, http: true }), pg = app.page, at = w + 'x' + h + ' ';
         const padLook = () => pg.evaluate(pin => {
           const pad = document.querySelector('.sheet-bg.on #pnpad'), o = [];
           if (!pad) return ['no pad'];
@@ -16594,7 +16640,9 @@ async function main() {
     //    the erased save back (BAK.undo; was: PRF.remove dropped the child and its "Undo erase" copy). 380x780, real taps.
     if (seg('RC2-UNDO')) {
       const bad = [];
-      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true }), pg = app.page;
+      // http: Erase everything and Back on setup (BAK.undo) reload the page with a changed save; over file:// headless Chrome sometimes starts the reloaded page with
+      // empty storage on a busy machine, see openApp in tools/lib/browser.js (as RC1-KIDS)
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, lazy: true, http: true }), pg = app.page;
       try {
         await pg.evaluate(async () => { await partLoad('gate'); PIN.set('2580'); PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', grade: 2, stars: 5 }), false); save(); });
         const s0 = await pg.evaluate(() => ({ name: S.name, stars: S.stars, id: PRF.cur }));

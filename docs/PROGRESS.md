@@ -540,6 +540,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### CHART-14: report card chart labels at 14 px; four reload smoke steps over http (v198, 2026-11-27, Claude; branch claude/beautiful-rubin-1urk3d)
+- **Report card chart**: the minutes-per-day chart was one 14-day svg (viewBox 336 wide) drawn 288 px wide at 360x740, so its 12-unit labels (minutes over each bar, day letters) drew at 10.3 px. Now two 7-day svgs (viewBox 168 x 124), last week and this week, each with its caption under it (`.rp-chart` > `.rp-wc`; flex-wrap, each 196-280 px wide): side by side when both fit (1024x600: as before, 20 px labels), one above the other on a phone (360x740: 20 px). A svg is never under 196 px wide, so a label is never under 14 px. Bars top out at 80 units (was 82) so the tallest bar's label stays inside its svg. The chart's name (aria-label, unchanged words) moved to the `.rp-chart` wrapper (role=img); the svgs are aria-hidden. No words changed.
+- **Tests**: smoke P5-06 measures every chart label (computed font size x the svg's scale) at 360x740 and 1024x600 with 14 days of play (3-digit minutes side by side): at least 14 px, inside its svg, no two labels or the two svgs overlap, no sideways scroll (fails on the old chart at 10.3 px). a11y new screen report-chart (360x740, 1024x600).
+- **Smoke over http**: P5-07, P5-10, RC1-GATE and RC2-UNDO open the app with `http: true` (as RC1-KIDS): they reload the page with a changed save, and over file:// headless Chrome sometimes starts the reloaded page with empty storage (P5-10 in a full check: "1024x600 after deleting Ava: {ava: null, rows: 2, ...}"). No expectation changed. Each passed 3 of 3 runs alone (the four run side by side).
+- No threshold, hash, KNOWN list, fixture or expected value changed. Start-up size 2,489,824 bytes.
+
 ### REC-198: recorded read-along stories and new Spanish words (v198, 2026-11-27, Claude; branch rec198)
 - **Owner decision 2026-11-27**: audio budget 9.5 -> 12 MB; record the STORIES-7 stories (STORIES7-READ.md) and the DEEP-15 Spanish words (DEEP15-READ.md), all wording approved.
 - **Budgets changed**: AUDIO_FAIL 9,500,000 -> 12,000,000; AUDIO_WARN 8,439,000 -> 10,660,000 (in proportion). CONTRIBUTING, HANDOFF, check.sh and test.js say so.
