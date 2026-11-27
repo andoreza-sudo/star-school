@@ -7672,6 +7672,8 @@ function d15Open(p, i) {
   const id = nid(NODES[p][i]);
   d15Then(p, () => { const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); });
 }
+/* ES-MORE: BUILT by tools/build.py from docs/drafts/ES-MORE-READ.md (never edit); 1 adds the words (52z-esmore.js) */
+let ESMORE_ON = 0;
 /* ---------- Map and world scenes (P4-09, DESIGN_SYSTEM 7; CSS 47-scenes.css; props, themes, world table: src/data/d-scenes.js) ----------
    A world band = a sky-to-ground CSS gradient (scene tokens) + one SVG: sun or moon, clouds, stars, rays, garland, horizon ridges,
    rolling ground, a landmark, props down the sides, ground marks. Props go only where the band's stops, labels, title, Test out
@@ -8441,7 +8443,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   view(`<div class="top tbar mp-top s-${p}">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl mp-ttl">${ico(UI.SUBJ_ICON[p]||'map',30)}<span>${esc(P.n)}</span></div>${UI.chip('star',S.stars,{aria:'Stars'})}</div>
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
-  NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read');if(p=='es'||p=='disc')teachWarm(p);d15Warm(p); // DEEP-15: with DEEP15_ON, the drafted Discover and Spanish items (42e-deep15.js); NAV-01: Back goes one step back
+  NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read');if(p=='es'||p=='disc')teachWarm(p);d15Warm(p);if(ESMORE_ON&&p=="es")partsLoad(D15P); // ES-MORE: 52z-esmore.js; DEEP-15: with DEEP15_ON, the drafted Discover and Spanish items (42e-deep15.js); NAV-01: Back goes one step back
   if($('.node.cur')||$('.lsn.cur'))if(nrSay('Tap the glowing stop to play!','#map',800))setTimeout(()=>{if($('#map'))fb('Tap the glowing stop to play!','info',2500)},800); // shown too: a spoken line is also on screen (a11y sound rule) // REC-12 (owner approved the words 2026-11-26): a non-reader hears what to do on arrival (12-speech.js)
   if(wi!=null)return mapTop(p);
   const c=$('.node.cur')||$('.lsn.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
