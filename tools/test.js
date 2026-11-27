@@ -26172,6 +26172,162 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
   return{problems:p,note:'gate off: same as without DEEP-15 ('+note.off+'); on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' Discover items, '+note.words+' Spanish words; longest answer '+(note.long||[]).join(', ')+'; repeats a round '+(note.rep||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DEEP15_ON '+on+')'};
 });
 
+// ---- ES-MORE (docs/drafts/ES-MORE-READ.md): more Spanish weather and feelings words, drafted for the owner and gated ----
+// src/data/d-es-more.js (the words, confuse pairs, caption words and drawings) and src/js/52z-esmore.js (esMoreApply) are in part teaches;
+// 42f-esmoreon.js (ESMORE_ON, BUILT from the read-through's status line) and one call in 46-home.js are in index.html. 1. The gate off
+// changes nothing: the units, SPN, ART, the skills and many seeded questions of every Spanish stop are the same as an app built without the
+// ES-MORE files. 2. On (forced here, as the owner's flip would build): every new word is at the end of its unit (weather or feel), with an
+// English meaning and a picture (a drawing for every weather word), well formed (P2-30, R-01s), no word already in a Spanish unit, no
+// two pictures alike in a unit, every question with one right answer and no confuse pair among its choices; no other unit, picture or
+// skill changes; the new drawings follow the object-art rules (DESIGN_SYSTEM 6.5). 3. The lazy load: nothing new at start-up but the
+// flag and the hook; with the gate on the Spanish map brings the words in (lessons on or off), with it off it does not. 4. The gate is the
+// one-line flip and the read-through lists every word, meaning, pair and line. Recordings: none yet (S-SPK2's sample is the recorded lines).
+run('ES-MORE: drafted Spanish weather and feelings words, the gate, words with pictures and meanings, drawings, lazy load',()=>{
+  const p=[],bad=m=>{if(p.length<80&&!p.includes(m))p.push(m)},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),note={};
+  const DOC='docs/drafts/ES-MORE-READ.md',doc=rd(DOC),FILES=['42f-esmoreon.js','52z-esmore.js','d-es-more.js'],src=f=>rd((f[0]=='d'?'src/data/':'src/js/')+f);
+  // 1. the gate off is the app without the ES-MORE files (the hook in 46-home.js runs only in pathMap, not here)
+  const jsOff=FILES.reduce((a,f)=>a.replace(src(f),''),js);
+  if(jsOff.length!==js.length-FILES.reduce((a,f)=>a+src(f).length,0))bad('the ES-MORE files could not be taken out of the app for the comparison');
+  const snap=function(){
+    const qs=[];for(const n of NODES.es)if(n.sk!=='boss')for(let s=1;s<=12;s++)for(const g of [0,2]){S.grade=g;qs.push(JSON.stringify(genQ(n.sk,n.lv,s)))}
+    S.grade=0;return JSON.stringify({ES_UNITS,SPN,ART,SK:Object.keys(SK).filter(k=>k.startsWith('es_')).map(k=>[k,SK[k].t,SK[k].max]),NODES:NODES.es.map(nid),qs});
+  };
+  const off0=eval(jsOff+';('+snap.toString()+')()');
+  const off1=eval(js+';ESMORE_ON=0;const __ap=esMoreApply();('+snap.toString()+')()+JSON.stringify([__ap,ESMF])');
+  if(off1!==off0+JSON.stringify([false,0]))bad('with the gate off the app is not exactly as without the ES-MORE files (or esMoreApply did something)');
+  note.off=require('crypto').createHash('md5').update(off0).digest('hex').slice(0,10);
+  // 2. the gate on
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+  const css=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  const body=function(){
+    const r={bad:[],n:{}},B=m=>{if(r.bad.length<80&&!r.bad.includes(m))r.bad.push(m)};
+    const before=JSON.stringify(ES_UNITS.filter(u=>!ESM.es[u.id])),art0=Object.keys(ART),artV=JSON.stringify(ART),old={};
+    for(const id in ESM.es)old[id]=ES_UNITS.find(u=>u.id==id).items.slice();
+    const seen=new Set([...ES_UNITS,...(typeof D15!='undefined'?[...D15.esNew]:[])].flatMap(u=>u.items).concat(typeof D15!='undefined'?Object.values(D15.es).flat():[]).flatMap(it=>it[0].split(' / ')));
+    ESMORE_ON=1;
+    if(esMoreApply()!==true)B('esMoreApply did not apply with the gate on');
+    if(esMoreApply()!==false)B('esMoreApply applied twice');
+    if(JSON.stringify(ES_UNITS.filter(u=>!ESM.es[u.id]))!==before)B('a unit other than weather and feel changed');
+    for(const k of art0)if(JSON.stringify(ART[k])!==JSON.stringify(JSON.parse(artV)[k]))B('the drawing '+k+' changed');
+    const BADPL=/\b[a-z]*(?:ch|sh|x|ss|z)s\b|\b[a-z]*[^aeiou\s]ys\b|\b(?:fishes|tooths|foots|mouses|childs|mans|womans|sheeps|leafs|knifes|persons)\b/i;
+    const picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
+    let words=0;
+    for(const id in ESM.es){const u=ES_UNITS.find(x=>x.id==id),add=ESM.es[id],k='es_'+id;
+      r.n[id]=add.length;
+      if(!u||!SK[k]||SK[k].max!==(u.spell?3:2)||u.spell||u.mix)B(k+': unit or skill (no spelling level, not in the Big Review)');
+      if(SPN[id]!==u.items)B(k+': SPN does not share the unit\'s words');
+      if(u.items.length!==old[id].length+add.length||old[id].some((it,i)=>u.items[i]!==it)||add.some((it,i)=>u.items[old[id].length+i]!==it))B(k+': the new words are not at the end, after the old ones');
+      for(const it of add){words++;const w=k+' '+it[0],full=esFull(it);
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||it[0]!==it[0].trim())B(w+': word not NFC, lowercase and trimmed');
+        if(!it[1]||it[1]!==it[1].trim()||BADPL.test(it[1]))B(w+': English meaning '+it[1]);
+        if(!['el','la','los','las',''].includes(it[3]))B(w+': article '+it[3]);
+        if(!allow.has(String(it[2]).replace(/️/g,'')))B(w+': picture '+it[2]+' is not on the allow list');
+        if(it[4]&&!ART[it[4]])B(w+': no drawing '+it[4]);
+        if(id=='weather'&&!it[4])B(w+': a weather word without a drawing');
+        if(/ \/ /.test(it[0])){const [m,f]=it[0].split(' / ');if(it[5]!==m+', '+f||!/o$/.test(m)||f!==m.slice(0,-1)+'a')B(w+': two forms shown and said as the feelings already are')}
+        else if(it[5])B(w+': a said form without two forms');
+        for(const x of it[0].split(' / '))if(seen.has(x))B(w+': already a Spanish word');
+        if(!doc.includes('| '+full+' | '+it[1]+' |'))B(w+': word and meaning not in '+DOC);
+        if(!doc.includes('Tap the picture for “'+full+'”')||!doc.includes('Listen again, slowly: “'+full+'”'))B(w+': its lines are not in '+DOC);
+        if(!doc.includes('"'+(it[5]||full)+'"'))B(w+': its recording line is not in '+DOC);
+        if(it[4]&&!picHTML(it,false).includes('<svg class="art"'))B(w+': the picture is not the drawing');
+        const cap=esCap(u,it),ph=picHTML(it,cap);if(cap!==ESM.cap[id].includes(it[0])||cap&&!ph.includes('<small>'+esc(it[1])+'</small>'))B(w+': English under the picture');
+      }
+      if(new Set(u.items.map(x=>x[0])).size!==u.items.length)B(k+': a word twice');
+      if(new Set(u.items.map(x=>x[2]+'|'+(x[4]||''))).size!==u.items.length||new Set(u.items.map(x=>picFor(x[4]||'',x[2]))).size!==u.items.length)B(k+': two words share a picture');
+      for(const pr of ESM.confuse[id]){if(pr.some(x=>!u.items.some(it=>it[0]===x)))B(k+': confuse pair '+pr+' names a word not in the unit');
+        if(!doc.includes('| '+id+' | '+pr[0]+' | '+pr[1]+' |'))B(k+': confuse pair '+pr+' not in '+DOC)}
+      for(const c of ESM.cap[id])if(!add.some(it=>it[0]===c))B(k+': caption word '+c+' is not a new word');
+      // seeded questions: one right answer, no two choices alike by value or picture, no confuse pair together; every new word asked,
+      // at level 1 with its picture and at level 2 with its picture on top (the English is on the learn card and in the hint lines)
+      const asked={};
+      for(let lv=1;lv<=SK[k].max;lv++)for(const g of [0,2])for(let s=1;s<=600;s++){S.grade=g;const q=genQ(k,lv,s),kk=k+' L'+lv+' g'+g+' s'+s+': ';
+        if(q.kind!=='choice'){B(kk+'kind '+q.kind);continue}
+        const vs=q.choices.map(c=>String(c.v));if(new Set(vs).size!==vs.length)B(kk+'two choices share a value');
+        if(lv==1){const ps=q.choices.map(picOf);if(new Set(ps).size!==ps.length)B(kk+'two choices share a picture')}
+        if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(kk+'not exactly one right answer');
+        const its=vs.map(v=>u.items.find(it=>esFull(it)===v));
+        for(let a=0;a<its.length;a++)for(let b=a+1;b<its.length;b++)if(esClash(u,its[a],its[b]))B(kk+'a confuse pair together: '+its[a][0]+' / '+its[b][0]);
+        const it=add.find(x=>esFull(x)===String(q.ans));
+        if(it){asked[it[0]+lv]=1;const pic=picFor(it[4]||'',it[2]);
+          if(lv==1&&!picOf(q.choices.find(c=>String(c.v)===String(q.ans))).includes(pic))B(kk+'the right choice does not show its picture');
+          if(lv==2&&!q.html.includes(pic))B(kk+'the question does not show its picture')}}
+      S.grade=0;
+      for(const it of add)for(let lv=1;lv<=SK[k].max;lv++)if(!asked[it[0]+lv])B(k+' '+it[0]+': never asked at level '+lv+' in 1200 questions');
+    }
+    for(let s=1;s<=300;s++){const q=genQ('es_mix',2,s);if(q.kind=='choice'&&q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B('es_mix: not exactly one right answer')}
+    // the drawings: new names only, each used by a word, the object-art rules of sets A to C (DESIGN_SYSTEM 6.5)
+    const ATTR=/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/,used=new Set(Object.values(ESM.es).flat().map(it=>it[4]).filter(Boolean));
+    for(const n in ESM.art){const d=ESM.art[n];
+      if(art0.includes(n))B(n+': the drawing name is already taken');
+      if(!/^wx-[a-z]+$/.test(n)||!used.has(n))B(n+': not a wx- name used by a new word');
+      if(d.length>2500)B(n+': '+d.length+' bytes (limit 2500)');
+      if((d.match(/<[^>]*\/>/g)||[]).join('')!==d)B(n+': every element must be self-closing, nothing between them');
+      if((d.match(/<[a-z]+/g)||[]).length>40)B(n+': more than 40 elements');
+      for(const t of d.match(/<\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))B(n+': element '+t+'> not allowed');
+      for(const m of d.matchAll(/\s([a-zA-Z:-]+)=/g))if(!ATTR.test(m[1]))B(n+': attribute '+m[1]+' not allowed');
+      for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\(-?[\d.]+ -?[\d.]+ -?[\d.]+\)$/.test(m[1]))B(n+': transform '+m[1]);
+      for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))B(n+': opacity '+m[1]);
+      if(/gradient|filter|mask|clip|pattern|<text|<use|url\(|style=|\sid=|<defs|<image|href/i.test(d)||/#[0-9a-f]{3,8}\b/i.test(d))B(n+': ids, defs, gradients, filters, text, url(), style or raw hex');
+      for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\(--a-[a-z0-9]+\))"$/.test(a))B(n+': colour '+a);
+      for(const m of d.match(/--a-[a-z0-9]+/g)||[])if(!r.css.includes(m+':'))B(n+': '+m+' not defined in 21-art.css');
+      const co=(d.match(/\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);if(co)B(n+': coordinates to one decimal ('+co[0]+')');
+      for(const m of d.matchAll(/\s(cx|cy|x|y)="(-?[\d.]+)"/g))if(+m[2]<0||+m[2]>64)B(n+': '+m[1]+' '+m[2]+' is off the 64 grid');
+      for(const m of d.matchAll(/\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\d.]+/g)||[])if(+v<0||+v>64)B(n+': path number '+v+' is off the 64 grid');
+      if(!/^<svg [^>]*viewBox="0 0 64 64"[^>]*>(<(path|circle|ellipse|rect)\b[^>]*\/>)+<\/svg>$/.test(picArt(n,48)))B(n+': picArt markup not well formed');
+      r.n.art=(r.n.art||0)+1;r.n.artBytes=(r.n.artBytes||0)+d.length}
+    for(const n of used)if(n.startsWith('wx-')&&!ESM.art[n])B(n+': a word uses a drawing ES-MORE does not have');
+    r.words=words;
+    r.det=require('crypto').createHash('md5').update(JSON.stringify([genQ('es_weather',1,9),genQ('es_feel',2,9),genQ('es_weather',2,31)])).digest('hex');
+    return r;
+  };
+  const pre='const r_css='+JSON.stringify(css)+';';
+  const run2=()=>eval(js+';'+pre+'('+body.toString().replace("const r={bad:[],n:{}}","const r={bad:[],n:{},css:r_css}")+')()');
+  const a=run2(),b=run2();
+  for(const m of a.bad)bad(m);
+  if(a.det!==b.det)bad('the new questions differ between two runs');
+  note.n=a.n;note.words=a.words;
+  // 3. the lazy load, on a fresh page as the built app runs: nothing at start-up but the flag and the hook; with the gate on the Spanish
+  //    map brings the part in (here with the lessons off, when teachWarm would not) and the words are there; off, nothing changes
+  const need=['index.html',...START_FILES,...LAZY_FILES];
+  if(need.some(f=>!fs.existsSync(path.join(ROOT,f))))bad('not built: run python3 tools/build.py');
+  else try{
+    const html=rd('index.html'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)])),TF='teaches.'+BUILD_VER+'.js';
+    for(const f of ['index.html',...START_FILES])if(/const ESM = |function esMoreApply|wx-raincoat/.test(f==='index.html'?html:files[f]))bad(f+' carries ES-MORE words (they belong in part teaches)');
+    if(!files[TF].includes('const ESM = {')||!files[TF].includes('function esMoreApply()'))bad(TF+' does not carry the words');
+    if(Buffer.byteLength(files[TF])>=PART_WARN)bad(TF+' is over the part warning');
+    const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
+    if(!html.includes('let ESMORE_ON = '+on0+';'))bad('index.html is not built with ESMORE_ON = '+on0+' (the status line of '+DOC+')');
+    const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
+    const look='JSON.stringify([ES_UNITS.find(u=>u.id=="weather").items.length,ES_UNITS.find(u=>u.id=="feel").items.length,typeof ESMF=="undefined"?-1:ESMF,partReady("teaches")])';
+    const res={};
+    for(const on of [0,1]){const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('globalThis.window=globalThis;S.grade=1;TEACH.off=true;DEEP15_ON=0;ESMORE_ON='+on);
+      const n0=JSON.parse(pg.run(look));pg.run('pathMap("es")');serveAll(pg);res[on]=[n0,JSON.parse(pg.run(look))]}
+    const W0=res[0][0][0],F0=res[0][0][1],nw=a.n.weather,nf=a.n.feel;
+    if(JSON.stringify(res[0][1])!==JSON.stringify([W0,F0,-1,false]))bad('gate off: the Spanish map (lessons off) loaded the part or changed the units: '+JSON.stringify(res[0]));
+    if(JSON.stringify(res[1][1])!==JSON.stringify([W0+nw,F0+nf,1,true]))bad('gate on: after the Spanish map the units are '+JSON.stringify(res[1]));
+    note.lazy='weather '+W0+' -> '+res[1][1][0]+', feelings '+F0+' -> '+res[1][1][1]+' once the map loads teaches';
+  }catch(e){bad('the lazy load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // 4. the gate and the read-through
+  const st=(doc.match(/^status:\s*(.*)$/m)||[])[1]||'',on=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test(st)?1:0;
+  if(!src('42f-esmoreon.js').includes('let ESMORE_ON = '+on+';'))bad('42f-esmoreon.js does not follow the status line of '+DOC+' (run python3 tools/build.py)');
+  if(partOf('42f-esmoreon.js'))bad('42f-esmoreon.js is not in index.html');
+  for(const f of ['52z-esmore.js','d-es-more.js'])if(partOf(f)!=='teaches')bad(f+' is not in part teaches');
+  if(!/teachWarm\(p\);d15Warm\(p\);if\(ESMORE_ON&&p=="es"\)partsLoad\(D15P\);/.test(rd('src/js/46-home.js')))bad('46-home.js: the Spanish map hook');
+  // the read-through: every table under a ## or ### heading, a header row then a |---| row (the review page reads it this way)
+  const L=doc.split('\n');let head=0,tables=0;
+  for(let i=0;i<L.length;i++){if(/^#{2,3} /.test(L[i]))head=1;
+    if(/^\|/.test(L[i])&&!/^\|/.test(L[i-1]||'')){tables++;if(!/^\|(\s*-+\s*\|)+$/.test(L[i+1]||''))bad(DOC+' line '+(i+1)+': a table without a |---| row');
+      const nc=L[i].split('|').length;for(let j=i+2;j<L.length&&/^\|/.test(L[j]);j++)if(L[j].replace(/\\\|/g,'').split('|').length!==nc)bad(DOC+' line '+(j+1)+': '+(L[j].replace(/\\\|/g,'').split('|').length-2)+' cells for '+(nc-2)+' columns')}}
+  if(!/^## /m.test(doc)||!/^### /m.test(doc))bad(DOC+' has no ## and ### headings');
+  const code=FILES.map(src).join('\n');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the ES-MORE code reaches outside the tablet or draws at random');
+  if(/magic|evolution/i.test(code+doc))bad('a banned theme word (CONTENT-01)');
+  // recordings: none yet (not approved); S-SPK2 calibrates on the recorded lines, so its pinned counts stay until they are recorded
+  const rec=eval(js+';Object.values(ESM.es).flat().filter(it=>ES_AUDIO.lines[esKey(it[5]||esFull(it))]).length');
+  return{problems:p,note:'gate off: same as without ES-MORE ('+note.off+'); on: '+note.words+' words ('+Object.entries(note.n||{}).map(([k,v])=>k+' '+v).join(', ')+' bytes of drawings); '+(note.lazy||'')+'; '+rec+' recorded (S-SPK2 '+(rec?'needs a re-pin':'unchanged')+'); '+tables+' tables; status '+(st.split(' ')[0]||'?')+' (ESMORE_ON '+on+')'};
+});
+
 // ---- REC-198 (owner decision 2026-11-27: the audio budget 9.5 -> 12 MB for the read-along stories and the new Spanish words; STORIES7-READ.md
 // and DEEP15-READ.md approved): every STORIES-7 story is recorded with word times that fit it, the questions and the reader's spoken lines and
 // (with the budget's 300 KB margin) the words for word taps; every DEEP-15 Spanish word has its recording; the files are in sw.js
