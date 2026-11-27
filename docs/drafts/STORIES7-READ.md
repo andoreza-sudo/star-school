@@ -4,7 +4,7 @@ BEST-APP roadmap item 7. Each phonics stage of the reading map gets six short st
 few sight words. In each story the app reads to the child while every word lights up as it is spoken ("Read to me"), then the
 child reads it ("Now you read it", tapping any word to hear it, then "I read it!"), then answers one or two picture questions.
 
-status: unreviewed
+status: reviewed owner 2026-11-27
 
 Status: **pending owner approval**. Every story, every question and every new sentence of the screens is below. The code is built
 and tested, but no child sees any of it until the owner approves it. **Nothing is recorded**: the tablet's voice reads until the

@@ -15349,13 +15349,32 @@ async function main() {
         await vspeed(pg);
         if (!(await pg.evaluate(() => PIN.check('2580') === 'ok'))) bad.push(at + 'the PIN chosen in setup is not 2580');
         mark('Home');
-        // 2. the top mission opens the first lesson's start card (a stop of the free sample)
+        // 2. the top mission opens the first lesson's start card (a stop of the free sample).
+        //    OWNER-1127: with DEEP-15 approved (2026-11-27) a 1st grader's Discover starts in Discovery Garden, whose new stops have no
+        //    lesson yet, and Spanish gains two such stops; the missions are drawn by the day, so the top one may open one of them as a
+        //    practice round. Then it must be a free stop without a lesson, and the child goes Home by the corner house (Go Home?) and
+        //    taps Math and its glowing stop, the lesson the rehearsal followed ("Play a Math round"). Every other day: as before.
         await vwait(pg, 400);
         await tap('.hm-mi >> nth=0');
+        const got = await (await pg.waitForFunction(() => document.querySelector('#lslearn') ? 'lesson' : typeof G != 'undefined' && G && G.q && document.querySelector('#prompt') && !document.querySelector('#lsplay') ? 'round' : null, null, { timeout: 15000 })).jsonValue();
+        if (got === 'round') {
+          const r = await pg.evaluate(() => ({ p: G.path, id: nid(NODES[G.path][G.node]), free: PLAY.freeStop(G.path, G.node), ls: typeof LESSONS != 'undefined' && !!LESSONS[nid(NODES[G.path][G.node])] }));
+          if (!r.free || r.ls || !/^(sci_plant|sci_wx|sci_rock|sci_mach|civ_past|civ_work|es_toy|es_nature)\d/.test(r.id)) bad.push(at + 'the top mission opened a round, not a lesson: ' + JSON.stringify(r));
+          marks.push('the top mission: ' + r.id + ' (DEEP-15, no lesson yet)');
+          await tap('#quit');
+          await pg.waitForSelector('.sheet-bg.on #gquit', { timeout: 5000 });
+          await tap('#gquit');
+          await pg.waitForSelector('#hs', { timeout: 10000 });
+          await vwait(pg, 400);
+          await tap('.game[data-p="math"]');
+          await pg.waitForSelector('.lsn.cur, .node.cur', { timeout: 10000 });
+          await vwait(pg, 400);
+          await tap('.lsn.cur, .node.cur >> nth=0');
+        }
         await pg.waitForSelector('#lslearn', { timeout: 15000 });
         await tap('#lslearn');
         await pg.waitForSelector('#lsplay', { timeout: 10000 });
-        const st0 = await pg.evaluate(() => { const p = LS.st.L.p, i = NODES[p].findIndex(n => nid(n) === LS.st.id); return { p, id: LS.st.id, i, free: i >= 0 && PLAY.freeStop(p, i) }; });
+        const st0 = await pg.evaluate(() => { const p = LS.st.L.p || 'math', i = /* a math lesson names no path (LS: L.p || 'math') */ NODES[p].findIndex(n => nid(n) === LS.st.id); return { p, id: LS.st.id, i, free: i >= 0 && PLAY.freeStop(p, i) }; });
         if (!st0.free) bad.push(at + 'the first mission leads to a stop outside the free sample: ' + JSON.stringify(st0));
         // 3. every beat of the lesson, answered right with the lesson's own controls
         const wake = () => pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
@@ -16723,6 +16742,9 @@ async function main() {
           await pg.click('#gear');
           await pinIn(pg);
           await pg.waitForSelector('#rp-open', { timeout: 10000 });
+          // OWNER-1127: the owner approved PARENT-11 on 2026-11-27, so the build now has PARENT_ON = 1 (test.js PARENT-11 checks the
+          // flag follows the status line); "before approval" is tried by setting it to 0 in the page, as an unreviewed build has it
+          await pg.evaluate(() => { PARENT_ON = 0; });
           await pg.click('#rp-open');
           await pg.waitForSelector('#rp-weeks', { timeout: 10000 });
           const off = await pg.evaluate(() => ({ on: PARENT_ON, corner: !!document.querySelector('#rp-parent'), n: document.querySelectorAll('.rp-card').length, ls: !!document.querySelector('#rp-teach') }));
@@ -16811,8 +16833,9 @@ async function main() {
         const look = async (where, sel) => { const f = await fit(sel); if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', ')); if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px'); };
         try {
           await pg.waitForSelector('#gear', { timeout: 10000 });
-          // gate off (the build's STORY7_ON = 0): no Stories stop in any reading world
-          const off = await pg.evaluate(() => { S.unlockAll = true; pathMap('read', 0); let n = 0; for (let wi = 0; wi < PATHS.read.worlds.length; wi++) { MAPW.read = wi; drawMap('read'); n += document.querySelectorAll('.st7n').length; } return { on: STORY7_ON, n }; });
+          // gate off: no Stories stop in any reading world. OWNER-1127: the owner approved STORIES-7 on 2026-11-27, so the build now has
+          // STORY7_ON = 1 (test.js STORIES-7 checks it follows the status line); the gate off is tried by setting it to 0 in the page
+          const off = await pg.evaluate(() => { STORY7_ON = 0; S.unlockAll = true; pathMap('read', 0); let n = 0; for (let wi = 0; wi < PATHS.read.worlds.length; wi++) { MAPW.read = wi; drawMap('read'); n += document.querySelectorAll('.st7n').length; } return { on: STORY7_ON, n }; });
           if (off.on !== 0 || off.n) bad.push(at + 'with the gate off: ' + JSON.stringify(off));
           // gate on: Letter Meadow's Stories stop, after Picture Words
           await pg.evaluate(() => { STORY7_ON = 1; pathMap('read', 1); });

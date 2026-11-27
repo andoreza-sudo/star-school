@@ -1528,7 +1528,10 @@ run('report card (P5-06): read-only, empty and old saves, numbers, escaping, dam
       if(JSON.stringify(S)!==before||Object.keys(S).join(',')!==keys)bad(label+': opening the report card changed S');
       const txt=h.replace(/<[^>]*>/g,' ');
       if(BADTXT.test(txt))bad(label+': bad text '+(txt.match(BADTXT)||[])[0]);
-      if(!/Report card for/.test(h)||h.split('<section').length!==8)bad(label+': expected 7 sections, got '+(h.split('<section').length-1));
+      // OWNER-1127: the owner approved PARENT-11 on 2026-11-27 (PARENT_ON = 1), so the card has the Parent corner as an 8th section
+      // when the gate part (PC) is loaded, as it is here; with the flag off or the part not loaded, the 7 sections as before
+      const nsec=7+(PARENT_ON&&typeof PC!='undefined'?1:0);
+      if(!/Report card for/.test(h)||h.split('<section').length!==nsec+1)bad(label+': expected '+nsec+' sections, got '+(h.split('<section').length-1));
       return h;
     };
     const now=STRK.idx(today()),dk=n=>STRK.key(now-n);
@@ -25274,9 +25277,10 @@ run('FEEDBACK-4: Tell us what you think in Grown-ups only, a mailto with no chil
   // the card's code reads nothing of the child's save
   const fsrc=code(gr.slice(gr.indexOf('const FB_MAIL='),fz));
   if(/\bS\.|\bS\[|PRF\.|gradeOf|gradeSpoken|NODES|\bP\(|localStorage|SKEY|petN\(/.test(fsrc))p.push('the card\'s code reads the child\'s save');
-  // 5. every new sentence is in the read-through, marked pending owner approval
+  // 5. every new sentence is in the read-through, marked pending owner approval, or (OWNER-1127: the owner approved every sentence on
+  // 2026-11-27, with no change notes) marked approved with the owner's date. The table and every sentence must still be listed.
   let doc='';try{doc=fs.readFileSync(path.join(ROOT,'docs','drafts','FEEDBACK-READ.md'),'utf8')}catch(e){p.push('docs/drafts/FEEDBACK-READ.md is missing')}
-  if(doc){if(!/pending owner approval/i.test(doc)||!/\| *Where *\| *Proposed text *\| *Why *\|/i.test(doc))p.push('FEEDBACK-READ.md: no where / proposed text / why table marked pending owner approval');
+  if(doc){if(!/pending owner approval|approved by the owner \d{4}-\d\d-\d\d/i.test(doc)||!/\| *Where *\| *Proposed text *\| *Why *\|/i.test(doc))p.push('FEEDBACK-READ.md: no where / proposed text / why table marked pending owner approval');
     for(const s of ['Tell us what you think','Ideas, problems or a kind word: write to hello@whistlestoplearning.com.','Email us','Review on Google Play','Whistlestop feedback (1.0.0, build v'])
       if(!doc.includes(s))p.push('FEEDBACK-READ.md does not list "'+s+'"')}
   return{problems:p,note:'web: e-mail only; Play: e-mail and the Play page; '+files.length+' src files scanned for a rating prompt'};
@@ -25963,7 +25967,9 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
     return JSON.stringify({BANK,ES_UNITS,SPN,SK:Object.keys(SK).map(k=>[k,SK[k].t,SK[k].max,SK[k].area]),PATHS,NODES,WR,ICO_SK,SCN_W,ST:REP.STRANDS,qs});
   };
   const off0=eval(jsOff+';('+snap.toString()+')()');
-  const off1=eval(js+';const __ap=deep15Apply(),__w=[d15Want("disc"),d15Want("es"),D15F];('+snap.toString()+')()+JSON.stringify([__ap,__w,DEEP15_ON])');
+  // OWNER-1127: the owner approved DEEP-15 on 2026-11-27, so the built js now carries DEEP15_ON = 1; the gate-off comparison sets it to 0
+  // first (as a build from an unreviewed read-through would; a let, as smoke.js sets it), so it still proves the gate off changes nothing
+  const off1=eval(js+';DEEP15_ON=0;const __ap=deep15Apply(),__w=[d15Want("disc"),d15Want("es"),D15F];('+snap.toString()+')()+JSON.stringify([__ap,__w,DEEP15_ON])');
   if(off1!==off0+JSON.stringify([false,[false,false,0],0]))bad('with the gate off the app is not exactly as without the DEEP-15 files (or deep15Apply did something)');
   note.off=require('crypto').createHash('md5').update(off0).digest('hex').slice(0,10);
   // 2.-5. with the gate on (as the owner's flip would build)
@@ -26108,7 +26114,9 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
     for(const f of ['index.html',...START_FILES])if(/Discovery Garden|D15_HINT|d15Rows/.test(f==='index.html'?html:files[f]))bad(f+' carries DEEP-15 items (they belong in part teaches)');
     if(!files[TF].includes('const D15 = {')||!files[TF].includes('function deep15Apply()'))bad(TF+' does not carry the items');
     if(Buffer.byteLength(files[TF])>=PART_WARN)bad(TF+' is over the part warning');
-    if(!/let DEEP15_ON = 0;/.test(html))bad('index.html is not built with DEEP15_ON = 0');
+    // OWNER-1127: the start-up page carries the flag the status line asks for (was: always 0, while the read-through was unreviewed)
+    const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
+    if(!new RegExp('let DEEP15_ON = '+on0+';').test(html))bad('index.html is not built with DEEP15_ON = '+on0+' (the status line of '+DOC+')');
     const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DEEP15_ON='+on);return pg};
     const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
     // off: the map loads what it always did, and nothing changes

@@ -4097,7 +4097,7 @@ function aboutCard(){
    leaves the tablet). In the Play app (PLAY.on) also the app's Play page, so a grown-up can review it; the web version shows the e-mail
    only. Plain links, no network call: the Play page opens outside the app like the privacy policy (target _blank, rel noopener: the TWA
    hands an address outside its own site to Chrome or the Play Store); the mailto is handed to the e-mail app and the app stays where
-   it is. No child screen ever asks for a rating. Words: docs/drafts/FEEDBACK-READ.md (pending owner approval). */
+   it is. No child screen ever asks for a rating. Words: docs/drafts/FEEDBACK-READ.md (approved by the owner 2026-11-27). */
 const FB_MAIL='hello@whistlestoplearning.com',FB_PLAY='https://play.google.com/store/apps/details?id='+PLAY.PKG;
 function feedbackSubject(){return`Whistlestop feedback (${RELEASE}, build ${BUILD})`}
 function feedbackCard(){

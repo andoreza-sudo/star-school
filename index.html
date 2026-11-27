@@ -7634,10 +7634,10 @@ function st7Go(i) {
   partsThen(['teach', 'teach12', 'teachrd'], () => ST7.shelf(nid(NODES.read[i])), {title: 'Stories', icon: 'skill-story', line: 'Getting the stories ready...'});
 }
 /* STORIES-7: BUILT by tools/build.py (never edit): 1 once docs/drafts/STORIES7-READ.md is reviewed, else 0 (no Stories stop) */
-let STORY7_ON = 0;
+let STORY7_ON = 1;
 /* DEEP-15: BUILT by tools/build.py (never edit): 1 once docs/drafts/DEEP15-READ.md says "status: reviewed <name> <date>",
    else 0: Discover and Spanish are as before (42e-deep15.js, 52y-deep15.js). A let: tools/smoke.js and tools/test.js set it to try the items. */
-let DEEP15_ON = 0;
+let DEEP15_ON = 1;
 /* DEEP-15 (BEST-APP roadmap 15): the drafted Discover and Spanish items (part teaches: 52y-deep15.js, d-deep15.js) reach a child only with
    DEEP15_ON (42d-deep15on.js, BUILT from docs/drafts/DEEP15-READ.md); with 0 nothing here does anything and both maps are as before.
    With 1, the Discover and Spanish maps load the part (d15Warm, beside teachWarm), which adds the items, the new Discover world and the two
@@ -7650,10 +7650,12 @@ function d15Warm(p) {
   if (!d15Want(p)) return;
   partsLoad(D15P).then(bad => { if (bad) return; deep15Apply(); D15F = 1; if (MAPP == p && $('#map')) pathMap(p); }); // opens where the child starts now (a 1st grader: the new world)
 }
+function d15Then(p, f) {
+  partsThen(D15P, () => { deep15Apply(); D15F = 1; f(); }, {title: PATHS[p].n, icon: UI.SUBJ_ICON[p] || 'map', line: 'Getting the new stops ready...'});
+}
 function d15Open(p, i) {
   const id = nid(NODES[p][i]);
-  partsThen(D15P, () => { deep15Apply(); D15F = 1; const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); },
-    {title: PATHS[p].n, icon: UI.SUBJ_ICON[p] || 'map', line: 'Getting the new stops ready...'});
+  d15Then(p, () => { const j = NODES[p].findIndex(n => nid(n) == id); if (j < 0) pathMap(p); else open(p, j); });
 }
 /* ---------- Map and world scenes (P4-09, DESIGN_SYSTEM 7; CSS 47-scenes.css; props, themes, world table: src/data/d-scenes.js) ----------
    A world band = a sky-to-ground CSS gradient (scene tokens) + one SVG: sun or moon, clouds, stars, rays, garland, horizon ridges,
@@ -10259,7 +10261,7 @@ function roundOops(){
 }
 /* OLDER-14: BUILT by tools/build.py (never edit): 1 once docs/drafts/OLDER14-READ.md says "status: reviewed <name> <date>",
    else 0: every grade keeps the chest and the pet (50b-older.js). A let: tools/smoke.js and tools/test.js set it to try the look. */
-let OLDER_ON = 0;
+let OLDER_ON = 1;
 /* ---------- OLDER-14 (BEST-APP roadmap 14): an older look for grades 4 to 6 ----------
    Gated by OLDER_ON (50a-olderon.js, built from docs/drafts/OLDER14-READ.md). With 0 nothing here changes anything: OLD14.on() and
    OLD14.noPet() are false for every child, so finish() draws the chest and Home the pet, exactly as before.
@@ -10868,6 +10870,9 @@ const MIS = {
   },
   // Tapping a mission: straight to it
   go(x) {
+    // OWNER-1127: with DEEP-15 approved, a Discover or Spanish mission first loads the new stops, then picks its stop on the new map
+    // (picked before, it was the old map's: a 1st grader's Nature Trail stop, outside the free sample's new start world)
+    if (x.k == 'round' || x.k == 'other' || x.k == 'speak') { const p = x.k == 'speak' ? 'es' : x.p; if (typeof d15Want == 'function' && d15Want(p)) return d15Then(p, () => MIS.go(x)); }
     SFX.whoosh();
     if (x.k == 'sprint') {
       const ss = FLU.sets();
@@ -12222,7 +12227,7 @@ const BT = {
 for (const c of BT.CAT) BT.types[c.id] = BT.entry(c); // P6-03: every catalog type, its code still to come (bt.<VER>.js)
 /* PARENT-11: BUILT by tools/build.py (never edit): 1 once docs/drafts/PARENT11-READ.md says "status: reviewed <name> <date>",
    else 0: the report card draws no Parent corner (41d-parent.js, part gate). A let: tools/smoke.js sets it to try the corner. */
-let PARENT_ON = 0;
+let PARENT_ON = 1;
 /* ---------- app mode: full screen, install button ---------- */
 const isApp=()=>matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
 let installEvt=null;

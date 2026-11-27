@@ -4,7 +4,7 @@ BEST-APP roadmap item 14. For a child in grade 4, 5 or 6: the round ends on a sc
 treasure chest to tap, and a Grown-ups switch can hide the pet. Grades below 4 are unchanged. The audit and plan are in
 `docs/drafts/OLDER14.md`.
 
-status: unreviewed
+status: reviewed owner 2026-11-27
 
 Status: **pending owner approval**. The code uses the proposed words below, but every grade keeps the chest and the pet until the owner
 approves them.
