@@ -2043,6 +2043,23 @@ html.calm .rw-burst{display:none}
 .hm-gsi .ic{width:36px;height:36px}
 .hm-gsk{display:block;font-weight:400;color:var(--ink-2)}
 .hm-gse{font-size:var(--fs-5)}
+/* OLDER-14 (src/js/50b-older.js): the score card of grades 4 to 6 (RW.done with o.card) and Home with the pet hidden. Tokens only,
+   no animation of its own (the card keeps the round end's rw-* motion, which Calm mode and reduced motion already cut). */
+.o14 .rw-hero{background:var(--surface)}
+.o14-dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:var(--s-2);margin:var(--s-3) 0 0;text-align:left}
+.o14-r{display:flex;flex-direction:column;gap:2px;min-width:0;padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
+.o14-r dt{font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--ink-2)}
+.o14-r dd{margin:0;font-family:var(--font-display);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink);font-variant-numeric:tabular-nums;
+  overflow-wrap:break-word}
+.o14-nb{display:inline-flex;align-items:center;gap:var(--s-2);margin:var(--s-3) 0 0;padding:var(--s-1) var(--s-4);border-radius:var(--r-pill);
+  background:var(--good-tint);color:var(--good-ink);font-size:var(--fs-3);line-height:var(--lh-3);font-weight:700}
+.o14-nb .ic{flex:none;color:var(--star-shade)}
+.o14-prz{flex:none;min-height:80px;padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
+.o14-prz:empty{display:none}
+/* Home without the pet: one column, the name over the missions and the chips */
+.hm .hm-hero.hm-np{grid-template-columns:minmax(0,1fr);grid-template-areas:"nm" "ms" "ch"}
+.hm-acts.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hm-acts.n1{grid-template-columns:minmax(0,1fr)}
 /* P2-24 sentences: story order (sent 5) puts whole sentences on the order tiles. A tile that holds a .sl span is a full-width row
    that wraps its words; the three slots above it become full-width rows too, so nothing runs off a 380 px screen. */
 .oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2)}
@@ -6521,15 +6538,18 @@ const RW = {
 
   // after the tap. o: {sc, n, rate (stars or -1 for none), line, tip (the next step after a low score, or ''),
   // next (true: the next stop is open)}. NAV-01: the three end choices (Play again #again, Next #nxt, Home #ehome), the bonus game above
+  // OLDER-14: o.card (50b-older.js OLD14.card: grades 4 to 6, the look approved) is the score card: the time, the best and New best!
+  // under the score, the stickers in a plain row (no chest); o.np: the pet is hidden (no cheering pet). Without them, as before.
   done(o) {
-    const art = o.rate >= 0 ? RW.rate(o.rate) : RW.pet();
+    const art = o.rate >= 0 ? RW.rate(o.rate) : o.np ? '' : RW.pet();
     const btns = NAV.end3({ again: 'again', next: o.next ? 'nxt' : '', home: 'ehome',
       extra: UI.btn('Bonus game', { kind: 'subject', p: 'play', icon: 'gamepad', id: 'bonus' }) });
     const stars = o.sc ? RW.row('star', 'star', `<b class="rw-num">+0</b> stars`, 'rwst') : '';
-    return `<div class="rw-res"><section class="rw-a"><div class="rw-hero">${art}` +
+    return `<div class="rw-res${o.card ? ' o14' : ''}"><section class="rw-a"><div class="rw-hero">${art}` +
       `<h1 class="rw-score" id="sc"><b>${o.sc}</b> out of ${o.n}</h1><p class="rw-line">${esc(o.line)}</p>` +
-      `${o.tip ? `<p class="rw-tip">${ico('target', 24)}<span>${esc(o.tip)}</span></p>` : ''}</div>` +
-      `<div class="rw-tre"><div class="rw-chest-o">${RW.rays()}${RW.chest(1)}</div><div class="rw-prz" id="prz"></div></div></section>` +
+      `${o.card ? OLD14.html(o.card) : ''}${o.tip ? `<p class="rw-tip">${ico('target', 24)}<span>${esc(o.tip)}</span></p>` : ''}</div>` +
+      (o.card ? `<div class="rw-prz o14-prz" id="prz"></div></section>` :
+      `<div class="rw-tre"><div class="rw-chest-o">${RW.rays()}${RW.chest(1)}</div><div class="rw-prz" id="prz"></div></div></section>`) +
       `<section class="rw-b"><div class="rw-feed"><div class="rw-msgs" id="msgs"></div><div class="rw-earn" id="earn">${stars}</div></div>` +
       `<div class="rw-dock" id="btns" style="visibility:hidden">${btns}</div></section></div>`;
   },
@@ -7149,7 +7169,7 @@ const NAV = {
   tabs() {
     const t = [['home', 'home', 'Home', () => home()], ['learn', 'map', 'Learn', () => learnHub()], ['games', 'gamepad', 'Games', () => gameRoom()]];
     if (typeof BT != 'undefined' && BT.list().length) t.push(['puzzles', 'puzzle', 'Puzzles', () => BT.hub()]);
-    t.push(['pet', 'paw', 'My Pet', () => care()]);
+    if (typeof petShown != 'function' || petShown()) t.push(['pet', 'paw', 'My Pet', () => care()]); // OLDER-14: not when the pet is hidden
     return t;
   },
   barHTML(cur) {
@@ -8240,6 +8260,8 @@ function hmHero() {
   const chips = UI.chip('star', S.stars, { id: 'starc', aria: S.stars + ' stars' }) + UI.chip('coin', S.coins, { aria: S.coins + ' coins' }) +
     `<button class="stat flame${n ? '' : ' off'}" id="stkb" aria-label="Streak calendar">${ico('flame', 32)}<b>${n}</b></button>` +
     (left > 0 ? UI.chip('ticket', fmtT(left), { aria: 'Game time' }) : '');
+  // OLDER-14: the pet hidden (a grade 4-6 child, Show my pet off; 50b-older.js): the name, missions and chips, no stage or grow meter
+  if (!petShown()) return `<div class="hm-hero hm-np"><div class="hm-name"><b>${esc(S.name)}</b></div>${mission}<div class="hm-chips">${chips}</div></div>`;
   return `<div class="hm-hero">
     <div class="hm-stage sc-${esc(S.wear.scene || 'meadow')}">${hmScene(S.wear.scene)}<div class="petbig ${petAura()}" id="pet" role="button" tabindex="0" aria-label="Pat ${esc(petN())}">${petHTML()}</div>${need}${askBtn('ak-hm')}</div>
     <div class="hm-name"><b>${esc(S.name)}</b> <span>&amp; ${pn}</span></div>
@@ -8314,6 +8336,8 @@ function hmActs() {
   const a = (id, icon, cls, label, extra = '') =>
     `<button class="hm-act" id="${id}"><span class="hm-ai ${cls}">${ico(icon, 30)}${extra}</span><span>${label}</span></button>`;
   const rc = raceOn(); // audit v195: from grade 1
+  // OLDER-14: the pet hidden: no Pet Care or Pet Shop (their screens and the coins are kept for when the pet is back)
+  if (!petShown()) return `<div class="hm-acts ${rc ? 'n2' : 'n1'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}${a('book', 'sticker-book', 't-book', 'Stickers')}</div>`;
   return `<div class="hm-acts${rc ? '' : ' n3'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}` +
     a('care', 'paw', 't-care', 'Pet Care', needs ? `<i class="hm-need" aria-label="Your pet would like a visit">!</i>` : '') +
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
@@ -8339,7 +8363,7 @@ function home(first){
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
    <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v198)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
-  const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
+  const pet=$('#pet');if(pet)pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   if($('#hmgift')&&S.voice)setTimeout(()=>{const g=$('#hmgift');if(g)say(g.textContent.trim())},$('#svw')?4000:700);
@@ -8347,7 +8371,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;if($('#shop'))$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};if($('#care'))$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -8426,7 +8450,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls==2?[x,yy,'Stories',false,false,false]:ls?[x,yy,'Learn with '+petN(),false,false,lsLearned(nid(N[i]))]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
-    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
+    +(cp&&petShown()?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp&&petShown()?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fbSay(`Learn it with ${petN()} first!`);return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
@@ -9879,7 +9903,7 @@ function hintsWarm(){
   requestAnimationFrame(()=>setTimeout(()=>partLoad('hints'),0));
 }
 var ASK_LM=null; // ASK-01: the first wrong try of the last Practice question missed: {q, v, k (the child's save key)}
-const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
+const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null,t0:Date.now()},o)); // OLDER-14: t0, the round's start (the score card's time)
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
@@ -10141,24 +10165,28 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass&&!(n1&&PLAY.lockedS(p,ni+1)),testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   if(newPass||testOk)try{SPC.sync()}catch(e){logErr('spaced check-ins: '+e.message)} // SPACED-9: a stop passed (or a world tested out) joins the check-ins (59-review.js)
-  const grew=stage(S.stars)>stage(before);save();
+  const card=OLD14.card(g,sc,n,p,ni),np=OLD14.noPet(); // OLDER-14 (50b-older.js): grades 4 to 6 with the look approved, else null and false
+  const grew=stage(S.stars)>stage(before)&&!np;save(); // OLDER-14: a hidden pet does not show the growing overlay (it still grows)
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.
+  // OLDER-14: everything above is paid before anything is drawn; the score card shows it at once (reveal() below, no chest to tap)
+  if(card){view('<div class="center rw-fin" id="fin"><h1 id="sc"></h1></div>');return reveal()} // (the score's h1 at once: view() adds no second one)
   view(RW.pre());nrSay('Tap the treasure chest!','#chest',700); // AUDIO-12: the pre card's line, for a non-reader (12-speech.js)
   // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
   setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
-  $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
+  $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();reveal()};
+  function reveal(){const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
     const low=!g.mix&&!g.test&&stars==0;
     // audit v195: the line goes by the share right (6 of 6 said "Keep practicing"); a beaten boss shows the questions it took
     const shown=g.boss&&g.won&&g.asked>0?g.asked:n,sh=k=>sc*10>=k*shown;
-    const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    const line=sh(9)?(card?OLDW.top:'You are a superstar!'):sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
     const need=starNeed(g.n0||n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
-    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
+    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk),card,np}); // NAV-01: Next whenever the next stop is open; OLDER-14: card, np
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
@@ -10175,7 +10203,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
       (PT.mast&&nextI>=0?`<div class="rw-ph">${ico('hint',20)}<span>New stops earn way more game time!</span></div>`:PT.rep>=1?`<div class="rw-ph">${ico('hint',20)}<span>Try a different stop to earn more!</span></div>`:'');
-    const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',`+${coins} coins for the pet shop!`),null]];
+    const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',np?OLD14.F(OLDW.coins,{n:coins}):`+${coins} coins for the pet shop!`),null]];
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
     if(unl&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
@@ -10190,7 +10218,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     if(g.mix)M('target','Great practice on the tricky ones!',null);
     msgs.forEach(([to,h,s,x])=>{const e=add(to,h);setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
     if(ck)CHK.offerBind(p,ni);
-    };
+    }
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;
   o.innerHTML=`<div class="rw-card rw-growc">${RW.rays()}<div class="grow">${petArt(before)}</div><h1>${hatch?'Your egg is hatching!':`Whoa! ${esc(petN())} is growing!`}</h1></div>`;document.body.appendChild(o);
@@ -10209,6 +10237,57 @@ function roundOops(){
   document.body.appendChild(o);
   $('#oops').onclick=()=>{o.remove();home(true)};
 }
+/* OLDER-14: BUILT by tools/build.py (never edit): 1 once docs/drafts/OLDER14-READ.md says "status: reviewed <name> <date>",
+   else 0: every grade keeps the chest and the pet (50b-older.js). A let: tools/smoke.js and tools/test.js set it to try the look. */
+let OLDER_ON = 0;
+/* ---------- OLDER-14 (BEST-APP roadmap 14): an older look for grades 4 to 6 ----------
+   Gated by OLDER_ON (50a-olderon.js, built from docs/drafts/OLDER14-READ.md). With 0 nothing here changes anything: OLD14.on() and
+   OLD14.noPet() are false for every child, so finish() draws the chest and Home the pet, exactly as before.
+   With 1, a child in grade 4, 5 or 6 (gradeOf() >= 4) gets:
+   - the score card at the end of a round (finish(), 50-round.js) at once, with no chest to tap: the score, the time, the stars, the
+     personal best for that stop and "New best!" when it is beaten. Every payout is made before the card is drawn, by the same lines of
+     finish() as the chest flow; the card only shows them without the tap.
+   - a Grown-ups switch "Show my pet" (80-grown.js; S.petOff, absent = shown). Off hides the pet on Home (the stage, the grow meter, the
+     Pet Care and Pet Shop buttons, the My Pet tab), on the map, and at the round end (the cheering pet, the growing overlay). Nothing
+     about the pet is deleted, and turning the switch on again brings everything back.
+   Save: S.pb = {'<path>:<stop id>': [right, questions, ms]}, the best round of each stop (a bigger share right, or the same share in
+   less time). It is written only for a grade 4-6 child with the gate on. Old saves have none: the bests start empty, no migration. */
+const OLDW = {
+  time: 'Time', best: 'Your best', newBest: 'New best!', bestRow: '{sc} out of {n} in {t}', top: 'Excellent round!', coins: '+{n} coins!',
+  petSw: 'Show my pet',
+  petNote: 'Grades 4 to 6. Off hides the pet on Home, on the map and at the end of a round. Nothing is deleted: the pet, its costumes and the coins are kept for when it is back on.',
+};
+const OLD14 = {
+  on: () => !!OLDER_ON && gradeOf() >= 4,
+  noPet: () => OLD14.on() && S.petOff === true,
+  key: (p, i) => p + ':' + nid(NODES[p][i]),
+  ms: g => g && g.t0 > 0 ? Math.min(5999000, Math.max(0, Date.now() - g.t0)) : 0,
+  fmt: ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
+  F: (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => o[k] != null ? o[k] : m),
+  // a = [right, questions, ms] beats b: a bigger share right, or the same share in less time (no b: a is the first)
+  better: (a, b) => !b || a[0] * b[1] > b[0] * a[1] || (a[0] * b[1] == b[0] * a[1] && a[2] < b[2]),
+  // finish() calls it before save(): null keeps the chest (gate off, or grade 3 and below); else the card's data {ms, best, isNew},
+  // and a stop round updates that stop's best. A Tricky Mix, Daily Review, test-out or boss round has a time but no best.
+  card(g, sc, n, p, ni) {
+    if (!OLD14.on()) return null;
+    const c = { ms: OLD14.ms(g), best: null, isNew: false };
+    if (!p || !(ni >= 0) || !NODES[p] || !NODES[p][ni] || g.mix || g.test || g.boss || g.daily) return c;
+    if (!S.pb || typeof S.pb != 'object' || Array.isArray(S.pb)) S.pb = {};
+    const k = OLD14.key(p, ni), o = S.pb[k], was = Array.isArray(o) && o.length == 3 && o.every(x => x >= 0) ? o : null, now = [sc, n, c.ms];
+    if (OLD14.better(now, was)) { S.pb[k] = now; c.isNew = !!was; }
+    c.best = S.pb[k];
+    return c;
+  },
+  // the card's rows under the score (RW.done): the time, the best, New best!
+  html(c) {
+    const row = (l, v, id) => `<div class="o14-r" id="${id}"><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`, b = c.best;
+    return `<dl class="o14-dl">${c.ms ? row(OLDW.time, OLD14.fmt(c.ms), 'o14t') : ''}` +
+      `${b ? row(OLDW.best, OLD14.F(OLDW.bestRow, { sc: b[0], n: b[1], t: OLD14.fmt(b[2]) }), 'o14b') : ''}</dl>` +
+      `${c.isNew ? `<p class="o14-nb" id="o14nb">${ico('trophy', 26)}<span>${esc(OLDW.newBest)}</span></p>` : ''}`;
+  },
+};
+// the pet is shown (Home, the map, the round end): always, unless a grade 4-6 child turned it off with the look approved
+const petShown = () => !OLD14.noPet();
 /* ---------- mastery tracking and in-round adaptation (P1-08; ROADMAP 3.3) ----------
    Saved data: S.mast = {nid: {n, p, ms, d, last, md}}, keyed by stop id nid() = skill + level ('add1'). Optional field:
    read with defaults, written on the first try at a question of a stop that is on some map (any round: stop, boss, test out,

@@ -25770,6 +25770,175 @@ run('STORIES-7: decodable mini-stories, the checker, the read-along spans and cl
   return{problems:p,note:`${ST.list.length} stories (${D.STAGES.map(s=>s.id+' '+(per[s.id]||0)).join(', ')}), ${words} words checked, ${nq} questions; status ${st} (STORY7_ON ${on})`};
 });
 
+// ---- OLDER-14 (BEST-APP roadmap 14, docs/drafts/OLDER14.md; src/js/50b-older.js): grades 4 to 6 get a score card with a personal best and
+// no chest, and Grown-ups can hide the pet. Whole rounds on fake elements (as the practice audit check): 1. the gate off changes nothing for
+// any grade; 2. on: grades 4 to 6 get the score card at once, grades below 4 the chest; 3. every payout is the chest flow's, the same seeded
+// rounds both ways; 4. personal bests and New best!; 5. Show my pet hides and shows the pet and loses no data; 6. old saves; 7. the gate
+// (the one-line flip), the words in the read-through, the parts, tokens only.
+run('OLDER-14: grades 4 to 6 score card and personal best, no chest, payouts as the chest flow, Show my pet, old saves, the gate',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),cpx=require('child_process'),os=require('os'),p=[],store={},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const DOC='docs/drafts/OLDER14-READ.md',doc=rd(DOC),code=rd('src/js/50b-older.js'),css=rd('src/css/42b-older.css');
+  const fk=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):k==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+    k==='length'?0:k===Symbol.iterator?(function*(){}):k==='then'?undefined:['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(k)?300:k==='isConnected'?true:fk,apply:()=>fk,set:()=>true});
+  const docu={querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}};
+  const ctx=E.loadApp(null,{localStorage:{getItem:k=>k in store?store[k]:null,setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:docu,
+    setInterval(){return 0},clearInterval(){},requestAnimationFrame(){return 0},cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),innerWidth:1024,innerHeight:768,removeEventListener(){},__store:store,__fk:fk});
+  Object.assign(docu,{querySelector:()=>fk,getElementById:()=>fk,createElement:()=>fk,createElementNS:()=>fk,body:fk,hidden:false});
+  const R=x=>vm.runInContext(x,ctx),J=x=>JSON.parse(R(x));
+  let note='';
+  try{
+  R(`var __off=0,__T=Date.UTC(2026,10,27,15);{const D0=Date;Date=class extends D0{constructor(...a){if(a.length)super(...a);else super(__T+__off)}static now(){return __T+__off}}}
+   say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};flyStar=()=>{};confetti=()=>{};cheerSay=()=>false;bossHit=()=>{};bossKO=()=>{};hintsWarm=()=>{};
+   spkProbe=()=>{};for(const k in SFX)if(typeof SFX[k]=='function')SFX[k]=()=>{};
+   var __OK={},__NO={};for(const k in KIND){const K=KIND[k],s0=K.same;K.right=()=>{};K.reveal=()=>{};K.retry=()=>{};K.spoken=()=>'';K.same=(q,v)=>v===__OK?true:v===__NO?false:s0?s0(q,v):String(v)===String(q.ans)}
+   renderQ=function(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false;actQStart(q.sk,q.lv);mastShow(q)};
+   function __step(g){if(g.done<g.n){g.q=makeQ();g.retry=false;g.__pend=true;renderQ()}else if(g.missed.length){g.q=g.missed.shift();g.retry=true;g.__pend=true;renderQ()}}
+   next=function(){if(G&&!G.dead)__step(G)};
+   function __rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+   function __fresh(grade,raw){for(const k in __store)delete __store[k];loadSave(raw||null);migrate();if(!raw)S.name='Ava';S.grade=grade;S.voice=false;for(const p in PATHS)S.maps[p]=S.maps[p]||{};G=null;SPK.mic='?';SPK.deny=0;S.unlockAll=true;__off=0}
+   // what the round end draws and pays: the views, every row, card and sticker, RW.done's data and markup
+   var __chest={},__log=[],__views=[],__done=null,__html='';
+   var __app=new Proxy({},{get:(t,k)=>k==='innerHTML'?'':__fk[k],set:(t,k,v)=>{if(k==='innerHTML')__views.push(String(v));return true}}); // view() writes #app
+   document.querySelector=s=>s=='#chest'?__chest:s=='#app'?__app:__fk;
+   {const d0=RW.done;RW.done=o=>{__done=o;__html=d0(o);return __html};
+    for(const k of ['row','msg','sticker']){const f=RW[k];RW[k]=(...a)=>{const h=f(...a);__log.push(k+':'+h);return h}}}
+   // a whole stop round of path p, stop i: W = the question numbers missed on the first try, sec = seconds a question takes
+   function __round(p,i,W,sec,seed){__chest={};__log=[];__views=[];__done=null;__html='';Math.random=__rng(seed||7);RNG=__rng((seed||7)+99);start(p,i);
+     const g=G;let n=0;while(g.__pend&&n++<80){const ok=g.retry||!W.includes(g.done);__off+=(sec||3)*1000;G.qt=Date.now()-3000;
+       if(ok)check(__OK,__fk);else{check(__NO,__fk);if(!G.lock)check(__NO,__fk)}g.__pend=false;__step(g)}
+     finish();const chest=typeof __chest.onclick=='function';if(chest)__chest.onclick();return g}
+   // the save without the bests, for the payout comparison
+   function __pay(){const s=JSON.parse(JSON.stringify(S));delete s.pb;return JSON.stringify(s)}
+   function __end(chest){const d=__done||{};return JSON.stringify({chest,views:__views.map(v=>v.includes('id="chest"')?'chest':v),log:__log,sc:d.sc,n:d.n,line:d.line,tip:d.tip,rate:d.rate,next:d.next,card:d.card||null,np:!!d.np,pay:__pay(),html:__html})}`);
+  const stop=g=>R(`NODES.math.findIndex(n=>n.sk!='boss'&&PATHS.math.worlds[n.wi].g==${g})`);
+  const iA=stop(5),iB=R(`NODES.math.findIndex((n,j)=>j>${iA}&&n.sk!='boss'&&PATHS.math.worlds[n.wi].g==5)`);
+  if(iA<0||iB<0)throw new Error('no grade 5 math stops');
+  const play=(grade,on,W,sec,seed,petOff)=>{R(`OLDER_ON=${on};__fresh(${grade});${petOff?'S.petOff=true;':''}`);const g=R(`__round('math',${iA},${JSON.stringify(W)},${sec},${seed})`);
+    return J(`(()=>{const e=JSON.parse(__end(${'typeof __chest.onclick=="function"'}));e.ms=G.t0?Date.now()-G.t0:0;return JSON.stringify(e)})()`)};
+  // 1. the gate off: every grade gets the chest, the approved line, the pet, no bests; a hidden pet flag changes nothing
+  for(const gr of [-1,0,2,3,4,5,6]){
+    const a=play(gr,0,[2,5],3,11),b=play(gr,0,[2,5],3,11,true);
+    if(!a.chest||a.views[0]!=='chest'||a.card||a.np||/o14|New best|Your best/.test(a.html)||!/rw-chest-o/.test(a.html))p.push('gate off, grade '+gr+': not the chest flow '+JSON.stringify({chest:a.chest,v:a.views[0],card:a.card,np:a.np}));
+    if(JSON.parse(a.pay).pb!==undefined)p.push('gate off, grade '+gr+': a personal best was saved');
+    const t=play(gr,0,[],3,11);if(t.line!=='You are a superstar!')p.push('gate off, grade '+gr+': 10 of 10 says "'+t.line+'"');
+    const nf=x=>{const o=JSON.parse(x);delete o.petOff;return JSON.stringify(o)};
+    if(JSON.stringify(Object.assign({},a,{pay:''}))!==JSON.stringify(Object.assign({},b,{pay:''}))||nf(a.pay)!==nf(b.pay))p.push('gate off, grade '+gr+': S.petOff changed the round end: '+Object.keys(a).filter(k=>JSON.stringify(a[k])!==JSON.stringify(b[k])).map(k=>k=='pay'?(A=>{const B=JSON.parse(b.pay);return 'pay '+Object.keys(Object.assign({},A,B)).filter(x=>JSON.stringify(A[x])!==JSON.stringify(B[x])).join(' ')})(JSON.parse(a.pay)):k).join(', '));
+    R(`OLDER_ON=0;__fresh(${gr});`);const h0=R('hmHero()+hmActs()+JSON.stringify(NAV.tabs().map(t=>t[0]))');R('S.petOff=true');const h1=R('hmHero()+hmActs()+JSON.stringify(NAV.tabs().map(t=>t[0]))');
+    if(h0!==h1||!h0.includes('id="pet"')||!h0.includes('id="care"')||!h0.includes('"pet"]'))p.push('gate off, grade '+gr+': Home or the bar changed with S.petOff');
+  }
+  if(!/on: \(\) => !!OLDER_ON && gradeOf\(\) >= 4,/.test(code)||!/noPet: \(\) => OLD14\.on\(\) && S\.petOff === true,/.test(code)||!/const petShown = \(\) => !OLD14\.noPet\(\);/.test(code))p.push('50b-older.js: OLD14.on / noPet / petShown do not all start from OLDER_ON and the grade');
+  // 2. the gate on: the score card at once for grades 4 to 6, the chest below 4
+  for(const gr of [-1,0,1,2,3]){const a=play(gr,1,[2],3,5);if(!a.chest||a.views[0]!=='chest'||a.card)p.push('gate on, grade '+gr+': not the chest');}
+  for(const gr of [4,5,6]){const a=play(gr,1,[2],3,5);
+    if(a.chest||a.views.length!==1||a.views[0]!=='<div class="center rw-fin" id="fin"><h1 id="sc"></h1></div>'||!a.card)p.push('gate on, grade '+gr+': the chest is still there '+JSON.stringify({chest:a.chest,views:a.views.map(v=>v.slice(0,60))}));
+    const h=a.html;
+    for(const id of ['sc','prz','earn','msgs','btns','bonus','again','ehome','rwst','o14t','o14b'])if(!h.includes('id="'+id+'"'))p.push('score card, grade '+gr+': no #'+id);
+    if(/rw-chest|Tap the treasure|treasure chest/.test(h)||(h.match(/<h1/g)||[]).length!==1)p.push('score card, grade '+gr+': a chest, or not one heading');
+    if(!h.includes('<b>9</b> out of 10')||!h.includes('<dt>Time</dt><dd>0:33</dd>')||!h.includes('<dt>Your best</dt><dd>9 out of 10 in 0:33</dd>'))p.push('score card, grade '+gr+': '+h.slice(h.indexOf('<h1')).replace(/<svg[\s\S]*?<\/svg>/g,'').slice(0,400));
+    if(a.rate!==2||!/aria-label="2 of 3 stars"/.test(h))p.push('score card, grade '+gr+': the stars '+a.rate);
+    if(a.line!=='Excellent round!')p.push('score card, grade '+gr+': 9 of 10 says "'+a.line+'"');}
+  // the other lines are the approved ones (8, 6 and 4 of 10)
+  for(const W of [[1,2],[1,2,3],[1,2,3,4,5],[0,1,2,3,4,5,6]]){const a=play(5,1,W,3,5),sh=k=>a.sc*10>=k*a.n,want=sh(9)?'Excellent round!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    if(a.line!==want)p.push('score card: '+a.sc+' of '+a.n+' says "'+a.line+'", want "'+want+'"')}
+  // 3. payouts: the same seeded rounds (wrong answers, seconds, random) with the chest and with the score card, grade 5 and 4
+  let pays=0;
+  for(const gr of [4,5])for(const [W,sec,seed] of [[[],3,1],[[1,4],2,2],[[0,2,4,6,8],4,3],[[0,1,2,3,4,5,6],3,4]]){
+    const a=play(gr,0,W,sec,seed),b=play(gr,1,W,sec,seed);pays++;
+    if(a.pay!==b.pay){const A=JSON.parse(a.pay),B=JSON.parse(b.pay);p.push('payouts, grade '+gr+' missed '+W+': the save differs in '+Object.keys(Object.assign({},A,B)).filter(k=>JSON.stringify(A[k])!==JSON.stringify(B[k])).join(', '))}
+    if(JSON.stringify(a.log)!==JSON.stringify(b.log))p.push('payouts, grade '+gr+' missed '+W+': the rows, cards or stickers differ');
+    for(const k of ['sc','n','tip','rate','next'])if(a[k]!==b[k])p.push('payouts, grade '+gr+' missed '+W+': '+k+' '+a[k]+' / '+b[k]);
+    if(!(b.log.some(x=>/^row:.*\+\d+ coins for the pet shop!/.test(x)))||!b.log.some(x=>/^sticker:/.test(x))||!b.log.some(x=>/^row:.*of game time!/.test(x)))p.push('payouts, grade '+gr+': the card shows no coins, sticker or game time');}
+  // the same with the pet hidden: the same save (but the flag) and rows, but the coin row's words
+  {const a=play(5,0,[3],3,9,true),b=play(5,1,[3],3,9,true);
+   if(a.pay!==b.pay)p.push('payouts with the pet hidden: the save differs');
+   const strip=l=>l.map(x=>x.replace(/\+(\d+) coins for the pet shop!/,'+$1 coins!'));
+   if(JSON.stringify(strip(a.log))!==JSON.stringify(b.log)||!b.log.some(x=>/\+\d+ coins!</.test(x)))p.push('payouts with the pet hidden: the rows differ in more than the coin words');}
+  // 4. personal bests: the first round sets it, a better share or the same share faster beats it (New best!), worse or slower does not
+  R(`OLDER_ON=1;__fresh(5)`);
+  const rb=(W,sec,i=iA)=>J(`(()=>{__round('math',${i},${JSON.stringify(W)},${sec},3);const c=__done.card;return JSON.stringify({best:c.best,isNew:c.isNew,ms:c.ms,nb:/id="o14nb"/.test(__html)&&__html.includes('New best!'),pb:S.pb})})()`);
+  const k=R(`OLD14.key('math',${iA})`);
+    // (the time: every question and each missed one again at the end, sec seconds each)
+  const steps=[[[1,2],3,[8,10,36000],false],[[1],3,[9,10,33000],true],[[3,4,5],2,[9,10,33000],false],[[],4,[10,10,40000],true],[[],5,[10,10,40000],false],[[],2,[10,10,20000],true],[[7],1,[10,10,20000],false]];
+  steps.forEach(([W,sec,best,isNew],j)=>{const r=rb(W,sec);
+    if(JSON.stringify(r.best)!==JSON.stringify(best)||r.isNew!==isNew||r.nb!==isNew||JSON.stringify(r.pb[k])!==JSON.stringify(best))p.push('personal best, round '+(j+1)+': '+JSON.stringify(r)+', want '+JSON.stringify({best,isNew}))});
+  {const r=rb([0],3,iB);if(r.isNew||JSON.stringify(r.best)!==JSON.stringify([9,10,33000])||Object.keys(r.pb).length!==2)p.push('personal best: another stop shares a best '+JSON.stringify(r))}
+  const B=J(`JSON.stringify([[[8,10,1],[4,5,9]],[[4,5,9],[8,10,10]],[[4,5,9],[8,10,8]],[[7,10,5],[8,10,99]],[[6,8,50],[7,10,10]],[[0,10,1],null]].map(([a,b])=>OLD14.better(a,b)))`);
+  if(B.join()!=='true,true,false,false,true,true')p.push('OLD14.better (a bigger share, or the same share faster): '+B.join());
+  // a damaged best is replaced, never kept or thrown on; Tricky Mix, Daily Review and test-out show the time but keep no best
+  for(const bad of ['"x"','[1,2]','[-1,10,5]','{"a":1}','null'])
+    {R(`OLDER_ON=1;__fresh(5);S.pb={${JSON.stringify(k)}:${bad}}`);const r=rb([],3);if(r.isNew||JSON.stringify(r.best)!==JSON.stringify([10,10,30000]))p.push('a damaged best '+bad+': '+JSON.stringify(r))}
+  {R(`OLDER_ON=1;__fresh(5);S.pb=[1,2]`);const r=rb([],3);if(Array.isArray(r.pb)||!r.pb[k])p.push('a damaged S.pb is not replaced')}
+  {const r=J(`(()=>{OLDER_ON=1;__fresh(5);const o=[];for(const g of [{mix:true},{daily:true,mix:true},{test:{wi:0}},{boss:{name:'x'}}]){G=newG(Object.assign({path:g.mix?null:'math',node:g.mix?-1:${iA}},g));__off+=12000;const c=OLD14.card(G,7,10,G.path,G.node);o.push([c.ms,c.best,c.isNew])}return JSON.stringify({o,pb:S.pb||null})})()`);
+   if(r.o.some(x=>x[0]!==12000||x[1]!==null||x[2])||r.pb&&Object.keys(r.pb).length)p.push('mix, review, test-out, boss: '+JSON.stringify(r))}
+  if(R(`OLD14.fmt(0)+' '+OLD14.fmt(59499)+' '+OLD14.fmt(61000)+' '+OLD14.fmt(5999000)`)!=='0:00 0:59 1:01 99:59')p.push('the time format');
+  // 5. Show my pet: off hides the pet on Home, the bar, the map and the round end; on brings it back; no pet data is touched
+  {R(`OLDER_ON=1;__fresh(5);S.pet='dino';S.petName='Rex';S.stars=400;S.coins=77;S.owned.crown=1;S.wear.hat='crown';careTick();S.care.food=55;save()`);
+   const keep=()=>R(`JSON.stringify([S.pet,S.petName,S.stars,S.coins,S.owned,S.wear,S.care.food,S.stickers])`),k0=keep();
+   const look=()=>J(`JSON.stringify({home:hmHero()+hmActs(),tabs:NAV.tabs().map(t=>t[0]),shown:petShown()})`);
+   const on0=look();R('S.petOff=true');const off=look();R('delete S.petOff');const on1=look();
+   if(!on0.shown||!on0.home.includes('id="pet"')||!on0.home.includes('id="care"')||!on0.home.includes('id="shop"')||!on0.tabs.includes('pet'))p.push('Show my pet on: Home lacks the pet '+JSON.stringify(on0.tabs));
+   if(off.shown||/id="pet"|id="care"|id="shop"|hm-grow|hm-stage|Rex/.test(off.home)||off.tabs.includes('pet')||!off.home.includes('id="book"')||!off.home.includes('id="stkb"')||!off.home.includes('hm-np'))p.push('Show my pet off: Home still shows the pet '+off.home.replace(/<svg[\s\S]*?<\/svg>/g,'').slice(0,300));
+   if(JSON.stringify(on0)!==JSON.stringify(on1))p.push('Show my pet: off and on again does not give the same Home');
+   if(keep()!==k0)p.push('Show my pet: the pet data changed');
+   R('S.petOff=true;S.grade=3');if(!R('petShown()')||!R('hmHero()').includes('id="pet"'))p.push('Show my pet off, then grade 3: the pet stays hidden');
+   R('S.grade=5');const m=J(`(()=>{const a=[];const q0=document.querySelector;let h='';const mp=new Proxy({},{get:(t,k)=>k==='innerHTML'?h:k==='clientWidth'?400:__fk[k],set:(t,k,v)=>{if(k==='innerHTML')h=String(v);return true}});document.querySelector=s=>s=='#map'?mp:__fk;for(const off of [true,false]){if(off)S.petOff=true;else delete S.petOff;pathMap('math');drawMap('math');a.push(/mappet/.test(h))}document.querySelector=q0;return JSON.stringify(a)})()`);
+   if(m.join()!=='false,true')p.push('the map pet with Show my pet off, on: '+m.join());
+   // the round end: no cheering pet, no growing overlay (the pet still grows), the coin words
+   const r=J(`(()=>{S.petOff=true;S.stars=GROW[2]-1;let grew=0;const g0=growShow,t0=setTimeout;growShow=()=>{grew++};setTimeout=f=>{try{f()}catch(e){}return 0}; // the end card's timers at once
+     const st=stage();__round('math',${iA},[],3,4);const a={grew,st0:st,st1:stage()};
+     const all=[0,1,2,3,4,5,6,7,8,9];__round('math',${iA},all,3,4);Object.assign(a,{pet:/rw-pet/.test(__html),rate:__done.rate,np:__done.np});
+     delete S.petOff;__round('math',${iA},all,3,4);a.pet2=/rw-pet/.test(__html);S.stars=GROW[3]-1;__round('math',${iA},[],3,4);a.grew2=grew;growShow=g0;setTimeout=t0;return JSON.stringify(a)})()`);
+   if(r.pet||!r.np||r.rate!==-1||r.grew!==0||r.st1<=r.st0||!r.pet2||r.grew2!==1)p.push('the round end with the pet hidden: '+JSON.stringify(r));
+   const gs=rd('src/js/80-grown.js');
+   if(!/\$\{OLD14\.on\(\)\?UI\.sw\(OLDW\.petSw,petShown\(\),'petshow'\):''\}/.test(gs)||!/if\(\$\('#petshow'\)\)\$\('#petshow'\)\.onchange=e=>\{if\(e\.target\.checked\)delete S\.petOff;else S\.petOff=true;save\(\)\}/.test(gs))p.push('Grown-ups: no Show my pet switch that only sets S.petOff');
+   const gw=J(`(()=>{const o=[];for(const [on,gr] of [[0,5],[1,3],[1,5]]){OLDER_ON=on;S.grade=gr;o.push(OLD14.on())}return JSON.stringify(o)})()`);
+   if(gw.join()!=='false,false,true')p.push('the switch is offered for '+gw.join());}
+  // 6. old saves: no bests, no flag; the pet shows, the first round sets the best, nothing is migrated
+  for(const f of ['legacy-single-map','legacy-index-maps','midway','maxed','tricky']){
+    const raw=fs.readFileSync(path.join(__dirname,'fixtures',f+'.json'),'utf8');
+    const r=J(`(()=>{OLDER_ON=1;__fresh(5,${JSON.stringify(raw)});const a={pb:S.pb===undefined,off:S.petOff===undefined,shown:petShown(),pet:S.pet};__round('math',${iA},[2],3,6);
+      a.card=__done.card;a.pet2=S.pet;return JSON.stringify(a)})()`);
+    if(!r.pb||!r.off||!r.shown||r.pet!==r.pet2||!r.card||r.card.isNew||JSON.stringify(r.card.best)!==JSON.stringify([9,10,33000]))p.push('old save '+f+': '+JSON.stringify(r));
+  }
+  if(/\bpb\b|petOff/.test(rd('src/js/00-core.js')))p.push('00-core.js: a migration touches the bests or the pet flag (old saves need none)');
+  note=`${pays} round pairs paid alike, ${steps.length} best steps`;
+  }catch(e){p.push('threw: '+(e.stack||e).toString().split('\n').slice(0,3).join(' '))}
+  // 7. the gate: one status line, OLDER_ON as the read-through says, the flip through build.py --words-check
+  const st=(doc.match(/^status: (.*)$/m)||[])[1]||'',rev=/^reviewed\b/.test(st),on=Function(rd('src/js/50a-olderon.js')+';return OLDER_ON')();
+  if((doc.match(/^status:/gm)||[]).length!==1)p.push(DOC+' needs exactly one status line (the one-line flip)');
+  if(!rev&&st!=='unreviewed')p.push(DOC+': the status line is "'+st+'"');
+  if(rev&&!revNamed(DOC))p.push(DOC+': reviewed, but its status line names no reviewer and date');
+  if(on!==(rev?1:0))p.push('OLDER_ON is '+on+' with the read-through '+(rev?'reviewed':'not reviewed'));
+  if(!rev&&!/pending owner approval/i.test(doc))p.push(DOC+' is not marked pending owner approval');
+  if(!rd('index.html').includes('let OLDER_ON = '+on+';'))p.push('index.html does not carry OLDER_ON = '+on);
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'older14-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-words.js'),rd('src/js/52e-words.js').replace(/const LSW = \{[\s\S]*$/,'const LSW = {\n};\n'));
+  const oon=n=>rd('src/js/50a-olderon.js').replace(/let OLDER_ON = [01];/,'let OLDER_ON = '+n+';');
+  const chk=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--words-check',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  const put=(line,n)=>{fs.writeFileSync(path.join(tmp,DOC),doc.replace(/^status: .*$/m,line));fs.writeFileSync(path.join(tmp,'src/js/50a-olderon.js'),oon(n))};
+  put('status: unreviewed',0);if(chk()!==0)p.push('the words check refuses OLDER_ON 0 for an unreviewed read-through');
+  put('status: unreviewed',1);if(chk()!==1)p.push('the words check passes OLDER_ON 1 for an unreviewed read-through');
+  put('status: reviewed 2026-11-27',1);if(chk()!==1)p.push('the words check passes OLDER_ON 1 for a status line with no reviewer');
+  put('status: reviewed Test Owner 2026-11-27',0);if(chk()!==1)p.push('the words check passes OLDER_ON 0 for a reviewed read-through (the flip did not turn it on)');
+  put('status: reviewed Test Owner 2026-11-27',1);if(chk()!==0)p.push('the words check refuses OLDER_ON 1 for a reviewed read-through');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // every new sentence is in the read-through's table; the round end uses them from OLDW
+  const rows=doc.split('\n').filter(l=>/^\| .+ \| .+ \| .* \|$/.test(l)).map(l=>l.split(' | ')[1]);
+  const W=Function(code.replace(/^const OLD14[\s\S]*$/m,'')+';return OLDW')();
+  for(const k in W)if(!rows.includes(W[k]))p.push(DOC+' does not list OLDW.'+k+' "'+W[k]+'"');
+  const rnd=rd('src/js/50-round.js'),rw=rd('src/js/18-reward-art.js');
+  if(!/const line=sh\(9\)\?\(card\?OLDW\.top:'You are a superstar!'\):sh\(7\)\?'Fantastic work!'/.test(rnd)||!/np\?OLD14\.F\(OLDW\.coins,\{n:coins\}\):`\+\$\{coins\} coins for the pet shop!`/.test(rnd))p.push('50-round.js: the card\'s line or coin words are not OLDW\'s');
+  if(!/if\(card\)\{view\('<div class="center rw-fin" id="fin"><h1 id="sc"><\/h1><\/div>'\);return reveal\(\)\}/.test(rnd)||!/\$\('#chest'\)\.onclick=\(\)=>\{if\(opened\)return;opened=true;clearInterval\(rt\);SFX\.open\(\);reveal\(\)\};/.test(rnd))p.push('50-round.js: the score card and the chest tap do not share reveal()');
+  const pay=rnd.slice(rnd.indexOf('function finish()'),rnd.indexOf('const card=OLD14.card('));if(/OLD14|OLDER_ON|OLDW/.test(pay))p.push('50-round.js: the older look reaches the payout code above the card');
+  if(!/const art = o\.rate >= 0 \? RW\.rate\(o\.rate\) : o\.np \? '' : RW\.pet\(\);/.test(rw))p.push('18-reward-art.js: RW.done does not drop the pet only with o.np');
+  // the parts, tokens, no network
+  for(const f of ['50a-olderon.js','50b-older.js','42b-older.css'])if(partOf(f))p.push(f+' is not in index.html');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(|@keyframes|filter\s*:/.test(css.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('42b-older.css: a colour that is not a token, a file, keyframes or a filter');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage/.test(code))p.push('50b-older.js reaches outside the tablet');
+  if(/magic|evolution/i.test(code+css+doc))p.push('a banned theme word (CONTENT-01)');
+  return{problems:p,note:note+`; status ${st} (OLDER_ON ${on})`};
+});
+
 Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){

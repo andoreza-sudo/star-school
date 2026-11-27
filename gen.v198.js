@@ -4155,7 +4155,7 @@ function grown(){let armed=false;
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
   <div id="gw-pers" hidden></div>
-  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (lesson stops on the math and reading maps; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
+  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (lesson stops on the math and reading maps; off: practice rounds only)',!TEACH.off,'lson')}${OLD14.on()?UI.sw(OLDW.petSw,petShown(),'petshow'):''}</div>${OLD14.on()?`<p class="gw-sub" id="petshowh">${esc(OLDW.petNote)}</p>`:''}`,
     {sub:'Picks where the maps start. Progress is never removed when you change it, but a new grade can put stops behind a lesson.'})}
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
     <div class="gw-row"><span class="gw-rl">Minutes per round</span>${GW.seg('per',[2,3,5],pc.per,'Minutes per round',v=>v)}</div>
@@ -4210,6 +4210,7 @@ function grown(){let armed=false;
   if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Whistlestop: Unlock or restore asks the grown-up question first (89-play.js)
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
+  if($('#petshow'))$('#petshow').onchange=e=>{if(e.target.checked)delete S.petOff;else S.petOff=true;save()}; // OLDER-14: Show my pet (grades 4 to 6, the look approved); only the flag changes
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
   // RC-1 (owner): give or take away game time, in place (the bank shows the change; the page does not jump to the top)

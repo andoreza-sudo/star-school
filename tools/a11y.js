@@ -336,6 +336,15 @@ const SCREENS = {
   'story-you': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('team2-2'); st7You(); st7Tap(3); }); await p.waitForTimeout(600); } },
   'story-quiz': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('cvc-1'); st7Quiz(0); }); await p.waitForTimeout(600); } },
   'story-end': { run: async p => { await storyReady(p); await p.evaluate(() => { ST7.open('rvowel-1'); st7Fin(); }); await p.waitForTimeout(600); } },
+  // OLDER-14: the older look as if the owner had approved it (OLDER_ON = 1), a 5th grader: the score card with no chest (a 10 of 10 over an
+  // earlier best: New best!), Home with Show my pet off, and the switch in Grown-ups
+  'older-card': { run: async p => { await p.evaluate(() => { window.say = window.__a11y.say; OLDER_ON = 1; S.grade = 5; const i = NODES.math.findIndex(n => n.sk != 'boss' && PATHS.math.worlds[n.wi].g == 5);
+      S.pb = { [OLD14.key('math', i)]: [6, 10, 400000] }; start('math', i); });
+    await p.waitForTimeout(600);
+    await p.evaluate(() => { const n = G.n; G.score = n; G.done = n; finish(); if (window.__a11y) window.__a11y.said = []; });
+    await p.waitForSelector('#btns', { state: 'visible', timeout: 8000 }); await p.waitForTimeout(3000); } },
+  'older-home': { run: ev(() => { OLDER_ON = 1; S.grade = 5; S.petOff = true; home(); }) },
+  'grown-older': { adult: true, run: ev(() => { OLDER_ON = 1; S.grade = 5; grown(); document.querySelector('#petshow').closest('label').scrollIntoView({ block: 'center' }); }) },
   'grown-children': {
     adult: true,
     run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),

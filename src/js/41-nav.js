@@ -17,7 +17,7 @@ const NAV = {
   tabs() {
     const t = [['home', 'home', 'Home', () => home()], ['learn', 'map', 'Learn', () => learnHub()], ['games', 'gamepad', 'Games', () => gameRoom()]];
     if (typeof BT != 'undefined' && BT.list().length) t.push(['puzzles', 'puzzle', 'Puzzles', () => BT.hub()]);
-    t.push(['pet', 'paw', 'My Pet', () => care()]);
+    if (typeof petShown != 'function' || petShown()) t.push(['pet', 'paw', 'My Pet', () => care()]); // OLDER-14: not when the pet is hidden
     return t;
   },
   barHTML(cur) {

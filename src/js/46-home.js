@@ -240,6 +240,8 @@ function hmHero() {
   const chips = UI.chip('star', S.stars, { id: 'starc', aria: S.stars + ' stars' }) + UI.chip('coin', S.coins, { aria: S.coins + ' coins' }) +
     `<button class="stat flame${n ? '' : ' off'}" id="stkb" aria-label="Streak calendar">${ico('flame', 32)}<b>${n}</b></button>` +
     (left > 0 ? UI.chip('ticket', fmtT(left), { aria: 'Game time' }) : '');
+  // OLDER-14: the pet hidden (a grade 4-6 child, Show my pet off; 50b-older.js): the name, missions and chips, no stage or grow meter
+  if (!petShown()) return `<div class="hm-hero hm-np"><div class="hm-name"><b>${esc(S.name)}</b></div>${mission}<div class="hm-chips">${chips}</div></div>`;
   return `<div class="hm-hero">
     <div class="hm-stage sc-${esc(S.wear.scene || 'meadow')}">${hmScene(S.wear.scene)}<div class="petbig ${petAura()}" id="pet" role="button" tabindex="0" aria-label="Pat ${esc(petN())}">${petHTML()}</div>${need}${askBtn('ak-hm')}</div>
     <div class="hm-name"><b>${esc(S.name)}</b> <span>&amp; ${pn}</span></div>
@@ -314,6 +316,8 @@ function hmActs() {
   const a = (id, icon, cls, label, extra = '') =>
     `<button class="hm-act" id="${id}"><span class="hm-ai ${cls}">${ico(icon, 30)}${extra}</span><span>${label}</span></button>`;
   const rc = raceOn(); // audit v195: from grade 1
+  // OLDER-14: the pet hidden: no Pet Care or Pet Shop (their screens and the coins are kept for when the pet is back)
+  if (!petShown()) return `<div class="hm-acts ${rc ? 'n2' : 'n1'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}${a('book', 'sticker-book', 't-book', 'Stickers')}</div>`;
   return `<div class="hm-acts${rc ? '' : ' n3'}">${rc ? a('race', 'bolt', 't-race', 'Fact Race') : ''}` +
     a('care', 'paw', 't-care', 'Pet Care', needs ? `<i class="hm-need" aria-label="Your pet would like a visit">!</i>` : '') +
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
@@ -339,7 +343,7 @@ function home(first){
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
    <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build __VER__)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
-  const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
+  const pet=$('#pet');if(pet)pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   if($('#hmgift')&&S.voice)setTimeout(()=>{const g=$('#hmgift');if(g)say(g.textContent.trim())},$('#svw')?4000:700);
@@ -347,7 +351,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;if($('#shop'))$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};if($('#care'))$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -426,7 +430,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls==2?[x,yy,'Stories',false,false,false]:ls?[x,yy,'Learn with '+petN(),false,false,lsLearned(nid(N[i]))]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
-    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
+    +(cp&&petShown()?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(cp&&petShown()?askBtn('ak-mp',`left:${cp[0]+side*1.8}px;top:${cp[1]-40}px`):'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');askBind(); // ASK-01
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedS(p,i))return PLAY.kid(PLAY.lockedW(p,N[i].wi)?'world':'stop',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fbSay('Finish the stop before this one!');return}
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fbSay(`Learn it with ${petN()} first!`);return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});

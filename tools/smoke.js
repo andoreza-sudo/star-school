@@ -16882,6 +16882,118 @@ async function main() {
         notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
     }
 
+    if (seg('OLDER-14')) {
+      // OLDER-14 (BEST-APP roadmap 14): a 5th grader with the gate flipped on in the page (OLDER_ON = 1, as a reviewed read-through builds
+      // it) plays a grade 5 math stop through the real UI: no chest, the score card at once (the score, Time, Your best, the stars, New best!
+      // over the best an earlier round left), the same rows and end buttons; then Grown-ups (the PIN) turns Show my pet off: Home has no pet,
+      // Pet Care, Pet Shop or My Pet tab, and the pet's save is untouched; on again brings it back. At 380x780 and 1024x600: 48 px targets,
+      // no sideways scroll, no console errors, no network requests.
+      const bad = [], notes = [], P_ = require('path'), FS_ = require('fs'), shots = P_.join(__dirname, 'out', 'older14');
+      FS_.mkdirSync(shots, { recursive: true });
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = 'OLDER-14 ' + w + 'x' + h + ': ';
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page;
+        const fit = sel => pg.evaluate(sel => {
+          const vw = document.documentElement.clientWidth, small = [];
+          for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) small.push((b.id || b.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
+          const sc = [...document.querySelectorAll('#app .scroll')].map(s => s.scrollWidth - s.clientWidth);
+          return { small: small.slice(0, 5), wide: Math.max(document.documentElement.scrollWidth - vw, ...sc, 0) };
+        }, sel);
+        const look = async (where, sel) => { const f = await fit(sel); if (f.small.length) bad.push(at + where + ': under 48 px: ' + f.small.join(', ')); if (f.wide > 0) bad.push(at + where + ': scrolls sideways by ' + f.wide + ' px'); };
+        try {
+          await pg.waitForSelector('#gear', { timeout: 10000 });
+          // a 5th grader, the look approved, an earlier best of 6 of 10 on the stop
+          const i = await pg.evaluate(async () => {
+            await partLoad('gate'); PIN.set('2580');
+            OLDER_ON = 1; S.grade = 5; S.unlockAll = true; TEACH.off = true; S.pet = 'dino'; S.petName = 'Rex';
+            const i = NODES.math.findIndex(n => n.sk != 'boss' && PATHS.math.worlds[n.wi].g == 5);
+            S.pb = { [OLD14.key('math', i)]: [6, 10, 400000] }; save(); pathMap('math', NODES.math[i].wi); return i;
+          });
+          await pg.waitForSelector(`.node[data-n="${i}"]`, { timeout: 10000 });
+          await pg.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), i);
+          await pg.click(`.node[data-n="${i}"]`);
+          await pg.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 15000 });
+          const pay0 = await pg.evaluate(() => ({ coins: S.coins, stars: S.stars, stk: Object.values(S.stickers || {}).reduce((a, b) => a + b, 0) }));
+          let n = 0;
+          for (let guard = 0; guard < 40; guard++) {
+            const state = await pg.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
+            if (state === 'fin') break;
+            if (state === 'none') { await pg.waitForTimeout(150); continue; }
+            await pg.evaluate(() => { window.__q = G.q; });
+            await answer(pg); n++;
+            await pg.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+          }
+          await pg.waitForSelector('#fin #sc', { timeout: 5000 });
+          if (await pg.$('#chest')) bad.push(at + 'a 5th grader still gets the chest');
+          await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+          await vwait(pg, 1500);
+          await animsDone(pg);
+          const c = await pg.evaluate(() => {
+            const t = s => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, ' ').trim() : null; };
+            return { sc: t('#sc'), time: t('#o14t'), best: t('#o14b'), nb: t('#o14nb'), stars: !!document.querySelector('.rw-rate[aria-label="3 of 3 stars"]'), chest: !!document.querySelector('.rw-chest, .rw-chest-o, .rw-chest-art'),
+              line: t('.rw-line'), coins: t('#earn'), stk: document.querySelectorAll('#prz .rw-stk').length, btns: ['#again', '#ehome', '#bonus'].every(s => document.querySelector(s)), pb: S.pb[OLD14.key(G.path, G.node)],
+              score: G.score, nq: G.n, pay: { coins: S.coins, stars: S.stars, stk: Object.values(S.stickers || {}).reduce((a, b) => a + b, 0) }, superstar: /superstar|treasure/i.test(document.body.innerText) };
+          });
+          const m = /^Time (\d+):(\d\d)$/.exec(c.time || ''), secs = m ? +m[1] * 60 + +m[2] : -1;
+          if (c.sc !== c.score + ' out of ' + c.nq || c.score !== c.nq) bad.push(at + 'the score: ' + c.sc + ' (bot ' + c.score + ' of ' + c.nq + ')');
+          if (!m || secs < 1 || c.best !== 'Your best ' + c.nq + ' out of ' + c.nq + ' in ' + m[1] + ':' + m[2] || c.nb !== 'New best!' || JSON.stringify(c.pb.slice(0, 2)) !== JSON.stringify([c.nq, c.nq]))
+            bad.push(at + 'the score card: ' + JSON.stringify({ time: c.time, best: c.best, nb: c.nb, pb: c.pb }));
+          if (!c.stars || c.chest || c.superstar || c.line !== 'Excellent round!' || !c.btns || c.stk < 2) bad.push(at + 'the card: ' + JSON.stringify({ stars: c.stars, chest: c.chest, line: c.line, btns: c.btns, stk: c.stk }));
+          // paid as the chest flow pays a 10 of 10 (one star and one coin a right answer, a sticker and one more for all right), shown in the rows
+          if (c.pay.coins - pay0.coins < c.nq || c.pay.stars - pay0.stars < c.nq || c.pay.stk - pay0.stk < 2 || !new RegExp('\\+' + (c.pay.coins - pay0.coins) + ' coins for the pet shop!').test(c.coins))
+            bad.push(at + 'the payout: ' + JSON.stringify({ pay0, pay: c.pay, rows: c.coins }));
+          await look('the score card', '#app button');
+          await pg.screenshot({ path: P_.join(shots, `card-${w}x${h}.png`) }).catch(() => {});
+          // Home, then Grown-ups: Show my pet off
+          await pg.click('#ehome');
+          await pg.waitForSelector('#pet', { timeout: 10000 });
+          const keep = () => pg.evaluate(() => JSON.stringify([S.pet, S.petName, S.stars, S.coins, S.owned, S.wear, Object.keys(S.care || {}), S.stickers])); // the care meters drop with the clock, as always
+          const k0 = await keep();
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#petshow', { state: 'attached', timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#petshow').closest('label').scrollIntoView({ block: 'center' }));
+          const sw = await pg.evaluate(() => { const l = document.querySelector('#petshow').closest('label'), r = l.getBoundingClientRect(); return { on: document.querySelector('#petshow').checked, text: l.innerText.trim(), h: Math.round(r.height), w: Math.round(r.width), note: (document.querySelector('#petshowh') || {}).innerText }; });
+          if (!sw.on || sw.text !== 'Show my pet' || sw.h < 48 || !/^Grades 4 to 6\. Off hides the pet/.test(sw.note || '')) bad.push(at + 'the Show my pet switch: ' + JSON.stringify(sw));
+          await pg.click('label:has(#petshow)');
+          if (await pg.evaluate(() => S.petOff !== true)) bad.push(at + 'Show my pet off did not set S.petOff');
+          await pg.click('#back');
+          await pg.waitForSelector('.hm-hero', { timeout: 10000 });
+          await vwait(pg, 400);
+          const off = await pg.evaluate(() => ({ pet: !!document.querySelector('#pet, .petbig, .hm-stage, .hm-grow'), care: !!document.querySelector('#care'), shop: !!document.querySelector('#shop'), tab: !!document.querySelector('#navbar .nb-pet'),
+            book: !!document.querySelector('#book'), race: !!document.querySelector('#race'), rex: /Rex/.test(document.querySelector('#app').innerText) }));
+          if (off.pet || off.care || off.shop || off.tab || off.rex || !off.book || !off.race) bad.push(at + 'Home with the pet hidden: ' + JSON.stringify(off));
+          if (await keep() !== k0) bad.push(at + 'hiding the pet changed its save');
+          await look('Home without the pet', '#app button');
+          await pg.screenshot({ path: P_.join(shots, `home-nopet-${w}x${h}.png`), fullPage: true }).catch(() => {});
+          // the map: no pet by the stop
+          await pg.evaluate(() => pathMap('math'));
+          await pg.waitForSelector('#map .node', { timeout: 10000 });
+          if (await pg.$('.mappet')) bad.push(at + 'the map still draws the pet');
+          // on again: everything is back
+          await pg.evaluate(() => home());
+          await pg.click('#gear');
+          await pinIn(pg);
+          await pg.waitForSelector('#petshow', { state: 'attached', timeout: 10000 });
+          await pg.evaluate(() => document.querySelector('#petshow').closest('label').scrollIntoView({ block: 'center' }));
+          await pg.click('label:has(#petshow)');
+          await pg.click('#back');
+          await pg.waitForSelector('#pet', { timeout: 10000 });
+          const on = await pg.evaluate(() => ({ care: !!document.querySelector('#care'), shop: !!document.querySelector('#shop'), tab: !!document.querySelector('#navbar .nb-pet'), flag: 'petOff' in S }));
+          if (!on.care || !on.shop || !on.tab || on.flag) bad.push(at + 'Show my pet on again: ' + JSON.stringify(on));
+          if (await keep() !== k0) bad.push(at + 'the pet\'s save changed after off and on');
+          notes.push(w + 'x' + h + ' (' + n + ' answers, ' + c.time + ')');
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 2).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('OLDER-14 older look:\n  ' + bad.slice(0, 30).join('\n  '));
+      else step('OLDER-14: a 5th grader with the gate on: no chest, the score card (score, Time, Your best, 3 stars, New best! over an earlier 6 of 10), the payout rows; Show my pet off in Grown-ups: Home without the pet, Pet Care, Pet Shop or My Pet, no map pet, the pet\'s save untouched; on again: all back (' +
+        notes.join(', ') + '); 48 px, no sideways scroll, no console errors, no network requests');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

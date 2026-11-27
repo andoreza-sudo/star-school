@@ -150,6 +150,19 @@ def story7_on(root):
 def story7on_js(root):
     return ('/* STORIES-7: BUILT by tools/build.py (never edit): 1 once docs/drafts/STORIES7-READ.md is reviewed, else 0 (no Stories stop) */\n'
             'let STORY7_ON = %d;\n' % story7_on(root))
+# OLDER-14 (BEST-APP roadmap 14): the older look for grades 4 to 6 (src/js/50b-older.js: the score card with a personal best and no chest,
+# the Show my pet switch) shows only once the owner has read its words: docs/drafts/OLDER14-READ.md has one status line, "status: unreviewed"
+# until then. Changing it to "status: reviewed <name> <YYYY-MM-DD>" (the one-line flip) and building again writes src/js/50a-olderon.js
+# with OLDER_ON = 1 (in index.html); with 0 every grade keeps the chest and the pet. --words-only and --words-check cover it too.
+OLDER_FILE, OLDER_DOC = '50a-olderon.js', os.path.join('docs', 'drafts', 'OLDER14-READ.md')
+def older_on(root):
+    f = os.path.join(root, OLDER_DOC)
+    st = re.search(r'^status:\s*reviewed\s+\S.*\d{4}-\d\d-\d\d', open(f, encoding='utf-8').read(), re.M) if os.path.isfile(f) else None
+    return 1 if st else 0
+def olderon_js(root):
+    return ('/* OLDER-14: BUILT by tools/build.py (never edit): 1 once docs/drafts/OLDER14-READ.md says "status: reviewed <name> <date>",\n'
+            '   else 0: every grade keeps the chest and the pet (50b-older.js). A let: tools/smoke.js and tools/test.js set it to try the look. */\n'
+            'let OLDER_ON = %d;\n' % older_on(root))
 def write_words(root):
     for w in WORDS:
         open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
@@ -159,6 +172,7 @@ def write_words(root):
     open(os.path.join(root, 'src', 'js', ASKON_FILE), 'w', encoding='utf-8', newline='').write(askon_js(root))
     open(os.path.join(root, 'src', 'js', PARENT_FILE), 'w', encoding='utf-8', newline='').write(parenton_js(root))
     open(os.path.join(root, 'src', 'js', STORY7_FILE), 'w', encoding='utf-8', newline='').write(story7on_js(root))
+    open(os.path.join(root, 'src', 'js', OLDER_FILE), 'w', encoding='utf-8', newline='').write(olderon_js(root))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
     _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
@@ -169,7 +183,7 @@ if '--words-check' in sys.argv:
     _pf = os.path.join(_w, 'src', 'js', PERS_FILE)
     if os.path.isfile(_pf) and open(_pf, encoding='utf-8', newline='').read() != pers_js(_w):
         _bad.append(PERS_FILE)
-    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js), (STORY7_FILE, story7on_js)):
+    for _f, _fn in ((ASK_FILE, ask_js), (ASKON_FILE, askon_js), (PARENT_FILE, parenton_js), (STORY7_FILE, story7on_js), (OLDER_FILE, olderon_js)):
         _af = os.path.join(_w, 'src', 'js', _f)
         if os.path.isfile(_af) and open(_af, encoding='utf-8', newline='').read() != _fn(_w):
             _bad.append(_f)
@@ -177,7 +191,7 @@ if '--words-check' in sys.argv:
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js, src/js/82a-parenton.js and src/js/42c-story7on.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js, src/js/52k-words4.js, src/js/52s-words5.js, src/js/39n-hintw.js, src/js/39q-persw.js, src/js/39s-askw.js, src/js/39t-askon.js, src/js/82a-parenton.js, src/js/42c-story7on.js and src/js/50a-olderon.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])

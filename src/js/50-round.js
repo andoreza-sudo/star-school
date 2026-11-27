@@ -7,7 +7,7 @@ function hintsWarm(){
   requestAnimationFrame(()=>setTimeout(()=>partLoad('hints'),0));
 }
 var ASK_LM=null; // ASK-01: the first wrong try of the last Practice question missed: {q, v, k (the child's save key)}
-const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
+const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null,t0:Date.now()},o)); // OLDER-14: t0, the round's start (the score card's time)
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
@@ -269,24 +269,28 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass&&!(n1&&PLAY.lockedS(p,ni+1)),testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   if(newPass||testOk)try{SPC.sync()}catch(e){logErr('spaced check-ins: '+e.message)} // SPACED-9: a stop passed (or a world tested out) joins the check-ins (59-review.js)
-  const grew=stage(S.stars)>stage(before);save();
+  const card=OLD14.card(g,sc,n,p,ni),np=OLD14.noPet(); // OLDER-14 (50b-older.js): grades 4 to 6 with the look approved, else null and false
+  const grew=stage(S.stars)>stage(before)&&!np;save(); // OLDER-14: a hidden pet does not show the growing overlay (it still grows)
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.
+  // OLDER-14: everything above is paid before anything is drawn; the score card shows it at once (reveal() below, no chest to tap)
+  if(card){view('<div class="center rw-fin" id="fin"><h1 id="sc"></h1></div>');return reveal()} // (the score's h1 at once: view() adds no second one)
   view(RW.pre());nrSay('Tap the treasure chest!','#chest',700); // AUDIO-12: the pre card's line, for a non-reader (12-speech.js)
   // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
   setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
-  $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
+  $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();reveal()};
+  function reveal(){const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
     const low=!g.mix&&!g.test&&stars==0;
     // audit v195: the line goes by the share right (6 of 6 said "Keep practicing"); a beaten boss shows the questions it took
     const shown=g.boss&&g.won&&g.asked>0?g.asked:n,sh=k=>sc*10>=k*shown;
-    const line=sh(9)?'You are a superstar!':sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    const line=sh(9)?(card?OLDW.top:'You are a superstar!'):sh(7)?'Fantastic work!':sh(5)?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
     const need=starNeed(g.n0||n,.7),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
-    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
+    f.innerHTML=RW.done({sc,n:shown,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk),card,np}); // NAV-01: Next whenever the next stop is open; OLDER-14: card, np
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
@@ -303,7 +307,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
       (PT.mast&&nextI>=0?`<div class="rw-ph">${ico('hint',20)}<span>New stops earn way more game time!</span></div>`:PT.rep>=1?`<div class="rw-ph">${ico('hint',20)}<span>Try a different stop to earn more!</span></div>`:'');
-    const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',`+${coins} coins for the pet shop!`),null]];
+    const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',np?OLD14.F(OLDW.coins,{n:coins}):`+${coins} coins for the pet shop!`),null]];
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
     if(unl&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
@@ -318,7 +322,7 @@ function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // 
     if(g.mix)M('target','Great practice on the tricky ones!',null);
     msgs.forEach(([to,h,s,x])=>{const e=add(to,h);setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
     if(ck)CHK.offerBind(p,ni);
-    };
+    }
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;
   o.innerHTML=`<div class="rw-card rw-growc">${RW.rays()}<div class="grow">${petArt(before)}</div><h1>${hatch?'Your egg is hatching!':`Whoa! ${esc(petN())} is growing!`}</h1></div>`;document.body.appendChild(o);

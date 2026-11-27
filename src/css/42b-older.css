@@ -1,0 +1,17 @@
+/* OLDER-14 (src/js/50b-older.js): the score card of grades 4 to 6 (RW.done with o.card) and Home with the pet hidden. Tokens only,
+   no animation of its own (the card keeps the round end's rw-* motion, which Calm mode and reduced motion already cut). */
+.o14 .rw-hero{background:var(--surface)}
+.o14-dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:var(--s-2);margin:var(--s-3) 0 0;text-align:left}
+.o14-r{display:flex;flex-direction:column;gap:2px;min-width:0;padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
+.o14-r dt{font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--ink-2)}
+.o14-r dd{margin:0;font-family:var(--font-display);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink);font-variant-numeric:tabular-nums;
+  overflow-wrap:break-word}
+.o14-nb{display:inline-flex;align-items:center;gap:var(--s-2);margin:var(--s-3) 0 0;padding:var(--s-1) var(--s-4);border-radius:var(--r-pill);
+  background:var(--good-tint);color:var(--good-ink);font-size:var(--fs-3);line-height:var(--lh-3);font-weight:700}
+.o14-nb .ic{flex:none;color:var(--star-shade)}
+.o14-prz{flex:none;min-height:80px;padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
+.o14-prz:empty{display:none}
+/* Home without the pet: one column, the name over the missions and the chips */
+.hm .hm-hero.hm-np{grid-template-columns:minmax(0,1fr);grid-template-areas:"nm" "ms" "ch"}
+.hm-acts.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hm-acts.n1{grid-template-columns:minmax(0,1fr)}
