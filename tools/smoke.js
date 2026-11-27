@@ -453,6 +453,14 @@ async function endOpen(page, timeout = 5000) {
   return k;
 }
 
+// DEEP-15 (owner approved 2026-11-27, DEEP15_ON 1): opening the Discover or Spanish map loads part teaches, which then adds the new stops
+// (the world Discovery Garden after Nature Trail; the Nature and Toys stops in La Ciudad and La Casa) and draws the map again: the stop
+// indexes after them move (a stop is saved by its id, never its index). A step that looks up a stop's index on those maps waits for this
+// first, so it never taps an index from before the insertion; with the gate off (or the part already applied) it returns at once.
+async function d15Wait(page, timeout = 30000) {
+  await page.waitForFunction(() => typeof DEEP15_ON == 'undefined' || !DEEP15_ON || D15F === 1, null, { timeout });
+}
+
 // Plays the round that is on screen to the end and opens the chest (grades 4 to 6 with OLDER-14: the score card, nothing to open).
 async function playRound(page, label, total, onAsk) {
   if (total === undefined) total = await page.evaluate(() => G.n); // 8 at the default grade (K), 6 Pre-K, 10 from 1st
@@ -4934,14 +4942,19 @@ async function main() {
         if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/18/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
         await dp.click('.game[data-p="disc"]');
         await dp.waitForSelector('.node[data-n="0"]');
+        // DEEP-15 (owner approved 2026-11-27): the part adds Discovery Garden (g 1, 6 stops and its boss) after Nature Trail and the map is
+        // drawn again on it, where this 1st grader now starts: Nature Trail, Discovery Garden, then Science Lab, 19 stops (12 with the gate
+        // off). Nature Trail's stops keep indexes 0-5, so the round below is still Living Things at stop 0.
+        await d15Wait(dp);
+        await dp.waitForSelector('.node[data-n="0"]');
         await lsLearnSel(dp, '.node[data-n="0"]'); // TEACH-5S: Living Things has a lesson now (LS-STOP's rule: a practice step marks a locked stop's lesson learned first)
         const map = await dp.evaluate(() => {
           const ns = [...document.querySelectorAll('.node')];
-          return { n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
+          return { want: DEEP15_ON ? 19 : 12, n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
             over: document.documentElement.scrollWidth - document.documentElement.clientWidth, title: document.querySelector('.top').textContent };
         });
-        if (map.n !== 12 || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
-        else step(`${tag}: Home card, then the map (Nature Trail and the world after it, 12 stops; the first is open), 48 px stops, no sideways scroll`);
+        if (map.n !== map.want || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
+        else step(`${tag}: Home card, then the map (Nature Trail${map.want === 19 ? ', Discovery Garden' : ''} and the world after it, ${map.n} stops; the first is open), 48 px stops, no sideways scroll`);
         const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
         await lsLearnSel(dp, '.node[data-n="0"]'); // LS-STOP: as above
         await dp.click('.node[data-n="0"]');
@@ -5287,12 +5300,19 @@ async function main() {
       await dp.waitForSelector('.game[data-p="disc"]');
       await dp.click('.game[data-p="disc"]');
       await dp.waitForSelector('.node[data-n="0"]');
+      // DEEP-15 (owner approved 2026-11-27): Discovery Garden (6 stops and its boss) goes in after Nature Trail once the part loads, so the
+      // Science Lab stops move 7 places on; this finds every stop by its id (as the app saves them) after the insertion, not by a fixed
+      // index (Life Cycles & Food was 6, States & Capitals 9). A 4th grader still starts in Science Lab. With OLDER-14 on, this 4th grader's
+      // rounds end with the score card (playRound handles both endings).
+      await d15Wait(dp);
+      await dp.waitForSelector('.node.cur');
+      const IX = await dp.evaluate(() => Object.fromEntries(['sci_life2', 'geo_us1', 'civ1'].map(id => [id, NODES.disc.findIndex(n => nid(n) === id)])));
       const on = await dp.evaluate(() => ({
         world: PATHS.disc.worlds[curWorld('disc')].id, cur: nid(NODES.disc[curNode('disc')]), chip: (document.querySelector('.wchip.on') || {}).textContent || '',
         node: document.querySelector('.node.cur') ? +document.querySelector('.node.cur').dataset.n : -1,
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       }));
-      if (on.world !== 'd_lab' || on.cur !== 'sci_life2' || !/Science Lab/.test(on.chip) || on.node !== 6 || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
+      if (on.world !== 'd_lab' || on.cur !== 'sci_life2' || !/Science Lab/.test(on.chip) || on.node !== IX.sci_life2 || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
       else step(`${tag}: Discover opens on Science Lab at Life Cycles & Food (sci_life 2), no sideways scroll`);
       const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
       // one real round on a stop: opens it by its map button, plays, checks every question, and returns to the map
@@ -5323,23 +5343,23 @@ async function main() {
         await dp.evaluate(() => pathMap(MAPP));
         await dp.waitForSelector('#map');
       };
-      await playStop(6, 'Life Cycles & Food');
-      const after1 = await dp.evaluate(() => ({ keys: Object.keys(S.maps.disc).join(), next: unlocked('disc', 7), others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]) }));
+      await playStop(IX.sci_life2, 'Life Cycles & Food');
+      const after1 = await dp.evaluate(i => ({ keys: Object.keys(S.maps.disc).join(), next: unlocked('disc', i + 1), others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]) }), IX.sci_life2);
       if (after1.keys !== 'sci_life2' || !after1.next || JSON.stringify(JSON.parse(after1.others).slice(0, 3)) !== JSON.stringify(JSON.parse(before).slice(0, 3)))
         fail(`${tag}: after the first stop ${JSON.stringify(after1)}`);
       else step(`${tag}: stars only under sci_life2, the next stop opened, no other path changed`);
       // Science Earth and Forces count as done (set directly), then the geography stop is played with taps
       await dp.evaluate(() => { S.maps.disc.sci_earth2 = 1; S.maps.disc.sci_phys2 = 1; save(); pathMap('disc'); });
-      await dp.waitForSelector('.node[data-n="9"]');
-      const geo = await dp.evaluate(() => ({ id: nid(NODES.disc[9]), open: unlocked('disc', 9), t: NODES.disc[9].t }));
+      await dp.waitForSelector(`.node[data-n="${IX.geo_us1}"]`);
+      const geo = await dp.evaluate(i => ({ id: nid(NODES.disc[i]), open: unlocked('disc', i), t: NODES.disc[i].t }), IX.geo_us1);
       if (geo.id !== 'geo_us1' || !geo.open) fail(`${tag}: geography stop ${JSON.stringify(geo)}`);
-      await playStop(9, 'States & Capitals');
+      await playStop(IX.geo_us1, 'States & Capitals');
       // the civics stop is in Nature Trail: the four stops before it count as done
       await dp.evaluate(() => { for (const k of ['sci_life1', 'sci_earth1', 'sci_phys1', 'geo_world1']) S.maps.disc[k] = 1; save(); pathMap('disc', 0); });
-      await dp.waitForSelector('.node[data-n="4"]');
-      const civ = await dp.evaluate(() => ({ id: nid(NODES.disc[4]), open: unlocked('disc', 4), t: NODES.disc[4].t }));
+      await dp.waitForSelector(`.node[data-n="${IX.civ1}"]`);
+      const civ = await dp.evaluate(i => ({ id: nid(NODES.disc[i]), open: unlocked('disc', i), t: NODES.disc[i].t }), IX.civ1);
       if (civ.id !== 'civ1' || !civ.open) fail(`${tag}: civics stop ${JSON.stringify(civ)}`);
-      await playStop(4, 'Our Community');
+      await playStop(IX.civ1, 'Our Community');
       const fin = await dp.evaluate(() => ({ g: S.grade, civ: S.maps.disc.civ1, geo: S.maps.disc.geo_us1, v: S.v, others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es]) }));
       if (!(fin.civ >= 1) || !(fin.geo >= 1) || fin.g !== 4 || fin.others !== JSON.stringify(JSON.parse(before).slice(0, 3))) fail(`${tag}: end state ${JSON.stringify(fin)}`);
       else step(`${tag}: geography and civics stops saved, the other paths are unchanged`);
@@ -5734,6 +5754,7 @@ async function main() {
         await cp.evaluate(() => { if (G) G.dead = true; home(); });
         await cp.click('.game[data-p="es"]');
         await cp.waitForSelector('.wchip.on');
+        await d15Wait(cp); // DEEP-15: La Casa's two new stops move La Ciudad's indexes (an index from before them opened Transport)
         const at = await cp.evaluate(id => ({ i: NODES.es.findIndex(n => nid(n) === id), w: NODES.es.find(n => nid(n) === id).wi, wid: NODES.es.find(n => nid(n) === id).wid }), id);
         if (at.wid !== 'e_ciudad') fail('P2-33 ' + id + ' is not in La Ciudad: ' + JSON.stringify(at));
         await cp.click(`.wchip[data-w="${at.w}"]`);
@@ -6812,6 +6833,7 @@ async function main() {
         await fp.evaluate(() => { if (G) G.dead = true; home(); });
         await fp.click('.game[data-p="es"]');
         await fp.waitForSelector('.wchip.on');
+        await d15Wait(fp); // DEEP-15: the new stops in La Casa and La Ciudad move Las Frases' indexes (an index from before them opened Nature)
         const at = await fp.evaluate(id => ({ i: NODES.es.findIndex(n => nid(n) === id), w: NODES.es.find(n => nid(n) === id).wi, wid: NODES.es.find(n => nid(n) === id).wid }), id);
         if (at.wid !== 'e_frases') fail('P2-34 ' + id + ' is not in Las Frases: ' + JSON.stringify(at));
         await fp.click(`.wchip[data-w="${at.w}"]`);
@@ -7497,6 +7519,7 @@ async function main() {
       await cp.evaluate(() => { if (G) G.dead = true; home(); });
       await cp.click('.game[data-p="es"]');
       await cp.waitForSelector('.wchip.on');
+      await d15Wait(cp); // DEEP-15: the new stops in La Casa and La Ciudad move Los Cuentos' indexes
       const at = await cp.evaluate(() => ({ i: NODES.es.findIndex(n => nid(n) === 'es_story1'), w: NODES.es.find(n => nid(n) === 'es_story1').wi, wid: NODES.es.find(n => nid(n) === 'es_story1').wid, last: PATHS.es.worlds[PATHS.es.worlds.length - 1].id }));
       if (at.wid !== 'e_cuentos' || at.last !== 'e_cuentos') fail('P2-35 es_story1 is not in Los Cuentos: ' + JSON.stringify(at));
       await cp.click(`.wchip[data-w="${at.w}"]`);
@@ -9225,6 +9248,7 @@ async function main() {
         await rp.evaluate(() => { if (G) G.dead = true; home(); });
         await rp.click('.game[data-p="es"]');
         await rp.waitForSelector('.wchip.on');
+        await d15Wait(rp); // DEEP-15: La Casa's two new stops move El Tiempo's indexes (an index from before them opened Months, not Weather)
         const at = await rp.evaluate(id => { const i = NODES.es.findIndex(n => nid(n) === id); return { i, w: NODES.es[i].wi, wid: NODES.es[i].wid }; }, id);
         if (at.wid !== wid) bad.push(id + ' is not in ' + wid + ': ' + JSON.stringify(at));
         await rp.click(`.wchip[data-w="${at.w}"]`);
