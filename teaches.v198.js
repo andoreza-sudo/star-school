@@ -444,8 +444,16 @@ function d15Kind(k) {
   if (it.form == 'sort') { const ws = Object.values(it.bins).flat(); if (ws.every(d15Pic)) it.cp = Object.fromEntries(ws.map(w => [w, d15Pic(w)])); }
   return it;
 }
+/* everything deep15Apply touches is there: the banks (gen2 37-bank.js, filled by the data file), esReg (gen) and the whole of the data file up to
+   SCN_W (d-scenes.js, which runs after d-disc.js and d-es.js, so DISC_PIC, ES_UNITS and SPN are set too). Only typeof on var / function /
+   const names that are either declared or never declared, so it never throws: in tools/test.js the parts run before the data (no banks yet),
+   and when a start-up file is missing or stale the data file stops part way (at esReg without gen, earlier without gen2) and this part's
+   last line must then do nothing rather than throw (A11c: the app is refused by dataReady() as before). */
+function d15Ready() {
+  return typeof BANK == 'object' && !!BANK.sci_life && typeof esReg == 'function' && typeof SCN_W == 'object' && !!SCN_W;
+}
 function deep15Apply() {
-  if (!DEEP15_ON || D15F || !BANK.sci_life) return false; // in tools/test.js the parts run before the data: no banks yet
+  if (!DEEP15_ON || D15F || !d15Ready()) return false;
   D15F = 1;
   const g = typeof G != 'undefined' && G && G.path && NODES[G.path] && G.node >= 0 && NODES[G.path][G.node] ? nid(NODES[G.path][G.node]) : null;
   const mw = ['disc', 'es'].map(p => [p, MAPW[p] != null && PATHS[p].worlds[MAPW[p]] ? PATHS[p].worlds[MAPW[p]].id : null]);
