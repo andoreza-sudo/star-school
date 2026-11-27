@@ -231,7 +231,7 @@ PARTS = [
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
     ('teach12', r'(52e-words|52f-bench|52g-drafted|d-teach-audio)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35|52n-bench3b|52o-lessons3b)\.js|(52h-teach35|52n-teach3b)\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on; TEACH-3b: the grade 3-5 lessons TEACH-3 left out, and their models
-    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r|52w-story7d|52x-story7)\.js|(52k-teach4|52q-teach5r|52x-story7)\.css'),  # STORIES-7: the decodable mini-stories and their reader (52w, 52x; gated by STORY7_ON); READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
+    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4|52p-lessons4b|52q-bench5r|52r-lessons5r|52w-story7d|52x-story7|d-story-audio)\.js|(52k-teach4|52q-teach5r|52x-story7)\.css'),  # STORIES-7: the decodable mini-stories and their reader (52w, 52x; gated by STORY7_ON); REC-198: their recordings' manifest (d-story-audio.js: ST7A, ST7S); READ-SHAPES (v184): the reading lesson shapes 52q/52r; TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('teaches', r'(52s-bench5s|52s-words5|52t-lessons5s|52y-deep15|d-deep15)\.js|52s-teach5s\.css'),  # DEEP-15: the drafted Discover and Spanish items (52y-deep15.js and its data, d-deep15.js; gated by DEEP15_ON), which the same two maps load; TEACH-5S (v187): the Spanish and Discover lessons (their shapes, reviewed words and scripts): after teachrd, whose shapes they build on; the Spanish and Discover maps load it with teach, teach12 and teachrd
     ('teach6', r'(52u-bench6|52v-lessons6)\.js|52u-teach6\.css'),  # TEACH-6M (v188): the grade 6 math lessons (their models and scripts; their reviewed words are in teach35's 52h-words.js, as they are lsDraft3 lessons): after teach35, whose helpers they use; the math map loads it with teach, teach12 and teach35 for a 5th grader up
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
@@ -320,7 +320,8 @@ json.dump({"name": "Whistlestop", "short_name": "Whistlestop", "start_url": "./"
 # EN-PRAISE: the recorded English encouragement, audio/en/*.ogg (tools/en-audio.js; src/data/d-en-audio.js), the same way and cache.
 # AUDIO lists 'es/<file>' then 'en/<file>' (file names are hashes that differ between the two: each recipe is part of its hash).
 # TEACH-4: and the pet's recorded teacher lines, audio/teach/*.ogg (tools/en-audio.js; src/data/d-teach-audio.js), the same way and cache.
-AUDIO = [d + '/' + n for d in ('es', 'en', 'teach') if os.path.isdir(os.path.join(ROOT, 'audio', d))
+# REC-198: and the recorded stories of STORIES-7, audio/story/*.ogg (tools/en-audio.js --story; src/data/d-story-audio.js), the same way and cache.
+AUDIO = [d + '/' + n for d in ('es', 'en', 'teach', 'story') if os.path.isdir(os.path.join(ROOT, 'audio', d))
          for n in sorted(os.listdir(os.path.join(ROOT, 'audio', d))) if n.endswith('.ogg')]
 AUDIO_BYTES = sum(os.path.getsize(os.path.join(ROOT, 'audio', n)) for n in AUDIO)
 # Service worker. Cache name and precache list carry VER, so one release's index.html, part files and data file are cached and replaced together.
@@ -358,7 +359,7 @@ const fillAudio=()=>filling||(filling=caches.open(A).then(async c=>{const have=n
 self.addEventListener('message',e=>{if(e.data==='audio')e.waitUntil(fillAudio());if(e.data==='hush')hushT=Date.now()+HUSH_MS});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
- if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
+ if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\/|\\/audio\\/story\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):onDemand(e.request)));return}
  if(e.request.mode==='navigate'&&!/\\/(index\\.html)?$/.test(new URL(e.request.url).pathname)){const net=fetch(e.request),own=()=>caches.match(e.request,{ignoreSearch:true});e.waitUntil(net.catch(()=>{}));
   e.respondWith(new Promise(ok=>{let done=0;const fin=r=>{if(!done&&r){done=1;ok(r)}},t=setTimeout(()=>own().then(fin),NAV_MS);
@@ -377,4 +378,4 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
 for f in ('privacy.html', 'icon-192.png'):
     shutil.copyfile(os.path.join(ROOT, f), os.path.join(ROOT, 'site', f))
 print(os.listdir(OUT), os.path.getsize(OUT + '/index.html'), [os.path.getsize(OUT + '/' + f) for f in FILES])
-print('audio (ES-AUDIO, EN-PRAISE and TEACH-4, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))
+print('audio (ES-AUDIO, EN-PRAISE, TEACH-4 and REC-198, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))

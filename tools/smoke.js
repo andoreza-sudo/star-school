@@ -16832,8 +16832,8 @@ async function main() {
           await look('the story', '#app button');
           // Read to me: record every word that lights, in order
           const n = await pg.evaluate(() => {
-            ST7R.rate = 2; window.__st7 = [];
-            new MutationObserver(() => { const e = document.querySelector('.st7-w.st7-on'); if (e && window.__st7[window.__st7.length - 1] !== +e.dataset.i) window.__st7.push(+e.dataset.i); })
+            ST7R.rate = 2; window.__st7 = []; window.__st7rec = []; // REC-198: and the recording each word lit on (the story's file, played by storyPlay)
+            new MutationObserver(() => { const e = document.querySelector('.st7-w.st7-on'); if (e && window.__st7[window.__st7.length - 1] !== +e.dataset.i) { window.__st7.push(+e.dataset.i); window.__st7rec.push(ESA.cur && ESA.cur.story && ESA.au ? ESA.au.src.split('/').slice(-2).join('/') + '@' + Math.round(ESA.au.currentTime * 1000) : ''); } })
               .observe(document.querySelector('#st7'), { subtree: true, attributes: true, attributeFilter: ['class'] });
             return document.querySelectorAll('.st7-w').length;
           });
@@ -16844,6 +16844,11 @@ async function main() {
           const lit = await pg.evaluate(() => ({ seq: window.__st7.join(), tip: document.querySelector('#st7tip').textContent, past: document.querySelectorAll('.st7-w.st7-past').length }));
           if (lit.seq !== Array.from({ length: n }, (_, i) => i).join()) bad.push(at + 'Read to me lit ' + lit.seq + ' of ' + n + ' words');
           if (lit.tip !== 'Now you read it!' || lit.past !== n) bad.push(at + 'after Read to me: ' + JSON.stringify({ tip: lit.tip, past: lit.past }));
+          // REC-198: the story plays its recording (audio/story/<ST7A file>), every word lit while it plays, on its word times
+          const rc = await pg.evaluate(() => ({ want: 'story/' + ST7A['cvc-1'].f, t: ST7A['cvc-1'].t, rec: window.__st7rec }));
+          const offTime = rc.rec.filter((r, i) => { const ms = +r.split('@')[1]; return i < rc.rec.length - 2 && !(ms >= rc.t[i][0] - 50 && ms <= rc.t[i][0] + 600); }).length;
+          if (rc.rec.length !== n || rc.rec.slice(0, -2).some(r => r.split('@')[0] !== rc.want) || offTime > 2) bad.push(at + 'Read to me did not light the words on the recording ' + rc.want + ': ' + rc.rec.slice(0, 8).join(' ') + ' (' + offTime + ' off their time)');
+          else notes.push(w + 'x' + h + ' recording ' + rc.want);
           // Now you read it: two word taps, then I read it!
           await pg.click('#st7you');
           await pg.click('.st7-w[data-i="4"]');

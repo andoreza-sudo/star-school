@@ -7,13 +7,16 @@
    One story (ST7.open):
      Read to me      every word of the title and the story lights up while it is spoken (st7Play). The clock is a timing array,
                      one [start, end] in ms per word (st7Plan): from the story's recording when it has one (ST7A[id].t, with the file
-                     ST7A[id].f in audio/story/: none yet, the owner decides on recordings), else estimated from the words, and then
-                     the tablet's voice says one word at a time on that clock (a word waits for the voice to finish, never longer
-                     than three times its time).
+                     ST7A[id].f in audio/story/; REC-198: every story is recorded, src/data/d-story-audio.js), and then the words light
+                     on the recording's clock (st7Tick); without a recording (or with recordings off: Tablet voice, no Opus) the
+                     clock is estimated from the words and each word is said in turn (its recording, else the tablet's voice; a word
+                     waits for the voice to finish, never longer than three times its time).
      Now you read it the words stay still; a tap on a word says it (any time, in any mode); "I read it!" when done.
      Questions       1 or 2 picture questions (KIND.choice, the round's choice buttons, 49-kinds.js): a wrong picture is marked and
                      greyed, the child tries again; then the end card (Read it again, More stories).
-   Nothing is saved: no stars, no game time, no change to the map. ST7R.rate speeds the read-along clock (tools/smoke.js). */
+   Nothing is saved: no stars, no game time, no change to the map. ST7R.rate speeds the read-along clock (tools/smoke.js).
+   REC-198 (owner decision 2026-11-27): the questions, the sentences these screens say aloud and every word (a tap) are recorded too, in the
+   pet's teacher voice (ST7S, src/data/d-story-audio.js): st7Say plays them, else say() as before. */
 const ST7W = { // every sentence these screens show or say: proposed wording in docs/drafts/STORIES7-READ.md (tools/test.js STORIES-7)
   shelf: 'Stories',
   shelfTip: 'Pick a story. I read it to you, then you read it!',
@@ -66,6 +69,20 @@ function st7Q(st, k) {
   return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: picFor(w), v: w, h: true, w}))};
 }
 const st7Btns = ws => ws.map((w, i) => `<button class="st7-w" data-i="${i}">${esc(w.w)}</button>`);
+// REC-198: the recordings play where say() would play a recording (not with ENA.off, the Tablet voice choice, or where Opus cannot play)
+const st7RecOk = () => !ENA.off && !ESA.off && cheerMode() != 'tts' && esaOk();
+// say a line (or, with word, a word of the stories) from its recording in ST7S when there is one, else with say(); q: after what is playing
+function st7Say(t, btn, word, q) {
+  const M = typeof ST7S != 'undefined' ? ST7S : null, f = M && st7RecOk() && (word ? M.w[String(t).toLowerCase()] : M.lines[esKey(t)]);
+  if (!f || ESA.bad[f]) return say(t, btn, null, q);
+  const it = {a: [[f, 0]], i: 0, t: String(t), ts: [String(t)], btn, tch: 1, m: M};
+  if (cheerBusy()) { ESA.q = [it]; return; } // a cheer is not cut off (as say)
+  if (q && speakBusy()) { ESA.q.push(it); return; }
+  if (!q) hush();
+  esaPlay(it);
+}
+// a line for a child who cannot read yet (as nrSay, 12-speech.js), from its recording
+const st7Nr = (t, sel) => { if (t && nrOn()) setTimeout(() => { if (nrOn() && (!sel || $(sel))) st7Say(t, null, 0, 1); }, 500); };
 
 ST7.shelf = function (stop) {
   st7Halt();
@@ -81,7 +98,7 @@ ST7.shelf = function (stop) {
   $$('.st7-card').forEach(b => b.onclick = () => { SFX.whoosh(); ST7.open(b.dataset.st); });
   const sec = stop && $(`.st7-sg[data-stop="${stop}"]`);
   if (sec && sec.scrollIntoView) sec.scrollIntoView({block: 'start'});
-  nrSay(ST7W.shelfTip, '#st7s');
+  st7Nr(ST7W.shelfTip, '#st7s');
 };
 
 ST7.open = function (id) {
@@ -101,9 +118,9 @@ ST7.open = function (id) {
   $('#st7you').onclick = () => st7You();
   $('#st7done').onclick = () => { st7Halt(); SFX.whoosh(); st7Quiz(0); };
   $$('.st7-w').forEach(w => w.onclick = () => st7Tap(+w.dataset.i));
-  nrSay(ST7W.tipStart, '#st7');
+  st7Nr(ST7W.tipStart, '#st7');
 };
-function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) say(t); }
+function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) st7Say(t); }
 function st7Light(i) {
   for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
   const e = $(`.st7-w[data-i="${i}"]`);
@@ -117,7 +134,7 @@ function st7Label(t) { const b = $('#st7read span'); if (b) b.textContent = t; }
 function st7Halt(quiet) {
   const was = ST7R.mode == 'play';
   ST7R.gen++;
-  if (ST7R.au) { try { ST7R.au.pause(); } catch (e) {} ST7R.au = null; }
+  if (ST7R.au) { ST7R.au = null; try { hush(); } catch (e) {} } // a story recording plays through the speech module (storyPlay)
   if (was) { try { hush(); } catch (e) {} }
   if (ST7R.mode == 'play') ST7R.mode = '';
   for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
@@ -136,23 +153,35 @@ function st7Play() {
   st7Label(ST7W.stop);
   st7Tip(ST7W.tipRead);
   SFX.pop(1);
-  if (rec && rec.f && rec.t && rec.t.length == ws.length && typeof Audio != 'undefined') {
-    // a recording: the words follow its clock (built for the owner's later recordings: audio/story/<file>)
-    const a = ST7R.au = new Audio('audio/story/' + rec.f);
-    a.ontimeupdate = () => { if (g === ST7R.gen) { const k = st7Lit(plan, a.currentTime * 1000); if (k >= 0) st7Light(k); } };
-    a.onended = () => { if (g === ST7R.gen) st7End(); };
-    a.onerror = () => { if (g === ST7R.gen) { ST7R.au = null; st7Words1(g, 0); } };
-    a.play().catch(() => { if (g === ST7R.gen) { ST7R.au = null; st7Words1(g, 0); } });
-    return;
+  if (rec && rec.f && rec.t && rec.t.length == ws.length && st7RecOk() && !ESA.bad[rec.f]) {
+    // a recording (REC-198: audio/story/<file>), played by the speech module (storyPlay, 12-speech.js: ducks the music, stops on hush, waits
+    // while the app is hidden): the words follow its clock, every word once and in order (st7Tick). A file that does not play: the
+    // word-by-word reading on the estimated clock
+    const it = storyPlay('audio/story/', rec.f, st.t, ST7R.rate || 1, () => {
+      if (g !== ST7R.gen) return;
+      ST7R.au = null; ST7R.plan = st7Plan({id: '', t: st.t, s: st.s}); st7Words1(g, 0);
+    });
+    if (it) { if (!it.failed) { ST7R.au = it; ST7R.lit = -1; st7Tick(g, it); } return; } // failed at once: fail() reads on
   }
-  st7Words1(g, 0);
+  const t0 = plan[0] ? plan[0][0] / (ST7R.rate || 1) : 0; // the first word on its time (a recording's clock starts after its lead-in)
+  if (t0 > 0) setTimeout(() => st7Words1(g, 0), t0); else st7Words1(g, 0);
+}
+// the read-along on a recording's clock: each tick lights the next word once its start time is reached (one word a tick, so none is
+// skipped); after the recording ends, the words left light in turn, then the end. Stopped from outside (hush): the reading stops
+function st7Tick(g, it) {
+  if (g !== ST7R.gen || ST7R.au !== it) return;
+  if (storyGone(it)) return st7Halt(true);
+  const plan = ST7R.plan, ms = it.done ? Infinity : storyMs(it);
+  if (ST7R.lit + 1 < plan.length && plan[ST7R.lit + 1][0] <= ms) st7Light(++ST7R.lit);
+  else if (it.done && ST7R.lit + 1 >= plan.length) { ST7R.au = null; return st7End(); }
+  setTimeout(() => st7Tick(g, it), 25);
 }
 function st7Words1(g, i) {
   const ws = ST7R.ws, plan = ST7R.plan, r = ST7R.rate || 1;
   if (g !== ST7R.gen) return;
   if (i >= ws.length) return st7End();
   st7Light(i);
-  try { say(ws[i].k); } catch (e) {}
+  try { st7Say(ws[i].k, null, 1); } catch (e) {}
   const d = (plan[i][1] - plan[i][0]) / r, gap = ((plan[i + 1] ? plan[i + 1][0] : plan[i][1]) - plan[i][1]) / r, tick = Math.max(10, Math.min(60, d / 4));
   let el = 0;
   const wait = () => {
@@ -190,7 +219,7 @@ function st7Tap(i) {
   if (ST7R.mode == 'play') st7Halt(true);
   const w = ST7R.ws && ST7R.ws[i], e = $(`.st7-w[data-i="${i}"]`);
   if (!w || !e) return;
-  say(w.k);
+  st7Say(w.k, null, 1);
   e.classList.add('st7-heard');
 }
 // the picture questions, one at a time
@@ -206,7 +235,7 @@ function st7Quiz(k) {
     + `<div class="inp">${KIND.choice.render(q)}</div></div>`);
   $$('#st7q .ch').forEach(b => b.setAttribute('aria-label', q.choices[+b.dataset.i].w));
   $('#back').onclick = () => { SFX.click(); ST7.open(st.id); };
-  $('#st7hear').onclick = e => say(q.say, e.currentTarget);
+  $('#st7hear').onclick = e => st7Say(q.say, e.currentTarget);
   let done = false;
   KIND.choice.bind(q, {}, (v, el) => {
     if (done || !el || el.disabled) return;
@@ -215,17 +244,17 @@ function st7Quiz(k) {
       el.classList.add('right');
       SFX.right(k);
       fb(ST7W.right, 'good');
-      say(ST7W.right);
+      st7Say(ST7W.right);
       setTimeout(() => { if ($('#st7q')) st7Quiz(k + 1); }, 1300);
     } else {
       el.classList.add('wrong');
       el.disabled = true;
       SFX.wrong();
       fb(ST7W.wrong, 'warn');
-      say(ST7W.wrong);
+      st7Say(ST7W.wrong);
     }
   });
-  say(q.say);
+  st7Say(q.say);
 }
 function st7Fin() {
   const st = ST7R.st, sg = ST7.stages.find(x => x.id == st.st), line = st7F(ST7W.end, {title: st.t});

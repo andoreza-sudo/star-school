@@ -1,4 +1,4 @@
-/* Whistlestop teachrd v198. BUILT by tools/build.py from 52k-teach4.css, 52q-teach5r.css, 52x-story7.css, 52k-words4.js, 52l-bench4.js, 52m-lessons4.js, 52p-lessons4b.js, 52q-bench5r.js, 52r-lessons5r.js, 52w-story7d.js, 52x-story7.js: never edit by hand.
+/* Whistlestop teachrd v198. BUILT by tools/build.py from 52k-teach4.css, 52q-teach5r.css, 52x-story7.css, 52k-words4.js, 52l-bench4.js, 52m-lessons4.js, 52p-lessons4b.js, 52q-bench5r.js, 52r-lessons5r.js, 52w-story7d.js, 52x-story7.js, d-story-audio.js: never edit by hand.
    index.html v198 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v198.js. */
 (function(){var s=document.createElement('style');s.id='css-teachrd';s.textContent="/* TEACH-4: the reading and Pre-K lessons (52l-bench4.js, 52m-lessons4.js, part teachrd): the reading map's colours on the lesson screen,\n   the letter big on the card, word boxes with a letter missing, the pet's letters in Check me, pictures with their words. Tokens only. */\n.ls-top.s-read .ls-pip.on{background:var(--read);color:var(--surface)}\n.ls-top.s-read .ls-pip.now{background:var(--read-tint);color:var(--read-shade);box-shadow:inset 0 0 0 3px var(--read)}\n.ls4-pic{display:inline-flex;align-items:center;justify-content:center;line-height:1}\n.ls4-pic .art{display:block}\n.ls4-big{font-size:var(--fs-7);font-weight:700;line-height:1.1;color:var(--ink);background:var(--read-tint);border-radius:var(--r-card);padding:0 var(--s-4);min-width:1.6em;text-align:center}\n.ls4-row{display:flex;gap:var(--s-4);justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-top:var(--s-2)}\n.ls4-m{font-size:clamp(48px,14vmin,88px)}\n.ls4-nw{display:flex;flex-direction:column;align-items:center;gap:var(--s-1)}\n.ls4-wd{font-size:var(--fs-5);font-weight:700;color:var(--ink);letter-spacing:.04em}\n.ls4-wd b{color:var(--read-shade);text-decoration:underline;text-underline-offset:.15em}\n.ls4-gap{align-items:flex-end}\n.ls4-l{font-size:calc(clamp(36px,9vmin,72px)*var(--k));font-weight:700;line-height:1.35;color:var(--ink)}\n.ls.ls4-f{color:var(--ink);font-weight:700}\n.ls-pw.ls4-pw .ls,.ls4-gap .ls.ls4-f{background:var(--star-tint)}\n.ls4-pick{margin-top:var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center}\n.ls4-pk{display:inline-flex;align-items:center;justify-content:center;min-width:64px;min-height:64px;padding:var(--s-1);font-size:clamp(32px,6vh,52px);font-weight:700;color:var(--ink);\n  background:var(--surface-2);border-radius:var(--r-card)}\n.ls4-pk.on{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n.ls4-pk .pks,.ls4-pk .art{width:1em;height:1em}\n.ls4-word{font-size:var(--fs-7);font-weight:700;color:var(--ink);letter-spacing:.06em;line-height:1.2}\n.ls4-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.35;max-width:22em}\n.choices.ls4-words{grid-template-columns:1fr}\n.choices.ls4-words .ch{font-size:var(--fs-6);font-weight:700;letter-spacing:.06em}\n.ls4-plate{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;max-width:100%;font-size:clamp(24px,6vmin,40px);line-height:1}\n.ls4-plate .pko{display:inline-flex}\n.choices.ls4-plates .ch{font-size:inherit;padding:var(--s-2)}\n.ls4-bl{display:block;font-size:var(--fs-2);font-weight:700;color:var(--ink)}\n.sbl .ls4-pic{font-size:36px}\n.ls4-strip{display:flex;gap:var(--s-1);justify-content:center;font-size:var(--fs-5);font-weight:700;color:var(--ink-2);margin-bottom:var(--s-1)}\n.ls4-strip span{min-width:1.3em;text-align:center;background:var(--surface-2);border-radius:var(--r-chip)}\n.ls4-strip .ls4-q{color:var(--read-shade);background:var(--read-tint)}\n.ls4-claps{font-size:var(--fs-6);display:flex;align-items:center;justify-content:center;gap:var(--s-2)}\n.ls4-claps .ic{width:.8em;height:.8em}\n@media (max-width:420px){.ls4-big{font-size:var(--fs-6)}.ls4-word{font-size:var(--fs-6)}.ls4-sent{font-size:var(--fs-4)}}\n/* READ-SHAPES (v184): the models of the K-2 reading lesson shapes (52q-bench5r.js, part teachrd): word cards, the flash card, claps, the\n   dictation ear, the story card, opposite pairs, the sentence fixer, word tiles. Tokens only; every button 48 px or more. */\n.ls5-cards{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;max-width:100%}\n.ls5-card{display:inline-flex;align-items:center;justify-content:center;min-width:72px;min-height:72px;padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-card);\n  background:var(--read);color:var(--surface);font:inherit;font-size:var(--fs-5);font-weight:700;letter-spacing:.04em;box-shadow:var(--shadow)}\nbutton.ls5-card{cursor:pointer}\n.ls5-card.up{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 3px var(--read)}\n.ls5-card.ls5-big{font-size:var(--fs-7);min-width:120px;min-height:96px}\n.ls5-card.ls5-no{opacity:.75}\n.ls5-bk .ic{width:30px;height:30px}\n.ls5-pair{display:flex;gap:var(--s-4);justify-content:center;align-items:center;flex-wrap:wrap}\n.ls5-fl{display:flex;gap:var(--s-3);align-items:center;justify-content:center}\n.ls5-flash{display:inline-block;opacity:1}\n.ls5-flash.go{animation:ls5f 2.6s ease-in forwards}\n@keyframes ls5f{0%,70%{opacity:1}100%{opacity:0}}\n@media (prefers-reduced-motion:reduce){.ls5-flash.go{animation:none}}\n.mmb.ls5-again,.mmb.ls5-say{min-width:48px;min-height:48px}\n.mmb.ls5-ear{min-width:64px;min-height:64px;background:var(--read-tint);color:var(--read-shade)}\n.ls5-dict{display:flex;justify-content:center;margin:var(--s-1) 0}\n.ls5-claps{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:center;min-height:48px;color:var(--read-shade)}\n.ls5-cl{display:inline-flex}\n.ls5-cl0{display:inline-block;width:48px;height:4px;border-radius:2px;background:var(--line)}\n.ls5-cn{font-size:var(--fs-4);font-weight:700;color:var(--ink);text-align:center}\n.ls5-cbs{display:flex;gap:var(--s-3);justify-content:center}\n.mmb.ls5-clapb{min-width:120px;min-height:64px;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;background:var(--read);color:var(--surface)}\n.ls5-story{display:flex;flex-direction:column;gap:var(--s-1);max-width:30em;margin:0 auto;text-align:left}\n.ls5-sl{display:flex;align-items:center;gap:var(--s-2);background:var(--surface-2);border-radius:var(--r-card);padding:var(--s-1) var(--s-2)}\n.ls5-st{flex:1;font-size:var(--fs-4);font-weight:700;color:var(--ink);line-height:1.3}\n.ls5-sp{display:inline-flex;gap:var(--s-1);font-size:clamp(32px,8vmin,48px)}\n.ls5-pr{display:flex;align-items:center;justify-content:center;gap:var(--s-3);flex-wrap:wrap}\n.ls5-ar{display:inline-flex;align-items:center;font-size:var(--fs-6);font-weight:700;color:var(--read-shade)}\n.ls5-sent{font-size:var(--fs-5);font-weight:700;color:var(--ink);line-height:1.4;text-align:center}\n.ls5-c1{display:inline-block;min-width:.7em;border-radius:var(--r-chip);background:var(--surface-2)}\n.ls5-c1.on{background:var(--star-tint);color:var(--read-shade)}\n.ls5-mk{display:inline-block;min-width:.8em;color:var(--ink-2);text-align:center}\n.ls5-mk.on{color:var(--read-shade);background:var(--star-tint);border-radius:var(--r-chip)}\n.ls5-sents2{display:flex;flex-direction:column;gap:var(--s-2)}\n.ls5-fix{display:flex;gap:var(--s-3);justify-content:center}\n.mmb.ls5-fb{min-width:64px;min-height:56px;font-size:var(--fs-5);font-weight:700}\n.choices.ls5-sents{grid-template-columns:1fr}\n.choices.ls5-sents .ch{font-size:var(--fs-4);font-weight:700;justify-content:flex-start;text-align:left}\n.ls5-tiles{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;align-items:flex-end;font-size:var(--fs-5);font-weight:700}\n.ls5-tile{background:var(--surface-2);border-radius:var(--r-chip);padding:0 var(--s-2);color:var(--ink)}\n.ls5-tag{font-size:var(--fs-2);font-weight:700;color:var(--read-shade);background:var(--read-tint);border-radius:var(--r-chip);padding:0 var(--s-2)}\n.ls5-two{display:flex;gap:var(--s-2);justify-content:center}\n.lslots.ls5-nb .ls{background:var(--surface-2)}\n@media (max-width:420px){.ls5-card.ls5-big{font-size:var(--fs-6)}.ls5-st{font-size:var(--fs-3)}.ls5-sent{font-size:var(--fs-4)}.ls5-card{min-width:64px;min-height:64px;font-size:var(--fs-4)}}\n/* STORIES-7: the story reader (52x-story7.js, part teachrd). Tokens only. Every word is a 48 px button (a tap says it); the word\n   being read is lit (.st7-on: a thick ring and a tint, no movement, so reduced motion and Calm mode need nothing more). Phone: the\n   picture over the words; wide and low (1024x600): the picture beside them. */\n.st7-shelf,.st7-story,.st7-quiz,.st7-end{padding:var(--s-3) var(--s-4) var(--s-6)}\n.st7-tip{margin:var(--s-2) auto var(--s-3);max-width:44em;text-align:center;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}\n.st7-sg{margin:0 auto var(--s-4);max-width:60em}\n.st7-sh{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-2);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--read-shade)}\n.st7-sh .ic{flex:none;color:var(--read)}\n.st7-sg.lock .st7-sh{color:var(--ink-2)}\n.st7-sg.lock .st7-sh .ic{color:var(--ink-3)}\n.st7-lk{margin:0;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}\n.st7-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-2)}\n.btn.st7-card{flex-direction:column;justify-content:center;gap:var(--s-1);min-height:120px;padding:var(--s-2);text-align:center;font-size:var(--fs-3);line-height:var(--lh-3)}\n.st7-cp{display:block;width:64px;height:64px}\n.st7-page{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto;max-width:60em}\n.st7-pic{width:112px;height:112px;flex:none}\n.st7-pic .art{display:block;width:100%;height:100%}\n.st7-body{width:100%}\n.st7-t,.st7-txt{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--s-1);margin:0}\n.st7-t{justify-content:center;margin-bottom:var(--s-2)}\n.st7-w{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:48px;padding:0 var(--s-1);border:0;border-radius:var(--r-chip);\n  background:transparent;color:var(--ink);font:inherit;font-family:var(--font-body);font-size:var(--fs-5);line-height:var(--lh-5);cursor:pointer}\n.st7-t .st7-w{font-family:var(--font-display);color:var(--read-shade);font-weight:700}\n.st7-w:focus-visible{outline:3px solid var(--brand);outline-offset:2px}\n.st7-w.st7-on{background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star-shade)}\n.st7-w.st7-past{color:var(--ink)}\n.st7-youmode .st7-w{box-shadow:inset 0 -3px 0 var(--read-tint)}\n.st7-youmode .st7-w.st7-heard{background:var(--read-tint);color:var(--ink)}\n.st7-act{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2);margin:0 auto}\n.st7-act .btn{min-height:var(--tap)}\n.st7-hide{display:none!important}\n.st7-qn{margin:0 0 var(--s-2);text-align:center;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}\n.st7-qp{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-2);margin:0 auto var(--s-4);max-width:40em}\n.st7-qt{margin:0;font-size:var(--fs-5);line-height:var(--lh-5);text-align:center;color:var(--ink)}\n.st7-quiz .inp{max-width:40em;margin:0 auto}\n.choices.st7-ch .ch{min-height:96px}\n.st7-end{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center}\n.st7-big{margin:0;font-family:var(--font-display);font-size:var(--fs-5);line-height:var(--lh-5);color:var(--read-shade)}\n@media (min-width:700px) and (max-height:700px){\n  .st7-page{flex-direction:row;align-items:flex-start}\n  .st7-pic{width:150px;height:150px}\n  .st7-t{justify-content:flex-start}\n  .st7-story{padding-top:var(--s-2)}\n  .st7-tip{margin:var(--s-2) auto}\n}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-4: the words of the drafted lessons the owner has reviewed (part teachrd) ----------
@@ -1542,13 +1542,16 @@ const ST7 = {
    One story (ST7.open):
      Read to me      every word of the title and the story lights up while it is spoken (st7Play). The clock is a timing array,
                      one [start, end] in ms per word (st7Plan): from the story's recording when it has one (ST7A[id].t, with the file
-                     ST7A[id].f in audio/story/: none yet, the owner decides on recordings), else estimated from the words, and then
-                     the tablet's voice says one word at a time on that clock (a word waits for the voice to finish, never longer
-                     than three times its time).
+                     ST7A[id].f in audio/story/; REC-198: every story is recorded, src/data/d-story-audio.js), and then the words light
+                     on the recording's clock (st7Tick); without a recording (or with recordings off: Tablet voice, no Opus) the
+                     clock is estimated from the words and each word is said in turn (its recording, else the tablet's voice; a word
+                     waits for the voice to finish, never longer than three times its time).
      Now you read it the words stay still; a tap on a word says it (any time, in any mode); "I read it!" when done.
      Questions       1 or 2 picture questions (KIND.choice, the round's choice buttons, 49-kinds.js): a wrong picture is marked and
                      greyed, the child tries again; then the end card (Read it again, More stories).
-   Nothing is saved: no stars, no game time, no change to the map. ST7R.rate speeds the read-along clock (tools/smoke.js). */
+   Nothing is saved: no stars, no game time, no change to the map. ST7R.rate speeds the read-along clock (tools/smoke.js).
+   REC-198 (owner decision 2026-11-27): the questions, the sentences these screens say aloud and every word (a tap) are recorded too, in the
+   pet's teacher voice (ST7S, src/data/d-story-audio.js): st7Say plays them, else say() as before. */
 const ST7W = { // every sentence these screens show or say: proposed wording in docs/drafts/STORIES7-READ.md (tools/test.js STORIES-7)
   shelf: 'Stories',
   shelfTip: 'Pick a story. I read it to you, then you read it!',
@@ -1601,6 +1604,20 @@ function st7Q(st, k) {
   return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: picFor(w), v: w, h: true, w}))};
 }
 const st7Btns = ws => ws.map((w, i) => `<button class="st7-w" data-i="${i}">${esc(w.w)}</button>`);
+// REC-198: the recordings play where say() would play a recording (not with ENA.off, the Tablet voice choice, or where Opus cannot play)
+const st7RecOk = () => !ENA.off && !ESA.off && cheerMode() != 'tts' && esaOk();
+// say a line (or, with word, a word of the stories) from its recording in ST7S when there is one, else with say(); q: after what is playing
+function st7Say(t, btn, word, q) {
+  const M = typeof ST7S != 'undefined' ? ST7S : null, f = M && st7RecOk() && (word ? M.w[String(t).toLowerCase()] : M.lines[esKey(t)]);
+  if (!f || ESA.bad[f]) return say(t, btn, null, q);
+  const it = {a: [[f, 0]], i: 0, t: String(t), ts: [String(t)], btn, tch: 1, m: M};
+  if (cheerBusy()) { ESA.q = [it]; return; } // a cheer is not cut off (as say)
+  if (q && speakBusy()) { ESA.q.push(it); return; }
+  if (!q) hush();
+  esaPlay(it);
+}
+// a line for a child who cannot read yet (as nrSay, 12-speech.js), from its recording
+const st7Nr = (t, sel) => { if (t && nrOn()) setTimeout(() => { if (nrOn() && (!sel || $(sel))) st7Say(t, null, 0, 1); }, 500); };
 
 ST7.shelf = function (stop) {
   st7Halt();
@@ -1616,7 +1633,7 @@ ST7.shelf = function (stop) {
   $$('.st7-card').forEach(b => b.onclick = () => { SFX.whoosh(); ST7.open(b.dataset.st); });
   const sec = stop && $(`.st7-sg[data-stop="${stop}"]`);
   if (sec && sec.scrollIntoView) sec.scrollIntoView({block: 'start'});
-  nrSay(ST7W.shelfTip, '#st7s');
+  st7Nr(ST7W.shelfTip, '#st7s');
 };
 
 ST7.open = function (id) {
@@ -1636,9 +1653,9 @@ ST7.open = function (id) {
   $('#st7you').onclick = () => st7You();
   $('#st7done').onclick = () => { st7Halt(); SFX.whoosh(); st7Quiz(0); };
   $$('.st7-w').forEach(w => w.onclick = () => st7Tap(+w.dataset.i));
-  nrSay(ST7W.tipStart, '#st7');
+  st7Nr(ST7W.tipStart, '#st7');
 };
-function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) say(t); }
+function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) st7Say(t); }
 function st7Light(i) {
   for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
   const e = $(`.st7-w[data-i="${i}"]`);
@@ -1652,7 +1669,7 @@ function st7Label(t) { const b = $('#st7read span'); if (b) b.textContent = t; }
 function st7Halt(quiet) {
   const was = ST7R.mode == 'play';
   ST7R.gen++;
-  if (ST7R.au) { try { ST7R.au.pause(); } catch (e) {} ST7R.au = null; }
+  if (ST7R.au) { ST7R.au = null; try { hush(); } catch (e) {} } // a story recording plays through the speech module (storyPlay)
   if (was) { try { hush(); } catch (e) {} }
   if (ST7R.mode == 'play') ST7R.mode = '';
   for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
@@ -1671,23 +1688,35 @@ function st7Play() {
   st7Label(ST7W.stop);
   st7Tip(ST7W.tipRead);
   SFX.pop(1);
-  if (rec && rec.f && rec.t && rec.t.length == ws.length && typeof Audio != 'undefined') {
-    // a recording: the words follow its clock (built for the owner's later recordings: audio/story/<file>)
-    const a = ST7R.au = new Audio('audio/story/' + rec.f);
-    a.ontimeupdate = () => { if (g === ST7R.gen) { const k = st7Lit(plan, a.currentTime * 1000); if (k >= 0) st7Light(k); } };
-    a.onended = () => { if (g === ST7R.gen) st7End(); };
-    a.onerror = () => { if (g === ST7R.gen) { ST7R.au = null; st7Words1(g, 0); } };
-    a.play().catch(() => { if (g === ST7R.gen) { ST7R.au = null; st7Words1(g, 0); } });
-    return;
+  if (rec && rec.f && rec.t && rec.t.length == ws.length && st7RecOk() && !ESA.bad[rec.f]) {
+    // a recording (REC-198: audio/story/<file>), played by the speech module (storyPlay, 12-speech.js: ducks the music, stops on hush, waits
+    // while the app is hidden): the words follow its clock, every word once and in order (st7Tick). A file that does not play: the
+    // word-by-word reading on the estimated clock
+    const it = storyPlay('audio/story/', rec.f, st.t, ST7R.rate || 1, () => {
+      if (g !== ST7R.gen) return;
+      ST7R.au = null; ST7R.plan = st7Plan({id: '', t: st.t, s: st.s}); st7Words1(g, 0);
+    });
+    if (it) { if (!it.failed) { ST7R.au = it; ST7R.lit = -1; st7Tick(g, it); } return; } // failed at once: fail() reads on
   }
-  st7Words1(g, 0);
+  const t0 = plan[0] ? plan[0][0] / (ST7R.rate || 1) : 0; // the first word on its time (a recording's clock starts after its lead-in)
+  if (t0 > 0) setTimeout(() => st7Words1(g, 0), t0); else st7Words1(g, 0);
+}
+// the read-along on a recording's clock: each tick lights the next word once its start time is reached (one word a tick, so none is
+// skipped); after the recording ends, the words left light in turn, then the end. Stopped from outside (hush): the reading stops
+function st7Tick(g, it) {
+  if (g !== ST7R.gen || ST7R.au !== it) return;
+  if (storyGone(it)) return st7Halt(true);
+  const plan = ST7R.plan, ms = it.done ? Infinity : storyMs(it);
+  if (ST7R.lit + 1 < plan.length && plan[ST7R.lit + 1][0] <= ms) st7Light(++ST7R.lit);
+  else if (it.done && ST7R.lit + 1 >= plan.length) { ST7R.au = null; return st7End(); }
+  setTimeout(() => st7Tick(g, it), 25);
 }
 function st7Words1(g, i) {
   const ws = ST7R.ws, plan = ST7R.plan, r = ST7R.rate || 1;
   if (g !== ST7R.gen) return;
   if (i >= ws.length) return st7End();
   st7Light(i);
-  try { say(ws[i].k); } catch (e) {}
+  try { st7Say(ws[i].k, null, 1); } catch (e) {}
   const d = (plan[i][1] - plan[i][0]) / r, gap = ((plan[i + 1] ? plan[i + 1][0] : plan[i][1]) - plan[i][1]) / r, tick = Math.max(10, Math.min(60, d / 4));
   let el = 0;
   const wait = () => {
@@ -1725,7 +1754,7 @@ function st7Tap(i) {
   if (ST7R.mode == 'play') st7Halt(true);
   const w = ST7R.ws && ST7R.ws[i], e = $(`.st7-w[data-i="${i}"]`);
   if (!w || !e) return;
-  say(w.k);
+  st7Say(w.k, null, 1);
   e.classList.add('st7-heard');
 }
 // the picture questions, one at a time
@@ -1741,7 +1770,7 @@ function st7Quiz(k) {
     + `<div class="inp">${KIND.choice.render(q)}</div></div>`);
   $$('#st7q .ch').forEach(b => b.setAttribute('aria-label', q.choices[+b.dataset.i].w));
   $('#back').onclick = () => { SFX.click(); ST7.open(st.id); };
-  $('#st7hear').onclick = e => say(q.say, e.currentTarget);
+  $('#st7hear').onclick = e => st7Say(q.say, e.currentTarget);
   let done = false;
   KIND.choice.bind(q, {}, (v, el) => {
     if (done || !el || el.disabled) return;
@@ -1750,17 +1779,17 @@ function st7Quiz(k) {
       el.classList.add('right');
       SFX.right(k);
       fb(ST7W.right, 'good');
-      say(ST7W.right);
+      st7Say(ST7W.right);
       setTimeout(() => { if ($('#st7q')) st7Quiz(k + 1); }, 1300);
     } else {
       el.classList.add('wrong');
       el.disabled = true;
       SFX.wrong();
       fb(ST7W.wrong, 'warn');
-      say(ST7W.wrong);
+      st7Say(ST7W.wrong);
     }
   });
-  say(q.say);
+  st7Say(q.say);
 }
 function st7Fin() {
   const st = ST7R.st, sg = ST7.stages.find(x => x.id == st.st), line = st7F(ST7W.end, {title: st.t});
@@ -1773,5 +1802,134 @@ function st7Fin() {
   SFX.star();
   say(line);
 }
+/* ---------- REC-198: the recorded stories of STORIES-7 (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js --story) ----------
+   audio/story/<file> (xAI text to speech, English, the voice luna, speed 0.95, Opus 16 kbps mono), in the part teachrd.
+   ST7A[story id] = {f: file, t: [[start, end] in ms, one per word of st7Words], e: 1 when the times are estimated}: 42 stories; word times from speech to text
+   timestamps for 42, estimated from the length for 0. ST7S.lines: the questions and the reader's spoken sentences (79);
+   ST7S.w: the words, lower case, for a tap on a word (397, none means the tablet's voice). Keys of lines are esKey(text). */
+const ST7A={
+"cvc-1":{f:"268aed15c33d.ogg",t:[[20,240],[300,360],[381,461],[521,821],[1242,1522],[1662,1742],[1802,1883],[1903,1983],[2023,2323],[2824,3104],[3164,3325],[3445,3605],[3645,3685],[3705,3765],[3805,4106],[4526,4786],[4847,5007],[5107,5287],[5327,5387],[5407,5487],[5527,5808],[6248,6288],[6349,6649],[6729,6929],[6989,7150],[7550,7791],[7871,7971],[8251,8411],[8431,8512],[8552,8872]]},
+"cvc-2":{f:"5a76929d5b19.ogg",t:[[60,140],[200,360],[440,620],[701,1001],[1501,1701],[1741,1881],[1921,1961],[2021,2202],[2262,2422],[2502,2802],[3222,3262],[3302,3543],[3603,3823],[3903,4103],[4443,4483],[4543,4784],[4844,5064],[5144,5304],[5584,5624],[5664,5844],[5944,6165],[6245,6465],[6545,6745],[7185,7265],[7305,7486],[7546,7706],[7706,7866],[7946,8046]]},
+"cvc-3":{f:"f51970462364.ogg",t:[[60,300],[460,560],[560,660],[800,1041],[1461,1701],[1841,2021],[2081,2161],[2301,2542],[2882,3102],[3302,3602],[3722,3842],[3942,4283],[4723,5003],[5163,5423],[5563,5884],[6284,6404],[6504,6824],[6884,6924],[6964,7184],[7224,7485],[7965,8165],[8325,8605],[8645,8725],[8785,8985],[9045,9286]]},
+"cvc-4":{f:"1737517c7e78.ogg",t:[[80,361],[501,561],[661,1042],[1483,1763],[1903,1983],[2023,2063],[2164,2504],[3005,3266],[3406,3526],[3586,3626],[3746,3907],[4007,4187],[4267,4528],[4988,5269],[5429,5670],[5710,5790],[5850,6090],[6190,6271],[6291,6331],[6411,6731],[7192,7473],[7613,7833],[7873,7953],[8014,8254],[8334,8414],[8454,8494],[8555,8895],[9296,9376],[9416,9496],[9536,9576],[9656,9897],[9977,10117],[10137,10177],[10277,10658]]},
+"cvc-5":{f:"f8d7e3c17568.ogg",t:[[60,140],[241,521],[681,802],[822,882],[962,1263],[1724,1764],[1844,2044],[2145,2405],[2525,2706],[2766,2846],[2886,2926],[2986,3267],[3608,3648],[3728,3908],[4009,4269],[4369,4550],[4590,4670],[4690,4770],[4810,5091],[5532,5752],[5893,6153],[6273,6554],[6915,6995],[7075,7296],[7376,7536],[7576,7636],[7676,7716],[7777,8017],[8318,8398],[8458,8739],[8819,9000],[9000,9180],[9300,9460],[9500,9580]]},
+"cvc-6":{f:"f3e1b4039a59.ogg",t:[[60,260],[320,400],[420,500],[581,861],[1381,1461],[1562,1742],[1782,1882],[1962,2122],[2663,2843],[2883,2983],[3003,3263],[3383,3524],[3564,3624],[3644,3724],[3784,4064],[4545,4805],[4845,4965],[5005,5045],[5105,5325],[5385,5546],[5926,6126],[6206,6346],[6386,6426],[6446,6647],[6707,6867],[7227,7307],[7367,7648],[7708,7828],[7868,7908],[7948,8148],[8208,8388],[8849,9089],[9269,9610],[9770,9870],[9890,9970],[10010,10310],[10390,10631]]},
+"blend-1":{f:"d5c62ccf24b7.ogg",t:[[40,380],[441,541],[561,601],[661,1021],[1482,1522],[1602,1922],[2022,2203],[2263,2343],[2363,2403],[2463,2803],[3144,3184],[3244,3604],[3664,3965],[4045,4505],[5126,5266],[5306,5406],[5486,5787],[5927,6007],[6047,6327],[6427,6808],[7448,7629],[7689,7789],[8009,8089],[8129,8410],[8490,8870],[9271,9351],[9411,9711],[9811,10091],[10172,10312],[10352,10432],[10492,10912],[11233,11513]]},
+"blend-2":{f:"dabca00a078f.ogg",t:[[80,160],[220,601],[701,1162],[1783,2124],[2184,2264],[2304,2745],[2825,2965],[3005,3045],[3145,3346],[3426,3786],[4127,4467],[4688,5048],[5209,5589],[5930,5970],[6050,6391],[6471,6771],[6851,6992],[7312,7352],[7432,7673],[7753,8033],[8114,8254],[8735,8855],[8915,9035],[9135,9476],[9516,9616],[9696,10057],[10558,10638],[10678,10758],[10798,10838],[10898,11259],[11359,11760]]},
+"blend-3":{f:"bc58af85ee83.ogg",t:[[60,100],[180,461],[541,641],[701,1082],[1443,1783],[1883,2044],[2084,2124],[2204,2444],[2505,2605],[2665,3066],[3386,3466],[3526,3807],[3847,3927],[3967,4047],[4067,4107],[4188,4368],[4468,4809],[5229,5310],[5350,5410],[5450,5490],[5530,5831],[6151,6432],[6532,6752],[6792,6892],[6953,7213],[7494,7574],[7594,7674],[7734,7774],[7834,8235],[8576,8876],[8976,9277],[9377,9758]]},
+"blend-4":{f:"4c3a60f280bb.ogg",t:[[60,140],[200,380],[500,801],[1561,1821],[1902,2022],[2082,2422],[2522,2662],[2682,2762],[2802,2842],[2922,3263],[3783,3883],[3923,4063],[4103,4183],[4223,4303],[4504,4844],[5184,5384],[5545,5805],[5945,6185],[6605,6685],[6745,6966],[7026,7226],[7326,7546],[8067,8327],[8387,8467],[8507,8787],[8907,9127],[9187,9488],[9988,10048],[10088,10168],[10288,10469],[10529,10589],[10649,10969]]},
+"blend-5":{f:"99a555da5a91.ogg",t:[[80,401],[501,761],[901,1001],[1142,1282],[1863,2163],[2283,2443],[2503,2564],[2664,2704],[2784,3525],[3885,4026],[4126,4466],[4546,4626],[4787,4947],[5287,5407],[5488,5828],[5888,5948],[6088,6469],[6910,7210],[7330,7891],[8191,8552],[8972,9253],[9353,9653],[9693,9774],[9794,9874],[9914,10294],[10374,10474],[10535,11055]]},
+"blend-6":{f:"10bd7e757769.ogg",t:[[120,501],[501,1402],[1402,1582],[1702,1942],[2002,2062],[2102,2142],[2202,2483],[2863,2943],[3003,3244],[3324,3604],[3644,3764],[3824,3884],[3924,4004],[4044,4445],[4925,5286],[5826,5907],[5947,6167],[6267,6547],[6607,6687],[6707,6788],[6848,7168],[7608,7688],[7729,7969],[8029,8309],[8329,8409],[8429,8509],[8610,9110],[9110,9951],[9951,10311],[10351,10412],[10432,10512],[10552,10872]]},
+"digraph-1":{f:"0062e64e39e0.ogg",t:[[60,140],[220,461],[561,861],[1222,1462],[1543,1703],[1743,1783],[1843,2184],[2464,2544],[2644,2905],[3025,3105],[3145,3225],[3266,3306],[3366,3686],[4067,4147],[4227,4468],[4568,4768],[4808,4868],[4908,4968],[5029,5209],[5289,5750],[6291,6331],[6351,6531],[6631,6671],[6671,6792],[6812,6852],[6892,7352],[7453,7613],[7633,7713],[7753,8074],[8635,8875],[8935,9015],[9055,9316],[9376,9496],[9516,9596],[9696,10017],[10117,10177],[10197,10297],[10338,10798],[11279,11860]]},
+"digraph-2":{f:"43f9cfa10040.ogg",t:[[40,240],[380,460],[561,841],[1381,1621],[1862,1942],[2002,2042],[2082,2302],[2382,2642],[3143,3323],[3483,3783],[3824,3904],[3944,3984],[4044,4344],[4844,5025],[5165,5465],[5505,5585],[5605,5645],[5725,5965],[6466,6666],[6786,7087],[7127,7207],[7287,7587],[7647,7987],[8468,8708],[8788,8948],[9028,9248],[9589,9749],[9809,10109]]},
+"digraph-3":{f:"770b37acd5a6.ogg",t:[[80,440],[521,601],[621,701],[761,1001],[1441,1802],[1862,2002],[2062,2102],[2202,2402],[2542,2763],[3123,3203],[3263,3463],[3563,3644],[3684,3744],[3764,3844],[3904,4204],[4645,4945],[5065,5265],[5285,5325],[5405,5686],[6086,6166],[6226,6446],[6586,6767],[6807,6887],[6907,6987],[7047,7287],[7668,7848],[7908,7988],[8048,8228],[8368,8729],[9069,9609]]},
+"digraph-4":{f:"f8cfc14d048e.ogg",t:[[60,321],[401,481],[501,581],[681,1022],[1503,1803],[2164,2504],[3145,3285],[3326,3426],[3526,3606],[3626,3706],[3806,4127],[4628,4848],[4888,4988],[5048,5389],[5509,5830],[6511,6591],[6611,6691],[6791,6972],[7012,7052],[7092,7493],[7973,8033],[8073,8154],[8194,8234],[8374,8634],[8695,8815],[8855,8895],[8955,9316]]},
+"digraph-5":{f:"9c2517c8f567.ogg",t:[[120,200],[441,661],[781,922],[1022,1282],[1903,2064],[2164,2484],[2545,2585],[2645,2845],[2945,3045],[3126,3466],[3867,3927],[4067,4288],[4348,4428],[4448,4488],[4548,4909],[5290,5430],[5490,5790],[5911,6251],[6291,6391],[6432,6692],[7193,7534],[7634,7994],[8415,8495],[8696,8916],[9016,9156],[9237,9477]]},
+"digraph-6":{f:"0d6b6c74bbdf.ogg",t:[[60,140],[300,521],[621,1001],[1462,1502],[1602,1802],[1902,2203],[2363,2583],[2643,2723],[2763,2803],[2864,3184],[3524,3845],[4445,4526],[4606,4846],[4906,4986],[5066,5286],[5727,5807],[5867,6168],[6288,6808],[6848,6949],[7009,7529],[7810,8150],[8611,8691],[8751,8971],[9031,9111],[9211,9412],[9652,9752],[9772,9832],[9892,10172],[10233,10373],[10453,10833]]},
+"silente-1":{f:"c8235514cbed.ogg",t:[[40,421],[541,641],[661,721],[821,1222],[1743,2123],[2184,2324],[2384,2424],[2524,2704],[2825,3225],[3666,4007],[4087,4187],[4267,4567],[4648,4828],[4988,5108],[5189,5229],[5309,5549],[6110,6190],[6250,6571],[6631,7032],[7192,7332],[7633,7773],[8053,8234],[8774,8895],[8935,9015],[9115,9676],[9956,10036],[10117,10437],[10497,10577],[10637,10958],[11038,11499],[11940,12240],[12320,12921]]},
+"silente-2":{f:"12eeb3b734b3.ogg",t:[[80,120],[180,461],[481,601],[661,1022],[1583,1843],[1883,2144],[2204,2244],[2264,2545],[2565,2665],[2725,3025],[3426,3486],[3566,3787],[3847,4188],[4268,4348],[4428,4729],[5129,5209],[5270,5570],[5630,5891],[5971,6111],[6552,6612],[6692,7013],[7053,7133],[7193,7554],[7914,8055],[8095,8155],[8215,8435],[8475,8515],[8596,8916],[9357,9597],[9617,9778],[9818,9878],[9938,10138],[10158,10198],[10259,10379],[10459,10840]]},
+"silente-3":{f:"8896f6284bdb.ogg",t:[[20,280],[340,661],[681,821],[901,1262],[1522,1782],[1823,2103],[2123,2243],[2303,2544],[2584,2644],[2684,2764],[2844,3164],[3405,3465],[3565,3845],[3905,4206],[4246,4286],[4326,4626],[4687,4767],[4807,4847],[4907,5247],[5568,5648],[5708,5948],[6048,6469],[6509,6569],[6649,6970],[7330,7571],[7611,7991],[8031,8091],[8131,8191],[8251,8592],[9073,9253],[9333,9593],[9633,9914],[9974,10174],[10274,10755]]},
+"silente-4":{f:"e1aefb9ecc77.ogg",t:[[80,381],[461,581],[581,681],[741,1162],[1602,1983],[2003,2143],[2183,2223],[2283,2704],[3104,3245],[3305,3505],[3545,3625],[3745,4106],[4607,4867],[4967,5288],[5328,5448],[5548,5868],[5888,5948],[5989,6029],[6109,6469],[6910,7090],[7170,7230],[7290,7451],[7451,7611],[7691,8011],[8051,8152],[8612,8933],[8953,9073],[9113,9393],[9514,9794],[9894,10014],[10054,10355],[10795,10895],[10996,11416],[11616,11817],[11857,11937],[11997,12217]]},
+"silente-5":{f:"988e44b77b0f.ogg",t:[[40,381],[401,481],[501,581],[641,1102],[1783,2084],[2164,2304],[2364,2404],[2505,2785],[2825,3246],[3727,3947],[4488,4568],[4629,5069],[5109,5210],[5250,5350],[5390,5530],[6131,6272],[6312,6372],[6412,6772],[6833,7213],[7875,7955],[8015,8315],[8355,8416],[8456,8496],[8556,8876],[8896,8957],[8977,9057],[9117,9558],[10199,10459],[10519,10620],[10660,10940],[11040,11421],[11461,11521],[11561,11641],[11682,12082]]},
+"silente-6":{f:"d350f0e1014b.ogg",t:[[60,140],[180,481],[541,841],[841,1622],[1622,1723],[1803,2163],[2203,2404],[2444,2484],[2544,2804],[2824,2965],[3025,3445],[3445,4226],[4226,4647],[4747,5068],[5088,5188],[5248,5709],[6129,6410],[6470,6891],[6991,7171],[7291,7391],[7491,7732],[8573,8613],[8673,8934],[9234,9455],[9535,9875],[9875,10596],[10596,11137],[11618,11738],[11778,11878],[11958,12179],[12219,12599]]},
+"team-1":{f:"f124dc08df1d.ogg",t:[[20,100],[200,441],[501,561],[601,661],[721,1021],[1382,1422],[1542,1742],[1842,2043],[2103,2163],[2203,2243],[2283,2543],[2824,2904],[2964,3184],[3244,3585],[3645,3725],[3745,3825],[3905,4126],[4586,4626],[4686,4887],[4967,5287],[5347,5668],[5708,5788],[5808,6088],[6429,6509],[6609,6809],[6909,7150],[7250,7470],[7570,7871],[8231,8351],[8371,8411],[8491,8872],[8932,9192]]},
+"team-2":{f:"49b883db9da3.ogg",t:[[60,100],[180,380],[520,800],[1281,1361],[1481,1921],[2001,2101],[2141,2582],[2902,3162],[3222,3362],[3402,3442],[3502,3682],[3762,4062],[4423,4683],[4743,4863],[4903,4943],[5003,5283],[5363,5663],[6064,6164],[6284,6544],[6664,6764],[6844,7264],[7304,7364],[7384,7464],[7504,7825],[8265,8445],[8485,8565],[8665,8845],[8945,9225],[9325,9526],[9806,9926],[9966,10006],[10086,10286],[10366,10626]]},
+"team-3":{f:"dd4e8898323e.ogg",t:[[120,301],[421,501],[561,741],[1543,1703],[1763,1844],[1904,2044],[2184,2465],[2525,2605],[2645,2685],[2725,2986],[3467,3547],[3627,3848],[3928,4028],[4068,4128],[4168,4208],[4268,4569],[5170,5310],[5350,5431],[5491,5671],[5771,6212],[6693,6894],[6974,7214],[7254,7354],[7415,7495],[7515,7555],[7655,7916],[8497,8577],[8677,8917],[9038,9218],[9278,9358],[9418,9639],[10220,10440],[10581,10801],[10861,11142]]},
+"team-4":{f:"acfcebce1456.ogg",t:[[60,321],[461,561],[581,641],[721,1142],[1603,1843],[1983,2103],[2164,2504],[2604,2805],[2865,2985],[3005,3085],[3145,3526],[3926,4067],[4107,4167],[4227,4427],[4868,4968],[5028,5189],[5269,5429],[5489,5609],[5709,5850],[5890,5950],[5990,6030],[6130,6391],[6831,6911],[6972,7292],[7392,7753],[7833,8214],[8274,8554],[8614,9075],[9576,9776],[9896,10217],[10237,10317],[10337,10377],[10477,10738],[11198,11279],[11359,11559],[11659,11860],[12000,12280]]},
+"team-5":{f:"74904ccc3a40.ogg",t:[[80,260],[260,440],[440,520],[620,900],[1581,1801],[1921,2081],[2181,2341],[2401,2481],[2521,2641],[2721,3001],[3502,3762],[3842,4142],[4182,4262],[4302,4402],[4462,4742],[5182,5543],[5623,5943],[6023,6423],[6823,6903],[7003,7223],[7343,7703],[7744,7864],[7964,8304],[8364,8524],[8564,8644],[8704,9024],[9324,9925],[10365,10565],[10665,10865],[10945,11105],[11205,11545],[11665,11945]]},
+"team-6":{f:"312290e71db9.ogg",t:[[60,100],[180,440],[560,640],[680,740],[800,1161],[1761,2021],[2061,2161],[2201,2481],[2582,2642],[2762,2842],[2862,2902],[2942,3162],[3222,3502],[3922,4062],[4182,4343],[4443,4943],[5003,5103],[5203,5503],[6144,6404],[6584,6624],[6724,6984],[7124,7324],[7384,7464],[7484,7564],[7625,7925],[8185,8365],[8445,8685],[9185,9265],[9305,9526],[9606,9806],[9886,10206],[10646,10726],[10866,11087],[11127,11227],[11267,11547],[11727,11847],[11927,12387],[12427,12527],[12567,12808]]},
+"rvowel-1":{f:"789735f19940.ogg",t:[[60,100],[180,461],[541,661],[741,1082],[1463,1723],[1863,2064],[2124,2184],[2204,2284],[2344,2625],[2685,2925],[3005,3326],[3847,3907],[3987,4227],[4308,4468],[4708,4809],[4889,5089],[5149,5229],[5289,5550],[5590,5930],[6592,6832],[6872,7093],[7133,7173],[7233,7473],[7533,7654],[7674,7714],[7794,8054],[8215,8575],[9136,9216],[9256,9557],[9597,9817],[10038,10278],[10358,10559],[10579,10679],[10719,10759],[10839,11180],[11580,11641],[11661,11741],[11781,11821],[11921,12302]]},
+"rvowel-2":{f:"e93f06a392a9.ogg",t:[[40,361],[501,581],[641,1042],[1483,1784],[1884,1964],[2024,2064],[2124,2465],[2886,2966],[3046,3186],[3246,3286],[3367,3687],[3768,3848],[3868,3908],[3988,4309],[4409,4689],[5170,5451],[5551,5912],[5952,6032],[6072,6192],[6273,6513],[6593,6994],[7415,7495],[7575,7856],[7916,8136],[8236,8577],[8978,9198],[9319,9539],[9639,9900],[10361,10441],[10461,10541],[10581,10621],[10701,10962],[11062,11403]]},
+"rvowel-3":{f:"6da5e1928256.ogg",t:[[20,340],[421,501],[521,601],[661,1081],[1582,1883],[1943,2103],[2143,2183],[2243,2564],[2624,2744],[2824,3084],[3124,3184],[3265,3645],[4106,4246],[4286,4326],[4406,4767],[4867,5327],[5808,6108],[6189,6469],[6529,6589],[6629,6709],[6749,7110],[7550,7971],[8452,8532],[8592,8912],[8992,9173],[9273,9533],[9593,9653],[9733,10054],[10555,10755],[10795,10875],[10935,11216],[11256,11336],[11376,11456],[11516,11596],[11676,12037],[12137,12437]]},
+"rvowel-4":{f:"b1484d50b505.ogg",t:[[60,140],[200,501],[621,961],[1502,1782],[1822,1963],[2003,2043],[2143,2403],[2463,2583],[2603,2643],[2704,3004],[3084,3204],[3264,3364],[3785,3865],[3945,4226],[4286,4346],[4446,4726],[4806,5107],[5167,5247],[5287,5347],[5427,5708],[6188,6429],[6489,6589],[6629,6869],[6969,7370],[7450,7550],[7630,8051],[8471,8551],[8611,8892],[8992,9292],[9352,9433],[9473,9693],[9733,10033],[10514,10594],[10694,10934],[11015,11335],[11355,11435],[11495,11675],[11736,11776],[11856,12136],[12236,12577],[13057,13238],[13318,13578],[13618,13778],[13878,14059],[14139,14619]]},
+"rvowel-5":{f:"d9cf9bb54a95.ogg",t:[[80,160],[220,501],[581,941],[1422,1683],[1783,1883],[1923,2203],[2263,2384],[2404,2444],[2484,2764],[2824,3185],[3525,3846],[3886,4166],[4286,4387],[4507,4987],[5428,5749],[5809,6089],[6189,6289],[6390,6890],[7471,7651],[7752,8052],[8112,8312],[8413,8673],[8753,9033],[9534,9775],[9855,10175],[10215,10315],[10375,10576],[10616,10676],[10736,10936],[11016,11157],[11577,11677],[11737,12078],[12138,12218],[12278,12579],[12679,12939],[12979,13100],[13200,13600]]},
+"rvowel-6":{f:"c6f8dd346d09.ogg",t:[[60,140],[240,601],[1362,1662],[1702,1822],[1863,2163],[2263,2463],[2483,2523],[2604,2924],[3485,3605],[3645,3845],[3885,3925],[4005,4226],[4266,4366],[4446,4766],[5227,5327],[5387,5588],[5668,6008],[6068,6208],[6248,6288],[6369,6809],[7270,7430],[7470,7550],[7590,7851],[7951,8351],[8391,8511],[8552,8872],[8972,9132],[9593,9673],[9733,9973],[10054,10314],[10394,10654],[11155,11516],[11656,11956],[12056,12156],[12156,12236],[12277,12597],[12657,12757],[12777,12837],[12877,12917],[12977,13198]]},
+"team2-1":{f:"9cc9b6fb5615.ogg",t:[[80,401],[541,641],[661,741],[801,1122],[1522,1823],[1883,2103],[2183,2323],[2343,2424],[2444,2524],[2564,2844],[3185,3245],[3285,3385],[3525,3826],[4006,4126],[4206,4627],[4967,5047],[5148,5408],[5448,5528],[5588,5688],[5768,6189],[6690,6730],[6730,6870],[6970,7271],[7331,7431],[7511,7591],[7651,7952],[8432,8673],[8713,8813],[8853,9113],[9234,9554],[9614,9714],[9774,10075]]},
+"team2-2":{f:"743d64f301c7.ogg",t:[[60,100],[160,500],[540,601],[621,701],[781,1201],[1721,1761],[1822,2142],[2202,2522],[2602,2802],[2842,2902],[2943,3063],[3103,3503],[3963,4124],[4144,4324],[4384,4464],[4544,4864],[4924,5024],[5044,5104],[5144,5244],[5305,5605],[6085,6165],[6225,6526],[6546,6586],[6626,6946],[6986,7046],[7126,7446],[7506,7586],[7606,7667],[7707,8147],[8607,8988],[9068,9148],[9228,9668],[9808,9848],[9948,10409],[10909,11029],[11069,11149],[11210,11410],[11450,11530],[11590,11890],[11970,12090],[12190,12551],[12631,12951]]},
+"team2-3":{f:"fb60ea4055b4.ogg",t:[[60,140],[200,560],[720,820],[840,920],[1041,1261],[1741,1781],[1861,2201],[2301,2401],[2401,2501],[2601,2821],[3022,3242],[3282,3362],[3382,3422],[3502,3862],[4382,4462],[4522,4822],[4962,5143],[5203,5523],[5643,5763],[5803,6023],[6483,6543],[6663,6863],[7024,7364],[7424,7524],[7584,7804],[8404,8524],[8544,8624],[8684,8884],[8985,9245],[9325,9465],[9605,9685],[9785,9985],[10085,10445],[10545,10665],[10705,11066],[11566,11646],[11686,11946],[12026,12226],[12226,12426],[12566,12866],[13387,13447],[13547,13727],[13787,13867],[13907,14167],[14247,14587],[14687,14747],[14767,14847],[14887,15088],[15228,15488]]},
+"team2-4":{f:"81782b731269.ogg",t:[[60,140],[240,500],[581,881],[1481,1722],[1822,1962],[2002,2042],[2122,2362],[2442,2723],[3163,3223],[3363,3683],[3723,3784],[3824,3904],[3924,4004],[4064,4364],[4925,5185],[5485,5565],[5605,5805],[5865,6186],[6226,6546],[7167,7347],[7407,7547],[7647,7927],[8007,8308],[8368,8448],[8488,8608],[8628,8668],[8728,9309],[9809,9889],[9949,10230],[10330,10770],[10850,10950],[10990,11291],[11331,11411],[11451,11651],[11751,11971],[12051,12131],[12231,12492],[12972,13092],[13132,13172],[13252,13413],[13493,13933]]},
+"team2-5":{f:"2c79f93b280c.ogg",t:[[60,320],[440,961],[1341,1561],[1661,1901],[1941,2001],[2081,2381],[2802,2862],[2942,3202],[3242,3282],[3342,3822],[4143,4203],[4263,4583],[4763,4803],[4883,5363],[5423,5543],[5563,5603],[5663,5844],[5924,6384],[6764,6904],[6944,6984],[7064,7324],[7364,7404],[7465,7865],[7945,8065],[8165,8465],[8525,8685],[8725,8805],[8845,9166],[9866,10126],[10226,10546],[10566,10687],[10747,10847],[10907,10967],[11007,11127],[11187,11487]]},
+"team2-6":{f:"bd1fab1adbe2.ogg",t:[[120,461],[581,701],[701,781],[841,1162],[1582,1923],[1983,2063],[2103,2143],[2203,2523],[2603,3004],[3204,3264],[3364,3625],[3665,3705],[3765,4085],[4185,4306],[4326,4386],[4406,4486],[4526,4967],[5267,5407],[5447,5487],[5587,5848],[5948,6288],[6348,6609],[6649,6749],[6789,7169],[7249,7350],[7810,8151],[8251,8691],[8731,8832],[8892,9352],[9653,9733],[9813,10033],[10113,10474],[10514,10594],[10634,10994],[11355,11695],[11775,11936],[11976,12076],[12156,12416],[12476,12797]]}};
+const ST7S={dir:"audio/story/",ext:".ogg",voice:"luna",lines:{
+"Not that one. Look at the story again.":"663b510a6f44",
+"Now you read it!":"6cd14312ea3c",
+"Pick a story. I read it to you, then you read it!":"4c604ee4cdac",
+"Read the story. Tap a word if you need help.":"a645001ab0b4",
+"Tap Read to me. Each word lights up as I say it.":"a61b04aa7016",
+"What comes to the farm?":"b5802a7631e1",
+"What do Jay and Dad ride?":"6c870cf6ad05",
+"What do Lin and Gabe play with?":"08a5427f4798",
+"What do Mark and Herb race?":"c32dfc282b52",
+"What does Bart see?":"d22760622afe",
+"What does Bea sleep on?":"c4dc5a400155",
+"What does Brad have?":"2103e6f21300",
+"What does Brook hold up?":"54e0476fe16c",
+"What does Brook look at?":"eba5d25c1462",
+"What does Chip peck on Dad?":"c2da770f2ea8",
+"What does Dave have?":"4a0055751f13",
+"What does Drew like to do?":"ff0682b9f424",
+"What does Duke hide?":"2b49dd66774d",
+"What does Gail have on?":"e71a8f8a9bbd",
+"What does Gus have?":"7ac8c9818dd9",
+"What does Hen sit on?":"e516a4b419fa",
+"What does Jake put on top?":"34ee6d5f7d04",
+"What does Kate have?":"933730f2c3d7",
+"What does Kirk drip jam on?":"40a1e7fe4b2d",
+"What does Max have?":"f27dce187f41",
+"What does Mom get Bart?":"acbcc1f78bca",
+"What does Pete ride?":"a39e81a12c17",
+"What does Roy have?":"cc73bc0bf296",
+"What does Scout dig up?":"d4dc04c80a1c",
+"What does Seth have?":"9129f5bcd6b7",
+"What does Stef have in the cup?":"0f7f75807f77",
+"What does the duck have?":"35a447c34f2d",
+"What does the moth sit on?":"c132f823c925",
+"What goes flat on the grass?":"4499708b9564",
+"What has mud on it?":"8315e9a5b229",
+"What is in the box?":"655aedd857dc",
+"What is in the fort?":"3cf436878f5b",
+"What is in the shed?":"df4373fea893",
+"What is on the shirt?":"38ac06b083d7",
+"What is the fish in at the start?":"e72b81277b11",
+"What is the sheep in?":"aa8c39240d3d",
+"What is up in the sky?":"6c2428b66a47",
+"What jumps over the moon?":"900a81bd24a4",
+"What peeks out?":"9eb139d5d161",
+"What sits on the ship?":"1808de955a54",
+"What slips?":"4dcdfaa46c6c",
+"Where did the bug hide?":"39d4120c9338",
+"Where do Brent and Dad sit?":"15b8c70c5e44",
+"Where does Bea wake up?":"3a386a4c0cdd",
+"Where does the goat sit?":"355da79d6628",
+"Where does the kite land?":"4a9fe89975b4",
+"Where does the plane land?":"ec67c3942fa8",
+"Where is the nest?":"6281f0a3a81a",
+"Where is the ship?":"1bf8bd566bc8",
+"Who brings the boat back?":"9c5a8673d60a",
+"Who does Jay wave at?":"201f59532ab0",
+"Who does the mouse see?":"a201a391b90f",
+"Who drinks it up?":"1466e7ee0986",
+"Who gets on last?":"9fa8de2d11fb",
+"Who gets the bun?":"a5efcef0c9ac",
+"Who grabs the bone?":"2e6eed280e36",
+"Who has a hat on too?":"692b8fca7e95",
+"Who hoots?":"efd6f09c9f59",
+"Who is Brad?":"4a5872c2591c",
+"Who is Chip?":"e938851627ea",
+"Who is Fern?":"247efa6b7cbe",
+"Who is Max?":"f7eea2a7d360",
+"Who is in the boat?":"8f7cdf9c14dd",
+"Who is in the mud?":"7285bb446833",
+"Who jumps in?":"2e42c24ac058",
+"Who lives in the house?":"1eded4c820ea",
+"Who naps in the day now?":"ca3d31d46325",
+"Who ran up?":"788cd9e21c7f",
+"Who sat on the rug too?":"849a9b4cd0f3",
+"Who sits on the log?":"9ded6998d6d4",
+"Who smiles at Pete?":"6f41f81d24cc",
+"Who swims past?":"235e7d253359",
+"Who takes a bite?":"32d6673e6586",
+"Yes! That is right.":"78437267c24b"},
+w:{"a":"718603531832","adds":"c0f06e58e499","after":"393747859232","again":"08cd1ea7cff5","all":"bb9eb65908f2","an":"a8f283c70d36","and":"2d5376aa2769","are":"03be4948f63b","asks":"9dcbfa5e0ebd","at":"12dc48dd97c6","away":"b41c75818f8c","back":"f762f579a7e5","bake":"d6fd15759b7c","bakes":"a7ea29b1e668","bam":"5a7470a92017","band":"a4b3e3e4dfe8","barb":"b6a872d30645","barks":"efd5e0837468","barn":"91967ffc7f4a","bart":"31a181d25efc","bea":"2d5cdad2dea9","bee":"1721fbf2d64d","beep":"d34edaa06fef","bench":"d35b4655f538","beth":"ce57a0960ecb","big":"e08c9790fbab","bike":"22ecd86d882b","birch":"d96e23550a9f","bird":"0cafcee0ecee","bite":"a8019c491392","boat":"23fdd9e06723","bone":"fac8f4294417","box":"2eecce4a5429","brad":"4e66458161ed","brave":"15fc4c7b0efb","brent":"bca0b91e2d7e","brings":"f4fecd3b19a9","brook":"7f8370a24981","brown":"2e04f08a0b16","bug":"74b0ba4d4771","bun":"38904177ffe0","bus":"06d1f695d66c","by":"8432176b836e","cake":"89c5d2f5e301","camp":"3ad020c7c505","can":"406bf335ab11","car":"79a5245f8239","cat":"e8020ec4aee3","chad":"22c23421b1a2","check":"8334da7604c1","chick":"b47bec769495","chicks":"e73148e56ff3","chin":"cff7346bce3a","chip":"cfcec9d53807","chirp":"4a8e3ac04e46","chirps":"7a46d620bfc9","clap":"17b5ddc0e44d","clean":"eb0c304b0018","click":"2f6ed5619b40","clown":"0ddc2d60e90e","coat":"6e195628fd5e","comes":"4d631e78e176","corn":"2d7c340cfc1c","couch":"1a354cc609c8","cow":"a6486fcee4b8","crab":"a5f9e915ef0d","cross":"e0b8d437f622","crown":"334145014510","crust":"9aa530f2c923","cup":"808584c74a95","dad":"bc5c73ba4c5c","dad's":"e3757e71a6cf","dark":"fac3bcd4b6eb","dave":"7dec0c62a8fd","day":"2b2507623dc8","dean":"3ac67376795a","desk":"b4ff74121c5d","dice":"ae07b1695c2d","dig":"8d9d773e3087","digs":"46fae8419c72","dish":"c26df08df56f","dives":"ff3203ca1d2e","do":"f34a253eab8b","dog":"a2b836c080d1","down":"1bd15654d681","draw":"a459639e73cb","draws":"b42f6c211e4c","drew":"6f246d9cd6bf","drinks":"85b5f85e4932","drip":"bf74b04ed268","drips":"197e265238e3","drop":"0987b656c6d3","drops":"25d9a75fd300","drum":"dbdbd9976c84","duck":"45ba305fcc9a","duke":"97bcb9e30060","eat":"487f8a52c5b8","eating":"5ea873faff61","eats":"6288aaff2b06","egg":"4763f7371a2c","farm":"bf4740c225d0","fast":"5b7dcf2ff4d6","faster":"2452c4be2a36","feast":"b3507c87bdd0","feet":"7291edf9f36e","fern":"22f4f35ea225","find":"5ebe364f5a77","finds":"88170a4b8232","first":"7972ccbf04de","fish":"8a2e9aed333d","five":"2a495179d0e1","flat":"770f327fffda","floats":"64707db1bf5c","flop":"9731a502647c","for":"7287a89f786c","fort":"b6e7318a68c0","fox":"9948bb5dd1a6","fran":"54013c0590e0","frog":"f56f716599ae","fun":"e4d43b7ef788","gabe":"fa4b54e860b9","gail":"b500528540e3","game":"c398a35f9754","gate":"a6586455792e","get":"1eb788b37abc","gets":"7add488b67e9","gift":"2b53a69175e1","glen":"2bedc0823292","glides":"770e88494a25","go":"ccb7cdb90c56","goat":"99c65c068653","good":"4505d6b0afd1","grabs":"960a0351e280","gran":"d54cdd4c1c43","grapes":"83e249865eb1","grass":"b0bcf8d88a67","green":"086afdd0f9dd","grin":"641f5034da77","grins":"402e5c78f834","ground":"e9c54bca15fb","gus":"5a15d0dec204","had":"5a4f49655243","hands":"0cbb0d3ca0b7","handstand":"1fd274bc019d","hang":"058ddb4f29f7","has":"cc0061645f81","hat":"6aff308202c7","have":"fe3a49939257","hawk":"0202654f8a47","he":"31effe3f475c","heap":"46f531240a04","help":"372b66a54ffa","hen":"5888ec95d3bd","her":"e9416155df90","herb":"d203d54f2d99","herb's":"3683144e2831","here":"7c6c123e124d","hid":"19a8e4c1f021","hides":"215aa83ea372","hill":"10eba7d366bb","him":"db34c29a0c07","his":"41a080e90f51","holds":"7939796592bc","hole":"1a47d9c4079b","home":"23113c8b7ae4","hoots":"a631e9be8302","hops":"b1112b2f228a","hound":"bfeecf22280d","house":"8b2b874f68b2","howls":"faacb42a7908","hugs":"e047fd5b77a8","i":"f1b552a99c33","in":"e0fb9cd96c89","into":"96fba130fadd","is":"ccece9bef783","it":"9dd835f9c271","its":"7fab336467b5","jake":"2e7d65cccaa4","jam":"fbcadf2dbac8","jay":"8c7f85716591","jokes":"52a291e9fb5a","josh":"d0f659a4f27a","jump":"97f1ff4f4cab","jumps":"d2ee6d4e7c0b","just":"a6142a61eb10","kate":"8b5c7fc6fb4f","keeps":"337e91328907","kim":"b3e91597bce2","kirk":"770c8f71b53b","kite":"fe1f37dd0624","kurt":"1be4c0406e6f","lake":"4b2e0bee84cb","lamp":"cbdf06c7297d","lands":"fa513efd0bdd","last":"8e04f97b4232","laugh":"066376a5d08f","leaf":"f5ba563cc249","legs":"bdee41ae6d96","let":"5ca8c2f0bd5a","lid":"e3427d1a18df","lifts":"e5a354cc69fa","likes":"7a04d5e2346a","lin":"6d9aafb44a8d","line":"215a0b06409f","little":"e28ed9c625a2","live":"2fbd3083d2ad","lives":"8e51d6a4e526","log":"f271c65a078d","looks":"0c2ae6479546","lots":"3965ea353f0d","lunch":"77c1d7b4587e","make":"909747cf8fec","makes":"9c718b314960","mark":"ff814bac4b26","mark's":"7ad4137a9ca8","max":"e4c547130617","me":"7d5a8c3a1cb3","mike":"0757afbabd38","mike's":"f4e83134025f","milk":"0035d6c6e869","mom":"76fe4d540c70","moon":"46ea9f060287","moth":"08ebf811636c","mouse":"d107fbf58d91","mud":"79e348edabd4","mug":"6227fbe6d487","munch":"e62fb48af3d3","name":"eedfac798879","nap":"cf186144fabf","naps":"fabc88ea3de8","neal":"dc7e4f1718c5","nest":"2fefcd9272c1","new":"78d7ee959b1f","next":"5e4b34ad6bfa","no":"6fd826663c6e","norm":"a0e1e377c498","norm's":"f7e3ca2d7cb3","nose":"3705018e7cf2","not":"875ad37f9b13","now":"e7898c2555ff","nut":"f718b8b2b832","oats":"9dc981d613fb","of":"2b751b0f7d7a","off":"98bbe116a505","on":"bfaf0cba8635","one":"ab08ca73c611","oops":"ff1794704a33","our":"d07fc3714739","out":"21c5973cd848","over":"0192dce56085","owl":"c64f72fee5bc","packs":"7741b376f143","pail":"05a71c4f7a7f","past":"988d8fbe7c37","peanuts":"fab8090eb94c","pecks":"a3624b4de97a","peeks":"8c7800f07f3d","pet":"a2c5eddf8795","pete":"a3301ec1c814","picnic":"941d29d86dac","pig":"90ec03b909b9","plane":"7e9e60588cfc","play":"fe806203ec40","plop":"956fb6d0bfad","pond":"91d311915e08","pool":"849ff589d5a2","pops":"d91e63a8bc8f","puts":"7212664a1e39","race":"1885ec7ba497","rain":"49a1ed72992d","rains":"f1cb22cc9d11","ran":"04de2d9a885c","ray":"9032fe2c09e5","red":"8a8d48097817","rest":"c376cec0c561","rides":"6f1eb62d6368","rises":"86940878e07f","road":"383b30029c3e","rocks":"4ebfebe21cca","room":"2040fedafcd9","rose":"11cfcf5a7dcc","round":"d3dab121518f","roy":"ab57e577ab82","rug":"1bbd642ab8f9","run":"ec0068ffa0cd","runs":"2713ca06cf05","said":"26e8935937fb","sails":"4bd09825b6fa","sat":"03ec18434ff2","scoop":"122ce32165fd","scout":"c6285a19128b","scrub":"67b129c5515d","sea":"e980e159cbb1","seat":"d48f5e5f9243","see":"519fcf07cadb","sees":"76a037c49198","set":"b16651e804c5","seth":"e5e310b2e6d5","sets":"1b5b9c6968e2","shark":"a8244c484aac","she":"4706a64e226e","shed":"91adaa6dd308","sheep":"8b4367bf5059","sheet":"e2d5e0f9b551","shell":"c0f21ec0905a","ship":"fcb5dee42295","shirt":"e7cd499dc408","shouts":"1343dd2d430e","side":"001af7c431da","sing":"91ba264ea584","sit":"f241d52fc98b","sits":"98ceb79417c7","six":"c9550792c3b5","sleep":"3b3debb26ea2","sleeps":"56b2d00baad0","slips":"7da92e528819","smile":"544ac4c64bc7","smiles":"710c741b2324","sneaks":"271fb07ce118","sniffs":"b36b46813142","so":"78b0d56369d1","soap":"e61692179a94","sock":"41ffd39da5f5","song":"63712f6493aa","speeds":"18c469640dba","spill":"f2aa278fa3f0","spins":"e96039d2a72d","splash":"912c09887053","spoon":"3407c75e22a9","spot":"d5a19972afb8","star":"a1dc714737a2","stars":"3a6682a4ee0e","start":"721faa81ab7a","starts":"2ea327eaf422","stef":"c28c4933dd1b","still":"80bfaf5fc5ec","stomp":"a0a609a2f63c","stop":"dd178bb9f77a","stops":"3b90315acf12","storm":"5ca0424157e7","sun":"41a8477dd1de","swim":"e64f3f9cbbdd","swims":"4270c453220f","swoops":"86722a30232c","takes":"f4cc3853895b","tap":"4cbea58bc9be","tapes":"bf43feb40f1d","tell":"a08933b16383","tent":"8ecdb8757229","that":"8e6a1a19c0b7","the":"45fcf906a9af","them":"296ce245c957","then":"6512d83a832d","there":"7b4c435d4865","they":"707056415001","thin":"1224aeaf4fe8","three":"aed902dbfa2c","thud":"1a6f5abf1c8f","thump":"051c996cb1db","thunder":"b0fd54f44804","tips":"f32a6692e195","to":"24ea7fa2d40e","toast":"8988e555257b","too":"fdb698bc60e2","top":"89f0d0b321c5","torch":"46dc561ea4d1","tosses":"ec304f1787b2","toy":"18ff73ecd16b","train":"9ba397f2e825","tree":"5f11a7397016","trees":"715f587dad72","trip":"b439ce087e8a","tub":"ed05501dbc7d","turns":"49c1628273e2","two":"1ac5f85cdbb0","up":"4223fd99a1eb","us":"7ace7fcbb480","wait":"ee8d0c7c4ff5","wakes":"faf0dcc82ad6","wave":"edfaa6e493ff","waves":"ed40dec70671","wet":"76a1c544bab0","what":"83f6a33efc3f","when":"0dbe586d2c43","whit":"7afac5cfb210","white":"c45011560c75","will":"fd829527853f","win":"f4ff8891cc55","wish":"1125e6e492bd","with":"6ed308e5d9d3","wow":"bc89df0a0701","yard":"aea261f9778b","yells":"86858df504bf","you":"f8404f3f4151","zip":"0e1d8e74aced","zips":"39a7015c3361","zooms":"afd731c94cf9"}};
 
 var TEACHRD_VER='v198'; // last line: the whole file ran (checked by dataReady() before the app starts)

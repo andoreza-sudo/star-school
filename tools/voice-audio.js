@@ -40,14 +40,21 @@ async function tts(text, voice, lang, speed) {
   }
 }
 // stt(file, lang) -> the text xAI speech to text hears in a recording (EN-PRAISE checks every new file with it)
-function stt(file, lang) {
+function stt(file, lang) { const j = sttFull(file, lang); return j ? j.text : null; }
+// sttFull(file, lang) -> the whole answer: {text, duration (s), words: [{text, start, end}] (s)}, or null (REC-198: the stories' word times)
+function sttFull(file, lang) {
   for (let a = 0; ; a++) {
     const r = cp.spawnSync('curl', ['-sS', '--max-time', '60', '-X', 'POST', 'https://api.x.ai/v1/stt', '-H', 'Authorization: Bearer proxy-injected',
       '-F', 'model=grok-voice-transcribe-2.0', '-F', 'language=' + lang, '-F', 'file=@' + file]);
-    try { const j = JSON.parse(r.stdout.toString()); if (typeof j.text == 'string') return j.text; } catch (e) {}
+    try { const j = JSON.parse(r.stdout.toString()); if (typeof j.text == 'string') return j; } catch (e) {}
     if (a >= 3) return null;
     cp.spawnSync('sleep', [String(2 + a * 3)]);
   }
+}
+// the length of a recording in ms (ffprobe)
+function durMs(file) {
+  const r = cp.spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]);
+  return Math.round(parseFloat(r.stdout.toString()) * 1000);
 }
 // trim the silence, then Opus 16 kbps mono in Ogg, no tags
 function transcode(wav, out) {
@@ -100,4 +107,4 @@ function prune(dir, ext, keep) {
   return [gone.length, [...keep].reduce((s, f) => s + (fs.existsSync(path.join(d, f)) ? fs.statSync(path.join(d, f)).size : 0), 0)];
 }
 
-module.exports = { fileOf, tts, stt, transcode, record, prune, curl, ROOT };
+module.exports = { fileOf, tts, stt, sttFull, durMs, transcode, record, prune, curl, ROOT };
