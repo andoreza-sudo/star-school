@@ -10930,7 +10930,7 @@ var BTW = {
     'gheq obbo xvyy tha ' +
     // AUD-BT S-6: more runs the filler letters spelt (about 1 grid in 50 read one of them forwards)
     'nefr nahf nany encr tnl ubzb pbba fcvp qlxr shp spx avcf chor gneq ahqr yhfg juber ovgpu anmv cravf'),
-  more: 'act god wed tab sub arc hips rats arts tsar sore ores eros roes ebon ones eons carb murd nett rifts ports strop prost writs ' +
+  more: 'act god wed hueso tab sub arc hips rats arts tsar sore ores eros roes ebon ones eons carb murd nett rifts ports strop prost writs ' +
     'notices auctioned reflow fowler cleats fluor pam deb nus gorf shore could cloud finder player grown silent enlist tinsel ' +
     'three ether there pots tops opts post spot stop evil vile veil live lemon melon thing night elbow below bowel north thorn ' +
     'inch chin cheap peach study dusty canoe ocean charm march cried cider taste state words sword petal plate pleat leapt ' +
