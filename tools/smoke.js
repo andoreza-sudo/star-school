@@ -438,7 +438,22 @@ async function traceGlyph(page, o = {}) {
   throw new Error('trace: the glyph was not finished');
 }
 
-// Plays the round that is on screen to the end and opens the chest.
+// OLDER-14 (owner approved 2026-11-27, OLDER_ON 1): a round ends in one of two ways. Below grade 4 (or with the gate off) the treasure
+// chest, which the bot taps to see the rewards; for grades 4 to 6 the score card at once, with no chest to tap (#fin #sc, as the OLDER-14
+// segment checks it; the payouts are the same). endWait waits for either and says which ('chest' or 'card'); endOpen also taps the chest
+// when there is one, so after it the card and its buttons are coming either way. Neither changes the grade.
+const END_SEL = '#chest, #fin #sc';
+async function endWait(page, timeout = 5000) {
+  await page.waitForSelector(END_SEL, { timeout });
+  return (await page.$('#chest')) ? 'chest' : 'card';
+}
+async function endOpen(page, timeout = 5000) {
+  const k = await endWait(page, timeout);
+  if (k === 'chest') await page.click('#chest');
+  return k;
+}
+
+// Plays the round that is on screen to the end and opens the chest (grades 4 to 6 with OLDER-14: the score card, nothing to open).
 async function playRound(page, label, total, onAsk) {
   if (total === undefined) total = await page.evaluate(() => G.n); // 8 at the default grade (K), 6 Pre-K, 10 from 1st
   let n = 0;
@@ -453,10 +468,10 @@ async function playRound(page, label, total, onAsk) {
     // wait for the next question object or the finish screen
     await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
   }
-  await page.waitForSelector('#chest', { timeout: 5000 });
+  await endWait(page);
   const score = await page.evaluate(() => G.score);
   if (score !== total) fail(`${label}: expected ${total}/${total} from the bot, got ${score}`);
-  await page.click('#chest');
+  await endOpen(page);
   await page.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
   // a pet growth / hatch overlay may cover the buttons: tap its Yay button when it shows up
   await vwait(page, 800);
