@@ -11087,9 +11087,12 @@ async function main() {
         // more (one failing file would fail the install): after activation, when the page asks (a few seconds after the start, when idle),
         // 40 at a time; so this waits until the cache holds them all (SW-AUDIO: one file failing)
         const a1 = await p1.evaluate(async () => {
-          await partsLoad(['teach', 'teach12']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file
+          await partsLoad(['teach', 'teach12', 'teachrd']); // REC-ALL: the teacher manifest is in teach12 (on demand, with every lesson), not the data file; REC-198: the story manifest in teachrd
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext)),
-            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext)))]; // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
+            Object.values(EN_TEACH.lines).map(f => f + EN_TEACH.ext),
+            // REC-198 (owner decision 2026-11-27): the recorded STORIES-7 stories, their questions and spoken lines, and the word taps (audio/story,
+            // ST7A and ST7S in d-story-audio.js), which sw.js caches with the others
+            Object.values(ST7A).map(a => a.f), Object.values(ST7S.lines).concat(Object.values(ST7S.w)).map(f => f + ST7S.ext)))]; // EN-PRAISE: the English recordings too; TEACH-4: the teacher lines
           const t0 = Date.now();let have = new Set();
           while (Date.now() - t0 < 90000) {
             const c = await caches.open('starschool-audio');have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
