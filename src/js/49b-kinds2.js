@@ -1822,8 +1822,8 @@ if (typeof genEsGusta == 'function') genEsGusta = k2Wrap('es_gusta', genEsGusta)
 // another kind; a stop that gives only that kind is remembered in KMONO for the session, so it pays the extra draws once.
 // RELB-NOREPEAT: no label twice in a round while unused ones remain. G.qu (label -> times asked) holds what makeQ returned and the
 // check-in's questions (qUse). Skipped draws (up to QNEW.T) do not count towards the 10 kind draws, so a used-up sort or mark pool
-// gives the level's other items first. A label comes back only when all draws were used ones, or the unused ones would all be a third
-// of one kind in a row (that rule first): the one asked fewest times (of another kind, for the run), not the one just before.
+// gives the level's other items first. A label repeats only when every draw was a used one (or only a third-in-a-row kind is
+// unused; that rule first): the one asked fewest times, never the one just before.
 const KMONO = {};
 const QNEW = {T: 60};
 function qUse(g, q) {
