@@ -14,3 +14,11 @@ Done: site/landing.html "Made for Android tablets." is now "For Android tablets 
 The Play listing's descriptions should say the same when they are written (HANDOFF step 13).
 
 Also on 2026-11-28: Unscramble drops "road" (Mohenjo-daro spells "daro"); see PROGRESS APPROVE-200.
+
+## Wording fixes (review item 5), approved 2026-11-28
+
+The owner approved every row of "Whistlestop: wording fixes to approve" (https://claude.ai/artifact/SKytFfx2Gt4VmwGmnx1VbX) with
+no notes: Discover D1-D11 (D12, the Confucius question, stays as it is), Spanish S1-S8 (S3: days shown and said without "el", with
+new recordings), Reading R1-R8 and the picture-word swaps R9-R15 (torch→fork, sword→horn, church→nurse, clown→town, draw→straw,
+noise→soil, dawn→lawn), Math M1-M6. Also approved: the style of the Discover "why" lines (sample of 8 from Science Lab), spoken
+in the tablet's voice. Each world's full set of lines still goes to the owner for a read-through before it is switched on.
