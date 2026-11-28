@@ -19,5 +19,6 @@ var BTW = {
     'inch chin cheap peach study dusty canoe ocean charm march cried cider taste state words sword petal plate pleat leapt ' +
     'steal least slate tales stale cheat teach diary dairy fired fried earth heart hater stone notes tones onset angle angel ' +
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea ' +
-    'taco hissed appraised', // AUD-BT S-7: coat, dishes and disappear have these anagrams (the tiles could start as TACO or HISSED)
+    'taco hissed appraised ' + // AUD-BT S-7: coat, dishes and disappear have these anagrams (the tiles could start as TACO or HISSED)
+    'daro', // APPROVE-200 (owner decision 2026-11-28): Mohenjo-daro (DISC-46 history) spells "daro", so Unscramble drops "road"
 };

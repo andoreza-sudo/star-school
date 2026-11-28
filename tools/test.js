@@ -15098,7 +15098,10 @@ run('Spanish speaking check S-SPK2',()=>{
       // owner decision 2026-11-27: new recordings (REC-198): the DEEP-15 Spanish words are 134 more recorded lines (798 -> 932), so the every-6th set has more
       // targets and its far picks move: true match 96.4% of 330 (was 95.8% of 288), false accept 16.4% of 324 (was 14.9% of 282); the full set
       // (node tools/spk-calib.js) 99.3% / 11.8% of 2,414, similar word 220/786 (28%), another word 30/784 (3.8%), as before; thresholds unchanged
-      const want={npos:330,nneg:324,voice:54,child:264,similar:43,other:10,silence:0};
+      // owner decision 2026-11-27: new recordings (ES-MORE): the 22 weather and feelings words are 30 more recorded lines (932 -> 962), so the every-6th
+      // set moves again: true match 96.4% of 338 (was 96.4% of 330), false accept 11.4% of 332 (was 16.4% of 324); the full set (node tools/spk-calib.js)
+      // 99.3% of 1,698 / 12.1% of 2,502, similar word 225/816 (28%), another word 38/815 (4.7%), other2 39/811, silence 0/60; thresholds unchanged
+      const want={npos:338,nneg:332,voice:54,child:272,similar:32,other:6,silence:0};
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
       if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
@@ -19338,6 +19341,8 @@ run('Brain Teasers and practice fixes R-01b',()=>{
      const rows=[[{},60],[{stars:2,hints:1,paid:3},60],[{stars:1,hints:3,paid:3},60],[{band:'D',stars:1,hints:2,paid:3},120],[{stars:1,hints:2,paid:2},40]];
      for(const[o,w]of rows){load(null);const v=pb(o);if(v!==w)add('puzzle game time '+J(o)+': '+v+' s, want '+w)}
      load(null);S.grade=1;ptCfg().max=0;
+     // not today's Puzzle of the Day (on 2026-11-28 it was this very maze B1, and the daily's 60 s doubled the pay)
+     BT.dailyInfo();BT.st().daily.done=['_other'];
      const o2=BT.finish({id:'maze',band:'B',level:1,puzzle:{},state:null,hints:2,sec:30,day:today()},{mistakes:0,hints:2,sec:30});
      if(o2.stars!==1||o2.sec!==60)add('a band B first solve with 2 hints: '+o2.stars+' star(s), '+o2.sec+' s (want 1 star, 60 s; it paid 30 s)');
      note.push('two hints: 1 star and the full 60 s (band B; it paid 30 s)')}
@@ -26137,7 +26142,9 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
     // OWNER-1127: the start-up page carries the flag the status line asks for (was: always 0, while the read-through was unreviewed)
     const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
     if(!new RegExp('let DEEP15_ON = '+on0+';').test(html))bad('index.html is not built with DEEP15_ON = '+on0+' (the status line of '+DOC+')');
-    const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DEEP15_ON='+on);return pg};
+    // DISC-46 (owner approved 2026-11-27, DISC46_ON 1 in the build): the same part load would also add Canyon Trail and Volcano Ridge to the
+    // Discover map; this check is DEEP-15's alone, so DISC-46 is off here (the DISC-46 check loads its worlds with DEEP-15 as built)
+    const page=on=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade=1;DISC46_ON=0;DEEP15_ON='+on);return pg};
     const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
     // off: the map loads what it always did, and nothing changes
     let pg=page(0);const n0=pg.run('NODES.disc.map(nid).join()');pg.run('pathMap("disc")');serveAll(pg);
@@ -26170,6 +26177,321 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
   const code=D15FILES.map(f=>rd((f[0]=='d'?'src/data/':'src/js/')+f)).join('\n');
   if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the DEEP-15 code reaches outside the tablet or draws at random');
   return{problems:p,note:'gate off: same as without DEEP-15 ('+note.off+'); on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' Discover items, '+note.words+' Spanish words; longest answer '+(note.long||[]).join(', ')+'; repeats a round '+(note.rep||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DEEP15_ON '+on+')'};
+});
+
+// ---- DISC-46 (docs/drafts/DISC46-READ.md): Discover worlds for grades 4 and 6, drafted for the owner and gated ----
+// src/data/d-disc46.js (the items) and src/js/52z-disc46.js (disc46Apply) are in part teaches; 42n-disc46.js (the map hooks) and
+// 42m-disc46on.js (DISC46_ON, BUILT from docs/drafts/DISC46-READ.md) are in index.html. 1. The gate off changes nothing: the state and
+// seeded questions of every Discover stop are the same as an app built without the DISC-46 files, and the hooks do nothing. 2. With the
+// gate forced on here (as the owner's flip would build): Canyon Trail (g 4) after Science Lab and Volcano Ridge (g 6) after Star
+// Observatory, six stops and a boss each, in either order with DEEP-15; a 4th grader starts in Canyon Trail and a 6th grader in Volcano
+// Ridge, other grades where they did; old stars, a running round and the picked world keep their stops; every item is well formed with
+// exactly one right answer (the Discover rules of DEEP-15: the hint never names the answer, the answer is not in the prompt, the right
+// answer the single longest choice in under 40%, no repeat of a Discover question, pictures from the allow list, no banned theme of CONTENT-01);
+// 3. the lazy load on a fresh page; 4. the gate is the one-line flip and the read-through lists every item, its hint and every choice.
+run('DISC-46: Discover worlds for grades 4 and 6, the gate, answerable items, lazy load',()=>{
+  const p=[],bad=m=>{if(p.length<80&&!p.includes(m))p.push(m)},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),note={};
+  const DOC='docs/drafts/DISC46-READ.md',doc=rd(DOC),FILES=['42m-disc46on.js','42n-disc46.js','52z-disc46.js','d-disc46.js'];
+  const fp=f=>(f[0]=='d'?'src/data/':'src/js/')+f;
+  const jsOff=cat('js').replace(rd(fp(FILES[0])),'').replace(rd(fp(FILES[1])),'')+PARTS.map(x=>cat('js',x.stem).replace(rd(fp(FILES[2])),'')+cat('data',x.stem).replace(rd(fp(FILES[3])),'')).join('')+cat('data');
+  if(jsOff.length!==js.length-FILES.reduce((a,f)=>a+rd(fp(f)).length,0))bad('the DISC-46 files could not be taken out of the app for the comparison');
+  const snap=function(){
+    const qs=[];for(const n of NODES.disc)if(n.sk!=='boss')for(let s=1;s<=12;s++)qs.push(JSON.stringify(genQ(n.sk,n.lv,s)));
+    return JSON.stringify({BANK,SK:Object.keys(SK).map(k=>[k,SK[k].t,SK[k].max,SK[k].area]),PATHS,NODES,WR,ICO_SK,SCN_W,ST:REP.STRANDS,qs,s:[0,1,2,3,4,5,6].map(g=>defStart('disc',g))});
+  };
+  // 1. gate off (DEEP15_ON as built in both, so the two apps differ only by these files)
+  const off0=eval(jsOff+';('+snap.toString()+')()');
+  const off1=eval(js+';DISC46_ON=0;const __ap=disc46Apply(),__w=[d46Want("disc"),D46F];('+snap.toString()+')()+JSON.stringify([__ap,__w])');
+  if(off1!==off0+JSON.stringify([false,[false,0]]))bad('with the gate off Discover is not exactly as without the DISC-46 files (or disc46Apply did something)');
+  // 2. gate on; d15 says whether DEEP-15 is applied first, after, or not at all
+  const body=function(d15){
+    const r={bad:[],n:{}},B=m=>{if(r.bad.length<80&&!r.bad.includes(m))r.bad.push(m)};
+    if(d15==='first'){DEEP15_ON=1;deep15Apply()}
+    const so=NODES.disc.findIndex(n=>nid(n)=='sci_earth3');G={path:'disc',node:so};MAPW.disc=PATHS.disc.worlds.findIndex(w=>w.id=='d_cosmos');
+    loadSave(JSON.stringify({v:LATEST,mapv:2,name:'Kid',grade:4,maps:{disc:{sci_life1:3,sci_earth2:2,sci_earth3:1}}}));migrate();
+    const stars0=JSON.stringify(S.maps.disc),olds=NODES.disc.map(nid);
+    DISC46_ON=1;
+    if(disc46Apply()!==true)B('disc46Apply did not apply with the gate on');
+    if(disc46Apply()!==false||d46Want('disc'))B('disc46Apply applied twice, or the map still wants the part');
+    if(d15==='after'){DEEP15_ON=1;deep15Apply()}
+    if(nid(NODES.disc[G.node])!=='sci_earth3')B('the running round moved to '+nid(NODES.disc[G.node]));
+    if(PATHS.disc.worlds[MAPW.disc].id!=='d_cosmos'&&d15!=='after')B('the picked world moved');
+    if(JSON.stringify(S.maps.disc)!==stars0)B('stars moved');
+    for(const id of olds)if(!NODES.disc.some(n=>nid(n)===id))B('stop '+id+' is gone');
+    const W=PATHS.disc.worlds,ids=W.map(w=>w.id+'/'+w.g).join();
+    const want=(d15?'d_nature/0,d_garden/1,':'d_nature/0,')+'d_lab/3,d_canyon/4,d_cosmos/5,d_ridge/6';
+    if(ids!==want)B('Discover worlds '+ids);
+    const NEW={d_canyon:['sci_enr','sci_lite','sci_shape','sci_part','civ_gov4','civ_reg'],d_ridge:['sci_web','sci_deep','sci_storm','sci_wres','civ_river','civ_class']};
+    for(const wid in NEW){const wi=W.findIndex(w=>w.id==wid);
+      if(W[wi].nodes.map(n=>n[0]+n[1]).join()!==NEW[wid].map(x=>x+1).join()||!NODES.disc[WR.disc[wi][1]].boss)B(wid+' stops '+JSON.stringify(W[wi].nodes));
+      if([].concat(SCN_W[wid])[0]!==(wid=='d_canyon'?'desert':'volcano'))B(wid+' has no scene')}
+    for(const n of NODES.disc)if(n.sk!='boss'&&(!SK[n.sk]||n.lv>SK[n.sk].max||!n.t||n.t.length>24))B('stop '+nid(n)+' title or skill');
+    const all=[...NEW.d_canyon,...NEW.d_ridge];
+    for(const id of all)if(REP.strandOf(id)==='Other skills'||icoSk(id)==='star'||!ICONS[icoSk(id)])B(id+': report strand or icon');
+    // who starts where (a fresh save of each grade)
+    const mk=S.maps.disc;S.maps.disc={};
+    const st=[0,1,2,3,4,5,6].map(g=>{S.grade=g;return W[defStart('disc',g)].id+(curWorld('disc')===defStart('disc',g)?'':'!')});
+    const ws=(d15?['d_nature','d_garden','d_garden']:['d_nature','d_nature','d_nature']).concat(['d_lab','d_canyon','d_cosmos','d_ridge']);
+    if(st.join()!==ws.join())B('start worlds by grade K-6: '+st.join());
+    S.maps.disc=mk;S.grade=4;
+    // items
+    const STOP=/^(a|an|the|and|or|of|in|to|it|is|its|on|at|up|from|where|that|with|this|have)$/;
+    const EVO=/\bevolution|\bevolv|natural selection|ancestor|descend|over (many|the) generations|millions? of years|billions? of years|survival of the fittest/i;
+    const BADW=/\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|unicorns?|fairy|fairies|genies?|warlocks?)\b|cast(s|ing)? a spell/i;
+    const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+    const text=it=>[it.q,it.a,it.hint,...(it.d||[]),...Object.keys(it.bins||{}),...Object.values(it.bins||{}).flat(),...(it.pairs||[]).flat(),...(it.order||[])].filter(x=>x!=null).join(' | ');
+    const oldQ=new Set(Object.keys(BANK).filter(id=>!all.includes(id)).flatMap(id=>BANK[id].map(x=>x.q)));
+    const seenQ={};
+    for(const id of all)BANK[id].forEach((it,bi)=>{
+      const w=id+' "'+it.q+'"',form=it.form||'choice';r.n[form]=(r.n[form]||0)+1;
+      if(it.lv!==1)B(w+': not level 1');
+      if(seenQ[it.q]||oldQ.has(it.q))B(w+': the same question twice, or already in Discover');seenQ[it.q]=1;
+      if(EVO.test(text(it))||BADW.test(text(it)))B(w+': evolution or magic');
+      if(!it.hint||it.hint.length<20)B(w+': hint missing');
+      const cell=x=>String(x).replace(/\|/g,'\\|');
+      if(!doc.includes('| '+cell(it.q)+' |'))B(w+': not in '+DOC);
+      if(form==='choice'){
+        if(it.grade!==(NEW.d_canyon.includes(id)?'4':'6'))B(w+': grade '+it.grade);
+        const ch=[it.a,...it.d],lc=ch.map(x=>x.toLowerCase());
+        if(new Set(lc).size!==lc.length)B(w+': a choice repeats');
+        if(it.d.length<2||it.d.length>3)B(w+': '+it.d.length+' wrong answers');
+        for(const c of ch)if(!doc.includes(cell(c)))B(w+': choice "'+c+'" not in '+DOC);
+        if(!doc.includes(cell(it.hint)))B(w+': hint not in '+DOC);
+        const hw=it.hint.toLowerCase().split(/[^a-z]+/),aw=it.a.toLowerCase().split(/[^a-z]+/).filter(x=>x.length>=3&&!STOP.test(x));
+        if(it.hint.toLowerCase().includes(it.a.toLowerCase())||aw.some(x=>hw.includes(x)))B(w+': the hint gives the answer: '+it.hint);
+        const qw=it.q.toLowerCase().split(/[^a-z]+/);if(aw.some(x=>x.length>=5&&qw.includes(x)))B(w+': the answer is in the prompt');
+        if(it.em&&(!allow.has(String(it.em[1]).replace(/️/g,''))||!/^[a-z-]+$/.test(it.em[0])))B(w+': picture '+it.em);
+      }else{
+        if(form==='sort'&&(Object.values(it.bins).some(l=>!l.length)||new Set(Object.values(it.bins).flat()).size!==Object.values(it.bins).flat().length))B(w+': an empty bin or a chip twice');
+        if(!doc.includes(cell(it.hint)))B(w+': hint not in '+DOC);
+        for(const x of [...Object.keys(it.bins||{}),...Object.values(it.bins||{}).flat(),...(it.pairs||[]).flat(),...(it.order||[])])if(!doc.includes(cell(x)))B(w+': "'+x+'" not in '+DOC);
+      }
+      for(let s=1;s<=3;s++){
+        const q=genBank(id,1,{bi,s});KIND[q.kind].render(q);
+        for(const x of kindProblems(q))B(w+': '+x);
+        if(JSON.stringify(bankRebuild(q.bk))!==JSON.stringify(q))B(w+': bankRebuild differs');
+        if(q.kind==='choice'&&q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(w+': not exactly one right choice');
+      }
+    });
+    r.long=[];
+    for(const id of all){
+      const seen=new Set(),labels={},kinds={};let lg=0,ch=0;
+      for(let s=1;s<=2000;s++){const q=genQ(id,1,s),w=id+' '+q.label+': ';seen.add(q.bk.bi);kinds[q.kind]=(kinds[q.kind]||0)+1;
+        if(q.sk!==id||q.lv!==1)B(w+'genQ did not stamp sk/lv');
+        if(!q.label||q.label.length>=60)B(w+'label length');
+        if(labels[q.label]!==undefined&&labels[q.label]!==q.bk.bi)B(w+'label is not unique');labels[q.label]=q.bk.bi;
+        if(q.kind==='choice'){ch++;if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(w+'not exactly one right choice');
+          const L=q.choices.map(c=>String(c.v).length),mx=Math.max(...L);if(String(q.ans).length===mx&&L.filter(v=>v===mx).length===1)lg++}}
+      if(seen.size!==BANK[id].length)B(id+': 2000 questions drew '+seen.size+' of '+BANK[id].length+' items');
+      if(!(kinds.choice>800)||!kinds.sort||!kinds.match||!kinds.order)B(id+': kinds '+JSON.stringify(kinds));
+      if(lg/ch>=.4)B(id+': the right answer is the longest choice in '+(100*lg/ch).toFixed(1)+'%');
+      r.long.push(id+' '+(100*lg/ch).toFixed(0)+'%');
+    }
+    r.det=require('crypto').createHash('md5').update(all.map(id=>JSON.stringify(genQ(id,1,5))).join()).digest('hex');
+    return r;
+  };
+  for(const d15 of [0,'first','after']){
+    const a=eval(js+';DEEP15_ON=0;('+body.toString()+')('+JSON.stringify(d15)+')');
+    for(const m of a.bad)bad((d15?'(DEEP-15 '+d15+') ':'')+m);
+    if(!d15){note.n=a.n;note.long=a.long;note.det=a.det}else if(a.det!==note.det)bad('the new questions differ with DEEP-15 '+d15);
+  }
+  // 3. the lazy load, on a fresh page as the built app runs: nothing new in the start-up files; with the gate on the Discover map loads
+  //    teaches and shows the new world for a 4th grader; a stop tapped first waits for it; with the gate off nothing changes
+  const need=['index.html',...START_FILES,...LAZY_FILES];
+  if(need.some(f=>!fs.existsSync(path.join(ROOT,f))))bad('not built: run python3 tools/build.py');
+  else try{
+    const html=rd('index.html'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)])),TF='teaches.'+BUILD_VER+'.js';
+    for(const f of ['index.html',...START_FILES])if(/Canyon Trail|Volcano Ridge|D46_HINT|d46Rows/.test(f==='index.html'?html:files[f]))bad(f+' carries DISC-46 items (they belong in part teaches)');
+    if(!files[TF].includes('const D46 = {')||!files[TF].includes('function disc46Apply()'))bad(TF+' does not carry the items');
+    if(Buffer.byteLength(files[TF])>=PART_WARN)bad(TF+' is over the part warning');
+    const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
+    if(!new RegExp('let DISC46_ON = '+on0+';').test(html))bad('index.html is not built with DISC46_ON = '+on0+' (the status line of '+DOC+')');
+    const page=(on,g)=>{const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('S.grade='+g+';DISC46_ON='+on);return pg};
+    const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
+    let pg=page(0,4);pg.run('pathMap("disc")');serveAll(pg);
+    if(/d_canyon|d_ridge/.test(pg.run('PATHS.disc.worlds.map(w=>w.id).join()'))||pg.run('D46F')!==0)bad('gate off: the Discover map has a new world');
+    for(const [g,wid,t] of [[4,'d_canyon','Energy at Work'],[6,'d_ridge','Food Webs &amp; Balance']]){
+      pg=page(1,g);pg.run('pathMap("disc")');serveAll(pg);
+      const st=JSON.parse(pg.run('JSON.stringify({w:PATHS.disc.worlds.map(w=>w.id).join(),f:D46F,cur:PATHS.disc.worlds[curWorld("disc")].id,map:!!document.querySelector("#map")&&document.querySelector("#map").innerHTML.includes('+JSON.stringify(t)+')})'));
+      if(!st.w.includes(wid)||st.f!==1||st.cur!==wid||!st.map)bad('gate on, grade '+g+': after the part loaded the map is '+JSON.stringify(st));
+    }
+    pg=page(1,4);pg.run('S.unlockAll=true;open("disc",NODES.disc.findIndex(n=>nid(n)=="sci_earth2"))');
+    if(!/id="partwait"/.test(pg.app.innerHTML))bad('gate on: a stop tapped first does not wait for the part');
+    serveAll(pg);
+    const g1=JSON.parse(pg.run('JSON.stringify({node:G&&nid(NODES.disc[G.node]),q:!!(G&&G.q)})'));
+    if(g1.node!=='sci_earth2'||!g1.q)bad('gate on: the stop that waited opened '+JSON.stringify(g1));
+    pg.run('open("disc",NODES.disc.findIndex(n=>nid(n)=="sci_storm1"))');pg.flush();
+    const g2=JSON.parse(pg.run('JSON.stringify({sk:G.sk,q:G.q&&G.q.sk})'));
+    if(g2.sk!=='sci_storm'||g2.q!=='sci_storm')bad('gate on: Weather Systems did not start: '+JSON.stringify(g2));
+    note.lazy='lazy load ok';
+  }catch(e){bad('the lazy load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // 4. the gate
+  const st=(doc.match(/^status:\s*(.*)$/m)||[])[1]||'',on=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test(st)?1:0;
+  if(!rd('src/js/42m-disc46on.js').includes('let DISC46_ON = '+on+';'))bad('42m-disc46on.js does not follow the status line of '+DOC+' (run python3 tools/build.py)');
+  for(const f of FILES.slice(0,2))if(partOf(f))bad(f+' is not in index.html');
+  for(const f of FILES.slice(2))if(partOf(f)!=='teaches')bad(f+' is not in part teaches');
+  const h=rd('src/js/46-home.js');
+  if(!/d15Warm\(p\);(?:if\(ESMORE_ON&&p==\"es\"\)partsLoad\(D15P\);)?d46Warm\(p\);/.test(h)||!/return d15Open\(p,i\);if\(d46Want\(p\)\)return d46Open\(p,i\);/.test(h))bad('46-home.js: the open and map hooks');
+  const code=FILES.map(f=>rd(fp(f))).join('\n');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the DISC-46 code reaches outside the tablet or draws at random');
+  if(/magic|evolution/i.test(code+doc))bad('a banned theme word (CONTENT-01)');
+  return{problems:p,note:'gate off: same as without DISC-46; on: '+Object.entries(note.n||{}).map(([k,v])=>v+' '+k).join(', ')+' items; longest answer '+(note.long||[]).join(', ')+'; '+(note.lazy||'')+'; status '+(st.split(' ')[0]||'?')+' (DISC46_ON '+on+')'};
+});
+
+// ---- ES-MORE (docs/drafts/ES-MORE-READ.md): more Spanish weather and feelings words, drafted for the owner and gated ----
+// src/data/d-es-more.js (the words, confuse pairs, caption words and drawings) and src/js/52z-esmore.js (esMoreApply) are in part teaches;
+// 42f-esmoreon.js (ESMORE_ON, BUILT from the read-through's status line) and one call in 46-home.js are in index.html. 1. The gate off
+// changes nothing: the units, SPN, ART, the skills and many seeded questions of every Spanish stop are the same as an app built without the
+// ES-MORE files. 2. On (forced here, as the owner's flip would build): every new word is at the end of its unit (weather or feel), with an
+// English meaning and a picture (a drawing for every weather word), well formed (P2-30, R-01s), no word already in a Spanish unit, no
+// two pictures alike in a unit, every question with one right answer and no confuse pair among its choices; no other unit, picture or
+// skill changes; the new drawings follow the object-art rules (DESIGN_SYSTEM 6.5). 3. The lazy load: nothing new at start-up but the
+// flag and the hook; with the gate on the Spanish map brings the words in (lessons on or off), with it off it does not. 4. The gate is the
+// one-line flip and the read-through lists every word, meaning, pair and line. Recordings: none yet (S-SPK2's sample is the recorded lines).
+run('ES-MORE: drafted Spanish weather and feelings words, the gate, words with pictures and meanings, drawings, lazy load',()=>{
+  const p=[],bad=m=>{if(p.length<80&&!p.includes(m))p.push(m)},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),note={};
+  const DOC='docs/drafts/ES-MORE-READ.md',doc=rd(DOC),FILES=['42f-esmoreon.js','52z-esmore.js','d-es-more.js'],src=f=>rd((f[0]=='d'?'src/data/':'src/js/')+f);
+  // 1. the gate off is the app without the ES-MORE files (the hook in 46-home.js runs only in pathMap, not here)
+  const jsOff=FILES.reduce((a,f)=>a.replace(src(f),''),js);
+  if(jsOff.length!==js.length-FILES.reduce((a,f)=>a+src(f).length,0))bad('the ES-MORE files could not be taken out of the app for the comparison');
+  const snap=function(){
+    const qs=[];for(const n of NODES.es)if(n.sk!=='boss')for(let s=1;s<=12;s++)for(const g of [0,2]){S.grade=g;qs.push(JSON.stringify(genQ(n.sk,n.lv,s)))}
+    S.grade=0;return JSON.stringify({ES_UNITS,SPN,ART,SK:Object.keys(SK).filter(k=>k.startsWith('es_')).map(k=>[k,SK[k].t,SK[k].max]),NODES:NODES.es.map(nid),qs});
+  };
+  const off0=eval(jsOff+';('+snap.toString()+')()');
+  const off1=eval(js+';ESMORE_ON=0;const __ap=esMoreApply();('+snap.toString()+')()+JSON.stringify([__ap,ESMF])');
+  if(off1!==off0+JSON.stringify([false,0]))bad('with the gate off the app is not exactly as without the ES-MORE files (or esMoreApply did something)');
+  note.off=require('crypto').createHash('md5').update(off0).digest('hex').slice(0,10);
+  // 2. the gate on
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+  const css=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  const body=function(){
+    const r={bad:[],n:{}},B=m=>{if(r.bad.length<80&&!r.bad.includes(m))r.bad.push(m)};
+    const before=JSON.stringify(ES_UNITS.filter(u=>!ESM.es[u.id])),art0=Object.keys(ART),artV=JSON.stringify(ART),old={};
+    for(const id in ESM.es)old[id]=ES_UNITS.find(u=>u.id==id).items.slice();
+    const seen=new Set([...ES_UNITS,...(typeof D15!='undefined'?[...D15.esNew]:[])].flatMap(u=>u.items).concat(typeof D15!='undefined'?Object.values(D15.es).flat():[]).flatMap(it=>it[0].split(' / ')));
+    ESMORE_ON=1;
+    if(esMoreApply()!==true)B('esMoreApply did not apply with the gate on');
+    if(esMoreApply()!==false)B('esMoreApply applied twice');
+    if(JSON.stringify(ES_UNITS.filter(u=>!ESM.es[u.id]))!==before)B('a unit other than weather and feel changed');
+    for(const k of art0)if(JSON.stringify(ART[k])!==JSON.stringify(JSON.parse(artV)[k]))B('the drawing '+k+' changed');
+    const BADPL=/\b[a-z]*(?:ch|sh|x|ss|z)s\b|\b[a-z]*[^aeiou\s]ys\b|\b(?:fishes|tooths|foots|mouses|childs|mans|womans|sheeps|leafs|knifes|persons)\b/i;
+    const picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
+    let words=0;
+    for(const id in ESM.es){const u=ES_UNITS.find(x=>x.id==id),add=ESM.es[id],k='es_'+id;
+      r.n[id]=add.length;
+      if(!u||!SK[k]||SK[k].max!==(u.spell?3:2)||u.spell||u.mix)B(k+': unit or skill (no spelling level, not in the Big Review)');
+      if(SPN[id]!==u.items)B(k+': SPN does not share the unit\'s words');
+      if(u.items.length!==old[id].length+add.length||old[id].some((it,i)=>u.items[i]!==it)||add.some((it,i)=>u.items[old[id].length+i]!==it))B(k+': the new words are not at the end, after the old ones');
+      for(const it of add){words++;const w=k+' '+it[0],full=esFull(it);
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||it[0]!==it[0].trim())B(w+': word not NFC, lowercase and trimmed');
+        if(!it[1]||it[1]!==it[1].trim()||BADPL.test(it[1]))B(w+': English meaning '+it[1]);
+        if(!['el','la','los','las',''].includes(it[3]))B(w+': article '+it[3]);
+        if(!allow.has(String(it[2]).replace(/️/g,'')))B(w+': picture '+it[2]+' is not on the allow list');
+        if(it[4]&&!ART[it[4]])B(w+': no drawing '+it[4]);
+        if(id=='weather'&&!it[4])B(w+': a weather word without a drawing');
+        if(/ \/ /.test(it[0])){const [m,f]=it[0].split(' / ');if(it[5]!==m+', '+f||!/o$/.test(m)||f!==m.slice(0,-1)+'a')B(w+': two forms shown and said as the feelings already are')}
+        else if(it[5])B(w+': a said form without two forms');
+        for(const x of it[0].split(' / '))if(seen.has(x))B(w+': already a Spanish word');
+        if(!doc.includes('| '+full+' | '+it[1]+' |'))B(w+': word and meaning not in '+DOC);
+        if(!doc.includes('Tap the picture for “'+full+'”')||!doc.includes('Listen again, slowly: “'+full+'”'))B(w+': its lines are not in '+DOC);
+        if(!doc.includes('"'+(it[5]||full)+'"'))B(w+': its recording line is not in '+DOC);
+        if(it[4]&&!picHTML(it,false).includes('<svg class="art"'))B(w+': the picture is not the drawing');
+        const cap=esCap(u,it),ph=picHTML(it,cap);if(cap!==ESM.cap[id].includes(it[0])||cap&&!ph.includes('<small>'+esc(it[1])+'</small>'))B(w+': English under the picture');
+      }
+      if(new Set(u.items.map(x=>x[0])).size!==u.items.length)B(k+': a word twice');
+      if(new Set(u.items.map(x=>x[2]+'|'+(x[4]||''))).size!==u.items.length||new Set(u.items.map(x=>picFor(x[4]||'',x[2]))).size!==u.items.length)B(k+': two words share a picture');
+      for(const pr of ESM.confuse[id]){if(pr.some(x=>!u.items.some(it=>it[0]===x)))B(k+': confuse pair '+pr+' names a word not in the unit');
+        if(!doc.includes('| '+id+' | '+pr[0]+' | '+pr[1]+' |'))B(k+': confuse pair '+pr+' not in '+DOC)}
+      for(const c of ESM.cap[id])if(!add.some(it=>it[0]===c))B(k+': caption word '+c+' is not a new word');
+      // seeded questions: one right answer, no two choices alike by value or picture, no confuse pair together; every new word asked,
+      // at level 1 with its picture and at level 2 with its picture on top (the English is on the learn card and in the hint lines)
+      const asked={};
+      for(let lv=1;lv<=SK[k].max;lv++)for(const g of [0,2])for(let s=1;s<=600;s++){S.grade=g;const q=genQ(k,lv,s),kk=k+' L'+lv+' g'+g+' s'+s+': ';
+        if(q.kind!=='choice'){B(kk+'kind '+q.kind);continue}
+        const vs=q.choices.map(c=>String(c.v));if(new Set(vs).size!==vs.length)B(kk+'two choices share a value');
+        if(lv==1){const ps=q.choices.map(picOf);if(new Set(ps).size!==ps.length)B(kk+'two choices share a picture')}
+        if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B(kk+'not exactly one right answer');
+        const its=vs.map(v=>u.items.find(it=>esFull(it)===v));
+        for(let a=0;a<its.length;a++)for(let b=a+1;b<its.length;b++)if(esClash(u,its[a],its[b]))B(kk+'a confuse pair together: '+its[a][0]+' / '+its[b][0]);
+        const it=add.find(x=>esFull(x)===String(q.ans));
+        if(it){asked[it[0]+lv]=1;const pic=picFor(it[4]||'',it[2]);
+          if(lv==1&&!picOf(q.choices.find(c=>String(c.v)===String(q.ans))).includes(pic))B(kk+'the right choice does not show its picture');
+          if(lv==2&&!q.html.includes(pic))B(kk+'the question does not show its picture')}}
+      S.grade=0;
+      for(const it of add)for(let lv=1;lv<=SK[k].max;lv++)if(!asked[it[0]+lv])B(k+' '+it[0]+': never asked at level '+lv+' in 1200 questions');
+    }
+    for(let s=1;s<=300;s++){const q=genQ('es_mix',2,s);if(q.kind=='choice'&&q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B('es_mix: not exactly one right answer')}
+    // the drawings: new names only, each used by a word, the object-art rules of sets A to C (DESIGN_SYSTEM 6.5)
+    const ATTR=/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/,used=new Set(Object.values(ESM.es).flat().map(it=>it[4]).filter(Boolean));
+    for(const n in ESM.art){const d=ESM.art[n];
+      if(art0.includes(n))B(n+': the drawing name is already taken');
+      if(!/^wx-[a-z]+$/.test(n)||!used.has(n))B(n+': not a wx- name used by a new word');
+      if(d.length>2500)B(n+': '+d.length+' bytes (limit 2500)');
+      if((d.match(/<[^>]*\/>/g)||[]).join('')!==d)B(n+': every element must be self-closing, nothing between them');
+      if((d.match(/<[a-z]+/g)||[]).length>40)B(n+': more than 40 elements');
+      for(const t of d.match(/<\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))B(n+': element '+t+'> not allowed');
+      for(const m of d.matchAll(/\s([a-zA-Z:-]+)=/g))if(!ATTR.test(m[1]))B(n+': attribute '+m[1]+' not allowed');
+      for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\(-?[\d.]+ -?[\d.]+ -?[\d.]+\)$/.test(m[1]))B(n+': transform '+m[1]);
+      for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))B(n+': opacity '+m[1]);
+      if(/gradient|filter|mask|clip|pattern|<text|<use|url\(|style=|\sid=|<defs|<image|href/i.test(d)||/#[0-9a-f]{3,8}\b/i.test(d))B(n+': ids, defs, gradients, filters, text, url(), style or raw hex');
+      for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\(--a-[a-z0-9]+\))"$/.test(a))B(n+': colour '+a);
+      for(const m of d.match(/--a-[a-z0-9]+/g)||[])if(!r.css.includes(m+':'))B(n+': '+m+' not defined in 21-art.css');
+      const co=(d.match(/\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);if(co)B(n+': coordinates to one decimal ('+co[0]+')');
+      for(const m of d.matchAll(/\s(cx|cy|x|y)="(-?[\d.]+)"/g))if(+m[2]<0||+m[2]>64)B(n+': '+m[1]+' '+m[2]+' is off the 64 grid');
+      for(const m of d.matchAll(/\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\d.]+/g)||[])if(+v<0||+v>64)B(n+': path number '+v+' is off the 64 grid');
+      if(!/^<svg [^>]*viewBox="0 0 64 64"[^>]*>(<(path|circle|ellipse|rect)\b[^>]*\/>)+<\/svg>$/.test(picArt(n,48)))B(n+': picArt markup not well formed');
+      r.n.art=(r.n.art||0)+1;r.n.artBytes=(r.n.artBytes||0)+d.length}
+    for(const n of used)if(n.startsWith('wx-')&&!ESM.art[n])B(n+': a word uses a drawing ES-MORE does not have');
+    r.words=words;
+    r.det=require('crypto').createHash('md5').update(JSON.stringify([genQ('es_weather',1,9),genQ('es_feel',2,9),genQ('es_weather',2,31)])).digest('hex');
+    return r;
+  };
+  const pre='const r_css='+JSON.stringify(css)+';';
+  const run2=()=>eval(js+';'+pre+'('+body.toString().replace("const r={bad:[],n:{}}","const r={bad:[],n:{},css:r_css}")+')()');
+  const a=run2(),b=run2();
+  for(const m of a.bad)bad(m);
+  if(a.det!==b.det)bad('the new questions differ between two runs');
+  note.n=a.n;note.words=a.words;
+  // 3. the lazy load, on a fresh page as the built app runs: nothing at start-up but the flag and the hook; with the gate on the Spanish
+  //    map brings the part in (here with the lessons off, when teachWarm would not) and the words are there; off, nothing changes
+  const need=['index.html',...START_FILES,...LAZY_FILES];
+  if(need.some(f=>!fs.existsSync(path.join(ROOT,f))))bad('not built: run python3 tools/build.py');
+  else try{
+    const html=rd('index.html'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)])),TF='teaches.'+BUILD_VER+'.js';
+    for(const f of ['index.html',...START_FILES])if(/const ESM = |function esMoreApply|wx-raincoat/.test(f==='index.html'?html:files[f]))bad(f+' carries ES-MORE words (they belong in part teaches)');
+    if(!files[TF].includes('const ESM = {')||!files[TF].includes('function esMoreApply()'))bad(TF+' does not carry the words');
+    if(Buffer.byteLength(files[TF])>=PART_WARN)bad(TF+' is over the part warning');
+    const on0=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test((doc.match(/^status:\s*(.*)$/m)||[])[1]||'')?1:0;
+    if(!html.includes('let ESMORE_ON = '+on0+';'))bad('index.html is not built with ESMORE_ON = '+on0+' (the status line of '+DOC+')');
+    const serveAll=pg=>{for(let k=0;k<20;k++){pg.flush();if(!pg.scripts.length)break;while(pg.scripts.length)pg.serve()}pg.flush()};
+    const look='JSON.stringify([ES_UNITS.find(u=>u.id=="weather").items.length,ES_UNITS.find(u=>u.id=="feel").items.length,typeof ESMF=="undefined"?-1:ESMF,partReady("teaches")])';
+    const res={};
+    for(const on of [0,1]){const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);pg.run('globalThis.window=globalThis;S.grade=1;TEACH.off=true;DEEP15_ON=0;ESMORE_ON='+on);
+      const n0=JSON.parse(pg.run(look));pg.run('pathMap("es")');serveAll(pg);res[on]=[n0,JSON.parse(pg.run(look))]}
+    const W0=res[0][0][0],F0=res[0][0][1],nw=a.n.weather,nf=a.n.feel;
+    if(JSON.stringify(res[0][1])!==JSON.stringify([W0,F0,-1,false]))bad('gate off: the Spanish map (lessons off) loaded the part or changed the units: '+JSON.stringify(res[0]));
+    if(JSON.stringify(res[1][1])!==JSON.stringify([W0+nw,F0+nf,1,true]))bad('gate on: after the Spanish map the units are '+JSON.stringify(res[1]));
+    note.lazy='weather '+W0+' -> '+res[1][1][0]+', feelings '+F0+' -> '+res[1][1][1]+' once the map loads teaches';
+  }catch(e){bad('the lazy load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  // 4. the gate and the read-through
+  const st=(doc.match(/^status:\s*(.*)$/m)||[])[1]||'',on=/^reviewed\s+\S.*\d{4}-\d\d-\d\d/.test(st)?1:0;
+  if(!src('42f-esmoreon.js').includes('let ESMORE_ON = '+on+';'))bad('42f-esmoreon.js does not follow the status line of '+DOC+' (run python3 tools/build.py)');
+  if(partOf('42f-esmoreon.js'))bad('42f-esmoreon.js is not in index.html');
+  for(const f of ['52z-esmore.js','d-es-more.js'])if(partOf(f)!=='teaches')bad(f+' is not in part teaches');
+  if(!/teachWarm\(p\);d15Warm\(p\);if\(ESMORE_ON&&p=="es"\)partsLoad\(D15P\);/.test(rd('src/js/46-home.js')))bad('46-home.js: the Spanish map hook');
+  // the read-through: every table under a ## or ### heading, a header row then a |---| row (the review page reads it this way)
+  const L=doc.split('\n');let head=0,tables=0;
+  for(let i=0;i<L.length;i++){if(/^#{2,3} /.test(L[i]))head=1;
+    if(/^\|/.test(L[i])&&!/^\|/.test(L[i-1]||'')){tables++;if(!/^\|(\s*-+\s*\|)+$/.test(L[i+1]||''))bad(DOC+' line '+(i+1)+': a table without a |---| row');
+      const nc=L[i].split('|').length;for(let j=i+2;j<L.length&&/^\|/.test(L[j]);j++)if(L[j].replace(/\\\|/g,'').split('|').length!==nc)bad(DOC+' line '+(j+1)+': '+(L[j].replace(/\\\|/g,'').split('|').length-2)+' cells for '+(nc-2)+' columns')}}
+  if(!/^## /m.test(doc)||!/^### /m.test(doc))bad(DOC+' has no ## and ### headings');
+  const code=FILES.map(src).join('\n');
+  if(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|https?:|localStorage|rnd\(|Math\.random/.test(code))bad('the ES-MORE code reaches outside the tablet or draws at random');
+  if(/magic|evolution/i.test(code+doc))bad('a banned theme word (CONTENT-01)');
+  // recordings: none yet (not approved); S-SPK2 calibrates on the recorded lines, so its pinned counts stay until they are recorded
+  const rec=eval(js+';Object.values(ESM.es).flat().filter(it=>ES_AUDIO.lines[esKey(it[5]||esFull(it))]).length');
+  return{problems:p,note:'gate off: same as without ES-MORE ('+note.off+'); on: '+note.words+' words ('+Object.entries(note.n||{}).map(([k,v])=>k+' '+v).join(', ')+' bytes of drawings); '+(note.lazy||'')+'; '+rec+' recorded (S-SPK2 '+(rec?'needs a re-pin':'unchanged')+'); '+tables+' tables; status '+(st.split(' ')[0]||'?')+' (ESMORE_ON '+on+')'};
 });
 
 // ---- REC-198 (owner decision 2026-11-27: the audio budget 9.5 -> 12 MB for the read-along stories and the new Spanish words; STORIES7-READ.md

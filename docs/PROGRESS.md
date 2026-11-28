@@ -540,6 +540,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### APPROVE-200: DISC-46 and ES-MORE turned on (v200, 2026-11-27, Claude; branch claude/beautiful-rubin-1urk3d)
+- **Owner decisions 2026-11-27** (every item of docs/drafts/DISC46-READ.md and ES-MORE-READ.md approved): Canyon Trail (grade 4) and Volcano Ridge (grade 6) on, with the tablet's voice; 4th graders start on Canyon Trail, 6th on Volcano Ridge; the 22 Spanish weather and feelings words recorded first, then on.
+- **Recordings**: tools/es-audio.js collects the ES-MORE words whatever the gate says (as REC-198 did for DEEP-15). 30 files (the 22 words plus the said form of the 8 two-form feelings, as the old feelings have), 472 characters, 93,784 bytes; audio/es 962 files, 2,404,039 bytes; all audio 11,673,297 bytes (fail 12,000,000).
+- **Gates**: both status lines `reviewed owner 2026-11-27`; DISC46_ON = 1, ESMORE_ON = 1. VER v199 -> v200.
+- **Tests changed**: S-SPK2 re-pinned (new recordings; every-6th set 96.4% of 338 true match, 11.4% of 332 false accept; thresholds unchanged). test.js DEEP-15 lazy load sets DISC46_ON = 0 on its page (it is DEEP-15's own check). smoke: d15Wait also waits for D46F on the Discover map; P2-37 expects Canyon Trail at sci_enr1 for a 4th grader; DEEP-15's gate-off world list includes the DISC-46 worlds; R-01s seeds picked again for the same cases (weather 387, feelings 18) and hace buen tiempo in its caption list.
+- **Checks**: bash tools/check.sh: build, contrast, test-1, test-2, 10 smoke shards (387 steps), a11y, perf, sizes pass; test-t fails P3-15 only ("road" also spells "daro", from Mohenjo-daro in d-disc46.js, which the unscramble dictionary harvests). It fails the same on e6d75ec (DISC-46 merged gated off), so this change did not cause it; left for the owner (reword the two items, or change the harvest or the pool). Owner decision 2026-11-28: drop "road" from Unscramble; `daro` added to `BTW.more` (d-words-bt.js), so the pool skips "road" and the approved questions stay word for word. P3-15 passes.
+- No app bug found. No threshold, hash, KNOWN list or fixture changed. Start-up 2,492,970 bytes.
+
 ### CHART-14: report card chart labels at 14 px; four reload smoke steps over http (v198, 2026-11-27, Claude; branch claude/beautiful-rubin-1urk3d)
 - **Report card chart**: the minutes-per-day chart was one 14-day svg (viewBox 336 wide) drawn 288 px wide at 360x740, so its 12-unit labels (minutes over each bar, day letters) drew at 10.3 px. Now two 7-day svgs (viewBox 168 x 124), last week and this week, each with its caption under it (`.rp-chart` > `.rp-wc`; flex-wrap, each 196-280 px wide): side by side when both fit (1024x600: as before, 20 px labels), one above the other on a phone (360x740: 20 px). A svg is never under 196 px wide, so a label is never under 14 px. Bars top out at 80 units (was 82) so the tallest bar's label stays inside its svg. The chart's name (aria-label, unchanged words) moved to the `.rp-chart` wrapper (role=img); the svgs are aria-hidden. No words changed.
 - **Tests**: smoke P5-06 measures every chart label (computed font size x the svg's scale) at 360x740 and 1024x600 with 14 days of play (3-digit minutes side by side): at least 14 px, inside its svg, no two labels or the two svgs overlap, no sideways scroll (fails on the old chart at 10.3 px). a11y new screen report-chart (360x740, 1024x600).
@@ -1427,7 +1435,10 @@ A review of MERGE-186 (G-MOVES, TEACH-5S). VER stays v186.
   left out of the other-voice pairs because no child is asked to say one; owner decision 2026-11-27: new recordings (REC-198), the
   DEEP-15 Spanish words (798 -> 932 recorded lines): true match 96.4% of 330, other voice 54/66, false accept 16.4% of 324 (similar word 43/132, another word 10/132);
   the full set, `node tools/spk-calib.js`, ABS 1.6 / RATIO 1.15 unchanged: true match 99.3% of 1,638, false accept 11.8% of 2,414 with
-  the second unrelated word (similar word 220/786 = 28%, another word 30/784 = 3.8%, other2 36/784, silence and noise 0/60)) and fails if it moves. Real children's voices differ more than Leo and Eve, so
+  the second unrelated word (similar word 220/786 = 28%, another word 30/784 = 3.8%, other2 36/784, silence and noise 0/60); owner decision 2026-11-27: new recordings (ES-MORE),
+  the 22 weather and feelings words (932 -> 962 recorded lines): true match 96.4% of 338, other voice 54/66, false accept 11.4% of 332
+  (similar word 32/136, another word 6/136); the full set: true match 99.3% of 1,698, false accept 12.1% of 2,502 (similar word 225/816
+  = 28%, another word 38/815 = 4.7%, other2 39/811, silence and noise 0/60), thresholds unchanged) and fails if it moves. Real children's voices differ more than Leo and Eve, so
   expect fewer "Great job!" for right words than here; the self-check stays the real decision.
 - A page opened from a file (file://, the test harness) cannot read its own recordings, so there is no sound check there (no fetch is
   tried); the installed app and GitHub Pages (https, service worker cache) have it.

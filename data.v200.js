@@ -1,5 +1,5 @@
-/* Whistlestop data banks v199. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v199 loads this file with <script src="data.v199.js"> between the code and the start-up script. */
+/* Whistlestop data banks v200. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v200 loads this file with <script src="data.v200.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -4672,7 +4672,7 @@ const EN_AUDIO={dir:"audio/en/",ext:".ogg",voices:[["eve","f"],["iris","f"],["lu
 /* ---------- ES-AUDIO: recorded Spanish (BUILT by tools/es-audio.js: never edit by hand; run node tools/es-audio.js) ----------
    Every Spanish line the app can say -> [file, voice]: the file is audio/es/<file>.ogg (xAI text to speech, es-MX, speed 0.9,
    Opus 16 kbps mono). Keys are esKey(text) (NFC, trimmed, spaces collapsed). say() in src/js/12-speech.js plays the file; a line
-   that is not here (or whose file does not play) uses the tablet's voice. 932 lines: Leo 704, Eve 228. */
+   that is not here (or whose file does not play) uses the tablet's voice. 962 lines: Leo 715, Eve 247. */
 const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "Adiós.":["e95909756add","leo"],
 "Ana dice “Mucho gusto”. ¿Qué dice Luis?":["44f41636d869","leo"],
@@ -4879,6 +4879,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "abuelas":["ebbe99ffcf4f","leo"],
 "abuelo":["510883ff8403","leo"],
 "abuelos":["1f1ab34db810","leo"],
+"aburrido / aburrida":["59a1b4c5a4c8","eve"],
+"aburrido, aburrida":["8d24625f4d9b","eve"],
 "adiós":["350dcbbc4a9f","leo"],
 "agosto":["d672f2c84b77","eve"],
 "alto":["059b77bec8a3","leo"],
@@ -4923,6 +4925,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "cansado / cansada":["b17300d1c105","eve"],
 "cansado, cansada":["d93bb65f9109","eve"],
 "cantar":["e91fe656dc34","eve"],
+"cariñoso / cariñosa":["578ee8ea3e9f","eve"],
+"cariñoso, cariñosa":["47f99ac72c4f","eve"],
 "carro":["c542e0a0b723","leo"],
 "carros":["b1d60abe6d9f","leo"],
 "casa":["00b81434c862","leo"],
@@ -4946,6 +4950,10 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "comer":["d8a1bbe7b7d2","eve"],
 "conejo":["48dae9267793","leo"],
 "conejos":["18a122be9711","leo"],
+"confundido / confundida":["1aba4b5a000f","eve"],
+"confundido, confundida":["325c4febe79e","eve"],
+"contento / contenta":["7c9640ac6690","eve"],
+"contento, contenta":["2c0157f8ce49","eve"],
 "corbata":["dd77ac25b530","eve"],
 "correr":["df9772a9b9a8","eve"],
 "crayón":["eabcced81ac1","leo"],
@@ -4995,6 +5003,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "el casa":["d7d20deb95fb","leo"],
 "el cerdo":["65ef8042a4a0","leo"],
 "el chamarra":["8143ef39468e","eve"],
+"el charco":["97dd3b6de7fc","leo"],
 "el cine":["a2e5b8d70e8b","eve"],
 "el cohete":["7506caa26b11","leo"],
 "el conejo":["2dd0aba7218d","leo"],
@@ -5023,10 +5032,12 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "el helicóptero":["80553573db12","leo"],
 "el hermana":["8f7cce486b9e","eve"],
 "el hermano":["d06fec165a76","eve"],
+"el hielo":["c13e6e4244d5","leo"],
 "el hongo":["6a6925f956f9","eve"],
 "el hospital":["7a51dd327a09","eve"],
 "el hueso":["1e5407f69d2d","leo"],
 "el huevo":["8046630a9de4","eve"],
+"el impermeable":["dc67c29d8500","leo"],
 "el invierno":["601103da282f","eve"],
 "el jabón":["a18a4a561d04","leo"],
 "el jardín":["a94c9571167e","leo"],
@@ -5053,6 +5064,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "el miércoles":["f07a4ab7d237","leo"],
 "el mochila":["92b168ed1e82","leo"],
 "el moto":["9c55057e79a8","leo"],
+"el muñeco de nieve":["a87716ae8b5e","leo"],
 "el nariz":["0050ab80990d","leo"],
 "el oreja":["1065884acd1f","leo"],
 "el osito":["0d1a311c4296","leo"],
@@ -5083,6 +5095,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "el ratón":["24c2da8a0512","leo"],
 "el regla":["41fcf7344640","leo"],
 "el reloj":["3f9efa3c2e82","leo"],
+"el relámpago":["050650a64a65","leo"],
 "el restaurante":["6b66b7786239","eve"],
 "el robot":["d8d92b3b4f62","leo"],
 "el rompecabezas":["d6dd0bafbfff","leo"],
@@ -5094,6 +5107,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "el sábado":["45580dfc1168","leo"],
 "el tambor":["793d96076177","leo"],
 "el taza":["7beaea9aa5de","leo"],
+"el termómetro":["27b624c733ca","leo"],
+"el tornado":["371a98aca4cc","leo"],
 "el tortuga":["950e346d92f1","leo"],
 "el tractor":["d161f0d1d836","leo"],
 "el tren":["459deed2e87d","leo"],
@@ -5143,6 +5158,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "grande":["2ae84efb0b4a","leo"],
 "gris":["e0b8f05aed72","eve"],
 "gris oscuro":["95c0cb2cebcd","leo"],
+"hace buen tiempo":["b6466bdd1a87","leo"],
 "hace calor":["d95cfc66b670","leo"],
 "hace fresco":["861eba97217a","leo"],
 "hace frío":["88a7f80ea810","leo"],
@@ -5233,6 +5249,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "la leche":["a6e2a17258fd","eve"],
 "la león":["aa3c0c6e71ea","leo"],
 "la libro":["9bcfb215a354","leo"],
+"la lluvia":["c7377fba5b8e","leo"],
 "la luna":["8d1a95767f4f","eve"],
 "la lámpara":["00dc3796f1a2","leo"],
 "la lápiz":["9097582c3467","leo"],
@@ -5249,6 +5266,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "la montaña":["614142946cfb","eve"],
 "la moto":["3d3e6d578dc7","leo"],
 "la nariz":["fab8e3e14a58","leo"],
+"la niebla":["2fc999bca668","leo"],
 "la nube":["a31b0fa943e5","eve"],
 "la oreja":["a97c6852b791","leo"],
 "la oso":["7189b655acbe","leo"],
@@ -5345,6 +5363,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "los hospitales":["51193d57f49b","leo"],
 "los huevos":["62abf9ec7ea0","leo"],
 "los jardines":["430fa2d8fd19","leo"],
+"los lentes de sol":["81ca3946dbea","leo"],
 "los leones":["9fe26f579b7c","leo"],
 "los libros":["0b76f2db9acd","leo"],
 "los lápices":["bb236e5d1d11","leo"],
@@ -5384,6 +5403,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "naranja":["ff166502fee9","eve"],
 "narices":["774d53ca4d93","leo"],
 "negro":["0fcca76d0ce7","eve"],
+"nervioso / nerviosa":["5e699aec6565","eve"],
+"nervioso, nerviosa":["dd13e7952891","eve"],
 "nieva":["bcfc7de2f92d","leo"],
 "no":["3b6ecacb19e9","leo"],
 "noventa":["f4f0600a8a46","eve"],
@@ -5398,6 +5419,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "once":["3829b10a7924","eve"],
 "oreja":["c6086a14923f","leo"],
 "orejas":["516003e03b6e","leo"],
+"orgulloso / orgullosa":["5714f57e5cf1","eve"],
+"orgulloso, orgullosa":["feb974c22922","eve"],
 "oso":["c63f822e3c71","leo"],
 "osos":["13a777ec238a","leo"],
 "pantalones":["3028fe588d0e","eve"],
@@ -5419,6 +5442,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "plátano":["9f57390333ac","leo"],
 "plátanos":["8994219b07cf","leo"],
 "por favor":["be80a6d991bc","leo"],
+"preocupado / preocupada":["e1c691bd2e3e","eve"],
+"preocupado, preocupada":["5d815ec897fc","eve"],
 "puerta":["a47cb3173dda","leo"],
 "puertas":["1448ebf09210","leo"],
 "pájaro":["4f239bbb82e3","leo"],
@@ -5471,6 +5496,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "sucio":["d10bc1d18416","leo"],
 "sí":["4265a48b422d","leo"],
 "taza":["cb7d8cb48fff","leo"],
+"tengo hambre":["b93276e43d0c","eve"],
+"tengo sed":["1d0853ff0e01","eve"],
 "tienda":["efc49ec15ad5","leo"],
 "tiendas":["93bdda6688e2","leo"],
 "tijeras":["ba4221e1c984","leo"],
@@ -5483,6 +5510,8 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "tres":["a177d81c1637","leo"],
 "triste":["b6fc97460ba1","eve"],
 "turquesa":["bc18b1e278d3","leo"],
+"tímido / tímida":["d09478a4d65c","eve"],
+"tímido, tímida":["9c69e339ff12","eve"],
 "un abuelo":["07a34da22eae","leo"],
 "un barco":["b617030cc29d","leo"],
 "un caballo":["f924e0954127","leo"],
@@ -5528,6 +5557,7 @@ const ES_AUDIO={dir:"audio/es/",ext:".ogg",lines:{
 "uno":["9545000f8347","leo"],
 "vaca":["edf406bf6404","leo"],
 "vacas":["3502df14f459","leo"],
+"valiente":["e7472319b7c5","eve"],
 "veinte":["91e7b2411803","eve"],
 "veintisiete":["12b69cd0aabe","eve"],
 "veintitrés":["46407ff9a0b9","eve"],
@@ -8720,4 +8750,4 @@ WEAR_EMB['🎵'] = `<path ${wF('v2')} d="M21 15L49 7L49 15L21 23Z"/>` +
   }
 })();
 
-var DATA_VER='v199'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v200'; // last line: the whole file ran (checked by dataReady() before the app starts)
