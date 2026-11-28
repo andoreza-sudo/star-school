@@ -8,7 +8,7 @@ function hintsWarm(){
 }
 var ASK_LM=null; // ASK-01: the first wrong try of the last Practice question missed: {q, v, k (the child's save key)}
 const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null,t0:Date.now()},o)); // OLDER-14: t0, the round's start (the score card's time)
-function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
+function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:p=='disc'&&S.grade===-1?5:gradeCfg().n}); // RELA-YOUNG
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
   if(p=='es')spkProbe(); // S-SPK: is there a microphone (asked once per session)

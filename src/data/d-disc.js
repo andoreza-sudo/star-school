@@ -83,9 +83,11 @@ const DISC_PIC = {
 // grade: the grade band of a bank whose levels do not follow DISC_GRADE (P2-37: geo_us and civ start at levels 3-4 and 5-6)
 // R-01d: a K-2 item is read aloud with its choices and its hint (aloud), and gets picture answers when DISC_PIC has every choice (cp).
 // A seventh field, the grid "max;x,y,L;x,y" (R-01d, geo_world 2), draws a coordinate grid with the points the question names.
+// RELA-YOUNG: a row starting with ^ has 1st-2nd grade words: g1 (genBank)
 function discRows(lv, text, grade) {
   return text.trim().split('\n').map(r => {
-    const f = r.split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
+    const g1 = r[0] == '^', f = (g1 ? r.slice(1) : r).split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
+    if (g1) it.g1 = 1;
     if (f[4]) it.em = f[4].split(',');
     it.hint = f[5] || DISC_HINT[f[3]];
     if (f[6]) {
@@ -166,7 +168,7 @@ Which part of a plant takes in water from the soil?|roots|leaves;flower;seed|pla
 Which part of a plant holds it up tall?|stem|flower;seed;leaf|plants
 The colorful part that makes seeds is the ___.|flower|root;stem;leaf|plants||It is the bright, sweet-smelling part that bees visit.
 Which part of a plant is usually green and flat?|leaf|root;seed;stem|plants
-Leaves use sunlight to help a plant make its ___.|food|dirt;wind;rain|plants
+^Leaves use sunlight to help a plant make its ___.|food|dirt;wind;rain|plants
 A new plant can grow from a ___.|seed|pebble;feather;button|plants
 What do seeds need to start growing?|water and warmth|wind and snow;darkness and dust;nothing at all|plants||Think about a seed that is planted in the garden in a good season.
 Which part of a plant is a carrot?|root|flower;leaf;stem|plants
@@ -215,7 +217,7 @@ The sky is gray and full of clouds, but no rain is falling. What kind of day is 
 What do you wear on a cold, snowy day?|mittens|a swimsuit;sandals;shorts|weather
 What can you hold over your head to stay dry in the rain?|an umbrella|a kite;a bucket;a sun hat|weather
 Which one is NOT weather?|a tree|rain;wind;snow|weather
-Clouds are made of tiny drops of ___.|water|smoke;cotton;dust|weather|cloud,☁
+^Clouds are made of tiny drops of ___.|water|smoke;cotton;dust|weather|cloud,☁
 Which season is usually the coldest?|winter|summer;spring;fall|seasons
 Which season is usually the hottest?|summer|winter;spring;fall|seasons
 In which season do flowers start to bloom?|spring|winter;fall;summer|seasons
@@ -241,12 +243,12 @@ What time of day is it when the sun is high in the sky?|noon|midnight;bedtime|da
 Which one is NOT in the sky at night?|a rainbow|the moon;stars;a cloud|daynight
 The sun is a ___.|star|planet;moon;cloud|sunmoon|sun,☀
 Which one gives us heat and light?|the sun|the moon;a cloud;the wind|sunmoon
-The moon shines because light from the ___ bounces off it.|sun|ocean;clouds|sunmoon
+^The moon shines because light from the ___ bounces off it.|sun|ocean;clouds|sunmoon
 What shape does a full moon look like?|a circle|a square;a triangle|sunmoon
 Which one twinkles in the night sky?|stars|clouds;rainbows;kites|sunmoon
 How does the sun make us feel on a bright summer day?|warm|cold;wet;frozen|sunmoon
-The sun looks small because it is very ___ away.|far|close;near|sunmoon
-The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
+^The sun looks small because it is very ___ away.|far|close;near|sunmoon
+^The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
 The sun gives our world ___.|light and heat|rain and snow;wind and clouds;rocks and sand|sunmoon
 What is the moon mostly made of?|rock|ice;clouds;fire|sunmoon||Look at photos of the moon: the ground is gray, bumpy and dusty.
 Most of the Earth is covered by ___.|water|land;sand|landwater
@@ -299,7 +301,7 @@ Which one is the quietest?|a whisper|a siren;a trumpet;a drum|soundlight
 Which one makes its own light?|a flashlight|a mirror;a book;the moon|soundlight
 Which one makes its own light?|the sun|the moon;a mirror;a window|soundlight
 What do you see when something blocks the light?|a shadow|a rainbow;a puddle|soundlight
-A mirror ___ light so you can see yourself.|bounces|hides;swallows|soundlight
+^A mirror ___ light so you can see yourself.|bounces|hides;swallows|soundlight
 Which one can you hear but NOT hold in your hand?|a song|a drum;a bell;a flute|soundlight
 If you hit a bell harder, the sound gets ___.|louder|softer;colder|soundlight
 In a dark room, what helps you see?|a flashlight|a blanket;a rug;a pillow|soundlight
@@ -315,5 +317,5 @@ Water put in the freezer becomes ___.|ice|steam;sand|solid
 Which one is a solid?|ice|water;juice;milk|solid
 Which one is a liquid?|honey|a brick;a coin;a book|solid
 Which one is NOT a liquid?|a crayon|water;milk;juice|solid
-A liquid takes the shape of the ___ it is poured into.|container|color;weight;smell|solid
+^A liquid takes the shape of the ___ it is poured into.|container|color;weight;smell|solid
 `);

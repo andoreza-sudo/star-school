@@ -362,9 +362,9 @@ function genSgShape3() {
 }
 function genShapeK(lv) { return lv == 1 ? genPkShape() : lv == 2 ? genSgShape2() : genSgShape3(); }
 
-// add 4: sums within 5, with dots (the first group blue, the added group orange), including + 0
+// add 4: sums within 5, with dots (the first group blue, the added group orange); 1 in 10 with a 0
 function genSgAdd() {
-  const s = R(1, 5), a = R(0, s), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
+  const z = kZero(), s = z ? R(1, 5) : R(2, 5), a = z ? (coin() ? 0 : s) : R(1, s - 1), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
   return pkQ(Object.assign(q, { html: `<div class="pkq">${VIZ.dots(s, 'row', { b })}</div>` + q.html + pkTxt('How many in all?') }));
 }
 

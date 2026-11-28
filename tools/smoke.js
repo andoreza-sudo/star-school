@@ -5694,6 +5694,7 @@ async function main() {
       await setupGo(cp);
       await cp.waitForSelector('.game[data-p="es"]');
       await cp.evaluate(() => {
+        setGrade(2); // RELA-YOUNG: a K child walks the cut Spanish path (test.js checks it); this step is about the whole La Casa world
         for (let i = 0; i < WR.es[2][1] + 1; i++) setSt('es', i, 3);
         S.wdone = S.wdone || {}; for (let i = 0; i < 3; i++) S.wdone[worldId('es', i)] = 1;
         save();
@@ -9297,7 +9298,8 @@ async function main() {
       // ES-MORE (owner approved 2026-11-27): 11 more words in each of the two units draw other questions from the review's seeds (38 drew
       // el termómetro, 41 valiente), so the seeds are picked again for the same cases: weather 387 (hace fresco beside hace frío and hace
       // calor, all three captioned), feelings 18 (tranquilo / tranquila)
-      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 387], ['es_feel1', 'e_casa', 'feelings', 18]]) {
+      // RELA-YOUNG (owner 2026-11-28): level 1 of both units draws from the first words again (l1), so picked again: weather 166, feelings 41
+      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 166], ['es_feel1', 'e_casa', 'feelings', 41]]) {
         await rp.evaluate(() => { if (G) G.dead = true; home(); });
         await rp.click('.game[data-p="es"]');
         await rp.waitForSelector('.wchip.on');

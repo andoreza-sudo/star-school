@@ -890,18 +890,21 @@ const VIZ = (() => {
     ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut, solid, rayLine};
 })();
 /* ---------- math generators ---------- */
+// RELA-YOUNG: K's add 1, sub 1, miss 1 show counters; about 1 fact in 10 has a 0
+const kZero=()=>rnd()<.11;
+const kPic=v=>`<div class="pkq">${v}</div>`;
 function genAdd(lv){let a,b;
-  if(lv==1){const s=R(2,10);a=R(0,s);b=s-a}
+  if(lv==1){const s=R(2,10);a=kZero()?(coin()?0:s):R(1,s-1);b=s-a;const q=mathQ(a,'+',b,s,'c',coin());q.html=kPic(VIZ.dots(s,'row',{b}))+q.html;return q}
   else if(lv==2){const k=pick([9,9,8,10,'d']);if(k=='d'){a=b=R(1,9)}else{a=k;b=R(1,9)}if(coin())[a,b]=[b,a]}
   else{a=R(2,9);b=R(2,9)}
   return mathQ(a,'+',b,a+b,'c',coin(),lv==1?{}:{hint:factHint(a,'+',b,a+b,'c')})}
 function genMiss(lv){let c,a;
-  if(lv==1){c=R(3,10);a=R(0,c)}
+  if(lv==1){a=R(1,9);const q=mathQ(a,'+',10-a,10,'b',false);q.html=kPic(VIZ.tenFrame(a))+q.html;return q} // K: make 10
   else{[a,c]=factPair();c+=a} // R-01m: every fact with a sum of 10 to 18 equally often
   const blank=coin()?'a':'b';
   return mathQ(a,'+',c-a,c,blank,false,lv==1?{}:{hint:factHint(a,'+',c-a,c,blank)})}
 function genSub(lv){let a,b;
-  if(lv==1){a=R(2,10);b=R(0,a)}else if(lv==2){const [x,y]=factPair();a=x+y;b=y} // R-01m: every take-away fact from 10 to 18 equally often
+  if(lv==1){a=R(2,10);b=kZero()?(coin()?0:a):R(1,a-1);const q=mathQ(a,'-',b,a-b,'c',coin());q.html=kPic(VIZ.dots(a,'row',{fade:b}))+q.html;return q}else if(lv==2){const [x,y]=factPair();a=x+y;b=y} // R-01m: every take-away fact from 10 to 18 equally often
   else if(lv==3){const a1=R(1,9),b1=R(0,a1),a2=R(2,9),b2=R(1,a2-1);a=a2*10+a1;b=b2*10+b1;
     return mathQ(a,'-',b,a-b,'c',true,{hint:{k:'text',s:`Ones first: ${a1} − ${b1}. Then tens: ${a2} − ${b2}.`}})}
   else{const a1=R(0,8),b1=R(a1+1,9),a2=R(3,9),b2=R(1,a2-2);a=a2*10+a1;b=b2*10+b1;
@@ -951,14 +954,16 @@ function factHint(a,op,b,c,blank){
     `Think addition: ${b} plus what makes ${a}? Jump from ${b} to 10, then to ${a}. Add the jumps.`);
 }
 function genBig(lv){let a,b,s;
-  if(lv==1){const m=coin()?10:100,x=R(1,8),y=R(1,9-x);a=x*m;b=y*m;
+  if(lv==1){const m=10,x=R(1,8),y=R(1,9-x);a=x*m;b=y*m; // RELA-YOUNG: 1st grade: tens only
     const u=m==10?'ten':'hundred';s=`Think: ${qN(x,u)} + ${qN(y,u)}.`}
   else if(lv==2){const a1=R(0,8),b1=R(0,9-a1),a2=R(1,8),b2=R(1,9-a2);a=a2*10+a1;b=b2*10+b1;s=`Ones first: ${a1} + ${b1}. Then tens: ${a2} + ${b2}.`}
   else if(lv==4){const x=[R(1,8),R(0,9),R(0,9)],y=[R(1,9-x[0]),R(0,9-x[1]),R(0,9-x[2])];a=x[0]*100+x[1]*10+x[2];b=y[0]*100+y[1]*10+y[2];s='Add each column: ones, then tens, then hundreds.'}
   else{const a1=R(2,9),b1=R(10-a1,9),a2=R(1,7),b2=R(1,8-a2);a=a2*10+a1;b=b2*10+b1;s=`Ones first: ${a1} + ${b1} = ${a1+b1}. Write ${(a1+b1)%10}, carry the 1 to the tens!`}
   return mathQ(a,'+',b,a+b,'c',true,{hint:{k:'text',s}})}
+// RELA-YOUNG: K sees pairs of dots (the hint's picture)
+const eoPairs=n=>{let s='<div class="pkq"><div class="pairs">';for(let i=0;i<n;i+=2)s+='<span><b></b>'+(i+1<n?'<b></b>':'')+'</span>';return s+'</div></div>'};
 function genEO(lv){const n=lv==1?R(0,20):R(21,99);
-  return{kind:'choice',html:`<div>${n}</div><div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`+(lv==1?' Even is on the left.':''),ans:n%2?'odd':'even',
+  return{kind:'choice',html:`<div>${n}</div>${lv==1?eoPairs(n):''}<div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`+(lv==1?' Even is on the left.':''),ans:n%2?'odd':'even',
     choices:[{l:'Even',v:'even'},{l:'Odd',v:'odd'}],hint:{k:'pairs',n},label:`${n} even/odd`}}
 function genCnt(lv){let step,start;
   if(lv==1){step=pick([1,10]);start=step==1?R(0,25):10*R(0,5)}
@@ -1462,9 +1467,9 @@ function genSgShape3() {
 }
 function genShapeK(lv) { return lv == 1 ? genPkShape() : lv == 2 ? genSgShape2() : genSgShape3(); }
 
-// add 4: sums within 5, with dots (the first group blue, the added group orange), including + 0
+// add 4: sums within 5, with dots (the first group blue, the added group orange); 1 in 10 with a 0
 function genSgAdd() {
-  const s = R(1, 5), a = R(0, s), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
+  const z = kZero(), s = z ? R(1, 5) : R(2, 5), a = z ? (coin() ? 0 : s) : R(1, s - 1), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
   return pkQ(Object.assign(q, { html: `<div class="pkq">${VIZ.dots(s, 'row', { b })}</div>` + q.html + pkTxt('How many in all?') }));
 }
 
@@ -2106,7 +2111,7 @@ const tstr=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
 function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,45]),ans=tstr(h,m),c=new Set([ans]);
   const hh=x=>((x+11)%12)+1;
   const cand=[tstr(hh(h+1),m),tstr(hh(h-1),m),m?tstr(h,(m+30)%60):tstr(h,30),m?tstr(hh(h+1),m):tstr(12,h*5%60),tstr(hh(h+R(2,5)),m),tstr(h,pick([0,15,30,45]))];
-  for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00'))continue;c.add(x)}
+  for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00')||lv==2&&!/:[03]0$/.test(x))continue;c.add(x)} // RELA-YOUNG: lv 2 only :00 and :30
   while(c.size<4)c.add(tstr(R(1,12),lv==1?0:pick([0,30])));
   const spoken=m==0?`${h} o'clock`:m==30?`half past ${h}`:m==15?`quarter past ${h}`:`quarter to ${hh(h+1)}`;
   return{kind:'choice',html:`${VIZ.clock(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
@@ -4210,7 +4215,7 @@ function grown(){let armed=false;
   BAK.bind();
   PRF.bind();
   if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Whistlestop: Unlock or restore asks the grown-up question first (89-play.js)
-  $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
+  $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save();esRefit()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   if($('#petshow'))$('#petshow').onchange=e=>{if(e.target.checked)delete S.petOff;else S.petOff=true;save()}; // OLDER-14: Show my pet (grades 4 to 6, the look approved); only the flag changes
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
