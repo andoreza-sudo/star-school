@@ -20750,6 +20750,36 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
     return out})()`);
   return{problems:r.bad,note:`${r.n} questions in 200 rounds (${r.mono} triples on single-kind stops); ${r.rt} review round trips`};
 });
+// RELB-NOREPEAT (owner-approved review fix 3): pickQ remembers every label asked in the round (G.qu, qUse) and skips it while the stop
+// has unused ones; a label comes back only once the round has asked every label the stop can give (its pool: the labels of 3000
+// seeded questions), or, to avoid a third of one kind in a row (KINDS2 spec 4 comes first), when every unused label can come as that
+// kind (a math fact can be asked as num or make: then pickQ's draws of unused labels all came as that kind).
+// Seeded (RNG and Math.random), so the rounds are the same every run. Also: a boss or test-out pool (worldPool) and a check-in
+// never ask a label twice when their stops give enough, and G.qu counts each question makeQ returned.
+run('RELB-NOREPEAT rounds: no question twice in a round while the stop has unused ones',()=>{
+  const r=eval(js+`;(()=>{const out={bad:[],n:0,rep:0,ex:0,run:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    loadSave(null);migrate();S.grade=2;RNG=mulberry32(20261128);const MR=Math.random;Math.random=mulberry32(7);try{
+    const want=['comp1','comp2','gram2','gram4','gram5','gram6','gram7','gram8','vocab7','vocab8','pic2','sound4','build2','spell1','info1','comp4',
+      'shape1','pk_num1','add4','time1','tenf1','miss1','mult1','es_family1','es_num1','es_ser3','es_gusta1','es_story1','civ1','sci_life1','geo_us1'];
+    const stops={};for(const p in NODES)NODES[p].forEach((n,i)=>{const k=nid(n);if(want.includes(k)&&!stops[k])stops[k]=[p,i]});
+    for(const k of want)if(!stops[k])bad(k+': no stop on a map');
+    for(const k in stops){const [p,i]=stops[k],nd=NODES[p][i],pool=new Map();
+      for(let s=1;s<=3000;s++){const q=genQ(nd.sk,nd.lv,s);(pool.get(q.label)||pool.set(q.label,new Set()).get(q.label)).add(q.kind)}
+      for(let rd=0;rd<25;rd++){G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10});const seen=new Set();
+        while(G.done<G.n){const h=G.kh||[],two=h.length>1&&h[h.length-1]===h[h.length-2]?h[h.length-1]:null,q=makeQ();G.q=q;out.n++;
+          if(seen.has(q.label)){out.rep++;const left=[...pool.keys()].filter(l=>!seen.has(l));
+            if(!left.length)out.ex++;else if(two&&q.kind!==two&&left.every(l=>pool.get(l).has(two)))out.run++;
+            else bad(k+': "'+q.label+'" asked twice while '+left.length+' unused')}
+          seen.add(q.label);G.done++}
+        if([...seen].some(l=>!G.qu||!G.qu.get(l)))bad(k+': G.qu misses a label asked')}}
+    // a pool round: a boss's ten questions from a whole world; a check-in's questions
+    for(const p of ['read','math','es','disc'])for(let rd=0;rd<20;rd++){const a=worldPool(p,1,10),L=new Set(a.map(q=>q.label));if(a.length!==10||L.size!==10)bad(p+' world 2: a boss pool of '+a.length+' with '+L.size+' labels')}
+    for(const k of ['comp1','gram4','es_num1']){const [p,i]=stops[k];for(let rd=0;rd<20;rd++){G=newG({path:p,node:i,sk:NODES[p][i].sk,lv:NODES[p][i].lv,chk:true,kh:[]});
+      const a=CHK.qs(NODES[p][i]);if(new Set(a.map(q=>q.label)).size!==a.length)bad(k+': a check-in asked a label twice')}}
+    }finally{Math.random=MR}return out})()`);
+  return{problems:r.bad,note:`${r.n} questions, ${r.rep} repeats: ${r.ex} after the stop's pool was used up, ${r.run} to avoid a third of one kind in a row`};
+});
 // fix v194 (LESSON-STAGE review): the practice mix-in. Every lesson item lsMix gives is a valid question of its stop (sk, lv, lsx, another
 // kind); only a learned math lesson gives one, never with K2.off; pickQ takes one only when Practice asks (mix), so mastQ's and the
 // check-in's draws (no mix) and a check-in, boss or world-test round never show one; a miss of one is never kept (no phantom label).
