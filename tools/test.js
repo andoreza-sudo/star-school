@@ -8017,7 +8017,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate,sprint')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -8027,7 +8027,7 @@ run('code split A11b (and data file split A11)',()=>{
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
   // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-5S: teaches, the Spanish and Discover lessons; v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate","sprint"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // TEACH-5S: teaches, the Spanish and Discover lessons; v182: hints, the Practice mistake hints; TEACH-4: teachrd, the reading and Pre-K lessons; TEACH-2b: teach12, the grade 1-2 lessons; TEACH-3: teach35, the grade 3-5 lessons; PET-AGE2: petage, the older pet drawings
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -8168,7 +8168,9 @@ run('parts split A11c',()=>{
   // the moved files: in gen / gen2, not in index.html
   // ROOM: the Grown-ups screens (80-grown, 81-backup, 82-report, 88-online) moved to gen too, for room in index.html
   // MERGE-186 (ROOM 2): placement, Say it! (and its sound check and listening corner) and Fact Sprint moved to gen too
-  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','45-placement','50-say','50-say-cmp','50-say-corner','57-fluency','80-grown','81-backup','82-report','88-online'],
+  // RELA-SIZE: what start-up reads of placement and Fact Sprint stays in gen (45a-place, 57a-flu); the quiz and the screens are the part sprint
+  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','45a-place','50-say','50-say-cmp','50-say-corner','57a-flu','80-grown','81-backup','82-report','88-online'],
+    sprint:['45-placement','57-fluency'],
     gen2:['35-gen-math-upper','36-gen-phonics','37-bank','37-comp','39b-steps']};
   for(const [stem,list] of Object.entries(want)){
     const i=PARTS.findIndex(x=>x.stem===stem);
@@ -8199,7 +8201,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','gate','data']; // RC-1: gate; TEACH-5S: teaches; TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','gate','sprint','data']; // RELA-SIZE: sprint; RC-1: gate; TEACH-5S: teaches; TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; PET-AGE2: petage; v182: hints
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8636,8 +8638,8 @@ run('performance P6-02',()=>{
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teaches (TEACH-5S), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
-  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','gate']; // RC-1: gate is the PIN pad's and the picker's // TEACH-5S: teaches is the Spanish and Discover maps'; v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate","sprint"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1), teach12 (TEACH-2b), teach35 (TEACH-3), teaches (TEACH-5S), teachrd (TEACH-4), petage (PET-AGE2) and hints (v182): '+JSON.stringify(LAZY));
+  const NOT_GAME=['bt','teach','teach12','teach35','teachrd','teaches','teach6','petage','hints','gate','sprint']; // RELA-SIZE: sprint is Fact Sprint's and Find my level's; RC-1: gate is the PIN pad's and the picker's // TEACH-5S: teaches is the Spanish and Discover maps'; v182: hints is a Practice round's (hintsWarm, 50-round.js) // TEACH-2b: the lessons' two parts are the math map's (TEACH-3: three; TEACH-4: teachrd, the reading map's); PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
   const GAME_FILES=LAZY_FILES.filter((f,i)=>!NOT_GAME.includes(LAZY[i])),parts_=on=>LAZY.map(x=>String(!NOT_GAME.includes(x)&&on)).join(); // parts_(true): the games in, bt, teach and teach12 (TEACH-1/2b, the math map's) and petage not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
   if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach, teach12, teach35, teachrd, teaches, teach6, petage and hints');
@@ -8799,6 +8801,36 @@ run('performance P6-03',()=>{
     if(q.scripts.some(x=>x.src===BTF))p.push('the Game Room asked for '+BTF);
   }catch(e){p.push('the on-demand load of bt could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'start-up '+Math.round(before/1000)+' KB -> '+Math.round(start/1000)+' KB ('+BTF+' '+Math.round(bt/1000)+' KB on demand; '+regs.length+' puzzle types in BT.CAT)'};
+});
+// ---- RELA-SIZE (v200): the Find my level quiz and the Fact Sprint screens are the lazy part sprint; what start-up reads stays in gen ----
+run('performance RELA-SIZE',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),SPF=PART_FILES[PARTS.findIndex(x=>x.stem==='sprint')];
+  if(!SPF||!LAZY.includes('sprint'))return{problems:['sprint is not a LAZY part (tools/build.py)']};
+  for(const f of ['index.html',...START_FILES,SPF])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
+  if(partOf('45-placement.js')!=='sprint'||partOf('57-fluency.js')!=='sprint'||partOf('45a-place.js')!=='gen'||partOf('57a-flu.js')!=='gen')p.push('placement and Fact Sprint are not split between gen and sprint');
+  // every way in loads the part first
+  for(const [f,re] of [['41-nav.js',/\$\('#lhflu'\)\.onclick = \(\) => \{ SFX\.whoosh\(\); partThen\('sprint', \(\) => fluMenu\(\)\); \}/],['46-home.js',/\$\('#flu'\)\.onclick=\(\)=>\{SFX\.whoosh\(\);partThen\('sprint',\(\)=>fluMenu\(\)\)\}/],
+    ['55-missions.js',/return partThen\('sprint', \(\) => fluPlay\(/],['45a-place.js',/partThen\('sprint',\(\)=>placeIntro\(b\.dataset\.place,'home'\)\)/],['45a-place.js',/partThen\('sprint',\(\)=>placeIntro\(b\.dataset\.place,'grown'\)\)/]])
+    if(!re.test(rd('src/js/'+f)))p.push(f+' does not load the part sprint before its screen');
+  const html=rd('index.html'),files=Object.fromEntries([...START_FILES,SPF].map(f=>[f,rd(f)])),code=(html.match(/<script>([\s\S]*?)<\/script>/)||[])[1];
+  try{
+    const pg=lazyPage(code,files);
+    const at=pg.run('JSON.stringify([typeof fluMenu,typeof PLACE,typeof placeIntro,typeof FLU.on,typeof stopFlu,typeof placeAsk,typeof placeWorld,dataReady()])');
+    if(at!=='["undefined","undefined","undefined","function","function","function","function",true]')p.push('at start: '+at);
+    pg.run('S.grade=1;S.maps.math.add1=1;home()');pg.flush();pg.scripts.length=0;
+    pg.run('partThen("sprint",()=>fluMenu())');
+    if(pg.scripts.map(s=>s.src).join()!==SPF)p.push('the Fact Sprint tap asked for '+pg.scripts.map(s=>s.src));
+    pg.serve();
+    if(!pg.app.innerHTML.includes('Pick your facts.')||!pg.run('partReady("sprint")'))p.push('after loading '+SPF+' the Fact Sprint menu did not open: '+pg.app.innerHTML.slice(0,120));
+    pg.run('home()');pg.run('partThen("sprint",()=>fluMenu())');if(pg.scripts.length||!pg.app.innerHTML.includes('Pick your facts.'))p.push('the second tap did not open the menu at once');
+    const q=lazyPage(code,files);
+    // the vm page's #app has no elements: its first one is "still showing" while #app holds the same markup (view() replaces it)
+    Object.defineProperty(q.app,'firstElementChild',{get(){const h=q.app.innerHTML;return{get isConnected(){return q.app.innerHTML===h}}}});
+    q.run('S.grade=1;home()');q.flush();q.scripts.length=0;q.run('partThen("sprint",()=>placeIntro("math","home"))');q.run('view("<div id=\\"elsewhere\\"></div>")');q.serve();
+    if(!q.app.innerHTML.includes('elsewhere')||!q.run('partReady("sprint")'))p.push('a child who left while sprint loaded was pulled into Find my level');
+  }catch(e){p.push('the on-demand load of sprint could not be run: '+String(e.stack||e).split('\n').slice(0,6).join(' | '))}
+  const start=Buffer.byteLength(html)+START_FILES.reduce((a,f)=>a+Buffer.byteLength(files[f]),0);
+  return{problems:p,note:'loaded at start '+start+' bytes, '+SPF+' '+Buffer.byteLength(files[SPF])+' bytes on demand'};
 });
 
 run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, say, labels, reproducible, old levels unchanged',()=>{
@@ -18956,7 +18988,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,teach12,teach35,teachrd,teaches,teach6,petage,hints,gate,sprint,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   // AUDIO-12: the no-game-time toast is fbSay (fb, and said for non-readers); the "AUDIO-12" check forbids a bare fb(ptWhyNot())

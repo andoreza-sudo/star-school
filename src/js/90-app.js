@@ -54,6 +54,7 @@ function appFiles() {
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
     ['hints', typeof HINTS_VER === 'undefined' ? null : HINTS_VER],
     ['gate', typeof GATE_VER === 'undefined' ? null : GATE_VER],
+    ['sprint', typeof SPRINT_VER === 'undefined' ? null : SPRINT_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
@@ -81,7 +82,7 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate']; // RC-1: gate, the Grown-ups PIN and the picture passwords; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate', 'sprint']; // RELA-SIZE: sprint, the Fact Sprint and Find my level screens (partThen); RC-1: gate, the Grown-ups PIN and the picture passwords; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
@@ -117,4 +118,11 @@ function partsThen(stems, go, o = {}) {
     if (!wait.isConnected) return; // the child went elsewhere; what loaded stays loaded for next time
     if (bad) dataMissing([bad]); else go();
   }), 0));
+}
+// RELA-SIZE: a small lazy part a tap needs (sprint): go() at once when it is in; else no waiting screen, and go() runs once it has
+// loaded only if the tapped screen is still showing. One that does not load shows the Try again screen, as partsThen.
+function partThen(stem, go) {
+  if (partReady(stem)) return go();
+  const at = $('#app').firstElementChild;
+  partLoad(stem).then(ok => { if (at && !at.isConnected) return; if (ok) go(); else dataMissing([stem]); });
 }

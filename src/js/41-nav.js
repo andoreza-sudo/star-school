@@ -201,7 +201,7 @@ function learnHub() {
   $('#back').onclick = () => home();
   $$('.lh-path').forEach(b => b.onclick = () => { SFX.whoosh(); NAV.mapFrom = 'learn'; pathMap(b.dataset.p); });
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
-  if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
+  if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); partThen('sprint', () => fluMenu()); }; // RELA-SIZE: the part sprint
   if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }

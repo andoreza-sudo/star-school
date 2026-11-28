@@ -198,7 +198,7 @@ const MIS = {
     SFX.whoosh();
     if (x.k == 'sprint') {
       const ss = FLU.sets();
-      return fluPlay(ss[ss.length - 1].id, 't60');
+      return partThen('sprint', () => fluPlay(ss[ss.length - 1].id, 't60')); // RELA-SIZE: the sprint's screens are the part sprint
     }
     if (x.k == 'teaser') {
       const d = BT.dailyInfo();
