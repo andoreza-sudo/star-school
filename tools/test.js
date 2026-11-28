@@ -19341,6 +19341,8 @@ run('Brain Teasers and practice fixes R-01b',()=>{
      const rows=[[{},60],[{stars:2,hints:1,paid:3},60],[{stars:1,hints:3,paid:3},60],[{band:'D',stars:1,hints:2,paid:3},120],[{stars:1,hints:2,paid:2},40]];
      for(const[o,w]of rows){load(null);const v=pb(o);if(v!==w)add('puzzle game time '+J(o)+': '+v+' s, want '+w)}
      load(null);S.grade=1;ptCfg().max=0;
+     // not today's Puzzle of the Day (on 2026-11-28 it was this very maze B1, and the daily's 60 s doubled the pay)
+     BT.dailyInfo();BT.st().daily.done=['_other'];
      const o2=BT.finish({id:'maze',band:'B',level:1,puzzle:{},state:null,hints:2,sec:30,day:today()},{mistakes:0,hints:2,sec:30});
      if(o2.stars!==1||o2.sec!==60)add('a band B first solve with 2 hints: '+o2.stars+' star(s), '+o2.sec+' s (want 1 star, 60 s; it paid 30 s)');
      note.push('two hints: 1 star and the full 60 s (band B; it paid 30 s)')}
