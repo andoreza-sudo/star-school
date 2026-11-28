@@ -122,7 +122,8 @@ function fitCh(){for(const g of document.querySelectorAll('.choices')){const bs=
 // on a busy machine). So an overflowing question tries the smallest --k first: still over, the loop would end there anyway (the
 // same FIT_KMIN); it fits there, the loop finds the largest --k that fits, as before.
 const FIT_KMIN=(()=>{let k=1;while(k>.42)k-=.05;return k})();
-function fit(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
+function fit(){fit0();if(typeof qpFit=='function')qpFit()} // RELB-PET: the pet in the card (39v-qpet.js, part hints)
+function fit0(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
   const over=()=>qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1;
   if(!over())return;
   pr.style.setProperty('--k',FIT_KMIN);if(over())return;pr.style.setProperty('--k',1);
@@ -130,6 +131,7 @@ function fit(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;l
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 // R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
 // scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
+const petAn=c=>{anim($('#runner'),c);if(typeof qpRe=='function')qpRe(c)}
 function hintIn(){const h=$('#hint');if(h&&h.firstChild)h.scrollIntoView({block:'nearest'})}
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 // P4-10: the question screen. Top bar: the corner house (NAV-01), the track (one dot per question, the pet walks to the gift), streak and star chips.
@@ -202,7 +204,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
-    if(!G.retry)G.res[G.done-1]=G.tries?'try':'';qProg();anim($('#runner'),'jump');
+    if(!G.retry)G.res[G.done-1]=G.tries?'try':'';qProg();petAn('jump');
     let ko=false;if(G.boss&&!G.retry){G.hp=Math.max(0,G.hp-1);bossHit();if(G.hp==0){ko=true;G.won=true;G.asked=G.done;G.done=G.n;G.missed=[]}}
     qStreak();
     let wait=q.after?1900:1200;
@@ -213,7 +215,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     else{const pr=pick(CHEERS);fb(pr);petSay(pick(PET_YAY));const cs=q.after&&hasClips('cheer')?false:cheerSay('cheer',pr,.3);if(cs=='clip')wait+=400;else if(cs&&q.after)wait+=700} // EN-PRAISE: said in a recorded voice (q.after waits for it)
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
   G.tries++;if(!G.retry||MIX8.off)G.streak=0;qStreak(); // MIX-8: a retry never touches the in-row count
-  SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
+  SFX.wrong();petAn('sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
   const one=G.tries==1&&!G.chk&&!TEACH.off&&twoWay(q);if(one){G.tries=2;addMiss(q)} // TEACH-1: two choices, one try: the miss uses both tries
   if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
