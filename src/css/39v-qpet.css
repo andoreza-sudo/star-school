@@ -1,0 +1,13 @@
+/* RELB-PET (review fix 7): the pet in a Practice card's bottom corner (39v-qpet.js, part hints), on a small mound of the round's world.
+   No taps, no idle loop (the jump and wobble of a reaction only; calm mode and reduced motion stop those as everywhere). Tokens only. */
+.qs .qarea>.qpet{position:absolute;left:var(--s-3);bottom:var(--s-2);width:var(--qp,clamp(64px,19vh,116px));height:var(--qp,clamp(64px,19vh,116px));
+  margin:0;pointer-events:none;z-index:0}
+.qs .qarea>.qpet+*{margin-top:auto} /* first in the card (the centring's auto margins stay on the question) */
+.qs .qarea>.qpet.qp-r{left:auto;right:var(--s-3)}
+.qs .qarea>.qpet.qp-off{visibility:hidden}
+.qp-gr{position:absolute;left:4%;right:4%;bottom:0;height:22%;border-radius:50%;background:var(--qp-g,var(--surface-2));box-shadow:inset 0 -4px 0 var(--qp-g2,var(--line))}
+.qp-pet{position:absolute;left:0;right:0;bottom:7%;height:86%;display:block}
+.qp-pet .petwrap,.qp-pet .pet-svg{display:block;width:100%;height:100%;margin:0}
+.qpet .pg-fig,.qpet .pg-shadow,.qpet .pg-eyes,.qpet .pg-tail{animation:none}
+@media (orientation:portrait){.qs .qarea>.qpet{--qp:clamp(56px,10vh,96px)}}
+@media (max-width:480px){.qs .qarea>.qpet{--qp:64px;left:var(--s-2);bottom:var(--s-1)}.qs .qarea>.qpet.qp-r{left:auto;right:var(--s-2)}}
