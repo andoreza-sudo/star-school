@@ -165,7 +165,7 @@ function grown(){let armed=false;
   BAK.bind();
   PRF.bind();
   if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Whistlestop: Unlock or restore asks the grown-up question first (89-play.js)
-  $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
+  $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save();esRefit()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   if($('#petshow'))$('#petshow').onchange=e=>{if(e.target.checked)delete S.petOff;else S.petOff=true;save()}; // OLDER-14: Show my pet (grades 4 to 6, the look approved); only the flag changes
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});

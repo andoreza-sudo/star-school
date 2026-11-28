@@ -913,6 +913,7 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
   const werrs=[],bad=m=>werrs.push(m);
   // The body runs inside eval(js), so it sees the app's globals; it is a plain function to keep it readable.
   const body=function(){
+    ES_FIT=0; // RELA-YOUNG: this check is about the whole Spanish path (a legacy save infers K, which walks the cut path: its own check)
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
@@ -1653,7 +1654,8 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
         // and revQ falls back to a fresh question of the same skill and level (checked just above), as for any changed generator
         // R-01s: a Spanish noun of the first units now has el / la in front: the same question with the article (taken off both sides)
         // R-01b: only a single fact (revFact) is asked again exactly; anything else is a fresh question of the same skill and level
-        else if(o.q.seed!=null&&!['sub|2','story|1'].includes(it.sk+'|'+it.lv)&&revFact(it,o.q)&&(noArt(normPic(q.html))!==noArt(normPic(o.q.html))||noArt(q.ans)!==noArt(o.q.ans)||noArt(q.label)!==noArt(o.q.label)))bad(name+': not the same question '+revKey(it));
+        // RELA-YOUNG (owner 2026-11-28) changed add 1, sub 1 and miss 1 (fewer zeros, counters, make 10) the same way
+        else if(o.q.seed!=null&&!['sub|2','story|1','add|1','sub|1','miss|1'].includes(it.sk+'|'+it.lv)&&revFact(it,o.q)&&(noArt(normPic(q.html))!==noArt(normPic(o.q.html))||noArt(q.ans)!==noArt(o.q.ans)||noArt(q.label)!==noArt(o.q.label)))bad(name+': not the same question '+revKey(it));
         else if(o.q.seed==null&&!('seed' in it))bad(name+': seed search did not run for '+revKey(it));
       }
       if(name=='tricky'){
@@ -11103,6 +11105,7 @@ run('Spanish framework P2-30',()=>{
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    ES_FIT=0; // RELA-YOUNG: this check is about the whole Spanish path (a legacy save infers K, which walks the cut path: its own check)
     const CUR=PATHS.es.worlds;ES_UNITS.push(FX);SPN.tst=FX.items;esReg(FX);
     let checked=0;
     for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
@@ -11653,6 +11656,7 @@ run('Spanish La Casa P2-31',()=>{
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    ES_FIT=0; // RELA-YOUNG: this check is about the whole Spanish path (a legacy save infers K, which walks the cut path: its own check)
     const CUR=PATHS.es.worlds;let checked=0;
     // the path ends at La Casa while this runs: the Spanish worlds after it (El Tiempo, La Ciudad) were not shipped before it and have their own checks
     const CUT=CUR.slice(0,CUR.findIndex(x=>x.id==='e_casa')+1);
@@ -11806,6 +11810,7 @@ run('Spanish El Tiempo P2-32',()=>{
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    ES_FIT=0; // RELA-YOUNG: this check is about the whole Spanish path (a legacy save infers K, which walks the cut path: its own check)
     const CUR=PATHS.es.worlds,OLD=CUR.filter(x=>x.id!=='e_tiempo');let checked=0;
     for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
       const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
@@ -13744,6 +13749,7 @@ run('Spanish Las Frases P2-34',()=>{
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    ES_FIT=0; // RELA-YOUNG: this check is about the whole Spanish path (a legacy save infers K, which walks the cut path: its own check)
     const FULL=PATHS.es.worlds,CUR=FULL.slice(0,fi+1);let checked=0;
     for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
       const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
@@ -14654,6 +14660,7 @@ run('Spanish Los Cuentos P2-35',()=>{
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    ES_FIT=0; // RELA-YOUNG: this check is about the whole Spanish path (a legacy save infers K, which walks the cut path: its own check)
     const FULL=PATHS.es.worlds;let checked=0;
     for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
       const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
@@ -20536,7 +20543,7 @@ run('game feel 2 G-FEEL2',()=>{
 
 // ---- KINDS2 batch A (docs/KINDS2-SPEC.md section 6): the sort and mark kinds, bank builders, mixed formats, not three in a row ----
 // The stops switched to the new kinds (spec 3): sort stops have no kind above 65%; mark stops ask mark 15-35% of the time.
-const K2_SORT=['sort2','sort3','sound1','sound2','rhyme1','eo1','eo2','syl1','syl2','pic3','pic4','gram2','gram8','gram4','fact2','fact1','ang1',
+const K2_SORT=['sort2','sort3','sound1','sound2','rhyme1','eo2','syl1','syl2','pic3','pic4','gram2','gram8','gram4','fact2','fact1','ang1',
   'frac4','dec2','vocab8','es_art1','es_art2','es_ser2','es_gusta2','es_mix2','sci_life1','sci_life2','sci_life3','sci_earth1','sci_earth2',
   'sci_earth3','sci_phys1','sci_phys2','sci_phys3','geo_world1','geo_world2','geo_us1','geo_us2','civ1','civ2'];
 const K2_MARK=['gram5','gram6','gram7','vocab7'];
@@ -20649,6 +20656,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // loudness, which also makes those four questions "wide" (a choice over 7 letters); checked to be the only difference)
       // (WORDS-MATH, approved 2026-11-24, set two more: sort3 (E8: no fish in a food and animals sort; with sgCat as before it gives the v169
       // hash 1b1f327c30ec) and eo1 (W69: the K question says "Even is on the left."; without that sentence it gives the v169 hash 9eb0a73c72a3))
+      // (RELA-YOUNG, owner 2026-11-28, review fix 2: add1, sub1 and miss1 labels and the eo1 hash set again: about 1 fact in 10 with a 0,
+      // K miss 1 makes 10, eo 1 shows the number as pairs of dots; eo 1 no longer sorts (K2_SORT), its chips would be bare numbers)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
@@ -20694,7 +20703,7 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
       const rq=revQ(it);if(!rq||rq.rvk!==revKey(it)||rq.sk!==sk||rq.lv!==lv)bad(sk+lv+': revQ does not book to the item');
       if(revFact(it,b)&&(rq.label!==q.label||rq.kind!==kind))bad(sk+lv+': a fact item came back changed');
       if(!kindProblems(rq).length)out.rt++};
-    for(const [sk,lv] of [['eo',1],['sort',2],['syl',2],['pic',3],['fact',2],['ang',1],['es_art',1],['es_mix',2]])trip(sk,lv,'sort');
+    for(const [sk,lv] of [['eo',2],['sort',2],['syl',2],['pic',3],['fact',2],['ang',1],['es_art',1],['es_mix',2]])trip(sk,lv,'sort'); // RELA-YOUNG: eo 1 (K) no longer sorts; eo 2 does
     for(const [sk,lv,k] of [['gram',2,'sort'],['gram',2,'mark'],['gram',7,'mark'],['vocab',8,'sort'],['sci_life',1,'sort'],['civ',2,'sort'],['geo_us',1,'match'],['sci_phys',2,'order']])trip(sk,lv,k);
     // a pic 3 sort question keeps the fact's review label, so the review asks it again exactly
     {let q=null;for(let s=1;s<=400&&!q;s++){const t=genQ('pic',3,s);if(t.kind=='sort'&&/^read /.test(t.label))q=t}
@@ -20788,15 +20797,16 @@ run('GFX-1 JFX: the bit pool and its cap, stop with nothing flying',()=>{
 // ---- KINDS2 batch B (docs/KINDS2-SPEC.md 2.3, 3, 6): the line kind ----
 // K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4 at 40%, not 30%: 30% leaves the number pad at 70%).
 // K2_OFF0: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for s = 1..150, ART emptied, of the stops batches B and C switch, from the
-// generators of commit af3d449 (before them); with K2.off the stops must give these exactly.
+// generators of commit af3d449 (before them); with K2.off the stops must give these exactly. RELA-YOUNG (owner 2026-11-28, review fix 2)
+// set four again: int1 (mostly negative targets), add4 (1 in 10 with a 0), big1 (1st grade: tens only), time2 (only :00 and :30 offered)
 const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,dec1:.3,dec2:.3,pv5:.3,int1:.4,int2:.45};
 // RELA-UI: time1-5 re-pinned: only the clock drawing changed (longer minute hand, wider hour hand, haloed numbers); with the old
 // 23-viz.js the old hashes still match, so the K2.off questions are unchanged
 const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',round2:'f7aff9bb37e3',round3:'ed930021e130',round4:'af8199029acb',
-  frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'ef33cdc118a9',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
-  tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
-  coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'bd3c8eb7e2b6',time2:'afc2b3e9c811',
-  time3:'f32a1fc8912a',time4:'7fba462703ef',time5:'7787bc625878',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
+  frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'c003dd306e0c',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
+  tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'9103432c0f67',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'464826d510ee',
+  coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'7d131ef1ca42',
+  time3:'cf0a72347296',time4:'bff67461efdd',time5:'6ec67e6555e1',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
   mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'d26b15de7a3c',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
 // question valid, K2.off gives the af3d449 questions, and the review round trip (seed path)
@@ -20918,7 +20928,7 @@ const K2_FIXD={big3:.2,big4:.2,big5:.2,big6:.2,sub4:.2,sub5:.2,sub6:.2,sub7:.2,s
 const K2_OFF_D={big3:'decb627d2e51',big4:'dbf6bb48f066',big5:'752f27cab24d',big6:'3f329ad2111f',sub4:'87d6fc297420',sub5:'bcc307bb56b5',
   sub6:'75d9c8acc2f0',sub7:'3ed8cb858090',sub8:'cc81bee475ae',mbig2:'ffe9818ccc01',mbig3:'ef6c4a91812f',mbig4:'34f31f6d7d31',mbig5:'eba20cbe3d65',
   dbig1:'461a3960184c',dbig2:'a68933808fbd',dbig3:'5ba20233e7a6',dec3:'37312d1ea683',dec4:'892d5ed2d323',fop1:'e97e0ae92a60',fop3:'605a9fe1b8e7',
-  ooo1:'07bd22d61a8a',alg1:'57608e756aef',alg2:'a93fce988824',alg3:'fabe2af83806',miss1:'b1f02653e332',miss2:'728e96437f83',frac6:'ba17f505b115'};
+  ooo1:'07bd22d61a8a',alg1:'57608e756aef',alg2:'a93fce988824',alg3:'fabe2af83806',miss1:'29d6c89e718e',miss2:'728e96437f83',frac6:'ba17f505b115'};
 // the stops with why sentences (spec 5, the first ten) and the share of their questions that carry one, at least
 const K2_WHY={sub4:.5,sub6:.5,big3:.5,big5:.5,miss1:.5,miss2:.5,tenf2:.3,pv1:.3,pv2:.3,frac4:.15,frac6:.3,fop1:.15,fop3:.3,dec2:.03,
   round1:.9,round2:.9,round3:.9,round4:.9,ooo1:.02,es_art1:.25,es_art2:.25};
@@ -21006,7 +21016,8 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
 // only change is the format draw. miss 1 and 2 are the KINDS2-D hashes (K2_OFF_D) again. No kinds2-seeds.json hash changes: the
 // fixture's labels (add 1-3, sub 1-2, miss 1-2) are kept by the converters (the "KINDS2 mix" check).
 const TAP10={add1:.4,sub1:.4,miss1:.3,add2:.25,add3:.25,sub2:.25,miss2:.25,big2:.4,frac5:.3};
-const TAP10_OFF={add1:'2456a14adfea',add2:'0deb4182f960',add3:'ce3f6157c2d7',sub1:'22db8e2f3446',sub2:'fa8af1c69fb7',miss1:'b1f02653e332',
+// RELA-YOUNG (owner 2026-11-28): add1, sub1, miss1 re-pinned: about 1 fact in 10 with a 0, counters on every K item, K miss 1 makes 10
+const TAP10_OFF={add1:'6f15b99fd8be',add2:'0deb4182f960',add3:'ce3f6157c2d7',sub1:'e7d2b9a1d33e',sub2:'fa8af1c69fb7',miss1:'29d6c89e718e',
   miss2:'728e96437f83',big2:'75ba62daa06d',frac5:'c3b08e9a4b37'};
 run('TAP-10 touch the model: every new make question answerable on its model, wrong states wrong, hints, determinism, conversion rates, no new words',()=>{
   // the lesson sources the words come from (no new sentence a child sees or hears)
@@ -26408,6 +26419,7 @@ run('ES-MORE: drafted Spanish weather and feelings words, the gate, words with p
       for(const c of ESM.cap[id])if(!add.some(it=>it[0]===c))B(k+': caption word '+c+' is not a new word');
       // seeded questions: one right answer, no two choices alike by value or picture, no confuse pair together; every new word asked,
       // at level 1 with its picture and at level 2 with its picture on top (the English is on the learn card and in the hint lines)
+      // (RELA-YOUNG, owner 2026-11-28: weather and feel have l1, so level 1 keeps the first words and the new ones start at level 2)
       const asked={};
       for(let lv=1;lv<=SK[k].max;lv++)for(const g of [0,2])for(let s=1;s<=600;s++){S.grade=g;const q=genQ(k,lv,s),kk=k+' L'+lv+' g'+g+' s'+s+': ';
         if(q.kind!=='choice'){B(kk+'kind '+q.kind);continue}
@@ -26421,7 +26433,7 @@ run('ES-MORE: drafted Spanish weather and feelings words, the gate, words with p
           if(lv==1&&!picOf(q.choices.find(c=>String(c.v)===String(q.ans))).includes(pic))B(kk+'the right choice does not show its picture');
           if(lv==2&&!q.html.includes(pic))B(kk+'the question does not show its picture')}}
       S.grade=0;
-      for(const it of add)for(let lv=1;lv<=SK[k].max;lv++)if(!asked[it[0]+lv])B(k+' '+it[0]+': never asked at level '+lv+' in 1200 questions');
+      for(const it of add)for(let lv=u.l1?2:1;lv<=SK[k].max;lv++)if(!asked[it[0]+lv])B(k+' '+it[0]+': never asked at level '+lv+' in 1200 questions');
     }
     for(let s=1;s<=300;s++){const q=genQ('es_mix',2,s);if(q.kind=='choice'&&q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)B('es_mix: not exactly one right answer')}
     // the drawings: new names only, each used by a word, the object-art rules of sets A to C (DESIGN_SYSTEM 6.5)
@@ -26673,6 +26685,50 @@ run('OWNER-1127: the owner\'s free-sample decisions of 2026-11-27 (PIN, Unlock c
     if(b9.right||b9.x)p.push('B9: a right check-in did not clear the line');
   }catch(e){p.push('the check could not run: '+String(e.stack||e).split('\n').slice(0,4).join(' | '))}
   return{problems:p,note:'B2 PIN within 2 minutes / after; B3 card order; B4 bubble at K, 2nd, 3rd, 6th; B5 Puzzles tab K and 4th; B6-B8 day-one words and the mission; B9 the report line'};
+});
+// RELA-YOUNG (review fix 2, owner 2026-11-28): the youngest children. Spanish: Pre-K and K walk the listening worlds and the level 1
+// stops of house, clothes, feelings, toys and nature (no boss in a cut world); older grades and a save with no grade keep the whole
+// path; a star or a Test out past the cut, or Unlock every stop, keeps the whole path (nothing open ever locks), and no star moves.
+// K math: about 1 fact in 10 with a 0, counters on every K number item, miss 1 makes 10, eo 1 shows pairs. Discover: no g1 row for
+// Pre-K or K, 3 choices and rounds of 5 for Pre-K.
+run('young children RELA-YOUNG: the Spanish path per grade, saves, K math shares and pictures, Discover rows and choices',()=>{
+  const keepLS=global.localStorage;global.localStorage={getItem:()=>null,setItem:()=>{}};
+  let r;try{r=eval(js+`;(()=>{const p=[],bad=m=>{if(p.length<40&&!p.includes(m))p.push(m)},note={};
+    deep15Apply();if(typeof esMoreApply=='function')esMoreApply();
+    G={};const full=NODES.es.map(nid).join(' '),fit=g=>{S.grade=g;esRefit();return NODES.es.map(nid)};
+    const ids=fit(-1),want='es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso es_house1 es_clothes1 es_feel1 es_toy1 es_nature1';
+    if(ids.join(' ')!==want)bad('Pre-K Spanish path: '+ids.join(' '));note.prek=ids.filter(x=>!/^boss_/.test(x)).length;
+    if(fit(0).join(' ')!==want)bad('K Spanish path is not the cut one');
+    for(const g of [1,2,6,null])if(fit(g).join(' ')!==full)bad('grade '+g+': the whole Spanish path changed');
+    S.grade=0;S.maps.es={es_days1:1};esRefit();if(NODES.es.map(nid).join(' ')!==full)bad('a star past the cut hides stops');
+    S.maps.es={};S.skip={e_tiempo:1};esRefit();if(NODES.es.map(nid).join(' ')!==full)bad('a Test out past the cut hides stops');
+    S.skip={};S.unlockAll=true;esRefit();if(NODES.es.map(nid).join(' ')!==full)bad('Unlock every stop hides stops');S.unlockAll=false;esRefit();
+    // order: Gran Repaso done opens La Casa; La Casa's cut stops done open La Ciudad's nature stop; then the path ends
+    S.maps.es={};NODES.es.forEach((n,i)=>{if(['e_plaza','e_fiesta','e_repaso'].includes(n.wid))setSt('es',i,2)});
+    if(nid(NODES.es[curNode('es')])!=='es_house1')bad('after Gran Repaso the map is not on es_house1');
+    NODES.es.forEach((n,i)=>{if(n.wid=='e_casa')setSt('es',i,2)});
+    if(nid(NODES.es[curNode('es')])!=='es_nature1')bad('after the cut La Casa the map is not on es_nature1');
+    // growing up: every star stays, the whole path is back, the map goes on in La Casa
+    NODES.es.forEach((n,i)=>setSt('es',i,3));const st=JSON.stringify(S.maps.es);S.grade=1;esRefit();
+    if(JSON.stringify(S.maps.es)!==st)bad('a grade change moved a star');
+    if(nid(NODES.es[curNode('es')])!=='es_house2')bad('a K child who grew to 1st does not go on at es_house2: '+nid(NODES.es[curNode('es')]));
+    for(const n of NODES.es){const i=NODES.es.indexOf(n);if(passed('es',i)&&!unlocked('es',i))bad(nid(n)+' passed but locked')}
+    S.grade=null;S.maps.es={};esRefit();
+    // K math: zero shares and counters
+    const z=(sk,lv)=>{let n=0,k=0;for(let s=1;s<=3000;s++){const q=genQ(sk,lv,s);const m=/^(\\d+|\\?) [+−] (\\d+|\\?) = (\\d+|\\?)$/.exec(q.label);if(!m)continue;k++;if([m[1],m[2],m[3],q.ans].includes('0'))n++;
+      if(q.kind=='num'&&!/<svg/.test(q.html))bad(sk+lv+' seed '+s+': a K number item with no counters')}return n/k};
+    for(const [sk,lv] of [['add',4],['add',1],['sub',1],['miss',1]]){const v=z(sk,lv);note[sk+lv]=Math.round(v*1000)/10+'%';if(v>.14)bad(sk+lv+': '+Math.round(v*100)+'% zero facts')}
+    for(let s=1;s<=500;s++){const q=genQ('miss',1,s);if(!/^[1-9] \\+ \\? = 10$/.test(q.label))bad('miss 1 is not make 10: '+q.label);
+      const e=genQ('eo',1,s);if(e.kind!=='choice'||(e.html.match(/<b><\\/b>/g)||[]).length!==+e.label.split(' ')[0])bad('eo 1 seed '+s+': not the pairs of dots')}
+    // Discover: no g1 row for Pre-K or K, all of them from 1st grade; Pre-K 3 choices
+    const g1=g=>{S.grade=g;let n=0;for(const id of ['sci_life','sci_earth','sci_phys','geo_world','civ'])for(let s=1;s<=600;s++){const q=genQ(id,1,s);if(q.bk&&BANK[id][q.bk.bi].g1)n++}return n};
+    if(g1(-1)||g1(0))bad('a g1 row for Pre-K or K');if(!g1(1))bad('no g1 row for 1st grade');
+    note.g1=['sci_life','sci_earth','sci_phys','geo_world','civ'].reduce((a,id)=>a+BANK[id].filter(x=>x.g1).length,0);
+    S.grade=-1;for(let s=1;s<=300;s++){const q=genQ('sci_life',1,s);if(q.kind=='choice'&&q.choices.length>3)bad('Pre-K Discover has 4 choices')}
+    S.grade=0;if(!Array.from({length:300},(_,s)=>genQ('sci_life',1,s+1)).some(q=>q.kind=='choice'&&q.choices.length==4))bad('K lost its 4 choices');
+    S.grade=null;
+    return{p,note}})()`)}finally{global.localStorage=keepLS}
+  return{problems:r.p,note:'Pre-K Spanish stops '+r.note.prek+'; zero facts '+['add4','add1','sub1','miss1'].map(k=>k+' '+r.note[k]).join(', ')+'; '+r.note.g1+' g1 rows'};
 });
 Promise.all(PENDING).then(()=>{
 let failed=0;

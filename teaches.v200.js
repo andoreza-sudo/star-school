@@ -470,7 +470,7 @@ function deep15Apply() {
   // Spanish
   for (const id in D15.es) ES_UNITS.find(u => u.id == id).items.push(...D15.es[id]);
   for (const u of D15.esNew) { ES_UNITS.push(u); SPN[u.id] = u.items; esReg(u); }
-  for (const wid in D15.esAt) PATHS.es.worlds.find(w => w.id == wid).nodes.push(...D15.esAt[wid]);
+  for (const wid in D15.esAt) (PATHS.es.full || PATHS.es.worlds).find(w => w.id == wid).nodes.push(...D15.esAt[wid]);
   buildNodes('disc');
   buildNodes('es');
   for (const [p, wid] of mw) if (wid) MAPW[p] = PATHS[p].worlds.findIndex(w => w.id == wid);

@@ -1736,7 +1736,8 @@ function skyInt1() {
   const r = rnd();
   if (r < .3) { // tap a number
     let x;
-    do {x = R(-9, 9)} while (x == 0 || x % 5 == 0);
+    do {x = R(1, 9)} while (x % 5 == 0);
+    if (rnd() < .7) x = -x; // RELA-YOUNG: mostly negative targets
     let pts;
     for (;;) {
       pts = [x];
@@ -1753,6 +1754,7 @@ function skyInt1() {
   if (r < .7) {
     let a, b;
     do {a = R(-10, 10); b = R(-10, 10)} while (a == b || (a >= 0 && b >= 0));
+    if (a >= 0 && rnd() < .8) [a, b] = [b, a]; // the line kind's target
     const m = rnd();
     if (m < .5) { // compare
       return {kind: 'choice', cls: 'syms', ans: a < b ? '<' : '>', choices: FC_SYM.map(c => ({...c})),
@@ -1773,6 +1775,7 @@ function skyInt1() {
   // order three
   let v;
   do {v = [R(-10, 10), R(-10, 10), R(-10, 10)]} while (new Set(v).size < 3 || v.every(x => x >= 0));
+  if (v[0] >= 0 && rnd() < .8) { const j = v.findIndex(x => x < 0); [v[0], v[j]] = [v[j], v[0]]; }
   const up = rnd() < .7, asc = [...v].sort((x, y) => x - y), ans = (up ? asc : asc.slice().reverse()).map(String);
   let items;
   do {items = shuffle(v.map(x => ({v: String(x), l: skyN(x)})))} while (items.map(i => i.v).join() == ans.join());
@@ -2215,8 +2218,8 @@ function galFact3() {
     a = R(2, 36); b = R(2, 36);
     if (a == b) continue;
     // AUDIT-MATH: a story about the greatest number of teams never has the answer 1. The bare question keeps a pair with GCF 1 twice as
-    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before)
-    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .8)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
+    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before). RELA-YOUNG: .86, about 1 in 10
+    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .86)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
     break;
   }
   const lo = Math.min(a, b), hi = Math.max(a, b);
@@ -2550,13 +2553,16 @@ function bankBuild(id,it,pass){
   return q;
 }
 
+// RELA-YOUNG: no g1 item for a Pre-K or K child (a chosen grade) while others are left; Pre-K Discover: one wrong answer fewer
+const bankYoung=(items,c)=>{if(!S||!(S.grade===-1||S.grade===0))return c;const y=c.filter(i=>!items[i].g1);return y.length?y:c};
+const bankPre=(id,it)=>S&&S.grade===-1&&Array.isArray(it.d)&&it.d.length>2&&!!SK[id]&&SK[id].area=='disc'?Object.assign({},it,{d:it.d.slice(0,-1)}):it;
 /* genBank(id, lv): one question from BANK[id] at level lv. o.bi forces the item and o.s the seed (both used by bankRebuild). */
 function genBank(id,lv,o={}){
   const items=BANK[id]||[];
   const s0=o.s!=null?o.s:bankSeed();
   // KINDS2: items of the new forms (BANKNEW) are drawn by their share, with one more seeded draw after the usual choice
   const nw=i=>typeof BANKNEW!='undefined'&&BANKNEW.includes(items[i].form);
-  const all=items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i])),old=all.filter(i=>!nw(i)),cands=old.length?old:all;
+  const all=bankYoung(items,items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i]))),old=all.filter(i=>!nw(i)),cands=old.length?old:all;
   if(!cands.length)throw new Error('bank '+id+' has no usable item at level '+lv);
   let bi=o.bi!=null?o.bi:bankChoose(id,cands,s0);
   if(o.bi==null&&old.length&&old.length<all.length){
@@ -2564,7 +2570,7 @@ function genBank(id,lv,o={}){
     for(const f of BANKNEW){const fs=all.filter(i=>items[i].form==f);if(!fs.length)continue;acc+=bankShare(id,lv,f);
       if(d<acc){bi=bankChoose(id+':'+f,fs,bankSub(s0,0x4b33));break}}
   }
-  const q=bankWith(bankSub(s0,bi),()=>bankBuild(id,items[bi]));
+  const q=bankWith(bankSub(s0,bi),()=>bankBuild(id,bankPre(id,items[bi])));
   q.bk={id,lv,bi,s:s0};
   return q;
 }
@@ -5281,7 +5287,7 @@ const K2GEN = {
   sort: {2: [.5, k2SortSize], 3: [.5, k2SortKinds]},
   sound: {1: [.4, k2Sound], 2: [.4, k2Sound]},
   rhyme: {1: [.4, k2Rhyme]},
-  eo: {1: [.6, k2EO], 2: [.6, k2EO]},
+  eo: {2: [.6, k2EO]}, // RELA-YOUNG: eo 1 is the choice with dots
   syl: {1: [.5, k2Syl], 2: [.5, k2Syl]},
   pic: {3: [.4, k2Vowel], 4: [.4, k2Vowel]},
   fact: {1: [.4, k2Factor], 2: [.6, k2Prime]},
@@ -5295,9 +5301,10 @@ const K2GEN = {
   int: {1: [.4, k2IntLine], 2: [.45, k2IntOpp]},
   tenf: {1: [.45, k2Frame], 2: [.45, k2Frame], 3: [.45, k2Frame]},
   pk_count: {3: [.45, k2Frame]},
+  // RELA-YOUNG: add 1, sub 1, miss 1 shares lowered (fewer zeros, all miss 1 make 10) to keep the planned 40/40/30%
   // TAP-10 (the converters are in 49c-tap10.js): add 1-3, miss 1-2, sub 1-2 (below) on the ten frame, big 2 with blocks, frac 5 (above)
-  add: {1: [q => (k2Ab(q.label, '+') && /^[1-9]\d* \+ [1-9]/.test(q.label) ? .57 : 0), k2AddK], 2: [.25, k2Add20], 3: [.25, k2Add20], 4: [.45, k2AddFrame]},
-  miss: {1: [q => (k2MissAb(q.label) ? .8 : 0), k2MissFrame], 2: [q => (k2MissAb(q.label) ? .5 : 0), k2MissFrame]},
+  add: {1: [q => (k2Ab(q.label, '+') && /^[1-9]\d* \+ [1-9]/.test(q.label) ? .45 : 0), k2AddK], 2: [.25, k2Add20], 3: [.25, k2Add20], 4: [.45, k2AddFrame]},
+  miss: {1: [q => (k2MissAb(q.label) ? .3 : 0), k2MissFrame], 2: [q => (k2MissAb(q.label) ? .5 : 0), k2MissFrame]},
   big: {1: [.4, k2B10], 2: [.4, k2B10Sum], 3: [.2, k2FixAdd], 4: [.2, k2FixAdd], 5: [.2, k2FixAdd], 6: [.27, k2FixAdd]},
   coins: {1: [.45, k2Coins], 2: [.4, k2Coins], 3: [.4, k2Coins], 5: [.45, k2Coins]},
   time: {1: [.4, k2Clock], 2: [.4, k2Clock], 3: [.4, k2Clock], 4: [.4, k2Clock], 5: [.4, k2Clock]},
@@ -5312,7 +5319,7 @@ const K2GEN = {
   // KINDS2-D find the mistake (spec 3: 20% of the computation stops). A converter gives no question for some facts (5 or more digits,
   // mixed numbers, a one-step division ...), so a share is raised where that leaves the stop near 20%; ooo 1 and alg 3 convert only
   // their number questions. big 7 (6-digit sums: 7 lines, too tall for a phone) has none; sub 8 converts its 4-digit facts only.
-  sub: {1: [q => (k2TakeOk(q.label) ? .6 : 0), k2SubFrame], 2: [.25, k2SubFrame], 4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]}, // 1, 2: TAP-10
+  sub: {1: [q => (k2TakeOk(q.label) ? .45 : 0), k2SubFrame], 2: [.25, k2SubFrame], 4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]}, // 1, 2: TAP-10
   mbig: {2: [.28, k2FixMbig], 3: [.33, k2FixMbig], 4: [.28, k2FixMbig], 5: [.25, k2FixMbig]},
   dbig: {1: [.2, k2FixDiv], 2: [.4, k2FixDiv], 3: [.22, k2FixDiv]},
   fop: {1: [.33, k2FixFop], 3: [.2, k2FixFop]},

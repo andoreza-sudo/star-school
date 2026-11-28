@@ -2854,9 +2854,11 @@ const DISC_PIC = {
 // grade: the grade band of a bank whose levels do not follow DISC_GRADE (P2-37: geo_us and civ start at levels 3-4 and 5-6)
 // R-01d: a K-2 item is read aloud with its choices and its hint (aloud), and gets picture answers when DISC_PIC has every choice (cp).
 // A seventh field, the grid "max;x,y,L;x,y" (R-01d, geo_world 2), draws a coordinate grid with the points the question names.
+// RELA-YOUNG: a row starting with ^ has 1st-2nd grade words: g1 (genBank)
 function discRows(lv, text, grade) {
   return text.trim().split('\n').map(r => {
-    const f = r.split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
+    const g1 = r[0] == '^', f = (g1 ? r.slice(1) : r).split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
+    if (g1) it.g1 = 1;
     if (f[4]) it.em = f[4].split(',');
     it.hint = f[5] || DISC_HINT[f[3]];
     if (f[6]) {
@@ -2937,7 +2939,7 @@ Which part of a plant takes in water from the soil?|roots|leaves;flower;seed|pla
 Which part of a plant holds it up tall?|stem|flower;seed;leaf|plants
 The colorful part that makes seeds is the ___.|flower|root;stem;leaf|plants||It is the bright, sweet-smelling part that bees visit.
 Which part of a plant is usually green and flat?|leaf|root;seed;stem|plants
-Leaves use sunlight to help a plant make its ___.|food|dirt;wind;rain|plants
+^Leaves use sunlight to help a plant make its ___.|food|dirt;wind;rain|plants
 A new plant can grow from a ___.|seed|pebble;feather;button|plants
 What do seeds need to start growing?|water and warmth|wind and snow;darkness and dust;nothing at all|plants||Think about a seed that is planted in the garden in a good season.
 Which part of a plant is a carrot?|root|flower;leaf;stem|plants
@@ -2986,7 +2988,7 @@ The sky is gray and full of clouds, but no rain is falling. What kind of day is 
 What do you wear on a cold, snowy day?|mittens|a swimsuit;sandals;shorts|weather
 What can you hold over your head to stay dry in the rain?|an umbrella|a kite;a bucket;a sun hat|weather
 Which one is NOT weather?|a tree|rain;wind;snow|weather
-Clouds are made of tiny drops of ___.|water|smoke;cotton;dust|weather|cloud,☁
+^Clouds are made of tiny drops of ___.|water|smoke;cotton;dust|weather|cloud,☁
 Which season is usually the coldest?|winter|summer;spring;fall|seasons
 Which season is usually the hottest?|summer|winter;spring;fall|seasons
 In which season do flowers start to bloom?|spring|winter;fall;summer|seasons
@@ -3012,12 +3014,12 @@ What time of day is it when the sun is high in the sky?|noon|midnight;bedtime|da
 Which one is NOT in the sky at night?|a rainbow|the moon;stars;a cloud|daynight
 The sun is a ___.|star|planet;moon;cloud|sunmoon|sun,☀
 Which one gives us heat and light?|the sun|the moon;a cloud;the wind|sunmoon
-The moon shines because light from the ___ bounces off it.|sun|ocean;clouds|sunmoon
+^The moon shines because light from the ___ bounces off it.|sun|ocean;clouds|sunmoon
 What shape does a full moon look like?|a circle|a square;a triangle|sunmoon
 Which one twinkles in the night sky?|stars|clouds;rainbows;kites|sunmoon
 How does the sun make us feel on a bright summer day?|warm|cold;wet;frozen|sunmoon
-The sun looks small because it is very ___ away.|far|close;near|sunmoon
-The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
+^The sun looks small because it is very ___ away.|far|close;near|sunmoon
+^The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
 The sun gives our world ___.|light and heat|rain and snow;wind and clouds;rocks and sand|sunmoon
 What is the moon mostly made of?|rock|ice;clouds;fire|sunmoon||Look at photos of the moon: the ground is gray, bumpy and dusty.
 Most of the Earth is covered by ___.|water|land;sand|landwater
@@ -3070,7 +3072,7 @@ Which one is the quietest?|a whisper|a siren;a trumpet;a drum|soundlight
 Which one makes its own light?|a flashlight|a mirror;a book;the moon|soundlight
 Which one makes its own light?|the sun|the moon;a mirror;a window|soundlight
 What do you see when something blocks the light?|a shadow|a rainbow;a puddle|soundlight
-A mirror ___ light so you can see yourself.|bounces|hides;swallows|soundlight
+^A mirror ___ light so you can see yourself.|bounces|hides;swallows|soundlight
 Which one can you hear but NOT hold in your hand?|a song|a drum;a bell;a flute|soundlight
 If you hit a bell harder, the sound gets ___.|louder|softer;colder|soundlight
 In a dark room, what helps you see?|a flashlight|a blanket;a rug;a pillow|soundlight
@@ -3086,7 +3088,7 @@ Water put in the freezer becomes ___.|ice|steam;sand|solid
 Which one is a solid?|ice|water;juice;milk|solid
 Which one is a liquid?|honey|a brick;a coin;a book|solid
 Which one is NOT a liquid?|a crayon|water;milk;juice|solid
-A liquid takes the shape of the ___ it is poured into.|container|color;weight;smell|solid
+^A liquid takes the shape of the ___ it is poured into.|container|color;weight;smell|solid
 `);
 /* ---------- Discover: science for grades 3-6 (P2-37; CURRICULUM section 6, Lv 2 and Lv 3 columns) ---------- */
 /* Levels 2 (grades 3-4) and 3 (grades 5-6) of BANK.sci_life, BANK.sci_earth and BANK.sci_phys. Same row format and the same helpers
@@ -3617,8 +3619,8 @@ On most maps, west is on the ___ side of the map.|left|right;top;bottom|mapwords
 The Sun comes up in the east and goes down in the ___.|west|north;south;east|mapwords
 The opposite of north is ___.|south|east;west;up|mapwords
 The opposite of east is ___.|west|north;south;left|mapwords
-If you face north, east is on your ___.|right|left;back;front|mapwords
-If you face north, west is on your ___.|left|right;back;front|mapwords
+^If you face north, east is on your ___.|right|left;back;front|mapwords
+^If you face north, west is on your ___.|left|right;back;front|mapwords
 A map is a drawing of a place as seen from ___.|above|the side;inside;underneath|mapwords
 The tool that shows which way is north is a ___.|compass|clock;ruler;scale|mapwords
 A small picture on a map, such as a tree or a house, is a ___.|symbol|number;border;grid|mapwords
@@ -3626,7 +3628,7 @@ A map key tells you what the ___ on the map mean.|symbols|sounds;seasons;days|ma
 Which one is a direction word?|south|sun;song;sand|mapwords
 A map of your classroom shows ___.|where things are|what things smell like;what things cost;who is tallest|mapwords
 Which one is a compass direction?|west|up;left;under|mapwords
-If you walk toward the place where the Sun sets, you are walking ___.|west|east;north;south|mapwords
+^If you walk toward the place where the Sun sets, you are walking ___.|west|east;north;south|mapwords
 On a map, the top is north. Which way is the bottom of the map?|south|east;west;north|mapwords
 A very tall landform with a peak is a ___.|mountain|valley;island;lake|landforms
 A low area of land between mountains or hills is a ___.|valley|mountain;island;desert|landforms
@@ -3634,24 +3636,24 @@ Land that has water all around it is called ___.|island|valley;mountain;plain|la
 A big flat area of land is a ___.|plain|mountain;island;volcano|landforms
 A hill is ___ than a mountain.|smaller|taller;wetter;wider|landforms
 A large area of very dry land with little rain is a ___.|desert|island;beach;volcano|landforms
-A body of water with land all around it is a ___.|lake|island;peninsula;desert|landforms
+^A body of water with land all around it is a ___.|lake|island;peninsula;desert|landforms
 A stream of water that flows across the land to the sea is a ___.|river|lake;valley;island|landforms
 A mountain that can erupt with hot melted rock is a ___.|volcano|island;desert;beach|landforms
-Land with water on three sides is a ___.|peninsula|island;lake;valley|landforms
-A deep, narrow valley with steep sides, often cut by a river, is a ___.|canyon|plain;lake;hill|landforms
+^Land with water on three sides is a ___.|peninsula|island;lake;valley|landforms
+^A deep, narrow valley with steep sides, often cut by a river, is a ___.|canyon|plain;lake;hill|landforms
 The sandy or rocky land beside the sea is a ___.|beach|valley;mountain;volcano|landforms
 Which one is NOT a landform?|a cloud|a hill;a valley;an island|landforms
 Which one is a body of water?|an ocean|a hill;a plain;a mountain|landforms
-A flat-topped area of high land is a ___.|plateau|valley;island;lake|landforms
+^A flat-topped area of high land is a ___.|plateau|valley;island;lake|landforms
 A river that drops over a high cliff makes a ___.|waterfall|valley;island;plain|landforms
-A part of the ocean that cuts into the land is a ___.|bay|island;plain;hill|landforms
+^A part of the ocean that cuts into the land is a ___.|bay|island;plain;hill|landforms
 Which landform is usually the highest?|a mountain|a hill;a valley;a plain|landforms
 How many continents are there?|seven|five;six;eight|continents||Say the names of the continents you know and count them on your fingers.
 Which continent is the biggest?|Asia|Africa;Europe;Australia|continents
 Which continent is the coldest and covered in ice?|Antarctica|Asia;Africa;Europe|continents
 People in the United States live on the continent of ___.|North America|South America;Europe;Asia|continents
 Which continent has the Amazon rain forest?|South America|Africa;Europe;Antarctica|continents
-Which continent is mostly one country?|Australia|Africa;Asia;Europe|continents
+^Which continent is mostly one country?|Australia|Africa;Asia;Europe|continents
 Which continent has the Sahara Desert?|Africa|Asia;Europe;Australia|continents
 Giraffes live in the wild on the continent of ___.|Africa|Asia;Europe;Antarctica|continents
 The South Pole is on the continent of ___.|Antarctica|Asia;Europe;North America|continents
@@ -3660,20 +3662,20 @@ Mexico is on the continent of ___.|North America|South America;Europe;Asia|conti
 Brazil is on the continent of ___.|South America|North America;Africa;Europe|continents
 France is on the continent of ___.|Europe|Asia;Africa;Australia|continents
 A continent is a very large piece of ___.|land|water;sky;ice|continents
-Africa, Antarctica, Asia, Australia, Europe, North America and ___ are the seven continents.|South America|Greenland;the Arctic;the Pacific|continents
-Which one of these is a continent?|Europe|Pacific;Sahara;Amazon|continents
-Which continent has the most people?|Asia|Africa;Europe;North America|continents
+^Africa, Antarctica, Asia, Australia, Europe, North America and ___ are the seven continents.|South America|Greenland;the Arctic;the Pacific|continents
+^Which one of these is a continent?|Europe|Pacific;Sahara;Amazon|continents
+^Which continent has the most people?|Asia|Africa;Europe;North America|continents
 Which is the biggest ocean?|the Pacific Ocean|the Atlantic Ocean;the Indian Ocean;the Arctic Ocean|oceans
-Which is the smallest ocean?|the Arctic Ocean|the Pacific Ocean;the Atlantic Ocean;the Indian Ocean|oceans
+^Which is the smallest ocean?|the Arctic Ocean|the Pacific Ocean;the Atlantic Ocean;the Indian Ocean|oceans
 Which ocean is between North America and Europe?|the Atlantic Ocean|the Pacific Ocean;the Indian Ocean;the Arctic Ocean|oceans
 Which ocean touches the west coast of the United States?|the Pacific Ocean|the Atlantic Ocean;the Arctic Ocean;the Indian Ocean|oceans
 Which ocean touches the east coast of the United States?|the Atlantic Ocean|the Pacific Ocean;the Arctic Ocean;the Indian Ocean|oceans
 Most of Earth's surface is covered by ___.|water|land;ice;sand|oceans
 Which one is an ocean?|the Atlantic|Asia;Africa;Europe|oceans
 Ocean water tastes ___.|salty|sweet;sour;like lemons|oceans
-Which ocean is at the very top of the world, around the North Pole?|the Arctic Ocean|the Southern Ocean;the Pacific Ocean;the Indian Ocean|oceans
-Which ocean flows all the way around Antarctica?|the Southern Ocean|the Arctic Ocean;the Indian Ocean;the Atlantic Ocean|oceans
-Earth's five oceans are the Pacific, Atlantic, Indian, Arctic and ___.|Southern|Northern;Mediterranean;Caribbean|oceans
+^Which ocean is at the very top of the world, around the North Pole?|the Arctic Ocean|the Southern Ocean;the Pacific Ocean;the Indian Ocean|oceans
+^Which ocean flows all the way around Antarctica?|the Southern Ocean|the Arctic Ocean;the Indian Ocean;the Atlantic Ocean|oceans
+^Earth's five oceans are the Pacific, Atlantic, Indian, Arctic and ___.|Southern|Northern;Mediterranean;Caribbean|oceans
 `);
 
 BANK.geo_world.push(...discRows(2, `
@@ -4003,10 +4005,10 @@ Who makes bread and cakes in a bakery?|a baker|a pilot;a dentist;a vet|helpers
 Why do we have rules at school?|to keep everyone safe and fair|to make people sad;to stop learning;so grown-ups can do what they want|rules
 What should you do before you cross a street?|stop and look both ways|run across as fast as you can;close your eyes;hop|rules
 At a red light, cars must ___.|stop|go fast;sing;honk|rules
-A rule made for everyone in a town, state or country is called a ___.|law|toy;game;story|rules
+^A rule made for everyone in a town, state or country is called a ___.|law|toy;game;story|rules
 Who must follow the law?|everyone|only kids;only grown-ups;nobody|rules
 A good rule for the playground is to ___.|take turns|push others;grab all the balls;shout|rules
-If someone breaks a rule, there is a ___.|consequence|prize;party;holiday|rules
+^If someone breaks a rule, there is a ___.|consequence|prize;party;holiday|rules
 Wearing a seat belt is a rule that keeps you ___.|safe|late;hungry;cold|rules
 Raising your hand in class helps everyone ___.|get a turn to talk|talk at once;nap;go home|rules
 Which is a fair way to share a toy?|take turns|take it and run;hide it;say it is yours|rules
@@ -4016,17 +4018,17 @@ Walking in the hallway at school helps keep everyone ___.|safe|loud;late;hungry|
 The flag of the United States has ___ stripes.|13|10;50;7|symbols
 The flag of the United States has ___ stars.|50|13;48;100|symbols
 Each star on the United States flag stands for a ___.|state|president;city;holiday|symbols
-The 13 stripes on the flag stand for the first 13 ___.|colonies|cities;kings;oceans|symbols
+^The 13 stripes on the flag stand for the first 13 ___.|colonies|cities;kings;oceans|symbols
 The Statue of Liberty is a symbol of ___.|freedom|money;sports;weather|symbols
 The bald eagle is a symbol of the ___.|United States|Mexico;Canada;United Kingdom|symbols
 The colors of the United States flag are red, white and ___.|blue|green;yellow;black|symbols
 The Statue of Liberty holds a ___ in her raised hand.|torch|book;flag;sword|symbols
-A symbol is a picture or thing that stands for an ___.|idea|owner;lunch;address|symbols
+^A symbol is a picture or thing that stands for an ___.|idea|owner;lunch;address|symbols
 A red eight-sided sign on a street corner tells drivers to ___.|stop|go fast;sing;honk|symbols
-A national anthem is a ___ about a country.|song|map;game;rule|symbols
+^A national anthem is a ___ about a country.|song|map;game;rule|symbols
 Which one is a United States symbol?|the bald eagle|a kangaroo;a panda;a lion|symbols
 The White House is where the President lives and ___.|works|swims;sleeps only;plays ball|symbols
-Washington, D.C. is the ___ of the United States.|capital|farm;lake;biggest city|symbols
+^Washington, D.C. is the ___ of the United States.|capital|farm;lake;biggest city|symbols
 Which is a need?|food|fancy sneakers;a video game;a toy|needswants
 Which is a want?|a new toy|water;a home;warm winter clothes|needswants
 Which is a need?|clean water|a swimming pool;a puzzle;a bike|needswants
@@ -4043,7 +4045,7 @@ Where can you borrow books for free?|a library|a bank;a gas station;a bakery|com
 A big place with many people and tall buildings is a ___.|city|farm;pond;hill|community
 A town park is a place for everyone to ___.|share and enjoy|own;sell;hide|community
 People in a community can help each other by ___.|working together|staying apart;being mean;never sharing|community
-A mayor is the leader of a ___.|town or city|school;state;whole country|community
+^A mayor is the leader of a ___.|town or city|school;state;whole country|community
 A principal is the leader of a ___.|school|town;state;country|community
 Which is a way to be a good neighbor?|helping with a chore|making loud noise at night;tossing trash;ignoring them|community
 What do we call the people who live near you?|neighbors|astronauts;kings;pilots|community
@@ -5904,7 +5906,7 @@ Object.assign(SK,{
           answers by picture or by ear: hace sol / hace calor). tools/test.js scans every Spanish skill for such pairs
           (audit v195: the storm drawing has rain and a cloud: hay tormenta never with llueve or está nublado)
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
-   l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
+   l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time; RELA-YOUNG: units grown at the end)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
    An item is [spanish, english, picture, article, art, say]
    spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this. A feeling shows both forms
@@ -5959,7 +5961,7 @@ const ES_UNITS=[
   ['dieciocho','eighteen','n:18',''],
   ['diecinueve','nineteen','n:19',''],
   ['veinte','twenty','n:20','']]},
- {id:'animal',t:'Animals',e:'🐶',theme:'Animals',mix:1,items:[
+ {id:'animal',t:'Animals',e:'🐶',theme:'Animals',mix:1,l1:12,items:[
   ['perro','dog','🐶','el','dog'],
   ['gato','cat','🐱','el','cat'],
   ['pájaro','bird','🐦','el','bird'],
@@ -5972,7 +5974,7 @@ const ES_UNITS=[
   ['conejo','rabbit','🐰','el','rabbit'],
   ['león','lion','🦁','el','lion'],
   ['rana','frog','🐸','la','frog']]},
- {id:'food',t:'Food',e:'🍎',theme:'Food',mix:1,items:[
+ {id:'food',t:'Food',e:'🍎',theme:'Food',mix:1,l1:10,items:[
   ['manzana','apple','🍎','la','apple'],
   ['plátano','banana','🍌','el','banana'],
   ['leche','milk','🥛','la','milk'],
@@ -6034,7 +6036,7 @@ const ES_UNITS=[
   ['clase','class','🔔','la','bell'],
   ['tijeras','scissors','✂','las','scissors'],
   ['goma','eraser','🧽','la','eraser']]},
- {id:'feel',t:'Feelings',e:'😊',theme:'Feelings (both forms: cansado for a boy, cansada for a girl)',
+ {id:'feel',t:'Feelings',e:'😊',l1:9,theme:'Feelings (both forms: cansado for a boy, cansada for a girl)',
   confuse:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],items:[
   ['feliz','happy','😊',''],
   ['triste','sad','😢',''],
@@ -6073,7 +6075,7 @@ const ES_UNITS=[
   ['verano','summer','🏖','el'],
   ['otoño','fall','🍂','el'],
   ['invierno','winter','⛄','el','snowman']]},
- {id:'weather',t:'Weather',e:'☀',theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
+ {id:'weather',t:'Weather',e:'☀',l1:10,theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
   confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento'],['llueve','hay tormenta'],['está nublado','hay tormenta']],items:[
   ['hace sol','it is sunny','☀','','sun'],
   ['hace calor','it is hot','🥵',''],

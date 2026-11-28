@@ -130,13 +130,16 @@ function bankBuild(id,it,pass){
   return q;
 }
 
+// RELA-YOUNG: no g1 item for a Pre-K or K child (a chosen grade) while others are left; Pre-K Discover: one wrong answer fewer
+const bankYoung=(items,c)=>{if(!S||!(S.grade===-1||S.grade===0))return c;const y=c.filter(i=>!items[i].g1);return y.length?y:c};
+const bankPre=(id,it)=>S&&S.grade===-1&&Array.isArray(it.d)&&it.d.length>2&&!!SK[id]&&SK[id].area=='disc'?Object.assign({},it,{d:it.d.slice(0,-1)}):it;
 /* genBank(id, lv): one question from BANK[id] at level lv. o.bi forces the item and o.s the seed (both used by bankRebuild). */
 function genBank(id,lv,o={}){
   const items=BANK[id]||[];
   const s0=o.s!=null?o.s:bankSeed();
   // KINDS2: items of the new forms (BANKNEW) are drawn by their share, with one more seeded draw after the usual choice
   const nw=i=>typeof BANKNEW!='undefined'&&BANKNEW.includes(items[i].form);
-  const all=items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i])),old=all.filter(i=>!nw(i)),cands=old.length?old:all;
+  const all=bankYoung(items,items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i]))),old=all.filter(i=>!nw(i)),cands=old.length?old:all;
   if(!cands.length)throw new Error('bank '+id+' has no usable item at level '+lv);
   let bi=o.bi!=null?o.bi:bankChoose(id,cands,s0);
   if(o.bi==null&&old.length&&old.length<all.length){
@@ -144,7 +147,7 @@ function genBank(id,lv,o={}){
     for(const f of BANKNEW){const fs=all.filter(i=>items[i].form==f);if(!fs.length)continue;acc+=bankShare(id,lv,f);
       if(d<acc){bi=bankChoose(id+':'+f,fs,bankSub(s0,0x4b33));break}}
   }
-  const q=bankWith(bankSub(s0,bi),()=>bankBuild(id,items[bi]));
+  const q=bankWith(bankSub(s0,bi),()=>bankBuild(id,bankPre(id,items[bi])));
   q.bk={id,lv,bi,s:s0};
   return q;
 }

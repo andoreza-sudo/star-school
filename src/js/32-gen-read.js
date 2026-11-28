@@ -48,7 +48,7 @@ const tstr=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
 function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,45]),ans=tstr(h,m),c=new Set([ans]);
   const hh=x=>((x+11)%12)+1;
   const cand=[tstr(hh(h+1),m),tstr(hh(h-1),m),m?tstr(h,(m+30)%60):tstr(h,30),m?tstr(hh(h+1),m):tstr(12,h*5%60),tstr(hh(h+R(2,5)),m),tstr(h,pick([0,15,30,45]))];
-  for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00'))continue;c.add(x)}
+  for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00')||lv==2&&!/:[03]0$/.test(x))continue;c.add(x)} // RELA-YOUNG: lv 2 only :00 and :30
   while(c.size<4)c.add(tstr(R(1,12),lv==1?0:pick([0,30])));
   const spoken=m==0?`${h} o'clock`:m==30?`half past ${h}`:m==15?`quarter past ${h}`:`quarter to ${hh(h+1)}`;
   return{kind:'choice',html:`${VIZ.clock(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
