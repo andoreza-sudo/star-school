@@ -540,6 +540,35 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### RELB-MAPS: a US map and four diagrams for Discover picture questions (review fix 8; v200, 2026-11-28, Claude; branch relB-maps from 88d1c6d, not merged)
+- **What**: original SVG pictures (no words, aria-hidden, `--a-*` art roles) in src/data/d-art-h.js, part `teaches` (the Discover map
+  loads it), sized by src/css/52z-dpic.css (same part). `DPIC(id, item, form)` picks the picture by skill and topic; bankBuild
+  (37-bank.js) calls it for a choice item that has no picture of its own. Before the part loads DPIC is undefined and the question
+  shows as before. No data row, sentence or spoken line changed.
+  - **US map**: all 50 states, Alaska and Hawaii as insets (tools/usmap.py: hand-typed corners, Albers, rounded to a 300 x 190 box;
+    `python3 tools/usmap.py --check` confirms the map's neighbours equal DISC_ADJ exactly). The states the question names are shaded
+    red (RI, CT, DE also get a ring); a city, river, lake or mountain named after a state is not the state; when the answer or a
+    choice names an asked state there is no map. So "Which state shares a border with Ohio?" shades Ohio, "Which region is Texas in?"
+    shades Texas only, "X is the capital of which state?" and landmark items answered by a state get no map. 138 items: geo_us 136
+    (48 capitals, 39 regions, all 47 borders, 2 landmarks), civ_reg 2.
+  - **Earth's layers** (a globe with a quarter cut away): sci_deep 20 items (the 21st has its own mountain picture), sci_earth 4.
+  - **Wave** (rest line, crest and trough dots, wavelength and amplitude arrows): sci_phys 8, sci_lite 4.
+  - **Cells** (a plant cell and an animal cell; one of them when the question says plant or animal only): sci_life 10.
+  - **Highlight**: a part is marked (darker outline, others faded; red dots or arrow on the wave) only when the question names exactly
+    one part and no choice names it ("The outer core is made of hot, liquid ___" marks the outer core; "The distance from one crest
+    to the next crest" marks the crests; "The cell membrane ___" the membranes).
+  - Not done: water cycle, moon phases, tap-a-state.
+- **Sizes**: teaches.v200.js 188,845 -> 203,960 (+15,115: map paths 4.2 KB, diagrams, DPIC and CSS). Start-up 2,488,054 -> 2,488,276
+  (+222, the DPIC call in gen2); index.html unchanged at 999,340.
+- **Tests changed**: pins of sci_life3, sci_earth3, sci_phys3, geo_us1, geo_us2 (tools/lib/kinds2-seeds.json) and the R-01d sci_phys 3
+  hash set again, with a comment: with DPIC giving no picture both checks pass with the old hashes, so only the pictures changed. New
+  check "Discover pictures RELB-MAPS" (part teaches; a shaded state is named by the question and is no choice; no text or raw colour;
+  the same question without the part, minus the picture; 50 states; counts).
+- **Checks**: test.js --only art,emoji,viz,geo,disc,bank,kinds,deep,size,budget,start-up,parts,data,perf,teach,code,relb,review: 113 of
+  113. smoke --seg R-01d,DEEP-15,P2-22,A11,P6-02,KINDS2-C OK. Screenshots of 13 map and diagram questions at 1024x600, 380x780 and
+  600x960: no sideways scroll; shaded states checked by eye (Ohio, Rhode Island with its ring, Texas, Hawaii, New York). Total: 184 items
+  get a picture (map 138, Earth 24, wave 12, cells 10).
+
 ### RELA-SIZE: start-up back under 2.5 MB after the three review merges (v200, 2026-11-28, Claude; branch claude/beautiful-rubin-1urk3d)
 - **Why**: after RELA-UI, RELA-YOUNG and RELA-PICS, index.html + gen + gen2 + data was 2,505,645 bytes, over the 2,500,000 that "performance P6-03" keeps free (3.0 MB budget minus 500 KB). The budget is unchanged.
 - **What moved**: a new lazy part `sprint` (sprint.v200.js, about 20 KB, precached by sw.js like every part): the Find my level quiz (45-placement.js: PLACE, placeApply and the quiz screens) and the Fact Sprint screens (57-fluency.js: menu, modes, play, end card). What start-up reads stays in gen, in two new files: 45a-place.js (placePaths, placeOK, placeWorld for startWorld, PL, the Home card and the Grown-ups row) and 57a-flu.js (FLU with FLU.on() for Home, the Learn hub and the missions, FL and stopFlu for view()). Their CSS stays in index.html. Code moved as is: no sentence a child sees or hears changed.

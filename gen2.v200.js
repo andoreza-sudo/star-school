@@ -2524,8 +2524,9 @@ function bankBuild(id,it,pass){
   let why=null; // KINDS2-D: [text, why] distractors (spec 5) build q.why; the item is used with plain texts
   if(Array.isArray(it.d)&&it.d.some(Array.isArray)){why={};it=Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?(why[x[0]]=x[1],x[0]):x)})}
   const form=it.form||'choice';
-  const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`
-    :it.grid?`<div class="bpic bgrid">${VIZ.coordGrid(it.grid)}</div>`:''; // R-01d: the grid the coordinate question talks about
+  let pic0;const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`
+    :it.grid?`<div class="bpic bgrid">${VIZ.coordGrid(it.grid)}</div>`:typeof DPIC=='function'&&!pass&&(pic0=DPIC(id,it,form))?`<div class="bpic">${pic0}</div>`:''; // R-01d: the grid the coordinate question talks about
+  // RELB-MAPS: DPIC (d-art-h.js, part teaches) draws a map or diagram for some Discover items; until the part loads, none
   let q;
   if(form=='spell'){
     const w=it.a,abc='abcdefghijklmnoprstuw';
