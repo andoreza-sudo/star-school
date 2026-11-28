@@ -20811,7 +20811,7 @@ const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,
 const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',round2:'f7aff9bb37e3',round3:'ed930021e130',round4:'af8199029acb',
   frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'c003dd306e0c',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
   tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'9103432c0f67',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'464826d510ee',
-  coins1:'386991574633',coins2:'f439e04cd3e9',coins3:'92270200e77f',coins5:'83eb32d73172',time1:'bd3c8eb7e2b6',time2:'7d131ef1ca42',
+  coins1:'386991574633',coins2:'f439e04cd3e9',coins3:'92270200e77f',coins5:'83eb32d73172',time1:'bd3c8eb7e2b6',time2:'5fd2297c23d7',
   time3:'f32a1fc8912a',time4:'7fba462703ef',time5:'7787bc625878',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
   mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'d26b15de7a3c',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
