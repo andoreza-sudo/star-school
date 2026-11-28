@@ -1,5 +1,5 @@
-/* Whistlestop sprint v200. BUILT by tools/build.py from 45-placement.js, 57-fluency.js: never edit by hand.
-   index.html v200 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v200.js. */
+/* Whistlestop sprint v201. BUILT by tools/build.py from 45-placement.js, 57-fluency.js: never edit by hand.
+   index.html v201 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v201.js. */
 /* RELA-SIZE: part sprint (loaded on demand: partThen('sprint', ...) in 45a-place.js). The Home card, the Grown-ups row and placeWorld
    are in 45a-place.js (part gen, read at start). */
 /* ---------- placement quiz "Find my level" (P1-07; ROADMAP 3.2 step 3) ----------
@@ -337,4 +337,4 @@ function fluEnd(r) {
   o.querySelector('#fhome').onclick = () => {o.remove(); home()};
 }
 
-var SPRINT_VER='v200'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var SPRINT_VER='v201'; // last line: the whole file ran (checked by dataReady() before the app starts)
