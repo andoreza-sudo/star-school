@@ -20790,11 +20790,13 @@ run('GFX-1 JFX: the bit pool and its cap, stop with nothing flying',()=>{
 // K2_OFF0: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for s = 1..150, ART emptied, of the stops batches B and C switch, from the
 // generators of commit af3d449 (before them); with K2.off the stops must give these exactly.
 const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,dec1:.3,dec2:.3,pv5:.3,int1:.4,int2:.45};
+// RELA-UI: time1-5 re-pinned: only the clock drawing changed (longer minute hand, wider hour hand, haloed numbers); with the old
+// 23-viz.js the old hashes still match, so the K2.off questions are unchanged
 const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',round2:'f7aff9bb37e3',round3:'ed930021e130',round4:'af8199029acb',
   frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'ef33cdc118a9',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
   tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
-  coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'04c0ad9c8b15',
-  time3:'cf0a72347296',time4:'bff67461efdd',time5:'6ec67e6555e1',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
+  coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'bd3c8eb7e2b6',time2:'afc2b3e9c811',
+  time3:'f32a1fc8912a',time4:'7fba462703ef',time5:'7787bc625878',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
   mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'d26b15de7a3c',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
 // question valid, K2.off gives the af3d449 questions, and the review round trip (seed path)

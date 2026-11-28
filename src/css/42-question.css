@@ -251,3 +251,22 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 @media (max-height:520px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 72px)}}
 /* Shape Garden crayon bars: a full 48 px tap target inside the narrower card */
 .qs .sgbars .sgt{min-height:var(--tap)}
+/* RELA-UI: picture answers are tall tiles, the art (1em) about 100-120 px, sized by the row's width (container units); the caption has
+   its own row; a listen-only card (speaker and one line) stays small so the tiles get the room; K-2 Discover pictures are bigger */
+.qs:not(.ls-play) .choices.pics:not(.dlg){container-type:inline-size;max-width:680px}
+.qs:not(.ls-play) .choices.pics:not(.dlg) .choice.ch{font-size:clamp(44px,min(24cqi,20vh),120px);padding:var(--s-3) var(--s-2);line-height:1.2}
+.qs .choices.pics .ch .pks{width:.9em}
+.qs .choices.pics .ch .pcap{line-height:1.25;gap:2px}
+.qs .choices.pics .ch .pcap small{font-size:var(--fs-3);line-height:1.2}
+.qs .choices.pics .gcd{flex-direction:row;font-size:.55em;gap:.1em}
+.qs .choices.pics .gcd i{font-size:1em}
+.qy .bem{font-size:clamp(72px,min(24vh,32vw),140px)}
+.qs .choices.galr .ch .viz{width:100%}
+.mt.mtl{max-width:420px}
+.mt.mtl .choice.mb{min-height:clamp(64px,min(13vh,18vw),96px);font-size:clamp(36px,min(8vh,11vw),56px)}
+@media (orientation:portrait){.qs:has(.prompt>.hear:first-child+.sub:last-child) .qarea{flex:none}
+  .qs:has(.prompt>.hear:first-child+.sub:last-child) .inp{flex:1;display:flex;flex-direction:column;justify-content:center}}
+@media (orientation:landscape){.qs:has(.prompt>.hear:first-child+.sub:last-child) .inp{width:60%;max-width:680px}}
+.qs .bctx-b{padding-bottom:0}
+.qs .bctx-b::after{content:'';position:sticky;bottom:0;display:block;height:var(--s-8);background:linear-gradient(transparent,var(--surface-2) 80%);pointer-events:none}
+body:has(.qtop) .toast.info:not(.on){transform:translate(-50%,-8px)}

@@ -540,6 +540,19 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### RELA-UI: bigger pictures, fuller screens (review fix #1; v200, 2026-11-28, Claude; branch relA-ui from afe2a2e, not merged)
+- **Picture answers** (all subjects, `.qs .choices.pics`): tall tiles whose art (1em) follows the row's width (container units), about 100-120 px at 1024x600 and 600x960, 76-90 px at 380x780; captions on their own row at 18 px (no more "bridge" over the bridge); Pre-K shapes (`.pks`) follow the tile. A listen-only card (speaker and one line) stays small: narrower in landscape (the tiles get 60%), its own height in portrait. Lessons (`.ls-play`) and the dialogue replies (`.dlg`) keep their sizes.
+- **Spanish**: calendars, month rings and clocks fill the tile (clocks about 130 px); the "me gusta" face beside the food at the same size; the Learn cards show the two feelings forms on two lines without the slash; a Say it! line over 30 characters is 24-34 px (and on a 600 px landscape screen the picture and microphone shrink a little), so "Skip for now" stays on a 1024x600 screen; the no-voice note fades in under the top bar instead of sliding over it.
+- **Clocks** (VIZ.clock): minute hand to the minute ticks (43 of 48), hour hand 24 long and 9 wide under it, so at half past the hour hand shows on both sides; the numbers have a thin face-coloured halo so the minute hand never hides them.
+- **Rulers**: an inch ruler uses the card's width (80 a inch, quarter ticks 20 apart, was 34); a cm ruler of more than 12 cm labels every second number past 10.
+- **Number lines** in the inequality choices (`galr`): the full button width, tick labels about 16-20 px.
+- **Reading**: Match Big & Little (`cls: 'mtl'`, the match kind now passes `q.cls` to `.mt`) letters 36-56 px on tall tiles; passage choices 20-22 px; the passage panel fades out at the bottom while there is more to scroll (a sticky gradient, nothing faded at the end); story-order slots and tiles full width.
+- **Pre-K and K**: every question of a Pre-K or K child uses the big round Hear it and Help buttons (was only the `q.pk` ones; Number Meadow had the small text buttons); nothing new is spoken.
+- **K-2 Discover**: the subject picture (`em`) 72-140 px (`.qy`, grades Pre-K to 2).
+- Skipped: fewer clock numerals and dropping English captions (content, not layout); story pictures, pictographs, coins, shapes (other review fixes).
+- **Test changed**: KINDS2-C's K2.off hashes for time1-5 re-pinned (they hash the question html, which holds the clock drawing; with the old 23-viz.js the old hashes match, so only the drawing changed).
+- **Checks**: contrast 636 pairs pass; test.js 258 of 258; smoke P4-10, S-SPK, P2-01 to P2-04, P2-14 to P2-16, P2-24, P2-25, P2-29 to P2-37, R-01d, DEEP-15, STORIES-7 pass; a11y on the question, sort, line and Say it! screens: zero failures. Start-up 2,495,440 bytes (+2,470). No threshold, hash, KNOWN list or fixture changed.
+
 ### APPROVE-200: DISC-46 and ES-MORE turned on (v200, 2026-11-27, Claude; branch claude/beautiful-rubin-1urk3d)
 - **Owner decisions 2026-11-27** (every item of docs/drafts/DISC46-READ.md and ES-MORE-READ.md approved): Canyon Trail (grade 4) and Volcano Ridge (grade 6) on, with the tablet's voice; 4th graders start on Canyon Trail, 6th on Volcano Ridge; the 22 Spanish weather and feelings words recorded first, then on.
 - **Recordings**: tools/es-audio.js collects the ES-MORE words whatever the gate says (as REC-198 did for DEEP-15). 30 files (the 22 words plus the said form of the 8 two-form feelings, as the old feelings have), 472 characters, 93,784 bytes; audio/es 962 files, 2,404,039 bytes; all audio 11,673,297 bytes (fail 12,000,000).

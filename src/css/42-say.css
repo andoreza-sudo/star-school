@@ -11,6 +11,7 @@
 .spk-pic svg{width:1.1em;height:1.1em}
 .spk-word{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-3)}
 .spk-es{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,7vmin,52px);line-height:1.2;color:var(--es-shade)}
+.spk-es.long{font-size:clamp(24px,5vmin,34px)}
 .spk-en{margin:-4px 0 0;font-size:var(--fs-3);color:var(--ink-3)}
 .spk-tip{margin:0;min-height:1.4em;font-size:var(--fs-3);font-weight:700;color:var(--ink)}
 .spk-act{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%}
@@ -44,7 +45,9 @@
 @media (orientation:landscape) and (max-height:640px){
   .spk-card{padding:var(--s-3) var(--s-4);gap:var(--s-2)}
   .spk-pic{font-size:64px}
-  .spk-mic,.spk-lis{width:80px;height:80px}}
+  .spk-mic,.spk-lis{width:80px;height:80px}
+  .spk-card:has(.long) .spk-pic{font-size:40px}
+  .spk-card:has(.long) :is(.spk-mic,.spk-lis){width:72px;height:72px}}
 /* S-SPK2: the Grown-ups listening corner (50-say-corner.js) and the star message on Home. Tokens only. */
 .lc-list{display:flex;flex-direction:column;gap:var(--s-2)}
 .lc-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}

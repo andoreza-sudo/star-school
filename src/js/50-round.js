@@ -151,11 +151,12 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
     :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
       +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
       +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
-  const spk=!q.say?'':q.pk?UI.ibtn('speak','Hear it again',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
-  const help=q.pk?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
+  const gr=gradeOf(),pkb=q.pk||gr<1; // RELA-UI: the big round buttons for every Pre-K and K question
+  const spk=!q.say?'':pkb?UI.ibtn('speak',q.pk?'Hear it again':'Hear it',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
+  const help=pkb?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
   view(`<div class="top tbar round qtop s-${ar}">${NAV.house('quit')}${track}
    ${UI.chip('flame',G.streak,{id:'stk',off:G.streak<2,aria:'In a row'})}${UI.chip('star',G.score,{id:'starc',aria:'Stars'})}</div>
-  <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="play qs s-${ar}${gr<3?' qy':''}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
   UI.hear(); // P6-01: named speaker buttons in the prompt

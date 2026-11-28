@@ -36,8 +36,8 @@
 .viz .vt1{fill:none;stroke:var(--ink-3);stroke-width:3;stroke-linecap:butt}
 .viz .vt5{fill:none;stroke:var(--ink-2);stroke-width:4.5;stroke-linecap:butt}
 .viz .vcn{font-size:13px}
-.viz .vhh{fill:none;stroke:var(--read);stroke-width:7}
-.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
+.viz .vhh{fill:none;stroke:var(--read);stroke-width:9}
+.viz .vch{stroke:var(--surface);stroke-width:2.5;paint-order:stroke}.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
 .viz .vpin{fill:var(--ink)}
 /* tap targets and their states (set by the tap kind) */
 .viz .vt{cursor:pointer}

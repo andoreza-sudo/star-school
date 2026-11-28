@@ -453,7 +453,7 @@ function open(p,i){if(d15Want(p))return d15Open(p,i);if(d46Want(p))return d46Ope
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">${rec?'Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!':'Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!'}</p>
-  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it)).replace(/ \/ /g,' <br>')}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   if(esVoice()=='no'&&!rec)esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
   // ES-AUDIO: with every card recorded, one tap says the English (the tablet's voice) and then the Spanish (the recording), back

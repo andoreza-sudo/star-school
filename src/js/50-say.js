@@ -93,7 +93,7 @@ function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!es
    ${it.who?`<p class="spk-role">You are <b>${esc(it.who)}</b>! Say ${esc(it.who)}’s line.</p>`:''}
    ${it.cue?`<p class="spk-cue" lang="es"><b>${esc(it.cue[0])}:</b> ${esc(it.cue[1])}</p>`:''}
    ${it.pic?`<div class="spk-pic" aria-hidden="true">${it.pic}</div>`:''}
-   <div class="spk-word"><span class="spk-es" lang="es">${esc(it.es)}</span>${nov?'':UI.ibtn('speak','Hear it again',{kind:'subject',p:'es',size:'lg',id:'spkhear'})}</div>
+   <div class="spk-word"><span class="spk-es${it.es.length>30?' long':''}" lang="es">${esc(it.es)}</span>${nov?'':UI.ibtn('speak','Hear it again',{kind:'subject',p:'es',size:'lg',id:'spkhear'})}</div>
    ${it.en?`<p class="spk-en">${esc(it.en)}</p>`:''}
    <p class="spk-tip" id="spktip" role="status"></p>
    <div class="spk-act" id="spkact"></div>

@@ -383,7 +383,8 @@ const VIZ = (() => {
 
   // ---- clock ----
   // Minute and hour ticks are two dashed circles (one dash per tick), so the face stays small.
-  // The minute hand stops at the numbers, so it points at a number instead of covering it.
+  // RELA-UI: the minute hand reaches the minute ticks; the hour hand is clearly shorter and twice as wide, so it
+  // still shows on both sides of the thin minute hand at half past.
   function clock(h, m, o = {}) {
     h = ((Math.round(h) || 0) % 12 + 12) % 12;
     m = clamp(Math.round(m) || 0, 0, 59);
@@ -398,14 +399,15 @@ const VIZ = (() => {
       return `<path class="${cls}" d="M${c} ${c}L${f(c + len * Math.sin(t))} ${f(c - len * Math.cos(t))}"/>`;
     };
     let body = `<circle class="vld" cx="${c}" cy="${c + 2}" r="55"/><circle class="vrim" cx="${c}" cy="${c}" r="54"/>` +
-      `<path class="vfs" d="${cres(c, c, 52, 4)}"/><path class="vgc" stroke-width="1.6" d="${glossArc(c, c, 54)}"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5');
-    if (def(o.nums, true)) {
+      `<path class="vfs" d="${cres(c, c, 52, 4)}"/><path class="vgc" stroke-width="1.6" d="${glossArc(c, c, 54)}"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5') +
+      hand((h + m / 60) * 30, 24, 'vhh') + hand(m * 6, 43, 'vmh');
+    if (def(o.nums, true)) { // over the minute hand, with a thin halo: the number stays readable, the hand shows on both sides
       for (let i = 1; i <= 12; i++) {
         const a = i * Math.PI / 6;
-        body += `<text class="vcn" x="${f(c + 35 * Math.sin(a))}" y="${f(c - 35 * Math.cos(a) + 4.5)}">${i}</text>`;
+        body += `<text class="vcn vch" x="${f(c + 35 * Math.sin(a))}" y="${f(c - 35 * Math.cos(a) + 4.5)}">${i}</text>`;
       }
     }
-    body += hand((h + m / 60) * 30, 18, 'vhh') + hand(m * 6, 27, 'vmh') + `<circle class="vpin" cx="${c}" cy="${c}" r="4.5"/>`;
+    body += `<circle class="vpin" cx="${c}" cy="${c}" r="4.5"/>`;
     return svg('clk', 2 * c, 2 * c, body, 'clock', false, 180);
   }
 
@@ -505,7 +507,8 @@ const VIZ = (() => {
     len = Math.max(0, +len || 0);
     const from = Math.max(0, def(o.from, 0));
     const max = clamp(Math.round(def(o.max, Math.ceil(len + from) + 1)), inch ? 4 : 6, inch ? 12 : 15);
-    const s = Math.floor(clamp(300 / max, 18, 34)), P = 20, RY = 58, RH = 48;
+    // RELA-UI: an inch ruler takes the card's width (quarter ticks 20 apart); a long cm ruler labels every second number past 10
+    const s = Math.floor(clamp((inch ? 420 : 300) / max, 18, inch ? 80 : 34)), P = 20, RY = 58, RH = 48;
     const x0 = P + from * s, x1 = x0 + len * s, w = max * s;
     let body = '';
     if (obj == 'pencil' && len * s >= 40) {
@@ -518,7 +521,7 @@ const VIZ = (() => {
     for (let k = 0; k <= max * per; k++) {
       const x = P + k / per * s;
       t += `M${f(x)} ${RY}v${k % per == 0 ? 16 : inch && k % 2 == 0 ? 12 : inch ? 8 : 10}`;
-      if (k % per == 0) lab += `<text class="vcn" x="${f(x)}" y="${RY + 31}">${k / per}</text>`;
+      if (k % per == 0 && (s > 24 || k / per <= 10 || k / per % 2 == 0)) lab += `<text class="vcn" x="${f(x)}" y="${RY + 31}">${k / per}</text>`;
     }
     body += `<rect class="vru" x="${P}" y="${RY}" width="${w}" height="${RH}" rx="4"/><path class="vk" d="${t}"/>${lab}` +
       `<text class="vcn" x="${f(P + w - 18)}" y="${RY + RH - 5}">${inch ? 'in' : 'cm'}</text>`;

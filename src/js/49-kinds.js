@@ -251,7 +251,7 @@ const KIND={
     render:q=>{
       // AUD-DISC: q.speak (a read-aloud bank item): every word says itself when tapped (k2SayChip: Pre-K to 1st grade)
       const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}"${q.speak&&c.say?` data-say="${esc(c.say)}"`:''}>${c.h?c.l:esc(c.l)}</button>`;
-      return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
+      return `<div class="mt ${q.cls||''}"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
     bind(q,st,submit){

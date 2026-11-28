@@ -882,8 +882,8 @@ html.notext .pktxt{display:none}
 .viz .vt1{fill:none;stroke:var(--ink-3);stroke-width:3;stroke-linecap:butt}
 .viz .vt5{fill:none;stroke:var(--ink-2);stroke-width:4.5;stroke-linecap:butt}
 .viz .vcn{font-size:13px}
-.viz .vhh{fill:none;stroke:var(--read);stroke-width:7}
-.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
+.viz .vhh{fill:none;stroke:var(--read);stroke-width:9}
+.viz .vch{stroke:var(--surface);stroke-width:2.5;paint-order:stroke}.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
 .viz .vpin{fill:var(--ink)}
 /* tap targets and their states (set by the tap kind) */
 .viz .vt{cursor:pointer}
@@ -1161,7 +1161,7 @@ html.notext .pktxt{display:none}
 
 /* passage questions (P2-25): the choices sit under the passage panel, so they are compact and the question line stays on screen */
 .choices.bpass{gap:var(--s-2)}
-.choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
+.choices.wide.bpass .choice.ch{font-size:clamp(20px,3.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
 .choices.bpass:not(.wide) .choice.ch{font-size:clamp(20px,3.2vh,28px);padding:8px var(--s-3);min-height:var(--tap);line-height:1.2} /* short answers (2 x 2 tiles) are compact too (P2-26) */
 @media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}
 /* long passages (P2-29, over 700 characters: grade 4 and up): on a tall phone the panel takes less so the question line and four choices stay on screen */
@@ -1785,6 +1785,25 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 @media (max-height:520px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 72px)}}
 /* Shape Garden crayon bars: a full 48 px tap target inside the narrower card */
 .qs .sgbars .sgt{min-height:var(--tap)}
+/* RELA-UI: picture answers are tall tiles, the art (1em) about 100-120 px, sized by the row's width (container units); the caption has
+   its own row; a listen-only card (speaker and one line) stays small so the tiles get the room; K-2 Discover pictures are bigger */
+.qs:not(.ls-play) .choices.pics:not(.dlg){container-type:inline-size;max-width:680px}
+.qs:not(.ls-play) .choices.pics:not(.dlg) .choice.ch{font-size:clamp(44px,min(24cqi,20vh),120px);padding:var(--s-3) var(--s-2);line-height:1.2}
+.qs .choices.pics .ch .pks{width:.9em}
+.qs .choices.pics .ch .pcap{line-height:1.25;gap:2px}
+.qs .choices.pics .ch .pcap small{font-size:var(--fs-3);line-height:1.2}
+.qs .choices.pics .gcd{flex-direction:row;font-size:.55em;gap:.1em}
+.qs .choices.pics .gcd i{font-size:1em}
+.qy .bem{font-size:clamp(72px,min(24vh,32vw),140px)}
+.qs .choices.galr .ch .viz{width:100%}
+.mt.mtl{max-width:420px}
+.mt.mtl .choice.mb{min-height:clamp(64px,min(13vh,18vw),96px);font-size:clamp(36px,min(8vh,11vw),56px)}
+@media (orientation:portrait){.qs:has(.prompt>.hear:first-child+.sub:last-child) .qarea{flex:none}
+  .qs:has(.prompt>.hear:first-child+.sub:last-child) .inp{flex:1;display:flex;flex-direction:column;justify-content:center}}
+@media (orientation:landscape){.qs:has(.prompt>.hear:first-child+.sub:last-child) .inp{width:60%;max-width:680px}}
+.qs .bctx-b{padding-bottom:0}
+.qs .bctx-b::after{content:'';position:sticky;bottom:0;display:block;height:var(--s-8);background:linear-gradient(transparent,var(--surface-2) 80%);pointer-events:none}
+body:has(.qtop) .toast.info:not(.on){transform:translate(-50%,-8px)}
 /* Rewards (P4-11; DESIGN_SYSTEM.md 6.3, 8.1, 9 row 5): round complete, treasure chest, stars, prizes, bosses, test out, pet growth.
    Drawings: src/js/18-reward-art.js (RW.*). Tokens only. Animate only transform and opacity; keyframes are named rw-*.
    Calm mode and reduced motion cut every animation to 0.01 ms (20-base.css) and hide the drawn confetti (.rw-burst). */
@@ -1995,6 +2014,7 @@ html.calm .rw-burst{display:none}
 .spk-pic svg{width:1.1em;height:1.1em}
 .spk-word{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-3)}
 .spk-es{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,7vmin,52px);line-height:1.2;color:var(--es-shade)}
+.spk-es.long{font-size:clamp(24px,5vmin,34px)}
 .spk-en{margin:-4px 0 0;font-size:var(--fs-3);color:var(--ink-3)}
 .spk-tip{margin:0;min-height:1.4em;font-size:var(--fs-3);font-weight:700;color:var(--ink)}
 .spk-act{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%}
@@ -2028,7 +2048,9 @@ html.calm .rw-burst{display:none}
 @media (orientation:landscape) and (max-height:640px){
   .spk-card{padding:var(--s-3) var(--s-4);gap:var(--s-2)}
   .spk-pic{font-size:64px}
-  .spk-mic,.spk-lis{width:80px;height:80px}}
+  .spk-mic,.spk-lis{width:80px;height:80px}
+  .spk-card:has(.long) .spk-pic{font-size:40px}
+  .spk-card:has(.long) :is(.spk-mic,.spk-lis){width:72px;height:72px}}
 /* S-SPK2: the Grown-ups listening corner (50-say-corner.js) and the star message on Home. Tokens only. */
 .lc-list{display:flex;flex-direction:column;gap:var(--s-2)}
 .lc-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
@@ -2064,9 +2086,9 @@ html.calm .rw-burst{display:none}
 .hm-acts.n1{grid-template-columns:minmax(0,1fr)}
 /* P2-24 sentences: story order (sent 5) puts whole sentences on the order tiles. A tile that holds a .sl span is a full-width row
    that wraps its words; the three slots above it become full-width rows too, so nothing runs off a 380 px screen. */
-.oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2)}
+.oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2);width:100%}
 .oslots:has(+ .otiles .sl) .socket.os{width:100%;min-height:var(--tap);padding:var(--s-1) var(--s-3)}
-.otiles:has(.sl){flex-direction:column;align-items:stretch}
+.otiles:has(.sl){flex-direction:column;align-items:stretch;width:100%}
 .piece.ot:has(.sl),.socket.os:has(.sl){display:flex;align-items:center;justify-content:flex-start;text-align:left;white-space:normal;height:auto;min-height:var(--tap)}
 .sl{display:block;font-size:var(--fs-3);line-height:1.25;padding:var(--s-1) 0}
 /* Pet Shop and sticker book (P4-07; DESIGN_SYSTEM 6.4). Tokens only; motion on transform / opacity. Old .tabs / .shopgrid / .item
@@ -8532,7 +8554,7 @@ function open(p,i){if(d15Want(p))return d15Open(p,i);if(d46Want(p))return d46Ope
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">${rec?'Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!':'Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!'}</p>
-  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it)).replace(/ \/ /g,' <br>')}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   if(esVoice()=='no'&&!rec)esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
   // ES-AUDIO: with every card recorded, one tap says the English (the tablet's voice) and then the Spanish (the recording), back
@@ -9580,7 +9602,7 @@ const KIND={
     render:q=>{
       // AUD-DISC: q.speak (a read-aloud bank item): every word says itself when tapped (k2SayChip: Pre-K to 1st grade)
       const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}"${q.speak&&c.say?` data-say="${esc(c.say)}"`:''}>${c.h?c.l:esc(c.l)}</button>`;
-      return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
+      return `<div class="mt ${q.cls||''}"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
     bind(q,st,submit){
@@ -10110,11 +10132,12 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
     :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
       +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
       +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
-  const spk=!q.say?'':q.pk?UI.ibtn('speak','Hear it again',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
-  const help=q.pk?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
+  const gr=gradeOf(),pkb=q.pk||gr<1; // RELA-UI: the big round buttons for every Pre-K and K question
+  const spk=!q.say?'':pkb?UI.ibtn('speak',q.pk?'Hear it again':'Hear it',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
+  const help=pkb?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
   view(`<div class="top tbar round qtop s-${ar}">${NAV.house('quit')}${track}
    ${UI.chip('flame',G.streak,{id:'stk',off:G.streak<2,aria:'In a row'})}${UI.chip('star',G.score,{id:'starc',aria:'Stars'})}</div>
-  <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="play qs s-${ar}${gr<3?' qy':''}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
   UI.hear(); // P6-01: named speaker buttons in the prompt

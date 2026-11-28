@@ -113,7 +113,7 @@ function genAbc(lv){
   if(lv==3){ // match 4 big letters to their little letters
     const Ls=[];while(Ls.length<4){const x=pick(ABCP);if(!Ls.includes(x))Ls.push(x)}
     const items=Ls.map(x=>({v:x,l:x})),opts=shuffle(Ls.map(x=>({v:x,l:x.toLowerCase()})));
-    return{kind:'match',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
+    return{kind:'match',cls:'mtl',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
       items,opts,ans:[...Ls].sort().join('|'),after:'Big and little letters are partners!',
       hint:{k:'say',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.',
         w:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
