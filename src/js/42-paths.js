@@ -42,21 +42,31 @@ const PATHS={
  disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
   {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff'],['geo_world',1,'Maps & Land'],['civ',1,'Our Community']]},
   {id:'d_lab',g:3,n:'Science Lab',e:'💡',c:'#e0f2fe',nodes:[['sci_life',2,'Life Cycles & Food'],['sci_earth',2,'Water, Rocks & Moon'],['sci_phys',2,'Forces & Matter'],['geo_us',1,'States & Capitals'],['geo_world',2,'Grids & Climate']]},
-  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
+  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',ico:'telescope',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,
    never the world's index, so worlds can be inserted anywhere (decision A5). A path with byLevel is opened by order only. */
 const NODES={},WR={}; // WR[p][wi] = [first, last] stop index of world wi (the boss is last)
+/* RELA-YOUNG: a cut Spanish path (a cut world has no boss) for Pre-K and K (a chosen grade), not with Unlock every stop or a star or Test out past it.
+   PATHS.es.full keeps the whole. After migrate() only (ES_FIT); esRefit() on a grade or unlock change. */
+const ES_YOUNG=new Set('e_plaza e_fiesta e_repaso es_house1 es_clothes1 es_feel1 es_toy1 es_nature1'.split(' '));let ES_FIT=0;
+const esCut=ws=>ws.map(w=>ES_YOUNG.has(w.id)?w:{...w,cut:1,nodes:w.nodes.filter(n=>ES_YOUNG.has(n[0]+n[1]))}).filter(w=>w.nodes.length);
+function esYoung(ws){if(!ES_FIT||!S||!(S.grade===-1||S.grade===0)||S.unlockAll)return null;
+  const c=esCut(ws),ids=a=>a.flatMap(w=>[w.cut?'':'boss_'+w.id,...w.nodes.map(n=>n[0]+n[1])]),ok=new Set(ids(c)),m=S.maps.es||{},k=S.skip||{};
+  return ids(ws).every(x=>ok.has(x)||!(m[x]>0))&&ws.every(w=>!k[w.id]||ok.has('boss_'+w.id))?c:null}
+function esRefit(){const w=PATHS.es.worlds[MAPW.es],g=G&&G.path=='es'&&NODES.es[G.node];buildNodes('es');
+  if(w)MAPW.es=Math.max(0,PATHS.es.worlds.findIndex(x=>x.id==w.id));if(g)G.node=NODES.es.findIndex(n=>nid(n)==nid(g))}
 /* (Re)builds NODES[p] and WR[p] from PATHS[p]. Runs once per path at load; tests call it after adding fake worlds. */
 function buildNodes(p){
+  if(p=='es'){const P=PATHS.es;if(P.worlds===P.cut)P.worlds=P.full;P.full=P.worlds;P.cut=esYoung(P.full);if(P.cut)P.worlds=P.cut}
   const pi=Object.keys(PATHS).indexOf(p);
   NODES[p]=[];WR[p]=[];
   PATHS[p].worlds.forEach((w,wi)=>{
     const a=NODES[p].length;
     w.nodes.forEach(([sk,lv,t])=>NODES[p].push({sk,lv,t,wi,wid:w.id,p}));
     const B=BOSSES[wi%BOSSES.length];
-    NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,wid:w.id,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]});
+    if(!w.cut)NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,wid:w.id,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]});
     WR[p].push([a,NODES[p].length-1]);
   });
 }
@@ -83,7 +93,7 @@ const worldDone=(p,wi)=>{const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(!passed(p,
 const GRADES=[-1,0,1,2,3,4,5,6];
 const gradeLabel=g=>g<0?'Pre-K':g==0?'K':['1st','2nd','3rd','4th','5th','6th'][g-1]||'';
 const gradeOf=()=>GRADES.includes(S.grade)?S.grade:0;
-function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();return true}
+function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();esRefit();return true}
 /* Spoken names for the grade buttons (say() reads them when tapped). */
 const gradeSpoken=g=>g<0?'Pre-K':g==0?'Kindergarten':['First','Second','Third','Fourth','Fifth','Sixth'][g-1]+' grade';
 /* Round rules for a grade (ROADMAP 3.1). n: questions in a normal stop round; choices: most answer buttons a generator should
@@ -164,6 +174,7 @@ function worldStep(p,wi){
 }
 migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
+ES_FIT=1;buildNodes('es'); // RELA-YOUNG
 const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪀',45],['🏆',80]],

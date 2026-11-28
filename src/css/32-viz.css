@@ -13,6 +13,8 @@
 .viz .ve{fill:none;stroke:var(--ink-2);stroke-width:3}
 /* quantity: counters (v1), second set (v2), shaded parts (vs), faded (vx) */
 .viz .v1{fill:var(--math);stroke:var(--math-shade);stroke-width:2}
+.viz .vpd{fill:var(--surface-2);stroke:var(--math);stroke-width:1.5}
+.viz .vph{fill:var(--surface)}
 .viz .v2{fill:var(--play);stroke:var(--play-shade);stroke-width:2}
 .viz .vp{fill:var(--surface);stroke:var(--ink-2);stroke-width:2}
 .viz .vp.vs{fill:var(--math)}
@@ -36,8 +38,8 @@
 .viz .vt1{fill:none;stroke:var(--ink-3);stroke-width:3;stroke-linecap:butt}
 .viz .vt5{fill:none;stroke:var(--ink-2);stroke-width:4.5;stroke-linecap:butt}
 .viz .vcn{font-size:13px}
-.viz .vhh{fill:none;stroke:var(--read);stroke-width:7}
-.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
+.viz .vhh{fill:none;stroke:var(--read);stroke-width:9}
+.viz .vch{stroke:var(--surface);stroke-width:2.5;paint-order:stroke}.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
 .viz .vpin{fill:var(--ink)}
 /* tap targets and their states (set by the tap kind) */
 .viz .vt{cursor:pointer}
@@ -89,8 +91,8 @@
 /* coins (penny copper, the rest silver) and bills */
 .viz .vcu{fill:var(--ill-tan);stroke:var(--ill-tan-3);stroke-width:3}
 .viz .vsv{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:3}
-.viz .vci{fill:none;stroke:var(--ill-grey-2);stroke-width:1.5;stroke-dasharray:2 3}
-.viz .vcc{font-size:13px}
+.viz .vci{fill:none;stroke:var(--ill-grey-2);stroke-width:1.5}
+.viz .vrd{stroke:var(--ill-grey-3);stroke-width:3.4;stroke-dasharray:1.4 1.8;stroke-linecap:butt}
 .viz .vcp{fill:var(--ill-brown-3)}
 .viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
 .viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
@@ -111,3 +113,4 @@
 .viz .vcs.vcp{fill:var(--ill-tan-2)}
 .viz .vci.vcp{fill:none;stroke:var(--ill-tan-3)}
 .viz .vbs,.viz .vsp,.viz .vld,.viz .vgs,.viz .vgc,.viz .vfs,.viz .vcs{pointer-events:none}
+.viz-ratio g.v2>circle{fill:var(--ill-orange);stroke:var(--ill-orange-2)}

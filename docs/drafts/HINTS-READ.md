@@ -63,12 +63,12 @@ never in a check-in, and not when Grown-ups has lessons off.
 
 - **swap** (level 2): "10 plus 8. Make the answer on the frame." Answer given: 81
   Hint: "Look at 81. Which digit is the tens?" (reviewed)
-- **op** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 1
+- **op** (level 4): "3 plus 2 equals what?" Answer given: 1
   Hint: "Look at the sign. It says add." (reviewed)
-- **given** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 2
-  Hint: "2 is in the problem already. Find the missing number." (reviewed)
-- **on1** (level 4): "2 plus 1. Tap the frame to put in 2, then 1 more." Answer given: 4
-  Hint: "So close. Count again from 2, one step for each of 1." (reviewed)
+- **given** (level 4): "3 plus 2 equals what?" Answer given: 3
+  Hint: "3 is in the problem already. Find the missing number." (reviewed)
+- **on1** (level 4): "3 plus 2 equals what?" Answer given: 4
+  Hint: "So close. Count again from 3, one step for each of 2." (reviewed)
 - **pvcat** (level 2): "10 plus 8. Make the answer on the frame." Answer given: 108
   Hint: "The parts share places. Each digit takes the place of a zero." (reviewed)
 
@@ -96,24 +96,24 @@ never in a check-in, and not when Grown-ups has lessons off.
 
 ### Missing Number (miss)
 
-- **given** (level 1): "8 plus what equals 9?" Answer given: 8
+- **given** (level 1): "8 plus what equals 10?" Answer given: 8
   Hint: "8 is in the problem already. Find the missing number." (reviewed)
-- **tot** (level 1): "8 plus what equals 9?" Answer given: 17
-  Hint: "9 is the total. What goes with 8 to make it?" (reviewed)
+- **tot** (level 1): "8 plus what equals 10?" Answer given: 18
+  Hint: "10 is the total. What goes with 8 to make it?" (reviewed)
 
 ### Take Away (sub)
 
 - **swap** (level 3): "22 minus 10 equals what?" Answer given: 21
   Hint: "Look at 21. Which digit is the tens?" (reviewed)
-- **op** (level 1): "9 minus 8 equals what?" Answer given: 17
+- **op** (level 1): "There are 9. Take away 6." Answer given: 15
   Hint: "Look at the sign. It says take away." (reviewed)
-- **given** (level 1): "9 minus 8 equals what?" Answer given: 9
+- **given** (level 1): "There are 9. Take away 6." Answer given: 9
   Hint: "9 is in the problem already. Find the missing number." (reviewed)
-- **on1** (level 1): "9 minus 8 equals what?" Answer given: 0
-  Hint: "So close. Count again from 9, one step for each of 8." (reviewed)
-- **col** (level 1): "10 minus 7 equals what?" Answer given: 17
-  Hint: "In the ones, 0 take away 7 needs a trade first." (reviewed)
-- **keep** (level 1): "10 minus 7 equals what?" Answer given: 13
+- **on1** (level 1): "There are 9. Take away 6." Answer given: 2
+  Hint: "So close. Count again from 9, one step for each of 6." (reviewed)
+- **col** (level 1): "There are 10. Take away 9." Answer given: 19
+  Hint: "In the ones, 0 take away 9 needs a trade first." (reviewed)
+- **keep** (level 1): "There are 10. Take away 9." Answer given: 11
   Hint: "You traded from the tens. Now the tens have one less." (reviewed)
 
 ### Story Problems (story)
@@ -157,11 +157,11 @@ never in a check-in, and not when Grown-ups has lessons off.
 
 - **swap** (level 2): "11 plus 32 equals what?" Answer given: 34
   Hint: "Look at 34. Which digit is the tens?" (reviewed)
-- **op** (level 1): "700 plus 200 equals what?" Answer given: 500
+- **op** (level 1): "70 plus 20 equals what?" Answer given: 50
   Hint: "Look at the sign. It says add." (reviewed)
-- **given** (level 1): "20 plus 10 equals what?" Answer given: 20
+- **given** (level 1): "20 plus 20. Make the answer with blocks." Answer given: 20
   Hint: "20 is in the problem already. Find the missing number." (reviewed)
-- **on1** (level 1): "10 plus 10. Make the answer with blocks." Answer given: 19
+- **on1** (level 1): "10 plus 10 equals what?" Answer given: 19
   Hint: "So close. Count again from 10, one step for each of 10." (reviewed)
 - **cat** (level 3): "13 plus 37 equals what?" Answer given: 410
   Hint: "3 + 7 = 10. Only one digit fits in the ones." (reviewed)
@@ -429,9 +429,9 @@ never in a check-in, and not when Grown-ups has lessons off.
 
 - **given** (level 2): "The dot is negative 4. Put the pin on its opposite: the same distance from 0, on the other side." Answer given: -4
   Hint: "-4 is in the problem already. Find the missing number." (reviewed)
-- **small** (level 1): "Is 3 less than, equal to, or greater than negative 2?" Answer given: <
+- **small** (level 1): "Is negative 4 less than, equal to, or greater than 7?" Answer given: >
   Hint: "The open side faces the bigger number. Look again." (reviewed)
-- **ineg** (level 1): "Is 1 less than, equal to, or greater than negative 2?" Answer given: <
+- **ineg** (level 1): "Is negative 2 less than, equal to, or greater than 1?" Answer given: >
   Hint: "Below zero, the number farther from zero is smaller." (reviewed)
 - **idist** (level 2): "How many steps apart are negative 8 and 5 on the number line?" Answer given: 3
   Hint: "One number is below zero. Count to zero, then past it." (reviewed)

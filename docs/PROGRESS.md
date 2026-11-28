@@ -540,6 +540,72 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### RELA-FIX: two smoke failures after the merges (tests only; v200, 2026-11-28, Claude; branch claude/beautiful-rubin-1urk3d)
+- **TEACH-5S** ("Cannot read properties of undefined (reading 'sk')" in LS.record, then the step timed out): no app bug. The test set `S.grade` by hand (0, then 5 for El or La?). The app changes a grade only by setGrade (esRefit) or a reload (switching child), and the part teaches rebuilds NODES.es (deep15Apply, DEEP15_ON 1) for the grade it finds: it loaded while the test's grade was 0, so NODES.es became the RELA-YOUNG Kindergarten cut, and the 5th grader's es_art1 (not on the cut) had no stop, so record() found none. The test now grades by `setGrade(gr)` like the app (step 1 and the lesson loop); every assertion is as before.
+- **R-01s**: the feelings learn card check looked for 'cansado / cansada'; RELA-UI (owner approved) shows two forms on two lines with no slash. It now checks a card whose text is exactly the two lines cansado and cansada around one `<br>`, and that no learn card shows a slash.
+- a11y rally-race ("motion: calm: animation on span#rlspk ... 320 ms x 1" at 1024x600 in the full check): passed 3 of 3 alone (both sizes); load in the full run, Star Rally untouched.
+
+### RELA-SIZE: start-up back under 2.5 MB after the three review merges (v200, 2026-11-28, Claude; branch claude/beautiful-rubin-1urk3d)
+- **Why**: after RELA-UI, RELA-YOUNG and RELA-PICS, index.html + gen + gen2 + data was 2,505,645 bytes, over the 2,500,000 that "performance P6-03" keeps free (3.0 MB budget minus 500 KB). The budget is unchanged.
+- **What moved**: a new lazy part `sprint` (sprint.v200.js, about 20 KB, precached by sw.js like every part): the Find my level quiz (45-placement.js: PLACE, placeApply and the quiz screens) and the Fact Sprint screens (57-fluency.js: menu, modes, play, end card). What start-up reads stays in gen, in two new files: 45a-place.js (placePaths, placeOK, placeWorld for startWorld, PL, the Home card and the Grown-ups row) and 57a-flu.js (FLU with FLU.on() for Home, the Learn hub and the missions, FL and stopFlu for view()). Their CSS stays in index.html. Code moved as is: no sentence a child sees or hears changed.
+- **How it loads**: `partThen(stem, go)` (90-app.js, next to partsThen): go() at once when the part is in; else it loads the part with no waiting screen and runs go() only if the tapped screen is still showing; a part that does not load shows the Try again screen. Ways in: Home's Fact Sprint tile, the Learn hub card, the daily sprint mission (MIS.go), the Find my level card on Home and its Grown-ups row. Every other call (repeat, next path, Back) is inside the part.
+- **Start-up**: 2,488,054 bytes (was 2,505,645; -17,591). index.html 999,340 (under its 1,000,000).
+- **Tests changed to describe the new layout**: the PARTS stems and the LAZY lists in "code split A11b" and "performance P6-02", the appFiles stems, the gen file list (45a-place, 57a-flu in gen; 45-placement, 57-fluency in sprint), NOT_GAME, the appFiles order in "snack stand G-04a"; smoke A11 (the LAZY_PARTS list), P6-02 (one more part not loaded at the offline cold start and by the Game Room) and the service worker step list sprint with the other on-demand parts. New check "performance RELA-SIZE" (the split, the five ways in, a fresh vm page: no quiz or sprint code at start, a tap loads the part and opens the screen, a child who left meanwhile stays where they went). No budget, threshold, hash, KNOWN list or fixture changed.
+- **Checks**: test.js 260 of 260 (shards 1/2, 2/2, t; snack stand G-04a re-run after its appFiles list was updated); smoke core, A11, P1-07, P2-05, P2-06, P4-18, P5-06, P5-07, P5-08, NAV-01, R-01b, PLAY-01, P6-02, SW-AUDIO pass (A11 and P6-02 re-run after their part lists were updated).
+
+### RELA-UI: bigger pictures, fuller screens (review fix #1; v200, 2026-11-28, Claude; branch relA-ui from afe2a2e, not merged)
+- **Picture answers** (all subjects, `.qs .choices.pics`): tall tiles whose art (1em) follows the row's width (container units), about 100-120 px at 1024x600 and 600x960, 76-90 px at 380x780; captions on their own row at 18 px (no more "bridge" over the bridge); Pre-K shapes (`.pks`) follow the tile. A listen-only card (speaker and one line) stays small: narrower in landscape (the tiles get 60%), its own height in portrait. Lessons (`.ls-play`) and the dialogue replies (`.dlg`) keep their sizes.
+- **Spanish**: calendars, month rings and clocks fill the tile (clocks about 130 px); the "me gusta" face beside the food at the same size; the Learn cards show the two feelings forms on two lines without the slash; a Say it! line over 30 characters is 24-34 px (and on a 600 px landscape screen the picture and microphone shrink a little), so "Skip for now" stays on a 1024x600 screen; the no-voice note fades in under the top bar instead of sliding over it.
+- **Clocks** (VIZ.clock): minute hand to the minute ticks (43 of 48), hour hand 24 long and 9 wide under it, so at half past the hour hand shows on both sides; the numbers have a thin face-coloured halo so the minute hand never hides them.
+- **Rulers**: an inch ruler uses the card's width (80 a inch, quarter ticks 20 apart, was 34); a cm ruler of more than 12 cm labels every second number past 10.
+- **Number lines** in the inequality choices (`galr`): the full button width, tick labels about 16-20 px.
+- **Reading**: Match Big & Little (`cls: 'mtl'`, the match kind now passes `q.cls` to `.mt`) letters 36-56 px on tall tiles; passage choices 20-22 px; the passage panel fades out at the bottom while there is more to scroll (a sticky gradient, nothing faded at the end); story-order slots and tiles full width.
+- **Pre-K and K**: every question of a Pre-K or K child uses the big round Hear it and Help buttons (was only the `q.pk` ones; Number Meadow had the small text buttons); nothing new is spoken.
+- **K-2 Discover**: the subject picture (`em`) 72-140 px (`.qy`, grades Pre-K to 2).
+- Skipped: fewer clock numerals and dropping English captions (content, not layout); story pictures, pictographs, coins, shapes (other review fixes).
+- **Test changed**: KINDS2-C's K2.off hashes for time1-5 re-pinned (they hash the question html, which holds the clock drawing; with the old 23-viz.js the old hashes match, so only the drawing changed).
+- **Checks**: contrast 636 pairs pass; test.js 258 of 258; smoke P4-10, S-SPK, P2-01 to P2-04, P2-14 to P2-16, P2-24, P2-25, P2-29 to P2-37, R-01d, DEEP-15, STORIES-7 pass; a11y on the question, sort, line and Say it! screens: zero failures. Start-up 2,495,440 bytes (+2,470). No threshold, hash, KNOWN list or fixture changed.
+
+### RELA-YOUNG: fit the youngest children (review fix 2; v200, 2026-11-28, Claude; branch relA-young)
+- **Owner approval 2026-11-28** (review-es, review-math, review-disc "Age fit"). Logic only: no sentence a child sees or hears was added or changed.
+- **Spanish path**: a Pre-K or K child (a chosen grade, or one migration 4 inferred) walks Hola Plaza, Fiesta Island, Gran Repaso, then es_house 1, es_clothes 1, es_feel 1, es_toy 1 (La Casa) and es_nature 1 (La Ciudad), and the path ends: 23 stops and 3 bosses (a cut world has no boss). PATHS.es.worlds is a cut copy, PATHS.es.full the whole (42-paths.js: ES_YOUNG, esCut, esYoung, esRefit; setGrade and Unlock every stop refit it). The whole path stays for 1st grade up, a save with no grade, Unlock every stop, and any star or Test out past the cut, so nothing open locks and no star moves. A K child who grows to 1st goes on at es_house2. No migration.
+- **Spanish first stops**: l1 on animal 12, food 10, feel 9, weather 10 (the words before DEEP-15 and ES-MORE); the learn cards of a level 1 stop show the same l1 words (also big 8, time 12).
+- **K math**: about 1 fact in 10 has a 0 (add 4 11.4%, add 1 11%, sub 1 11%, miss 1 0%; were 58, 34, 34, 29%). add 1 and sub 1 show dots (sub: the taken ones faded), miss 1 a ten frame; miss 1 is always a + ? = 10 (make 10, the blank after the counters). The TAP-10 shares of add 1, sub 1, miss 1 were lowered so the make share stays at the planned 40/40/30%. eo 1 shows the number as pairs of dots (the hint's own picture) and no longer sorts into text bins. big 1 (Candy Canyon, 1st only): tens only. time 2: only :00 and :30 times offered. fact 3: GCF answer 1 in 9% of GCF items (was 12%). int 1: the target (the first number) negative in 85% (was 58%).
+- **Discover**: 30 Nature Trail rows with 1st-2nd grade words are marked `^` in their row (g1: peninsula, plateau, Southern Ocean, colonies, consequence, container, most people, ...); genBank never gives them to Pre-K or K while others are left. Pre-K: one wrong answer fewer in every Discover choice (3 choices) and 5-question Discover rounds (gradeCfg already sets round length by grade).
+- **Tests changed (the old behaviour they pinned was changed on purpose)**: kinds2-seeds.json add1/sub1/miss1 labels and the eo1 hash; TAP10_OFF add1/sub1/miss1, K2_OFF_D miss1, K2_OFF0 int1/add4/big1/time2; eo1 out of K2_SORT and the sort round trip moved to eo 2; review "tricky" exempts add|1, sub|1, miss|1 as R-01m did sub|2; ES-MORE asks the new words from level 2; five whole-path Spanish save checks and the worlds check set ES_FIT=0 (a legacy fixture infers K); smoke P2-31 sets 2nd grade, R-01s seeds picked again (weather 166, feelings 41). docs/drafts/HINTS-READ.md regenerated (its sample questions). New check "young children RELA-YOUNG".
+- **Not done / for the owner**: the stop title "Tens & Hundreds" (big 1) now has tens only; "Even or Odd" in K still names the words even and odd (only the picture was added).
+- Start-up 2,496,301 bytes (was 2,492,970).
+
+### RELA-PICS: pictures that contradicted the words (review fix 4; v200, 2026-11-28, Claude; branch relA-pics)
+- What changed (art only, no sentence changed):
+  - Stories (52w/52x, teachrd): `col` hue swaps draw the bus, hat and bug red, the ship red and the mouse brown on the shelf card, the
+    page, the end screen and the quiz (`st7Hue`). `st7Tight` lets a short word's 48 px tap box reach into the gap, so "has a big" no
+    longer reads as double spaced (button markup unchanged).
+  - Math: basketball and tennis ball show the ball drawing in their own colours (orange, yellow), not the beach ball (🎾 draws a racquet). Coins print no value (VIZ.coinSVG and the
+    `.cn` coins of coins 1-3 and the make-money tray): size, colour, and a ridged edge on the dime, quarter and half dollar; bills keep
+    their $. Perimeter polygons are drawn to scale (corners on one circle, longest side at the bottom) and generated sides stay within
+    2:1. Two joined boxes stand side by side (cavalier view, the taller on the left), all five lengths labelled. "Behind": the hidden
+    one shows a third or more and the house lets taps through. Plate, bowl, basket, pond and box holders look like themselves (CSS on
+    aria-label). Picture graphs draw each row's own icon in its circles (cats, apples, swings, colours ...). The grade 6 ratio dots
+    are flat dots in two rows on a plain grid, not a ten frame.
+  - Spanish: la clase a chalkboard, nuevo a new shoe, viejo a worn shoe, bajo a short person beside a tall one, por favor open hands
+    (src/data/d-art-g.js, part teaches, which the Spanish map loads; the items' art names are set when it loads, so before that the
+    old emoji shows; start-up budget). el/la questions and sorts show the unit's drawing (la goma the eraser, la mesa the table: `esArtOf`).
+    DEEP-15 confuse pairs: familia never with mamá, papá, hermano, hermana; cara never with ojos, nariz, boca.
+  - Discover: icons seedling (Seeds & Plants), cloud (Weather Watch), telescope and volcano (Star Observatory and Volcano Ridge
+    chips, via `w.ico`; their first stops keep their skill icon). Telescope is in 15-icons; the other three only serve lazy worlds, so
+    d-art-g.js adds them to ICONS and the sprite. A US flag (13 stripes) and a compass rose (no letters) drawn for the
+    two questions (src/data/d-art-g.js, part teaches; emoji 🚩 🗺 until it loads).
+- Test changes: test.js `coinSVG face` checks the new promise (no value on coins, ridges on 10 and 25, bills keep values). The K2.off
+  pins of coins1-3 (test.js K2_OFF0) and geo_world1, civ1 (tools/lib/kinds2-seeds.json) set again for these pictures, with a comment;
+  checked: with only the coin markup and the two em fields put back, the old hashes return.
+- Tests: test.js --only art,emoji,icon,viz,spanish,es_,coin,geo,stor,math,picture,size,budget,start-up,deep,disc,kinds,parts,data,perf,
+  teach,pk,shape,ratio: 140 checks passed. smoke --seg STORIES-7,DEEP-15,KINDS2-C,P4-14,P4-15,P2-30,P2-37,R-01m,P4-03: OK.
+  Start-up (index + gen + gen2 + data) 2,492,970 -> 2,499,844 bytes (+6,874; 156 under the 2.5 MB line).
+- Screenshots: scratchpad relA-pics/before and after (1024x600).
+- Skipped: Long Ago & Today picture answers (no allowed emoji or drawing for candle and TV, so the items cannot all have pictures);
+  pin and can redraws (start-up budget). The pictograph key text ("= 10 child") is clipped at the svg edge, before and after (layout). Words that need the owner to swap: torch, sword, church, clown, draw, noise, dawn, dew, jewel.
+
 ### APPROVE-200: DISC-46 and ES-MORE turned on (v200, 2026-11-27, Claude; branch claude/beautiful-rubin-1urk3d)
 - **Owner decisions 2026-11-27** (every item of docs/drafts/DISC46-READ.md and ES-MORE-READ.md approved): Canyon Trail (grade 4) and Volcano Ridge (grade 6) on, with the tablet's voice; 4th graders start on Canyon Trail, 6th on Volcano Ridge; the 22 Spanish weather and feelings words recorded first, then on.
 - **Recordings**: tools/es-audio.js collects the ES-MORE words whatever the gate says (as REC-198 did for DEEP-15). 30 files (the 22 words plus the said form of the 8 two-form feelings, as the old feelings have), 472 characters, 93,784 bytes; audio/es 962 files, 2,404,039 bytes; all audio 11,673,297 bytes (fail 12,000,000).

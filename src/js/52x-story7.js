@@ -62,11 +62,19 @@ function st7Plan(st) {
 }
 // the word lit at ms (for a recording's clock: its currentTime); -1 between words
 const st7Lit = (plan, ms) => plan.findIndex(x => ms >= x[0] && ms < x[1]);
+// RELA-PICS: a story's drawing in the colour its words name (st.col: "y-r" turns every yellow tone red, "b2-r2" one tone; ART is drawn once)
+function st7Hue(st, w, h) {
+  const c = st.col && st.col[w], m = {};
+  if (!c) return h;
+  for (const p of c.split(' ')) { const [a, b] = p.split('-'); if (a.length > 1) m[a] = b; else for (const d of ['', '1', '2', '3']) m[a + d] = b + d; }
+  return h.replace(/var\(--a-([a-z]\d?)\)/g, (x, r) => m[r] ? `var(--a-${m[r]})` : x);
+}
+const st7Pic = (st, size) => st7Hue(st, st.pic, picArt(st.pic, size));
 // the picture choices of question k of a story: always the same order for the same story (no random draw)
 function st7Q(st, k) {
   const q = st.q[k], all = [q[1]].concat(q[2]), r = [...(st.id + k)].reduce((a, c) => a + c.charCodeAt(0), 0) % all.length;
   const ch = all.slice(r).concat(all.slice(0, r));
-  return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: picFor(w), v: w, h: true, w}))};
+  return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: st7Hue(st, w, picFor(w)), v: w, h: true, w}))};
 }
 const st7Btns = ws => ws.map((w, i) => `<button class="st7-w" data-i="${i}">${esc(w.w)}</button>`);
 // REC-198: the recordings play where say() would play a recording (not with ENA.off, the Tablet voice choice, or where Opus cannot play)
@@ -86,7 +94,7 @@ const st7Nr = (t, sel) => { if (t && nrOn()) setTimeout(() => { if (nrOn() && (!
 
 ST7.shelf = function (stop) {
   st7Halt();
-  const card = st => `<button class="btn st7-card" data-st="${esc(st.id)}"><span class="st7-cp" aria-hidden="true">${picArt(st.pic, 64)}</span><span>${esc(st.t)}</span></button>`;
+  const card = st => `<button class="btn st7-card" data-st="${esc(st.id)}"><span class="st7-cp" aria-hidden="true">${st7Pic(st, 64)}</span><span>${esc(st.t)}</span></button>`;
   const secs = ST7.stages.map(sg => {
     const ok = st7Ok(sg.stop), list = ST7.list.filter(s => s.st == sg.id), nm = st7Name(sg.stop);
     return `<section class="st7-sg${ok ? '' : ' lock'}" data-stop="${esc(sg.stop)}"><h2 class="st7-sh">${ico(ok ? 'skill-story' : 'lock', 28)}<span>${esc(nm)}</span></h2>`
@@ -108,7 +116,7 @@ ST7.open = function (id) {
   const ws = st7Words(st), b = st7Btns(ws), nt = st.t.split(/\s+/).filter(Boolean).length, sg = ST7.stages.find(x => x.id == st.st);
   Object.assign(ST7R, {st, ws, plan: st7Plan(st), mode: ''});
   view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(sg ? st7Name(sg.stop) : ST7W.shelf)}</span></div></div>`
-    + `<div class="scroll st7-story" id="st7"><div class="st7-page"><div class="st7-pic" aria-hidden="true">${picArt(st.pic, '100%')}</div>`
+    + `<div class="scroll st7-story" id="st7"><div class="st7-page"><div class="st7-pic" aria-hidden="true">${st7Pic(st, '100%')}</div>`
     + `<div class="st7-body"><h2 class="st7-t">${b.slice(0, nt).join(' ')}</h2><p class="st7-txt">${b.slice(nt).join(' ')}</p></div></div>`
     + `<p class="st7-tip" id="st7tip">${esc(ST7W.tipStart)}</p>`
     + `<div class="st7-act">${UI.btn(ST7W.read, {kind: 'primary', size: 'lg', icon: 'speak', id: 'st7read'})}${UI.btn(ST7W.you, {size: 'lg', icon: 'eye', id: 'st7you'})}`
@@ -118,8 +126,19 @@ ST7.open = function (id) {
   $('#st7you').onclick = () => st7You();
   $('#st7done').onclick = () => { st7Halt(); SFX.whoosh(); st7Quiz(0); };
   $$('.st7-w').forEach(w => w.onclick = () => st7Tap(+w.dataset.i));
+  st7Tight();
   st7Nr(ST7W.tipStart, '#st7');
 };
+// RELA-PICS: a short word ("a") keeps its 48 px tap box, but the box may reach into the gap and its neighbours' padding, so the
+// space around it reads like the space between other words (no tap box reaches a neighbour's letters)
+function st7Tight() {
+  for (const b of $$('.st7-w')) {
+    if (!document.createRange || !b.firstChild) continue;
+    const r = document.createRange(); r.selectNodeContents(b);
+    const pad = parseFloat(getComputedStyle(b).paddingLeft) || 0, x = Math.min(2 * pad, (b.getBoundingClientRect().width - r.getBoundingClientRect().width) / 2 - pad);
+    if (x >= 1) b.style.margin = `0 -${Math.round(x)}px`;
+  }
+}
 function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) st7Say(t); }
 function st7Light(i) {
   for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
@@ -259,7 +278,7 @@ function st7Quiz(k) {
 function st7Fin() {
   const st = ST7R.st, sg = ST7.stages.find(x => x.id == st.st), line = st7F(ST7W.end, {title: st.t});
   view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(ST7W.shelf)}</span></div></div>`
-    + `<div class="scroll st7-end" id="st7e"><div class="st7-pic" aria-hidden="true">${picArt(st.pic, '100%')}</div><p class="st7-big">${esc(line)}</p>`
+    + `<div class="scroll st7-end" id="st7e"><div class="st7-pic" aria-hidden="true">${st7Pic(st, '100%')}</div><p class="st7-big">${esc(line)}</p>`
     + `<div class="st7-act">${UI.btn(ST7W.again, {size: 'lg', icon: 'replay', id: 'st7again'})}${UI.btn(ST7W.more, {kind: 'primary', size: 'lg', icon: 'skill-story', id: 'st7more'})}</div></div>`);
   $('#back').onclick = () => { SFX.click(); ST7.shelf(sg && sg.stop); };
   $('#st7again').onclick = () => { SFX.whoosh(); ST7.open(st.id); };

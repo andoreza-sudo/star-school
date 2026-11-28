@@ -421,15 +421,27 @@ function ffTime6() {
     choices: shuffle([ans, ...bad].map(x => ({v: x, l: x}))), hint: {k: 'text', s: hint}, label: `time6 ${d} ${form} ${s}`};
 }
 
-// A polygon of 3 to 6 sides, each side labelled outside (not drawn to scale)
+// A polygon of 3 to 6 sides, each side labelled outside. RELA-PICS: to scale, corners on one circle, the longest side at the bottom
 function ffPoly(sides, unit) {
-  const n = sides.length, cx = 130, cy = 100, r = 60, off = n % 2 ? 0 : Math.PI / n;
-  const pt = (i, rr) => [cx + rr * Math.cos(-Math.PI / 2 + off + 2 * Math.PI * i / n), cy + rr * Math.sin(-Math.PI / 2 + off + 2 * Math.PI * i / n)];
-  const P = sides.map((_, i) => pt(i, r)), fx = v => Math.round(v * 10) / 10;
+  const n = sides.length, M = Math.max(...sides), k = sides.indexOf(M), A = (s, r) => 2 * Math.asin(Math.min(1, s / 2 / r));
+  const rest = r => sides.reduce((t, s, i) => t + (i == k ? 0 : A(s, r)), 0), out = rest(M / 2) < Math.PI;
+  let lo = M / 2, hi = 50 * M;
+  for (let i = 0; i < 60; i++) { const r = (lo + hi) / 2, d = rest(r) + (out ? -A(M, r) : A(M, r) - 2 * Math.PI); if (out ? d < 0 : d > 0) lo = r; else hi = r; }
+  let t = 0;
+  const V = sides.map((s, i) => { const a = t; t += i == k && out ? 2 * Math.PI - rest(lo) : A(s, lo); return [lo * Math.cos(a), lo * Math.sin(a)]; });
+  const [x0, y0] = V[k], [x1, y1] = V[(k + 1) % n], g = Math.atan2(y1 - y0, x1 - x0), c = Math.cos(g), sn = Math.sin(g);
+  let P = V.map(([x, y]) => [x * c + y * sn, y * c - x * sn]);
+  if (P.some(p => p[1] > P[k][1] + 1e-6)) P = P.map(([x, y]) => [-x, -y]);
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]), sc = Math.min(170 / (Math.max(...xs) - Math.min(...xs)), 120 / (Math.max(...ys) - Math.min(...ys)));
+  const mx = (Math.max(...xs) + Math.min(...xs)) / 2, my = (Math.max(...ys) + Math.min(...ys)) / 2;
+  P = P.map(([x, y]) => [130 + (x - mx) * sc, 100 + (y - my) * sc]);
+  const fx = v => Math.round(v * 10) / 10, cx = P.reduce((a, p) => a + p[0], 0) / n, cy = P.reduce((a, p) => a + p[1], 0) / n;
   let lab = '';
   sides.forEach((v, i) => {
-    const mid = pt(i + .5, r * Math.cos(Math.PI / n) + 24);
-    lab += `<text x="${fx(mid[0])}" y="${fx(mid[1] + 5)}">${v}${unit ? ' ' + unit : ''}</text>`;
+    const [ax, ay] = P[i], [bx, by] = P[(i + 1) % n], L = Math.hypot(bx - ax, by - ay);
+    let nx = (by - ay) / L, ny = (ax - bx) / L;
+    if (nx * ((ax + bx) / 2 - cx) + ny * ((ay + by) / 2 - cy) < 0) { nx = -nx; ny = -ny; }
+    lab += `<text x="${fx((ax + bx) / 2 + nx * 24)}" y="${fx((ay + by) / 2 + ny * 16 + 5)}">${v}${unit ? ' ' + unit : ''}</text>`;
   });
   const body = `<path class="vpo" d="M${P.map(p => fx(p[0]) + ' ' + fx(p[1])).join('L')}z"/>${lab}`;
   return `<svg class="viz viz-poly" viewBox="0 0 260 200" style="--vw:260" role="img" aria-label="shape with side lengths">${body}</svg>`;
@@ -448,8 +460,8 @@ function ffGeo1() {
   }
   const n = R(3, 6), name = ['', '', '', 'triangle', 'shape with 4 sides', 'pentagon', 'hexagon'][n];
   let s;
-  // AUDIT-MATH: the longest side is shorter than the others together, for any number of sides (a shape that can be drawn)
-  do s = Array.from({length: n}, () => R(1, 20)); while (2 * Math.max(...s) >= s.reduce((x, y) => x + y, 0) || s.every(x => x == 1));
+  // AUDIT-MATH: the longest side is shorter than the others together; RELA-PICS: and at most twice the shortest
+  do {const b = R(2, 10); s = Array.from({length: n}, () => R(b, 2 * b));} while (2 * Math.max(...s) >= s.reduce((x, y) => x + y, 0) || 2 * Math.min(...s) < Math.max(...s));
   while (s[n - 1] == 1) s.unshift(s.pop()); // R-01m: the unit follows the last side, so it is never "1 meters" (the same polygon, turned)
   const sum = s.reduce((x, y) => x + y, 0);
   return {kind: 'num', html: `${ffPoly(s, unit)}<div class="sub">Find the perimeter of the ${name}.</div><div class="eq">${SLOT} ${unit}</div>`,

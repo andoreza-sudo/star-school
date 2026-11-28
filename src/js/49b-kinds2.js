@@ -661,7 +661,7 @@ function k2Art(q0, lv) {
   do its = [...(fn ? [fn] : []), ...k2Take(pool, fn ? 3 : 4, fn ? [fn] : [])];
   while (its.every(n => art(n) == art(its[0])) || new Set(its.map(word)).size < its.length);
   const items = shuffle(its).map(n => ({v: word(n), b: art(n), h: true, say: word(n), lang: 'es', al: word(n),
-    l: `${k2Pic('', n[2], 'k2sm')}<span>${esc(word(n))}</span>`}));
+    l: `${k2Pic(esArtOf(n[0]), n[2], 'k2sm')}<span>${esc(word(n))}</span>`}));
   const bins = ws.map(w => ({v: w, l: w}));
   return k2Sort({bins, items, html: `<div class="sub">${esc(ws[0])} or ${esc(ws[1])}? Sort the words.</div>`,
     say: `Which words go with ${ws[0]}, and which go with ${ws[1]}?`,
@@ -918,7 +918,7 @@ const mmRow = (lab, i, show, ds = [1]) => `<div class="mms"><span class="mml">${
   + ds.slice().reverse().map(d => mmBtn(i, -d, 'minus', (d > 1 ? d + " " : "") + "less: " + lab, ds.length > 1 || d > 1 ? '−' + d : '')).join('')
   + (show ? `<output class="mmn" data-o="${i}">0</output>` : '')
   + ds.map(d => mmBtn(i, d, 'plus', (d > 1 ? d + " " : "") + "more: " + lab, ds.length > 1 || d > 1 ? '+' + d : '')).join('') + '</div>';
-const mmCoin = v => `<span class="cn" style="--c:${COIN[v][2]};--s:${COIN[v][3]}">${COIN[v][0]}</span>`;
+const mmCoin = cnSpan;
 const mmSum = s => s.reduce((a, b) => a + b, 0);
 const mmTime = s => s[0] + ':' + String(s[1]).padStart(2, '0');
 const mmTimeSay = (h, m) => (m == 0 ? `${h} o'clock` : m == 30 ? `half past ${h}` : `${h} ${m < 10 ? 'oh ' + m : m}`);
@@ -1772,7 +1772,7 @@ const K2GEN = {
   sort: {2: [.5, k2SortSize], 3: [.5, k2SortKinds]},
   sound: {1: [.4, k2Sound], 2: [.4, k2Sound]},
   rhyme: {1: [.4, k2Rhyme]},
-  eo: {1: [.6, k2EO], 2: [.6, k2EO]},
+  eo: {2: [.6, k2EO]}, // RELA-YOUNG: eo 1 is the choice with dots
   syl: {1: [.5, k2Syl], 2: [.5, k2Syl]},
   pic: {3: [.4, k2Vowel], 4: [.4, k2Vowel]},
   fact: {1: [.4, k2Factor], 2: [.6, k2Prime]},
@@ -1786,9 +1786,10 @@ const K2GEN = {
   int: {1: [.4, k2IntLine], 2: [.45, k2IntOpp]},
   tenf: {1: [.45, k2Frame], 2: [.45, k2Frame], 3: [.45, k2Frame]},
   pk_count: {3: [.45, k2Frame]},
+  // RELA-YOUNG: add 1, sub 1, miss 1 shares lowered (fewer zeros, all miss 1 make 10) to keep the planned 40/40/30%
   // TAP-10 (the converters are in 49c-tap10.js): add 1-3, miss 1-2, sub 1-2 (below) on the ten frame, big 2 with blocks, frac 5 (above)
-  add: {1: [q => (k2Ab(q.label, '+') && /^[1-9]\d* \+ [1-9]/.test(q.label) ? .57 : 0), k2AddK], 2: [.25, k2Add20], 3: [.25, k2Add20], 4: [.45, k2AddFrame]},
-  miss: {1: [q => (k2MissAb(q.label) ? .8 : 0), k2MissFrame], 2: [q => (k2MissAb(q.label) ? .5 : 0), k2MissFrame]},
+  add: {1: [q => (k2Ab(q.label, '+') && /^[1-9]\d* \+ [1-9]/.test(q.label) ? .45 : 0), k2AddK], 2: [.25, k2Add20], 3: [.25, k2Add20], 4: [.45, k2AddFrame]},
+  miss: {1: [q => (k2MissAb(q.label) ? .3 : 0), k2MissFrame], 2: [q => (k2MissAb(q.label) ? .5 : 0), k2MissFrame]},
   big: {1: [.4, k2B10], 2: [.4, k2B10Sum], 3: [.2, k2FixAdd], 4: [.2, k2FixAdd], 5: [.2, k2FixAdd], 6: [.27, k2FixAdd]},
   coins: {1: [.45, k2Coins], 2: [.4, k2Coins], 3: [.4, k2Coins], 5: [.45, k2Coins]},
   time: {1: [.4, k2Clock], 2: [.4, k2Clock], 3: [.4, k2Clock], 4: [.4, k2Clock], 5: [.4, k2Clock]},
@@ -1803,7 +1804,7 @@ const K2GEN = {
   // KINDS2-D find the mistake (spec 3: 20% of the computation stops). A converter gives no question for some facts (5 or more digits,
   // mixed numbers, a one-step division ...), so a share is raised where that leaves the stop near 20%; ooo 1 and alg 3 convert only
   // their number questions. big 7 (6-digit sums: 7 lines, too tall for a phone) has none; sub 8 converts its 4-digit facts only.
-  sub: {1: [q => (k2TakeOk(q.label) ? .6 : 0), k2SubFrame], 2: [.25, k2SubFrame], 4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]}, // 1, 2: TAP-10
+  sub: {1: [q => (k2TakeOk(q.label) ? .45 : 0), k2SubFrame], 2: [.25, k2SubFrame], 4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]}, // 1, 2: TAP-10
   mbig: {2: [.28, k2FixMbig], 3: [.33, k2FixMbig], 4: [.28, k2FixMbig], 5: [.25, k2FixMbig]},
   dbig: {1: [.2, k2FixDiv], 2: [.4, k2FixDiv], 3: [.22, k2FixDiv]},
   fop: {1: [.33, k2FixFop], 3: [.2, k2FixFop]},

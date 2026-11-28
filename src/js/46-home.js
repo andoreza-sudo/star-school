@@ -355,7 +355,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;if($('#shop'))$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};if($('#care'))$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;if($('#shop'))$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();partThen('sprint',()=>fluMenu())};if($('#care'))$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -371,7 +371,7 @@ let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this ses
 function wBadge(p,wi){const ws=PATHS[p].worlds,w=ws[wi],seen=new Set();
   ws.slice(0,wi).forEach(x=>x.nodes.forEach(n=>seen.add(n[0])));
   const sk=(w.nodes.find(n=>!seen.has(n[0]))||w.nodes[0]||['star'])[0];
-  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(icoSk(sk),20)}</span>`}
+  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(w.ico||icoSk(sk),20)}</span>`}
 function nodeFace(n,lk){if(lk)return ico('lock',32);
   if(n.sk=='boss')return RW.boss(n.boss[1],'idle','nb-art')||`<span class="nb-e">${n.boss[0]}</span>`;
   return ico(icoSk(n.sk),38)}
@@ -450,10 +450,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
 function teachWarm(p='math'){const up=gradeOf()>2,rd=p=='read'||gradeOf()<0,sd=p=='es'||p=='disc';if(sd&&!TEACH.off&&!partReady('teaches'))return partsLoad(['teach','teach12','teachrd','teaches']).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()});const g6=gradeOf()>4;if(sd||TEACH.off||p=='read'&&up||partReady(up?(g6?'teach6':'teach35'):rd?'teachrd':'teach12'))return;(up?(g6?partsLoad(['teach','teach12','teach35','teach6']):partsLoad(['teach','teach12','teach35'])):rd?partsLoad(['teach','teach12','teachrd']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons too (teach35); TEACH-4: the reading map (Pre-K to 2nd), and the math map of a Pre-K child, load the reading and Pre-K lessons (teachrd); TEACH-5S: the Spanish and Discover maps, their lessons (teaches); TEACH-6M: 5th grade up, the grade 6 lessons too (teach6)
 function open(p,i){if(d15Want(p))return d15Open(p,i);if(d46Want(p))return d46Open(p,i);const n=NODES[p][i];if(lsGate(p,i))return lsOpen(p,i);if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
-function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
+function learn(p,i){const n=NODES[p][i],un=ES_UNITS.find(u=>u.id==n.sk.slice(3)),items=SPN[n.sk.slice(3)].slice(0,un&&un.l1||1e3),rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded; RELA-YOUNG: l1
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">${rec?'Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!':'Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!'}</p>
-  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it)).replace(/ \/ /g,' <br>')}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   if(esVoice()=='no'&&!rec)esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
   // ES-AUDIO: with every card recorded, one tap says the English (the tablet's voice) and then the Spanish (the recording), back

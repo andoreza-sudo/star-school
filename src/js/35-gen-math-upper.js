@@ -1556,12 +1556,20 @@ function skyRatioChoices(p, q, to) {
   }
   return shuffle(out);
 }
+// RELA-PICS: flat dots, two rows on a plain grid
+function skyDots(a, b) {
+  const n = Math.max(a, b), W = n * 34 + 8, row = (k, y) => Array.from({length: k}, (_, i) => `<circle cx="${21 + i * 34}" cy="${y}" r="12"/>`).join('');
+  let d = `M4 42h${W - 8}`;
+  for (let i = 1; i < n; i++) d += `M${4 + i * 34} 4v76`;
+  return `<svg class="viz viz-ratio" viewBox="0 0 ${W} 84" style="--vw:${W}" role="img" aria-label="dots"><rect class="vo" x="4" y="4" width="${W - 8}" height="76" rx="8"/>`
+    + `<path class="vl" d="${d}"/><g class="v1">${row(a, 23)}</g><g class="v2">${row(b, 61)}</g></svg>`;
+}
 function skyRatio1() {
   const r = rnd(), to = coin();
   if (r < .35) { // dots: blue then orange (VIZ.tenFrame: the first counters are the first colour, the last b the second)
     const [a, b] = skyCoprime(1, 9, 18), bo = coin();
     const p = bo ? a : b, q = bo ? b : a, word = bo ? 'blue to orange' : 'orange to blue';
-    const pic = VIZ.tenFrame(a + b, a + b > 10 ? 20 : 10, {b});
+    const pic = skyDots(a, b);
     return {kind: 'choice', cls: 'skyr', ans: `${p}:${q}`, choices: skyRatioChoices(p, q, to),
       html: `${pic}<div class="sub">What is the ratio of ${word} dots?</div>`,
       say: `Look at the dots. What is the ratio of ${word} dots? Say the first one, then the second one.`,
@@ -1733,7 +1741,8 @@ function skyInt1() {
   const r = rnd();
   if (r < .3) { // tap a number
     let x;
-    do {x = R(-9, 9)} while (x == 0 || x % 5 == 0);
+    do {x = R(1, 9)} while (x % 5 == 0);
+    if (rnd() < .7) x = -x; // RELA-YOUNG: mostly negative targets
     let pts;
     for (;;) {
       pts = [x];
@@ -1750,6 +1759,7 @@ function skyInt1() {
   if (r < .7) {
     let a, b;
     do {a = R(-10, 10); b = R(-10, 10)} while (a == b || (a >= 0 && b >= 0));
+    if (a >= 0 && rnd() < .8) [a, b] = [b, a]; // the line kind's target
     const m = rnd();
     if (m < .5) { // compare
       return {kind: 'choice', cls: 'syms', ans: a < b ? '<' : '>', choices: FC_SYM.map(c => ({...c})),
@@ -1770,6 +1780,7 @@ function skyInt1() {
   // order three
   let v;
   do {v = [R(-10, 10), R(-10, 10), R(-10, 10)]} while (new Set(v).size < 3 || v.every(x => x >= 0));
+  if (v[0] >= 0 && rnd() < .8) { const j = v.findIndex(x => x < 0); [v[0], v[j]] = [v[j], v[0]]; }
   const up = rnd() < .7, asc = [...v].sort((x, y) => x - y), ans = (up ? asc : asc.slice().reverse()).map(String);
   let items;
   do {items = shuffle(v.map(x => ({v: String(x), l: skyN(x)})))} while (items.map(i => i.v).join() == ans.join());
@@ -2212,8 +2223,8 @@ function galFact3() {
     a = R(2, 36); b = R(2, 36);
     if (a == b) continue;
     // AUDIT-MATH: a story about the greatest number of teams never has the answer 1. The bare question keeps a pair with GCF 1 twice as
-    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before)
-    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .8)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
+    // often (2 in 10, was 1 in 10), so "the GCF can be 1" is asked about as often as before (one draw a pair, as before). RELA-YOUNG: .86, about 1 in 10
+    if (gcf ? (skyGcd(a, b) == 1 && rnd() < (word ? 1 : .86)) : (galLcm(a, b) > 144 || (galLcm(a, b) == Math.max(a, b) && rnd() < .9))) continue;
     break;
   }
   const lo = Math.min(a, b), hi = Math.max(a, b);

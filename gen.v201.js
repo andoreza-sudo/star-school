@@ -1,5 +1,5 @@
-/* Whistlestop gen v200. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45-placement.js, 49c-tap10.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57-fluency.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
-   index.html v200 loads this file with <script src="gen.v200.js"> after its own code, before data.v200.js. */
+/* Whistlestop gen v201. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 30p-pers.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 45a-place.js, 49c-tap10.js, 50-say-cmp.js, 50-say-corner.js, 50-say.js, 57a-flu.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js, 89-play.js: never edit by hand.
+   index.html v201 loads this file with <script src="gen.v201.js"> after its own code, before data.v201.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -76,7 +76,7 @@
      balance(left, right, o)      counters on a scale (left blue, right orange); a side may be {n, q: true} (n counters plus
                                   a "?" box); tilts to the heavier side unless o.tilt (-1, 0, 1); o.nums or more than 10
                                   shows a number block
-     coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
+     coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50 (no value), bills 100 500 1000 2000; o.face = false hides values
      tally(n)                     tally marks, 0..50, groups of five
      tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
      rayLine(o)                   P2-14: an inequality (x > k, x < k) on a number line (o.min -5, o.max 5, every value labelled, o.w 290):
@@ -385,7 +385,8 @@ const VIZ = (() => {
 
   // ---- clock ----
   // Minute and hour ticks are two dashed circles (one dash per tick), so the face stays small.
-  // The minute hand stops at the numbers, so it points at a number instead of covering it.
+  // RELA-UI: the minute hand reaches the minute ticks; the hour hand is clearly shorter and twice as wide, so it
+  // still shows on both sides of the thin minute hand at half past.
   function clock(h, m, o = {}) {
     h = ((Math.round(h) || 0) % 12 + 12) % 12;
     m = clamp(Math.round(m) || 0, 0, 59);
@@ -400,14 +401,15 @@ const VIZ = (() => {
       return `<path class="${cls}" d="M${c} ${c}L${f(c + len * Math.sin(t))} ${f(c - len * Math.cos(t))}"/>`;
     };
     let body = `<circle class="vld" cx="${c}" cy="${c + 2}" r="55"/><circle class="vrim" cx="${c}" cy="${c}" r="54"/>` +
-      `<path class="vfs" d="${cres(c, c, 52, 4)}"/><path class="vgc" stroke-width="1.6" d="${glossArc(c, c, 54)}"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5');
-    if (def(o.nums, true)) {
+      `<path class="vfs" d="${cres(c, c, 52, 4)}"/><path class="vgc" stroke-width="1.6" d="${glossArc(c, c, 54)}"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5') +
+      hand((h + m / 60) * 30, 24, 'vhh') + hand(m * 6, 43, 'vmh');
+    if (def(o.nums, true)) { // over the minute hand, with a thin halo: the number stays readable, the hand shows on both sides
       for (let i = 1; i <= 12; i++) {
         const a = i * Math.PI / 6;
-        body += `<text class="vcn" x="${f(c + 35 * Math.sin(a))}" y="${f(c - 35 * Math.cos(a) + 4.5)}">${i}</text>`;
+        body += `<text class="vcn vch" x="${f(c + 35 * Math.sin(a))}" y="${f(c - 35 * Math.cos(a) + 4.5)}">${i}</text>`;
       }
     }
-    body += hand((h + m / 60) * 30, 18, 'vhh') + hand(m * 6, 27, 'vmh') + `<circle class="vpin" cx="${c}" cy="${c}" r="4.5"/>`;
+    body += `<circle class="vpin" cx="${c}" cy="${c}" r="4.5"/>`;
     return svg('clk', 2 * c, 2 * c, body, 'clock', false, 180);
   }
 
@@ -507,7 +509,8 @@ const VIZ = (() => {
     len = Math.max(0, +len || 0);
     const from = Math.max(0, def(o.from, 0));
     const max = clamp(Math.round(def(o.max, Math.ceil(len + from) + 1)), inch ? 4 : 6, inch ? 12 : 15);
-    const s = Math.floor(clamp(300 / max, 18, 34)), P = 20, RY = 58, RH = 48;
+    // RELA-UI: an inch ruler takes the card's width (quarter ticks 20 apart); a long cm ruler labels every second number past 10
+    const s = Math.floor(clamp((inch ? 420 : 300) / max, 18, inch ? 80 : 34)), P = 20, RY = 58, RH = 48;
     const x0 = P + from * s, x1 = x0 + len * s, w = max * s;
     let body = '';
     if (obj == 'pencil' && len * s >= 40) {
@@ -520,7 +523,7 @@ const VIZ = (() => {
     for (let k = 0; k <= max * per; k++) {
       const x = P + k / per * s;
       t += `M${f(x)} ${RY}v${k % per == 0 ? 16 : inch && k % 2 == 0 ? 12 : inch ? 8 : 10}`;
-      if (k % per == 0) lab += `<text class="vcn" x="${f(x)}" y="${RY + 31}">${k / per}</text>`;
+      if (k % per == 0 && (s > 24 || k / per <= 10 || k / per % 2 == 0)) lab += `<text class="vcn" x="${f(x)}" y="${RY + 31}">${k / per}</text>`;
     }
     body += `<rect class="vru" x="${P}" y="${RY}" width="${w}" height="${RH}" rx="4"/><path class="vk" d="${t}"/>${lab}` +
       `<text class="vcn" x="${f(P + w - 18)}" y="${RY + RH - 5}">${inch ? 'in' : 'cm'}</text>`;
@@ -555,8 +558,19 @@ const VIZ = (() => {
   }
 
   // ---- pictograph ----
+  // RELA-PICS: each row's drawing in its circles when every row has one (F fill, C circle r cy, w/colour stroke)
+  const PICG = {};
+  'cats=Forange M-7-1-6-9-2-5h4l4-4 1 8a7 6 0 0 1-14 0z;2/ink M-3 0h0M3 0h0|dogs=Cbrown 6.5;Fbrown-3 M-6-6q-4 0-3 9 4-2 3-9zM6-6q4 0 3 9-4-2-3-9z;2/ink M-2.5 0h0M2.5 0h0|fish=Faqua M-8 0q6-7 12 0-6 7-12 0zM3 0l6-5v10z;2/ink M-4-1h0|birds=Cblue 6.5 1;Forange M5-1l5 2-5 2z;2/ink M2-1h0|apples=Cred 7 1;Fgreen M0-6q4-4 7-1-4 2-7 1z|pears=Fgreen-1 M0-8c3 0 2 5 4 7 3 3 2 9-4 9s-7-6-4-9c2-2 1-7 4-7z|plums=Cpurple 7 1;Fgreen M0-6q4-4 7-1-4 2-7 1z|grapes=4.6/purple M-4-4h0M0-4h0M4-4h0M-2 0h0M2 0h0M0 4h0|swings=1.8/brown M-8 8-5-8h10l3 16M-2-8v9M2-8v9;2.6/red M-3 2h6|slides=1.6/grey-3 M-8 8V-7M-4 8V-7M-8-3h4M-8 1h4;2.6/blue M-4-7h2l9 14|tag=Fskin M-5 8V-1h10v9z;2.6/skin M-4-1v-6M-1-2v-6M2-2v-6M5-1v-4|ball=Cred 7.5;Fyellow M0-7.5a4 7.5 0 0 0 0 15 4 7.5 0 0 0 0-15z|soccer=Cwhite 7.5;1.2/ink M-7.5 0a7.5 7.5 0 1 0 15 0 7.5 7.5 0 1 0-15 0;Fink M0-3l3 2-1 3.5h-4l-1-3.5z|tennis=Cyellow 7.5;1.4/white M-5-5q5 5 0 10M5-5q-5 5 0 10|swim=Cskin 3 -3;2/blue M-8 3q2-2 4 0t4 0 4 0 4 0M-8 7q2-2 4 0t4 0 4 0 4 0|bike=1.6/ink-2 M-9 3a4 4 0 1 0 8 0 4 4 0 1 0-8 0M1 3a4 4 0 1 0 8 0 4 4 0 1 0-8 0M-5 3l3-6h6l1 6M-5 3h5l3-6M-2-3l-1-2|red=Cred 8|blue=Cblue 8|green=Cgreen 8|pink=Cpink 8|purple=Cpurple 8'.split('|').forEach(e => {
+    const [k, v] = e.split('=');
+    PICG[k] = v.split(';').map(x => {
+      const [c, ...d] = x.slice(/^[FC]/.test(x)).split(' '), [w, h] = c.split('/'), fl = `var(--ill-${h || c})`;
+      return x[0] == 'C' ? `<circle cy="${d[1] || 0}" r="${d[0]}" fill="${fl}"/>` : x[0] == 'F' ? `<path fill="${fl}" d="${d.join(' ')}"/>`
+        : `<path fill="none" stroke="${fl}" stroke-width="${w}" stroke-linecap="round" d="${d.join(' ')}"/>`;
+    }).join('');
+  });
   function pictograph(data, o = {}) {
     data = (data || []).slice(0, 6).map(d => [d[0], Math.max(0, +d[1] || 0)]);
+    const ic = data.every(d => PICG[String(d[0]).toLowerCase()]), sym = (x, y, g, h) => `<g transform="translate(${f(x)} ${f(y)})"><circle class="vpd" r="10"/>${g}${h ? '<path class="vph" d="M0-11h12v22H0z"/>' : ''}</g>`;
     const per = def(o.per, 1), r = 10, pc = 26;
     const LW = Math.min(88, Math.max(...data.map(d => String(d[0]).length), 3) * 8 + 8);
     const most = clamp(Math.ceil(Math.max(1, ...data.map(d => d[1])) / per), 1, 12);
@@ -567,15 +581,17 @@ const VIZ = (() => {
       const y = i * rh + rh / 2 + 2, k = v / per;
       body += `<text class="vta" x="${LW}" y="${y + 5}">${ex(name)}</text>`;
       grid += `M4 ${(i + 1) * rh + 2}h${f(w - 4)}`;
-      for (let j = 0; j < Math.floor(k); j++) full.push([LW + 12 + j * pc + r + 2, y]);
-      if (k % 1 >= 0.5) {
+      const g = ic && PICG[String(name).toLowerCase()];
+      for (let j = 0; j < Math.floor(k); j++) if (g) body += sym(LW + 14 + j * pc + r, y, g); else full.push([LW + 12 + j * pc + r + 2, y]);
+      if (g && k % 1 >= .5) body += sym(LW + 14 + Math.floor(k) * pc + r, y, g, 1);
+      else if (k % 1 >= 0.5) {
         const cx = LW + 12 + Math.floor(k) * pc + r + 2;
         half += `M${f(cx)} ${y - r}A${r} ${r} 0 0 0 ${f(cx)} ${y + r}z`;
       }
     });
     const H = data.length * rh + 4 + (key ? 34 : 0);
     body = `<path class="vgl" d="${grid}"/>` + body + counters(full, r) + (half ? `<path class="v1" d="${half}"/>` : '');
-    if (key) body += counters([[LW + 12 + r + 2, H - 17]], r) + `<text class="vts" x="${LW + 12 + 2 * r + 10}" y="${H - 12}">= ${ex(def(o.key, per))}</text>`;
+    if (key) body += (ic ? sym(LW + 14 + r, H - 17, '') : counters([[LW + 12 + r + 2, H - 17]], r)) + `<text class="vts" x="${LW + 12 + 2 * r + 10}" y="${H - 12}">= ${ex(def(o.key, per))}</text>`;
     return svg('pic', w, H, body, 'picture graph');
   }
 
@@ -800,9 +816,8 @@ const VIZ = (() => {
       if (x + d > 300 && row) { mx = Math.max(mx, x); x = 4; y += 64; }
       const cx = x + d / 2, cy = y + 32, r = COIN[c];
       row += r
-        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><path class="vcs${c == 1 ? ' vcp' : ''}" d="${cres(cx, cy, r - 1.5, f(r * 0.16))}"/>` +
-          `<path class="vgc" stroke-width="2.6" d="${glossArc(cx, cy, r - 3.5)}"/><circle class="vci${c == 1 ? ' vcp' : ''}" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
-          (face ? `<text class="vcc${c == 1 ? ' vcp' : ''}" x="${f(cx)}" y="${cy + 5}">${c}¢</text>` : '')
+        ? `<circle class="${c == 1 ? 'vcu' : c > 5 ? 'vsv vrd' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><path class="vcs${c == 1 ? ' vcp' : ''}" d="${cres(cx, cy, r - 1.5, f(r * 0.16))}"/>` +
+          `<path class="vgc" stroke-width="2.6" d="${glossArc(cx, cy, r - 3.5)}"/><circle class="vci${c == 1 ? ' vcp' : ''}" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>`
         : `<rect class="vld" x="${f(x)}" y="${cy - 19}" width="90" height="44" rx="5"/><rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
           (face ? `<text class="vcb" x="${f(cx)}" y="${cy + 7}">$${c / 100}</text>` : '');
       x += d + 8;
@@ -847,14 +862,18 @@ const VIZ = (() => {
   function solid(parts, o = {}) {
     parts = (parts || []).slice(0, 3).map(p => ({l: clamp(Math.round(p.l), 1, 12), h: clamp(Math.round(p.h), 1, 12), c2: !!p.c2}));
     const w = clamp(Math.round(def(o.w, 3)), 1, 12), L = parts.reduce((s, p) => s + p.l, 0), H = Math.max(1, ...parts.map(p => p.h));
-    const s = f(Math.min(28, 300 / ((L + w) * 0.866), 210 / ((L + w) * 0.5 + H))), c = 0.866 * s, e = 0.5 * s, lab = !!o.lab;
-    const ox = (lab ? 34 : 14) + w * c, oy = 14 + H * s;
-    const P = (x, y, z) => `${f(ox + (x - y) * c)} ${f(oy + (x + y) * e - z * s)}`;
+    // RELA-PICS: two boxes side by side (cavalier), the taller on the left; a first box taller has its top, then the other's side, drawn again
+    const two = parts.length == 2, lab = !!o.lab, sw = two && parts[1].h > parts[0].h;
+    const s = f(two ? Math.min(28, 290 / (L + w * 0.87), 190 / (H + w * 0.5)) : Math.min(28, 300 / ((L + w) * 0.866), 210 / ((L + w) * 0.5 + H)));
+    const c = 0.866 * s, e = 0.5 * s, ox = (lab ? 34 : 14) + (two ? 0 : w * c), oy = 14 + (two ? H * s + w * e : H * s);
+    const P = (x, y, z) => two ? `${f(ox + x * s + y * c)} ${f(oy - y * e - z * s)}` : `${f(ox + (x - y) * c)} ${f(oy + (x + y) * e - z * s)}`;
     const poly = pts => 'M' + pts.map(q => P(...q)).join('L') + 'z';
-    const W = ox + L * c + (lab ? 34 : 14), Hh = oy + (L + w) * e + (lab ? 36 : 14);
+    const W = two ? ox + L * s + w * c + (lab ? 40 : 14) : ox + L * c + (lab ? 34 : 14), Hh = two ? oy + (lab ? 30 : 14) : oy + (L + w) * e + (lab ? 36 : 14);
+    const F = two ? 0 : w; // the face toward the viewer
     let body = '', x0 = 0;
     parts.forEach((p, n) => {
-      const x1 = x0 + p.l, h = p.h;
+      if (two) x0 = n == +sw ? 0 : parts[+sw].l;
+      const x1 = x0 + p.l, h = p.h, left = two ? !x0 : !n, hr = two && left ? parts[1 - n].h : 0;
       let g = '', gt = ''; // grid lines: on the sides (light lines) and on the top (dark lines)
       if (o.grid) {
         for (let i = 1; i < p.l; i++) {
@@ -868,20 +887,25 @@ const VIZ = (() => {
         for (let k = 1; k < h; k++) g += `M${P(x0, w, k)}L${P(x1, w, k)}L${P(x1, 0, k)}`;
       }
       body += `<g class="vsl${p.c2 ? ' c2' : ''}"><path class="s2" d="${poly([[x0, 0, h], [x1, 0, h], [x1, w, h], [x0, w, h]])}"/>` +
-        `<path class="s1" d="${poly([[x0, w, 0], [x1, w, 0], [x1, w, h], [x0, w, h]])}"/>` +
-        `<path class="s3" d="${poly([[x1, w, 0], [x1, 0, 0], [x1, 0, h], [x1, w, h]])}"/>` +
+        `<path class="s1" d="${poly([[x0, F, 0], [x1, F, 0], [x1, F, h], [x0, F, h]])}"/>` +
+        `<path class="s3" d="${poly([[x1, w, hr], [x1, 0, hr], [x1, 0, h], [x1, w, h]])}"/>` +
         `${gt ? `<path class="vcg vct" d="${gt}"/>` : ''}${g ? `<path class="vcg" d="${g}"/>` : ''}</g>`;
       if (lab) {
-        const [bx, by] = P((x0 + x1) / 2, w, 0).split(' ').map(Number);
-        body += `<text x="${f(bx - 12)}" y="${f(by + 20)}">${p.l}</text>`;
-        const [hx, hy] = (n == 0 ? P(x0, w, h / 2) : P(x1, 0, h / 2)).split(' ').map(Number);
-        body += `<text x="${f(n == 0 ? hx - 14 : hx + 14)}" y="${f(hy + 5)}">${h}</text>`;
+        const [bx, by] = P((x0 + x1) / 2, F, 0).split(' ').map(Number);
+        body += `<text x="${f(two ? bx : bx - 12)}" y="${f(by + 20)}">${p.l}</text>`;
+        const [hx, hy] = (left ? P(x0, F, h / 2) : P(x1, two ? w : 0, h / 2)).split(' ').map(Number);
+        body += `<text x="${f(left ? hx - 14 : hx + 14)}" y="${f(hy + 5)}">${h}</text>`;
       }
       x0 = x1;
     });
+    if (two && !sw) {
+      const [a, b] = parts;
+      body += `<g class="vsl${a.c2 ? ' c2' : ''}"><path class="s2" d="${poly([[0, 0, a.h], [a.l, 0, a.h], [a.l, w, a.h], [0, w, a.h]])}"/></g>` +
+        `<g class="vsl${b.c2 ? ' c2' : ''}"><path class="s3" d="${poly([[L, w, 0], [L, 0, 0], [L, 0, b.h], [L, w, b.h]])}"/></g>`;
+    }
     if (lab) {
       const [wx, wy] = P(L, w / 2, 0).split(' ').map(Number);
-      body += `<text x="${f(wx + 14)}" y="${f(wy + 18)}">${w}</text>`;
+      body += `<text x="${f(wx + 14)}" y="${f(wy + (two ? 12 : 18))}">${w}</text>`;
     }
     return svg('box', W, Hh, body, 'box made of cubes');
   }
@@ -890,18 +914,21 @@ const VIZ = (() => {
     ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut, solid, rayLine};
 })();
 /* ---------- math generators ---------- */
+// RELA-YOUNG: K's add 1, sub 1, miss 1 show counters; about 1 fact in 10 has a 0
+const kZero=()=>rnd()<.11;
+const kPic=v=>`<div class="pkq">${v}</div>`;
 function genAdd(lv){let a,b;
-  if(lv==1){const s=R(2,10);a=R(0,s);b=s-a}
+  if(lv==1){const s=R(2,10);a=kZero()?(coin()?0:s):R(1,s-1);b=s-a;const q=mathQ(a,'+',b,s,'c',coin());q.html=kPic(VIZ.dots(s,'row',{b}))+q.html;return q}
   else if(lv==2){const k=pick([9,9,8,10,'d']);if(k=='d'){a=b=R(1,9)}else{a=k;b=R(1,9)}if(coin())[a,b]=[b,a]}
   else{a=R(2,9);b=R(2,9)}
   return mathQ(a,'+',b,a+b,'c',coin(),lv==1?{}:{hint:factHint(a,'+',b,a+b,'c')})}
 function genMiss(lv){let c,a;
-  if(lv==1){c=R(3,10);a=R(0,c)}
+  if(lv==1){a=R(1,9);const q=mathQ(a,'+',10-a,10,'b',false);q.html=kPic(VIZ.tenFrame(a))+q.html;return q} // K: make 10
   else{[a,c]=factPair();c+=a} // R-01m: every fact with a sum of 10 to 18 equally often
   const blank=coin()?'a':'b';
   return mathQ(a,'+',c-a,c,blank,false,lv==1?{}:{hint:factHint(a,'+',c-a,c,blank)})}
 function genSub(lv){let a,b;
-  if(lv==1){a=R(2,10);b=R(0,a)}else if(lv==2){const [x,y]=factPair();a=x+y;b=y} // R-01m: every take-away fact from 10 to 18 equally often
+  if(lv==1){a=R(2,10);b=kZero()?(coin()?0:a):R(1,a-1);const q=mathQ(a,'-',b,a-b,'c',coin());q.html=kPic(VIZ.dots(a,'row',{fade:b}))+q.html;return q}else if(lv==2){const [x,y]=factPair();a=x+y;b=y} // R-01m: every take-away fact from 10 to 18 equally often
   else if(lv==3){const a1=R(1,9),b1=R(0,a1),a2=R(2,9),b2=R(1,a2-1);a=a2*10+a1;b=b2*10+b1;
     return mathQ(a,'-',b,a-b,'c',true,{hint:{k:'text',s:`Ones first: ${a1} − ${b1}. Then tens: ${a2} − ${b2}.`}})}
   else{const a1=R(0,8),b1=R(a1+1,9),a2=R(3,9),b2=R(1,a2-2);a=a2*10+a1;b=b2*10+b1;
@@ -951,14 +978,16 @@ function factHint(a,op,b,c,blank){
     `Think addition: ${b} plus what makes ${a}? Jump from ${b} to 10, then to ${a}. Add the jumps.`);
 }
 function genBig(lv){let a,b,s;
-  if(lv==1){const m=coin()?10:100,x=R(1,8),y=R(1,9-x);a=x*m;b=y*m;
+  if(lv==1){const m=10,x=R(1,8),y=R(1,9-x);a=x*m;b=y*m; // RELA-YOUNG: 1st grade: tens only
     const u=m==10?'ten':'hundred';s=`Think: ${qN(x,u)} + ${qN(y,u)}.`}
   else if(lv==2){const a1=R(0,8),b1=R(0,9-a1),a2=R(1,8),b2=R(1,9-a2);a=a2*10+a1;b=b2*10+b1;s=`Ones first: ${a1} + ${b1}. Then tens: ${a2} + ${b2}.`}
   else if(lv==4){const x=[R(1,8),R(0,9),R(0,9)],y=[R(1,9-x[0]),R(0,9-x[1]),R(0,9-x[2])];a=x[0]*100+x[1]*10+x[2];b=y[0]*100+y[1]*10+y[2];s='Add each column: ones, then tens, then hundreds.'}
   else{const a1=R(2,9),b1=R(10-a1,9),a2=R(1,7),b2=R(1,8-a2);a=a2*10+a1;b=b2*10+b1;s=`Ones first: ${a1} + ${b1} = ${a1+b1}. Write ${(a1+b1)%10}, carry the 1 to the tens!`}
   return mathQ(a,'+',b,a+b,'c',true,{hint:{k:'text',s}})}
+// RELA-YOUNG: K sees pairs of dots (the hint's picture)
+const eoPairs=n=>{let s='<div class="pkq"><div class="pairs">';for(let i=0;i<n;i+=2)s+='<span><b></b>'+(i+1<n?'<b></b>':'')+'</span>';return s+'</div></div>'};
 function genEO(lv){const n=lv==1?R(0,20):R(21,99);
-  return{kind:'choice',html:`<div>${n}</div><div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`+(lv==1?' Even is on the left.':''),ans:n%2?'odd':'even',
+  return{kind:'choice',html:`<div>${n}</div>${lv==1?eoPairs(n):''}<div class="sub">Even or odd?</div>`,say:`Is ${n} even or odd?`+(lv==1?' Even is on the left.':''),ans:n%2?'odd':'even',
     choices:[{l:'Even',v:'even'},{l:'Odd',v:'odd'}],hint:{k:'pairs',n},label:`${n} even/odd`}}
 function genCnt(lv){let step,start;
   if(lv==1){step=pick([1,10]);start=step==1?R(0,25):10*R(0,5)}
@@ -1453,18 +1482,20 @@ function genSgShape3() {
     });
   }
   const [nm, art, em, ans, sp, fact] = pick(SG_THINGS3);
+  // RELA-PICS: the tennis ball and the basketball are the ball drawing in their own colours (not the beach ball)
+  const hu = {'tennis ball': 'yyy', basketball: 'ooO'}[nm], th = hu ? picArt(art).replace(/--a-([rby])\)/g, (m, c) => '--a-' + hu['rby'.indexOf(c)].replace('O', 'o2') + ')') : picFor(art, em);
   return pkQ({
     kind: 'choice', cls: 'pics pk4', ans, choices,
-    html: `<div class="pkq"><span class="sgobj">${picFor(art, em)}</span></div>${pkTxt(`Which one is shaped like ${sp}?`)}`,
+    html: `<div class="pkq"><span class="sgobj">${th}</span></div>${pkTxt(`Which one is shaped like ${sp}?`)}`,
     say: `Which one is shaped like ${sp}?`,
-    hint: PK.hint(`<div class="pkhint"><span class="sgobj">${picFor(art, em)}</span>${pkTxt(fact)}</div>`, fact), label: `solid like ${nm}`,
+    hint: PK.hint(`<div class="pkhint"><span class="sgobj">${th}</span>${pkTxt(fact)}</div>`, fact), label: `solid like ${nm}`,
   });
 }
 function genShapeK(lv) { return lv == 1 ? genPkShape() : lv == 2 ? genSgShape2() : genSgShape3(); }
 
-// add 4: sums within 5, with dots (the first group blue, the added group orange), including + 0
+// add 4: sums within 5, with dots (the first group blue, the added group orange); 1 in 10 with a 0
 function genSgAdd() {
-  const s = R(1, 5), a = R(0, s), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
+  const z = kZero(), s = z ? R(1, 5) : R(2, 5), a = z ? (coin() ? 0 : s) : R(1, s - 1), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
   return pkQ(Object.assign(q, { html: `<div class="pkq">${VIZ.dots(s, 'row', { b })}</div>` + q.html + pkTxt('How many in all?') }));
 }
 
@@ -2106,16 +2137,18 @@ const tstr=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
 function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,45]),ans=tstr(h,m),c=new Set([ans]);
   const hh=x=>((x+11)%12)+1;
   const cand=[tstr(hh(h+1),m),tstr(hh(h-1),m),m?tstr(h,(m+30)%60):tstr(h,30),m?tstr(hh(h+1),m):tstr(12,h*5%60),tstr(hh(h+R(2,5)),m),tstr(h,pick([0,15,30,45]))];
-  for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00'))continue;c.add(x)}
+  for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00')||lv==2&&!/:[03]0$/.test(x))continue;c.add(x)} // RELA-YOUNG: lv 2 only :00 and :30
   while(c.size<4)c.add(tstr(R(1,12),lv==1?0:pick([0,30])));
   const spoken=m==0?`${h} o'clock`:m==30?`half past ${h}`:m==15?`quarter past ${h}`:`quarter to ${hh(h+1)}`;
   return{kind:'choice',html:`${VIZ.clock(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
     choices:shuffle([...c]).map(x=>({l:x,v:x})),hint:{k:'text',s:m==0?'The short pink hand shows the hour. The long blue hand on 12 means o\'clock.':'Short pink hand = hour. Long blue hand: on 3 is :15, on 6 is :30, on 9 is :45.'},label:`clock ${ans}`}}
 const COIN={1:['1¢','penny','#c2703d',1],5:['5¢','nickel','#b8bcc2',1.2],10:['10¢','dime','#c9cdd3',.95],25:['25¢','quarter','#aeb3b9',1.35]};
+// RELA-PICS: no printed value; dime and quarter ridged
+const cnSpan=v=>`<span class="cn${v>5?' cnr':''}" style="--c:${COIN[v][2]};--s:${COIN[v][3]}"></span>`;
 function genCoins(lv){const types=lv==1?[5,1]:lv==2?[10,5,1]:[25,10,5,1];let cs;
   do{cs=Array.from({length:R(lv==1?2:3,lv==1?5:6)},()=>pick(types)).sort((a,b)=>b-a)}while(cs.reduce((a,b)=>a+b,0)>99);
   const tot=cs.reduce((a,b)=>a+b,0),run=[];cs.reduce((a,b)=>(run.push(a+b),a+b),0);
-  return{kind:'num',html:`<div class="coins">${cs.map(v=>`<span class="cn" style="--c:${COIN[v][2]};--s:${COIN[v][3]}">${COIN[v][0]}</span>`).join('')}</div><div class="eq" style="font-size:.7em">${SLOT}¢</div>`,
+  return{kind:'num',html:`<div class="coins">${cs.map(cnSpan).join('')}</div><div class="eq" style="font-size:.7em">${SLOT}¢</div>`,
     say:'How many cents?',ans:String(tot),hint:{k:'text',s:`Start with the biggest coin and count on: ${run.slice(0,Math.min(2,run.length-1)).join(', ')}, ...`},label:`coins ${cs.join('+')}`}}
 const FRUIT=['🍎','🍓','🍪','⭐','🐟','🌸','🍩','🐞'];
 function genMult(lv){const g=R(2,lv==1?4:5),n=lv==1?pick([2,5,10]):R(2,5),e=pick(FRUIT);
@@ -2171,7 +2204,7 @@ function genAbc(lv){
   if(lv==3){ // match 4 big letters to their little letters
     const Ls=[];while(Ls.length<4){const x=pick(ABCP);if(!Ls.includes(x))Ls.push(x)}
     const items=Ls.map(x=>({v:x,l:x})),opts=shuffle(Ls.map(x=>({v:x,l:x.toLowerCase()})));
-    return{kind:'match',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
+    return{kind:'match',cls:'mtl',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
       items,opts,ans:[...Ls].sort().join('|'),after:'Big and little letters are partners!',
       hint:{k:'say',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.',
         w:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
@@ -2745,15 +2778,27 @@ function ffTime6() {
     choices: shuffle([ans, ...bad].map(x => ({v: x, l: x}))), hint: {k: 'text', s: hint}, label: `time6 ${d} ${form} ${s}`};
 }
 
-// A polygon of 3 to 6 sides, each side labelled outside (not drawn to scale)
+// A polygon of 3 to 6 sides, each side labelled outside. RELA-PICS: to scale, corners on one circle, the longest side at the bottom
 function ffPoly(sides, unit) {
-  const n = sides.length, cx = 130, cy = 100, r = 60, off = n % 2 ? 0 : Math.PI / n;
-  const pt = (i, rr) => [cx + rr * Math.cos(-Math.PI / 2 + off + 2 * Math.PI * i / n), cy + rr * Math.sin(-Math.PI / 2 + off + 2 * Math.PI * i / n)];
-  const P = sides.map((_, i) => pt(i, r)), fx = v => Math.round(v * 10) / 10;
+  const n = sides.length, M = Math.max(...sides), k = sides.indexOf(M), A = (s, r) => 2 * Math.asin(Math.min(1, s / 2 / r));
+  const rest = r => sides.reduce((t, s, i) => t + (i == k ? 0 : A(s, r)), 0), out = rest(M / 2) < Math.PI;
+  let lo = M / 2, hi = 50 * M;
+  for (let i = 0; i < 60; i++) { const r = (lo + hi) / 2, d = rest(r) + (out ? -A(M, r) : A(M, r) - 2 * Math.PI); if (out ? d < 0 : d > 0) lo = r; else hi = r; }
+  let t = 0;
+  const V = sides.map((s, i) => { const a = t; t += i == k && out ? 2 * Math.PI - rest(lo) : A(s, lo); return [lo * Math.cos(a), lo * Math.sin(a)]; });
+  const [x0, y0] = V[k], [x1, y1] = V[(k + 1) % n], g = Math.atan2(y1 - y0, x1 - x0), c = Math.cos(g), sn = Math.sin(g);
+  let P = V.map(([x, y]) => [x * c + y * sn, y * c - x * sn]);
+  if (P.some(p => p[1] > P[k][1] + 1e-6)) P = P.map(([x, y]) => [-x, -y]);
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]), sc = Math.min(170 / (Math.max(...xs) - Math.min(...xs)), 120 / (Math.max(...ys) - Math.min(...ys)));
+  const mx = (Math.max(...xs) + Math.min(...xs)) / 2, my = (Math.max(...ys) + Math.min(...ys)) / 2;
+  P = P.map(([x, y]) => [130 + (x - mx) * sc, 100 + (y - my) * sc]);
+  const fx = v => Math.round(v * 10) / 10, cx = P.reduce((a, p) => a + p[0], 0) / n, cy = P.reduce((a, p) => a + p[1], 0) / n;
   let lab = '';
   sides.forEach((v, i) => {
-    const mid = pt(i + .5, r * Math.cos(Math.PI / n) + 24);
-    lab += `<text x="${fx(mid[0])}" y="${fx(mid[1] + 5)}">${v}${unit ? ' ' + unit : ''}</text>`;
+    const [ax, ay] = P[i], [bx, by] = P[(i + 1) % n], L = Math.hypot(bx - ax, by - ay);
+    let nx = (by - ay) / L, ny = (ax - bx) / L;
+    if (nx * ((ax + bx) / 2 - cx) + ny * ((ay + by) / 2 - cy) < 0) { nx = -nx; ny = -ny; }
+    lab += `<text x="${fx((ax + bx) / 2 + nx * 24)}" y="${fx((ay + by) / 2 + ny * 16 + 5)}">${v}${unit ? ' ' + unit : ''}</text>`;
   });
   const body = `<path class="vpo" d="M${P.map(p => fx(p[0]) + ' ' + fx(p[1])).join('L')}z"/>${lab}`;
   return `<svg class="viz viz-poly" viewBox="0 0 260 200" style="--vw:260" role="img" aria-label="shape with side lengths">${body}</svg>`;
@@ -2772,8 +2817,8 @@ function ffGeo1() {
   }
   const n = R(3, 6), name = ['', '', '', 'triangle', 'shape with 4 sides', 'pentagon', 'hexagon'][n];
   let s;
-  // AUDIT-MATH: the longest side is shorter than the others together, for any number of sides (a shape that can be drawn)
-  do s = Array.from({length: n}, () => R(1, 20)); while (2 * Math.max(...s) >= s.reduce((x, y) => x + y, 0) || s.every(x => x == 1));
+  // AUDIT-MATH: the longest side is shorter than the others together; RELA-PICS: and at most twice the shortest
+  do {const b = R(2, 10); s = Array.from({length: n}, () => R(b, 2 * b));} while (2 * Math.max(...s) >= s.reduce((x, y) => x + y, 0) || 2 * Math.min(...s) < Math.max(...s));
   while (s[n - 1] == 1) s.unshift(s.pop()); // R-01m: the unit follows the last side, so it is never "1 meters" (the same polygon, turned)
   const sum = s.reduce((x, y) => x + y, 0);
   return {kind: 'num', html: `${ffPoly(s, unit)}<div class="sub">Find the perimeter of the ${name}.</div><div class="eq">${SLOT} ${unit}</div>`,
@@ -3016,20 +3061,21 @@ function genEsPhrase(lv){const G=ES_GRAM;
   return{kind:'choice',cls:'wide',...gSay(qa.q),after:right,html:`<div class="sent">${esc(qa.q)}</div>${gSub('Which reply fits?')}`,ans:right,
     choices:shuffle([right,...wrong]).map(x=>({l:x,v:x})),hint:{k:'text',s:qa.h},label:`${qa.q} (reply)`}}
 // article: -o words are el / un, -a words are la / una (level 1 and the "a" half of level 2); the plural half of level 2 is los / las + -s / -es
+const esArtOf=w=>(ES_UNITS.flatMap(u=>u.items).find(it=>it[0]==w&&it[4])||[])[4]||'';
 function genEsArt(lv){const N=ES_GRAM.nouns,regular=N.filter(n=>/[oa]$/.test(n[0]));
   if(lv==2&&R(0,1)){ // plurals: the right article for the gender AND the right ending
     const n=pick(N),art=gPlArt(n[3]),oth=art=='los'?'las':'los',right=`${art} ${n[4]}`,vowel=/[aeiou]$/.test(n[0]),
       bad=vowel?pick([n[0],n[0]+'es']):pick([n[0],n[0]+'s']),opts=shuffle([right,`${oth} ${n[4]}`,`${art} ${bad}`]);
     // R-01s: "More than one dog!" (singular after "one") and "the beaches" (enPlural, 22-qhelpers.js), in the voice and on screen
     return{kind:'choice',cls:'wide',say:`More than one ${n[1]}! How do you say the ${enPlural(n[1])}?`,after:right,afterLang:'es',
-      html:`<div class="emo">${picFor('',n[2])}${picFor('',n[2])}</div>${gSub(`More than one! How do you say “the ${esc(enPlural(n[1]))}”?`)}`,
+      html:`<div class="emo">${picFor(esArtOf(n[0]),n[2]).repeat(2)}</div>${gSub(`More than one! How do you say “the ${esc(enPlural(n[1]))}”?`)}`,
       ans:right,choices:opts.map(x=>({l:x,v:x})),
       hint:{k:'text',s:'Many things: change the ending (a vowel at the end takes -s, a consonant takes -es, and z changes to c: lápiz, lápices), and use the small word that goes with boy words or girl words.'},label:`${right} (plural)`}}
   const n=pick(regular),a=lv==2?(n[3]=='el'?'un':'una'):n[3],ch=lv==2?['un','una']:['el','la'],
     hint=(/o$/.test(n[0])?'This word ends in -o. Words that end in -o are usually “boy” words (masculine).':'This word ends in -a. Words that end in -a are usually “girl” words (feminine).')
       +(lv==2?' The word for “a” has a boy form and a girl form too.':'');
   return{kind:'choice',cls:'syms',lang:'es',auto:'must',say:n[0],after:a+' '+n[0],afterLang:'es',
-    html:`<div class="emo">${picFor('',n[2])}</div><div class="sent">${SLOT} ${esc(n[0])}</div>${gSub(`“${lv==2?'a':'the'} ${esc(n[1])}”: which word goes in the blank?`)}`,
+    html:`<div class="emo">${picFor(esArtOf(n[0]),n[2])}</div><div class="sent">${SLOT} ${esc(n[0])}</div>${gSub(`“${lv==2?'a':'the'} ${esc(n[1])}”: which word goes in the blank?`)}`,
     ans:a,choices:ch.map(x=>({l:x,v:x})),hint:{k:'text',s:hint},label:`${a} ${n[0]}`}}
 // ser (level 1), estar (2), tener (3): the subject fixes the form, so one answer fits. The English line says what the sentence means and is
 // what "Hear it" reads (the Spanish sentence holds the answer); the Spanish sentence is said after the answer
@@ -3099,89 +3145,10 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
   for(let k=0;k<2;k++){const di=bankChoose('S:es_story',pool,bankSub(s0,k));pool=pool.filter(i=>i!=di);
     D[di].qs.forEach((_,qi)=>{const q=bankWith(bankSub(s0,di*8+qi),()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;out.push(q)})}
   return out}
-/* ---------- placement quiz "Find my level" (P1-07; ROADMAP 3.2 step 3) ----------
-   Optional, per graded path (math, reading; not Spanish, whose worlds are word sets in an order, not a ladder), not for Pre-K.
-   Rules (ROADMAP 3.2):
-     - starts one grade below the child's grade: the first world with g >= grade - 1 (the last world if none is)
-     - a testlet is 4 questions from one world. 3 or 4 right: pass, go up one world. 0 or 1 right: not yet, go down one world.
-       2 right: one more testlet at the same world, which then passes at 6 of 8.
-       R-01b: the first pass of a quiz is confirmed: until a world has passed, 3 right also asks one more testlet (6 of 8 passes);
-       4 of 4 passes at once. The quiz still stops at 20 questions, so a child far above the start world is placed a little lower
-       more often (harmless: they can test out); a struggling child is placed too high far less often.
-     - stops when a "not yet" world sits directly above a passed world, at either end of the path, or after 5 testlets (20 questions)
-     - result: the map starts at the lowest world not passed (the one above the highest passed world). The worlds below it get
-       S.skip[worldId] = 1: a check mark, no stars, still playable. With no world passed it starts at the lowest world asked.
-   Two parts:
-     PLACE.*      pure state machine: takes the world list, a seed and the number right per testlet; no S, no DOM, no Math.random.
-                  The same seed and answers always give the same questions and the same result (tests rely on it).
-     place*()     a thin screen on the question kinds (KIND render/bind): no stars, no buzz, no hints, one try per question,
-                  a neutral "Got it!" and progress dots. Nothing is saved until the last testlet is answered; quitting
-                  (the X, or leaving the screen) changes nothing.
-   Saved (only by placeApply, at the end): S.place[path] = {world, date, asked, right, g} (world id, today(), questions asked,
-   right answers, the grade it was taken at) and S.skip[worldId] = 1 for the worlds below the result. It only ever adds: no star,
-   stop, coin or skip is removed, nothing is re-locked. startWorld() (42-paths.js) reads the result through placeWorld(p) while
-   the grade is unchanged, so the map opens on the placed world. A later run replaces S.place[path]; earlier skips stay. */
-const PLACE={
-  TL:4,  // questions per testlet
-  MAX:5, // testlets at most: 20 questions
-  // The start world for a grade: the first world with g >= grade - 1, else the last world.
-  first(worlds,grade){
-    const k=worlds.findIndex(w=>w.g>=grade-1);
-    return k<0?worlds.length-1:k;
-  },
-  // A new quiz. rec[wi] = {t: testlets, r: right, v: 'pass' | 'fail'} per world asked.
-  begin(worlds,grade,seed){
-    return{n:worlds.length,wi:PLACE.first(worlds,grade),seed:seed>>>0,k:0,asked:0,right:0,rec:{},done:false,at:-1,skip:[]};
-  },
-  // The 4 questions of the next testlet: [{sk, lv, seed}], from the stops (not the boss, not a skill marked noPlace) of world st.wi.
-  // Stops are shuffled by a private stream from (seed, testlet number) and taken in turn, so a world with 2 stops gives 2 each.
-  items(worlds,st){
-    const r=mulberry32((st.seed^Math.imul(st.k+1,0x9E3779B1))>>>0);
-    const ns=worlds[st.wi].nodes.filter(nd=>!(SK[nd[0]]&&SK[nd[0]].noPlace)); // P2-16: tracing is not asked in the quiz
-    for(let i=ns.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[ns[i],ns[j]]=[ns[j],ns[i]]}
-    const out=[];
-    for(let i=0;i<PLACE.TL;i++){const nd=ns[i%ns.length];out.push({sk:nd[0],lv:nd[1],seed:Math.floor(r()*4294967296)>>>0})}
-    return out;
-  },
-  // Score one testlet (right = how many of the 4 were right) and move on. Returns a new state; st is not changed.
-  step(st,right){
-    const s=JSON.parse(JSON.stringify(st));
-    if(s.done)return s;
-    right=Math.max(0,Math.min(PLACE.TL,right|0));
-    const w=s.wi,rec=s.rec[w]||(s.rec[w]={t:0,r:0});
-    rec.t++;rec.r+=right;s.k++;s.asked+=PLACE.TL;s.right+=right;
-    let v=null;
-    // R-01b: the quiz's first pass must be confirmed. While no world has passed yet, 3 of 4 is not enough (a lucky guess or two
-    // moved a struggling child up): it asks one more testlet here like 2 of 4 does, and 4 of 4 still passes at once.
-    const first=!Object.values(s.rec).some(x=>x.v=='pass'),need1=first?PLACE.TL:3;
-    if(rec.t==1)v=right>=need1?'pass':right<=1?'fail':null; // 2 right (3 on the first pass): one more testlet here
-    else v=rec.r>=6?'pass':'fail';                          // two testlets: pass at 6 of 8
-    if(v)rec.v=v;
-    const R=s.rec;
-    let stop=s.k>=PLACE.MAX;
-    if(v=='pass'){if(w+1>=s.n||(R[w+1]&&R[w+1].v=='fail'))stop=true;else if(!stop)s.wi=w+1}
-    if(v=='fail'){if(w==0||(R[w-1]&&R[w-1].v=='pass'))stop=true;else if(!stop)s.wi=w-1}
-    if(stop)PLACE.finish(s);
-    return s;
-  },
-  // Work out the result: s.at = the world to start at, s.skip = worlds to mark skipped, s.all = every world passed.
-  finish(s){
-    s.done=true;
-    const ws=Object.keys(s.rec).map(Number),hi=Math.max(-1,...ws.filter(w=>s.rec[w].v=='pass'));
-    s.all=hi>=s.n-1;
-    s.at=hi>=0?Math.min(hi+1,s.n-1):Math.min(...ws);
-    s.skip=[];
-    for(let i=0;i<=hi;i++)s.skip.push(i);
-    return s;
-  },
-  // Run a whole quiz with an answer function ans(world index, item) -> true/false. Used by the tests.
-  sim(worlds,grade,seed,ans){
-    let st=PLACE.begin(worlds,grade,seed);
-    while(!st.done){const its=PLACE.items(worlds,st);st=PLACE.step(st,its.filter(it=>ans(st.wi,it)).length)}
-    return st;
-  }
-};
-
+/* ---------- "Find my level" (P1-07): what start-up needs (part gen) ----------
+   RELA-SIZE: the Home card, the Grown-ups row and the placed start world (startWorld, 42-paths.js) are read at start, so they stay
+   here; the quiz itself (PLACE, placeApply and the screens, 45-placement.js) is the lazy part sprint: a tap loads it first
+   (partThen, 90-app.js). The rules are in 45-placement.js. */
 /* ---------- saved result ---------- */
 // Paths that offer placement: graded ones (byLevel paths open by order).
 const placePaths=()=>Object.keys(PATHS).filter(p=>!PATHS[p].byLevel&&!PATHS[p].noPlace); // Discover (noPlace) has no placement quiz
@@ -3191,17 +3158,6 @@ function placeWorld(p){
   const r=S.place&&S.place[p];
   if(!r||r.g!==gradeOf())return -1;
   return PATHS[p].worlds.findIndex(w=>w.id===r.world);
-}
-// Save a finished quiz. Adds skips and the record; never removes or lowers anything.
-function placeApply(p,st){
-  if(!st||!st.done)return null;
-  const ws=PATHS[p].worlds;
-  S.skip=S.skip||{};
-  for(const wi of st.skip)S.skip[ws[wi].id]=1;
-  S.place=S.place||{};
-  S.place[p]={world:ws[st.at].id,date:today(),asked:st.asked,right:st.right,g:gradeOf()};
-  save();
-  return S.place[p];
 }
 
 /* ---------- screens ---------- */
@@ -3221,7 +3177,7 @@ function placeBanner(){
 }
 function placeBannerBind(){
   if(!$('#plcard'))return;
-  $$('#plcard [data-place]').forEach(b=>b.onclick=()=>{SFX.whoosh();placeIntro(b.dataset.place,'home')});
+  $$('#plcard [data-place]').forEach(b=>b.onclick=()=>{SFX.whoosh();partThen('sprint',()=>placeIntro(b.dataset.place,'home'))});
   $('#plno').onclick=()=>{PLACE_HIDE=true;SFX.click();const c=$('#plcard');if(c)c.remove()};
 }
 // Grown-ups row: start a quiz for either path and see the last result.
@@ -3237,90 +3193,8 @@ function placeGrownHTML(){if(PLAY.locked())return''; // sample fix: not in the P
 function placeGrownBind(){
   $$('.pl-grown [data-place]').forEach(b=>b.onclick=()=>{
     if(!placeOK())return fb('Find my level starts at K','warn');
-    SFX.whoosh();placeIntro(b.dataset.place,'grown');
+    SFX.whoosh();partThen('sprint',()=>placeIntro(b.dataset.place,'grown'));
   });
-}
-const placeBack=()=>home(); // RC-2: a child is handed the quiz: Back goes Home, never into Grown-ups (was: Grown-ups when started there)
-function placeIntro(p,from){
-  PL=null;
-  if(G)G.dead=true; // a finished or left round must not fire its next-question timer into this screen
-  const nm=esc(placeName(p));
-  view(`<div class="center pl-in s-${p}"><div class="pl-big">${ico(UI.SUBJ_ICON[p]||'map',64)}<i class="pl-tg">${ico('target',26)}</i></div><h1>Let's find your level!</h1>
-   <p class="sub">A few ${nm} questions. Some may be tricky, and that's OK. Just do your best!</p>
-   <p class="small">No stars to win or lose. You can stop any time.</p>
-   <div class="rowh">${UI.btn('Start',{kind:'primary',size:'lg',icon:'play',id:'plgo'})}${UI.btn('Not now',{id:'plback'})}</div></div>`);
-  if(S.voice)say(`Let's find your level! Some questions may be tricky. Just do your best!`);
-  $('#plback').onclick=()=>{SFX.click();placeBack(from)};
-  $('#plgo').onclick=()=>{
-    SFX.whoosh();
-    const seed=Math.floor(Math.random()*4294967296)>>>0;
-    placeStart(p,from,seed);
-  };
-}
-// Start the quiz on path p with a seed (smoke and shots pass a fixed one).
-function placeStart(p,from,seed){
-  const ws=PATHS[p].worlds;
-  PL={p,from:from||'home',ws,st:PLACE.begin(ws,gradeOf(),seed),its:null,qi:0,right:0,lock:false};
-  placeTestlet();
-}
-function placeTestlet(){
-  PL.its=PLACE.items(PL.ws,PL.st).map(it=>genQ(it.sk,it.lv,it.seed));
-  PL.qi=0;PL.right=0;
-  placeQ();
-}
-function placeQ(){if(NAV.held&&PL){PL.pend=true;return} // NAV-01: the next question waits while Go Home? is open
-  const me=PL,q=PL.its[PL.qi],K=KIND[q.kind];
-  PL.q=q;PL.lock=false;PL.typed='';PL.tries=0;PL.built=[];
-  const dots=PL.its.map((_,i)=>`<span class="pl-dot ${i<PL.qi?'on':i==PL.qi?'now':''}"></span>`).join('');
-  view(`<div class="top tbar round qtop pl-top s-${PL.p}">${NAV.house('quit')}
-   <div class="pl-dots" aria-label="Question ${PL.qi+1} of ${PL.its.length}">${dots}</div><div class="sp"></div>
-   <div class="pl-tag">${ico(UI.SUBJ_ICON[PL.p]||'map',24)}<span>Find my level</span></div></div>
-  <div class="play qs s-${PL.p}"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'}):''}</div></div>
-  <div class="inp">${K.render(q)}</div></div>`);
-  NAV.wire('quit',{hold:on=>{if(!on&&PL&&PL.pend){PL.pend=false;placeQ()}},leave:()=>{PL=null}}); // NAV-01: the corner house (nothing is saved until the end, as before)
-  if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
-  UI.hear(); // P6-01
-  $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
-  $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
-  $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
-  K.bind(q,PL,placeSubmit);esQFix(q);
-  fit();if(document.fonts)document.fonts.ready.then(fit);
-  if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>{if(PL===me&&me.q===q)say(q.say,null,q.lang=='es'?'es':null)},400);
-}
-// One try per question. Right or not, the child hears the same neutral "Got it!"; nothing is saved here.
-function placeSubmit(v,el){
-  if(!PL||PL.lock)return;
-  const me=PL,q=PL.q,K=KIND[q.kind];
-  PL.lock=true;
-  if(K.same?K.same(q,v):String(v)===String(q.ans))PL.right++;
-  if(el)el.classList.add('pl-pick');
-  SFX.pop(2);fb(pick(['Got it!','Thanks!','Okay!']),'pl-fb'); // brand blue, not the green of a right answer
-  const d=$$('.pl-dot')[PL.qi];if(d)d.className='pl-dot on';
-  setTimeout(()=>{
-    if(PL!==me)return; // quit or left meanwhile
-    PL.qi++;
-    if(PL.qi<PL.its.length)return placeQ();
-    PL.st=PLACE.step(PL.st,PL.right);
-    if(PL.st.done)placeDone();else placeTestlet();
-  },700);
-}
-function placeDone(){
-  const {p,st,from}=PL,ws=PL.ws;
-  PL=null;
-  placeApply(p,st);
-  const w=ws[st.at],sk=st.skip.map(i=>ws[i]);
-  const other=placePaths().find(x=>x!=p&&!(S.place&&S.place[x]));
-  view(`<div class="center pl-in"><div class="pl-done">${ico('trophy',64)}</div><h1>All done! Great work${S.name?', '+esc(S.name):''}!</h1>
-   <p class="sub">${st.all?`You know a lot! Your ${esc(placeName(p))} map opens at the last world:`:`Your ${esc(placeName(p))} map starts here:`}</p>
-   <div class="pl-res">${wBadge(p,st.at)}${esc(w.n)}</div>
-   ${sk.length?`<p class="small pl-skip">${ico('check','1.2em')} Skipped: ${sk.map(x=>esc(x.n)).join(', ')}. You can still play ${sk.length>1?"them":"it"} any time.</p>`:''}
-   <div class="pl-end">${NAV.end3({next:'plmap',home:'plhome',extra:other?UI.btn(placeName(other)+' next',{icon:UI.SUBJ_ICON[other]||'map',id:'plnext',attrs:`data-place="${other}"`}):''})}</div></div>`); // NAV-01
-  SFX.fanfare();
-  if(S.voice)say(`All done! Great work! Your map starts at ${w.n}.`);
-  $('#plmap').onclick=()=>{SFX.whoosh();pathMap(p,st.at)};
-  if($('#plnext'))$('#plnext').onclick=()=>{SFX.whoosh();placeIntro(other,from)};
-  $('#plhome').onclick=()=>{SFX.click();home()};
 }
 /* ---------- TAP-10 (BEST-APP roadmap 10, docs/drafts/TAP10.md): more stops answered on the model ----------
    Converters for K2GEN (49b-kinds2.js): a fact question q0 becomes a make question about the same fact, with the make kind's own
@@ -3681,7 +3555,7 @@ function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!es
    ${it.who?`<p class="spk-role">You are <b>${esc(it.who)}</b>! Say ${esc(it.who)}’s line.</p>`:''}
    ${it.cue?`<p class="spk-cue" lang="es"><b>${esc(it.cue[0])}:</b> ${esc(it.cue[1])}</p>`:''}
    ${it.pic?`<div class="spk-pic" aria-hidden="true">${it.pic}</div>`:''}
-   <div class="spk-word"><span class="spk-es" lang="es">${esc(it.es)}</span>${nov?'':UI.ibtn('speak','Hear it again',{kind:'subject',p:'es',size:'lg',id:'spkhear'})}</div>
+   <div class="spk-word"><span class="spk-es${it.es.length>30?' long':''}" lang="es">${esc(it.es)}</span>${nov?'':UI.ibtn('speak','Hear it again',{kind:'subject',p:'es',size:'lg',id:'spkhear'})}</div>
    ${it.en?`<p class="spk-en">${esc(it.en)}</p>`:''}
    <p class="spk-tip" id="spktip" role="status"></p>
    <div class="spk-act" id="spkact"></div>
@@ -3890,159 +3764,6 @@ function stopFlu() {
   document.removeEventListener('visibilitychange', FL.vis);
   FL = null;
 }
-const fluSecs = ms => (Math.round(ms / 100) / 10).toFixed(1);
-const fluBest = (key, lower) => {
-  const b = ((S.flu || {})[key] || {}).best;
-  return b == null ? 'not yet' : lower ? b + ' s' : '' + b;
-};
-
-// P4-18: drawn set badges (the sign of the facts, and 10 or 20 on a tag) instead of the set emoji
-const fluIco = id => /^add/.test(id) ? 'plus' : /^sub/.test(id) ? 'minus' : /^mf/.test(id) ? 'times' : /^df/.test(id) ? 'divide' : 'bolt';
-const fluTag = id => (/(10|20)$/.exec(id) || [])[1] || '';
-// Top bar of the sprint menus: back, a math badge with the bolt, the title
-const fluTop = (t, icon) => `<div class="top tbar gx-mtop s-math">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}` +
-  `<div class="ttl gx-ttl"><span class="gx-tb">${ico(icon, 24)}</span><span>${esc(t)}</span></div></div>`;
-
-function fluMenu() {
-  const sets = FLU.sets();
-  view(`${fluTop('Fact Sprint', 'bolt')}
-  <div class="scroll gx-list"><p class="gx-lead">Pick your facts. Beat your best!</p>
-  <div class="games">${sets.map(s => GFX.card({ cls: 'game', attrs: `data-s="${s.id}"`, p: 'math', icon: fluIco(s.id), tag: fluTag(s.id), title: s.t,
-    sub: `<span class="gx-ln">${ico('timer', 18)}<span>60 s best: <b>${fluBest(s.id, false)}</b></span></span>` +
-      `<span class="gx-ln">${ico('target', 18)}<span>20 facts best: <b>${fluBest(s.id + '-20', true)}</b></span></span>` })).join('')}</div></div>`);
-  NAV.bar('learn');
-  $('#back').onclick = () => NAV.back();
-  $$('[data-s]').forEach(b => b.onclick = () => fluModes(b.dataset.s));
-}
-
-function fluModes(set) {
-  const s = FLU.set(set);
-  view(`${fluTop(s.t, fluIco(set))}
-  <div class="scroll gx-list"><div class="games">
-   ${GFX.card({ cls: 'game', attrs: 'data-m="t60"', p: 'play', icon: 'timer', title: '60 seconds', sub: `How many can you get? Best: <b>${fluBest(set, false)}</b>` })}
-   ${GFX.card({ cls: 'game', attrs: 'data-m="n20"', p: 'es', icon: 'target', title: '20 facts', sub: `Beat your time! Best: <b>${fluBest(set + '-20', true)}</b>` })}</div>
-   <p class="gx-note">${ico('ticket', 24)}<span>A first sprint each day earns game time.</span></p></div>`);
-  NAV.bar('learn');
-  $('#back').onclick = fluMenu;
-  $$('[data-m]').forEach(b => b.onclick = () => fluPlay(set, b.dataset.m));
-}
-
-function fluPlay(set, mode) {
-  stopFlu();
-  const timed = mode != 'n20', key = FLU.key(set, mode);
-  view(`${GFX.speedTop('math', 'fbar', timed ? 1 : 0, UI.chip('bolt', timed ? 0 : '0 / ' + FLU.GOAL, { id: 'fsc', aria: 'Right answers' }) +
-    UI.chip('timer', timed ? '60 s' : '0.0 s', { id: 'ftm', aria: 'Time' }))}
-   <div class="play qs s-math" id="fplay"></div>`);
-  FL = {set, mode, key, timed, right: 0, typed: '', lock: true, clock: {ms: 0, last: Date.now()}, st: {set, last: '', redo: []}, f: null};
-  // NAV-01: the corner house; the clock does not count while Go Home? is open
-  NAV.wire('quit', {hold: on => {if (!FL) return; FLU.tick(FL.clock, Date.now(), document.hidden || !on); FL.held = on}, leave: stopFlu});
-  FL.vis = () => {if (FL) FLU.tick(FL.clock, Date.now(), document.hidden)};
-  document.addEventListener('visibilitychange', FL.vis);
-
-  const show = () => {
-    if (!FL) return;
-    const f = FL.f = FLU.next(FL.st);
-    FL.typed = '';
-    FL.lock = false;
-    $('#fplay').innerHTML = `<div class="qarea"><div class="prompt" id="prompt"><div class="eq">${f.a} ${f.op} ${f.b} = ${SLOT}</div></div></div>
-     <div class="inp">${GFX.pad()}</div>`;
-    fit();
-    $$('.k').forEach(b => b.onclick = () => {
-      if (!FL || FL.lock) return;
-      const k = b.dataset.k, want = String(FL.f.c);
-      if (k == 'del') FL.typed = FL.typed.slice(0, -1);
-      else if (FL.typed.length < want.length) {FL.typed += k; SFX.key(+k)}
-      $('#slot').textContent = FL.typed;
-      if (FL.typed.length == want.length) answer(FL.typed == want); // auto-submit when the digit count matches
-    });
-  };
-
-  const answer = ok => {
-    FL.lock = true;
-    const slot = $('#slot');
-    if (ok) {
-      FL.right++;
-      SFX.right(FL.right % 10);
-      slot.classList.add('ok');
-      if (timed) UI.setChip($('#fsc'), FL.right);
-      else {
-        UI.setChip($('#fsc'), FL.right + ' / ' + FLU.GOAL);
-        GFX.bar($('#fbar'), FL.right / FLU.GOAL);
-      }
-      if (!timed && FL.right >= FLU.GOAL) return finish();
-      FL.to = setTimeout(show, 250);
-    } else {
-      SFX.wrong();
-      FLU.miss(FL.st, FL.f);
-      slot.textContent = FL.f.c;
-      slot.className = 'slot rev'; // show the fact for 1 second, then it comes back a few facts later
-      FL.to = setTimeout(show, 1000);
-    }
-  };
-
-  const finish = () => {
-    FLU.tick(FL.clock, Date.now(), document.hidden);
-    const sec = timed ? FLU.SECS : Math.round(FL.clock.ms / 100) / 10, right = FL.right;
-    stopFlu();
-    S.flu = S.flu || {};
-    const r = FLU.record(S.flu, key, today(), sec, right, !timed);
-    actFlu(sec); // P5-05
-    const rec = r.rec && (!timed || right > 0); // no fireworks for a first 60 s run of zero
-    const earned = FLU.earn(S.flu, set, today(), rec, right, mode);
-    if (earned) ptEarn(earned);
-    const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
-    save();
-    rec ? (SFX.fanfare(), confetti(40)) : SFX.chime();
-    fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
-  };
-
-  // Clock counts only while the page is visible. It starts after a short "ready" beat.
-  FL.to = setTimeout(() => {
-    if (!FL) return;
-    fb('Ready… GO!', 'zap');
-    SFX.fanfare();
-    FL.clock.last = Date.now();
-    show();
-    FL.iv = setInterval(() => {
-      if (!FL) return;
-      const ms = FLU.tick(FL.clock, Date.now(), document.hidden || FL.held), left = FLU.SECS - ms / 1000;
-      if (timed) {
-        GFX.bar($('#fbar'), left / FLU.SECS);
-        $('#ftm b').textContent = Math.max(0, Math.ceil(left)) + ' s';
-        if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); SFX.tick()}
-        if (left <= 0) finish();
-      } else $('#ftm b').textContent = fluSecs(ms) + ' s';
-    }, 200);
-  }, 300);
-}
-
-// Sparkline of the last 7 days: higher is always better (faster times are flipped).
-function fluSpark(vals, lower) {
-  const W = 168, H = 48, pad = 6, got = vals.filter(v => v != null);
-  if (!got.length) return '';
-  const lo = Math.min(...got), hi = Math.max(...got), span = hi - lo || 1;
-  const pts = vals.map((v, i) => {
-    if (v == null) return null;
-    const t = (v - lo) / span, up = lower ? 1 - t : t;
-    return [pad + i * (W - 2 * pad) / 6, H - pad - (got.length > 1 ? up : .5) * (H - 2 * pad)];
-  });
-  const line = pts.filter(Boolean).map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
-  const dots = pts.map((p, i) => p ? `<circle class="${i == 6 ? 'gx-sn' : 'gx-sd'}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i == 6 ? 6 : 4}"/>` : '').join('');
-  return `<svg class="gx-spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Your last 7 days"><polyline class="gx-sl" points="${line}"/>${dots}</svg>`;
-}
-
-function fluEnd(r) {
-  const lower = !r.timed, e = (S.flu || {})[r.key], bestNow = e && e.best;
-  const title = r.timed ? `${r.right} in 60 seconds!` : `20 facts in ${r.sec} s!`;
-  const sp = fluSpark(FLU.week(e, lower), lower);
-  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: (sp ? `<div class="gx-week">${sp}</div>` : '') + (r.mis || ''),
-    earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
-    btns: NAV.end3({again: 'frepeat', home: 'fhome'}) }); // NAV-01
-  document.body.appendChild(o);
-  if (S.voice) say(r.rec ? 'New record!' : 'Good job!');
-  o.querySelector('#frepeat').onclick = () => {o.remove(); fluPlay(r.set, r.mode)};
-  o.querySelector('#fhome').onclick = () => {o.remove(); home()};
-}
 /* ---------- grown-ups ----------
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
@@ -4210,7 +3931,7 @@ function grown(){let armed=false;
   BAK.bind();
   PRF.bind();
   if(PLAY.on)PLAY.cardBind(); // PLAY-01: Unlock Whistlestop: Unlock or restore asks the grown-up question first (89-play.js)
-  $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
+  $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save();esRefit()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   if($('#petshow'))$('#petshow').onchange=e=>{if(e.target.checked)delete S.petOff;else S.petOff=true;save()}; // OLDER-14: Show my pet (grades 4 to 6, the look approved); only the flag changes
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
@@ -5216,4 +4937,4 @@ Object.assign(PLAY, {
 // acknowledgement not confirmed yet)
 if (PLAY.on) setTimeout(() => { PLAY.verify().catch(() => {}); }, 2000);
 
-var GEN_VER='v200'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v201'; // last line: the whole file ran (checked by dataReady() before the app starts)

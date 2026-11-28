@@ -690,6 +690,12 @@ table{width:100%;border-collapse:collapse;font-size:var(--fs-2)}td,th{padding:6p
 .pkpair{display:flex;gap:var(--s-4);justify-content:center;max-width:100%}
 .pkplate{display:flex;align-items:center;justify-content:center;min-width:var(--tap-pk);min-height:calc(var(--tap-pk)*2);padding:var(--s-2);
   border:4px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer}
+.pkplate[aria-label=plate]{border-radius:50%;padding:var(--s-3) var(--s-4);background:var(--ill-cream-1);border-color:var(--ill-cream-3);box-shadow:inset 0 0 0 8px var(--ill-cream)}
+.pkplate[aria-label=bowl]{border-radius:12px 12px 50% 50%/12px 12px 42% 42%;padding-bottom:var(--s-4);background:var(--ill-blue-1);border-color:var(--ill-blue-2)}
+.pkplate[aria-label=basket]{border-radius:10px 10px 40% 40%/10px 10px 25% 25%;border-color:var(--ill-brown-2);
+  background:repeating-linear-gradient(45deg,transparent 0 8px,var(--ill-tan-2) 8px 10px),repeating-linear-gradient(-45deg,var(--ill-tan-1) 0 8px,var(--ill-tan-2) 8px 10px)}
+.pkplate[aria-label=pond]{border-radius:50%;padding:var(--s-3) var(--s-4);background:var(--ill-aqua-1);border-color:var(--ill-green)}
+.pkplate[aria-label=box]{border-radius:6px;background:var(--ill-tan-1);border-color:var(--ill-tan-3);box-shadow:inset 0 10px 0 var(--ill-tan)}
 .pkplate.right{background:var(--good-tint);border-color:var(--good);animation:bump .4s}
 .pkplate.wrong{background:var(--try-tint);border-color:var(--try);opacity:.6}
 .pkpl{display:grid;grid-template-columns:repeat(3,auto);font-size:.8em;gap:.05em}
@@ -756,10 +762,10 @@ html.notext .pktxt{display:none}
 .sggrid{display:grid;grid-template-columns:auto auto;justify-content:center;gap:var(--s-3);align-items:center;justify-items:center}
 .sggrid.sgflip{direction:rtl}
 .sgrow{flex-direction:row}
-/* in front of / behind: the one in front overlaps the lower right of the thing, the one behind peeks out above and left */
+/* in front of / behind: the one behind shows a third or more and all of it takes taps (RELA-PICS) */
 .sgdepth{position:relative;display:block;width:min(100%,9em);height:clamp(200px,32vh,280px);margin-bottom:var(--s-3)}
-.sgdepth .sgref{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:2;font-size:2.4em}
-.sgdepth .sgbk{position:absolute;left:36%;top:0;z-index:1;font-size:.9em}
+.sgdepth .sgref{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:2;font-size:2.4em;pointer-events:none}
+.sgdepth .sgbk{position:absolute;left:50%;top:-4%;z-index:1;font-size:.9em}
 .sgdepth .sgfk{position:absolute;left:30%;bottom:0;z-index:3;font-size:.9em}
 .sgdepth .sgt{border-color:transparent;background:none}
 .sgdepth .sgt.right{background:var(--good-tint);border-color:var(--good)}
@@ -859,6 +865,8 @@ html.notext .pktxt{display:none}
 .viz .ve{fill:none;stroke:var(--ink-2);stroke-width:3}
 /* quantity: counters (v1), second set (v2), shaded parts (vs), faded (vx) */
 .viz .v1{fill:var(--math);stroke:var(--math-shade);stroke-width:2}
+.viz .vpd{fill:var(--surface-2);stroke:var(--math);stroke-width:1.5}
+.viz .vph{fill:var(--surface)}
 .viz .v2{fill:var(--play);stroke:var(--play-shade);stroke-width:2}
 .viz .vp{fill:var(--surface);stroke:var(--ink-2);stroke-width:2}
 .viz .vp.vs{fill:var(--math)}
@@ -882,8 +890,8 @@ html.notext .pktxt{display:none}
 .viz .vt1{fill:none;stroke:var(--ink-3);stroke-width:3;stroke-linecap:butt}
 .viz .vt5{fill:none;stroke:var(--ink-2);stroke-width:4.5;stroke-linecap:butt}
 .viz .vcn{font-size:13px}
-.viz .vhh{fill:none;stroke:var(--read);stroke-width:7}
-.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
+.viz .vhh{fill:none;stroke:var(--read);stroke-width:9}
+.viz .vch{stroke:var(--surface);stroke-width:2.5;paint-order:stroke}.viz .vmh{fill:none;stroke:var(--math);stroke-width:4.5}
 .viz .vpin{fill:var(--ink)}
 /* tap targets and their states (set by the tap kind) */
 .viz .vt{cursor:pointer}
@@ -935,8 +943,8 @@ html.notext .pktxt{display:none}
 /* coins (penny copper, the rest silver) and bills */
 .viz .vcu{fill:var(--ill-tan);stroke:var(--ill-tan-3);stroke-width:3}
 .viz .vsv{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:3}
-.viz .vci{fill:none;stroke:var(--ill-grey-2);stroke-width:1.5;stroke-dasharray:2 3}
-.viz .vcc{font-size:13px}
+.viz .vci{fill:none;stroke:var(--ill-grey-2);stroke-width:1.5}
+.viz .vrd{stroke:var(--ill-grey-3);stroke-width:3.4;stroke-dasharray:1.4 1.8;stroke-linecap:butt}
 .viz .vcp{fill:var(--ill-brown-3)}
 .viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
 .viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
@@ -957,6 +965,7 @@ html.notext .pktxt{display:none}
 .viz .vcs.vcp{fill:var(--ill-tan-2)}
 .viz .vci.vcp{fill:none;stroke:var(--ill-tan-3)}
 .viz .vbs,.viz .vsp,.viz .vld,.viz .vgs,.viz .vgc,.viz .vfs,.viz .vcs{pointer-events:none}
+.viz-ratio g.v2>circle{fill:var(--ill-orange);stroke:var(--ill-orange-2)}
 /* P1-08 mastery: the Challenge tag on a question from the next harder stop (51-mastery.js mastShow). Tokens only. */
 .mtag{display:inline-flex;align-items:center;gap:var(--s-1);align-self:center;background:var(--star-tint);color:var(--ink);font-weight:700;
   font-size:var(--fs-2);border-radius:var(--r-pill);padding:var(--s-1) var(--s-3)}
@@ -1161,7 +1170,7 @@ html.notext .pktxt{display:none}
 
 /* passage questions (P2-25): the choices sit under the passage panel, so they are compact and the question line stays on screen */
 .choices.bpass{gap:var(--s-2)}
-.choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
+.choices.wide.bpass .choice.ch{font-size:clamp(20px,3.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
 .choices.bpass:not(.wide) .choice.ch{font-size:clamp(20px,3.2vh,28px);padding:8px var(--s-3);min-height:var(--tap);line-height:1.2} /* short answers (2 x 2 tiles) are compact too (P2-26) */
 @media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}
 /* long passages (P2-29, over 700 characters: grade 4 and up): on a tall phone the panel takes less so the question line and four choices stay on screen */
@@ -1364,6 +1373,7 @@ html.notext .pktxt{display:none}
 .clock{width:calc(clamp(170px,40vmin,300px)*var(--k));height:auto;display:block;margin:0 auto}
 .coins{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;max-width:520px;margin:0 auto 6px}
 .cn{width:calc(70px*var(--s)*var(--k));height:calc(70px*var(--s)*var(--k));border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffa,var(--c) 62%);border:3px solid #0003;display:flex;align-items:center;justify-content:center;font-size:calc(20px*var(--s)*var(--k));font-weight:700;color:#2d2a26;box-shadow:0 3px 0 #0002}
+.cn.cnr{border:4px dotted #0005}
 .groups{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:640px;margin:0 auto 6px}
 .grp{border:3px dashed #a8a29e;border-radius:22px;padding:6px 8px;font-size:calc(30px*var(--k));line-height:1.2;background:#fff8;display:inline-grid;grid-template-columns:repeat(var(--c),1fr)}
 .choices.syms{grid-template-columns:repeat(3,1fr)}.choices.syms .ch{font-size:clamp(36px,7vh,56px)}
@@ -1785,6 +1795,25 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 @media (max-height:520px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 72px)}}
 /* Shape Garden crayon bars: a full 48 px tap target inside the narrower card */
 .qs .sgbars .sgt{min-height:var(--tap)}
+/* RELA-UI: picture answers are tall tiles, the art (1em) about 100-120 px, sized by the row's width (container units); the caption has
+   its own row; a listen-only card (speaker and one line) stays small so the tiles get the room; K-2 Discover pictures are bigger */
+.qs:not(.ls-play) .choices.pics:not(.dlg){container-type:inline-size;max-width:680px}
+.qs:not(.ls-play) .choices.pics:not(.dlg) .choice.ch{font-size:clamp(44px,min(24cqi,20vh),120px);padding:var(--s-3) var(--s-2);line-height:1.2}
+.qs .choices.pics .ch .pks{width:.9em}
+.qs .choices.pics .ch .pcap{line-height:1.25;gap:2px}
+.qs .choices.pics .ch .pcap small{font-size:var(--fs-3);line-height:1.2}
+.qs .choices.pics .gcd{flex-direction:row;font-size:.55em;gap:.1em}
+.qs .choices.pics .gcd i{font-size:1em}
+.qy .bem{font-size:clamp(72px,min(24vh,32vw),140px)}
+.qs .choices.galr .ch .viz{width:100%}
+.mt.mtl{max-width:420px}
+.mt.mtl .choice.mb{min-height:clamp(64px,min(13vh,18vw),96px);font-size:clamp(36px,min(8vh,11vw),56px)}
+@media (orientation:portrait){.qs:has(.prompt>.hear:first-child+.sub:last-child) .qarea{flex:none}
+  .qs:has(.prompt>.hear:first-child+.sub:last-child) .inp{flex:1;display:flex;flex-direction:column;justify-content:center}}
+@media (orientation:landscape){.qs:has(.prompt>.hear:first-child+.sub:last-child) .inp{width:60%;max-width:680px}}
+.qs .bctx-b{padding-bottom:0}
+.qs .bctx-b::after{content:'';position:sticky;bottom:0;display:block;height:var(--s-8);background:linear-gradient(transparent,var(--surface-2) 80%);pointer-events:none}
+body:has(.qtop) .toast.info:not(.on){transform:translate(-50%,-8px)}
 /* Rewards (P4-11; DESIGN_SYSTEM.md 6.3, 8.1, 9 row 5): round complete, treasure chest, stars, prizes, bosses, test out, pet growth.
    Drawings: src/js/18-reward-art.js (RW.*). Tokens only. Animate only transform and opacity; keyframes are named rw-*.
    Calm mode and reduced motion cut every animation to 0.01 ms (20-base.css) and hide the drawn confetti (.rw-burst). */
@@ -1995,6 +2024,7 @@ html.calm .rw-burst{display:none}
 .spk-pic svg{width:1.1em;height:1.1em}
 .spk-word{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-3)}
 .spk-es{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,7vmin,52px);line-height:1.2;color:var(--es-shade)}
+.spk-es.long{font-size:clamp(24px,5vmin,34px)}
 .spk-en{margin:-4px 0 0;font-size:var(--fs-3);color:var(--ink-3)}
 .spk-tip{margin:0;min-height:1.4em;font-size:var(--fs-3);font-weight:700;color:var(--ink)}
 .spk-act{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%}
@@ -2028,7 +2058,9 @@ html.calm .rw-burst{display:none}
 @media (orientation:landscape) and (max-height:640px){
   .spk-card{padding:var(--s-3) var(--s-4);gap:var(--s-2)}
   .spk-pic{font-size:64px}
-  .spk-mic,.spk-lis{width:80px;height:80px}}
+  .spk-mic,.spk-lis{width:80px;height:80px}
+  .spk-card:has(.long) .spk-pic{font-size:40px}
+  .spk-card:has(.long) :is(.spk-mic,.spk-lis){width:72px;height:72px}}
 /* S-SPK2: the Grown-ups listening corner (50-say-corner.js) and the star message on Home. Tokens only. */
 .lc-list{display:flex;flex-direction:column;gap:var(--s-2)}
 .lc-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
@@ -2064,9 +2096,9 @@ html.calm .rw-burst{display:none}
 .hm-acts.n1{grid-template-columns:minmax(0,1fr)}
 /* P2-24 sentences: story order (sent 5) puts whole sentences on the order tiles. A tile that holds a .sl span is a full-width row
    that wraps its words; the three slots above it become full-width rows too, so nothing runs off a 380 px screen. */
-.oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2)}
+.oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2);width:100%}
 .oslots:has(+ .otiles .sl) .socket.os{width:100%;min-height:var(--tap);padding:var(--s-1) var(--s-3)}
-.otiles:has(.sl){flex-direction:column;align-items:stretch}
+.otiles:has(.sl){flex-direction:column;align-items:stretch;width:100%}
 .piece.ot:has(.sl),.socket.os:has(.sl){display:flex;align-items:center;justify-content:flex-start;text-align:left;white-space:normal;height:auto;min-height:var(--tap)}
 .sl{display:block;font-size:var(--fs-3);line-height:1.25;padding:var(--s-1) 0}
 /* Pet Shop and sticker book (P4-07; DESIGN_SYSTEM 6.4). Tokens only; motion on transform / opacity. Old .tabs / .shopgrid / .item
@@ -3085,7 +3117,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v200'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v200 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v201'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v201 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=11; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3314,7 +3346,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v200'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v201'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -4853,6 +4885,8 @@ const ICONS={
     '<circle fill="var(--ic3,currentColor)" opacity=".4" cx="12" cy="12" r="9.2"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2.2" d="M12 2.8a9.2 9.2 0 1 0 0 18.4a9.2 9.2 0 1 0 0-18.4ZM12 2.8' +
     'c-2.8 2.6-4 5.6-4 9.2s1.2 6.6 4 9.2M12 2.8c2.8 2.6 4 5.6 4 9.2s-1.2 6.6-4 9.2M3 12h18"/>',
+  telescope: '<path d="M3.2 12.6L17.4 5L19.6 9.2L5.4 16.8Z"/><path fill="var(--ic3,currentColor)" opacity=".4" d="M18.6 3.6L20.6 2.6L23 7.2L21 8.2Z"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.2" d="M12 13L8 21.5M12 13L16 21.5M12 13V21.5"/>',
   'moon':
     '<path fill="var(--ic3,currentColor)" opacity=".4" d="M18.2 2C19 4.8 19 4.8 21.8 5.6C19 6.4 19 6.4 18.2 9.2' +
     'C17.4 6.4 17.4 6.4 14.6 5.6C17.4 4.8 17.4 4.8 18.2 2Z"/>' +
@@ -7364,7 +7398,7 @@ function learnHub() {
   $('#back').onclick = () => home();
   $$('.lh-path').forEach(b => b.onclick = () => { SFX.whoosh(); NAV.mapFrom = 'learn'; pathMap(b.dataset.p); });
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
-  if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
+  if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); partThen('sprint', () => fluMenu()); }; // RELA-SIZE: the part sprint
   if ($('#lhrace')) $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
   if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
@@ -7431,21 +7465,31 @@ const PATHS={
  disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
   {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff'],['geo_world',1,'Maps & Land'],['civ',1,'Our Community']]},
   {id:'d_lab',g:3,n:'Science Lab',e:'💡',c:'#e0f2fe',nodes:[['sci_life',2,'Life Cycles & Food'],['sci_earth',2,'Water, Rocks & Moon'],['sci_phys',2,'Forces & Matter'],['geo_us',1,'States & Capitals'],['geo_world',2,'Grids & Climate']]},
-  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
+  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',ico:'telescope',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,
    never the world's index, so worlds can be inserted anywhere (decision A5). A path with byLevel is opened by order only. */
 const NODES={},WR={}; // WR[p][wi] = [first, last] stop index of world wi (the boss is last)
+/* RELA-YOUNG: a cut Spanish path (a cut world has no boss) for Pre-K and K (a chosen grade), not with Unlock every stop or a star or Test out past it.
+   PATHS.es.full keeps the whole. After migrate() only (ES_FIT); esRefit() on a grade or unlock change. */
+const ES_YOUNG=new Set('e_plaza e_fiesta e_repaso es_house1 es_clothes1 es_feel1 es_toy1 es_nature1'.split(' '));let ES_FIT=0;
+const esCut=ws=>ws.map(w=>ES_YOUNG.has(w.id)?w:{...w,cut:1,nodes:w.nodes.filter(n=>ES_YOUNG.has(n[0]+n[1]))}).filter(w=>w.nodes.length);
+function esYoung(ws){if(!ES_FIT||!S||!(S.grade===-1||S.grade===0)||S.unlockAll)return null;
+  const c=esCut(ws),ids=a=>a.flatMap(w=>[w.cut?'':'boss_'+w.id,...w.nodes.map(n=>n[0]+n[1])]),ok=new Set(ids(c)),m=S.maps.es||{},k=S.skip||{};
+  return ids(ws).every(x=>ok.has(x)||!(m[x]>0))&&ws.every(w=>!k[w.id]||ok.has('boss_'+w.id))?c:null}
+function esRefit(){const w=PATHS.es.worlds[MAPW.es],g=G&&G.path=='es'&&NODES.es[G.node];buildNodes('es');
+  if(w)MAPW.es=Math.max(0,PATHS.es.worlds.findIndex(x=>x.id==w.id));if(g)G.node=NODES.es.findIndex(n=>nid(n)==nid(g))}
 /* (Re)builds NODES[p] and WR[p] from PATHS[p]. Runs once per path at load; tests call it after adding fake worlds. */
 function buildNodes(p){
+  if(p=='es'){const P=PATHS.es;if(P.worlds===P.cut)P.worlds=P.full;P.full=P.worlds;P.cut=esYoung(P.full);if(P.cut)P.worlds=P.cut}
   const pi=Object.keys(PATHS).indexOf(p);
   NODES[p]=[];WR[p]=[];
   PATHS[p].worlds.forEach((w,wi)=>{
     const a=NODES[p].length;
     w.nodes.forEach(([sk,lv,t])=>NODES[p].push({sk,lv,t,wi,wid:w.id,p}));
     const B=BOSSES[wi%BOSSES.length];
-    NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,wid:w.id,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]});
+    if(!w.cut)NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,wid:w.id,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]});
     WR[p].push([a,NODES[p].length-1]);
   });
 }
@@ -7472,7 +7516,7 @@ const worldDone=(p,wi)=>{const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(!passed(p,
 const GRADES=[-1,0,1,2,3,4,5,6];
 const gradeLabel=g=>g<0?'Pre-K':g==0?'K':['1st','2nd','3rd','4th','5th','6th'][g-1]||'';
 const gradeOf=()=>GRADES.includes(S.grade)?S.grade:0;
-function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();return true}
+function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();esRefit();return true}
 /* Spoken names for the grade buttons (say() reads them when tapped). */
 const gradeSpoken=g=>g<0?'Pre-K':g==0?'Kindergarten':['First','Second','Third','Fourth','Fifth','Sixth'][g-1]+' grade';
 /* Round rules for a grade (ROADMAP 3.1). n: questions in a normal stop round; choices: most answer buttons a generator should
@@ -7553,6 +7597,7 @@ function worldStep(p,wi){
 }
 migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
+ES_FIT=1;buildNodes('es'); // RELA-YOUNG
 const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪀',45],['🏆',80]],
@@ -8424,7 +8469,7 @@ function home(first){
   <div class="scroll hm" id="hs">${hmSaveWarn()}${hmGift()}<div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v200)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Whistlestop ${RELEASE} (build v201)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');if(pet)pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8434,7 +8479,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();askBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;if($('#shop'))$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};if($('#care'))$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;if($('#shop'))$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};if($('#race'))$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();partThen('sprint',()=>fluMenu())};if($('#care'))$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   NAV.gateBind(); // NAV-01: Grown-ups: hold 3 seconds, or a tap asks a times-table question
@@ -8450,7 +8495,7 @@ let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this ses
 function wBadge(p,wi){const ws=PATHS[p].worlds,w=ws[wi],seen=new Set();
   ws.slice(0,wi).forEach(x=>x.nodes.forEach(n=>seen.add(n[0])));
   const sk=(w.nodes.find(n=>!seen.has(n[0]))||w.nodes[0]||['star'])[0];
-  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(icoSk(sk),20)}</span>`}
+  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(w.ico||icoSk(sk),20)}</span>`}
 function nodeFace(n,lk){if(lk)return ico('lock',32);
   if(n.sk=='boss')return RW.boss(n.boss[1],'idle','nb-art')||`<span class="nb-e">${n.boss[0]}</span>`;
   return ico(icoSk(n.sk),38)}
@@ -8529,10 +8574,10 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
 function teachWarm(p='math'){const up=gradeOf()>2,rd=p=='read'||gradeOf()<0,sd=p=='es'||p=='disc';if(sd&&!TEACH.off&&!partReady('teaches'))return partsLoad(['teach','teach12','teachrd','teaches']).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()});const g6=gradeOf()>4;if(sd||TEACH.off||p=='read'&&up||partReady(up?(g6?'teach6':'teach35'):rd?'teachrd':'teach12'))return;(up?(g6?partsLoad(['teach','teach12','teach35','teach6']):partsLoad(['teach','teach12','teach35'])):rd?partsLoad(['teach','teach12','teachrd']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons too (teach35); TEACH-4: the reading map (Pre-K to 2nd), and the math map of a Pre-K child, load the reading and Pre-K lessons (teachrd); TEACH-5S: the Spanish and Discover maps, their lessons (teaches); TEACH-6M: 5th grade up, the grade 6 lessons too (teach6)
 function open(p,i){if(d15Want(p))return d15Open(p,i);if(d46Want(p))return d46Open(p,i);const n=NODES[p][i];if(lsGate(p,i))return lsOpen(p,i);if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
-function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
+function learn(p,i){const n=NODES[p][i],un=ES_UNITS.find(u=>u.id==n.sk.slice(3)),items=SPN[n.sk.slice(3)].slice(0,un&&un.l1||1e3),rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded; RELA-YOUNG: l1
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">${rec?'Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!':'Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!'}</p>
-  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it)).replace(/ \/ /g,' <br>')}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   if(esVoice()=='no'&&!rec)esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
   // ES-AUDIO: with every card recorded, one tap says the English (the tablet's voice) and then the Spanish (the recording), back
@@ -9580,7 +9625,7 @@ const KIND={
     render:q=>{
       // AUD-DISC: q.speak (a read-aloud bank item): every word says itself when tapped (k2SayChip: Pre-K to 1st grade)
       const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}"${q.speak&&c.say?` data-say="${esc(c.say)}"`:''}>${c.h?c.l:esc(c.l)}</button>`;
-      return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
+      return `<div class="mt ${q.cls||''}"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
     bind(q,st,submit){
@@ -9967,7 +10012,7 @@ function hintsWarm(){
 }
 var ASK_LM=null; // ASK-01: the first wrong try of the last Practice question missed: {q, v, k (the child's save key)}
 const newG=o=>(bankRound(),hintsWarm(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null,t0:Date.now()},o)); // OLDER-14: t0, the round's start (the score card's time)
-function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
+function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:p=='disc'&&S.grade===-1?5:gradeCfg().n}); // RELA-YOUNG
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
   if(p=='es')spkProbe(); // S-SPK: is there a microphone (asked once per session)
@@ -10110,11 +10155,12 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
     :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
       +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
       +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
-  const spk=!q.say?'':q.pk?UI.ibtn('speak','Hear it again',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
-  const help=q.pk?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
+  const gr=gradeOf(),pkb=q.pk||gr<1; // RELA-UI: the big round buttons for every Pre-K and K question
+  const spk=!q.say?'':pkb?UI.ibtn('speak',q.pk?'Hear it again':'Hear it',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
+  const help=pkb?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
   view(`<div class="top tbar round qtop s-${ar}">${NAV.house('quit')}${track}
    ${UI.chip('flame',G.streak,{id:'stk',off:G.streak<2,aria:'In a row'})}${UI.chip('star',G.score,{id:'starc',aria:'Stars'})}</div>
-  <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="play qs s-${ar}${gr<3?' qy':''}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
   UI.hear(); // P6-01: named speaker buttons in the prompt
@@ -10923,7 +10969,7 @@ const MIS = {
     SFX.whoosh();
     if (x.k == 'sprint') {
       const ss = FLU.sets();
-      return fluPlay(ss[ss.length - 1].id, 't60');
+      return partThen('sprint', () => fluPlay(ss[ss.length - 1].id, 't60')); // RELA-SIZE: the sprint's screens are the part sprint
     }
     if (x.k == 'teaser') {
       const d = BT.dailyInfo();
@@ -11709,7 +11755,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v200'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v201'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12340,17 +12386,18 @@ function appFiles() {
     ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
     ['hints', typeof HINTS_VER === 'undefined' ? null : HINTS_VER],
     ['gate', typeof GATE_VER === 'undefined' ? null : GATE_VER],
+    ['sprint', typeof SPRINT_VER === 'undefined' ? null : SPRINT_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v200');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v201');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v200')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v200)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v201')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v201)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss"><div class="wl-top">${UI.logo('', true, false)}</div>${UI.empty('download', 'Whistlestop needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12367,20 +12414,20 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate']; // RC-1: gate, the Grown-ups PIN and the picture passwords; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate', 'sprint']; // RELA-SIZE: sprint, the Fact Sprint and Find my level screens (partThen); RC-1: gate, the Grown-ups PIN and the picture passwords; // TEACH-6M: teach6, the grade 6 math lessons; v182: hints, the Practice mistake hints (hintsWarm, 50-round.js); TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it; TEACH-3: teach35, the grade 3-5 lessons, with both for 3rd grade up; PET-AGE2: petage (petAgeWarm, 17-pets-svg.js); TEACH-4: teachrd, the reading and Pre-K lessons (the reading map, and the math map of a Pre-K child)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v200';
+  return !!f && f[1] === 'v201';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v200') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v201') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v200.js';
+    s.src = stem + '.v201.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12404,10 +12451,17 @@ function partsThen(stems, go, o = {}) {
     if (bad) dataMissing([bad]); else go();
   }), 0));
 }
+// RELA-SIZE: a small lazy part a tap needs (sprint): go() at once when it is in; else no waiting screen, and go() runs once it has
+// loaded only if the tapped screen is still showing. One that does not load shows the Try again screen, as partsThen.
+function partThen(stem, go) {
+  if (partReady(stem)) return go();
+  const at = $('#app').firstElementChild;
+  partLoad(stem).then(ok => { if (at && !at.isConnected) return; if (ok) go(); else dataMissing([stem]); });
+}
 </script>
-<script src="gen.v200.js"></script>
-<script src="gen2.v200.js"></script>
-<script src="data.v200.js"></script>
+<script src="gen.v201.js"></script>
+<script src="gen2.v201.js"></script>
+<script src="data.v201.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

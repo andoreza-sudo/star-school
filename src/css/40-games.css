@@ -15,6 +15,7 @@
 .clock{width:calc(clamp(170px,40vmin,300px)*var(--k));height:auto;display:block;margin:0 auto}
 .coins{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;max-width:520px;margin:0 auto 6px}
 .cn{width:calc(70px*var(--s)*var(--k));height:calc(70px*var(--s)*var(--k));border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffa,var(--c) 62%);border:3px solid #0003;display:flex;align-items:center;justify-content:center;font-size:calc(20px*var(--s)*var(--k));font-weight:700;color:#2d2a26;box-shadow:0 3px 0 #0002}
+.cn.cnr{border:4px dotted #0005}
 .groups{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:640px;margin:0 auto 6px}
 .grp{border:3px dashed #a8a29e;border-radius:22px;padding:6px 8px;font-size:calc(30px*var(--k));line-height:1.2;background:#fff8;display:inline-grid;grid-template-columns:repeat(var(--c),1fr)}
 .choices.syms{grid-template-columns:repeat(3,1fr)}.choices.syms .ch{font-size:clamp(36px,7vh,56px)}

@@ -4,7 +4,8 @@
    ST7.stages  the phonics stages in reading-map order: id (tools/decode.js STAGES) and the stop the stage follows (its Stories stop
                on the map stands right after it)
    ST7.list    the stories: id, st (stage), t (title), pic (a drawing of ART: 16-art-a.js, src/data/d-art-*.js), s (3 to 6 short
-               sentences), q (1 or 2 picture questions: [question, the right picture, [two other pictures]])
+               sentences), q (1 or 2 picture questions: [question, the right picture, [two other pictures]]), col (RELA-PICS: a drawing shown
+               in the colour the words name, as hue swaps for st7Hue in 52x-story7.js: "Gus has a big red bus" draws the bus red)
    Every word of every title and sentence uses only the letter-sound patterns taught up to its stage, or a sight word of a Sight Words
    stop before it on the map: tools/decode.js checks this, and tools/test.js STORIES-7 runs it on every story.
    None of the themes the parent ruled out (CONTENT-01), no brands, no real characters. The answer of a question is a word of its story; the other two
@@ -23,13 +24,13 @@ const ST7 = {
     // Letter Meadow (K), after Picture Words: short vowels, one consonant each side
     {id: 'cvc-1', st: 'cvc', t: 'Pig in the Mud', pic: 'pig', s: ['Pig is in the mud.', 'Pig can sit in the mud.', 'Pig can dig in the mud.', 'A cat ran up.', '“Not me!” said the cat.'],
       q: [['Who is in the mud?', 'pig', ['dog', 'hen']], ['Who ran up?', 'cat', ['duck', 'cow']]]},
-    {id: 'cvc-2', st: 'cvc', t: 'The Big Red Bus', pic: 'bus', s: ['Gus has a big red bus.', 'A cat gets on.', 'A dog gets on.', 'A big pig gets on.', 'The bus can not go!'],
+    {id: 'cvc-2', st: 'cvc', t: 'The Big Red Bus', pic: 'bus', col: {bus: 'y-r r-y'}, s: ['Gus has a big red bus.', 'A cat gets on.', 'A dog gets on.', 'A big pig gets on.', 'The bus can not go!'],
       q: [['What does Gus have?', 'bus', ['car', 'truck']], ['Who gets on last?', 'pig', ['cow', 'duck']]]},
     {id: 'cvc-3', st: 'cvc', t: 'Hen and the Egg', pic: 'hen', s: ['Hen has an egg.', 'Hen sits and sits.', 'Tap, tap, tap!', 'Up pops a little hen.', 'Hen hugs the little hen.'],
       q: [['What does Hen sit on?', 'egg', ['ball', 'hat']]]},
-    {id: 'cvc-4', st: 'cvc', t: 'Max the Fox', pic: 'fox', s: ['Max is a fox.', 'Max has a big red hat.', 'Max sets the hat on a cat.', 'Max sets the hat on a pig.', 'It is a hat for a fox!'],
+    {id: 'cvc-4', st: 'cvc', t: 'Max the Fox', pic: 'fox', col: {hat: 't-r r-t'}, s: ['Max is a fox.', 'Max has a big red hat.', 'Max sets the hat on a cat.', 'Max sets the hat on a pig.', 'It is a hat for a fox!'],
       q: [['Who is Max?', 'fox', ['dog', 'cow']], ['What does Max have?', 'hat', ['cup', 'sock']]]},
-    {id: 'cvc-5', st: 'cvc', t: 'The Bug and the Rug', pic: 'bug', s: ['A red bug sat on a rug.', 'A big dog sat on the rug.', 'Run, bug, run!', 'The bug hid in a cup.', 'The dog can not see it.'],
+    {id: 'cvc-5', st: 'cvc', t: 'The Bug and the Rug', pic: 'bug', col: {bug: 'g-r'}, s: ['A red bug sat on a rug.', 'A big dog sat on the rug.', 'Run, bug, run!', 'The bug hid in a cup.', 'The dog can not see it.'],
       q: [['Where did the bug hide?', 'cup', ['box', 'hat']], ['Who sat on the rug too?', 'dog', ['cat', 'pig']]]},
     {id: 'cvc-6', st: 'cvc', t: 'Fun in the Sun', pic: 'sun', s: ['The sun is up.', 'Kim and Dad sit in the sun.', 'Dad has a hat on.', 'Kim has a hat on.', 'The dog has a hat on!', 'Kim, Dad and the dog nap.'],
       q: [['What is up in the sky?', 'sun', ['moon', 'star']], ['Who has a hat on too?', 'dog', ['cat', 'hen']]]},
@@ -51,7 +52,7 @@ const ST7 = {
       q: [['What does Seth have?', 'fish', ['bird', 'cat']], ['What is the fish in at the start?', 'dish', ['cup', 'box']]]},
     {id: 'digraph-2', st: 'digraph', t: 'Chip the Chick', pic: 'chick', s: ['Chip is a little chick.', 'Chip pecks at a bug.', 'Chip pecks at a nut.', 'Chip pecks at Dad’s sock!', '“Stop that, Chip!” said Dad.'],
       q: [['Who is Chip?', 'chick', ['duck', 'owl']], ['What does Chip peck on Dad?', 'sock', ['shoes', 'hat']]]},
-    {id: 'digraph-3', st: 'digraph', t: 'Josh and the Ship', pic: 'ship', s: ['Josh has a red ship.', 'The ship is in the tub.', 'Josh adds a shell.', 'The shell sits on the ship.', 'Then the ship tips!', 'Splash!'],
+    {id: 'digraph-3', st: 'digraph', t: 'Josh and the Ship', pic: 'ship', col: {ship: 'b-r r-b'}, s: ['Josh has a red ship.', 'The ship is in the tub.', 'Josh adds a shell.', 'The shell sits on the ship.', 'Then the ship tips!', 'Splash!'],
       q: [['What sits on the ship?', 'shell', ['fish', 'ball']], ['Where is the ship?', 'tub', ['bed', 'box']]]},
     {id: 'digraph-4', st: 'digraph', t: 'Thump in the Shed', pic: 'duck', s: ['Thump! Thud!', 'What is in the shed?', 'Beth and Chad check.', 'It is not a moth.', 'It is a duck with a drum!'],
       q: [['What is in the shed?', 'duck', ['cat', 'horse']], ['What does the duck have?', 'drum', ['bell', 'ball']]]},
@@ -101,7 +102,7 @@ const ST7 = {
     // Word Workshop (2nd), after Vowel Teams 2: oo ou ow oi oy aw ew
     {id: 'team2-1', st: 'team2', t: 'Brook and the Moon', pic: 'moon', s: ['Brook looks out at the moon.', 'It is big and round.', 'She holds up her spoon.', '“I will scoop up the moon!”', 'Brook and Mom laugh and laugh.'],
       q: [['What does Brook hold up?', 'spoon', ['cup', 'pencil']], ['What does Brook look at?', 'moon', ['sun', 'star']]]},
-    {id: 'team2-2', st: 'team2', t: 'A Mouse in the House', pic: 'mouse', s: ['A brown mouse lives in our house.', 'One day it sneaks out of its hole.', 'It finds a crust of toast on the couch.', '“Wow!” it shouts.', '“A feast!”', 'Then it sees the cat and zooms home!'],
+    {id: 'team2-2', st: 'team2', t: 'A Mouse in the House', pic: 'mouse', col: {mouse: 'e-n'}, s: ['A brown mouse lives in our house.', 'One day it sneaks out of its hole.', 'It finds a crust of toast on the couch.', '“Wow!” it shouts.', '“A feast!”', 'Then it sees the cat and zooms home!'],
       q: [['Who lives in the house?', 'mouse', ['rabbit', 'bird']], ['Who does the mouse see?', 'cat', ['dog', 'owl']]]},
     {id: 'team2-3', st: 'team2', t: 'The Cow and the Owl', pic: 'owl', s: ['A cow and an owl live on a farm.', 'The cow eats grass all day.', 'The owl sleeps all day.', 'When the moon comes up, the owl hoots and hoots.', 'The cow can not sleep!', 'So now the cow naps in the day, too.'],
       q: [['Who hoots?', 'owl', ['duck', 'frog']], ['Who naps in the day now?', 'cow', ['horse', 'sheep']]]},

@@ -121,6 +121,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `39b-steps.js` | P2-08 | Step-hint builders (`stepsAdd`, `stepsSub`, `stepsMul`, `stepsDiv`, `stepsEquivFrac`, `stepsCommonDen`, `stepsStory`) and prompt layouts `ST.vert`, `ST.ldiv`; the renderer is in `39-hints.js`, CSS in `src/css/39-steps.css` |
 | `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Built into `data.<VER>.js` (A11, section 3.3), which loads after all code, so code may read them only inside functions (at run time), never while the script is first loading. TRIM-START (v196): the Brain Teaser data (`d-puz-*`, `d-riddles`, `d-memory`, `d-words-bt`: `PUZ`, `RIDDLES`, `MEMW`, `BTW`, read only by the `NN-bt-*.js` types) is built into the lazy part `bt` instead, after its code |
 | `45-placement.js`, `47-trace.js`, `49-kinds.js`, `51-mastery.js`, `57-fluency.js`, `59-review.js` | P1, P2, P5 | Engines |
+| `45a-place.js`, `57a-flu.js` (gen); `45-placement.js`, `57-fluency.js` (part sprint) | RELA-SIZE | Find my level and Fact Sprint split: what start-up reads (the Home card, the Grown-ups row, `placeWorld`; `FLU`, `FL`, `stopFlu`) in gen; the quiz and the sprint screens in the lazy part sprint, loaded by `partThen('sprint', ...)` (90-app.js) |
 | `51b-checkin.js`, `src/css/51b-checkin.css` | CHECK-IN | Mastery check-ins and stop badges (`CHK.*`; gen2 file): when one is offered, the 5-question check-in, the badge card, the map medal and Check-in button, the badge shelf; save `S.chk` (default `{}` in `migrate()`); hooks in 50-round.js, 46-home.js, 41-nav.js and the report card |
 | `74-teasers.js`, `NN-bt-*.js` | P3 | Brain Teasers: the framework (index.html) and one file per puzzle type (built into `bt.<VER>.js`, section 3.3) |
 
@@ -139,7 +140,8 @@ gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math
                   34-gen-es; ROOM: the Grown-ups screens 80-grown, 81-backup, 82-report, 88-online (room in index.html, under its 1 MB
                   limit; loaded at start, so every caller has them); MERGE-186 (ROOM 2): 45-placement, 50-say, 50-say-cmp, 50-say-corner,
                   57-fluency (placement, Say it! and its sound check and listening corner, Fact Sprint: JS only, their CSS stays in
-                  index.html; index.html 999 -> 930 KB), then  var GEN_VER='<VER>';
+                  index.html; index.html 999 -> 930 KB); RELA-SIZE: of placement and Fact Sprint only what start-up reads is here
+                  (45a-place, 57a-flu), then  var GEN_VER='<VER>';
                   Rule for anything moved here: index.html's code may call it only inside functions that run after start-up (view()
                   calls stopFlu behind typeof, so the A11 Try again screen works without gen)
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
@@ -169,6 +171,9 @@ hints.<VER>.js    v182: the Practice mistake hints (HINT-01), src/js/39m-mist.js
                   LAZY: a Practice round loads it as it starts (hintsWarm in 50-round.js, from newG); check() shows the generic hint until it is in
                   (PERS-01: the story themes 39p-pers.js, 39q-persw.js; ASK-01: the Ask the pet menu 39r-ask.js and its reviewed words 39s-askw.js,
                   loaded by the Ask button beside the pet; 39t-askon.js, the count of reviewed questions, stays in index.html)
+sprint.<VER>.js   RELA-SIZE (v200): the Find my level quiz (src/js/45-placement.js) and the Fact Sprint screens (57-fluency.js), then  var SPRINT_VER='<VER>';
+                  LAZY: the tap that opens one loads it first (partThen in 90-app.js; no waiting screen, and nothing opens if the child went elsewhere);
+                  what start-up reads (45a-place.js, 57a-flu.js) is in gen; their CSS stays in index.html
 data.<VER>.js     src/data/*.js in filename order (not the ones a part takes: d-teach-audio.js, teach12; the Brain Teaser data, bt), then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
                   (install waits for these only); ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es, en, teach

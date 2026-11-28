@@ -25,6 +25,12 @@
 .pkpair{display:flex;gap:var(--s-4);justify-content:center;max-width:100%}
 .pkplate{display:flex;align-items:center;justify-content:center;min-width:var(--tap-pk);min-height:calc(var(--tap-pk)*2);padding:var(--s-2);
   border:4px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer}
+.pkplate[aria-label=plate]{border-radius:50%;padding:var(--s-3) var(--s-4);background:var(--ill-cream-1);border-color:var(--ill-cream-3);box-shadow:inset 0 0 0 8px var(--ill-cream)}
+.pkplate[aria-label=bowl]{border-radius:12px 12px 50% 50%/12px 12px 42% 42%;padding-bottom:var(--s-4);background:var(--ill-blue-1);border-color:var(--ill-blue-2)}
+.pkplate[aria-label=basket]{border-radius:10px 10px 40% 40%/10px 10px 25% 25%;border-color:var(--ill-brown-2);
+  background:repeating-linear-gradient(45deg,transparent 0 8px,var(--ill-tan-2) 8px 10px),repeating-linear-gradient(-45deg,var(--ill-tan-1) 0 8px,var(--ill-tan-2) 8px 10px)}
+.pkplate[aria-label=pond]{border-radius:50%;padding:var(--s-3) var(--s-4);background:var(--ill-aqua-1);border-color:var(--ill-green)}
+.pkplate[aria-label=box]{border-radius:6px;background:var(--ill-tan-1);border-color:var(--ill-tan-3);box-shadow:inset 0 10px 0 var(--ill-tan)}
 .pkplate.right{background:var(--good-tint);border-color:var(--good);animation:bump .4s}
 .pkplate.wrong{background:var(--try-tint);border-color:var(--try);opacity:.6}
 .pkpl{display:grid;grid-template-columns:repeat(3,auto);font-size:.8em;gap:.05em}

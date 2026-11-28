@@ -820,7 +820,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12","teach35","teachrd","teaches","teach6","petage","hints","gate","sprint"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== 'later' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -876,9 +876,9 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       // MERGE-185: the hints part (with PERS-01's picker <style>) loads on its own when a round starts, so like its <script> tag its <style> is left out of these lists
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
-        ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints' && x !== 'gate').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints|gate)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // RC-1: gate (the PIN pad) is not the Game Room's // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints' && x !== 'gate').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
-        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints' && x !== 'gate').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+        ready: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints' && x !== 'gate' && x !== 'sprint').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^(petage|hints|gate|sprint)\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // RC-1: gate (the PIN pad) is not the Game Room's // PET-AGE2: petage is Home's (grade 3+), not the Game Room's; v182: hints is a Practice round's
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage' && x !== 'hints' && x !== 'gate' && x !== 'sprint').map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x) && x !== 'petage' && x !== 'hints' && x !== 'gate' && x !== 'sprint').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -5694,6 +5694,7 @@ async function main() {
       await setupGo(cp);
       await cp.waitForSelector('.game[data-p="es"]');
       await cp.evaluate(() => {
+        setGrade(2); // RELA-YOUNG: a K child walks the cut Spanish path (test.js checks it); this step is about the whole La Casa world
         for (let i = 0; i < WR.es[2][1] + 1; i++) setSt('es', i, 3);
         S.wdone = S.wdone || {}; for (let i = 0; i < 3; i++) S.wdone[worldId('es', i)] = 1;
         save();
@@ -9283,7 +9284,7 @@ async function main() {
     // R-01s Spanish review fixes at 380x780 (2x). A weather question and a feelings question, each opened from the Spanish map with real taps
     //    (world chip, stop, ¡Vamos! on the learn screen), then the review's two-answer seed shown in the round (weather 1 seed 387, feelings 1
     //    seed 18; were 38 and 41 before ES-MORE): no two choices mean the same thing, the cool / hot / cold pictures carry their English, a feeling shows both forms
-    //    (cards and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
+    //    (cards on two lines with no slash since RELA-UI, and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
     //    Screenshots: tools/out/es-r01s-* (or the folder in R01S_SHOTS).
     if (seg('R-01s')) {
       const rx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
@@ -9297,7 +9298,8 @@ async function main() {
       // ES-MORE (owner approved 2026-11-27): 11 more words in each of the two units draw other questions from the review's seeds (38 drew
       // el termómetro, 41 valiente), so the seeds are picked again for the same cases: weather 387 (hace fresco beside hace frío and hace
       // calor, all three captioned), feelings 18 (tranquilo / tranquila)
-      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 387], ['es_feel1', 'e_casa', 'feelings', 18]]) {
+      // RELA-YOUNG (owner 2026-11-28): level 1 of both units draws from the first words again (l1), so picked again: weather 166, feelings 41
+      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 166], ['es_feel1', 'e_casa', 'feelings', 41]]) {
         await rp.evaluate(() => { if (G) G.dead = true; home(); });
         await rp.click('.game[data-p="es"]');
         await rp.waitForSelector('.wchip.on');
@@ -9309,8 +9311,12 @@ async function main() {
         await lsLearnSel(rp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await rp.click(`.node[data-n="${at.i}"]`);
         await rp.waitForSelector('#go'); // level 1 opens on the learn cards
-        const cards = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => b.textContent));
-        if (tag === 'feelings' && (!cards.includes('cansado / cansada') || !cards.includes('feliz'))) bad.push('feelings learn cards: ' + cards.join(', '));
+        // RELA-UI (owner approved): a two-form word is shown on two lines (a <br>), with no slash; the lines are the text nodes around the <br>
+        const lines = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => ({ l: [...b.childNodes].filter(n => n.nodeType == 3).map(n => n.textContent.trim()).filter(Boolean),
+          br: b.querySelectorAll('br').length, slash: b.textContent.includes('/') })));
+        const cards = lines.map(c => c.l.join(' | '));
+        if (lines.some(c => c.slash)) bad.push('a learn card shows a slash: ' + cards.join(', '));
+        if (tag === 'feelings' && (!lines.some(c => c.br == 1 && c.l.join() == 'cansado,cansada') || !cards.includes('feliz'))) bad.push('feelings learn cards: ' + cards.join(', '));
         if (tag === 'weather' && !cards.includes('hace fresco')) bad.push('weather learn cards: ' + cards.join(', '));
         await shot(tag + '-learn');
         await rp.click('#go');
@@ -11160,7 +11166,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate'].map(x => x + '.' + c1.ver + '.js'); // RC-1: gate; P6-03: bt is on demand too; TEACH-5S: teaches; TEACH-6M: teach6
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'teaches', 'teach6', 'petage', 'hints', 'gate', 'sprint'].map(x => x + '.' + c1.ver + '.js'); // RELA-SIZE: sprint; RC-1: gate; P6-03: bt is on demand too; TEACH-5S: teaches; TEACH-6M: teach6
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
         if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
@@ -11200,7 +11206,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage' && x !== 'hints').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').filter(x => x !== 'css-hints').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false,false,false,false' || // RC-1: twelve with gate (the PIN pad and picture passwords, not loaded at start); TEACH-6M: thirteen with teach6, eleven here; twelve lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; TEACH-5S: teaches; PET-AGE2: petage; hints), less petage and hints (filtered above): ten
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false,false,false,false,false,false,false,false' || // RELA-SIZE: thirteen with sprint; RC-1: twelve with gate (the PIN pad and picture passwords, not loaded at start); TEACH-6M: thirteen with teach6, eleven here; twelve lazy parts (TEACH-2b: teach12; TEACH-3: teach35; TEACH-4: teachrd; TEACH-5S: teaches; PET-AGE2: petage; hints), less petage and hints (filtered above): ten
             s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
@@ -11218,7 +11224,7 @@ async function main() {
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt
-        if (s3.parts !== 'false,true,true,true,true,false,false,false,false,false,false,false' || // RC-1: gate is not the Game Room's; TEACH-6M: teach6 is the math map's, not the Game Room's; // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's; TEACH-5S: teaches, the Spanish and Discover maps')
+        if (s3.parts !== 'false,true,true,true,true,false,false,false,false,false,false,false,false' || // RELA-SIZE: sprint is not the Game Room's; RC-1: gate is not the Game Room's; TEACH-6M: teach6 is the math map's, not the Game Room's; // TEACH-2b: teach and teach12 are the math map's (TEACH-3: and teach35; TEACH-4: teachrd, the reading map's; TEACH-5S: teaches, the Spanish and Discover maps')
             s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
@@ -14698,7 +14704,9 @@ async function main() {
             window.say = function (t, b, lang, q, slow) { window.__said.push([String(t), lang || '']); return o.apply(this, arguments); }; });
           // 1. the maps: a lesson stop in front of Animals (Spanish, a Kindergartner) and of Living Things (Discover)
           for (const [p, id] of [['es', 'es_animal1'], ['disc', 'sci_life1']]) {
-            await pg.evaluate(([p, id]) => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES[p].findIndex(n => nid(n) === id);
+            // RELA-FIX: grades by setGrade (esRefit), never S.grade alone: a Kindergartner's Spanish path is the RELA-YOUNG cut, and the part
+            // teaches rebuilds NODES.es (deep15Apply) for the grade it finds, so a bare S.grade left the 5th grader below on the cut path
+            await pg.evaluate(([p, id]) => { setGrade(0); S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES[p].findIndex(n => nid(n) === id);
               for (let j = 0; j < NODES[p].length; j++) setSt(p, j, j < i ? 2 : 0); save(); pathMap(p, NODES[p][i].wi); }, [p, id]);
             await pg.waitForFunction(() => partReady('teaches') && typeof ls6Spanish == 'function', null, { timeout: 15000 });
             await pg.waitForTimeout(300);
@@ -14711,7 +14719,7 @@ async function main() {
           await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
           // 2. four lessons through every beat
           for (const [id, gr] of [['es_animal1', 0], ['es_art1', 5], ['sci_phys1', 0], ['sci_earth1', 1]]) {
-            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; window.__said = []; const p = id.startsWith('es_') ? 'es' : 'disc', i = NODES[p].findIndex(n => nid(n) === id);
+            await pg.evaluate(([id, gr]) => { setGrade(gr); delete S.les; S.know = {}; window.__said = []; const p = id.startsWith('es_') ? 'es' : 'disc', i = NODES[p].findIndex(n => nid(n) === id);
               for (let j = 0; j <= i; j++) setSt(p, j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
             await pg.waitForSelector('#lsplay', { timeout: 5000 });
             const path = [], seen = [];

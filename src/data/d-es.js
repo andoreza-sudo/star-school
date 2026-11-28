@@ -9,7 +9,7 @@
           answers by picture or by ear: hace sol / hace calor). tools/test.js scans every Spanish skill for such pairs
           (audit v195: the storm drawing has rain and a cloud: hay tormenta never with llueve or está nublado)
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
-   l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
+   l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time; RELA-YOUNG: units grown at the end)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
    An item is [spanish, english, picture, article, art, say]
    spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this. A feeling shows both forms
@@ -64,7 +64,7 @@ const ES_UNITS=[
   ['dieciocho','eighteen','n:18',''],
   ['diecinueve','nineteen','n:19',''],
   ['veinte','twenty','n:20','']]},
- {id:'animal',t:'Animals',e:'🐶',theme:'Animals',mix:1,items:[
+ {id:'animal',t:'Animals',e:'🐶',theme:'Animals',mix:1,l1:12,items:[
   ['perro','dog','🐶','el','dog'],
   ['gato','cat','🐱','el','cat'],
   ['pájaro','bird','🐦','el','bird'],
@@ -77,7 +77,7 @@ const ES_UNITS=[
   ['conejo','rabbit','🐰','el','rabbit'],
   ['león','lion','🦁','el','lion'],
   ['rana','frog','🐸','la','frog']]},
- {id:'food',t:'Food',e:'🍎',theme:'Food',mix:1,items:[
+ {id:'food',t:'Food',e:'🍎',theme:'Food',mix:1,l1:10,items:[
   ['manzana','apple','🍎','la','apple'],
   ['plátano','banana','🍌','el','banana'],
   ['leche','milk','🥛','la','milk'],
@@ -139,7 +139,7 @@ const ES_UNITS=[
   ['clase','class','🔔','la','bell'],
   ['tijeras','scissors','✂','las','scissors'],
   ['goma','eraser','🧽','la','eraser']]},
- {id:'feel',t:'Feelings',e:'😊',theme:'Feelings (both forms: cansado for a boy, cansada for a girl)',
+ {id:'feel',t:'Feelings',e:'😊',l1:9,theme:'Feelings (both forms: cansado for a boy, cansada for a girl)',
   confuse:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],items:[
   ['feliz','happy','😊',''],
   ['triste','sad','😢',''],
@@ -178,7 +178,7 @@ const ES_UNITS=[
   ['verano','summer','🏖','el'],
   ['otoño','fall','🍂','el'],
   ['invierno','winter','⛄','el','snowman']]},
- {id:'weather',t:'Weather',e:'☀',theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
+ {id:'weather',t:'Weather',e:'☀',l1:10,theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
   confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento'],['llueve','hay tormenta'],['está nublado','hay tormenta']],items:[
   ['hace sol','it is sunny','☀','','sun'],
   ['hace calor','it is hot','🥵',''],

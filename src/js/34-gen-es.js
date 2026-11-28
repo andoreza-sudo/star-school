@@ -60,20 +60,21 @@ function genEsPhrase(lv){const G=ES_GRAM;
   return{kind:'choice',cls:'wide',...gSay(qa.q),after:right,html:`<div class="sent">${esc(qa.q)}</div>${gSub('Which reply fits?')}`,ans:right,
     choices:shuffle([right,...wrong]).map(x=>({l:x,v:x})),hint:{k:'text',s:qa.h},label:`${qa.q} (reply)`}}
 // article: -o words are el / un, -a words are la / una (level 1 and the "a" half of level 2); the plural half of level 2 is los / las + -s / -es
+const esArtOf=w=>(ES_UNITS.flatMap(u=>u.items).find(it=>it[0]==w&&it[4])||[])[4]||'';
 function genEsArt(lv){const N=ES_GRAM.nouns,regular=N.filter(n=>/[oa]$/.test(n[0]));
   if(lv==2&&R(0,1)){ // plurals: the right article for the gender AND the right ending
     const n=pick(N),art=gPlArt(n[3]),oth=art=='los'?'las':'los',right=`${art} ${n[4]}`,vowel=/[aeiou]$/.test(n[0]),
       bad=vowel?pick([n[0],n[0]+'es']):pick([n[0],n[0]+'s']),opts=shuffle([right,`${oth} ${n[4]}`,`${art} ${bad}`]);
     // R-01s: "More than one dog!" (singular after "one") and "the beaches" (enPlural, 22-qhelpers.js), in the voice and on screen
     return{kind:'choice',cls:'wide',say:`More than one ${n[1]}! How do you say the ${enPlural(n[1])}?`,after:right,afterLang:'es',
-      html:`<div class="emo">${picFor('',n[2])}${picFor('',n[2])}</div>${gSub(`More than one! How do you say “the ${esc(enPlural(n[1]))}”?`)}`,
+      html:`<div class="emo">${picFor(esArtOf(n[0]),n[2]).repeat(2)}</div>${gSub(`More than one! How do you say “the ${esc(enPlural(n[1]))}”?`)}`,
       ans:right,choices:opts.map(x=>({l:x,v:x})),
       hint:{k:'text',s:'Many things: change the ending (a vowel at the end takes -s, a consonant takes -es, and z changes to c: lápiz, lápices), and use the small word that goes with boy words or girl words.'},label:`${right} (plural)`}}
   const n=pick(regular),a=lv==2?(n[3]=='el'?'un':'una'):n[3],ch=lv==2?['un','una']:['el','la'],
     hint=(/o$/.test(n[0])?'This word ends in -o. Words that end in -o are usually “boy” words (masculine).':'This word ends in -a. Words that end in -a are usually “girl” words (feminine).')
       +(lv==2?' The word for “a” has a boy form and a girl form too.':'');
   return{kind:'choice',cls:'syms',lang:'es',auto:'must',say:n[0],after:a+' '+n[0],afterLang:'es',
-    html:`<div class="emo">${picFor('',n[2])}</div><div class="sent">${SLOT} ${esc(n[0])}</div>${gSub(`“${lv==2?'a':'the'} ${esc(n[1])}”: which word goes in the blank?`)}`,
+    html:`<div class="emo">${picFor(esArtOf(n[0]),n[2])}</div><div class="sent">${SLOT} ${esc(n[0])}</div>${gSub(`“${lv==2?'a':'the'} ${esc(n[1])}”: which word goes in the blank?`)}`,
     ans:a,choices:ch.map(x=>({l:x,v:x})),hint:{k:'text',s:hint},label:`${a} ${n[0]}`}}
 // ser (level 1), estar (2), tener (3): the subject fixes the form, so one answer fits. The English line says what the sentence means and is
 // what "Hear it" reads (the Spanish sentence holds the answer); the Spanish sentence is said after the answer

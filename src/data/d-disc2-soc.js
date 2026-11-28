@@ -47,7 +47,7 @@ Object.assign(DISC_HINT, {
 });
 
 BANK.geo_world = discRows(1, `
-On a compass, the letter N stands for ___.|north|south;east;west|mapwords
+On a compass, the letter N stands for ___.|north|south;east;west|mapwords|compass-rose,🗺
 On most maps, north is at the ___ of the map.|top|bottom;left;right|mapwords
 On most maps, south is at the ___ of the map.|bottom|top;left;right|mapwords
 On most maps, east is on the ___ side of the map.|right|left;top;bottom|mapwords
@@ -55,8 +55,8 @@ On most maps, west is on the ___ side of the map.|left|right;top;bottom|mapwords
 The Sun comes up in the east and goes down in the ___.|west|north;south;east|mapwords
 The opposite of north is ___.|south|east;west;up|mapwords
 The opposite of east is ___.|west|north;south;left|mapwords
-If you face north, east is on your ___.|right|left;back;front|mapwords
-If you face north, west is on your ___.|left|right;back;front|mapwords
+^If you face north, east is on your ___.|right|left;back;front|mapwords
+^If you face north, west is on your ___.|left|right;back;front|mapwords
 A map is a drawing of a place as seen from ___.|above|the side;inside;underneath|mapwords
 The tool that shows which way is north is a ___.|compass|clock;ruler;scale|mapwords
 A small picture on a map, such as a tree or a house, is a ___.|symbol|number;border;grid|mapwords
@@ -64,7 +64,7 @@ A map key tells you what the ___ on the map mean.|symbols|sounds;seasons;days|ma
 Which one is a direction word?|south|sun;song;sand|mapwords
 A map of your classroom shows ___.|where things are|what things smell like;what things cost;who is tallest|mapwords
 Which one is a compass direction?|west|up;left;under|mapwords
-If you walk toward the place where the Sun sets, you are walking ___.|west|east;north;south|mapwords
+^If you walk toward the place where the Sun sets, you are walking ___.|west|east;north;south|mapwords
 On a map, the top is north. Which way is the bottom of the map?|south|east;west;north|mapwords
 A very tall landform with a peak is a ___.|mountain|valley;island;lake|landforms
 A low area of land between mountains or hills is a ___.|valley|mountain;island;desert|landforms
@@ -72,24 +72,24 @@ Land that has water all around it is called ___.|island|valley;mountain;plain|la
 A big flat area of land is a ___.|plain|mountain;island;volcano|landforms
 A hill is ___ than a mountain.|smaller|taller;wetter;wider|landforms
 A large area of very dry land with little rain is a ___.|desert|island;beach;volcano|landforms
-A body of water with land all around it is a ___.|lake|island;peninsula;desert|landforms
+^A body of water with land all around it is a ___.|lake|island;peninsula;desert|landforms
 A stream of water that flows across the land to the sea is a ___.|river|lake;valley;island|landforms
 A mountain that can erupt with hot melted rock is a ___.|volcano|island;desert;beach|landforms
-Land with water on three sides is a ___.|peninsula|island;lake;valley|landforms
-A deep, narrow valley with steep sides, often cut by a river, is a ___.|canyon|plain;lake;hill|landforms
+^Land with water on three sides is a ___.|peninsula|island;lake;valley|landforms
+^A deep, narrow valley with steep sides, often cut by a river, is a ___.|canyon|plain;lake;hill|landforms
 The sandy or rocky land beside the sea is a ___.|beach|valley;mountain;volcano|landforms
 Which one is NOT a landform?|a cloud|a hill;a valley;an island|landforms
 Which one is a body of water?|an ocean|a hill;a plain;a mountain|landforms
-A flat-topped area of high land is a ___.|plateau|valley;island;lake|landforms
+^A flat-topped area of high land is a ___.|plateau|valley;island;lake|landforms
 A river that drops over a high cliff makes a ___.|waterfall|valley;island;plain|landforms
-A part of the ocean that cuts into the land is a ___.|bay|island;plain;hill|landforms
+^A part of the ocean that cuts into the land is a ___.|bay|island;plain;hill|landforms
 Which landform is usually the highest?|a mountain|a hill;a valley;a plain|landforms
 How many continents are there?|seven|five;six;eight|continents||Say the names of the continents you know and count them on your fingers.
 Which continent is the biggest?|Asia|Africa;Europe;Australia|continents
 Which continent is the coldest and covered in ice?|Antarctica|Asia;Africa;Europe|continents
 People in the United States live on the continent of ___.|North America|South America;Europe;Asia|continents
 Which continent has the Amazon rain forest?|South America|Africa;Europe;Antarctica|continents
-Which continent is mostly one country?|Australia|Africa;Asia;Europe|continents
+^Which continent is mostly one country?|Australia|Africa;Asia;Europe|continents
 Which continent has the Sahara Desert?|Africa|Asia;Europe;Australia|continents
 Giraffes live in the wild on the continent of ___.|Africa|Asia;Europe;Antarctica|continents
 The South Pole is on the continent of ___.|Antarctica|Asia;Europe;North America|continents
@@ -98,20 +98,20 @@ Mexico is on the continent of ___.|North America|South America;Europe;Asia|conti
 Brazil is on the continent of ___.|South America|North America;Africa;Europe|continents
 France is on the continent of ___.|Europe|Asia;Africa;Australia|continents
 A continent is a very large piece of ___.|land|water;sky;ice|continents
-Africa, Antarctica, Asia, Australia, Europe, North America and ___ are the seven continents.|South America|Greenland;the Arctic;the Pacific|continents
-Which one of these is a continent?|Europe|Pacific;Sahara;Amazon|continents
-Which continent has the most people?|Asia|Africa;Europe;North America|continents
+^Africa, Antarctica, Asia, Australia, Europe, North America and ___ are the seven continents.|South America|Greenland;the Arctic;the Pacific|continents
+^Which one of these is a continent?|Europe|Pacific;Sahara;Amazon|continents
+^Which continent has the most people?|Asia|Africa;Europe;North America|continents
 Which is the biggest ocean?|the Pacific Ocean|the Atlantic Ocean;the Indian Ocean;the Arctic Ocean|oceans
-Which is the smallest ocean?|the Arctic Ocean|the Pacific Ocean;the Atlantic Ocean;the Indian Ocean|oceans
+^Which is the smallest ocean?|the Arctic Ocean|the Pacific Ocean;the Atlantic Ocean;the Indian Ocean|oceans
 Which ocean is between North America and Europe?|the Atlantic Ocean|the Pacific Ocean;the Indian Ocean;the Arctic Ocean|oceans
 Which ocean touches the west coast of the United States?|the Pacific Ocean|the Atlantic Ocean;the Arctic Ocean;the Indian Ocean|oceans
 Which ocean touches the east coast of the United States?|the Atlantic Ocean|the Pacific Ocean;the Arctic Ocean;the Indian Ocean|oceans
 Most of Earth's surface is covered by ___.|water|land;ice;sand|oceans
 Which one is an ocean?|the Atlantic|Asia;Africa;Europe|oceans
 Ocean water tastes ___.|salty|sweet;sour;like lemons|oceans
-Which ocean is at the very top of the world, around the North Pole?|the Arctic Ocean|the Southern Ocean;the Pacific Ocean;the Indian Ocean|oceans
-Which ocean flows all the way around Antarctica?|the Southern Ocean|the Arctic Ocean;the Indian Ocean;the Atlantic Ocean|oceans
-Earth's five oceans are the Pacific, Atlantic, Indian, Arctic and ___.|Southern|Northern;Mediterranean;Caribbean|oceans
+^Which ocean is at the very top of the world, around the North Pole?|the Arctic Ocean|the Southern Ocean;the Pacific Ocean;the Indian Ocean|oceans
+^Which ocean flows all the way around Antarctica?|the Southern Ocean|the Arctic Ocean;the Indian Ocean;the Atlantic Ocean|oceans
+^Earth's five oceans are the Pacific, Atlantic, Indian, Arctic and ___.|Southern|Northern;Mediterranean;Caribbean|oceans
 `);
 
 BANK.geo_world.push(...discRows(2, `
@@ -441,30 +441,30 @@ Who makes bread and cakes in a bakery?|a baker|a pilot;a dentist;a vet|helpers
 Why do we have rules at school?|to keep everyone safe and fair|to make people sad;to stop learning;so grown-ups can do what they want|rules
 What should you do before you cross a street?|stop and look both ways|run across as fast as you can;close your eyes;hop|rules
 At a red light, cars must ___.|stop|go fast;sing;honk|rules
-A rule made for everyone in a town, state or country is called a ___.|law|toy;game;story|rules
+^A rule made for everyone in a town, state or country is called a ___.|law|toy;game;story|rules
 Who must follow the law?|everyone|only kids;only grown-ups;nobody|rules
 A good rule for the playground is to ___.|take turns|push others;grab all the balls;shout|rules
-If someone breaks a rule, there is a ___.|consequence|prize;party;holiday|rules
+^If someone breaks a rule, there is a ___.|consequence|prize;party;holiday|rules
 Wearing a seat belt is a rule that keeps you ___.|safe|late;hungry;cold|rules
 Raising your hand in class helps everyone ___.|get a turn to talk|talk at once;nap;go home|rules
 Which is a fair way to share a toy?|take turns|take it and run;hide it;say it is yours|rules
 A good citizen follows the rules and ___.|helps others|is rude;takes things;litters|rules
 Voting is a fair way for a group to ___.|make a choice|sleep;pay bills;let the oldest person decide|rules
 Walking in the hallway at school helps keep everyone ___.|safe|loud;late;hungry|rules
-The flag of the United States has ___ stripes.|13|10;50;7|symbols
+The flag of the United States has ___ stripes.|13|10;50;7|symbols|us-flag,🚩
 The flag of the United States has ___ stars.|50|13;48;100|symbols
 Each star on the United States flag stands for a ___.|state|president;city;holiday|symbols
-The 13 stripes on the flag stand for the first 13 ___.|colonies|cities;kings;oceans|symbols
+^The 13 stripes on the flag stand for the first 13 ___.|colonies|cities;kings;oceans|symbols
 The Statue of Liberty is a symbol of ___.|freedom|money;sports;weather|symbols
 The bald eagle is a symbol of the ___.|United States|Mexico;Canada;United Kingdom|symbols
 The colors of the United States flag are red, white and ___.|blue|green;yellow;black|symbols
 The Statue of Liberty holds a ___ in her raised hand.|torch|book;flag;sword|symbols
-A symbol is a picture or thing that stands for an ___.|idea|owner;lunch;address|symbols
+^A symbol is a picture or thing that stands for an ___.|idea|owner;lunch;address|symbols
 A red eight-sided sign on a street corner tells drivers to ___.|stop|go fast;sing;honk|symbols
-A national anthem is a ___ about a country.|song|map;game;rule|symbols
+^A national anthem is a ___ about a country.|song|map;game;rule|symbols
 Which one is a United States symbol?|the bald eagle|a kangaroo;a panda;a lion|symbols
 The White House is where the President lives and ___.|works|swims;sleeps only;plays ball|symbols
-Washington, D.C. is the ___ of the United States.|capital|farm;lake;biggest city|symbols
+^Washington, D.C. is the ___ of the United States.|capital|farm;lake;biggest city|symbols
 Which is a need?|food|fancy sneakers;a video game;a toy|needswants
 Which is a want?|a new toy|water;a home;warm winter clothes|needswants
 Which is a need?|clean water|a swimming pool;a puzzle;a bike|needswants
@@ -481,7 +481,7 @@ Where can you borrow books for free?|a library|a bank;a gas station;a bakery|com
 A big place with many people and tall buildings is a ___.|city|farm;pond;hill|community
 A town park is a place for everyone to ___.|share and enjoy|own;sell;hide|community
 People in a community can help each other by ___.|working together|staying apart;being mean;never sharing|community
-A mayor is the leader of a ___.|town or city|school;state;whole country|community
+^A mayor is the leader of a ___.|town or city|school;state;whole country|community
 A principal is the leader of a ___.|school|town;state;country|community
 Which is a way to be a good neighbor?|helping with a chore|making loud noise at night;tossing trash;ignoring them|community
 What do we call the people who live near you?|neighbors|astronauts;kings;pilots|community
