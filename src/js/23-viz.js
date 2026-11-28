@@ -74,7 +74,7 @@
      balance(left, right, o)      counters on a scale (left blue, right orange); a side may be {n, q: true} (n counters plus
                                   a "?" box); tilts to the heavier side unless o.tilt (-1, 0, 1); o.nums or more than 10
                                   shows a number block
-     coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
+     coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50 (no value), bills 100 500 1000 2000; o.face = false hides values
      tally(n)                     tally marks, 0..50, groups of five
      tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
      rayLine(o)                   P2-14: an inequality (x > k, x < k) on a number line (o.min -5, o.max 5, every value labelled, o.w 290):
@@ -556,8 +556,19 @@ const VIZ = (() => {
   }
 
   // ---- pictograph ----
+  // RELA-PICS: each row's drawing in its circles when every row has one (F fill, C circle r cy, w/colour stroke)
+  const PICG = {};
+  'cats=Forange M-7-1-6-9-2-5h4l4-4 1 8a7 6 0 0 1-14 0z;2/ink M-3 0h0M3 0h0|dogs=Cbrown 6.5;Fbrown-3 M-6-6q-4 0-3 9 4-2 3-9zM6-6q4 0 3 9-4-2-3-9z;2/ink M-2.5 0h0M2.5 0h0|fish=Faqua M-8 0q6-7 12 0-6 7-12 0zM3 0l6-5v10z;2/ink M-4-1h0|birds=Cblue 6.5 1;Forange M5-1l5 2-5 2z;2/ink M2-1h0|apples=Cred 7 1;Fgreen M0-6q4-4 7-1-4 2-7 1z|pears=Fgreen-1 M0-8c3 0 2 5 4 7 3 3 2 9-4 9s-7-6-4-9c2-2 1-7 4-7z|plums=Cpurple 7 1;Fgreen M0-6q4-4 7-1-4 2-7 1z|grapes=4.6/purple M-4-4h0M0-4h0M4-4h0M-2 0h0M2 0h0M0 4h0|swings=1.8/brown M-8 8-5-8h10l3 16M-2-8v9M2-8v9;2.6/red M-3 2h6|slides=1.6/grey-3 M-8 8V-7M-4 8V-7M-8-3h4M-8 1h4;2.6/blue M-4-7h2l9 14|tag=Fskin M-5 8V-1h10v9z;2.6/skin M-4-1v-6M-1-2v-6M2-2v-6M5-1v-4|ball=Cred 7.5;Fyellow M0-7.5a4 7.5 0 0 0 0 15 4 7.5 0 0 0 0-15z|soccer=Cwhite 7.5;1.2/ink M-7.5 0a7.5 7.5 0 1 0 15 0 7.5 7.5 0 1 0-15 0;Fink M0-3l3 2-1 3.5h-4l-1-3.5z|tennis=Cyellow 7.5;1.4/white M-5-5q5 5 0 10M5-5q-5 5 0 10|swim=Cskin 3 -3;2/blue M-8 3q2-2 4 0t4 0 4 0 4 0M-8 7q2-2 4 0t4 0 4 0 4 0|bike=1.6/ink-2 M-9 3a4 4 0 1 0 8 0 4 4 0 1 0-8 0M1 3a4 4 0 1 0 8 0 4 4 0 1 0-8 0M-5 3l3-6h6l1 6M-5 3h5l3-6M-2-3l-1-2|red=Cred 8|blue=Cblue 8|green=Cgreen 8|pink=Cpink 8|purple=Cpurple 8'.split('|').forEach(e => {
+    const [k, v] = e.split('=');
+    PICG[k] = v.split(';').map(x => {
+      const [c, ...d] = x.slice(/^[FC]/.test(x)).split(' '), [w, h] = c.split('/'), fl = `var(--ill-${h || c})`;
+      return x[0] == 'C' ? `<circle cy="${d[1] || 0}" r="${d[0]}" fill="${fl}"/>` : x[0] == 'F' ? `<path fill="${fl}" d="${d.join(' ')}"/>`
+        : `<path fill="none" stroke="${fl}" stroke-width="${w}" stroke-linecap="round" d="${d.join(' ')}"/>`;
+    }).join('');
+  });
   function pictograph(data, o = {}) {
     data = (data || []).slice(0, 6).map(d => [d[0], Math.max(0, +d[1] || 0)]);
+    const ic = data.every(d => PICG[String(d[0]).toLowerCase()]), sym = (x, y, g, h) => `<g transform="translate(${f(x)} ${f(y)})"><circle class="vpd" r="10"/>${g}${h ? '<path class="vph" d="M0-11h12v22H0z"/>' : ''}</g>`;
     const per = def(o.per, 1), r = 10, pc = 26;
     const LW = Math.min(88, Math.max(...data.map(d => String(d[0]).length), 3) * 8 + 8);
     const most = clamp(Math.ceil(Math.max(1, ...data.map(d => d[1])) / per), 1, 12);
@@ -568,15 +579,17 @@ const VIZ = (() => {
       const y = i * rh + rh / 2 + 2, k = v / per;
       body += `<text class="vta" x="${LW}" y="${y + 5}">${ex(name)}</text>`;
       grid += `M4 ${(i + 1) * rh + 2}h${f(w - 4)}`;
-      for (let j = 0; j < Math.floor(k); j++) full.push([LW + 12 + j * pc + r + 2, y]);
-      if (k % 1 >= 0.5) {
+      const g = ic && PICG[String(name).toLowerCase()];
+      for (let j = 0; j < Math.floor(k); j++) if (g) body += sym(LW + 14 + j * pc + r, y, g); else full.push([LW + 12 + j * pc + r + 2, y]);
+      if (g && k % 1 >= .5) body += sym(LW + 14 + Math.floor(k) * pc + r, y, g, 1);
+      else if (k % 1 >= 0.5) {
         const cx = LW + 12 + Math.floor(k) * pc + r + 2;
         half += `M${f(cx)} ${y - r}A${r} ${r} 0 0 0 ${f(cx)} ${y + r}z`;
       }
     });
     const H = data.length * rh + 4 + (key ? 34 : 0);
     body = `<path class="vgl" d="${grid}"/>` + body + counters(full, r) + (half ? `<path class="v1" d="${half}"/>` : '');
-    if (key) body += counters([[LW + 12 + r + 2, H - 17]], r) + `<text class="vts" x="${LW + 12 + 2 * r + 10}" y="${H - 12}">= ${ex(def(o.key, per))}</text>`;
+    if (key) body += (ic ? sym(LW + 14 + r, H - 17, '') : counters([[LW + 12 + r + 2, H - 17]], r)) + `<text class="vts" x="${LW + 12 + 2 * r + 10}" y="${H - 12}">= ${ex(def(o.key, per))}</text>`;
     return svg('pic', w, H, body, 'picture graph');
   }
 
@@ -801,9 +814,8 @@ const VIZ = (() => {
       if (x + d > 300 && row) { mx = Math.max(mx, x); x = 4; y += 64; }
       const cx = x + d / 2, cy = y + 32, r = COIN[c];
       row += r
-        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><path class="vcs${c == 1 ? ' vcp' : ''}" d="${cres(cx, cy, r - 1.5, f(r * 0.16))}"/>` +
-          `<path class="vgc" stroke-width="2.6" d="${glossArc(cx, cy, r - 3.5)}"/><circle class="vci${c == 1 ? ' vcp' : ''}" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
-          (face ? `<text class="vcc${c == 1 ? ' vcp' : ''}" x="${f(cx)}" y="${cy + 5}">${c}¢</text>` : '')
+        ? `<circle class="${c == 1 ? 'vcu' : c > 5 ? 'vsv vrd' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><path class="vcs${c == 1 ? ' vcp' : ''}" d="${cres(cx, cy, r - 1.5, f(r * 0.16))}"/>` +
+          `<path class="vgc" stroke-width="2.6" d="${glossArc(cx, cy, r - 3.5)}"/><circle class="vci${c == 1 ? ' vcp' : ''}" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>`
         : `<rect class="vld" x="${f(x)}" y="${cy - 19}" width="90" height="44" rx="5"/><rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
           (face ? `<text class="vcb" x="${f(cx)}" y="${cy + 7}">$${c / 100}</text>` : '');
       x += d + 8;
@@ -848,14 +860,18 @@ const VIZ = (() => {
   function solid(parts, o = {}) {
     parts = (parts || []).slice(0, 3).map(p => ({l: clamp(Math.round(p.l), 1, 12), h: clamp(Math.round(p.h), 1, 12), c2: !!p.c2}));
     const w = clamp(Math.round(def(o.w, 3)), 1, 12), L = parts.reduce((s, p) => s + p.l, 0), H = Math.max(1, ...parts.map(p => p.h));
-    const s = f(Math.min(28, 300 / ((L + w) * 0.866), 210 / ((L + w) * 0.5 + H))), c = 0.866 * s, e = 0.5 * s, lab = !!o.lab;
-    const ox = (lab ? 34 : 14) + w * c, oy = 14 + H * s;
-    const P = (x, y, z) => `${f(ox + (x - y) * c)} ${f(oy + (x + y) * e - z * s)}`;
+    // RELA-PICS: two boxes side by side (cavalier), the taller on the left; a first box taller has its top, then the other's side, drawn again
+    const two = parts.length == 2, lab = !!o.lab, sw = two && parts[1].h > parts[0].h;
+    const s = f(two ? Math.min(28, 290 / (L + w * 0.87), 190 / (H + w * 0.5)) : Math.min(28, 300 / ((L + w) * 0.866), 210 / ((L + w) * 0.5 + H)));
+    const c = 0.866 * s, e = 0.5 * s, ox = (lab ? 34 : 14) + (two ? 0 : w * c), oy = 14 + (two ? H * s + w * e : H * s);
+    const P = (x, y, z) => two ? `${f(ox + x * s + y * c)} ${f(oy - y * e - z * s)}` : `${f(ox + (x - y) * c)} ${f(oy + (x + y) * e - z * s)}`;
     const poly = pts => 'M' + pts.map(q => P(...q)).join('L') + 'z';
-    const W = ox + L * c + (lab ? 34 : 14), Hh = oy + (L + w) * e + (lab ? 36 : 14);
+    const W = two ? ox + L * s + w * c + (lab ? 40 : 14) : ox + L * c + (lab ? 34 : 14), Hh = two ? oy + (lab ? 30 : 14) : oy + (L + w) * e + (lab ? 36 : 14);
+    const F = two ? 0 : w; // the face toward the viewer
     let body = '', x0 = 0;
     parts.forEach((p, n) => {
-      const x1 = x0 + p.l, h = p.h;
+      if (two) x0 = n == +sw ? 0 : parts[+sw].l;
+      const x1 = x0 + p.l, h = p.h, left = two ? !x0 : !n, hr = two && left ? parts[1 - n].h : 0;
       let g = '', gt = ''; // grid lines: on the sides (light lines) and on the top (dark lines)
       if (o.grid) {
         for (let i = 1; i < p.l; i++) {
@@ -869,20 +885,25 @@ const VIZ = (() => {
         for (let k = 1; k < h; k++) g += `M${P(x0, w, k)}L${P(x1, w, k)}L${P(x1, 0, k)}`;
       }
       body += `<g class="vsl${p.c2 ? ' c2' : ''}"><path class="s2" d="${poly([[x0, 0, h], [x1, 0, h], [x1, w, h], [x0, w, h]])}"/>` +
-        `<path class="s1" d="${poly([[x0, w, 0], [x1, w, 0], [x1, w, h], [x0, w, h]])}"/>` +
-        `<path class="s3" d="${poly([[x1, w, 0], [x1, 0, 0], [x1, 0, h], [x1, w, h]])}"/>` +
+        `<path class="s1" d="${poly([[x0, F, 0], [x1, F, 0], [x1, F, h], [x0, F, h]])}"/>` +
+        `<path class="s3" d="${poly([[x1, w, hr], [x1, 0, hr], [x1, 0, h], [x1, w, h]])}"/>` +
         `${gt ? `<path class="vcg vct" d="${gt}"/>` : ''}${g ? `<path class="vcg" d="${g}"/>` : ''}</g>`;
       if (lab) {
-        const [bx, by] = P((x0 + x1) / 2, w, 0).split(' ').map(Number);
-        body += `<text x="${f(bx - 12)}" y="${f(by + 20)}">${p.l}</text>`;
-        const [hx, hy] = (n == 0 ? P(x0, w, h / 2) : P(x1, 0, h / 2)).split(' ').map(Number);
-        body += `<text x="${f(n == 0 ? hx - 14 : hx + 14)}" y="${f(hy + 5)}">${h}</text>`;
+        const [bx, by] = P((x0 + x1) / 2, F, 0).split(' ').map(Number);
+        body += `<text x="${f(two ? bx : bx - 12)}" y="${f(by + 20)}">${p.l}</text>`;
+        const [hx, hy] = (left ? P(x0, F, h / 2) : P(x1, two ? w : 0, h / 2)).split(' ').map(Number);
+        body += `<text x="${f(left ? hx - 14 : hx + 14)}" y="${f(hy + 5)}">${h}</text>`;
       }
       x0 = x1;
     });
+    if (two && !sw) {
+      const [a, b] = parts;
+      body += `<g class="vsl${a.c2 ? ' c2' : ''}"><path class="s2" d="${poly([[0, 0, a.h], [a.l, 0, a.h], [a.l, w, a.h], [0, w, a.h]])}"/></g>` +
+        `<g class="vsl${b.c2 ? ' c2' : ''}"><path class="s3" d="${poly([[L, w, 0], [L, 0, 0], [L, 0, b.h], [L, w, b.h]])}"/></g>`;
+    }
     if (lab) {
       const [wx, wy] = P(L, w / 2, 0).split(' ').map(Number);
-      body += `<text x="${f(wx + 14)}" y="${f(wy + 18)}">${w}</text>`;
+      body += `<text x="${f(wx + 14)}" y="${f(wy + (two ? 12 : 18))}">${w}</text>`;
     }
     return svg('box', W, Hh, body, 'box made of cubes');
   }

@@ -371,7 +371,7 @@ let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this ses
 function wBadge(p,wi){const ws=PATHS[p].worlds,w=ws[wi],seen=new Set();
   ws.slice(0,wi).forEach(x=>x.nodes.forEach(n=>seen.add(n[0])));
   const sk=(w.nodes.find(n=>!seen.has(n[0]))||w.nodes[0]||['star'])[0];
-  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(icoSk(sk),20)}</span>`}
+  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(w.ico||icoSk(sk),20)}</span>`}
 function nodeFace(n,lk){if(lk)return ico('lock',32);
   if(n.sk=='boss')return RW.boss(n.boss[1],'idle','nb-art')||`<span class="nb-e">${n.boss[0]}</span>`;
   return ico(icoSk(n.sk),38)}

@@ -1424,7 +1424,8 @@ lsDraft4('gram3', ls5Plural('gram3', 'Plurals', 2, {idea: 'More than one: add s,
    ST7.stages  the phonics stages in reading-map order: id (tools/decode.js STAGES) and the stop the stage follows (its Stories stop
                on the map stands right after it)
    ST7.list    the stories: id, st (stage), t (title), pic (a drawing of ART: 16-art-a.js, src/data/d-art-*.js), s (3 to 6 short
-               sentences), q (1 or 2 picture questions: [question, the right picture, [two other pictures]])
+               sentences), q (1 or 2 picture questions: [question, the right picture, [two other pictures]]), col (RELA-PICS: a drawing shown
+               in the colour the words name, as hue swaps for st7Hue in 52x-story7.js: "Gus has a big red bus" draws the bus red)
    Every word of every title and sentence uses only the letter-sound patterns taught up to its stage, or a sight word of a Sight Words
    stop before it on the map: tools/decode.js checks this, and tools/test.js STORIES-7 runs it on every story.
    None of the themes the parent ruled out (CONTENT-01), no brands, no real characters. The answer of a question is a word of its story; the other two
@@ -1443,13 +1444,13 @@ const ST7 = {
     // Letter Meadow (K), after Picture Words: short vowels, one consonant each side
     {id: 'cvc-1', st: 'cvc', t: 'Pig in the Mud', pic: 'pig', s: ['Pig is in the mud.', 'Pig can sit in the mud.', 'Pig can dig in the mud.', 'A cat ran up.', '“Not me!” said the cat.'],
       q: [['Who is in the mud?', 'pig', ['dog', 'hen']], ['Who ran up?', 'cat', ['duck', 'cow']]]},
-    {id: 'cvc-2', st: 'cvc', t: 'The Big Red Bus', pic: 'bus', s: ['Gus has a big red bus.', 'A cat gets on.', 'A dog gets on.', 'A big pig gets on.', 'The bus can not go!'],
+    {id: 'cvc-2', st: 'cvc', t: 'The Big Red Bus', pic: 'bus', col: {bus: 'y-r r-y'}, s: ['Gus has a big red bus.', 'A cat gets on.', 'A dog gets on.', 'A big pig gets on.', 'The bus can not go!'],
       q: [['What does Gus have?', 'bus', ['car', 'truck']], ['Who gets on last?', 'pig', ['cow', 'duck']]]},
     {id: 'cvc-3', st: 'cvc', t: 'Hen and the Egg', pic: 'hen', s: ['Hen has an egg.', 'Hen sits and sits.', 'Tap, tap, tap!', 'Up pops a little hen.', 'Hen hugs the little hen.'],
       q: [['What does Hen sit on?', 'egg', ['ball', 'hat']]]},
-    {id: 'cvc-4', st: 'cvc', t: 'Max the Fox', pic: 'fox', s: ['Max is a fox.', 'Max has a big red hat.', 'Max sets the hat on a cat.', 'Max sets the hat on a pig.', 'It is a hat for a fox!'],
+    {id: 'cvc-4', st: 'cvc', t: 'Max the Fox', pic: 'fox', col: {hat: 't-r r-t'}, s: ['Max is a fox.', 'Max has a big red hat.', 'Max sets the hat on a cat.', 'Max sets the hat on a pig.', 'It is a hat for a fox!'],
       q: [['Who is Max?', 'fox', ['dog', 'cow']], ['What does Max have?', 'hat', ['cup', 'sock']]]},
-    {id: 'cvc-5', st: 'cvc', t: 'The Bug and the Rug', pic: 'bug', s: ['A red bug sat on a rug.', 'A big dog sat on the rug.', 'Run, bug, run!', 'The bug hid in a cup.', 'The dog can not see it.'],
+    {id: 'cvc-5', st: 'cvc', t: 'The Bug and the Rug', pic: 'bug', col: {bug: 'g-r'}, s: ['A red bug sat on a rug.', 'A big dog sat on the rug.', 'Run, bug, run!', 'The bug hid in a cup.', 'The dog can not see it.'],
       q: [['Where did the bug hide?', 'cup', ['box', 'hat']], ['Who sat on the rug too?', 'dog', ['cat', 'pig']]]},
     {id: 'cvc-6', st: 'cvc', t: 'Fun in the Sun', pic: 'sun', s: ['The sun is up.', 'Kim and Dad sit in the sun.', 'Dad has a hat on.', 'Kim has a hat on.', 'The dog has a hat on!', 'Kim, Dad and the dog nap.'],
       q: [['What is up in the sky?', 'sun', ['moon', 'star']], ['Who has a hat on too?', 'dog', ['cat', 'hen']]]},
@@ -1471,7 +1472,7 @@ const ST7 = {
       q: [['What does Seth have?', 'fish', ['bird', 'cat']], ['What is the fish in at the start?', 'dish', ['cup', 'box']]]},
     {id: 'digraph-2', st: 'digraph', t: 'Chip the Chick', pic: 'chick', s: ['Chip is a little chick.', 'Chip pecks at a bug.', 'Chip pecks at a nut.', 'Chip pecks at Dad’s sock!', '“Stop that, Chip!” said Dad.'],
       q: [['Who is Chip?', 'chick', ['duck', 'owl']], ['What does Chip peck on Dad?', 'sock', ['shoes', 'hat']]]},
-    {id: 'digraph-3', st: 'digraph', t: 'Josh and the Ship', pic: 'ship', s: ['Josh has a red ship.', 'The ship is in the tub.', 'Josh adds a shell.', 'The shell sits on the ship.', 'Then the ship tips!', 'Splash!'],
+    {id: 'digraph-3', st: 'digraph', t: 'Josh and the Ship', pic: 'ship', col: {ship: 'b-r r-b'}, s: ['Josh has a red ship.', 'The ship is in the tub.', 'Josh adds a shell.', 'The shell sits on the ship.', 'Then the ship tips!', 'Splash!'],
       q: [['What sits on the ship?', 'shell', ['fish', 'ball']], ['Where is the ship?', 'tub', ['bed', 'box']]]},
     {id: 'digraph-4', st: 'digraph', t: 'Thump in the Shed', pic: 'duck', s: ['Thump! Thud!', 'What is in the shed?', 'Beth and Chad check.', 'It is not a moth.', 'It is a duck with a drum!'],
       q: [['What is in the shed?', 'duck', ['cat', 'horse']], ['What does the duck have?', 'drum', ['bell', 'ball']]]},
@@ -1521,7 +1522,7 @@ const ST7 = {
     // Word Workshop (2nd), after Vowel Teams 2: oo ou ow oi oy aw ew
     {id: 'team2-1', st: 'team2', t: 'Brook and the Moon', pic: 'moon', s: ['Brook looks out at the moon.', 'It is big and round.', 'She holds up her spoon.', '“I will scoop up the moon!”', 'Brook and Mom laugh and laugh.'],
       q: [['What does Brook hold up?', 'spoon', ['cup', 'pencil']], ['What does Brook look at?', 'moon', ['sun', 'star']]]},
-    {id: 'team2-2', st: 'team2', t: 'A Mouse in the House', pic: 'mouse', s: ['A brown mouse lives in our house.', 'One day it sneaks out of its hole.', 'It finds a crust of toast on the couch.', '“Wow!” it shouts.', '“A feast!”', 'Then it sees the cat and zooms home!'],
+    {id: 'team2-2', st: 'team2', t: 'A Mouse in the House', pic: 'mouse', col: {mouse: 'e-n'}, s: ['A brown mouse lives in our house.', 'One day it sneaks out of its hole.', 'It finds a crust of toast on the couch.', '“Wow!” it shouts.', '“A feast!”', 'Then it sees the cat and zooms home!'],
       q: [['Who lives in the house?', 'mouse', ['rabbit', 'bird']], ['Who does the mouse see?', 'cat', ['dog', 'owl']]]},
     {id: 'team2-3', st: 'team2', t: 'The Cow and the Owl', pic: 'owl', s: ['A cow and an owl live on a farm.', 'The cow eats grass all day.', 'The owl sleeps all day.', 'When the moon comes up, the owl hoots and hoots.', 'The cow can not sleep!', 'So now the cow naps in the day, too.'],
       q: [['Who hoots?', 'owl', ['duck', 'frog']], ['Who naps in the day now?', 'cow', ['horse', 'sheep']]]},
@@ -1597,11 +1598,19 @@ function st7Plan(st) {
 }
 // the word lit at ms (for a recording's clock: its currentTime); -1 between words
 const st7Lit = (plan, ms) => plan.findIndex(x => ms >= x[0] && ms < x[1]);
+// RELA-PICS: a story's drawing in the colour its words name (st.col: "y-r" turns every yellow tone red, "b2-r2" one tone; ART is drawn once)
+function st7Hue(st, w, h) {
+  const c = st.col && st.col[w], m = {};
+  if (!c) return h;
+  for (const p of c.split(' ')) { const [a, b] = p.split('-'); if (a.length > 1) m[a] = b; else for (const d of ['', '1', '2', '3']) m[a + d] = b + d; }
+  return h.replace(/var\(--a-([a-z]\d?)\)/g, (x, r) => m[r] ? `var(--a-${m[r]})` : x);
+}
+const st7Pic = (st, size) => st7Hue(st, st.pic, picArt(st.pic, size));
 // the picture choices of question k of a story: always the same order for the same story (no random draw)
 function st7Q(st, k) {
   const q = st.q[k], all = [q[1]].concat(q[2]), r = [...(st.id + k)].reduce((a, c) => a + c.charCodeAt(0), 0) % all.length;
   const ch = all.slice(r).concat(all.slice(0, r));
-  return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: picFor(w), v: w, h: true, w}))};
+  return {kind: 'choice', cls: 'pics st7-ch', ans: q[1], say: q[0], choices: ch.map(w => ({l: st7Hue(st, w, picFor(w)), v: w, h: true, w}))};
 }
 const st7Btns = ws => ws.map((w, i) => `<button class="st7-w" data-i="${i}">${esc(w.w)}</button>`);
 // REC-198: the recordings play where say() would play a recording (not with ENA.off, the Tablet voice choice, or where Opus cannot play)
@@ -1621,7 +1630,7 @@ const st7Nr = (t, sel) => { if (t && nrOn()) setTimeout(() => { if (nrOn() && (!
 
 ST7.shelf = function (stop) {
   st7Halt();
-  const card = st => `<button class="btn st7-card" data-st="${esc(st.id)}"><span class="st7-cp" aria-hidden="true">${picArt(st.pic, 64)}</span><span>${esc(st.t)}</span></button>`;
+  const card = st => `<button class="btn st7-card" data-st="${esc(st.id)}"><span class="st7-cp" aria-hidden="true">${st7Pic(st, 64)}</span><span>${esc(st.t)}</span></button>`;
   const secs = ST7.stages.map(sg => {
     const ok = st7Ok(sg.stop), list = ST7.list.filter(s => s.st == sg.id), nm = st7Name(sg.stop);
     return `<section class="st7-sg${ok ? '' : ' lock'}" data-stop="${esc(sg.stop)}"><h2 class="st7-sh">${ico(ok ? 'skill-story' : 'lock', 28)}<span>${esc(nm)}</span></h2>`
@@ -1643,7 +1652,7 @@ ST7.open = function (id) {
   const ws = st7Words(st), b = st7Btns(ws), nt = st.t.split(/\s+/).filter(Boolean).length, sg = ST7.stages.find(x => x.id == st.st);
   Object.assign(ST7R, {st, ws, plan: st7Plan(st), mode: ''});
   view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(sg ? st7Name(sg.stop) : ST7W.shelf)}</span></div></div>`
-    + `<div class="scroll st7-story" id="st7"><div class="st7-page"><div class="st7-pic" aria-hidden="true">${picArt(st.pic, '100%')}</div>`
+    + `<div class="scroll st7-story" id="st7"><div class="st7-page"><div class="st7-pic" aria-hidden="true">${st7Pic(st, '100%')}</div>`
     + `<div class="st7-body"><h2 class="st7-t">${b.slice(0, nt).join(' ')}</h2><p class="st7-txt">${b.slice(nt).join(' ')}</p></div></div>`
     + `<p class="st7-tip" id="st7tip">${esc(ST7W.tipStart)}</p>`
     + `<div class="st7-act">${UI.btn(ST7W.read, {kind: 'primary', size: 'lg', icon: 'speak', id: 'st7read'})}${UI.btn(ST7W.you, {size: 'lg', icon: 'eye', id: 'st7you'})}`
@@ -1653,8 +1662,19 @@ ST7.open = function (id) {
   $('#st7you').onclick = () => st7You();
   $('#st7done').onclick = () => { st7Halt(); SFX.whoosh(); st7Quiz(0); };
   $$('.st7-w').forEach(w => w.onclick = () => st7Tap(+w.dataset.i));
+  st7Tight();
   st7Nr(ST7W.tipStart, '#st7');
 };
+// RELA-PICS: a short word ("a") keeps its 48 px tap box, but the box may reach into the gap and its neighbours' padding, so the
+// space around it reads like the space between other words (no tap box reaches a neighbour's letters)
+function st7Tight() {
+  for (const b of $$('.st7-w')) {
+    if (!document.createRange || !b.firstChild) continue;
+    const r = document.createRange(); r.selectNodeContents(b);
+    const pad = parseFloat(getComputedStyle(b).paddingLeft) || 0, x = Math.min(2 * pad, (b.getBoundingClientRect().width - r.getBoundingClientRect().width) / 2 - pad);
+    if (x >= 1) b.style.margin = `0 -${Math.round(x)}px`;
+  }
+}
 function st7Tip(t, sayIt) { const e = $('#st7tip'); if (e) e.textContent = t; if (sayIt) st7Say(t); }
 function st7Light(i) {
   for (const e of $$('.st7-w.st7-on')) e.classList.remove('st7-on');
@@ -1794,7 +1814,7 @@ function st7Quiz(k) {
 function st7Fin() {
   const st = ST7R.st, sg = ST7.stages.find(x => x.id == st.st), line = st7F(ST7W.end, {title: st.t});
   view(`<div class="top tbar s-read">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('skill-story', 30)}<span>${esc(ST7W.shelf)}</span></div></div>`
-    + `<div class="scroll st7-end" id="st7e"><div class="st7-pic" aria-hidden="true">${picArt(st.pic, '100%')}</div><p class="st7-big">${esc(line)}</p>`
+    + `<div class="scroll st7-end" id="st7e"><div class="st7-pic" aria-hidden="true">${st7Pic(st, '100%')}</div><p class="st7-big">${esc(line)}</p>`
     + `<div class="st7-act">${UI.btn(ST7W.again, {size: 'lg', icon: 'replay', id: 'st7again'})}${UI.btn(ST7W.more, {kind: 'primary', size: 'lg', icon: 'skill-story', id: 'st7more'})}</div></div>`);
   $('#back').onclick = () => { SFX.click(); ST7.shelf(sg && sg.stop); };
   $('#st7again').onclick = () => { SFX.whoosh(); ST7.open(st.id); };

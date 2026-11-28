@@ -1556,12 +1556,20 @@ function skyRatioChoices(p, q, to) {
   }
   return shuffle(out);
 }
+// RELA-PICS: flat dots, two rows on a plain grid
+function skyDots(a, b) {
+  const n = Math.max(a, b), W = n * 34 + 8, row = (k, y) => Array.from({length: k}, (_, i) => `<circle cx="${21 + i * 34}" cy="${y}" r="12"/>`).join('');
+  let d = `M4 42h${W - 8}`;
+  for (let i = 1; i < n; i++) d += `M${4 + i * 34} 4v76`;
+  return `<svg class="viz viz-ratio" viewBox="0 0 ${W} 84" style="--vw:${W}" role="img" aria-label="dots"><rect class="vo" x="4" y="4" width="${W - 8}" height="76" rx="8"/>`
+    + `<path class="vl" d="${d}"/><g class="v1">${row(a, 23)}</g><g class="v2">${row(b, 61)}</g></svg>`;
+}
 function skyRatio1() {
   const r = rnd(), to = coin();
   if (r < .35) { // dots: blue then orange (VIZ.tenFrame: the first counters are the first colour, the last b the second)
     const [a, b] = skyCoprime(1, 9, 18), bo = coin();
     const p = bo ? a : b, q = bo ? b : a, word = bo ? 'blue to orange' : 'orange to blue';
-    const pic = VIZ.tenFrame(a + b, a + b > 10 ? 20 : 10, {b});
+    const pic = skyDots(a, b);
     return {kind: 'choice', cls: 'skyr', ans: `${p}:${q}`, choices: skyRatioChoices(p, q, to),
       html: `${pic}<div class="sub">What is the ratio of ${word} dots?</div>`,
       say: `Look at the dots. What is the ratio of ${word} dots? Say the first one, then the second one.`,

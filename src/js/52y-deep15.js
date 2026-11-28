@@ -52,6 +52,7 @@ function deep15Apply() {
   if (typeof REP != 'undefined') for (const st of REP.STRANDS) if (D15.strands[st[0]]) st[1] += ' ' + D15.strands[st[0]];
   // Spanish
   for (const id in D15.es) ES_UNITS.find(u => u.id == id).items.push(...D15.es[id]);
+  for (const id in D15.esConfuse) { const u = ES_UNITS.find(x => x.id == id); u.confuse = (u.confuse || []).concat(D15.esConfuse[id]); }
   for (const u of D15.esNew) { ES_UNITS.push(u); SPN[u.id] = u.items; esReg(u); }
   for (const wid in D15.esAt) (PATHS.es.full || PATHS.es.worlds).find(w => w.id == wid).nodes.push(...D15.esAt[wid]);
   buildNodes('disc');

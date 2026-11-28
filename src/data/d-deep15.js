@@ -37,7 +37,7 @@ const D15 = {
   // Science and Social studies: Discover's report strands (REP.STRANDS, 82-report.js)
   strands: {Science: 'sci_plant sci_wx sci_rock sci_mach', 'Geography and civics': 'civ_past civ_work'},
   disc: [
-    {id: 'sci_plant', t: 'Seeds & Plants', e: '🌱', ico: 'globe', rows: `
+    {id: 'sci_plant', t: 'Seeds & Plants', e: '🌱', ico: 'seedling', rows: `
 Most plants start out as a tiny ___.|seed|leaf;stem;fruit|grow
 A seed is planted and watered. What grows out of it first?|a tiny root|a big flower;a ripe fruit;a pine cone|grow
 A young plant that has just come up out of the soil is called a ___.|seedling|pebble;puddle;petal|grow
@@ -73,7 +73,7 @@ Bees visit flowers. What do they carry from flower to flower that helps make see
         {form: 'sort', topic: 'grow', q: 'Sort them: is it a seed, or not?', hint: 'If you plant it and water it, will a new plant come up?', bins: {seed: ['acorn', 'peanut', 'bean'], 'not a seed': ['rock', 'button']}},
         {form: 'match', topic: 'pneeds', q: 'Match each plant part to its job: roots, leaves and flower.', hint: 'One is under the ground, one faces the sun, and one is colorful.', pairs: [['roots', 'take in water'], ['leaves', 'make food'], ['flower', 'makes seeds']]},
         {form: 'order', topic: 'grow', q: 'Put them in order: how does an apple tree make apples?', hint: 'In spring the tree is covered in white and pink.', order: ['flower', 'small green fruit', 'ripe apple']}]},
-    {id: 'sci_wx', t: 'Weather Watch', e: '🌧', ico: 'globe', rows: `
+    {id: 'sci_wx', t: 'Weather Watch', e: '🌧', ico: 'cloud', rows: `
 Which tool tells you how hot or cold it is outside?|a thermometer|a ruler;a clock;a measuring cup|wtool
 The red line in a thermometer goes up. What does that mean?|it is getting warmer|it is getting colder;it is getting darker;it is getting windier|wtool
 A rain gauge is a tool that measures ___.|how much rain fell|how hot it is;how fast the wind blows;how tall the clouds are|wtool
@@ -279,6 +279,8 @@ Where do people go to buy food?|a grocery store|a fire station;a library;a post 
     place: [['panadería', 'bakery', '🍞', 'la', 'bread'], ['gasolinera', 'gas station', '⛽', 'la'], ['aeropuerto', 'airport', '✈', 'el', 'plane'], ['puente', 'bridge', '🌉', 'el']],
     verb: [['cocinar', 'to cook', '🍳', ''], ['pintar', 'to paint', '🎨', ''], ['escuchar', 'to listen', '👂', '', 'ear'], ['mirar', 'to look', '👀', ''], ['abrir', 'to open', '🔓', ''], ['cerrar', 'to close', '🔒', '']],
     adj: [['abierto', 'open', '🔓', ''], ['cerrado', 'closed', '🔒', ''], ['duro', 'hard', '🪨', '', 'rock'], ['suave', 'soft', '🧸', '']]},
+  // RELA-PICS: never offered together (the family picture shows a mom, a dad and a child; the face shows its eyes, nose and mouth)
+  esConfuse: {family: [['familia', 'mamá'], ['familia', 'papá'], ['familia', 'hermano'], ['familia', 'hermana']], body: [['cara', 'ojos'], ['cara', 'nariz'], ['cara', 'boca']]},
   esNew: [
     {id: 'nature', t: 'Nature', e: '🌳', theme: 'Nature: sky, land, water and growing things', items: [['sol', 'sun', '☀', 'el', 'sun'], ['luna', 'moon', '🌙', 'la', 'moon'], ['estrella', 'star', '⭐', 'la', 'star'], ['árbol', 'tree', '🌳', 'el', 'tree'], ['flor', 'flower', '🌷', 'la', 'flower'], ['hoja', 'leaf', '🍃', 'la', 'leaf'], ['nube', 'cloud', '☁', 'la', 'cloud'], ['montaña', 'mountain', '🏔', 'la'], ['mar', 'sea', '🌊', 'el'], ['isla', 'island', '🏝', 'la'], ['piedra', 'rock', '🪨', 'la', 'rock'], ['concha', 'shell', '🐚', 'la', 'shell'], ['hongo', 'mushroom', '🍄', 'el'], ['desierto', 'desert', '🏜', 'el']]},
     {id: 'toy', t: 'Toys & Play', e: '🧸', theme: 'Toys and play things', items: [['pelota', 'ball', '⚽', 'la', 'ball'], ['globo', 'balloon', '🎈', 'el', 'balloon'], ['papalote', 'kite', '🪁', 'el', 'kite'], ['osito', 'teddy bear', '🧸', 'el'], ['tambor', 'drum', '🥁', 'el', 'drum'], ['guitarra', 'guitar', '🎸', 'la', 'guitar'], ['robot', 'robot', '🤖', 'el'], ['dado', 'dice', '🎲', 'el', 'dice'], ['rompecabezas', 'puzzle', '🧩', 'el'], ['piñata', 'piñata', '🪅', 'la'], ['trompeta', 'trumpet', '🎺', 'la', 'trumpet'], ['videojuego', 'video game', '🎮', 'el', 'gamepad'], ['patín', 'skate', '⛸', 'el']]}],

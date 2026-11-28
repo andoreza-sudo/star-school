@@ -563,6 +563,36 @@ Things noticed while working that are outside the current chunk. One line each, 
 - **Not done / for the owner**: the stop title "Tens & Hundreds" (big 1) now has tens only; "Even or Odd" in K still names the words even and odd (only the picture was added).
 - Start-up 2,496,301 bytes (was 2,492,970).
 
+### RELA-PICS: pictures that contradicted the words (review fix 4; v200, 2026-11-28, Claude; branch relA-pics)
+- What changed (art only, no sentence changed):
+  - Stories (52w/52x, teachrd): `col` hue swaps draw the bus, hat and bug red, the ship red and the mouse brown on the shelf card, the
+    page, the end screen and the quiz (`st7Hue`). `st7Tight` lets a short word's 48 px tap box reach into the gap, so "has a big" no
+    longer reads as double spaced (button markup unchanged).
+  - Math: basketball and tennis ball show the ball drawing in their own colours (orange, yellow), not the beach ball (🎾 draws a racquet). Coins print no value (VIZ.coinSVG and the
+    `.cn` coins of coins 1-3 and the make-money tray): size, colour, and a ridged edge on the dime, quarter and half dollar; bills keep
+    their $. Perimeter polygons are drawn to scale (corners on one circle, longest side at the bottom) and generated sides stay within
+    2:1. Two joined boxes stand side by side (cavalier view, the taller on the left), all five lengths labelled. "Behind": the hidden
+    one shows a third or more and the house lets taps through. Plate, bowl, basket, pond and box holders look like themselves (CSS on
+    aria-label). Picture graphs draw each row's own icon in its circles (cats, apples, swings, colours ...). The grade 6 ratio dots
+    are flat dots in two rows on a plain grid, not a ten frame.
+  - Spanish: la clase a chalkboard, nuevo a new shoe, viejo a worn shoe, bajo a short person beside a tall one, por favor open hands
+    (src/data/d-art-g.js, part teaches, which the Spanish map loads; the items' art names are set when it loads, so before that the
+    old emoji shows; start-up budget). el/la questions and sorts show the unit's drawing (la goma the eraser, la mesa the table: `esArtOf`).
+    DEEP-15 confuse pairs: familia never with mamá, papá, hermano, hermana; cara never with ojos, nariz, boca.
+  - Discover: icons seedling (Seeds & Plants), cloud (Weather Watch), telescope and volcano (Star Observatory and Volcano Ridge
+    chips, via `w.ico`; their first stops keep their skill icon). Telescope is in 15-icons; the other three only serve lazy worlds, so
+    d-art-g.js adds them to ICONS and the sprite. A US flag (13 stripes) and a compass rose (no letters) drawn for the
+    two questions (src/data/d-art-g.js, part teaches; emoji 🚩 🗺 until it loads).
+- Test changes: test.js `coinSVG face` checks the new promise (no value on coins, ridges on 10 and 25, bills keep values). The K2.off
+  pins of coins1-3 (test.js K2_OFF0) and geo_world1, civ1 (tools/lib/kinds2-seeds.json) set again for these pictures, with a comment;
+  checked: with only the coin markup and the two em fields put back, the old hashes return.
+- Tests: test.js --only art,emoji,icon,viz,spanish,es_,coin,geo,stor,math,picture,size,budget,start-up,deep,disc,kinds,parts,data,perf,
+  teach,pk,shape,ratio: 140 checks passed. smoke --seg STORIES-7,DEEP-15,KINDS2-C,P4-14,P4-15,P2-30,P2-37,R-01m,P4-03: OK.
+  Start-up (index + gen + gen2 + data) 2,492,970 -> 2,499,844 bytes (+6,874; 156 under the 2.5 MB line).
+- Screenshots: scratchpad relA-pics/before and after (1024x600).
+- Skipped: Long Ago & Today picture answers (no allowed emoji or drawing for candle and TV, so the items cannot all have pictures);
+  pin and can redraws (start-up budget). The pictograph key text ("= 10 child") is clipped at the svg edge, before and after (layout). Words that need the owner to swap: torch, sword, church, clown, draw, noise, dawn, dew, jewel.
+
 ### APPROVE-200: DISC-46 and ES-MORE turned on (v200, 2026-11-27, Claude; branch claude/beautiful-rubin-1urk3d)
 - **Owner decisions 2026-11-27** (every item of docs/drafts/DISC46-READ.md and ES-MORE-READ.md approved): Canyon Trail (grade 4) and Volcano Ridge (grade 6) on, with the tablet's voice; 4th graders start on Canyon Trail, 6th on Volcano Ridge; the 22 Spanish weather and feelings words recorded first, then on.
 - **Recordings**: tools/es-audio.js collects the ES-MORE words whatever the gate says (as REC-198 did for DEEP-15). 30 files (the 22 words plus the said form of the 8 two-form feelings, as the old feelings have), 472 characters, 93,784 bytes; audio/es 962 files, 2,404,039 bytes; all audio 11,673,297 bytes (fail 12,000,000).
