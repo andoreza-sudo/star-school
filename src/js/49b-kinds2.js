@@ -1820,21 +1820,50 @@ if (typeof genEsGusta == 'function') genEsGusta = k2Wrap('es_gusta', genEsGusta)
 // ---- "not three in a row" (spec 4): makeQ and mastQ draw a stop's question through pickQ ----
 // G.kh: the kinds asked so far this round (makeQ pushes every question it returns). After two of one kind, up to 10 draws look for
 // another kind; a stop that gives only that kind is remembered in KMONO for the session, so it pays the extra draws once.
+// RELB-NOREPEAT: no label twice in a round while unused ones remain. G.qu (label -> times asked) holds what makeQ returned and the
+// check-in's questions (qUse). Skipped draws (up to QNEW.T) do not count towards the 10 kind draws, so a used-up sort or mark pool
+// gives the level's other items first. A label comes back only when all draws were used ones, or the unused ones would all be a third
+// of one kind in a row (that rule first): the one asked fewest times (of another kind, for the run), not the one just before.
 const KMONO = {};
+const QNEW = {T: 60};
+function qUse(g, q) {
+  if (!g || !q) return;
+  const u = g.qu || (g.qu = new Map());
+  u.set(q.label, (u.get(q.label) || 0) + 1);
+}
+// Mixed Practice's top-up, a boss or test-out pool: a label not yet in the list a, within 20 draws
+function qNew(sk, lv, a) {
+  const u = new Set(a.map(x => x.label));
+  let q;
+  for (let t = 0; t < 20; t++) if (!u.has((q = genQ(sk, lv)).label)) return q;
+  return q;
+}
 // mix: Practice's own draw only (lsMix)
 function pickQ(sk, lv, mix) {
   const h = G.kh || (G.kh = []), two = h.length > 1 && h[h.length - 1] === h[h.length - 2] ? h[h.length - 1] : null, id = sk + lv;
-  let q, alt;
+  const u = G.qu || new Map();
+  let q, alt, old, oldK, fresh = 0, t = 0, other = false;
   // LESSON-STAGE: a stop whose questions are all one kind: the third in a row comes from its lesson in another kind (lsMix, part teach)
   if (mix && two && KMONO[id] && typeof lsMix == 'function' && (q = lsMix(sk, lv, two))) return q;
-  for (let t = 0; t < 10; t++) {
+  for (; t < QNEW.T && (fresh < 10 || two); t++) { // after two of a kind: all QNEW.T draws may look for an unused other kind
     q = genQ(sk, lv);
-    if (q.label === G.last) continue;
+    if (q.kind !== two) other = true;
+    if (q.label === G.last || u.has(q.label)) {
+      const n = u.get(q.label);
+      if (q.label !== G.last && (!old || n < u.get(old.label))) old = q;
+      if (two && q.kind !== two && q.label !== G.last && (!oldK || n < u.get(oldK.label))) oldK = q;
+      continue;
+    }
+    fresh++;
     if (!two || KMONO[id] || q.kind !== two) return q;
     alt = alt || q;
   }
-  if (alt) KMONO[id] = 1;
-  return alt || q;
+  // KMONO as before: 10 or more draws and none of another kind, asked or not
+  if (alt) {
+    if (t >= 10 && !other) KMONO[id] = 1;
+    return oldK || alt;
+  }
+  return oldK || old || q;
 }
 
 // ---- KINDS2-D why (spec 5): short, kind feedback on the likely misconception after a first wrong answer ----

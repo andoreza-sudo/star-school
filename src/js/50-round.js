@@ -28,11 +28,11 @@ function mixGroups(){const out={recent:[],weak:[],old:[]};
 function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_W.weak?'weak':'old';return pick(gr[k].length?gr[k]:gr.recent)}
 function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
   qs.push(...spcMix()); // SPACED-9: then up to 2 stops' check-ins that are due, within the day's cap (59-review.js)
-  while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
+  while(qs.length<10){const n=mixPick(gr),q=qNew(n.sk,n.lv,qs);qs.push(q)}
   return qs}
 function startMix(){G=newG({mix:true,pool:runCap(shuffle(mixQs())),sk:'mix'});next()} // MIX-8 (b): the same 10, never three of one kind in a row where they allow it
 const back=()=>G&&G.path?pathMap(G.path):home();
-function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=genQ(n.sk,n.lv);return q})}
+function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss'),a=[];while(a.length<k){const n=pick(ns);a.push(qNew(n.sk,n.lv,a))}return a}
 function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
   view(RW.bossIn(p,name,e,n.prize)); // P4-11 (18-reward-art.js)
   SFX.rattle();setTimeout(SFX.rattle,500);if(S.voice)say(`Oh no! ${name} appears! Answer questions to zap ${name}!`);
@@ -74,7 +74,7 @@ function makeQ(){let q;const h=G.hold;
   else{if(h)G.nos=1;try{q=makeQ1()}finally{G.nos=0}
     if(!h&&q&&q.review&&!MIX8.off&&!G.pool&&runKind(G,q.kind)&&G.done<G.n-1&&!(typeof KMONO!='undefined'&&KMONO[G.sk+G.lv])){
       G.hold=q;G.nos=1;try{q=makeQ1()}finally{G.nos=0}}}
-  if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
+  if(q){(G.kh||(G.kh=[])).push(q.kind);qUse(G,q)}return q} // RELB-NOREPEAT: qUse, pickQ, qNew in 49b-kinds2.js
 // MIX-8 (c): a missed question due back now, or null (one at a time, and not right after another one)
 function backQ(g){if(MIX8.off||g.test||g.retry||g.hold||!g.missed.length)return null;
   const one=typeof KMONO!='undefined'&&KMONO[g.sk+g.lv]; // a stop of one kind: the run cap cannot hold there, so it does not wait
