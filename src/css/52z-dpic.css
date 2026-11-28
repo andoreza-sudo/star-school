@@ -1,0 +1,5 @@
+/* RELB-MAPS: the Discover maps and diagrams (src/data/d-art-h.js, part teaches): as wide as the card allows, never taller than
+   about a third of the screen, so the question and its choices still fit on a 1024x600 or 380x780 screen. */
+.bpic .dpic{display:block;width:100%;height:auto;max-width:26rem;max-height:min(40vh,17rem);stroke-linecap:round;stroke-linejoin:round}
+.bpic .dearth,.bpic .dcell{max-width:12rem}
+.bpic .dwave{max-width:22rem}

@@ -70,6 +70,7 @@ const CHK = {
       if (seen.has(q.label)) continue;
       seen.add(q.label);
       G.kh.push(q.kind);
+      qUse(G, q); // RELB-NOREPEAT: pickQ skips it from now on
       out.push(q);
     }
     while (out.length < CHK.Q) out.push(genQ(nd.sk, nd.lv));
