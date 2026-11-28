@@ -19133,7 +19133,9 @@ run('Discover review fixes R-01d',()=>{
       const h=require('crypto').createHash('md5').update(a.join('\n')).digest('hex').slice(0,12);
       // AUD-DISC-W (W37, approved 2026-11-24): one wrong answer of one sci_phys 3 item changed ("the same" to "steadier" in "the ___ the
       // pull of gravity between them"), so the hash is the new one (it was d7726a821099 from v139 to v196)
-      if(h!=='d38801d3cfd5')bad('sci_phys 3 changed by seed ('+h+'), but only W37 touched it since v139')}
+      // RELB-MAPS (owner-approved review fix 8): its wave items gained a diagram (DPIC, d-art-h.js, part teaches); with DPIC giving no
+      // picture the hash is d38801d3cfd5 as before, so only the picture changed
+      if(h!=='821b73a3c04b')bad('sci_phys 3 changed by seed ('+h+'), but only W37 touched it since v139')}
     finally{Object.assign(ART,artKeep)}
   };
   eval(js+K2OLD+';('+body.toString()+')()');
@@ -20694,6 +20696,9 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // K miss 1 makes 10, eo 1 shows the number as pairs of dots; eo 1 no longer sorts (K2_SORT), its chips would be bare numbers)
       // (RELA-PICS, owner-approved review fix 4, set geo_world1 and civ1 again in kinds2-seeds.json: the compass and stripes questions
       // gained a picture (em compass-rose, us-flag); without the two em fields they give d1e5623a7a27 and a6e8a775acdc as before)
+      // (RELB-MAPS, owner-approved review fix 8, set sci_life3, sci_earth3, sci_phys3, geo_us1 and geo_us2 again: their cell, Earth-layer,
+      // wave and US map items gained a picture (DPIC, src/data/d-art-h.js, part teaches); with DPIC giving no picture they give
+      // a3371235b2d3, 95bf9cabc88e, d38801d3cfd5, 3e8754468fb3 and 3dc805615b71 as before)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
@@ -26270,6 +26275,36 @@ run('DEEP-15: deeper Discover and Spanish, the gate, well-formed answerable item
 // exactly one right answer (the Discover rules of DEEP-15: the hint never names the answer, the answer is not in the prompt, the right
 // answer the single longest choice in under 40%, no repeat of a Discover question, pictures from the allow list, no banned theme of CONTENT-01);
 // 3. the lazy load on a fresh page; 4. the gate is the one-line flip and the read-through lists every item, its hint and every choice.
+// RELB-MAPS (review fix 8): the Discover map and diagrams live in the lazy part teaches; a shaded state or marked part is never the answer
+// or a choice; without the part the question has no picture and is otherwise the same
+run('Discover pictures RELB-MAPS: map and diagrams in the part teaches, never the answer, the question the same without them',()=>{
+  const p=[],bad=m=>{if(p.length<40&&!p.includes(m))p.push(m)};
+  if(partOf('d-art-h.js')!=='teaches'||partOf('52z-dpic.css')!=='teaches'||!LAZY.includes('teaches'))bad('d-art-h.js and 52z-dpic.css are not in the lazy part teaches');
+  const r=JSON.parse(eval(js.replace('const DPIC = (() =>','var DPIC = (() =>')+`;(function(){
+    try{if(!D46F){disc46Apply();D46F=1}}catch(e){}
+    const cnt={},out=[],st={};DISC_ST.trim().split('\\n').forEach(r=>{const f=r.split('|');st[f[0]]=f[1]});
+    for(const id in BANK){if(!SK[id]||SK[id].area!='disc')continue;
+      BANK[id].forEach((it,i)=>{const f=it.form||'choice',h=DPIC(id,it,f);if(!h)return;const k=(h.match(/class="art dpic (\\w+)/)||[])[1];cnt[k]=(cnt[k]||0)+1;
+        const ch=[it.a,...(it.d||[]).map(x=>Array.isArray(x)?x[0]:x)];
+        if(/<text|<image|url\\(|#[0-9a-f]{3,6}\\b/i.test(h))out.push(id+' '+i+': text, image or raw colour in the picture');
+        if(k=='dmap'){const sh=Object.keys(USMAP).filter(c=>h.includes('fill="var(--a-r2)" stroke="var(--a-r3)" stroke-width=".9" d="'+USMAP[c]+'"'));
+          if(!sh.length)out.push(id+' '+i+': a map with no state shaded');
+          for(const c of sh){if(!new RegExp('\\\\b'+st[c]+'\\\\b').test(it.q))out.push(id+' '+i+': shades '+c+', which the question does not name');
+            if(ch.some(x=>String(x)===st[c]))out.push(id+' '+i+': shades the state of a choice '+c)}}
+        if(!/^(choice|wide)$/.test(f))out.push(id+' '+i+': a picture on a '+f+' item')});
+    }
+    // without the part: no picture, same question otherwise
+    const it=BANK.geo_us.find(x=>/border with Ohio/.test(x.q)),a=bankBuild('geo_us',it).html;
+    const D=DPIC;DPIC=undefined;const b=bankBuild('geo_us',it).html;DPIC=D;
+    if(!a.includes('dmap')||b.includes('dpic')||a.replace(/<div class="bpic"><svg[\\s\\S]*?<\\/svg><\\/div>/,'')!==b)out.push('Ohio: with and without the part '+b.slice(0,80));
+    return JSON.stringify({cnt,out,n:Object.keys(USMAP).length});
+  })()`));
+  r.out.forEach(bad);
+  if(r.n!==50)bad('the map has '+r.n+' states');
+  if(!(r.cnt.dmap>=130&&r.cnt.dearth>=20&&r.cnt.dwave>=10&&(r.cnt.dcell||0)+(r.cnt.dcell2||0)>=10))bad('fewer pictures than RELB-MAPS attached: '+JSON.stringify(r.cnt));
+  return{problems:p,note:JSON.stringify(r.cnt)};
+});
+
 run('DISC-46: Discover worlds for grades 4 and 6, the gate, answerable items, lazy load',()=>{
   const p=[],bad=m=>{if(p.length<80&&!p.includes(m))p.push(m)},rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),note={};
   const DOC='docs/drafts/DISC46-READ.md',doc=rd(DOC),FILES=['42m-disc46on.js','42n-disc46.js','52z-disc46.js','d-disc46.js'];
