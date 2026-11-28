@@ -353,11 +353,13 @@ function genSgShape3() {
     });
   }
   const [nm, art, em, ans, sp, fact] = pick(SG_THINGS3);
+  // RELA-PICS: the tennis ball and the basketball are the ball drawing in their own colours (not the beach ball)
+  const hu = {'tennis ball': 'yyy', basketball: 'ooO'}[nm], th = hu ? picArt(art).replace(/--a-([rby])\)/g, (m, c) => '--a-' + hu['rby'.indexOf(c)].replace('O', 'o2') + ')') : picFor(art, em);
   return pkQ({
     kind: 'choice', cls: 'pics pk4', ans, choices,
-    html: `<div class="pkq"><span class="sgobj">${picFor(art, em)}</span></div>${pkTxt(`Which one is shaped like ${sp}?`)}`,
+    html: `<div class="pkq"><span class="sgobj">${th}</span></div>${pkTxt(`Which one is shaped like ${sp}?`)}`,
     say: `Which one is shaped like ${sp}?`,
-    hint: PK.hint(`<div class="pkhint"><span class="sgobj">${picFor(art, em)}</span>${pkTxt(fact)}</div>`, fact), label: `solid like ${nm}`,
+    hint: PK.hint(`<div class="pkhint"><span class="sgobj">${th}</span>${pkTxt(fact)}</div>`, fact), label: `solid like ${nm}`,
   });
 }
 function genShapeK(lv) { return lv == 1 ? genPkShape() : lv == 2 ? genSgShape2() : genSgShape3(); }

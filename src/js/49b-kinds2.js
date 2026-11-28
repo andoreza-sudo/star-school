@@ -661,7 +661,7 @@ function k2Art(q0, lv) {
   do its = [...(fn ? [fn] : []), ...k2Take(pool, fn ? 3 : 4, fn ? [fn] : [])];
   while (its.every(n => art(n) == art(its[0])) || new Set(its.map(word)).size < its.length);
   const items = shuffle(its).map(n => ({v: word(n), b: art(n), h: true, say: word(n), lang: 'es', al: word(n),
-    l: `${k2Pic('', n[2], 'k2sm')}<span>${esc(word(n))}</span>`}));
+    l: `${k2Pic(esArtOf(n[0]), n[2], 'k2sm')}<span>${esc(word(n))}</span>`}));
   const bins = ws.map(w => ({v: w, l: w}));
   return k2Sort({bins, items, html: `<div class="sub">${esc(ws[0])} or ${esc(ws[1])}? Sort the words.</div>`,
     say: `Which words go with ${ws[0]}, and which go with ${ws[1]}?`,
@@ -918,7 +918,7 @@ const mmRow = (lab, i, show, ds = [1]) => `<div class="mms"><span class="mml">${
   + ds.slice().reverse().map(d => mmBtn(i, -d, 'minus', (d > 1 ? d + " " : "") + "less: " + lab, ds.length > 1 || d > 1 ? '−' + d : '')).join('')
   + (show ? `<output class="mmn" data-o="${i}">0</output>` : '')
   + ds.map(d => mmBtn(i, d, 'plus', (d > 1 ? d + " " : "") + "more: " + lab, ds.length > 1 || d > 1 ? '+' + d : '')).join('') + '</div>';
-const mmCoin = v => `<span class="cn" style="--c:${COIN[v][2]};--s:${COIN[v][3]}">${COIN[v][0]}</span>`;
+const mmCoin = cnSpan;
 const mmSum = s => s.reduce((a, b) => a + b, 0);
 const mmTime = s => s[0] + ':' + String(s[1]).padStart(2, '0');
 const mmTimeSay = (h, m) => (m == 0 ? `${h} o'clock` : m == 30 ? `half past ${h}` : `${h} ${m < 10 ? 'oh ' + m : m}`);

@@ -39,10 +39,10 @@
 .sggrid{display:grid;grid-template-columns:auto auto;justify-content:center;gap:var(--s-3);align-items:center;justify-items:center}
 .sggrid.sgflip{direction:rtl}
 .sgrow{flex-direction:row}
-/* in front of / behind: the one in front overlaps the lower right of the thing, the one behind peeks out above and left */
+/* in front of / behind: the one behind shows a third or more and all of it takes taps (RELA-PICS) */
 .sgdepth{position:relative;display:block;width:min(100%,9em);height:clamp(200px,32vh,280px);margin-bottom:var(--s-3)}
-.sgdepth .sgref{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:2;font-size:2.4em}
-.sgdepth .sgbk{position:absolute;left:36%;top:0;z-index:1;font-size:.9em}
+.sgdepth .sgref{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:2;font-size:2.4em;pointer-events:none}
+.sgdepth .sgbk{position:absolute;left:50%;top:-4%;z-index:1;font-size:.9em}
 .sgdepth .sgfk{position:absolute;left:30%;bottom:0;z-index:3;font-size:.9em}
 .sgdepth .sgt{border-color:transparent;background:none}
 .sgdepth .sgt.right{background:var(--good-tint);border-color:var(--good)}

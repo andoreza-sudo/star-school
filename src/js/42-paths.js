@@ -42,7 +42,7 @@ const PATHS={
  disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
   {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff'],['geo_world',1,'Maps & Land'],['civ',1,'Our Community']]},
   {id:'d_lab',g:3,n:'Science Lab',e:'💡',c:'#e0f2fe',nodes:[['sci_life',2,'Life Cycles & Food'],['sci_earth',2,'Water, Rocks & Moon'],['sci_phys',2,'Forces & Matter'],['geo_us',1,'States & Capitals'],['geo_world',2,'Grids & Climate']]},
-  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
+  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',ico:'telescope',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,

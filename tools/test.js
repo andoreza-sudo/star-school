@@ -888,7 +888,9 @@ run('viz: math visuals well-formed, small, deterministic, tokens only, tap targe
   if(!has(V.angle(60,{label:'?'}),/class="vq"/))p.push('angle ? label');
   if(cnt(V.balance(5,3),/<circle/g)!==9)p.push('balance(5, 3): 8 counters and the pivot');
   if(V.balance(5,3)===V.balance(3,5)||V.balance(4,4)===V.balance(5,3))p.push('balance tilt');
-  if(cnt(V.coinSVG([25,10,5,1]),/<text/g)!==4||cnt(V.coinSVG([25,10,5,1],{face:false}),/<text/g)!==0)p.push('coinSVG face');
+  // RELA-PICS (owner-approved review fix 4): coins carry no printed value (size, colour and edge tell them apart; the dime, quarter
+  // and half dollar have a ridged edge); bills keep theirs unless face is false
+  if(cnt(V.coinSVG([25,10,5,1]),/<text/g)!==0||cnt(V.coinSVG([25,10,5,1]),/ vrd"/g)!==2||cnt(V.coinSVG([500,100]),/<text/g)!==2||cnt(V.coinSVG([500,100],{face:false}),/<text/g)!==0)p.push('coinSVG face');
   if(cnt(V.tally(13),/v38/g)!==11)p.push('tally(13) should draw 11 upright strokes');
   if(cnt(V.tally(13),/L/g)!==2)p.push('tally(13) should draw 2 slashes');
   if(cnt(V.pictograph([['A',5]],{per:2}),/<path class="v1"/g)!==1)p.push('pictograph half picture');
@@ -20649,6 +20651,8 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
       // loudness, which also makes those four questions "wide" (a choice over 7 letters); checked to be the only difference)
       // (WORDS-MATH, approved 2026-11-24, set two more: sort3 (E8: no fish in a food and animals sort; with sgCat as before it gives the v169
       // hash 1b1f327c30ec) and eo1 (W69: the K question says "Even is on the left."; without that sentence it gives the v169 hash 9eb0a73c72a3))
+      // (RELA-PICS, owner-approved review fix 4, set geo_world1 and civ1 again in kinds2-seeds.json: the compass and stripes questions
+      // gained a picture (em compass-rose, us-flag); without the two em fields they give d1e5623a7a27 and a6e8a775acdc as before)
       K2.off=true;
       try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
@@ -20789,11 +20793,13 @@ run('GFX-1 JFX: the bit pool and its cap, stop with nothing flying',()=>{
 // K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4 at 40%, not 30%: 30% leaves the number pad at 70%).
 // K2_OFF0: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for s = 1..150, ART emptied, of the stops batches B and C switch, from the
 // generators of commit af3d449 (before them); with K2.off the stops must give these exactly.
+// (RELA-PICS, owner-approved review fix 4, set coins1-3 again: their coins print no value and the dime and quarter are ridged;
+// with only that markup put back they give the af3d449 hashes c6223ca6725d, 79e47fb01235, da823ebb199b)
 const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,dec1:.3,dec2:.3,pv5:.3,int1:.4,int2:.45};
 const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',round2:'f7aff9bb37e3',round3:'ed930021e130',round4:'af8199029acb',
   frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'ef33cdc118a9',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
   tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
-  coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'04c0ad9c8b15',
+  coins1:'386991574633',coins2:'f439e04cd3e9',coins3:'92270200e77f',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'04c0ad9c8b15',
   time3:'cf0a72347296',time4:'bff67461efdd',time5:'6ec67e6555e1',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
   mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'d26b15de7a3c',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new

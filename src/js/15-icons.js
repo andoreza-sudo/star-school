@@ -389,6 +389,8 @@ const ICONS={
     '<circle fill="var(--ic3,currentColor)" opacity=".4" cx="12" cy="12" r="9.2"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2.2" d="M12 2.8a9.2 9.2 0 1 0 0 18.4a9.2 9.2 0 1 0 0-18.4ZM12 2.8' +
     'c-2.8 2.6-4 5.6-4 9.2s1.2 6.6 4 9.2M12 2.8c2.8 2.6 4 5.6 4 9.2s-1.2 6.6-4 9.2M3 12h18"/>',
+  telescope: '<path d="M3.2 12.6L17.4 5L19.6 9.2L5.4 16.8Z"/><path fill="var(--ic3,currentColor)" opacity=".4" d="M18.6 3.6L20.6 2.6L23 7.2L21 8.2Z"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.2" d="M12 13L8 21.5M12 13L16 21.5M12 13V21.5"/>',
   'moon':
     '<path fill="var(--ic3,currentColor)" opacity=".4" d="M18.2 2C19 4.8 19 4.8 21.8 5.6C19 6.4 19 6.4 18.2 9.2' +
     'C17.4 6.4 17.4 6.4 14.6 5.6C17.4 4.8 17.4 4.8 18.2 2Z"/>' +

@@ -3609,7 +3609,7 @@ Object.assign(DISC_HINT, {
 });
 
 BANK.geo_world = discRows(1, `
-On a compass, the letter N stands for ___.|north|south;east;west|mapwords
+On a compass, the letter N stands for ___.|north|south;east;west|mapwords|compass-rose,🗺
 On most maps, north is at the ___ of the map.|top|bottom;left;right|mapwords
 On most maps, south is at the ___ of the map.|bottom|top;left;right|mapwords
 On most maps, east is on the ___ side of the map.|right|left;top;bottom|mapwords
@@ -4013,7 +4013,7 @@ Which is a fair way to share a toy?|take turns|take it and run;hide it;say it is
 A good citizen follows the rules and ___.|helps others|is rude;takes things;litters|rules
 Voting is a fair way for a group to ___.|make a choice|sleep;pay bills;let the oldest person decide|rules
 Walking in the hallway at school helps keep everyone ___.|safe|loud;late;hungry|rules
-The flag of the United States has ___ stripes.|13|10;50;7|symbols
+The flag of the United States has ___ stripes.|13|10;50;7|symbols|us-flag,🚩
 The flag of the United States has ___ stars.|50|13;48;100|symbols
 Each star on the United States flag stands for a ___.|state|president;city;holiday|symbols
 The 13 stripes on the flag stand for the first 13 ___.|colonies|cities;kings;oceans|symbols

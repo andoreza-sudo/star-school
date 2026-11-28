@@ -1559,12 +1559,20 @@ function skyRatioChoices(p, q, to) {
   }
   return shuffle(out);
 }
+// RELA-PICS: flat dots, two rows on a plain grid
+function skyDots(a, b) {
+  const n = Math.max(a, b), W = n * 34 + 8, row = (k, y) => Array.from({length: k}, (_, i) => `<circle cx="${21 + i * 34}" cy="${y}" r="12"/>`).join('');
+  let d = `M4 42h${W - 8}`;
+  for (let i = 1; i < n; i++) d += `M${4 + i * 34} 4v76`;
+  return `<svg class="viz viz-ratio" viewBox="0 0 ${W} 84" style="--vw:${W}" role="img" aria-label="dots"><rect class="vo" x="4" y="4" width="${W - 8}" height="76" rx="8"/>`
+    + `<path class="vl" d="${d}"/><g class="v1">${row(a, 23)}</g><g class="v2">${row(b, 61)}</g></svg>`;
+}
 function skyRatio1() {
   const r = rnd(), to = coin();
   if (r < .35) { // dots: blue then orange (VIZ.tenFrame: the first counters are the first colour, the last b the second)
     const [a, b] = skyCoprime(1, 9, 18), bo = coin();
     const p = bo ? a : b, q = bo ? b : a, word = bo ? 'blue to orange' : 'orange to blue';
-    const pic = VIZ.tenFrame(a + b, a + b > 10 ? 20 : 10, {b});
+    const pic = skyDots(a, b);
     return {kind: 'choice', cls: 'skyr', ans: `${p}:${q}`, choices: skyRatioChoices(p, q, to),
       html: `${pic}<div class="sub">What is the ratio of ${word} dots?</div>`,
       say: `Look at the dots. What is the ratio of ${word} dots? Say the first one, then the second one.`,
@@ -4170,7 +4178,7 @@ function k2Art(q0, lv) {
   do its = [...(fn ? [fn] : []), ...k2Take(pool, fn ? 3 : 4, fn ? [fn] : [])];
   while (its.every(n => art(n) == art(its[0])) || new Set(its.map(word)).size < its.length);
   const items = shuffle(its).map(n => ({v: word(n), b: art(n), h: true, say: word(n), lang: 'es', al: word(n),
-    l: `${k2Pic('', n[2], 'k2sm')}<span>${esc(word(n))}</span>`}));
+    l: `${k2Pic(esArtOf(n[0]), n[2], 'k2sm')}<span>${esc(word(n))}</span>`}));
   const bins = ws.map(w => ({v: w, l: w}));
   return k2Sort({bins, items, html: `<div class="sub">${esc(ws[0])} or ${esc(ws[1])}? Sort the words.</div>`,
     say: `Which words go with ${ws[0]}, and which go with ${ws[1]}?`,
@@ -4427,7 +4435,7 @@ const mmRow = (lab, i, show, ds = [1]) => `<div class="mms"><span class="mml">${
   + ds.slice().reverse().map(d => mmBtn(i, -d, 'minus', (d > 1 ? d + " " : "") + "less: " + lab, ds.length > 1 || d > 1 ? '−' + d : '')).join('')
   + (show ? `<output class="mmn" data-o="${i}">0</output>` : '')
   + ds.map(d => mmBtn(i, d, 'plus', (d > 1 ? d + " " : "") + "more: " + lab, ds.length > 1 || d > 1 ? '+' + d : '')).join('') + '</div>';
-const mmCoin = v => `<span class="cn" style="--c:${COIN[v][2]};--s:${COIN[v][3]}">${COIN[v][0]}</span>`;
+const mmCoin = cnSpan;
 const mmSum = s => s.reduce((a, b) => a + b, 0);
 const mmTime = s => s[0] + ':' + String(s[1]).padStart(2, '0');
 const mmTimeSay = (h, m) => (m == 0 ? `${h} o'clock` : m == 30 ? `half past ${h}` : `${h} ${m < 10 ? 'oh ' + m : m}`);
