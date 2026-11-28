@@ -9284,7 +9284,7 @@ async function main() {
     // R-01s Spanish review fixes at 380x780 (2x). A weather question and a feelings question, each opened from the Spanish map with real taps
     //    (world chip, stop, ¡Vamos! on the learn screen), then the review's two-answer seed shown in the round (weather 1 seed 387, feelings 1
     //    seed 18; were 38 and 41 before ES-MORE): no two choices mean the same thing, the cool / hot / cold pictures carry their English, a feeling shows both forms
-    //    (cards and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
+    //    (cards on two lines with no slash since RELA-UI, and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
     //    Screenshots: tools/out/es-r01s-* (or the folder in R01S_SHOTS).
     if (seg('R-01s')) {
       const rx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
@@ -9311,8 +9311,12 @@ async function main() {
         await lsLearnSel(rp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await rp.click(`.node[data-n="${at.i}"]`);
         await rp.waitForSelector('#go'); // level 1 opens on the learn cards
-        const cards = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => b.textContent));
-        if (tag === 'feelings' && (!cards.includes('cansado / cansada') || !cards.includes('feliz'))) bad.push('feelings learn cards: ' + cards.join(', '));
+        // RELA-UI (owner approved): a two-form word is shown on two lines (a <br>), with no slash; the lines are the text nodes around the <br>
+        const lines = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => ({ l: [...b.childNodes].filter(n => n.nodeType == 3).map(n => n.textContent.trim()).filter(Boolean),
+          br: b.querySelectorAll('br').length, slash: b.textContent.includes('/') })));
+        const cards = lines.map(c => c.l.join(' | '));
+        if (lines.some(c => c.slash)) bad.push('a learn card shows a slash: ' + cards.join(', '));
+        if (tag === 'feelings' && (!lines.some(c => c.br == 1 && c.l.join() == 'cansado,cansada') || !cards.includes('feliz'))) bad.push('feelings learn cards: ' + cards.join(', '));
         if (tag === 'weather' && !cards.includes('hace fresco')) bad.push('weather learn cards: ' + cards.join(', '));
         await shot(tag + '-learn');
         await rp.click('#go');
@@ -14700,7 +14704,9 @@ async function main() {
             window.say = function (t, b, lang, q, slow) { window.__said.push([String(t), lang || '']); return o.apply(this, arguments); }; });
           // 1. the maps: a lesson stop in front of Animals (Spanish, a Kindergartner) and of Living Things (Discover)
           for (const [p, id] of [['es', 'es_animal1'], ['disc', 'sci_life1']]) {
-            await pg.evaluate(([p, id]) => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES[p].findIndex(n => nid(n) === id);
+            // RELA-FIX: grades by setGrade (esRefit), never S.grade alone: a Kindergartner's Spanish path is the RELA-YOUNG cut, and the part
+            // teaches rebuilds NODES.es (deep15Apply) for the grade it finds, so a bare S.grade left the 5th grader below on the cut path
+            await pg.evaluate(([p, id]) => { setGrade(0); S.know = {}; delete S.les; S.lm = []; delete S.lsOpen; const i = NODES[p].findIndex(n => nid(n) === id);
               for (let j = 0; j < NODES[p].length; j++) setSt(p, j, j < i ? 2 : 0); save(); pathMap(p, NODES[p][i].wi); }, [p, id]);
             await pg.waitForFunction(() => partReady('teaches') && typeof ls6Spanish == 'function', null, { timeout: 15000 });
             await pg.waitForTimeout(300);
@@ -14713,7 +14719,7 @@ async function main() {
           await pg.evaluate(() => { LS.WAKE = 400; LS.PET_OK = 0; });
           // 2. four lessons through every beat
           for (const [id, gr] of [['es_animal1', 0], ['es_art1', 5], ['sci_phys1', 0], ['sci_earth1', 1]]) {
-            await pg.evaluate(([id, gr]) => { S.grade = gr; delete S.les; S.know = {}; window.__said = []; const p = id.startsWith('es_') ? 'es' : 'disc', i = NODES[p].findIndex(n => nid(n) === id);
+            await pg.evaluate(([id, gr]) => { setGrade(gr); delete S.les; S.know = {}; window.__said = []; const p = id.startsWith('es_') ? 'es' : 'disc', i = NODES[p].findIndex(n => nid(n) === id);
               for (let j = 0; j <= i; j++) setSt(p, j, j < i ? 2 : 0); LS.start(id); }, [id, gr]);
             await pg.waitForSelector('#lsplay', { timeout: 5000 });
             const path = [], seen = [];

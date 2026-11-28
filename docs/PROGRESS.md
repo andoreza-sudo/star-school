@@ -540,6 +540,11 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### RELA-FIX: two smoke failures after the merges (tests only; v200, 2026-11-28, Claude; branch claude/beautiful-rubin-1urk3d)
+- **TEACH-5S** ("Cannot read properties of undefined (reading 'sk')" in LS.record, then the step timed out): no app bug. The test set `S.grade` by hand (0, then 5 for El or La?). The app changes a grade only by setGrade (esRefit) or a reload (switching child), and the part teaches rebuilds NODES.es (deep15Apply, DEEP15_ON 1) for the grade it finds: it loaded while the test's grade was 0, so NODES.es became the RELA-YOUNG Kindergarten cut, and the 5th grader's es_art1 (not on the cut) had no stop, so record() found none. The test now grades by `setGrade(gr)` like the app (step 1 and the lesson loop); every assertion is as before.
+- **R-01s**: the feelings learn card check looked for 'cansado / cansada'; RELA-UI (owner approved) shows two forms on two lines with no slash. It now checks a card whose text is exactly the two lines cansado and cansada around one `<br>`, and that no learn card shows a slash.
+- a11y rally-race ("motion: calm: animation on span#rlspk ... 320 ms x 1" at 1024x600 in the full check): passed 3 of 3 alone (both sizes); load in the full run, Star Rally untouched.
+
 ### RELA-SIZE: start-up back under 2.5 MB after the three review merges (v200, 2026-11-28, Claude; branch claude/beautiful-rubin-1urk3d)
 - **Why**: after RELA-UI, RELA-YOUNG and RELA-PICS, index.html + gen + gen2 + data was 2,505,645 bytes, over the 2,500,000 that "performance P6-03" keeps free (3.0 MB budget minus 500 KB). The budget is unchanged.
 - **What moved**: a new lazy part `sprint` (sprint.v200.js, about 20 KB, precached by sw.js like every part): the Find my level quiz (45-placement.js: PLACE, placeApply and the quiz screens) and the Fact Sprint screens (57-fluency.js: menu, modes, play, end card). What start-up reads stays in gen, in two new files: 45a-place.js (placePaths, placeOK, placeWorld for startWorld, PL, the Home card and the Grown-ups row) and 57a-flu.js (FLU with FLU.on() for Home, the Learn hub and the missions, FL and stopFlu for view()). Their CSS stays in index.html. Code moved as is: no sentence a child sees or hears changed.
